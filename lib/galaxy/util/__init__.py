@@ -5,24 +5,8 @@ Utility functions used systemwide.
 import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
 from email.MIMEText import MIMEText
 
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import new as md5
-
-try:
-    from math import isinf
-except ImportError:
-    INF = float( 'inf' )
-    NEG_INF = -INF
-    ISINF_LIST = [ INF, NEG_INF ]
-    isinf = lambda x: x in ISINF_LIST
+from os.path import relpath
+from hashlib import md5
 
 from galaxy import eggs
 import pkg_resources
@@ -39,6 +23,11 @@ import wchartype
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
+
+CHUNK_SIZE = 65536 #64k
+
+DATABASE_MAX_STRING_SIZE = 32768
+DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
@@ -118,7 +107,7 @@ def file_iter(fname, sep=None):
         if line and line[0] != '#':
             yield line.split(sep)
 
-def file_reader(fp, chunk_size=65536):
+def file_reader( fp, chunk_size=CHUNK_SIZE ):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
     while 1:
         data = fp.read(chunk_size)
@@ -167,6 +156,79 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
+
+def get_file_size( value, default=None ):
+    try:
+        #try built-in
+        return os.path.getsize( value )
+    except:
+        try:
+            #try built-in one name attribute
+            return os.path.getsize( value.name )
+        except:
+            try:
+                #try tell() of end of object
+                offset = value.tell()
+                value.seek( 0, 2 )
+                rval = value.tell()
+                value.seek( offset )
+                return rval
+            except:
+                #return default value
+                return default
+
+def shrink_stream_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    rval = ''
+    if get_file_size( value ) > size:
+        start = value.tell()
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            elif end_on_size_error:
+                value.seek( -size, 2 )
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        rval = value.read( left_index ) + join_by
+        value.seek( -right_index, 2 )
+        rval += value.read( right_index )
+    else:
+        while True:
+            data = value.read( CHUNK_SIZE )
+            if not data:
+                break
+            rval += data
+    return rval
+
+def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    if len( value ) > size:
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                return value[:size]
+            elif end_on_size_error:
+                return value[-size:]
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
+    return value
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -542,41 +604,6 @@ def read_build_sites( filename, check_builds=True ):
     except:
         print "ERROR: Unable to read builds for site file %s" %filename
     return build_sites
-
-def relpath( path, start = None ):
-    """Return a relative version of a path"""
-    #modified from python 2.6.1 source code
-    
-    #version 2.6+ has it built in, we'll use the 'official' copy
-    if sys.version_info[:2] >= ( 2, 6 ):
-        if start is not None:
-            return os.path.relpath( path, start )
-        return os.path.relpath( path )
-    
-    #we need to initialize some local parameters
-    curdir = os.curdir
-    pardir = os.pardir
-    sep = os.sep
-    commonprefix = os.path.commonprefix
-    join = os.path.join
-    if start is None:
-        start = curdir
-    
-    #below is the unedited (but formated) relpath() from posixpath.py of 2.6.1
-    #this will likely not function properly on non-posix systems, i.e. windows
-    if not path:
-        raise ValueError( "no path specified" )
-    
-    start_list = os.path.abspath( start ).split( sep )
-    path_list = os.path.abspath( path ).split( sep )
-    
-    # Work out how much of the filepath is shared by start and path.
-    i = len( commonprefix( [ start_list, path_list ] ) )
-    
-    rel_list = [ pardir ] * ( len( start_list )- i ) + path_list[ i: ]
-    if not rel_list:
-        return curdir
-    return join( *rel_list )
 
 def relativize_symlinks( path, start=None, followlinks=False):
     for root, dirs, files in os.walk( path, followlinks=followlinks ):

@@ -3,10 +3,9 @@
     <description> - receive data from GenomeSpace</description>
     <command interpreter="python">genomespace_importer.py
         --genomespace_site "prod"
-        #assert $__user_id__ != 'Anonymous', Exception( 'You must be logged in to use this tool.' )
-        #set $user = $__app__.model.User.get( $__user_id__ )
-        #set $username = $user.preferences.get( 'genomespace_username', None )
-        #set $token = $user.preferences.get( 'genomespace_token', None )
+        #assert $__user__, Exception( 'You must be logged in to use this tool.' )
+        #set $username = $__user__.preferences.get( 'genomespace_username', None )
+        #set $token = $__user__.preferences.get( 'genomespace_token', None )
         #assert None not in ( $username, $token ), Exception( 'You must associate a GenomeSpace OpenID with your account and log in with it.' )
         --username "${username}"
         --token "${token}"

@@ -1,14 +1,19 @@
-import os, logging
+import logging
+import os
 from galaxy.webapps.tool_shed import model
 from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, or_
+from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import patch
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -49,7 +54,7 @@ class ComponentGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
@@ -136,7 +141,10 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     key="name",
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
-        RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   attach_popup=False,
+                                   key="User.username" ),
         WithReviewsRevisionColumn( "Reviewed revisions" ),
         ReviewersColumn( "Reviewers", attach_popup=False ),
         RatingColumn( "Rating", attach_popup=False ),
@@ -177,7 +185,9 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                                        attach_popup=False ),
         RepositoriesWithReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithReviewsGrid.UserColumn( "Owner",
-                                                attach_popup=False )
+                                                model_class=model.User,
+                                                attach_popup=False,
+                                                key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
@@ -213,7 +223,9 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
                                                           attach_popup=False ),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithoutReviewsGrid.UserColumn( "Owner",
-                                                   attach_popup=False )
+                                                   model_class=model.User,
+                                                   attach_popup=False,
+                                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
@@ -240,6 +252,23 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
 
 class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
+
+    columns = [
+        RepositoriesWithReviewsGrid.NameColumn( "Repository name",
+                                                key="name",
+                                                link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                                attach_popup=True ),
+        RepositoriesWithReviewsGrid.UserColumn( "Owner", attach_popup=False ),
+        RepositoriesWithReviewsGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
+        RepositoriesWithReviewsGrid.ReviewersColumn( "Reviewers", attach_popup=False ),
+        RepositoriesWithReviewsGrid.RatingColumn( "Rating", attach_popup=False ),
+        RepositoriesWithReviewsGrid.ApprovedColumn( "Approved", attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[ 0 ] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
@@ -327,7 +356,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         user_id = trans.security.decode_id( kwd[ 'id' ] )
@@ -371,12 +400,12 @@ class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
 
 
-class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
+class RepositoriesWithNoToolTestsGrid( RepositoriesWithoutReviewsGrid ):
     # Repositories that are ready for human review are those that either:
     # 1) Have no tools
     # 2) Have tools that have been proven to be functionally correct within Galaxy.
     # This grid filters out repositories that have been marked as either deprecated or deleted.
-    title = "Repositories that contain tools with invalid functional tests"
+    title = "Repositories that contain tools with no tests or test data"
     columns = [
         RepositoriesWithoutReviewsGrid.NameColumn( "Repository name",
                                                    key="name",
@@ -387,7 +416,9 @@ class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
                                                           attach_popup=False ),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithoutReviewsGrid.UserColumn( "Owner",
-                                                   attach_popup=False )
+                                                   model_class=model.User,
+                                                   attach_popup=False,
+                                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
@@ -402,8 +433,7 @@ class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
                                .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False,
-                                              model.Repository.reviews == None ) ) \
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( model.RepositoryMetadata.table ) \
                                .filter( and_( model.RepositoryMetadata.table.c.downloadable == True,
                                               model.RepositoryMetadata.table.c.includes_tools == True,

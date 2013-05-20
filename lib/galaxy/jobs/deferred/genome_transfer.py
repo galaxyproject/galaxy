@@ -165,28 +165,18 @@ class GenomeTransferPlugin( DataTransfer ):
                 for name in z.namelist():
                     if name.endswith('/'):
                         continue
-                    if sys.version_info[:2] >= ( 2, 6 ):
-                        zipped_file = z.open( name )
-                        while 1:
-                            try:
-                                chunk = zipped_file.read( CHUNK_SIZE )
-                            except IOError:
-                                os.close( fd )
-                                log.error( 'Problem decompressing zipped data' )
-                                return self.app.model.DeferredJob.states.INVALID
-                            if not chunk:
-                                break
-                            os.write( fd, chunk )
-                        zipped_file.close()
-                    else:
+                    zipped_file = z.open( name )
+                    while 1:
                         try:
-                            outfile = open( fd, 'wb' )
-                            outfile.write( z.read( name ) )
-                            outfile.close()
+                            chunk = zipped_file.read( CHUNK_SIZE )
                         except IOError:
                             os.close( fd )
                             log.error( 'Problem decompressing zipped data' )
-                            return
+                            return self.app.model.DeferredJob.states.INVALID
+                        if not chunk:
+                            break
+                        os.write( fd, chunk )
+                    zipped_file.close()
                 os.close( fd )
                 z.close()
             elif data_type == 'fasta':

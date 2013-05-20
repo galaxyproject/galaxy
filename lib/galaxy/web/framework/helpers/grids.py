@@ -1,14 +1,15 @@
-from galaxy.model.orm import *
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import iff
-from galaxy.web import url_for
+import logging
+import math
+
+from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
-from galaxy.web.framework.helpers import to_unicode
-from galaxy.model.item_attrs import *
+from galaxy.web.framework import error, url_for
+from galaxy.web.framework.helpers import iff
 
-import sys, logging, math
+from sqlalchemy.sql.expression import and_, func, or_
+
 
 log = logging.getLogger( __name__ )
 
@@ -193,7 +194,6 @@ class Grid( object ):
                     page_num = int( kwargs['page'] )
             else:
                 page_num = 1
-
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
@@ -209,11 +209,9 @@ class Grid( object ):
             # Defaults.
             page_num = 1
             num_pages = 1
-
         # There are some places in grid templates where it's useful for a grid
         # to have its current filter.
         self.cur_filter_dict = cur_filter_dict
-
         # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
@@ -228,6 +226,7 @@ class Grid( object ):
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
         trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+
         # Render grid.
         def url( *args, **kwargs ):
             # Only include sort/filter arguments if not linking to another
@@ -247,7 +246,13 @@ class Grid( object ):
                     new_kwargs[ 'id' ] = [ trans.security.encode_id( i ) for i in id ]
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
-            return url_for( **new_kwargs )
+            #The url_for invocation *must* include a controller and action.
+            if 'controller' not in new_kwargs:
+                new_kwargs['controller'] = trans.controller
+            if 'action' not in new_kwargs:
+                new_kwargs['action'] = trans.action
+            return url_for( **new_kwargs)
+
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
         async_request = ( ( self.use_async ) and ( kwargs.get( 'async', False ) in [ True, 'True', 'true'] ) )
         # Currently, filling the template returns a str object; this requires decoding the string into a

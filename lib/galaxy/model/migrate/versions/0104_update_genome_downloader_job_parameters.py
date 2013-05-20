@@ -2,18 +2,19 @@
 Migration script to update the deferred job parameters for liftover transfer jobs.
 """
 
-from sqlalchemy import *
-from migrate import *
-from sqlalchemy.orm import *
-
 import datetime
-now = datetime.datetime.utcnow
-
+import logging, sys
+from galaxy.model.custom_types import JSONType
+from galaxy.util.bunch import Bunch
+from sqlalchemy import *
+from sqlalchemy import Integer, Table, MetaData, Column
+from sqlalchemy.orm import *
+from sqlalchemy.orm import scoped_session, sessionmaker
+from migrate import *
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-from galaxy.model.orm.ext.assignmapper import assign_mapper
 
-import sys, logging
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,9 +23,6 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
-
-metadata = MetaData( migrate_engine )
 
 class DeferredJob( object ):
     states = Bunch( NEW = 'new',
@@ -38,38 +36,48 @@ class DeferredJob( object ):
         self.plugin = plugin
         self.params = params
 
-DeferredJob.table = Table( "deferred_job", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "state", String( 64 ), index=True ),
-    Column( "plugin", String( 128 ), index=True ),
-    Column( "params", JSONType ) )
+def upgrade(migrate_engine):
+    metadata = MetaData()
+    metadata.bind = migrate_engine
 
-assign_mapper( context, DeferredJob, DeferredJob.table, properties = {} )
+    Session = sessionmaker( bind=migrate_engine)
+    context = Session()
 
-def upgrade():
-    print __doc__
+    DeferredJob.table = Table( "deferred_job", metadata,
+        Column( "id", Integer, primary_key=True ),
+        Column( "create_time", DateTime, default=now ),
+        Column( "update_time", DateTime, default=now, onupdate=now ),
+        Column( "state", String( 64 ), index=True ),
+        Column( "plugin", String( 128 ), index=True ),
+        Column( "params", JSONType ) )
+
+    mapper( DeferredJob, DeferredJob.table, properties = {} )
+
     liftoverjobs = dict()
-    
+
     jobs = context.query( DeferredJob ).filter_by( plugin='LiftOverTransferPlugin' ).all()
-    
+
     for job in jobs:
         if job.params[ 'parentjob' ] not in liftoverjobs:
             liftoverjobs[ job.params[ 'parentjob' ] ] = []
         liftoverjobs[ job.params[ 'parentjob'] ].append( job.id )
-    
+
     for parent in liftoverjobs:
         lifts = liftoverjobs[ parent ]
         deferred = context.query( DeferredJob ).filter_by( id=parent ).first()
         deferred.params[ 'liftover' ] = lifts
-        
+
     context.flush()
 
-def downgrade():
-    
+def downgrade(migrate_engine):
+    metadata = MetaData()
+    metadata.bind = migrate_engine
+
+    Session = sessionmaker( bind=migrate_engine)
+    context = Session()
+
     jobs = context.query( DeferredJob ).filter_by( plugin='GenomeTransferPlugin' ).all()
-    
+
     for job in jobs:
         if len( job.params[ 'liftover' ] ) == 0:
             continue
@@ -78,5 +86,5 @@ def downgrade():
             liftoverjob = context.query( DeferredJob ).filter_by( id=lift ).first()
             transfers.append( liftoverjob.params[ 'transfer_job_id' ] )
         job.params[ 'liftover' ] = transfers
-    
+
     context.flush()

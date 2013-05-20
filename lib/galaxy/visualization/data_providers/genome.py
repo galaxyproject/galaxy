@@ -2,25 +2,21 @@
 Data providers for genome visualizations.
 """
 
-import os, sys
+import os, sys, re
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
-if sys.version_info[:2] == (2, 4):
-    pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 import numpy
-from galaxy.datatypes.util.gff_util import *
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, GFFInterval, GFFFeature, convert_gff_coords_to_bed
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.tracks.summary import *
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-import galaxy_utils.sequence.vcf
-from galaxy.datatypes.tabular import Tabular, Vcf
-from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
+from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 from pysam import csamtools, ctabix
 
@@ -181,7 +177,7 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         start, end = int( low ), int( high )
         iterator = self.get_iterator( chrom, start, end, **kwargs )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
+        return self.process_data( iterator, start_val, max_vals, start=start, end=end, **kwargs )
 
     def get_genome_data( self, chroms_info, **kwargs ):
         """
@@ -604,12 +600,22 @@ class VcfDataProvider( GenomeDataProvider ):
     """
     Abstract class that processes VCF data from native format to payload format.
 
-    Payload format: TODO
+    Payload format: An array of entries for each locus in the file. Each array 
+    has the following entries:
+        1. GUID (unused)
+        2. location (0-based) 
+        3. reference base(s)
+        4. alternative base(s)
+        5. quality score
+        6. whether variant passed filter
+        7. sample genotypes -- a single string with samples separated by commas; empty string
+           denotes the reference genotype
+        8-end: allele counts for each alternative
     """
     
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
-    dataset_type = 'bai'
+    dataset_type = 'variant'
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -624,7 +630,7 @@ class VcfDataProvider( GenomeDataProvider ):
             message - error/informative message
 
         """
-        rval = []
+        data = []
         message = None
 
         def get_mapping( ref, alt ):
@@ -654,6 +660,7 @@ class VcfDataProvider( GenomeDataProvider ):
                 return ref_in_alt_index, alt[ ref_in_alt_index + 1: ], [ [ cig_ops.find( "I" ), alt_len - ref_len ] ]
 
         # Pack data.
+        genotype_re = re.compile( '/|\|' )
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
@@ -661,37 +668,66 @@ class VcfDataProvider( GenomeDataProvider ):
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
 
+            # Split line and aggregate data.
             feature = line.split()
-            start = int( feature[1] ) - 1
-            ref = feature[3]
-            alts = feature[4]
+            pos, c_id, ref, alt, qual, c_filter, info = feature[ 1:8 ]
+            format = feature[ 8 ]
+            samples_data = feature [ 9: ]
+            # VCF is 1-based.
+            pos = int( pos ) - 1
+            
+            # FIXME: OK to skip?
+            if alt == '.':
+                count -= 1
+                continue
 
-            # HACK? alts == '.' --> monomorphism.
-            if alts == '.':
-                alts = ref
+            # Count number of samples matching each allele.
+            allele_counts = [ 0 for i in range ( alt.count( ',' ) + 1 ) ]
 
-            # Pack variants.
-            for alt in alts.split(","):
-                offset, new_seq, cigar = get_mapping( ref, alt )
-                start += offset
-                end = start + len( new_seq )
+            # Process and pack sample genotype.
+            sample_gts = []
+            alleles_seen = {}
+            has_alleles = False
 
-                # Pack line.
-                payload = [ 
-                            hash( line ), 
-                            start, 
-                            end,
-                            # ID:
-                            feature[2],
-                            cigar,
-                            # TODO? VCF does not have strand, so default to positive.
-                            "+",
-                            new_seq,
-                            None if feature[5] == '.' else float( feature[5] ) 
-                          ]
-                rval.append(payload)
+            for i, sample in enumerate( samples_data ):
+                # Parse and count alleles.
+                genotype = sample.split( ':' )[ 0 ]
+                has_alleles = False
+                alleles_seen.clear()
+                for allele in genotype_re.split( genotype ):
+                    try:
+                        # This may throw a ValueError if allele is missing.
+                        allele = int( allele )
 
-        return { 'data': rval, 'message': message }
+                        # Only count allele if it hasn't been seen yet.
+                        if allele != 0 and allele not in alleles_seen:
+                            allele_counts[ allele - 1 ] += 1
+                            alleles_seen[ allele ] = True
+                            has_alleles = True
+                    except ValueError:
+                        pass
+                
+                # If no alleles, use empty string as proxy.
+                if not has_alleles:
+                    genotype = ''
+
+                sample_gts.append( genotype )
+
+            # Add locus data.
+            locus_data = [
+                -1,
+                pos,
+                c_id,
+                ref,
+                alt,
+                qual,
+                c_filter,
+                ','.join( sample_gts )
+            ]
+            locus_data.extend( allele_counts )
+            data.append( locus_data )
+
+        return { 'data': data, 'message': message }
 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
@@ -710,7 +746,8 @@ class VcfTabixDataProvider( TabixDataProvider, VcfDataProvider ):
     """
     Provides data from a VCF file indexed via tabix.
     """
-    pass
+    
+    dataset_type = 'variant'
 
 class RawVcfDataProvider( VcfDataProvider ):
     """
@@ -721,104 +758,46 @@ class RawVcfDataProvider( VcfDataProvider ):
     """
 
     def get_iterator( self, chrom, start, end, **kwargs ):
-        # Read first line in order to match chrom naming format.
-        line = source.readline()
-        dataset_chrom = line.split()[0]
-        if not _chrom_naming_matches( chrom, dataset_chrom ):
-            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-        # Undo read.
-        source.seek( 0 )
+        source = open( self.original_dataset.file_name )
+
+        # Skip comments.
+        pos = 0
+        line = None
+        for line in source:
+            if not line.startswith("#"):
+                break
+            else:
+                pos = source.tell()
+
+        # If last line is a comment, there are no data lines.
+        if line.startswith( "#" ):
+            return []
+
+        # Match chrom naming format.
+        if line:
+            dataset_chrom = line.split()[0]
+            if not _chrom_naming_matches( chrom, dataset_chrom ):
+                chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+
+        def line_in_region( vcf_line, chrom, start, end ):
+            """ Returns true if line is in region. """
+            variant_chrom, variant_start = vcf_line.split()[ 0:2 ]
+            # VCF format is 1-based.
+            variant_start = int( variant_start ) - 1
+            return variant_chrom == chrom and variant_start >= start and variant_start <= end
 
         def line_filter_iter():
-            for line in open( self.original_dataset.file_name ):
-                if line.startswith("#"):
-                    continue
-                variant = line.split()
-                variant_chrom, variant_start, id, ref, alts = variant[ 0:5 ]
-                variant_start = int( variant_start )
-                longest_alt = -1
-                for alt in alts:
-                    if len( alt ) > longest_alt:
-                        longest_alt = len( alt )
-                variant_end = variant_start + abs( len( ref ) - longest_alt )
-                if variant_chrom != chrom or variant_start > end or variant_end < start:
-                    continue
+            """ Yields lines in source that are in region chrom:start-end """
+            # Yield data line read above.
+            if line_in_region( line, chrom, start, end ):
                 yield line
+
+            # Search for and yield other data lines.
+            for data_line in source:
+                if line_in_region( data_line, chrom, start, end ):
+                    yield data_line
         
         return line_filter_iter()
-
-class SummaryTreeDataProvider( GenomeDataProvider ):
-    """
-    Summary tree data provider for the Galaxy track browser. 
-    """
-
-    dataset_type = 'summary_tree'
-    
-    CACHE = LRUCache( 20 ) # Store 20 recently accessed indices for performance
-    
-    def valid_chroms( self ):
-        st = summary_tree_from_file( self.converted_dataset.file_name )
-        return st.chrom_blocks.keys()
-    
-    def get_data( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None, **kwargs ):
-        """
-        Returns summary tree data for a given genomic region.
-        """
-        filename = self.converted_dataset.file_name
-        st = self.CACHE[filename]
-        if st is None:
-            st = summary_tree_from_file( self.converted_dataset.file_name )
-            self.CACHE[filename] = st
-
-        # Look for chrom in tree using both naming conventions.
-        if chrom not in st.chrom_blocks:
-            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-            if chrom not in st.chrom_blocks:
-                return None
-
-        # Get or compute level.
-        if level:
-            level = int( level )
-        elif resolution:
-            resolution = max( 1, ceil( float( resolution ) ) )
-            level = ceil( log( resolution, st.block_size ) ) - 1
-            level = int( max( level, 0 ) )
-        else:
-            # Either level or resolution is required.
-            return None
-
-        if level <= 1:
-            return "detail"
-
-        # Use level to get results.
-        stats = st.chrom_stats[ chrom ]
-        results = st.query( chrom, int(start), int(end), level, detail_cutoff=detail_cutoff, draw_cutoff=draw_cutoff )
-        if results == "detail" or results == "draw":
-            return results
-        else:
-            return {
-                'dataset_type': self.dataset_type,
-                'data': results,
-                'max': stats[ level ][ "max" ],
-                'avg': stats[ level ][ "avg" ],
-                'delta': stats[ level ][ "delta" ],
-                'level': level
-            }
-            
-    def has_data( self, chrom ):
-        """
-        Returns true if dataset has data for this chrom
-        """
-        
-        # Get summary tree.
-        filename = self.converted_dataset.file_name
-        st = self.CACHE[filename]
-        if st is None:
-            st = summary_tree_from_file( self.converted_dataset.file_name )
-            self.CACHE[filename] = st
-            
-        # Check for data.
-        return st.chrom_blocks.get(chrom, None) or st.chrom_blocks.get(_convert_between_ucsc_and_ensemble_naming(chrom), None)
 
 class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """
@@ -899,7 +878,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 return None
         return data
                 
-    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, start=0, **kwargs ):
         """
         Returns a dict with the following attributes::
 
@@ -927,7 +906,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # No iterator indicates no reads.
         if iterator is None:
             return { 'data': [], 'message': None }
-        
+
+        #
+        # Helper functions.
+        #
+
         # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
             strand_flag = ( read_flag & mask == 0 )
@@ -935,8 +918,10 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 return "+"
             else:
                 return "-"
-                
+        
+        #
         # Encode reads as list of lists.
+        #
         results = []
         paired_pending = {}
         unmapped = 0
@@ -1006,7 +991,47 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
-        
+
+        # If there are results and reference data, transform read sequence and cigar.
+        if len( results ) != 0 and ref_seq:
+            def process_read( read, start_field, cigar_field, seq_field ):
+                '''
+                Process a read using the designated fields.
+                '''
+                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(), 
+                                                                         read[ start_field ], 
+                                                                         ref_seq, 
+                                                                         start, 
+                                                                         read[ cigar_field ] )
+                read[ seq_field ] = read_seq
+                read[ cigar_field ] = read_cigar
+
+            def process_se_read( read ):
+                '''
+                Process single-end read.
+                '''
+                process_read( read, 1, 4, 6)
+                
+            def process_pe_read( read ):
+                '''
+                Process paired-end read.
+                '''
+                if len( read[4] ) > 2:
+                    process_read( read[4], 0, 2, 4 )
+                if len( read[5] ) > 2:
+                    process_read( read[5], 0, 2, 4 )
+
+            # Uppercase for easy comparison.
+            ref_seq = ref_seq.upper()
+
+            # Process reads.
+            for read in results:
+                # Use correct function for processing reads.
+                if isinstance( read[ 5 ], list ):
+                    process_pe_read( read )
+                else:
+                    process_se_read( read )
+
         max_low, max_high = get_bounds( results, 1, 2 )
                 
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
@@ -1017,14 +1042,16 @@ class SamDataProvider( BamDataProvider ):
     
     def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
         """ Create SamDataProvider. """
+        super( SamDataProvider, self ).__init__( converted_dataset=converted_dataset,
+                                                 original_dataset=original_dataset,
+                                                 dependencies=dependencies )
         
-        # HACK: to use BamDataProvider, original dataset must be BAM and 
+        # To use BamDataProvider, original dataset must be BAM and 
         # converted dataset must be BAI. Use BAI from BAM metadata.
         if converted_dataset:
-            self.converted_dataset = converted_dataset.metadata.bam_index
             self.original_dataset = converted_dataset
-        self.dependencies = dependencies
-
+            self.converted_dataset = converted_dataset.metadata.bam_index
+        
 class BBIDataProvider( GenomeDataProvider ):
     """
     BBI data provider for the Galaxy track browser. 
@@ -1174,7 +1201,7 @@ class BigWigDataProvider ( BBIDataProvider ):
             
 class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
-    Interval index files used only for GFF files.
+    Interval index files used for GFF, Pileup files.
     """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
 
@@ -1184,20 +1211,26 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
         out = open( filename, 'w' )
-        
+
         for region in regions:
             # Write data from region.
             chrom = region.chrom
             start = region.start
             end = region.end
-            for start, end, offset in index.find(chrom, start, end):
+            for start, end, offset in index.find( chrom, start, end ):
                 source.seek( offset )
-            
-                reader = GFFReaderWrapper( source, fix_strand=True )
-                feature = reader.next()
-                for interval in feature.intervals:
-                    out.write( '\t'.join( interval.fields ) + '\n' )
-                    
+
+                # HACK: write differently depending on original dataset format.
+                if self.original_dataset.ext not in [ 'gff', 'gff3', 'gtf' ]:
+                    line = source.readline()
+                    out.write( line )
+                else:
+                    reader = GFFReaderWrapper( source, fix_strand=True )
+                    feature = reader.next()
+                    for interval in feature.intervals:
+                        out.write( '\t'.join( interval.fields ) + '\n' )
+                        
+        source.close()
         out.close()
         
     def get_iterator( self, chrom, start, end, **kwargs ):

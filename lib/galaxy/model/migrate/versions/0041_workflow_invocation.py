@@ -14,8 +14,7 @@ log = logging.getLogger( __name__ )
 import datetime
 now = datetime.datetime.utcnow
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 WorkflowInvocation_table = Table( "workflow_invocation", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -34,8 +33,9 @@ WorkflowInvocationStep_table = Table( "workflow_invocation_step", metadata,
     )
 
 tables = [ WorkflowInvocation_table, WorkflowInvocationStep_table ]
-    
-def upgrade():
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -44,8 +44,9 @@ def upgrade():
             table.create()
         except:
             log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
-        
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in tables:

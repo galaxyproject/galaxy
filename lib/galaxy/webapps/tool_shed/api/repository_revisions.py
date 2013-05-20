@@ -42,6 +42,10 @@ class RepositoryRevisionsController( BaseAPIController ):
         tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
         if tools_functionally_correct is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.tools_functionally_correct == util.string_as_bool( tools_functionally_correct ) )
+        # Filter by missing_test_components if received.
+        missing_test_components = kwd.get( 'missing_test_components', None )
+        if missing_test_components is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.missing_test_components == util.string_as_bool( missing_test_components ) )
         # Filter by do_not_test if received.
         do_not_test = kwd.get( 'do_not_test', None )
         if do_not_test is not None:
@@ -50,11 +54,29 @@ class RepositoryRevisionsController( BaseAPIController ):
         includes_tools = kwd.get( 'includes_tools', None )
         if includes_tools is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.includes_tools == util.string_as_bool( includes_tools ) )
+        # Filter by test_install_error if received.
+        test_install_error = kwd.get( 'test_install_error', None )
+        if test_install_error is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.test_install_error == util.string_as_bool( test_install_error ) )
+        # Filter by skip_tool_test if received.
+        skip_tool_test = kwd.get( 'skip_tool_test', None )
+        if skip_tool_test is not None:
+            skip_tool_test = util.string_as_bool( skip_tool_test )
+        # Generate and execute the query.
         try:
-            query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
-                                    .filter( and_( *clause_list ) ) \
-                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
-                                    .all()
+            if skip_tool_test:
+                # The skip_tool_test filter was received as True.
+                query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
+                                        .join( trans.model.SkipToolTest ) \
+                                        .filter( and_( *clause_list ) ) \
+                                        .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
+                                        .all()
+            else:
+                # The skip_tool_test filter was not received or it was received as False.
+                query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
+                                        .filter( and_( *clause_list ) ) \
+                                        .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
+                                        .all()
             for repository_metadata in query:
                 repository_metadata_dict = repository_metadata.get_api_value( view='collection',
                                                                               value_mapper=default_value_mapper( trans, repository_metadata ) )

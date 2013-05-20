@@ -555,7 +555,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
 
-def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
+def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, repository_id, tool_config_filepath, work_dir ):
     # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
     message = ''
     sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
@@ -564,11 +564,11 @@ def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_con
             # Load entries into the tool_data_tables if the tool requires them.
             tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
             error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    tool, valid, message2 = load_tool_from_config( trans.app, tool_config_filepath )
+    tool, valid, message2 = load_tool_from_config( trans.app, repository_id, tool_config_filepath )
     message = concat_messages( message, message2 )
     return tool, valid, message, sample_files
 
-def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
+def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir ):
     tool = None
     message = ''
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
@@ -586,7 +586,7 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
                     log.debug( message )
     manifest_ctx, ctx_file = suc.get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
     if manifest_ctx and ctx_file:
-        tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+        tool, message2 = load_tool_from_tmp_config( trans, repo, repository_id, manifest_ctx, ctx_file, work_dir )
         message = concat_messages( message, message2 )
     return tool, message, sample_files
 
@@ -617,6 +617,9 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
+            # Make sure the no_changes checkbox overrides the new_tool_panel_section if the user checked the checkbox and
+            # entered something into the field.
+            new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
                 if not tool_panel_dict:
@@ -755,7 +758,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
-        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
+        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, repository_id, tool_config_filepath, work_dir )
         if tool is not None:
             invalid_files_and_errors_tups = check_tool_input_params( trans.app,
                                                                      repo_files_dir,
@@ -771,16 +774,16 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                displaying_invalid_tool=True )
                 message = concat_messages( message, message2 )
     else:
-        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir )
     suc.remove_dir( work_dir )
     trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
     return repository, tool, message
 
-def load_tool_from_config( app, full_path ):
+def load_tool_from_config( app, repository_id, full_path ):
     try:
-        tool = app.toolbox.load_tool( full_path )
+        tool = app.toolbox.load_tool( full_path, repository_id=repository_id )
         valid = True
         error_message = None
     except KeyError, e:
@@ -795,7 +798,7 @@ def load_tool_from_config( app, full_path ):
         error_message = str( e )
     return tool, valid, error_message
 
-def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
+def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_dir ):
     tool = None
     message = ''
     tmp_tool_config = suc.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
@@ -809,7 +812,7 @@ def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
             tmp_code_file_name = suc.copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
             if tmp_code_file_name:
                 tmp_code_files.append( tmp_code_file_name )
-        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
+        tool, valid, message = load_tool_from_config( trans.app, repository_id, tmp_tool_config )
         for tmp_code_file in tmp_code_files:
             try:
                 os.unlink( tmp_code_file )

@@ -30,7 +30,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -50,20 +50,6 @@ def display_migration_details():
     print "an index with a shortened name."
     print "========================================"
 
-if migrate_engine.name == 'postgres':
-    # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
-    from sqlalchemy.databases import postgres
-    class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
-        def visit_table(self, table):
-            for column in table.columns:
-                if column.default is not None:
-                    self.traverse_single(column.default)
-            self.append("\nDROP TABLE " +
-                        self.preparer.format_table(table) +
-                        " CASCADE")
-            self.execute()
-    postgres.dialect.schemadropper = PGCascadeSchemaDropper
-
 LibraryInfoAssociation_table = Table( 'library_info_association', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
@@ -81,11 +67,25 @@ LibraryDatasetDatasetInfoAssociation_table = Table( 'library_dataset_dataset_inf
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
-    
-def upgrade():
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
+    if migrate_engine.name == 'postgres':
+        # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
+        from sqlalchemy.databases import postgres
+        class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+            def visit_table(self, table):
+                for column in table.columns:
+                    if column.default is not None:
+                        self.traverse_single(column.default)
+                self.append("\nDROP TABLE " +
+                            self.preparer.format_table(table) +
+                            " CASCADE")
+                self.execute()
+        postgres.dialect.schemadropper = PGCascadeSchemaDropper
     # Drop all of the original library_item_info tables
     # NOTE: all existing library item into template data is eliminated here via table drops
     try:
@@ -251,5 +251,6 @@ def upgrade():
         except Exception, e:
             log.debug( "Adding index 'ix_lddaia_ldda_id' to table 'library_dataset_dataset_info_association' table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     log.debug( "Downgrade is not possible." )

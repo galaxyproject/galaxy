@@ -2,6 +2,7 @@ import logging
 import metadata
 import mimetypes
 import os
+import shutil
 import sys
 import tempfile
 import zipfile
@@ -16,12 +17,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy import eggs
 eggs.require( "Paste" )
 import paste
-
-
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger(__name__)
 
@@ -102,6 +97,12 @@ class Data( object ):
     primary_file_name = 'index'
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
+
+    # Trackster track type.
+    track_type = None
+
+    # Data sources.
+    data_sources = {}
 
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -343,6 +344,7 @@ class Data( object ):
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
+        preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
@@ -544,21 +546,21 @@ class Data( object ):
         return False
 
 
-
     def merge( split_files, output_file):
         """
-        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
-        but might be brittle. Need to revisit this.
+            Merge files with copy.copyfileobj() will not hit the
+            max argument limitation of cat. gz and bz2 files are also working.
         """
         if not split_files:
             raise ValueError('Asked to merge zero files as %s' % output_file)
         elif len(split_files) == 1:
-            cmd = 'mv -f %s %s' % ( split_files[0], output_file )
+            shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            fdst = open(output_file, 'wb')
+            for fsrc in split_files:
+                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
+            fdst.close()
+
     merge = staticmethod(merge)
 
     def get_visualizations( self, dataset ):
@@ -566,7 +568,7 @@ class Data( object ):
         Returns a list of visualizations for datatype.
         """
 
-        if hasattr( self, 'get_track_type' ):
+        if self.track_type:
             return [ 'trackster', 'circster' ]
         return []
 
@@ -739,6 +741,10 @@ class Text( Data ):
         f.close()
     split = classmethod(split)
 
+class GenericAsn1( Text ):
+    """Class for generic ASN.1 text format"""
+    file_ext = 'asn1'
+
 class LineCount( Text ):
     """
     Dataset contains a single line with a single integer that denotes the
@@ -859,7 +865,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         text = "%s file" % file_type
     else:
         try:
-            text = unicode( '\n'.join( lines ), 'utf-8' )
+            text = util.unicodify( '\n'.join( lines ) )
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text

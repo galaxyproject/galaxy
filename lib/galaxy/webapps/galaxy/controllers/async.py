@@ -2,12 +2,12 @@
 Upload class
 """
 
-from galaxy.web.base.controller import *
+import logging, urllib
 
-from galaxy import jobs, util, datatypes, web
-
-import logging, urllib, sys
-from galaxy.util.hash_util import *
+from galaxy import jobs, util, web
+from galaxy.util import Params
+from galaxy.util.hash_util import hmac_new
+from galaxy.web.base.controller import BaseUIController
 
 log = logging.getLogger( __name__ )
 
@@ -32,7 +32,7 @@ class ASync( BaseUIController ):
             return trans.response.send_redirect( "/index" )
 
         history = trans.get_history( create=True )
-        params  = util.Params(kwd, sanitize=False) 
+        params  = Params(kwd, sanitize=False) 
         STATUS = params.STATUS
         URL = params.URL
         data_id = params.data_id

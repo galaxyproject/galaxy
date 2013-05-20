@@ -53,11 +53,12 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 var ajaxPromise = jQuery.ajax( purge_url );
                 ajaxPromise.success( function( message, status, responseObj ){
                     hdaView.model.set( 'purged', true );
+                    hdaView.trigger( 'purged', hdaView );
                 });
                 ajaxPromise.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                    hdaView.trigger( 'error', _l( "Unable to purge this dataset" ), error, status, message );
                 });
             });
         }
@@ -152,7 +153,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'delete',
             on_click    : function() {
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
-                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly
                 // on the model.
                 $.ajax({
                     url: delete_url,
@@ -238,8 +239,25 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_visualizationsButton : function(){
+        var visualizations = this.model.get( 'visualizations' );
+        if( ( !this.model.hasData() )
+        ||  ( _.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        //TODO: this is a bridge to allow the framework to be switched off
+        // remove this fn and use the other when fully integrated
+        if( _.isObject( visualizations[0] ) ){
+            return this._render_visualizationsFrameworkButton( visualizations );
+        }
+
+        if( !this.urls.visualization ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
         var dbkey = this.model.get( 'dbkey' ),
-            visualizations = this.model.get( 'visualizations' ),
             visualization_url = this.urls.visualization,
             popup_menu_dict = {},
             params = {
@@ -249,17 +267,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
-        if( !( this.model.hasData() )
-        ||  !( visualizations && visualizations.length )
-        ||  !( visualization_url ) ){
-            this.visualizationsButton = null;
-            return null;
-        }
-        
         // render the icon from template
         this.visualizationsButton = new IconButtonView({ model : new IconButton({
             title       : _l( 'Visualize' ),
-            href        : visualization_url,
+            href        : this.urls.visualization,
             icon_class  : 'chart_curve'
         })});
         var $icon = this.visualizationsButton.render().$el;
@@ -295,6 +306,40 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
+        }
+        return $icon;
+    },
+
+    /** Render an icon-button or popupmenu of links based on the applicable visualizations
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_visualizationsFrameworkButton : function( visualizations ){
+        if( !( this.model.hasData() )
+        ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        // render the icon from template
+        this.visualizationsButton = new IconButtonView({ model : new IconButton({
+            title       : _l( 'Visualize' ),
+            icon_class  : 'chart_curve'
+        })});
+        var $icon = this.visualizationsButton.render().$el;
+        $icon.addClass( 'visualize-icon' ); // needed?
+
+        // No need for popup menu because there's a single visualization.
+        if( _.keys( visualizations ).length === 1 ) {
+            $icon.attr( 'title', _.keys( visualizations )[0] );
+            $icon.attr( 'href', _.values( visualizations )[0] );
+
+        // >1: Populate menu dict with visualization fns, make the popupmenu
+        } else {
+            var popup_menu_options = [];
+            _.each( visualizations, function( linkData ) {
+                popup_menu_options.push( linkData );
+            });
+            var popup = new PopupMenu( $icon, popup_menu_options );
         }
         return $icon;
     },
@@ -404,6 +449,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function( parent ){
+        //TODO: should call super somehow and insert the needed...
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
 
@@ -434,7 +480,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         parent.append( this._render_tagArea() );
         parent.append( this._render_annotationArea() );
         
-        parent.append( this._render_displayApps() );
+        parent.append( this._render_displayAppArea() );
+        this._render_displayApps( parent );
         parent.append( this._render_peek() );
     },
 
@@ -454,7 +501,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '.tag-area' ),
+        var view = this,
+            tagArea = this.$el.find( '.tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
@@ -464,7 +512,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, status, error ){
+                        view.log( "Tagging failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                    },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();
@@ -479,7 +530,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             tagArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
@@ -498,7 +549,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){ alert( _l( "Annotations failed" ) ); },
+                    error: function(){
+                        view.log( "Annotation failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Annotation failed" ), xhr, status, error );
+                    },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
@@ -522,7 +576,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             annotationArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
 
     // ......................................................................... UTILTIY

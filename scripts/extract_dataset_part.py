@@ -24,7 +24,6 @@ import simplejson
 # This junk is here to prevent loading errors
 import galaxy.model.mapping #need to load this before we unpickle, in order to setup properties assigned by the mappers
 galaxy.model.Job() #this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
-galaxy.datatypes.metadata.DATABASE_CONNECTION_AVAILABLE = False #Let metadata know that there is no database connection, and to just assume object ids are valid
 
 def __main__():
     """

@@ -16,8 +16,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 # Table to add
 
@@ -37,25 +36,27 @@ TransferJob_table = Table( "transfer_job", metadata,
     Column( "path", String( 1024 ) ),
     Column( "params", JSONType ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Create deferred_job table
     try:
         DeferredJob_table.create()
     except Exception, e:
         log.error( "Creating deferred_job table failed: %s" % str( e ) )
-        
+
     # Create transfer_job table
     try:
         TransferJob_table.create()
     except Exception, e:
         log.error( "Creating transfer_job table failed: %s" % str( e ) )
-        
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop deferred_job table
     try:
         DeferredJob_table.drop()

@@ -15,6 +15,8 @@ import traceback
 import types
 import urllib
 
+from math import isinf
+
 from galaxy import eggs
 eggs.require( "simplejson" )
 eggs.require( "MarkupSafe" ) #MarkupSafe must load before mako
@@ -29,12 +31,12 @@ from elementtree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
 from sqlalchemy import and_
-from copy import deepcopy
 
 from galaxy import jobs, model
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
@@ -47,17 +49,17 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.test import ToolTestBuilder
-from galaxy.util import isinf, listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
-from galaxy.visualization.genome.visual_analytics import TracksterConfig
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import shed_util_common
+from .loader import load_tool, template_macro_params
 
 log = logging.getLogger( __name__ )
 
@@ -446,6 +448,7 @@ class ToolBox( object ):
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
+            repository_id = None
             if guid is None:
                 tool_shed_repository = None
                 can_load_into_panel_dict = True
@@ -464,11 +467,12 @@ class ToolBox( object ):
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
+                    repository_id = self.app.security.encode_id( tool_shed_repository.id )
                 else:
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -574,10 +578,10 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
-    def load_tool( self, config_file, guid=None, **kwds ):
+    def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tree = self._load_and_preprocess_tool_xml( config_file )
+        tree = load_tool( config_file )
         root = tree.getroot()
         # Allow specifying a different tool subclass to instantiate
         if root.find( "type" ) is not None:
@@ -590,7 +594,7 @@ class ToolBox( object ):
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app, guid=guid, **kwds )
+        return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -762,102 +766,6 @@ class ToolBox( object ):
 
         return rval
 
-    def _load_and_preprocess_tool_xml(self, config_file):
-        tree = parse_xml(config_file)
-        root = tree.getroot()
-        macros_el = root.find('macros')
-        if not macros_el:
-            return tree
-        tool_dir = os.path.dirname(config_file)
-        macros = self._load_macros(macros_el, tool_dir)
-
-        self._expand_macros([root], macros)
-        return tree
-
-    def _expand_macros(self, elements, macros):
-        for element in elements:
-            # HACK for elementtree, newer implementations (etree/lxml) won't
-            # require this parent_map data structure but elementtree does not
-            # track parents or recongnize .find('..').
-            parent_map = dict((c, p) for p in element.getiterator() for c in p)
-            for expand_el in element.findall('.//expand'):
-                macro_name = expand_el.get('macro')
-                macro_def = deepcopy(macros[macro_name])  # deepcopy needed?
-
-                yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
-
-                expand_el_children = expand_el.getchildren()
-                macro_def_parent_map = \
-                    dict((c, p) for macro_def_el in macro_def for p in macro_def_el.getiterator() for c in p)
-
-                for yield_el in yield_els:
-                    self._xml_replace(yield_el, expand_el_children, macro_def_parent_map)
-
-                # Recursively expand contained macros.
-                self._expand_macros(macro_def, macros)
-                self._xml_replace(expand_el, macro_def, parent_map)
-
-    def _load_macros(self, macros_el, tool_dir):
-        macros = {}
-        # Import macros from external files.
-        macros.update(self._load_imported_macros(macros_el, tool_dir))
-        # Load all directly defined macros.
-        macros.update(self._load_embedded_macros(macros_el, tool_dir))
-        return macros
-
-    def _load_embedded_macros(self, macros_el, tool_dir):
-        macros = {}
-
-        macro_els = []
-        if macros_el:
-            macro_els = macros_el.findall("macro")
-        for macro in macro_els:
-            macro_name = macro.get("name")
-            macros[macro_name] = self._load_macro_def(macro)
-
-        return macros
-
-    def _load_imported_macros(self, macros_el, tool_dir):
-        macros = {}
-
-        macro_import_els = []
-        if macros_el:
-            macro_import_els = macros_el.findall("import")
-        for macro_import_el in macro_import_els:
-            raw_import_path = macro_import_el.text
-            tool_relative_import_path = \
-                os.path.basename(raw_import_path)  # Sanitize this
-            import_path = \
-                os.path.join(tool_dir, tool_relative_import_path)
-            file_macros = self._load_macro_file(import_path, tool_dir)
-            macros.update(file_macros)
-
-        return macros
-
-    def _load_macro_file(self, path, tool_dir):
-        tree = parse_xml(path)
-        root = tree.getroot()
-        return self._load_macros(root, tool_dir)
-
-    def _load_macro_def(self, macro):
-        return list(macro.getchildren())
-
-    def _xml_replace(self, query, targets, parent_map):
-        #parent_el = query.find('..') ## Something like this would be better with newer xml library
-        parent_el = parent_map[query]
-        matching_index = -1
-        #for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
-        for index, el in enumerate(parent_el.getchildren()):
-            if el == query:
-                matching_index = index
-                break
-        assert matching_index >= 0
-        current_index = matching_index
-        for target in targets:
-            current_index += 1
-            parent_el.insert(current_index, deepcopy(target))
-        parent_el.remove(query)
-
 
 class ToolSection( object ):
     """
@@ -1004,12 +912,13 @@ class Tool( object ):
     tool_type = 'default'
     default_tool_action = DefaultToolAction
 
-    def __init__( self, config_file, root, app, guid=None ):
+    def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        self.repository_id = repository_id
         #setup initial attribute values
         self.inputs = odict()
         self.stdio_exit_codes = list()
@@ -1186,7 +1095,7 @@ class Tool( object ):
         self.version_string_cmd = None
         version_cmd = root.find("version_command")
         if version_cmd is not None:
-            self.version_string_cmd = version_cmd.text
+            self.version_string_cmd = version_cmd.text.strip()
             version_cmd_interpreter = version_cmd.get( "interpreter", None )
             if version_cmd_interpreter:
                 executable = self.version_string_cmd.split()[0]
@@ -1207,6 +1116,7 @@ class Tool( object ):
         if self.old_id != self.id:
             # Handle toolshed guids
             self_ids = [ self.id.lower(), self.id.lower().rsplit('/',1)[0], self.old_id.lower() ]
+        self.all_ids = self_ids
         # In the toolshed context, there is no job config.
         if 'job_config' in dir(self.app):
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
@@ -1286,6 +1196,7 @@ class Tool( object ):
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
         if trackster_conf is not None:
+            from galaxy.visualization.genome.visual_analytics import TracksterConfig
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
@@ -1342,6 +1253,7 @@ class Tool( object ):
         # thus hardcoded)  FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
+        self.template_macro_params = template_macro_params(root)
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
@@ -1358,6 +1270,19 @@ class Tool( object ):
         help_header = ""
         help_footer = ""
         if self.help is not None:
+            # Handle tool help image display for tools that are contained in repositories that are in the tool shed or installed into Galaxy.
+            # When tool config files use the special string $PATH_TO_IMAGES, the following code will replace that string with the path on disk.
+            if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
+                if self.app.name == 'galaxy':
+                    repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/tool_runner/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+                elif self.app.name == 'tool_shed':
+                    repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/repository/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
@@ -2463,7 +2388,7 @@ class Tool( object ):
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
-
+        param_dict.update(self.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update( incoming )
 
@@ -2621,6 +2546,7 @@ class Tool( object ):
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
+        param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
         # Return the dictionary of parameters
         return param_dict
     def build_param_file( self, param_dict, directory=None ):
@@ -2838,8 +2764,10 @@ class Tool( object ):
                 parent_id = int(fields.pop(0))
                 designation = fields.pop(0)
                 visible = fields.pop(0).lower()
-                if visible == "visible": visible = True
-                else: visible = False
+                if visible == "visible":
+                    visible = True
+                else:
+                    visible = False
                 ext = fields.pop(0).lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext,
                                                                           parent_id=outdata.id,
@@ -3104,6 +3032,7 @@ class DataSourceTool( OutputParameterJSONTool ):
     allow the user to query and extract data from another web site.
     """
     tool_type = 'data_source'
+    default_tool_action = DataSourceToolAction
 
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
@@ -3228,6 +3157,10 @@ class DataManagerTool( OutputParameterJSONTool ):
         #process results of tool
         if job and job.state == job.states.ERROR:
             return
+        #Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
+        for dataset in out_data.itervalues():
+            if dataset.state != dataset.states.OK:
+                return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager( data_manager_id, None )
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
@@ -3315,6 +3248,8 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
     """
     def __init__( self, obj ):
         self.obj = obj
+    def __nonzero__( self ):
+        return bool( self.obj ) #FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
     def __str__( self ):
         return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
     def __getattr__( self, key ):

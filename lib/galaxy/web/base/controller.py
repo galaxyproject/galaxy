@@ -14,7 +14,7 @@ import routes
 from sqlalchemy import func, and_, select
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 
-from galaxy import util, web
+from galaxy import util, web, model
 from gettext import gettext
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
@@ -28,11 +28,8 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
 
-
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
-
-from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
 
 log = logging.getLogger( __name__ )
 
@@ -140,7 +137,7 @@ class BaseController( object ):
         if type( rval ) != dict:
             return rval
         for k, v in rval.items():
-            if k == 'id' or k.endswith( '_id' ):
+            if (k == 'id' or k.endswith( '_id' )) and v is not None:
                 try:
                     rval[k] = trans.security.encode_id( v )
                 except:
@@ -247,11 +244,197 @@ class SharableItemSecurityMixin:
         return item
 
 
+class UsesHistoryMixin( SharableItemSecurityMixin ):
+    """ Mixin for controllers that use History objects. """
+
+    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
+        """Get a History from the database by id, verifying ownership."""
+        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        return self.security_check( trans, history, check_ownership, check_accessible )
+
+    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
+        """ Returns history's datasets. """
+        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
+            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
+            .options( eagerload( "children" ) ) \
+            .join( "dataset" ) \
+            .options( eagerload_all( "dataset.actions" ) ) \
+            .order_by( trans.model.HistoryDatasetAssociation.hid )
+        if not show_deleted:
+            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
+        if not show_purged:
+            query = query.filter( trans.model.Dataset.purged == False )
+        return query.all()
+
+    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
+        """
+        Returns a dictionary with state counts for history's HDAs. Key is a
+        dataset state, value is the number of states in that count.
+        """
+        # Build query to get (state, count) pairs.
+        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
+        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
+
+        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
+        if not include_deleted:
+            # Only count datasets that have not been deleted.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
+        if not include_hidden:
+            # Only count datasets that are visible.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
+
+        group_by = trans.app.model.Dataset.table.c.state
+        query = select( columns=cols_to_select,
+                        from_obj=from_obj,
+                        whereclause=and_( *conditions ),
+                        group_by=group_by )
+
+        # Initialize count dict with all states.
+        state_count_dict = {}
+        for k, state in trans.app.model.Dataset.states.items():
+            state_count_dict[ state ] = 0
+
+        # Process query results, adding to count dict.
+        for row in trans.sa_session.execute( query ):
+            state, count = row
+            state_count_dict[ state ] = count
+
+        return state_count_dict
+
+    def get_hda_summary_dicts( self, trans, history ):
+        """Returns a list of dictionaries containing summary information
+        for each HDA in the given history.
+        """
+        hda_model = trans.model.HistoryDatasetAssociation
+
+        # get state, name, etc.
+        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
+                    trans.model.Dataset.state )
+        column_keys = [ "name", "hid", "id", "deleted", "state" ]
+
+        query = ( trans.sa_session.query( *columns )
+                    .enable_eagerloads( False )
+                    .filter( hda_model.history == history )
+                    .join( trans.model.Dataset )
+                    .order_by( hda_model.hid ) )
+
+        # build dictionaries, adding history id and encoding all ids
+        hda_dicts = []
+        for hda_tuple in query.all():
+            hda_dict = dict( zip( column_keys, hda_tuple ) )
+            hda_dict[ 'history_id' ] = history.id
+            trans.security.encode_dict_ids( hda_dict )
+            hda_dicts.append( hda_dict )
+        return hda_dicts
+
+    def _get_hda_state_summaries( self, trans, hda_dict_list ):
+        """Returns two dictionaries (in a tuple): state_counts and state_ids.
+        Each is keyed according to the possible hda states:
+            _counts contains a sum of the datasets in each state
+            _ids contains a list of the encoded ids for each hda in that state
+
+        hda_dict_list should be a list of hda data in dictionary form.
+        """
+        #TODO: doc to rst
+        # init counts, ids for each state
+        state_counts = {}
+        state_ids = {}
+        for key, state in trans.app.model.Dataset.states.items():
+            state_counts[ state ] = 0
+            state_ids[ state ] = []
+
+        for hda_dict in hda_dict_list:
+            item_state = hda_dict['state']
+            if not hda_dict['deleted']:
+                state_counts[ item_state ] = state_counts[ item_state ] + 1
+            # needs to return all ids (no deleted check)
+            state_ids[ item_state ].append( hda_dict['id'] )
+
+        return ( state_counts, state_ids )
+
+    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
+        """Returns the history state based on the states of the HDAs it contains.
+        """
+        states = trans.app.model.Dataset.states
+
+        num_hdas = sum( hda_state_counts.values() )
+        # (default to ERROR)
+        state = states.ERROR
+        if num_hdas == 0:
+            state = states.NEW
+
+        else:
+            if( ( hda_state_counts[ states.RUNNING ] > 0 )
+            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
+            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
+                state = states.RUNNING
+
+            elif hda_state_counts[ states.QUEUED ] > 0:
+                state = states.QUEUED
+
+            elif( ( hda_state_counts[ states.ERROR ] > 0 )
+            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
+                state = states.ERROR
+
+            elif hda_state_counts[ states.OK ] == num_hdas:
+                state = states.OK
+
+        return state
+
+    def get_history_dict( self, trans, history, hda_dictionaries=None ):
+        """Returns history data in the form of a dictionary.
+        """
+        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
+
+        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
+        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
+        if not history_dict[ 'annotation' ]:
+            history_dict[ 'annotation' ] = ''
+        #TODO: item_slug url
+
+        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
+        #TODO remove the following in v2
+        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
+        history_dict[ 'state_details' ] = state_counts
+        history_dict[ 'state_ids' ] = state_ids
+        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
+
+        return history_dict
+
+    def set_history_from_dict( self, trans, history, new_data ):
+        """
+        Changes history data using the given dictionary new_data.
+        """
+        # precondition: access of the history has already been checked
+
+        # send what we can down into the model
+        changed = history.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # importable (ctrl.history.set_accessible_async)
+        # sharing/permissions?
+        # slugs?
+        # purged - duh duh duhhhhhhnnnnnnnnnn
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
+
+
 class UsesHistoryDatasetAssociationMixin:
-    """ Mixin for controllers that use HistoryDatasetAssociation objects. """
+    """
+    Mixin for controllers that use HistoryDatasetAssociation objects.
+    """
 
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-        """ Get an HDA object by id. """
+        """
+        Get an HDA object by id performing security checks using
+        the current transaction.
+        """
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             # encoded id?
@@ -287,7 +470,10 @@ class UsesHistoryDatasetAssociationMixin:
 
     def get_history_dataset_association( self, trans, history, dataset_id,
                                          check_ownership=True, check_accessible=False, check_state=False ):
-        """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
+        """
+        Get a HistoryDatasetAssociation from the database by id, verifying ownership.
+        """
+        #TODO: duplicate of above? alias to above (or vis-versa)
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
         hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
 
@@ -299,9 +485,29 @@ class UsesHistoryDatasetAssociationMixin:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
 
-    def get_data( self, dataset, preview=True ):
-        """ Gets a dataset's data. """
+    def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Returns one or more datasets in a list.
 
+        If a dataset is not found or is inaccessible to trans.user,
+        add None in its place in the list.
+        """
+        # precondtion: dataset_ids is a list of encoded id strings
+        hdas = []
+        for id in hda_ids:
+            hda = None
+            try:
+                hda = self.get_dataset( trans, id,
+                    check_ownership=check_ownership, check_accesible=check_accesible, check_state=check_state )
+            except Exception, exception:
+                pass
+            hdas.append( hda )
+        return hdas
+
+    def get_data( self, dataset, preview=True ):
+        """
+        Gets a dataset's data.
+        """
         # Get data from file, truncating if necessary.
         truncated = False
         dataset_data = None
@@ -332,6 +538,8 @@ class UsesHistoryDatasetAssociationMixin:
         return None
 
     def get_hda_dict( self, trans, hda ):
+        """Return full details of this HDA in dictionary form.
+        """
         hda_dict = hda.get_api_value( view='element' )
         history = hda.history
         hda_dict[ 'api_type' ] = "file"
@@ -341,9 +549,10 @@ class UsesHistoryDatasetAssociationMixin:
         can_access_hda = ( trans.user_is_admin() or can_access_hda )
         hda_dict[ 'accessible' ] = can_access_hda
 
-        # return here if deleted and purged or can't access
+        # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ) or not can_access_hda:
+            #TODO: get_api_value should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
@@ -353,6 +562,7 @@ class UsesHistoryDatasetAssociationMixin:
             history_id = trans.security.encode_id( history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
 
+        # indeces, assoc. metadata files, etc.
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
             if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
@@ -360,14 +570,20 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-        hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        # currently, the viz reg is optional - handle on/off
+        if trans.app.visualizations_registry:
+            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+        else:
+            hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+        #           when the visualizations button is clicked (instead of preloading/pre-checking)
 
-        # return here if deleted
+        # ---- return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
 
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
         if( ( hda.state in [ 'running', 'queued' ] )
         and ( hda.creating_job and hda.creating_job.tool_id ) ):
             tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
@@ -376,30 +592,28 @@ class UsesHistoryDatasetAssociationMixin:
 
         return trans.security.encode_dict_ids( hda_dict )
 
+    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'error'     : error_msg
+        })
+
     def get_display_apps( self, trans, hda ):
-        #TODO: make more straightforward (somehow)
         display_apps = []
-
-        def get_display_app_url( display_app_link, hda, trans ):
-            web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-            dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
-            return ''
-            return web_url_for( controller='dataset',
-                            action="display_application",
-                            dataset_id=dataset_hash,
-                            user_id=user_hash,
-                            app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                            link_name=urllib.quote_plus( display_app_link.id ) )
-
         for display_app in hda.get_display_applications( trans ).itervalues():
+
             app_links = []
-            for display_app_link in display_app.links.itervalues():
+            for link_app in display_app.links.itervalues():
                 app_links.append({
-                    'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                    'href' : get_display_app_url( display_app_link, hda, trans ),
-                    'text' : gettext( display_app_link.name )
+                    'target': link_app.url.get( 'target_frame', '_blank' ),
+                    'href'  : link_app.get_display_url( hda, trans ),
+                    'text'  : gettext( link_app.name )
                 })
-            display_apps.append( dict( label=display_app.name, links=app_links ) )
+            if app_links:
+                display_apps.append( dict( label=display_app.name, links=app_links ) )
 
         return display_apps
 
@@ -407,21 +621,46 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        for display_app_name in hda.datatype.get_display_types():
-            link_generator = get_display_app_link_generator( display_app_name )
-            display_links = link_generator.generate_links( trans, hda )
+        
+        for display_app in hda.datatype.get_display_types():
+            target_frame, display_links = hda.datatype.get_display_links( hda,
+                display_app, trans.app, trans.request.base )
 
-            app_links = []
-            for display_name, display_link in display_links:
-                app_links.append({
-                    'target' : '_blank',
-                    'href' : display_link,
-                    'text' : display_name
-                })
-            if app_links:
-                display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
+            if len( display_links ) > 0:
+                display_label = hda.datatype.get_display_label( display_app )
+
+                app_links = []
+                for display_name, display_link in display_links:
+                    app_links.append({
+                        'target': target_frame,
+                        'href'  : display_link,
+                        'text'  : gettext( display_name )
+                    })
+                if app_links:
+                    display_apps.append( dict( label=display_label, links=app_links ) )
 
         return display_apps
+
+    def set_hda_from_dict( self, trans, hda, new_data ):
+        """
+        Changes HDA data using the given dictionary new_data.
+        """
+        # precondition: access of the hda has already been checked
+
+        # send what we can down into the model
+        changed = hda.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # sharing/permissions?
+        # purged
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
 
 
 class UsesLibraryMixin:
@@ -445,18 +684,190 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
 
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
-                              UsesLibraryMixinItems ):
-    """ Mixin for controllers that use Visualization objects. """
+class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+    """
+    Mixin for controllers that use Visualization objects.
+    """
 
     viz_types = [ "trackster" ]
 
-    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
-        """ Create visualiation and first revision. """
+    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
+        """
+        Get a Visualization from the database by id, verifying ownership.
+        """
+        # Load workflow from database
+        try:
+            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            visualization = None
+        if not visualization:
+            error( "Visualization not found" )
+        else:
+            return self.security_check( trans, visualization, check_ownership, check_accessible )
+
+    def get_visualizations_by_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results of visualizations filtered by a user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        #TODO: move into model (as class attr)
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.user == user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_visualizations_shared_with_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results for visualizations shared with the given user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization ).join( model.VisualizationUserShareAssociation )
+        query = query.filter( model.VisualizationUserShareAssociation.user_id == user.id )
+        # remove duplicates when a user shares with themselves?
+        query = query.filter( model.Visualization.user_id != user.id )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_published_visualizations( self, trans, exclude_user=None, order_by=None, query_only=False ):
+        """
+        Return query or query results for published visualizations optionally excluding
+        the user in `exclude_user`.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.published == True )
+        if exclude_user:
+            query = query.filter( model.Visualization.user != exclude_user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    #TODO: move into model (get_api_value)
+    def get_visualization_summary_dict( self, visualization ):
+        """
+        Return a set of summary attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        #TODO: deleted
+        #TODO: importable
+        return {
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'dbkey'     : visualization.dbkey,
+        }
+
+    def get_visualization_dict( self, visualization ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        The visualization's latest_revision is returned in its own sub-dictionary.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'Visualization',
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'user_id'   : visualization.user.id,
+            'dbkey'     : visualization.dbkey,
+            'slug'      : visualization.slug,
+            # dictify only the latest revision (allow older to be fetched elsewhere)
+            'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
+            'revisions' : [ r.id for r in visualization.revisions ],
+        }
+
+    def get_visualization_revision_dict( self, revision ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'VisualizationRevision',
+            'id'        : revision.id,
+            'visualization_id' : revision.visualization.id,
+            'title'     : revision.title,
+            'dbkey'     : revision.dbkey,
+            'config'    : revision.config,
+        }
+
+    def import_visualization( self, trans, id, user=None ):
+        """
+        Copy the visualization with the given id and associate the copy
+        with the given user (defaults to trans.user).
+
+        Raises `ItemAccessibilityException` if `user` is not passed and
+        the current user is anonymous, and if the visualization is not `importable`.
+        Raises `ItemDeletionException` if the visualization has been deleted.
+        """
+        # default to trans.user, error if anon
+        if not user:
+            if not trans.user:
+                raise ItemAccessibilityException( "You must be logged in to import Galaxy visualizations" )
+            user = trans.user
+
+        # check accessibility
+        visualization = self.get_visualization( trans, id, check_ownership=False )
+        if not visualization.importable:
+            raise ItemAccessibilityException( "The owner of this visualization has disabled imports via this link." )
+        if visualization.deleted:
+            raise ItemDeletionException( "You can't import this visualization because it has been deleted." )
+
+        # copy vis and alter title
+        #TODO: need to handle custom db keys.
+        imported_visualization = visualization.copy( user=user, title="imported: " + visualization.title )
+        trans.sa_session.add( imported_visualization )
+        trans.sa_session.flush()
+        return imported_visualization
+
+    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None,
+                              dbkey=None, annotation=None, config={}, save=True ):
+        """
+        Create visualiation and first revision.
+        """
         visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation, save )
+        #TODO: handle this error structure better either in _create or here
+        if isinstance( visualization, dict ):
+            err_dict = visualization
+            raise ValueError( err_dict[ 'title_err' ] or err_dict[ 'slug_err' ] )
 
         # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config=config, dbkey=dbkey )
+        revision = trans.model.VisualizationRevision( visualization=visualization, title=title,
+                                                      config=config, dbkey=dbkey )
         visualization.latest_revision = revision
 
         if save:
@@ -465,6 +876,21 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             session.flush()
 
         return visualization
+
+    def add_visualization_revision( self, trans, visualization, config, title, dbkey ):
+        """
+        Adds a new `VisualizationRevision` to the given `visualization` with
+        the given parameters and set its parent visualization's `latest_revision`
+        to the new revision.
+        """
+        #precondition: only add new revision on owned vis's
+        #TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
+        revision = trans.model.VisualizationRevision( visualization, title, dbkey, config )
+        visualization.latest_revision = revision
+        #TODO:?? does this automatically add revision to visualzation.revisions?
+        trans.sa_session.add( revision )
+        trans.sa_session.flush()
+        return revision
 
     def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
         session = trans.sa_session
@@ -480,23 +906,26 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         # Create new VisualizationRevision that will be attached to the viz
         vis_rev = trans.model.VisualizationRevision()
         vis_rev.visualization = vis
-        vis_rev.title = vis.title
-        vis_rev.dbkey = dbkey
+        # do NOT alter the dbkey
+        vis_rev.dbkey = vis.dbkey
+        # do alter the title and config
+        vis_rev.title = title
 
         # -- Validate config. --
 
         if vis.type == 'trackster':
-            def unpack_track( track_json ):
+            def unpack_track( track_dict ):
                 """ Unpack a track from its json. """
+                dataset_dict = track_dict[ 'dataset' ]
                 return {
-                    "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
-                    "hda_ldda": track_json.get('hda_ldda', 'hda'),
-                    "name": track_json['name'],
-                    "track_type": track_json['track_type'],
-                    "prefs": track_json['prefs'],
-                    "mode": track_json['mode'],
-                    "filters": track_json['filters'],
-                    "tool_state": track_json['tool_state']
+                    "dataset_id": trans.security.decode_id( dataset_dict['id'] ),
+                    "hda_ldda": dataset_dict.get('hda_ldda', 'hda'),
+                    "name": track_dict['name'],
+                    "track_type": track_dict['track_type'],
+                    "prefs": track_dict['prefs'],
+                    "mode": track_dict['mode'],
+                    "filters": track_dict['filters'],
+                    "tool_state": track_dict['tool_state']
                 }
 
             def unpack_collection( collection_json ):
@@ -542,18 +971,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         encoded_id = trans.security.encode_id( vis.id )
         return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
 
-    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
-        """ Get a Visualization from the database by id, verifying ownership. """
-        # Load workflow from database
-        try:
-            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            visualization = None
-        if not visualization:
-            error( "Visualization not found" )
-        else:
-            return self.security_check( trans, visualization, check_ownership, check_accessible )
-
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
         config = None
@@ -576,15 +993,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                 except KeyError:
                     prefs = {}
 
-                track_type, _ = dataset.datatype.get_track_type()
                 track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
                                                                                           original_dataset=dataset,
                                                                                           source='data' )
                 return {
-                    "track_type": track_type,
+                    "track_type": dataset.datatype.track_type,
+                    "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
                     "name": track_dict['name'],
-                    "hda_ldda": track_dict.get("hda_ldda", "hda"),
-                    "dataset_id": trans.security.encode_id( dataset.id ),
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
@@ -652,9 +1067,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         Returns track configuration dict for a dataset.
         """
         # Get data provider.
-        track_type, _ = dataset.datatype.get_track_type()
         track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
-
 
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
             hda_ldda = "hda"
@@ -663,10 +1076,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         # Get track definition.
         return {
-            "track_type": track_type,
+            "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "hda_ldda": hda_ldda,
-            "dataset_id": trans.security.encode_id( dataset.id ),
+            "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": get_tool_def( trans, dataset ),
@@ -698,7 +1110,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         if title_err or slug_err:
             return { 'title_err': title_err, 'slug_err': slug_err }
 
-
         # Create visualization
         visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
         if slug:
@@ -707,6 +1118,8 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             self.create_item_slug( trans.sa_session, visualization )
         if annotation:
             annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            #TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
+            #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
 
         if save:
@@ -814,193 +1227,6 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                 step.state = step.module.get_runtime_state()
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
-
-
-class UsesHistoryMixin( SharableItemSecurityMixin ):
-    """ Mixin for controllers that use History objects. """
-
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """Get a History from the database by id, verifying ownership."""
-        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        return self.security_check( trans, history, check_ownership, check_accessible )
-
-    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
-        """ Returns history's datasets. """
-        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
-            .options( eagerload( "children" ) ) \
-            .join( "dataset" ) \
-            .options( eagerload_all( "dataset.actions" ) ) \
-            .order_by( trans.model.HistoryDatasetAssociation.hid )
-        if not show_deleted:
-            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
-        if not show_purged:
-            query = query.filter( trans.model.Dataset.purged == False )
-        return query.all()
-
-    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
-        """
-        Returns a dictionary with state counts for history's HDAs. Key is a
-        dataset state, value is the number of states in that count.
-        """
-        # Build query to get (state, count) pairs.
-        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
-        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-
-        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
-        if not include_deleted:
-            # Only count datasets that have not been deleted.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
-        if not include_hidden:
-            # Only count datasets that are visible.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
-
-        group_by = trans.app.model.Dataset.table.c.state
-        query = select( columns=cols_to_select,
-                        from_obj=from_obj,
-                        whereclause=and_( *conditions ),
-                        group_by=group_by )
-
-        # Initialize count dict with all states.
-        state_count_dict = {}
-        for k, state in trans.app.model.Dataset.states.items():
-            state_count_dict[ state ] = 0
-
-        # Process query results, adding to count dict.
-        for row in trans.sa_session.execute( query ):
-            state, count = row
-            state_count_dict[ state ] = count
-
-        return state_count_dict
-
-    def get_hda_summary_dicts( self, trans, history ):
-        """Returns a list of dictionaries containing summary information
-        for each HDA in the given history.
-        """
-        hda_model = trans.model.HistoryDatasetAssociation
-
-        # outer join with job output to get job_state or None
-        job_subq = ( trans.sa_session.query(
-                        trans.model.Job.id.label( 'job_id' ),
-                        trans.model.Job.state.label( 'job_state' ),
-                        trans.model.JobToOutputDatasetAssociation.dataset_id.label( 'hda_id' ) )
-                    .join( trans.model.JobToOutputDatasetAssociation ) ).subquery()
-
-        # get state, name, etc.
-        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state,
-                    job_subq.c.job_state, job_subq.c.job_id )
-        column_keys = [ "name", "hid", "id", "deleted", "state", "job_state", "job_id" ]
-
-        query = ( trans.sa_session.query( *columns )
-                    .enable_eagerloads( False )
-                    .filter( hda_model.history == history )
-                    .join( trans.model.Dataset )
-                    .outerjoin(( job_subq, job_subq.c.hda_id == hda_model.id ))
-                    .order_by( hda_model.hid ) )
-
-        # build dictionaries, adding history id and encoding all ids
-        hda_dicts = []
-        for hda_tuple in query.all():
-            hda_dict = dict( zip( column_keys, hda_tuple ) )
-            #if hda_dict[ 'job_state' ] not in [ None, 'ok' ]:
-            #    print hda_dict[ 'hid' ], hda_dict[ 'name' ], hda_dict[ 'job_state' ]
-            hda_dict[ 'history_id' ] = history.id
-            trans.security.encode_dict_ids( hda_dict )
-            hda_dicts.append( hda_dict )
-        return hda_dicts
-
-    def _get_hda_state_summaries( self, trans, hda_dict_list ):
-        """Returns two dictionaries (in a tuple): state_counts and state_ids.
-        Each is keyed according to the possible hda states:
-            _counts contains a sum of the datasets in each state
-            _ids contains a list of the encoded ids for each hda in that state
-
-        hda_dict_list should be a list of hda data in dictionary form.
-        """
-        #TODO: doc to rst
-        # init counts, ids for each state
-        state_counts = {}
-        state_ids = {}
-        for key, state in trans.app.model.Dataset.states.items():
-            state_counts[ state ] = 0
-            state_ids[ state ] = []
-
-        for hda_dict in hda_dict_list:
-            item_state = hda_dict['state']
-            if not hda_dict['deleted']:
-                state_counts[ item_state ] = state_counts[ item_state ] + 1
-            # needs to return all ids (no deleted check)
-            state_ids[ item_state ].append( hda_dict['id'] )
-
-        return ( state_counts, state_ids )
-
-    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
-        """Returns the history state based on the states of the HDAs it contains.
-        """
-        states = trans.app.model.Dataset.states
-
-        num_hdas = sum( hda_state_counts.values() )
-        # (default to ERROR)
-        state = states.ERROR
-        if num_hdas == 0:
-            state = states.NEW
-
-        else:
-            if( ( hda_state_counts[ states.RUNNING ] > 0 )
-            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
-            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
-                state = states.RUNNING
-
-            elif hda_state_counts[ states.QUEUED ] > 0:
-                state = states.QUEUED
-
-            elif( ( hda_state_counts[ states.ERROR ] > 0 )
-            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
-                state = states.ERROR
-
-            elif hda_state_counts[ states.OK ] == num_hdas:
-                state = states.OK
-
-        return state
-
-    def _are_jobs_still_running( self, trans, hda_summary_list ):
-        """Determine whether any jobs are running from the given
-        list of hda summary dictionaries.
-        """
-        job_states = trans.model.Job.states
-        def is_job_running( job_state ):
-            return ( ( job_state == job_states.NEW )
-                   or( job_state == job_states.UPLOAD )
-                   or( job_state == job_states.WAITING )
-                   or( job_state == job_states.QUEUED )
-                   or( job_state == job_states.RUNNING ) )
-
-        return len( filter( lambda hda: is_job_running( hda['job_state'] ), hda_summary_list ) )
-
-    def get_history_dict( self, trans, history ):
-        """Returns history data in the form of a dictionary.
-        """
-        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
-
-        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-
-        #TODO: separate, move to annotation api, fill on the client
-        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
-        if not history_dict[ 'annotation' ]:
-            history_dict[ 'annotation' ] = ''
-
-        #TODO: allow passing as arg
-        hda_summaries = self.get_hda_summary_dicts( trans, history )
-        #TODO remove the following in v2
-        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
-        history_dict[ 'state_details' ] = state_counts
-        history_dict[ 'state_ids' ] = state_ids
-        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        history_dict[ 'jobs_running' ] = self._are_jobs_still_running( trans, hda_summaries )
-
-        return history_dict
 
 
 class UsesFormDefinitionsMixin:

@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
+import os
+
 from sqlalchemy import desc, or_, and_
+from paste.httpexceptions import HTTPNotFound
+
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
@@ -12,8 +16,12 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
+from galaxy.visualization.genomes import GenomeRegion
 
 from .library import LibraryListGrid
+
+import logging
+log = logging.getLogger( __name__ )
 
 #
 # -- Grids --
@@ -121,7 +129,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         Current item for grid is the history being queried. This is a bit 
         of hack since current_item typically means the current item in the grid.
         """
-        return model.History.get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
+        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
@@ -688,6 +696,54 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                     default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def render( self, trans, visualization_name, embedded=None, **kwargs ):
+        """
+        Render the appropriate visualization template, parsing the `kwargs`
+        into appropriate variables and resources (such as ORM models)
+        based on this visualizations `param` data in visualizations_conf.xml.
+
+        URL: /visualization/show/{visualization_name}
+        """
+        # validate name vs. registry
+        registry = trans.app.visualizations_registry
+        if not registry:
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)')
+        if visualization_name not in registry.listings:
+            raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
+            # or redirect to list?
+        registry_listing = registry.listings[ visualization_name ]
+
+        returned = None
+        try:
+            # convert query string to resources for template based on registry config
+            #NOTE: passing in controller to keep resource lookup within the controller's responsibilities
+            #   (and not the ResourceParser)
+            resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
+
+            # look up template and render
+            template_root = registry_listing.get( 'template_root', registry.TEMPLATE_ROOT )
+            template = registry_listing[ 'template' ]
+            template_path = os.path.join( template_root, template )
+            #NOTE: passing *unparsed* kwargs as query_args
+            #NOTE: shared_vars is a dictionary for shared data in the template
+            #   this feels hacky to me but it's what mako recommends:
+            #   http://docs.makotemplates.org/en/latest/runtime.html
+            #TODO: embedded
+            returned = trans.fill_template( template_path, visualization_name=visualization_name,
+                embedded=embedded, query_args=kwargs, shared_vars={}, **resources )
+
+        except Exception, exception:
+            log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+            if trans.debug: raise
+            returned = trans.show_error_message(
+                "There was an error rendering the visualization. " +
+                "Contact your Galaxy administrator if the problem persists." +
+                "<br/>Details: " + str( exception ), use_panels=False )
+
+        return returned
+
+    @web.expose
     @web.require_login()
     def trackster(self, trans, id=None, **kwargs):
         """
@@ -696,7 +752,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Get dataset to add.
         new_dataset_id = kwargs.get( "dataset_id", None )
-        
+
+        # Check for gene region
+        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
+    
         # Set up new browser if no id provided.
         if not id:
             # Use dbkey from dataset to be added or from incoming parameter.
@@ -705,14 +764,19 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
-            
-            return trans.fill_template( "tracks/browser.mako", config={}, 
-                                        add_dataset=new_dataset_id, 
-                                        default_dbkey=dbkey )
+        
+            # fill template
+            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region.__dict__, add_dataset=new_dataset_id, default_dbkey=dbkey )
 
         # Display saved visualization.
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
+        
+        # Update gene region of saved visualization if user parses a new gene region in the url
+        if gene_region.chrom is not None:
+            viz_config['viewport']['chrom'] = gene_region.chrom
+            viz_config['viewport']['start'] = gene_region.start
+            viz_config['viewport']['end']   = gene_region.end
         
         '''
         FIXME:
@@ -720,6 +784,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
                 new_dataset = None # Already in browser, so don't add
         '''
+        # fill template
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset_id )
 
     @web.expose
@@ -782,6 +847,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         get the visualization with the given id; otherwise, create a new visualization using
         a given dataset and regions.
         """
+        print 'sweepster:', id, hda_ldda, dataset_id, regions
+        regions = regions or '{}'
         # Need to create history if necessary in order to create tool form.
         trans.get_history( create=True )
 
@@ -793,6 +860,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+            print 'dataset:', dataset
             job = get_dataset_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,

@@ -69,24 +69,27 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
     webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
+    # The following route will handle displaying tool shelp images for tools contained in repositories.
+    webapp.add_route( '/repository/static/images/:repository_id/:image_file', controller='repository', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
-    webapp.api_mapper.resource( 'repository',
-                                'repositories',
-                                controller='repositories',
-                                collection={ 'get_repository_revision_install_info' : 'GET' },
-                                name_prefix='repository_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository', collection_name='repositories' ) )
-    webapp.api_mapper.resource( 'repository_revision',
-                                'repository_revisions',
-                                controller='repository_revisions',
-                                name_prefix='repository_revision_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
+    webapp.mapper.resource( 'repository',
+                            'repositories',
+                            controller='repositories',
+                            collection={ 'get_repository_revision_install_info' : 'GET',
+                                         'get_ordered_installable_revisions' : 'GET' },
+                            name_prefix='repository_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository', collection_name='repositories' ) )
+    webapp.mapper.resource( 'repository_revision',
+                            'repository_revisions',
+                            controller='repository_revisions',
+                            name_prefix='repository_revision_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
@@ -158,8 +161,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
         # Not in interactive debug mode, just use the regular error middleware
-        from paste.exceptions import errormiddleware
-        app = errormiddleware.ErrorMiddleware( app, conf )
+        import galaxy.web.framework.middleware.error
+        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):

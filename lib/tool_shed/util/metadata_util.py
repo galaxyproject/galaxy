@@ -1,7 +1,6 @@
 import logging
 import os
 import tempfile
-import urllib2
 from galaxy import eggs
 from galaxy import util
 from galaxy import web
@@ -10,8 +9,10 @@ from galaxy.model.orm import and_
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.util import inflector
 from galaxy.util import json
+from galaxy.web import url_for
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
@@ -74,6 +75,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get( 'repository_dependencies', [] )
     ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', {} )
     ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
+    ancestor_data_manager = ancestor_metadata_dict.get( 'data_manager', {} )
     current_datatypes = current_metadata_dict.get( 'datatypes', [] )
     current_tools = current_metadata_dict.get( 'tools', [] )
     current_guids = [ tool_dict[ 'guid' ] for tool_dict in current_tools ]
@@ -83,6 +85,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     current_repository_dependencies = current_repository_dependencies_dict.get( 'repository_dependencies', [] )
     current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', {} ) 
     current_workflows = current_metadata_dict.get( 'workflows', [] )
+    current_data_manager = current_metadata_dict.get( 'data_manager', {} )
     # Handle case where no metadata exists for either changeset.
     no_datatypes = not ancestor_datatypes and not current_datatypes
     no_readme_files = not ancestor_readme_files and not current_readme_files
@@ -91,7 +94,8 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
     no_tools = not ancestor_guids and not current_guids
     no_workflows = not ancestor_workflows and not current_workflows
-    if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows:
+    no_data_manager = not ancestor_data_manager and not current_data_manager
+    if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows and no_data_manager:
         return 'no metadata'
     # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
     # compare_readme_files() method.
@@ -100,20 +104,25 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     tool_dependency_comparison = compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependencies )
     workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
     datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+    data_manager_comparison = compare_data_manager( ancestor_data_manager, current_data_manager )
     # Handle case where all metadata is the same.
+    # TODO: these values, ('equal', etc), should be abstracted out to constants
     if ancestor_guids == current_guids and \
         repository_dependency_comparison == 'equal' and \
         tool_dependency_comparison == 'equal' and \
         workflow_comparison == 'equal' and \
-        datatype_comparison == 'equal':
+        datatype_comparison == 'equal' and \
+        data_manager_comparison == 'equal':
         return 'equal'
     # Handle case where ancestor metadata is a subset of current metadata.
     # readme_file_is_subset = readme_file_comparision in [ 'equal', 'subset' ]
+    # TODO: this list [ 'equal', 'subset' ] should be created once
     repository_dependency_is_subset = repository_dependency_comparison in [ 'equal', 'subset' ]
     tool_dependency_is_subset = tool_dependency_comparison in [ 'equal', 'subset' ]
     workflow_dependency_is_subset = workflow_comparison in [ 'equal', 'subset' ]
     datatype_is_subset = datatype_comparison in [ 'equal', 'subset' ]
-    if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset:
+    datamanager_is_subset = data_manager_comparison in [ 'equal', 'subset' ]
+    if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset and datamanager_is_subset:
         is_subset = True
         for guid in ancestor_guids:
             if guid not in current_guids:
@@ -121,6 +130,21 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
                 break
         if is_subset:
             return 'subset'
+    return 'not equal and not subset'
+
+def compare_data_manager( ancestor_metadata, current_metadata ):
+    """Determine if ancestor_metadata is the same as or a subset of current_metadata for data_managers."""
+    def __data_manager_dict_to_tuple_list( metadata_dict ):
+        # we do not check tool_guid or tool conf file name
+        return set( sorted( [ ( name, tuple( sorted( value.get( 'data_tables', [] ) ) ), value.get( 'guid'  ), value.get( 'version' ), value.get( 'name' ), value.get( 'id' )  ) for name, value in metadata_dict.iteritems() ] ) )
+    # only compare valid entries, any invalid entries are ignored
+    ancestor_metadata = __data_manager_dict_to_tuple_list( ancestor_metadata.get( 'data_managers', {} ) )
+    current_metadata = __data_manager_dict_to_tuple_list( current_metadata.get( 'data_managers', {} ) )
+    # use set comparisons
+    if ancestor_metadata.issubset( current_metadata ):
+        if ancestor_metadata == current_metadata:
+            return 'equal'
+        return 'subset'
     return 'not equal and not subset'
 
 def compare_datatypes( ancestor_datatypes, current_datatypes ):
@@ -169,18 +193,19 @@ def compare_readme_files( ancestor_readme_files, current_readme_files ):
 
 def compare_repository_dependencies( ancestor_repository_dependencies, current_repository_dependencies ):
     """Determine if ancestor_repository_dependencies is the same as or a subset of current_repository_dependencies."""
-    # The list of repository_dependencies looks something like: [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407"]].
+    # The list of repository_dependencies looks something like: [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407", False]].
     # Create a string from each tuple in the list for easier comparison.
     if len( ancestor_repository_dependencies ) <= len( current_repository_dependencies ):
         for ancestor_tup in ancestor_repository_dependencies:
-            ancestor_tool_shed, ancestor_repository_name, ancestor_repository_owner, ancestor_changeset_revision = ancestor_tup
+            ancestor_tool_shed, ancestor_repository_name, ancestor_repository_owner, ancestor_changeset_revision, ancestor_prior_installation_required = ancestor_tup
             found_in_current = False
             for current_tup in current_repository_dependencies:
-                current_tool_shed, current_repository_name, current_repository_owner, current_changeset_revision = current_tup
+                current_tool_shed, current_repository_name, current_repository_owner, current_changeset_revision, current_prior_installation_required = current_tup
                 if current_tool_shed == ancestor_tool_shed and \
                     current_repository_name == ancestor_repository_name and \
                     current_repository_owner == ancestor_repository_owner and \
-                    current_changeset_revision == ancestor_changeset_revision:
+                    current_changeset_revision == ancestor_changeset_revision and \
+                    current_prior_installation_required == ancestor_prior_installation_required:
                     found_in_current = True
                     break
             if not found_in_current:
@@ -257,6 +282,8 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
     downloadable = has_repository_dependencies or includes_datatypes or includes_tools or includes_tool_dependencies or includes_workflows
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
+        # A repository metadata record already exists with the received changeset_revision, so we don't need to check the skip_tool_test table.
+        check_skip_tool_test = False
         repository_metadata.metadata = metadata_dict
         repository_metadata.downloadable = downloadable
         repository_metadata.has_repository_dependencies = has_repository_dependencies
@@ -265,6 +292,8 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         repository_metadata.includes_tool_dependencies = includes_tool_dependencies
         repository_metadata.includes_workflows = includes_workflows
     else:
+        # No repository_metadata record exists for the received changeset_revision, so we may need to update the skip_tool_test table.
+        check_skip_tool_test = True
         repository_metadata = trans.model.RepositoryMetadata( repository_id=repository.id,
                                                               changeset_revision=changeset_revision,
                                                               metadata=metadata_dict,
@@ -276,11 +305,38 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                                                               includes_workflows=includes_workflows )
     # Always set the default values for the following columns.  When resetting all metadata on a repository, this will reset the values.
     repository_metadata.tools_functionally_correct = False
+    repository_metadata.missing_test_components = False
+    repository_metadata.test_install_error = False
     repository_metadata.do_not_test = False
     repository_metadata.time_last_tested = None
-    repository_metadata.tool_test_errors = None
+    repository_metadata.tool_test_results = None
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
+    if check_skip_tool_test:
+        # Since we created a new repository_metadata record, we may need to update the skip_tool_test table to point to it.  Inspect each
+        # changeset revision in the received repository's changelog (up to the received changeset revision) to see if it is contained in the
+        # skip_tool_test table.  If it is, but is not associated with a repository_metadata record, reset that skip_tool_test record to the
+        # newly created repository_metadata record.
+        repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+        for changeset in repo.changelog:
+            changeset_hash = str( repo.changectx( changeset ) )
+            skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans, changeset_hash )
+            if skip_tool_test:
+                # We found a skip_tool_test record associated with the changeset_revision, so see if it has a valid repository_revision.
+                repository_revision = suc.get_repository_metadata_by_id( trans, trans.security.encode_id( repository_metadata.id ) )
+                if repository_revision:
+                    # The skip_tool_test record is associated with a valid repository_metadata record, so proceed.
+                    continue
+                # We found a skip_tool_test record that is associated with an invalid repository_metadata record, so update it to point to
+                # the newly created repository_metadata record.  In some special cases there may be multiple skip_tool_test records that
+                # require updating, so we won't break here, we'll continue to inspect the rest of the changelog up to the received
+                # changeset_revision.
+                skip_tool_test.repository_metadata_id = repository_metadata.id
+                trans.sa_session.add( skip_tool_test )
+                trans.sa_session.flush()
+            if changeset_hash == changeset_revision:
+                # Proceed no further than the received changeset_revision.
+                break
     return repository_metadata
 
 def generate_data_manager_metadata( app, repository, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None ):
@@ -359,7 +415,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
                     data_tables.append( data_table_name )
             if bad_data_table:
                 continue
-        data_manager_metadata_tool_file = os.path.join( relative_data_manager_dir, tool_file )
+        data_manager_metadata_tool_file = os.path.normpath( os.path.join( relative_data_manager_dir, tool_file ) )
         tool_metadata_tool_file = os.path.join( repo_files_directory, data_manager_metadata_tool_file )
         tool = tools.get( tool_metadata_tool_file, None )
         if tool is None:
@@ -377,7 +433,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
 
-def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
+def generate_datatypes_metadata( app, repository, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     try:
         tree = ElementTree.parse( datatypes_config )
@@ -428,7 +484,7 @@ def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir
                     # Parse the tool_config to get the guid.
                     tool_config_path = suc.get_config_from_disk( tool_config, repository_files_dir )
                     full_path = os.path.abspath( tool_config_path )
-                    tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
+                    tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                     if tool is None:
                         guid = None
                     else:
@@ -534,7 +590,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Handle proprietary datatypes, if any.
     datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( app, repository_clone_url, files_dir, datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( app, repository, repository_clone_url, files_dir, datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
     sample_file_metadata_paths, sample_file_copy_paths = get_sample_files_from_disk( repository_files_dir=files_dir,
                                                                                      tool_path=shed_config_dict.get( 'tool_path' ),
@@ -589,7 +645,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                 log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
                                 is_tool = False
                             if is_tool:
-                                tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
+                                tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                                 if tool is None:
                                     if not valid:
                                         invalid_tool_configs.append( name )
@@ -704,23 +760,23 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
         xml_is_valid = False
     if xml_is_valid:
         invalid_repository_dependencies_dict = dict( description=root.get( 'description' ) )
-        invalid_repository_dependencies_tups = []
+        invalid_repository_dependency_tups = []
         valid_repository_dependencies_dict = dict( description=root.get( 'description' ) )
-        valid_repository_dependencies_tups = []
+        valid_repository_dependency_tups = []
         for repository_elem in root.findall( 'repository' ):
-            repository_dependencies_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app, repository_elem )
+            repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app, repository_elem )
             if repository_dependency_is_valid:
-                valid_repository_dependencies_tups.append( repository_dependencies_tup )
+                valid_repository_dependency_tups.append( repository_dependency_tup )
             else:
                 # Append the error_message to the repository dependencies tuple.
-                toolshed, name, owner, changeset_revision = repository_dependencies_tup
-                repository_dependencies_tup = ( toolshed, name, owner, changeset_revision, error_message )
-                invalid_repository_dependencies_tups.append( repository_dependencies_tup )
-        if invalid_repository_dependencies_tups:
-            invalid_repository_dependencies_dict[ 'repository_dependencies' ] = invalid_repository_dependencies_tups
+                toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
+                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, error_message )
+                invalid_repository_dependency_tups.append( repository_dependency_tup )
+        if invalid_repository_dependency_tups:
+            invalid_repository_dependencies_dict[ 'repository_dependencies' ] = invalid_repository_dependency_tups
             metadata_dict[ 'invalid_repository_dependencies' ] = invalid_repository_dependencies_dict
-        if valid_repository_dependencies_tups:
-            valid_repository_dependencies_dict[ 'repository_dependencies' ] = valid_repository_dependencies_tups
+        if valid_repository_dependency_tups:
+            valid_repository_dependencies_dict[ 'repository_dependencies' ] = valid_repository_dependency_tups
             metadata_dict[ 'repository_dependencies' ] = valid_repository_dependencies_dict
     return metadata_dict, error_message
 
@@ -765,8 +821,8 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
-                    toolshed, name, owner, changeset_revision = repository_dependency_tup
-                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, message )
+                    toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
+                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
@@ -823,6 +879,8 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             for output in ttb.outputs:
                 name, file_name, extra = output
                 outputs.append( ( name, suc.strip_path( file_name ) if file_name else None ) )
+                if file_name not in required_files and file_name is not None:
+                    required_files.append( file_name )
             test_dict = dict( name=ttb.name,
                               required_files=required_files,
                               inputs=inputs,
@@ -1007,13 +1065,14 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
 
-def get_updated_changeset_revisions_from_tool_shed( tool_shed_url, name, owner, changeset_revision ):
-    """Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination."""
-    url = suc.url_join( tool_shed_url,
-                        'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    text = response.read()
-    response.close()
+def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
+    """
+    Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination.
+    """
+    url  = suc.url_join( tool_shed_url,
+                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' %
+                         ( name, owner, changeset_revision ) )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
 
 def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
@@ -1044,11 +1103,15 @@ def handle_repository_elem( app, repository_elem ):
     sa_session = app.model.context.current
     is_valid = True
     error_message = ''
-    toolshed = repository_elem.attrib[ 'toolshed' ]
-    name = repository_elem.attrib[ 'name' ]
-    owner = repository_elem.attrib[ 'owner' ]
-    changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
-    repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+    toolshed = repository_elem.get( 'toolshed' )
+    if not toolshed:
+        # Default to the current tool shed.
+        toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
+    name = repository_elem.get( 'name' )
+    owner = repository_elem.get( 'owner' )
+    changeset_revision = repository_elem.get( 'changeset_revision' )
+    prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
+    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
     user = None
     repository = None
     if app.name == 'galaxy':
@@ -1058,20 +1121,16 @@ def handle_repository_elem( app, repository_elem ):
         # repository_elem, we know it is valid.
         repository = suc.get_repository_for_dependency_relationship( app, toolshed, name, owner, changeset_revision )
         if repository:
-            return repository_dependencies_tup, is_valid, error_message
+            return repository_dependency_tup, is_valid, error_message
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository may have been installed.
-            #try:
-                # Hopefully the tool shed is accessible.
-            text = get_updated_changeset_revisions_from_tool_shed( toolshed, name, owner, changeset_revision )
-            #except:
-            #    text = None
+            text = get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:
                     repository = suc.get_repository_for_dependency_relationship( app, toolshed, name, owner, updated_changeset_revision )
                     if repository:
-                        return repository_dependencies_tup, is_valid, error_message
+                        return repository_dependency_tup, is_valid, error_message
             # We'll currently default to setting the repository dependency definition as invalid if an installed repository cannot be found.
             # This may not be ideal because the tool shed may have simply been inaccessible when metadata was being generated for the installed
             # tool shed repository.
@@ -1079,7 +1138,7 @@ def handle_repository_elem( app, repository_elem ):
                 ( toolshed, name, owner, changeset_revision )
             log.debug( error_message )
             is_valid = False
-            return repository_dependencies_tup, is_valid, error_message
+            return repository_dependency_tup, is_valid, error_message
     else:        
         # We're in the tool shed.
         if suc.tool_shed_is_this_tool_shed( toolshed ):
@@ -1093,7 +1152,7 @@ def handle_repository_elem( app, repository_elem ):
                 error_message += "because the owner is invalid.  "
                 log.debug( error_message )
                 is_valid = False
-                return repository_dependencies_tup, is_valid, error_message
+                return repository_dependency_tup, is_valid, error_message
             try:
                 repository = sa_session.query( app.model.Repository ) \
                                        .filter( and_( app.model.Repository.table.c.name == name,
@@ -1105,7 +1164,7 @@ def handle_repository_elem( app, repository_elem ):
                 error_message += "because the name is invalid.  "
                 log.debug( error_message )
                 is_valid = False
-                return repository_dependencies_tup, is_valid, error_message
+                return repository_dependency_tup, is_valid, error_message
             # Find the specified changeset revision in the repository's changelog to see if it's valid.
             found = False
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( app ) )
@@ -1120,15 +1179,15 @@ def handle_repository_elem( app, repository_elem ):
                 error_message += "because the changeset revision is invalid.  "
                 log.debug( error_message )
                 is_valid = False
-                return repository_dependencies_tup, is_valid, error_message
+                return repository_dependency_tup, is_valid, error_message
         else:
             # Repository dependencies are currently supported within a single tool shed.
             error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
             error_message += "for tool shed %s, name %s, owner %s, changeset revision %s.  " % ( toolshed, name, owner, changeset_revision )
             log.debug( error_message )
             is_valid = False
-            return repository_dependencies_tup, is_valid, error_message
-    return repository_dependencies_tup, is_valid, error_message
+            return repository_dependency_tup, is_valid, error_message
+    return repository_dependency_tup, is_valid, error_message
 
 def is_downloadable( metadata_dict ):
     # NOTE: although repository README files are considered Galaxy utilities, they have no effect on determining if a revision is installable.
@@ -1247,17 +1306,24 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
             new_repository_dependencies_metadata = metadata_dict.get( 'repository_dependencies', None )
             if new_repository_dependencies_metadata:
                 new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                # TODO: We used to include the following here to handle the case where repository dependency definitions were deleted.  However,
+                # this erroneously returned True in cases where is should not have done so.  This usually occurred where multiple single files
+                # were uploaded when a single tarball should have been.  We need to implement support for handling deleted repository dependency
+                # definitions so that we can guarantee reproducibility, but we need to do it in a way that is better than the following.
+                # for new_repository_dependency in new_repository_dependencies:
+                #     if new_repository_dependency not in saved_repository_dependencies:
+                #         return True
                 # The saved metadata must be a subset of the new metadata.
-                for new_repository_dependency_metadata in new_repository_dependencies:
-                    if new_repository_dependency_metadata not in saved_repository_dependencies:
+                for saved_repository_dependency in saved_repository_dependencies:
+                    if saved_repository_dependency not in new_repository_dependencies:
                         return True
-                for saved_repository_dependency_metadata in saved_repository_dependencies:
-                    if saved_repository_dependency_metadata not in new_repository_dependencies:
-                        return True
+                return False
             else:
                 # The repository_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
                 # access to the deleted file.
                 return True
+        else:
+            return False
     else:
         if 'repository_dependencies' in metadata_dict:
             # There is no saved repository metadata, so we need to create a new repository_metadata record.
@@ -1278,17 +1344,24 @@ def new_tool_dependency_metadata_required( trans, repository_metadata, metadata_
                 saved_tool_dependencies = metadata[ 'tool_dependencies' ]
                 new_tool_dependencies = metadata_dict.get( 'tool_dependencies', None )
                 if new_tool_dependencies:
+                    # TODO: We used to include the following here to handle the case where tool dependency definitions were deleted.  However,
+                    # this erroneously returned True in cases where is should not have done so.  This usually occurred where multiple single files
+                    # were uploaded when a single tarball should have been.  We need to implement support for handling deleted tool dependency
+                    # definitions so that we can guarantee reproducibility, but we need to do it in a way that is better than the following.
+                    # for new_tool_dependency in new_tool_dependencies:
+                    #     if new_tool_dependency not in saved_tool_dependencies:
+                    #         return True
                     # The saved metadata must be a subset of the new metadata.
-                    for new_repository_dependency_metadata in new_tool_dependencies:
-                        if new_repository_dependency_metadata not in saved_tool_dependencies:
+                    for saved_tool_dependency in saved_tool_dependencies:
+                        if saved_tool_dependency not in new_tool_dependencies:
                             return True
-                    for saved_repository_dependency_metadata in saved_tool_dependencies:
-                        if saved_repository_dependency_metadata not in new_tool_dependencies:
-                            return True
+                    return False
                 else:
                     # The tool_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
                     # access to the deleted file.
                     return True
+            else:
+                return False
         else:
             # We have repository metadata that does not include metadata for any tool dependencies in the repository, so we can update
             # the existing repository metadata.
@@ -1330,6 +1403,7 @@ def new_tool_metadata_required( trans, repository_metadata, metadata_dict ):
                     for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
                         if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
                             return True
+                    return False
                 else:
                     # The new metadata includes tools, but the stored metadata does not, so we can update the stored metadata.
                     return False
@@ -1371,14 +1445,13 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         invalid_tools = metadata.get( 'invalid_tools', None )
         # Handle README files.
         if repository.has_readme_files:
-            if reinstalling:
+            if reinstalling or repository.status not in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                          trans.model.ToolShedRepository.installation_status.INSTALLED ]:
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                                     ( repository.name, repository.owner, repository.installed_changeset_revision ) )
-                response = urllib2.urlopen( url )
-                raw_text = response.read()
-                response.close()
+                raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
                 readme_files_dict = readme_util.build_readme_files_dict( repository.metadata, tool_path )
@@ -1725,7 +1798,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 repository_metadata.do_not_test = False
                 repository_metadata.time_last_tested = None
                 repository_metadata.tools_functionally_correct = False
-                repository_metadata.tool_test_errors = None
+                repository_metadata.missing_test_components = False
+                repository_metadata.tool_test_results = None
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
@@ -1851,25 +1925,18 @@ def update_repository_dependencies_metadata( metadata, repository_dependency_tup
         repository_dependencies_dict = metadata.get( 'invalid_repository_dependencies', None )
     for repository_dependency_tup in repository_dependency_tups:
         if is_valid:
-            tool_shed, name, owner, changeset_revision = repository_dependency_tup
+            tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
         else:
-            tool_shed, name, owner, changeset_revision, error_message = repository_dependency_tup
-        rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=tool_shed,
-                                                                                     repository_name=name,
-                                                                                     repository_owner=owner,
-                                                                                     changeset_revision=changeset_revision )
+            tool_shed, name, owner, changeset_revision, prior_installation_required, error_message = repository_dependency_tup
+        prior_installation_required = util.asbool( str( prior_installation_required ) )
         if repository_dependencies_dict:
-            if rd_key in repository_dependencies_dict:
-                repository_dependencies = repository_dependencies_dict[ rd_key ]
-                for repository_dependency_tup in repository_dependency_tups:
-                    if repository_dependency_tup not in repository_dependencies:
-                        repository_dependencies.append( repository_dependency_tup )
-                repository_dependencies_dict[ rd_key ] = repository_dependencies
-            else:
-                repository_dependencies_dict[ rd_key ] = repository_dependency_tups
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            for repository_dependency_tup in repository_dependency_tups:
+                if repository_dependency_tup not in repository_dependencies:
+                    repository_dependencies.append( repository_dependency_tup )
+            repository_dependencies_dict[ 'repository_dependencies' ] = repository_dependencies
         else:
-            repository_dependencies_dict = dict( root_key=rd_key,
-                                                 description=description,
+            repository_dependencies_dict = dict( description=description,
                                                  repository_dependencies=repository_dependency_tups )
     if repository_dependencies_dict:
         if is_valid:

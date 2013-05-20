@@ -9,6 +9,8 @@
             --FDR=$fdr
             --num-threads="4"
             --min-alignment-count=$min_alignment_count
+            --library-norm-method=$library_norm_method
+            --dispersion-method=$dispersion_method
 
             --isoforms_fpkm_tracking_output=$isoforms_fpkm_tracking
             --genes_fpkm_tracking_output=$genes_fpkm_tracking
@@ -91,6 +93,18 @@
                 <param format="sam,bam" name="aligned_reads2" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
             </when>
         </conditional>
+
+        <param name="library_norm_method" type="select" label="Library normalization method">
+            <option value="geometric" selected="True">geometric</option>
+            <option value="classic-fpkm">classic-fpkm</option>
+            <option value="quartile">quartile</option>
+        </param>
+
+        <param name="dispersion_method" type="select" label="Dispersion estimation method" help="If using only one sample per condition, you must use 'blind.'">
+            <option value="pooled" selected="True">pooled</option>
+            <option value="per-condition">per-condition</option>
+            <option value="blind">blind</option>
+        </param>
 
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
 

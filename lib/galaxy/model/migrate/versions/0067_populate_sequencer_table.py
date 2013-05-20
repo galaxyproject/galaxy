@@ -2,7 +2,7 @@
 Migration script to populate the 'sequencer' table and it is populated using unique
 entries in the 'datatx_info' column in the 'request_type' table. It also deletes the 'datatx_info'
 column in the 'request_type' table and adds a foreign key to the 'sequencer' table. The
-actual contents of the datatx_info column are stored as form_values. 
+actual contents of the datatx_info column are stored as form_values.
 """
 
 from sqlalchemy import *
@@ -21,8 +21,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def nextval( table, col='id' ):
     if migrate_engine.name == 'postgres':
@@ -31,7 +30,7 @@ def nextval( table, col='id' ):
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-    
+
 def localtimestamp():
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
        return "LOCALTIMESTAMP"
@@ -41,13 +40,13 @@ def localtimestamp():
        raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
 def get_latest_id( table ):
-    result = db_session.execute( "select id from %s order by id desc" % table )
+    result = migrate_engine.execute( "select id from %s order by id desc" % table )
     row = result.fetchone()
     if row:
         return row[0]
     else:
         raise Exception( 'Unable to get the latest id in the %s table.' % table )
-    
+
 def boolean( value ):
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
        return value
@@ -60,9 +59,9 @@ def boolean( value ):
 
 def create_sequencer_form_definition():
     '''
-    Create a new form_definition containing 5 fields (host, username, password, 
+    Create a new form_definition containing 5 fields (host, username, password,
     data_dir & rename_datasets) which described the existing datatx_info json
-    dict in the request_type table 
+    dict in the request_type table
     '''
     # create new form_definition_current in the db
     cmd = "INSERT INTO form_definition_current VALUES ( %s, %s, %s, %s, %s )"
@@ -71,21 +70,21 @@ def create_sequencer_form_definition():
                   localtimestamp(),
                   'NULL',
                   boolean( 'false' ) )
-    db_session.execute( cmd )
+    migrate_engine.execute( cmd )
     # get this form_definition_current id
     form_definition_current_id = get_latest_id( 'form_definition_current' )
     # create new form_definition in the db
     form_definition_name = 'Generic sequencer form'
     form_definition_desc = ''
     form_definition_fields = []
-    fields = [ ( 'Host', 'TextField' ), 
+    fields = [ ( 'Host', 'TextField' ),
                ( 'User name', 'TextField' ),
                ( 'Password', 'PasswordField' ),
                ( 'Data directory', 'TextField' ) ]
     for index, ( label, field_type ) in enumerate( fields ):
         form_definition_fields.append( { 'name': 'field_%i' % index,
-                                         'label': label, 
-                                         'helptext': '', 
+                                         'label': label,
+                                         'helptext': '',
                                          'visible': True,
                                          'required': False,
                                          'type': field_type,
@@ -93,8 +92,8 @@ def create_sequencer_form_definition():
                                          'layout': 'none',
                                          'default': '' } )
     form_definition_fields.append( { 'name': 'field_%i' % len( fields ),
-                                     'label': 'Prepend the experiment name and sample name to the dataset name?', 
-                                     'helptext': 'Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.', 
+                                     'label': 'Prepend the experiment name and sample name to the dataset name?',
+                                     'helptext': 'Galaxy datasets are renamed by prepending the experiment name and sample name to the dataset name, ensuring dataset names remain unique in Galaxy even when multiple datasets have the same name on the sequencer.',
                                      'visible': True,
                                      'required': False,
                                      'type': 'SelectField',
@@ -116,12 +115,12 @@ def create_sequencer_form_definition():
                   to_json_string( form_definition_fields ),
                   form_definition_type,
                   form_definition_layout )
-    db_session.execute( cmd )
+    migrate_engine.execute( cmd )
     # get this form_definition id
     form_definition_id = get_latest_id( 'form_definition' )
     # update the form_definition_id column in form_definition_current
     cmd = "UPDATE form_definition_current SET latest_form_id=%i WHERE id=%i" %( form_definition_id, form_definition_current_id )
-    db_session.execute( cmd )
+    migrate_engine.execute( cmd )
     return form_definition_id
 
 def get_sequencer_id( sequencer_info ):
@@ -129,7 +128,7 @@ def get_sequencer_id( sequencer_info ):
     # Check if there is any existing sequencer which have the same sequencer
     # information fields & values
     cmd = "SELECT sequencer.id, form_values.content FROM sequencer, form_values WHERE sequencer.form_values_id=form_values.id"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for row in result:
         sequencer_id = row[0]
         values = str( row[1] )
@@ -154,12 +153,12 @@ def add_sequencer( sequencer_index, sequencer_form_definition_id, sequencer_info
                                'field_2': sequencer_info.get( 'password', '' ),
                                'field_3': sequencer_info.get( 'data_dir', '' ),
                                'field_4': sequencer_info.get( 'rename_dataset', '' ) } )
-    cmd = "INSERT INTO form_values VALUES ( %s, %s, %s, %s, '%s' )" % ( nextval( 'form_values' ), 
-                                                                        localtimestamp(), 
-                                                                        localtimestamp(), 
+    cmd = "INSERT INTO form_values VALUES ( %s, %s, %s, %s, '%s' )" % ( nextval( 'form_values' ),
+                                                                        localtimestamp(),
+                                                                        localtimestamp(),
                                                                         sequencer_form_definition_id,
                                                                         values )
-    db_session.execute(cmd)
+    migrate_engine.execute(cmd)
     sequencer_form_values_id = get_latest_id( 'form_values' )
     # Create a new sequencer record with reference to the form value created above.
     name = 'Sequencer_%i' % sequencer_index
@@ -168,25 +167,26 @@ def add_sequencer( sequencer_index, sequencer_form_definition_id, sequencer_info
     result_datasets = dict()
     sequencer_type_id = 'simple_unknown_sequencer'
     cmd = "INSERT INTO sequencer VALUES ( %s, %s, %s, '%s', '%s', '%s', '%s', %s, %s, %s )"
-    cmd = cmd % ( nextval('sequencer'), 
-                  localtimestamp(), 
-                  localtimestamp(), 
-                  name, 
-                  desc, 
+    cmd = cmd % ( nextval('sequencer'),
+                  localtimestamp(),
+                  localtimestamp(),
+                  name,
+                  desc,
                   sequencer_type_id,
-                  version, 
+                  version,
                   sequencer_form_definition_id,
                   sequencer_form_values_id,
                   boolean( 'false' ) )
-    db_session.execute(cmd)
+    migrate_engine.execute(cmd)
     return get_latest_id( 'sequencer' )
 
 def update_sequencer_id_in_request_type( request_type_id, sequencer_id ):
     '''Update the foreign key to the sequencer table in the request_type table'''
     cmd = "UPDATE request_type SET sequencer_id=%i WHERE id=%i" %( sequencer_id, request_type_id )
-    db_session.execute( cmd )
-    
-def upgrade():
+    migrate_engine.execute( cmd )
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -194,7 +194,7 @@ def upgrade():
     except NoSuchTableError, e:
         RequestType_table = None
         log.debug( "Failed loading table 'request_type'" )
-    if not RequestType_table:
+    if RequestType_table is None:
         return
     # load the sequencer table
     try:
@@ -202,27 +202,27 @@ def upgrade():
     except NoSuchTableError, e:
         Sequencer_table = None
         log.debug( "Failed loading table 'sequencer'" )
-    if not Sequencer_table:
+    if Sequencer_table is None:
         return
     # create foreign key field to the sequencer table in the request_type table
     try:
-        col = Column( "sequencer_id", Integer, ForeignKey( "sequencer.id" ), nullable=True, index=True )
+        col = Column( "sequencer_id", Integer, ForeignKey( "sequencer.id" ), nullable=True )
         col.create( RequestType_table )
         assert col is RequestType_table.c.sequencer_id
     except Exception, e:
-        log.debug( "Creating column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )   
-    # copy the sequencer information contained in the 'datatx_info' column 
+        log.debug( "Creating column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )
+    # copy the sequencer information contained in the 'datatx_info' column
     # of the request_type table to the form values referenced in the sequencer table
     cmd = "SELECT id, name, datatx_info FROM request_type ORDER BY id ASC"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     results_list = result.fetchall()
     # Proceed only if request_types exists
     if len( results_list ):
-        # In this migration script the all the contents of the datatx_info are stored as form_values   
-        # with a pointer to the sequencer table. This way the sequencer information can be customized  
+        # In this migration script the all the contents of the datatx_info are stored as form_values
+        # with a pointer to the sequencer table. This way the sequencer information can be customized
         # by the admin and is no longer restricted to host, username, password, data directory.
-        # For the existing request_types in the database, we add a new form_definition 
-        # with these 4 fields. Then we populate the sequencer table with unique datatx_info 
+        # For the existing request_types in the database, we add a new form_definition
+        # with these 4 fields. Then we populate the sequencer table with unique datatx_info
         # column from the existing request_types.
         sequencer_form_definition_id = create_sequencer_form_definition()
         sequencer_index = 1
@@ -244,39 +244,40 @@ def upgrade():
                 # now update the sequencer_id column in request_type table
                 update_sequencer_id_in_request_type( request_type_id, sequencer_id )
                 sequencer_index = sequencer_index + 1
-                
+
     # Finally delete the 'datatx_info' column from the request_type table
     try:
         RequestType_table.c.datatx_info.drop()
     except Exception, e:
-        log.debug( "Deleting column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )   
-        
-        
-def downgrade():
+        log.debug( "Deleting column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )
+
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )
     except NoSuchTableError, e:
         RequestType_table = None
         log.debug( "Failed loading table 'request_type'" )
-    if RequestType_table:
+    if RequestType_table is not None:
         # create the 'datatx_info' column
         try:
             col = Column( "datatx_info", JSONType() )
             col.create( RequestType_table )
             assert col is RequestType_table.c.datatx_info
         except Exception, e:
-            log.debug( "Creating column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )   
-        # restore the datatx_info column data in the request_type table with data from 
+            log.debug( "Creating column 'datatx_info' in the 'request_type' table failed: %s" % ( str( e ) ) )
+        # restore the datatx_info column data in the request_type table with data from
         # the sequencer and the form_values table
         cmd = "SELECT request_type.id, form_values.content "\
               + " FROM request_type, sequencer, form_values "\
               + " WHERE request_type.sequencer_id=sequencer.id AND sequencer.form_values_id=form_values.id "\
               + " ORDER  BY request_type.id ASC"
-        result = db_session.execute( cmd )
+        result = migrate_engine.execute( cmd )
         for row in result:
             request_type_id = row[0]
-            seq_values = from_json_string( str( row[1] ) ) 
+            seq_values = from_json_string( str( row[1] ) )
             # create the datatx_info json dict
             datatx_info = to_json_string( dict( host = seq_values.get( 'field_0', '' ),
                                                 username = seq_values.get( 'field_1', '' ),
@@ -285,27 +286,27 @@ def downgrade():
                                                 rename_dataset = seq_values.get( 'field_4', '' ) ) )
             # update the column
             cmd = "UPDATE request_type SET datatx_info='%s' WHERE id=%i" %( datatx_info, request_type_id )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         # delete foreign key field to the sequencer table in the request_type table
         try:
             RequestType_table.c.sequencer_id.drop()
         except Exception, e:
-            log.debug( "Deleting column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )   
+            log.debug( "Deleting column 'sequencer_id' in the 'request_type' table failed: %s" % ( str( e ) ) )
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

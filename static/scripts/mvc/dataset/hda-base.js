@@ -1,16 +1,18 @@
 //define([
 //    "../mvc/base-mvc"
 //], function(){
+
+/* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
  * 
- *  @augments BaseView
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDABaseView = BaseView.extend( LoggableMixin ).extend(
+var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends HDABaseView.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -43,8 +45,23 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
 
-        // re-render the entire view on any model change
-        this.model.bind( 'change', this.render , this );
+        // re-rendering on any model changes
+        this.model.bind( 'change', function( event, changed ){
+            // find out if more has changed than just the display applications
+            //TODO: need a better handler for these sorts of partial rendering cases
+            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
+            if( nonDisplayAppChanges.length ){
+                // if it's more, render everything
+                this.render();
+
+            // if it's just the display links, and it's already expanded
+            } else {
+                if( this.expanded ){
+                    // render the links only
+                    this._render_displayApps();
+                }
+            }
+        }, this );
 
         //this.bind( 'all', function( event ){
         //    this.log( event );
@@ -291,28 +308,38 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     },
     
     // ......................................................................... other elements
-    /** Render links to external genome display applications (igb, gbrowse, etc.).
+    /** Render the area for display application links.
      *  @returns {jQuery} rendered DOM
      */
+    _render_displayAppArea : function(){
+        return $( '<div/>' ).addClass( 'display-apps' );
+    },
+
+    /** Render links to external genome display applications (igb, gbrowse, etc.).
+     *  @param {jQuery} $parent  the jq node to search for .display-apps and render into to (defaults to this.$el)
+     */
     //TODO: not a fan of the style on these
-    _render_displayApps : function(){
-        if( !this.model.hasData() ){ return null; }
-        
-        var displayAppsDiv = $( '<div/>' ).addClass( 'display-apps' );
-        if( !_.isEmpty( this.model.get( 'display_types' ) ) ){
+    _render_displayApps : function( $parent ){
+        $parent = $parent || this.$el;
+        var $displayAppsDiv = $parent.find( 'div.display-apps' ),
+            display_types = this.model.get( 'display_types' ),
+            display_apps  = this.model.get( 'display_apps' );
+
+        if( ( !this.model.hasData() )
+        ||  ( !$parent || !$parent.length )
+        ||  ( !$displayAppsDiv.length ) ){
+            return;
+        }
+
+        $displayAppsDiv.html( null );
+        if( !_.isEmpty( display_types ) ){
             //this.log( this + 'display_types:', this.model.get( 'urls' ).display_types );
-            //TODO:?? does this ever get used?
-            displayAppsDiv.append(
-                HDABaseView.templates.displayApps({ displayApps : this.model.get( 'display_types' ) })
-            );
+            $displayAppsDiv.append( HDABaseView.templates.displayApps({ displayApps : display_types }) );
         }
-        if( !_.isEmpty( this.model.get( 'display_apps' ) ) ){
+        if( !_.isEmpty( display_apps ) ){
             //this.log( this + 'display_apps:',  this.model.get( 'urls' ).display_apps );
-            displayAppsDiv.append(
-                HDABaseView.templates.displayApps({ displayApps : this.model.get( 'display_apps' ) })
-            );
+            $displayAppsDiv.append( HDABaseView.templates.displayApps({ displayApps : display_apps }) );
         }
-        return displayAppsDiv;
     },
             
     /** Render the data peek.
@@ -344,7 +371,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( this.expanded ){
             // only render the body html if it's being shown
             this._render_body_html( body );
-            body.show();
+            //TODO: switch back when jq -> 1.9
+            //body.show();
+            body.css( 'display', 'block' );
         }
         return body;
     },
@@ -407,7 +436,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_new : function( parent ){
-        var newMsg = 'This is a new dataset and not all of its data are available yet';
+        var newMsg = _l( 'This is a new dataset and not all of its data are available yet' );
         parent.append( $( '<div>' + _l( newMsg ) + '</div>' ) );
     },
 
@@ -483,7 +512,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_empty : function( parent ){
-        //TODO: replace i with dataset-misc-info class 
+        //TODO: replace i with dataset-misc-info class
         //?? why are we showing the file size when we know it's zero??
         parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
@@ -526,7 +555,8 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         ]));
         parent.append( '<div class="clear"/>' );
         
-        parent.append( this._render_displayApps() );
+        parent.append( this._render_displayAppArea() );
+        this._render_displayApps( parent );
         parent.append( this._render_peek() );
     },
     
@@ -559,10 +589,12 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         }
     },
 
+    // ......................................................................... DELETION
     remove : function( callback ){
         var hdaView = this;
         this.$el.fadeOut( 'fast', function(){
             hdaView.$el.remove();
+            hdaView.off();
             if( callback ){ callback(); }
         });
     },

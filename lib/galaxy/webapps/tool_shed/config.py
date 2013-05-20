@@ -36,7 +36,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )                        
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored
-        self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
+        self.file_path = resolve_path( kwargs.get( "file_path", "database/community_files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
@@ -79,6 +79,10 @@ class Configuration( object ):
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.blog_url = kwargs.get( 'blog_url', None )

@@ -173,17 +173,8 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ],
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_5_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_5_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
             emboss_6_repository = self.get_or_create_repository( name='emboss_6_0030', 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
@@ -200,17 +191,8 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '6' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_6_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_6_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
             emboss_repository = self.get_or_create_repository( name='emboss_0030', 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
@@ -227,28 +209,10 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ emboss_5_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
-            self.generate_repository_dependency_xml( [ emboss_6_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=True,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, emboss_5_repository.name, emboss_5_repository.user.username, self.get_repository_tip( emboss_5_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
+            dependency_tuple = ( self.url, emboss_6_repository.name, emboss_6_repository.user.username, self.get_repository_tip( emboss_6_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
         repository = self.get_or_create_repository( name='freebayes_0040', 
                                                     description="Galaxy's freebayes tool", 
                                                     long_description="Long description of Galaxy's freebayes tool", 
@@ -283,30 +247,10 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
             filtering_repository = test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0340', additional_paths=[ 'dependencies' ] )
-            self.generate_repository_dependency_xml( [ freebayes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
-            self.upload_file( filtering_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml specifying freebayes',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
-            self.generate_repository_dependency_xml( [ filtering_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Freebayes depends on the filtering repository.' )
-            self.upload_file( freebayes_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml specifying filtering',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
+            self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
+            dependency_tuple = ( self.url, filtering_repository.name, filtering_repository.user.username, self.get_repository_tip( filtering_repository ) )
+            self.create_repository_dependency( repository=freebayes_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
         datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0050', 
                                                     description="Datatypes for emboss", 
                                                     long_description="Long description of Emboss' datatypes", 
@@ -369,56 +313,19 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'emboss' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Emboss depends on the emboss_datatypes repository.' )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'filtering' ] )
-            self.generate_repository_dependency_xml( [ emboss_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Filtering depends on the emboss repository.' )
-            self.upload_file( filtering_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, emboss_repository.name, emboss_repository.user.username, self.get_repository_tip( emboss_repository ) )
+            self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'freebayes' ] )
-            self.generate_repository_dependency_xml( [ filtering_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Emboss depends on the filtering repository.' )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
-            self.generate_repository_dependency_xml( [ datatypes_repository, emboss_repository, filtering_repository, freebayes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                     dependency_description='Freebayes depends on the filtering repository.' )
-            self.upload_file( freebayes_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, filtering_repository.name, filtering_repository.user.username, self.get_repository_tip( filtering_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
+            dependency_tuples = [ ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) ),
+                                  ( self.url, emboss_repository.name, emboss_repository.user.username, self.get_repository_tip( emboss_repository ) ),
+                                  ( self.url, filtering_repository.name, filtering_repository.user.username, self.get_repository_tip( filtering_repository ) ),
+                                  ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) ) ]
+            self.create_repository_dependency( repository=freebayes_repository, repository_tuples=dependency_tuples, filepath=repository_dependencies_path )
         workflow_repository = self.get_or_create_repository( name='filtering_0060', 
                                                              description="Galaxy's filtering tool", 
                                                              long_description="Long description of Galaxy's filtering tool", 
@@ -450,6 +357,7 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               commit_message='Uploaded filtering 2.2.0 tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0010_install_all_missing_repositories( self ):
         '''Call the install_repository method to ensure that all required repositories are installed.'''
         global repository_datatypes_count
@@ -481,6 +389,7 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
             assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
         else:
             assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
+ 
     def test_0015_reset_metadata_on_all_repositories( self ):
         '''Reset metadata on all repositories, then verify that it has not changed.'''
         repository_metadata = dict()
@@ -491,5 +400,14 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
         for repository in repositories:
             test_db_util.ga_refresh( repository )
             old_metadata = repository_metadata[ self.security.encode_id( repository.id ) ]
-            assert repository.metadata == old_metadata, 'Metadata for installed repository %s changed after reset.' % repository.name
+            # When a repository with tools to be displayed in a tool panel section is deactivated and reinstalled, 
+            # the tool panel section remains in the repository metadata. However, when the repository's metadata
+            # is subsequently reset, the tool panel section is removed from the repository metadata. While this 
+            # is normal and expected behavior, the functional tests assume that repository metadata will not change
+            # in any way after a reset. A workaround is to remove the tool panel section from the stored repository
+            # metadata dict, in order to eliminate the misleading detection of changed metadata.
+            if 'tool_panel_section' in old_metadata and 'tool_panel_section' not in repository.metadata:
+                del old_metadata[ 'tool_panel_section' ]
+            assert repository.metadata == old_metadata, 'Metadata for %s repository %s changed after reset. \nOld: %s\nNew: %s' % \
+                ( repository.status, repository.name, old_metadata, repository.metadata )
  

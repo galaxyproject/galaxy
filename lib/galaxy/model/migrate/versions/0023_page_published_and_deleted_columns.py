@@ -10,24 +10,26 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
-    
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
+
     print __doc__
     metadata.reflect()
-    
+
     Page_table = Table( "page", metadata, autoload=True )
-    
+
     c = Column( "published", Boolean, index=True, default=False )
-    c.create( Page_table )
+    c.create( Page_table, index_name = 'ix_page_published' )
     assert c is Page_table.c.published
-    
-    c = Column( "deleted", Boolean, index=True, default=False ) 
-    c.create( Page_table )
+
+    c = Column( "deleted", Boolean, index=True, default=False )
+    c.create( Page_table, index_name='ix_page_deleted')
     assert c is Page_table.c.deleted
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     Page_table = Table( "page", metadata, autoload=True )

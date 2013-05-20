@@ -20,7 +20,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 User_table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
@@ -49,7 +49,7 @@ Role_table = Table( "role", metadata,
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-UserGroupAssociation_table = Table( "user_group_association", metadata, 
+UserGroupAssociation_table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -83,7 +83,7 @@ GalaxySession_table = Table( "galaxy_session", metadata,
     Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
     )
 
-Tool_table = Table( "tool", metadata, 
+Tool_table = Table( "tool", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
     Column( "tool_id", TrimmedString( 255 ), index=True ),
@@ -127,7 +127,7 @@ Tag_table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ), 
+    Column( "name", TrimmedString(255) ),
     UniqueConstraint( "name" ) )
 
 ToolTagAssociation_table = Table( "tool_tag_association", metadata,
@@ -145,10 +145,11 @@ ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
 
-def upgrade():
+def upgrade( migrate_engine ):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.create_all()
 
-def downgrade():
+def downgrade( migrate_engine ):
     # Operations to reverse the above upgrade go here.
     pass

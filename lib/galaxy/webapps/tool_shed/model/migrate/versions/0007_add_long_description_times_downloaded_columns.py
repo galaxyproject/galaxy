@@ -19,11 +19,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
     Repository_table = Table( "repository", metadata, autoload=True )
@@ -46,11 +46,12 @@ def upgrade():
         log.debug( "Adding times_downloaded column to the repository table failed: %s" % str( e ) )
 
     cmd = "UPDATE repository SET long_description = ''"
-    db_session.execute( cmd )
+    migrate_engine.execute( cmd )
     cmd = "UPDATE repository SET times_downloaded = 0"
-    db_session.execute( cmd )
-    
-def downgrade():
+    migrate_engine.execute( cmd )
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop email_alerts column from repository table.
     Repository_table = Table( "repository", metadata, autoload=True )

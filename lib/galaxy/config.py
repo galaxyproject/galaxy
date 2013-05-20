@@ -86,7 +86,6 @@ class Configuration( object ):
         self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
-        self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
@@ -155,6 +154,10 @@ class Configuration( object ):
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
         self.blog_url = kwargs.get( 'blog_url', None )
@@ -166,6 +169,7 @@ class Configuration( object ):
         self.enable_whoosh_library_search = string_as_bool( kwargs.get( 'enable_whoosh_library_search', False ) )
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
@@ -271,6 +275,8 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+        # visualizations registry config path
+        self.visualizations_conf_path = kwargs.get( 'visualizations_conf_path', None )
 
     @property
     def sentry_dsn_public( self ):

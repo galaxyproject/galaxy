@@ -7,6 +7,7 @@ from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
 
+from galaxy.util import asbool
 from galaxy.webapps.tool_shed import model
 from galaxy.util.hash_util import new_secure_hash
 import mercurial.__version__
@@ -111,6 +112,7 @@ class Hg( object ):
             return self.__authenticate( username, password )
 
     def __authenticate( self, username, password ):
+        db_password = None
         # Instantiate a database connection
         engine = sqlalchemy.create_engine( self.db_url )
         connection = engine.connect()
@@ -120,14 +122,17 @@ class Hg( object ):
             db_email = row[ 'email' ]
             db_password = row[ 'password' ]
         connection.close()
-        # Check if password matches db_password when hashed.
-        return new_secure_hash( text_type=password ) == db_password
+        if db_password:
+            # Check if password matches db_password when hashed.
+            return new_secure_hash( text_type=password ) == db_password
+        return False
 
     def __authenticate_remote_user( self, environ, username, password ):
         """
         Look after a remote user and "authenticate" - upstream server should already have achieved this for us, but we check that the
         user exists at least. Hg allow_push = must include username - some versions of mercurial blow up with 500 errors.
         """
+        db_username = None
         ru_email = environ[ 'HTTP_REMOTE_USER' ].lower()
         ## Instantiate a database connection...
         engine = sqlalchemy.create_engine( self.db_url )
@@ -139,9 +144,8 @@ class Hg( object ):
             db_password = row[ 'password' ]
             db_username = row[ 'username' ]
         connection.close()
-
-        """
-        We could check the password here except that the function galaxy.web.framework.get_or_create_remote_user() does some random generation of
-        a password - so that no-one knows the password and only the hash is stored...
-        """
-        return db_username == username
+        if db_username:
+            # We could check the password here except that the function galaxy.web.framework.get_or_create_remote_user() does some random generation of
+            # a password - so that no-one knows the password and only the hash is stored...
+            return db_username == username
+        return False

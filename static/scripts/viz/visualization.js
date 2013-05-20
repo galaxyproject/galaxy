@@ -505,9 +505,6 @@ var GenomeDataManager = Cache.extend({
             // FIXME: constant should go somewhere.
             extra_params.num_samples = 1000 * detail_multiplier;
         }
-        else if (cur_data.dataset_type === 'summary_tree') {
-            extra_params.level = Math.min(cur_data.level - 1, 2);
-        }
 
         return this.load_data(region, mode, resolution, extra_params);
     },
@@ -579,7 +576,7 @@ var GenomeDataManager = Cache.extend({
                            data_point[0] <= subregion.get('end');
                 });
             },
-            'refseq': function(data, subregion) {
+            refseq: function(data, subregion) {
                 var seq_start = subregion.get('start') - entry.region.get('start'),
                     seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
                 return entry.data.slice(seq_start, seq_end);

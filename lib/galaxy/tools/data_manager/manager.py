@@ -112,6 +112,7 @@ class DataManager( object ):
         self.declared_id = elem.get( 'id', None )
         self.guid = elem.get( 'guid', None )
         path = elem.get( 'tool_file', None )
+        self.version = elem.get( 'version', self.version )
         tool_guid = None
         if path is None:
             tool_elem = elem.find( 'tool' )

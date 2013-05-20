@@ -3,16 +3,13 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
+    <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true" />
+    <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bam_to_bai.xml" target_datatype="bai"/>
-      <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
-      <!--
-        Caution: (a) this converter requires bedtools to be installed and (b) it is very memory intensive and
-        is not recommended for most laptops/desktops.
-        <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
-      -->
+      <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
@@ -20,10 +17,9 @@
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
-      <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-      <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
       <display file="igb/bed.xml" />
@@ -49,7 +45,7 @@
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="True">
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-      <converter file="interval_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
@@ -91,7 +87,7 @@
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
-      <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>
       <display file="ensembl/ensembl_gff.xml" inherit="True"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
@@ -101,7 +97,7 @@
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
         <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
-        <converter file="gff_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+        <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="True" />
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
@@ -113,7 +109,7 @@
       <converter file="interval_to_bed12_converter.xml" target_datatype="bed12"/>
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-	  <converter file="interval_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+	    <converter file="interval_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
@@ -154,10 +150,13 @@
 	<datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="True">
 	  <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
 	  <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
-	  <converter file="encodepeak_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+	  <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
 	</datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
-    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
+    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+    </datatype>
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
     <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
@@ -167,7 +166,7 @@
     <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
     	<converter file="sam_to_bam.xml" target_datatype="bam"/>
-    	<converter file="sam_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+    	<converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
 	</datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
@@ -185,7 +184,7 @@
       <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
       <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-      <converter file="vcf_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/vcf.xml" />
       <display file="igv/vcf.xml" />
       <display file="rviewer/vcf.xml" inherit="True"/>
@@ -198,7 +197,6 @@
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->
       <display file="igb/wig.xml" />
     </datatype>
-    <datatype extension="summary_tree" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="True" />
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="True" />

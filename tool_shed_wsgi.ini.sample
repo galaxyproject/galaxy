@@ -29,7 +29,7 @@ database_file = database/community.sqlite
 # Where the hgweb.config file is stored.  The default is the Galaxy installation directory.
 #hgweb_config_dir = None
 
-# Where dataset files are saved
+# Where tool shed repositories are stored.
 file_path = database/community_files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
@@ -87,6 +87,11 @@ sendmail_path = /usr/sbin/sendmail
 
 # Use the new iframe / javascript based layout
 use_new_layout = true
+
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
 
 # Serving static files (needed if running standalone)
 static_enabled = True

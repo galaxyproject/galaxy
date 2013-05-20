@@ -265,9 +265,10 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
-        return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
+        return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+        preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:
@@ -357,6 +358,9 @@ class Taxonomy( Tabular ):
 
 class Sam( Tabular ):
     file_ext = 'sam'
+    track_type = "ReadTrack"
+    data_sources = { "data": "bam", "index": "bigwig" }
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         Tabular.__init__( self, **kwd )
@@ -466,17 +470,16 @@ class Sam( Tabular ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
-    def get_track_type( self ):
-        return "ReadTrack", {"data": "bam", "index": "summary_tree"}
-
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
     line_class = "genomic coordinate"
+    data_sources = { "data": "tabix" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=2, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter )
 
     def init_meta( self, dataset, copy_from=None ):
@@ -524,8 +527,7 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-
-
+            
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
 
@@ -534,23 +536,39 @@ class ElandMulti( Tabular ):
 
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
+    track_type = "VariantTrack"
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True, visible=False )
+    MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
-    def get_track_type( self ):
-        return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
+    def set_meta( self, dataset, **kwd ):
+        Tabular.set_meta( self, dataset, **kwd )
+        source = open( dataset.file_name )
+
+        # Skip comments.
+        line = None
+        for line in source:
+            if not line.startswith( '##' ):
+                break
+
+        if line and line.startswith( '#' ):
+            # Found header line, get sample names.
+            dataset.metadata.sample_names = line.split()[ 9: ]
+
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""

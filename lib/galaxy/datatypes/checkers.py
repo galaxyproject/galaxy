@@ -58,7 +58,7 @@ def check_binary( name, file_path=True ):
     for chars in temp:
         for char in chars:
             chars_read += 1
-            if ord( char ) > 128:
+            if util.is_binary( char ):
                 is_binary = True
                 break
             if chars_read > 100:

@@ -656,7 +656,7 @@ class TestHistory( TwillTestCase ):
                 if hda[ 'id' ] == self.security.encode_id( hda_2_bed.id ):
                     return ( not hda[ 'accessible' ] )
             return False
-        self.check_history_json( r'\bhdas\s*=\s*(.*);', hda_2_bed_is_inaccessible )
+        self.check_history_json( r'\bhdaJson\s*=\s*(.*);', hda_2_bed_is_inaccessible )
 
         # Admin users can view all datasets ( using the history/view feature ), so make sure 2.bed is accessible to the admin
         self.logout()

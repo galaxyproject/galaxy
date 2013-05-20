@@ -27,9 +27,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                 url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&from_install_manager=True' % \
                 ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
                 try:
-                    response = urllib2.urlopen( url )
-                    text = response.read()
-                    response.close()
+                    text = tool_shed_get( app, tool_shed_url, url )
                     tool_shed_accessible = True
                 except Exception, e:
                     # Tool shed may be unavailable - we have to set tool_shed_accessible since we're looping.
@@ -95,3 +93,16 @@ def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
                 shed_url = shed_url.rstrip( '/' )
             return shed_url
     return None
+
+def tool_shed_get( app, tool_shed_url, uri ):
+    """Make contact with the tool shed via the uri provided."""
+    registry = app.tool_shed_registry
+    urlopener = urllib2.build_opener()
+    password_mgr = registry.password_manager_for_url( tool_shed_url )
+    if ( password_mgr is not None ):
+        auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
+        urlopener.add_handler( auth_handler )
+    response = urlopener.open( uri )
+    content = response.read()
+    response.close()
+    return content
