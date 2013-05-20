@@ -210,11 +210,25 @@ class Client(object):
         check_complete_response = self.__raw_execute("check_complete", {"job_id": self.job_id})
         return check_complete_response
 
-    def check_complete(self):
+    def check_complete(self, response=None):
         """
         Return boolean indicating whether the job is complete.
         """
-        return self.raw_check_complete()["complete"] == "true"
+        if response == None:
+            response = self.raw_check_complete()
+        return response["complete"] == "true"
+
+    def get_status(self):
+        check_complete_response = self.raw_check_complete()
+        # Older LWR instances won't set status so use 'complete', at some
+        # point drop backward compatibility.
+        complete = self.check_complete(check_complete_response)
+        old_status = "complete" if complete else "running"
+        status = check_complete_response.get("status", old_status)
+        # Bug in certains older LWR instances returned literal "status".
+        if status not in ["complete", "running", "queued"]:
+            status = old_status
+        return status
 
     def clean(self):
         """
