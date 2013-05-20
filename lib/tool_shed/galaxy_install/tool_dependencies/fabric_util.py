@@ -30,7 +30,8 @@ def check_fabric_version():
 
 def handle_command( app, tool_dependency, install_dir, cmd ):
     sa_session = app.model.context.current
-    output = local( cmd, capture=True )
+    with settings( warn_only=True ):
+        output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
