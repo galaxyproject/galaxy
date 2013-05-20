@@ -1451,10 +1451,7 @@ class DataToolParameter( ToolParameter ):
         def dataset_collector( hdas, parent_hid ):
             current_user_roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
-                if len( hda.name ) > 30:
-                    hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
-                else:
-                    hda_name = hda.name
+                hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:

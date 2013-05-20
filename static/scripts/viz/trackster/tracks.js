@@ -3071,6 +3071,20 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
+     * Returns appropriate display mode based on data.
+     */
+    get_mode: function(data) {
+        return this.mode;
+    },
+
+    /**
+     * Update track interface to show display mode being used.
+     */
+    update_auto_mode: function( display_mode ) {
+        // FIXME: needs to be implemented.
+    },
+
+    /**
      * Returns a list of drawables to draw. Defaults to current track.
      */
     _get_drawables: function() {
@@ -3925,6 +3939,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
     },
 
+    /**
+     * Update track interface to show display mode being used.
+     */
     update_auto_mode: function( mode ) {
         var mode;
         if ( this.mode === "Auto" ) {

@@ -280,20 +280,18 @@ def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
     api_url = get_api_url( base=tool_shed_url, parts=api_path )
     repository_metadata = json_from_url( api_url )
     tool_test_results = repository_metadata.get( 'tool_test_results', {} )
-    # Compatibility code, remove before next release.
-    if not tool_test_results:
-        tool_test_results = repository_metadata.get( 'tool_test_errors', {} )
+    # If, for some reason, the script that checks for functional tests has not run, tool_test_results will be None.
+    if tool_test_results is None:
+        return dict()
     return tool_test_results
 
 def is_latest_downloadable_revision( url, repository_info_dict ):
     api_url_parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
     params = urllib.urlencode( dict( name=repository_info_dict[ 'name' ], owner=repository_info_dict[ 'owner' ] ) )
     api_url = get_api_url( url, api_url_parts, params )
-    # TODO: Remove this try/catch wrapping when the main tool shed is updated.
-    try:
-        changeset_revisions = json_from_url( api_url )
-    except Exception, e:
-        return True
+    changeset_revisions = json_from_url( api_url )
+    # The get_ordered_installable_revisions returns a list of changeset hashes, with the last hash in the list
+    # being the most recent installable revision.
     latest_revision = changeset_revisions.pop()
     return str( repository_info_dict[ 'changeset_revision' ] ) == str( latest_revision )
 
@@ -312,17 +310,6 @@ def register_test_result( url, metadata_id, test_results_dict, repository_info_d
     Update the repository metadata tool_test_results and appropriate flags using the API.
     '''
     params[ 'tool_test_results' ] = test_results_dict
-    # BEGIN compatibility code.
-    # TODO: The repository_revisions API controller ignores any received parameter that is not present in the database schema,
-    # but the compatibility code here should be removed when the main tool shed is updated with the new database migration version.
-    params[ 'tool_test_errors' ] = test_results_dict
-    if test_results_dict[ 'failed_tests' ]:
-        params[ 'tool_test_errors' ][ 'test_errors' ] = test_results_dict[ 'failed_tests' ]
-    if test_results_dict[ 'passed_tests' ]:
-        params[ 'tool_test_errors' ][ 'tests_passed' ] = test_results_dict[ 'passed_tests' ]
-    # Copying the missing_test_components key is not necessary, since the main tool shed is running its own version of the
-    # check repositories script, which correctly updates the invalid_tests key.
-    # END compatibility code.
     if '-info_only' in sys.argv:
         return {}
     else:
@@ -760,8 +747,8 @@ def main():
                             repository_status[ 'missing_test_components' ].append( missing_components )
                     # Record the status of this repository in the tool shed.
                     set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
-                    params[ 'tools_functionally_correct' ] = 'false'
-                    params[ 'missing_test_components' ] = 'true'
+                    params[ 'tools_functionally_correct' ] = False
+                    params[ 'missing_test_components' ] = True
                     params[ 'do_not_test' ] = str( set_do_not_test )
                     register_test_result( galaxy_tool_shed_url, 
                                           metadata_revision_id, 
@@ -795,9 +782,9 @@ def main():
                                             error_message=dependency.error_message )
                         repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
                     # Record the status of this repository in the tool shed.
-                    params[ 'tools_functionally_correct' ] = 'false'
-                    params[ 'do_not_test' ] = 'false'
-                    params[ 'test_install_error' ] = 'true'
+                    params[ 'tools_functionally_correct' ] = False
+                    params[ 'do_not_test' ] = False
+                    params[ 'test_install_error' ] = True
                     register_test_result( galaxy_tool_shed_url, 
                                           metadata_revision_id, 
                                           repository_status, 
@@ -848,8 +835,8 @@ def main():
                         # controller with the status of the test. This also sets the do_not_test and tools_functionally correct flags, and
                         # updates the time_last_tested field to today's date.
                         repositories_passed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                        params[ 'tools_functionally_correct' ] = 'true'
-                        params[ 'do_not_test' ] = 'false'
+                        params[ 'tools_functionally_correct' ] = True
+                        params[ 'do_not_test' ] = False
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 
                                               repository_status, 
@@ -900,7 +887,7 @@ def main():
                         # field to today's date.
                         repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                         set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
-                        params[ 'tools_functionally_correct' ] = 'false'
+                        params[ 'tools_functionally_correct' ] = False
                         params[ 'do_not_test' ] = str( set_do_not_test )
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 
@@ -933,9 +920,9 @@ def main():
                                     changeset_revision=repository.changeset_revision,
                                     error_message=repository.error_message )
                 repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                params[ 'tools_functionally_correct' ] = 'false'
-                params[ 'test_install_error' ] = 'true'
-                params[ 'do_not_test' ] = 'false'
+                params[ 'tools_functionally_correct' ] = False
+                params[ 'test_install_error' ] = True
+                params[ 'do_not_test' ] = False
                 register_test_result( galaxy_tool_shed_url, 
                                       metadata_revision_id, 
                                       repository_status, 
