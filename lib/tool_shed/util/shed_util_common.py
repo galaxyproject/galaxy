@@ -497,7 +497,10 @@ def get_latest_downloadable_changeset_revision( trans, repository, repo ):
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    return get_previous_metadata_changeset_revision( repository, repo, repository_tip, downloadable=True )
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+    if changeset_revisions:
+        return changeset_revisions[ -1 ]
+    return INITIAL_CHANGELOG_HASH
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
@@ -583,7 +586,7 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
             rev = '-1'
         changeset_tups.append( ( rev, changeset_revision ) )
     sorted_changeset_tups = sorted( changeset_tups )
-    sorted_changeset_revisions = [ changeset_tup[ 1 ] for changeset_tup in sorted_changeset_tups ]
+    sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
     return sorted_changeset_revisions
 
 def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
