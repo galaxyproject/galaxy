@@ -1538,6 +1538,8 @@ extend(VariantPainter.prototype, Painter.prototype, {
      * as a left_offset may be present.
      */
     draw: function(ctx, width, height, w_scale) {
+        ctx.save();
+
         var locus_data,
             pos,
             id,
@@ -1568,7 +1570,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
             ctx.fillStyle = '#F3F3F3';
             ctx.globalAlpha = 1;
             ctx.fillRect(0, this.prefs.summary_height - this.divider_height, width, this.divider_height);
-        }   
+        }
 
         // Draw variants.
         ctx.textAlign = "center";
@@ -1586,6 +1588,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
             
             //  Draw summary.
             ctx.fillStyle = '#999999';
+            ctx.globalAlpha = 1;
             // Draw background for summary.
             ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
             draw_y_start = this.prefs.summary_height;
@@ -1622,7 +1625,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 else { // Heterozygous for variant.
                     variant = (genotype[0] !== '0' ? genotype[0] : genotype[1]);
                     variant = alt[ parseInt(variant, 10) - 1 ];
-                    ctx.globalAlpha = 0.4;
+                    ctx.globalAlpha = 0.5;
                 }
 
                 // If there's a variant, draw it.
@@ -1637,6 +1640,8 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 }
             }
         }
+
+        ctx.restore();
     }
 });
 
