@@ -9,6 +9,7 @@ from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
+import tool_shed.util.shed_util_common as suc
 
 #set up logger
 import logging
@@ -113,12 +114,20 @@ class DataManager( object ):
         self.guid = elem.get( 'guid', None )
         path = elem.get( 'tool_file', None )
         self.version = elem.get( 'version', self.version )
+        tool_shed_repository_id = None
         tool_guid = None
         if path is None:
             tool_elem = elem.find( 'tool' )
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( util.xml_to_string( elem ) )
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
+            #need to determine repository info so that dependencies will work correctly
+            tool_shed = tool_elem.find( 'tool_shed' ).text
+            repository_name = tool_elem.find( 'repository_name' ).text
+            repository_owner = tool_elem.find( 'repository_owner' ).text
+            installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
+            tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app, tool_shed, repository_name, repository_owner, installed_changeset_revision )
+            tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
             #use shed_conf_file to determine tool_path
             shed_conf_file = elem.get( "shed_conf_file", None )
             if shed_conf_file:
@@ -126,7 +135,7 @@ class DataManager( object ):
                 if shed_conf:
                     tool_path = shed_conf.get( "tool_path", tool_path )
         assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
-        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id )
+        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id, tool_shed_repository_id=tool_shed_repository_id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
         
@@ -180,8 +189,8 @@ class DataManager( object ):
     @property
     def id( self ):
         return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
-    def load_tool( self, tool_filename, guid=None, data_manager_id=None ):
-        tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id )
+    def load_tool( self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None ):
+        tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id, repository_id=tool_shed_repository_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
         self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
