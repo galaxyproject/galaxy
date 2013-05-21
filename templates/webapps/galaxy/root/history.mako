@@ -213,6 +213,10 @@ $(function(){
     galaxyPageSetUp();
     // ostensibly, this is the App
 
+    %if 'profiling' in self.context.kwargs:
+    Galaxy.profiling = ${h.to_json_string( profiling )}.join( '\n' );
+    %endif
+
     //NOTE: for debugging on non-local instances (main/test)
     //  1. load history panel in own tab
     //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )

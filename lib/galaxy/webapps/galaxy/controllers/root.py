@@ -2,7 +2,6 @@
 Contains the main interface in the Universe class
 """
 import cgi
-import logging
 import os
 import urllib
 
@@ -15,6 +14,9 @@ from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
 from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.util.json import to_json_string
 
+from galaxy.util.debugging import SimpleProfiler
+
+import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
@@ -175,6 +177,73 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         return trans.stream_template_mako( "root/history.mako",
             history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
             show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status )
+
+    @web.expose
+    def profile_history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
+        """
+        Same as above but adds SimpleProfiler to get some
+        profiling times for the operations done.
+        """
+        if as_xml:
+            return self.history_as_xml( trans,
+                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
+
+        # get all datasets server-side, client-side will get flags and render appropriately
+        show_deleted = string_as_bool_or_none( show_deleted )
+        show_purged  = show_deleted
+        show_hidden  = string_as_bool_or_none( show_hidden )
+        params = Params( kwd )
+        message = params.get( 'message', '' )
+        #TODO: ugh...
+        message = message if message != 'None' else ''
+        status = params.get( 'status', 'done' )
+
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
+
+        def err_msg( where=None ):
+            where = where if where else 'getting the history data from the server'
+            err_msg = ( 'An error occurred %s. '
+                      + 'Please contact a Galaxy administrator if the problem persists.' ) %( where )
+            return err_msg, 'error'
+
+        profiler = SimpleProfiler()
+        profiler.start()
+
+        history_dictionary = {}
+        hda_dictionaries   = []
+        try:
+            history = trans.get_history( create=True )
+            profiler.report( 'trans.get_history' )
+            hdas = self.get_history_datasets( trans, history,
+                show_deleted=True, show_hidden=True, show_purged=True )
+            profiler.report( 'get_history_datasets' )
+
+            for hda in hdas:
+                try:
+                    hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+                    profiler.report( '\t hda -> dictionary (%s)' %( hda.name ) )
+
+                except Exception, exc:
+                    # don't fail entire list if hda err's, record and move on
+                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
+                    hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+            profiler.report( 'hdas -> dictionaries' )
+
+            # re-use the hdas above to get the history data...
+            history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
+            profiler.report( 'history -> dictionary' )
+
+        except Exception, exc:
+            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
+            log.error( 'Error bootstrapping history for user %s: %s', user_id, str( exc ), exc_info=True )
+            message, status = err_msg()
+            history_dictionary[ 'error' ] = message
+
+        return trans.stream_template_mako( "root/history.mako",
+            history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
+            show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status,
+            profiling=profiler.get_reports() )
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
