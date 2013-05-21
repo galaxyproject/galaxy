@@ -832,7 +832,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Add genome-wide data to each track in viz.
         tracks = viz_config.get( 'tracks', [] )
         for track in tracks:
-            dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
+            dataset_dict = track[ 'dataset' ]
+            dataset = self.get_hda_or_ldda( trans, dataset_dict[ 'hda_ldda'], dataset_dict[ 'id' ] )
 
             genome_data = self._get_genome_data( trans, dataset, dbkey )
             if not isinstance( genome_data, str ):

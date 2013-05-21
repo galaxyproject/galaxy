@@ -861,11 +861,17 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = data_mod.Dataset.extend({
+var BackboneTrack = Backbone.RelationalModel.extend({
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'dataset',
+            relatedModel: data_mod.Dataset
+        }
+    ],
 
     initialize: function(options) {
-        // Dataset id is unique ID for now.
-        this.set('id', options.dataset_id);
 
         // -- Set up config settings. -- 
 
@@ -886,7 +892,7 @@ var BackboneTrack = data_mod.Dataset.extend({
             preloaded_data = [];
         }
         this.set('data_manager', new GenomeDataManager({
-            dataset: this,
+            dataset: this.get('dataset'),
             init_data: preloaded_data
         }));
     }
