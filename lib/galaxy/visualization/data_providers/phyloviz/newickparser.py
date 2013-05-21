@@ -77,8 +77,6 @@ class Newick_Parser(Base_Parser):
             childrenNodes += [node]
         return childrenNodes
 
-
-
     def _mapName(self, newickString, nameMap):
         """
         Necessary to replace names of terms inside nexus representation
@@ -108,9 +106,9 @@ class Newick_Parser(Base_Parser):
         newString += newickString[start:]
         return newString
 
-
     def parseNode(self, string, depth):
-        """ Recursive method for parsing newick string, works by stripping down the string into substring
+        """
+        Recursive method for parsing newick string, works by stripping down the string into substring
         of newick contained with brackers, which is used to call itself.
 
         Eg ... ( A, B, (D, E)C, F, G ) ...
