@@ -53,7 +53,7 @@ class DataProviderRegistry( object ):
             elif isinstance( original_dataset.datatype, Tabular ):
                 data_provider_class = ColumnDataProvider
             elif isinstance( original_dataset.datatype, ( Nexus, Newick, Phyloxml ) ):
-                data_provider_class = genome.PhylovizDataProvider
+                data_provider_class = PhylovizDataProvider
 
             data_provider = data_provider_class( original_dataset=original_dataset )
 

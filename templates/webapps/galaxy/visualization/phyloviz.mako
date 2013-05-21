@@ -81,7 +81,7 @@
             position: fixed;
 
         ##          Borrowed from galaxy modal_dialogues
-                    background-color: white;
+            background-color: white;
             border: 1px solid #999;
             border: 1px solid rgba(0, 0, 0, 0.3);
             -webkit-border-radius: 6px;
@@ -157,9 +157,9 @@
 
                 // -- Initialization code |-->
                 phyloviz = new phyloviz_mod.PhylovizView({
-                    data: data,
-                    layout : "Linear",
-                    config :  config
+                    data    : data,
+                    layout  : "Linear",
+                    config  :  config
                 });
 
                 // -- Render viz. --
@@ -169,7 +169,9 @@
 
             $(function firstVizLoad(){       // calls when viz is loaded for the first time
                 var config = JSON.parse( '${ h.to_json_string( config )}');
+                window.config = config;
                 var data = JSON.parse('${h.to_json_string(data)}');
+                window.data = data;
                 initPhyloViz(data, config);
             });
         });
@@ -189,7 +191,6 @@
         <div style="clear: both"></div>
     </div>
 
-
     <div id="phyloVizNavContainer">
         <div id="phyloVizNav">
             %if config["ext"] == "nex" and not config["saved_visualization"]:
@@ -208,10 +209,7 @@
             <div class="navControl">
                 <p>&nbsp;| Alt+click to select nodes</p>
             </div>
-
-
         </div>
-
     </div>
 
     ##  Node Selection Menu
@@ -284,11 +282,6 @@
         </div>
     </div>
 
-
-
-
-
-
     <div class="Panel" id="FloatingMenu" style="display: None;">
 
         <h2>PhyloViz (<a onclick="displayHelp()" href="javascript:void(0);">?</a>)</h2>
@@ -300,13 +293,11 @@
             <div class="hint">4. Minimap: Currently displays an exact but scaled down replicate of the tree, orange bounding box is correct for linear only<br/>
                 Can be switched on or off</div>
             <div class="hint">5. Changing Layouts: Able to change between circular and linear layouts.</div>
-
         </div>
 
         <h5>Scaling & Rotation:</h5>
         <button id="phylovizZoomInBtn" class="" > + </button>
         <button id="phylovizZoomOutBtn" class="" > - </button>
-
 
         <h5>Translation:</h5>
         <button id="phylovizTranslateUpBtn" > Up </button>
@@ -314,8 +305,6 @@
         <br/>
         <button id="phylovizTranslateLeftBtn" > Left </button>
         <button id="phylovizTranslateRightBtn" > Right </button>
-
-
 
         <h5>Others:</h5>
         <button id="phylovizResetBtn" > Reset Zoom/Translate </button>
