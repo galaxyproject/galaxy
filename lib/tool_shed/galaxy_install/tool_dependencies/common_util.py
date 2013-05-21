@@ -131,7 +131,14 @@ def get_env_shell_file_paths( app, elem ):
                         tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )
                         installation_directory = tool_dependency.installation_directory( app )
                         env_shell_file_path = get_env_shell_file_path( installation_directory )
-                        env_shell_file_paths.append( env_shell_file_path )
+                        if env_shell_file_path:
+                            env_shell_file_paths.append( env_shell_file_path )
+                        else:
+                            error_message = "Skipping tool dependency definition because unable to locate env.sh file for tool dependency "
+                            error_message += "type %s, name %s, version %s for repository %s" % \
+                                ( str( tool_dependency_type ), str( tool_dependency_name ), str( tool_dependency_version ), str( repository.name ) )
+                            log.debug( error_message )
+                            continue
                     else:
                         error_message = "Skipping tool dependency definition because unable to locate tool dependency "
                         error_message += "type %s, name %s, version %s for repository %s" % \

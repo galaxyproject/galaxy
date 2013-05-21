@@ -346,6 +346,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     if package_name:
         actions_dict[ 'package_name' ] = package_name
     actions = []
+    all_env_shell_file_paths = []
     for action_elem in actions_elem:
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
@@ -415,7 +416,6 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be 
             # supported.  The above tag set will result in the installed and compiled numpy version 1.7.1 binary to be used when compiling the current
             # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
-            all_env_shell_file_paths = []
             for env_elem in action_elem:
                 if env_elem.tag == 'repository':
                     env_shell_file_paths = common_util.get_env_shell_file_paths( app, env_elem )
