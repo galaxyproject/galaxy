@@ -129,6 +129,7 @@ tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 
 galaxy_tool_shed_url = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_URL', None )
 tool_shed_api_key = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY', None )
+exclude_list_file = os.environ.get( 'GALAXY_INSTALL_TEST_EXCLUDE_REPOSITORIES', 'install_test_exclude.xml' )
 
 if tool_shed_api_key is None:
     print "This script requires the GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY environment variable to be set and non-empty."
@@ -243,6 +244,13 @@ def get_repository_info_from_api( url, repository_info_dict ):
     extended_dict[ 'latest_revision' ] = str( latest_changeset_revision )
     return extended_dict
 
+def get_repository_tuple_from_elem( elem ):
+    attributes = elem.attrib
+    name = attributes.get( 'name', None )
+    owner = attributes.get( 'owner', None )
+    changeset_revision = attributes.get( 'changeset_revision', None )
+    return ( name, owner, changeset_revision )
+
 def get_repositories_to_install( tool_shed_url, latest_revision_only=True ):
     '''
     Get a list of repository info dicts to install. This method expects a json list of dicts with the following structure:
@@ -266,6 +274,7 @@ def get_repositories_to_install( tool_shed_url, latest_revision_only=True ):
                                      skip_tool_test='false' ) )
     api_url = get_api_url( base=tool_shed_url, parts=[ 'repository_revisions' ], params=params )
     base_repository_list = json_from_url( api_url )
+    log.info( 'The api returned %d metadata revisions.', len( base_repository_list ) )
     known_repository_ids = {}
     detailed_repository_list = []
     for repository_to_install_dict in base_repository_list:
@@ -335,6 +344,49 @@ def json_from_url( url ):
         log.exception( 'Error parsing JSON data.' )
         raise
     return parsed_json
+
+def parse_exclude_list( xml_filename ):
+    '''
+    This method should return a list with the following structure:
+    [
+        {
+            'reason': The default reason or the reason specified in this section,
+            'repositories': 
+                [
+                    ( name, owner, changeset revision if changeset revision else None ),
+                    ( name, owner, changeset revision if changeset revision else None )
+                ]
+        },
+        {
+            'reason': The default reason or the reason specified in this section,
+            'repositories': 
+                [
+                    ( name, owner, changeset revision if changeset revision else None ),
+                    ( name, owner, changeset revision if changeset revision else None )
+                ]
+        },
+    ]
+    '''
+    exclude_list = []
+    xml_tree = parse_xml( xml_filename )
+    tool_sheds = xml_tree.findall( 'repositories' )
+    xml_element = None
+    for tool_shed in tool_sheds:
+        if galaxy_tool_shed_url != tool_shed.attrib[ 'tool_shed' ]:
+            continue
+        else:
+            xml_element = tool_shed
+    for reason_section in xml_element:
+        print reason_section
+        reason_text = reason_section.find( 'text' ).text
+        repositories = reason_section.findall( 'repository' )
+        exclude_dict = dict( reason=reason_text, repositories=[] )
+        for repository in repositories:
+            repository_tuple = get_repository_tuple_from_elem( repository )
+            if repository_tuple not in exclude_dict[ 'repositories' ]:
+                exclude_dict[ 'repositories' ].append( repository_tuple )
+        exclude_list.append( exclude_dict )
+    return exclude_list
 
 def register_test_result( url, metadata_id, test_results_dict, repository_info_dict, params ):
     '''
@@ -566,6 +618,10 @@ def main():
     repositories_passed = []
     repositories_failed = []
     repositories_failed_install = []
+    exclude_list = []
+    if os.path.exists( exclude_list_file ):
+        exclude_list = parse_exclude_list( exclude_list_file )
+    log.info( exclude_list )
     try:
         # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
         log.info( "Retrieving repositories to install from the URL:\n%s\n", str( galaxy_tool_shed_url ) )
@@ -623,8 +679,43 @@ def main():
             # Get the name and owner out of the repository info dict.
             name = str( repository_info_dict[ 'name' ] )
             owner = str( repository_info_dict[ 'owner' ] )
-            log.info( "Installing and testing revision %s of repository id %s (%s/%s)...",
-                      str( changeset_revision ), str( repository_id ), owner, name )
+            # Populate the repository_status dict now.
+            repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
+            if 'test_environment' not in repository_status:
+                repository_status[ 'test_environment' ] = {}
+            test_environment = get_test_environment( repository_status[ 'test_environment' ] )
+            test_environment[ 'galaxy_database_version' ] = get_database_version( app )
+            test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
+            repository_status[ 'test_environment' ] = test_environment
+            repository_status[ 'passed_tests' ] = []
+            repository_status[ 'failed_tests' ] = []
+            repository_status[ 'skip_reason' ] = None
+            # Iterate through the list of repositories defined not to be installed. This should be a list of dicts in the following format:
+            # {
+            #     'reason': The default reason or the reason specified in this section,
+            #     'repositories': 
+            #         [
+            #             ( name, owner, changeset revision if changeset revision else None ),
+            #             ( name, owner, changeset revision if changeset revision else None )
+            #         ]
+            # },
+            # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
+            # revision should be skipped. 
+            # TODO: When a repository is selected to be skipped, use the API to update the tool shed with the defined skip reason.
+            skip_this_repository = False
+            skip_because = None
+            for exclude_by_reason in exclude_list:
+                reason = exclude_by_reason[ 'reason' ]
+                exclude_repositories = exclude_by_reason[ 'repositories' ]
+                if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
+                    skip_this_repository = True
+                    skip_because = reason
+                    break
+            if skip_this_repository:
+                log.info( "Not testing revision %s of repository %s owned by %s.", changeset_revision, name, owner )
+                continue
+            else:
+                log.info( "Installing and testing revision %s of repository %s owned by %s...", changeset_revision, name, owner )
             # Explicitly clear tests from twill's test environment.
             remove_generated_tests( app )
             # Use the repository information dict to generate an install method that will install the repository into the embedded
@@ -638,15 +729,6 @@ def main():
             # repository, with tool and repository dependencies also selected for installation.
             result, _ = run_tests( test_config )
             success = result.wasSuccessful()
-            repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
-            if 'test_environment' not in repository_status:
-                repository_status[ 'test_environment' ] = {}
-            test_environment = get_test_environment( repository_status[ 'test_environment' ] )
-            test_environment[ 'galaxy_database_version' ] = get_database_version( app )
-            test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
-            repository_status[ 'test_environment' ] = test_environment
-            repository_status[ 'passed_tests' ] = []
-            repository_status[ 'failed_tests' ] = []
             repository_status[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
             try:
                 repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
@@ -750,16 +832,19 @@ def main():
                     # If the repository does not have a test-data directory, any functional tests in the tool configuration will
                     # fail. Mark the repository as failed and skip installation.
                     log.error( 'Test data is missing for this repository. Updating repository and skipping functional tests.' )
-                    # Record the lack of test data.
-                    for tool in repository.metadata[ 'tools' ]:
-                        tool_id = tool[ 'id' ]
-                        tool_version = tool[ 'version' ]
-                        tool_guid = tool[ 'guid' ]
-                        # In keeping with the standard display layout, add the error message to the dict for each tool individually.
-                        missing_components = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
-                                                   missing_components="Repository %s is missing a test-data directory." % name )
-                        if missing_components not in repository_status[ 'missing_test_components' ]:
-                            repository_status[ 'missing_test_components' ].append( missing_components )
+                    # Record the lack of test data if the repository metadata defines tools.
+                    if 'tools' in repository.metadata:
+                        for tool in repository.metadata[ 'tools' ]:
+                            tool_id = tool[ 'id' ]
+                            tool_version = tool[ 'version' ]
+                            tool_guid = tool[ 'guid' ]
+                            # In keeping with the standard display layout, add the error message to the dict for each tool individually.
+                            missing_components = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
+                                                       missing_components="Repository %s is missing a test-data directory." % name )
+                            if missing_components not in repository_status[ 'missing_test_components' ]:
+                                repository_status[ 'missing_test_components' ].append( missing_components )
+                    else:
+                        continue
                     # Record the status of this repository in the tool shed.
                     set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
                     params[ 'tools_functionally_correct' ] = False
