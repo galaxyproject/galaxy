@@ -225,13 +225,25 @@ def get_api_url( base, parts=[], params=None, key=None ):
         url += '&%s' % params
     return url
 
+def get_latest_downloadable_changeset_revision( url, name, owner ):
+    api_url_parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
+    params = urllib.urlencode( dict( name=name, owner=owner ) )
+    api_url = get_api_url( url, api_url_parts, params )
+    changeset_revisions = json_from_url( api_url )
+    if changeset_revisions:
+        return changeset_revisions[ -1 ]
+    else:
+        return '000000000000'
+
 def get_repository_info_from_api( url, repository_info_dict ):
     parts = [ 'api', 'repositories', repository_info_dict[ 'repository_id' ] ]
     api_url = get_api_url( base=url, parts=parts )
     extended_dict = json_from_url( api_url )
+    latest_changeset_revision = get_latest_downloadable_changeset_revision( url, extended_dict[ 'name' ], extended_dict[ 'owner' ] )
+    extended_dict[ 'latest_revision' ] = str( latest_changeset_revision )
     return extended_dict
 
-def get_repositories_to_install( location, source='file', format='json' ):
+def get_repositories_to_install( tool_shed_url, latest_revision_only=True ):
     '''
     Get a list of repository info dicts to install. This method expects a json list of dicts with the following structure:
     [
@@ -246,24 +258,49 @@ def get_repositories_to_install( location, source='file', format='json' ):
     ]
     NOTE: If the tool shed URL specified in any dict is not present in the tool_sheds_conf.xml, the installation will fail.
     '''
-    if source == 'file':
-        listing = file( location, 'r' ).read()
-    elif source == 'url':
-        assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
-        params = urllib.urlencode( dict( do_not_test='false', 
-                                         downloadable='true', 
-                                         malicious='false',
-                                         includes_tools='true',
-                                         skip_tool_test='false' ) )
-        api_url = get_api_url( base=location, parts=[ 'repository_revisions' ], params=params )
-        if format == 'json':
-            return json_from_url( api_url )
+    assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
+    params = urllib.urlencode( dict( do_not_test='false', 
+                                     downloadable='true', 
+                                     malicious='false',
+                                     includes_tools='true',
+                                     skip_tool_test='false' ) )
+    api_url = get_api_url( base=tool_shed_url, parts=[ 'repository_revisions' ], params=params )
+    base_repository_list = json_from_url( api_url )
+    known_repository_ids = {}
+    detailed_repository_list = []
+    for repository_to_install_dict in base_repository_list:
+        # We need to get some details from the tool shed API, such as repository name and owner, to pass on to the
+        # module that will generate the install methods.
+        repository_info_dict = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
+        if repository_info_dict[ 'latest_revision' ] == '000000000000':
+            continue
+        owner = repository_info_dict[ 'owner' ] 
+        name = repository_info_dict[ 'name' ]
+        changeset_revision = repository_to_install_dict[ 'changeset_revision' ]
+        repository_id = repository_to_install_dict[ 'repository_id' ]
+        # We are testing deprecated repositories, because it is possible that a deprecated repository contains valid
+        # and functionally correct tools that someone has previously installed. Deleted repositories have never been installed,
+        # and therefore do not need to be checked. If they are undeleted, this script will then test them the next time it runs.
+        if repository_info_dict[ 'deleted' ]:
+            log.info( "Skipping revision %s of repository id %s (%s/%s) since the repository is deleted...",
+                      changeset_revision, 
+                      repository_id, 
+                      name, 
+                      owner )
+            continue
+        # Now merge the dict returned from /api/repository_revisions with the detailed dict we just retrieved.
+        if latest_revision_only:
+            if changeset_revision == repository_info_dict[ 'latest_revision' ]:
+                detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
+        else:
+            detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
+    repositories_tested = len( detailed_repository_list )
+    if latest_revision_only:
+        skipped_previous = ' and metadata revisions that are not the most recent'
     else:
-        raise AssertionError( 'Do not know how to handle source type %s.' % source )
-    if format == 'json':
-        return from_json_string( listing )
-    else:
-        raise AssertonError( 'Unknown format %s.' % format )
+        skipped_previous = ''
+    log.info( 'After removing deleted repositories%s from the list, %d remain to be tested.', skipped_previous, repositories_tested )
+    return detailed_repository_list
 
 def get_tool_info_from_test_id( test_id ):
     '''
@@ -286,13 +323,7 @@ def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
     return tool_test_results
 
 def is_latest_downloadable_revision( url, repository_info_dict ):
-    api_url_parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
-    params = urllib.urlencode( dict( name=repository_info_dict[ 'name' ], owner=repository_info_dict[ 'owner' ] ) )
-    api_url = get_api_url( url, api_url_parts, params )
-    changeset_revisions = json_from_url( api_url )
-    # The get_ordered_installable_revisions returns a list of changeset hashes, with the last hash in the list
-    # being the most recent installable revision.
-    latest_revision = changeset_revisions.pop()
+    latest_revision = get_latest_downloadable_changeset_revision( url, name=repository_info_dict[ 'name' ], owner=repository_info_dict[ 'owner' ] )
     return str( repository_info_dict[ 'changeset_revision' ] ) == str( latest_revision )
 
 def json_from_url( url ):
@@ -532,41 +563,25 @@ def main():
                                                                shed_tool_data_table_config=None, 
                                                                persist=False )
     # Initialize some variables for the summary that will be printed to stdout.
-    repositories_tested = 0
     repositories_passed = []
     repositories_failed = []
     repositories_failed_install = []
     try:
-        detailed_repository_list = []
         # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
         log.info( "Retrieving repositories to install from the URL:\n%s\n", str( galaxy_tool_shed_url ) )
-        repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, source='url' )
+        if '-check_all_revisions' not in sys.argv:
+            repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, latest_revision_only=True )
+        else:
+            repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, latest_revision_only=False )
         log.info( "Retrieved %d repositories from the API.", len( repositories_to_install ) )
-        for repository_to_install_dict in repositories_to_install:
-            # We need to get some details from the tool shed API, such as repository name and owner, to pass on to the
-            # module that will generate the install methods.
-            repository_info_dict = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
-            # We are testing deprecated repositories, because it is possible that a deprecated repository contains valid
-            # and functionally correct tools that someone has previously installed. Deleted repositories have never been installed,
-            # and therefore do not need to be checked. If they are undeleted, this script will then test them the next time it runs.
-            if repository_info_dict[ 'deleted' ]:
-                log.info( "Skipping revision %s of repository id %s (%s/%s) since the repository is deleted...",
-                          repository_to_install_dict[ 'changeset_revision' ], 
-                          repository_to_install_dict[ 'repository_id' ], 
-                          repository_info_dict[ 'owner' ], 
-                          repository_info_dict[ 'name' ] )
-                continue
-            # Now merge the dict returned from /api/repository_revisions with the detailed dict we just retrieved.
-            detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
-        repositories_tested = len( detailed_repository_list )
-        log.info( 'After removing deleted repositories from the list, %d remain to be tested.', repositories_tested )
         if '-list_repositories' in sys.argv:
             log.info( "The API returned the following repositories, not counting deleted:" )
-            for repository_info_dict in detailed_repository_list:
+            for repository_info_dict in repositories_to_install:
                 log.info( "%s owned by %s changeset revision %s",
                           repository_info_dict.get( 'name', None ),
                           repository_info_dict.get( 'owner', None ),
                           repository_info_dict.get( 'changeset_revision', None ) )
+        repositories_tested = len( repositories_to_install )
         # This loop will iterate through the list of repositories generated by the above code, having already filtered out any
         # that were marked as deleted. For each repository, it will generate a test method that will use Twill to install that
         # repository into the embedded Galaxy application that was started up, selecting to install repository and tool
@@ -575,7 +590,7 @@ def main():
         # it will record the result of the tests, and if any failed, the traceback and captured output of the tool that was run.
         # After all tests have completed, the repository is uninstalled, so that the previous test cases don't interfere with
         # the next repository's functional tests.
-        for repository_info_dict in detailed_repository_list:
+        for repository_info_dict in repositories_to_install:
             """
             Each repository_info_dict looks something like:
             {
@@ -600,8 +615,8 @@ def main():
             """
             repository_status = dict()
             params = dict()
-            repository_id = repository_info_dict.get( 'repository_id', None )
-            changeset_revision = repository_info_dict.get( 'changeset_revision', None )
+            repository_id = str( repository_info_dict.get( 'repository_id', None ) )
+            changeset_revision = str( repository_info_dict.get( 'changeset_revision', None ) )
             metadata_revision_id = repository_info_dict.get( 'id', None )
             # Add the URL for the tool shed we're installing from, so the automated installation methods go to the right place.
             repository_info_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
