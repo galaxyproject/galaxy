@@ -74,7 +74,7 @@ class UploadController( BaseUIController ):
                     fd, uploaded_file_name = tempfile.mkstemp()
                     uploaded_file = open( uploaded_file_name, 'wb' )
                     while 1:
-                        chunk = stream.read( CHUNK_SIZE )
+                        chunk = stream.read( util.CHUNK_SIZE )
                         if not chunk:
                             break
                         uploaded_file.write( chunk )
