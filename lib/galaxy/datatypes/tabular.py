@@ -328,7 +328,6 @@ class Tabular( data.Text ):
         """
         Returns a list of visualizations for datatype.
         """
-
         # Can visualize tabular data as scatterplot if there are 2+ numerical
         # columns.
         num_numerical_cols = 0
