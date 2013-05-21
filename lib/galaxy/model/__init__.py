@@ -1662,6 +1662,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         # other model classes.
         hda = self
         rval = dict( id = hda.id,
+                     hda_ldda = 'hda',
                      uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
                      hid = hda.hid,
                      file_ext = hda.ext,
@@ -2078,6 +2079,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         except OSError:
             file_size = 0
         rval = dict( id = ldda.id,
+                     hda_ldda = 'ldda',
                      model_class = self.__class__.__name__,
                      name = ldda.name,
                      deleted = ldda.deleted,
