@@ -1650,6 +1650,7 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata \
+        and repository_metadata.tool_test_results is not None \
         and not repository_metadata.missing_test_components \
         and not repository_metadata.tools_functionally_correct \
         and not repository_metadata.test_install_error:
