@@ -1,5 +1,6 @@
 import logging
 import os
+import pkg_resources
 import shutil
 import tempfile
 from galaxy import util
@@ -9,10 +10,14 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
 
 from galaxy import eggs
+
 eggs.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
+
+pkg_resources.require( 'elementtree' )
+from elementtree.ElementTree import tostring
 
 log = logging.getLogger( __name__ )
 
@@ -57,13 +62,13 @@ def check_file_content_for_html_and_images( file_path ):
         message = 'The file "%s" contains image content.\n' % str( file_path )
     return message
 
-def create_and_write_tmp_file( text ):
+def create_and_write_tmp_file( root ):
     fh = tempfile.NamedTemporaryFile( 'wb' )
     tmp_filename = fh.name
     fh.close()
     fh = open( tmp_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n' )
-    fh.write( text )
+    fh.write( tostring( root, 'utf-8' ) )
     fh.close()
     return tmp_filename
 
@@ -255,7 +260,6 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                             package_altered = True
                             if not altered:
                                 altered = True
-
                     elif package_elem.tag == 'install':
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
@@ -277,8 +281,9 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                                     if package_altered:
                                         actions_elem[ action_index ] = action_elem
                             if package_altered:
-                                root_elem[ actions_index ] = actions_elem
-
+                                package_elem[ actions_index ] = actions_elem
+                        if package_altered:
+                            root_elem[ package_index ] = package_elem
                 if package_altered:
                     root[ root_index ] = root_elem
         return altered, root

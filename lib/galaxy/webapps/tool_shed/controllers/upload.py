@@ -131,7 +131,7 @@ class UploadController( BaseUIController ):
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                         altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                            tmp_filename = commit_util.create_and_write_tmp_file( root )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
@@ -140,7 +140,7 @@ class UploadController( BaseUIController ):
                         # are missing and if so, set them appropriately.
                         altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                            tmp_filename = commit_util.create_and_write_tmp_file( root )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
@@ -268,13 +268,13 @@ class UploadController( BaseUIController ):
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root )
                         shutil.move( tmp_filename, uploaded_file_name )
                 if ok:
                     repo_path = os.path.join( full_path, relative_path )
@@ -330,13 +330,13 @@ class UploadController( BaseUIController ):
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root )
                         shutil.move( tmp_filename, uploaded_file_name )
             return commit_util.handle_directory_changes( trans,
                                                          repository,
