@@ -952,6 +952,8 @@ class Tool( object ):
         self.version = None
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
+        #populate toolshed repository info, if available
+        self.populate_tool_shed_info()
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script
@@ -1775,6 +1777,17 @@ class Tool( object ):
             version = requirement_elem.get( "version", None )
             requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
+    
+    def populate_tool_shed_info( self ):
+        if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
+            repository_id = self.app.security.decode_id( self.repository_id )
+            tool_shed_repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( repository_id )
+            if tool_shed_repository:
+                self.tool_shed = tool_shed_repository.tool_shed
+                self.repository_name = tool_shed_repository.name
+                self.repository_owner = tool_shed_repository.owner
+                self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+    
     def check_workflow_compatible( self, root ):
         """
         Determine if a tool can be used in workflows. External tools and the
