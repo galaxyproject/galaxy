@@ -883,48 +883,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         """
         Returns a page that controls and renders a scatteplot graph.
         """
-        # Get HDA.
         hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        hda_dict = hda.get_api_value()
-        hda_dict[ 'id' ] = dataset_id
-
-        if( ( hda_dict[ 'metadata_column_names' ] == None )
-        and ( hasattr( hda.datatype, 'column_names' ) ) ):
-                hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
-
-        # try to get the first line (assuming it's a header)
-        #TODO: doesn't belong here
-        try:
-            num_comment_lines = 1
-            if hda_dict[ 'metadata_comment_lines' ]:
-                num_comment_lines = hda_dict[ 'metadata_comment_lines' ]
-
-            infile = open( hda.file_name )
-            for index, line in enumerate( infile ):
-                if 'comment_lines' not in hda_dict:
-                    hda_dict[ 'comment_lines' ] = []
-                hda_dict[ 'comment_lines' ].append( line )
-                if index >= num_comment_lines:
-                    break
-            infile.close()
-
-        except Exception, exc:
-            if infile:
-                infile.close()
-            log.error( str( exc ) )
-
-        history_id = trans.security.encode_id( hda.history.id )
-        
-        #TODO: add column data
-        # Read data.
-        #data_provider = ColumnDataProvider( original_dataset=hda, **kwargs )
-        #data = data_provider.get_data()
-        
-        # Return plot.
         return trans.fill_template_mako( "visualization/scatterplot.mako",
-                                         hda=hda_dict,
-                                         historyID=history_id,
-                                         kwargs=kwargs )
+                                         hda=hda,
+                                         query_args=kwargs )
 
     @web.expose    
     def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):
