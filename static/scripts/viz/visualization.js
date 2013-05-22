@@ -68,7 +68,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
-    return ( 'isResolved' in d );
+    return ('promise' in d);
 };
 
 // --------- Models ---------
@@ -331,14 +331,6 @@ var GenomeDataManager = Cache.extend({
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
-        // Debugging:
-        //console.log("get_data", low, high, mode);
-        /*
-        console.log("cache contents:")
-        for (var i = 0; i < this.key_ary.length; i++) {
-            console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
-        }
-        */
                 
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
@@ -348,8 +340,7 @@ var GenomeDataManager = Cache.extend({
         }
 
         //
-        // Look in cache for data that can be used. Data can be reused if it
-        // has the requested data and is not summary tree and has details.
+        // Look in cache for data that can be used.
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
         //
