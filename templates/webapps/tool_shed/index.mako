@@ -131,15 +131,14 @@
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_invalid_tools' )}">Latest revision: invalid tools</a>
                             </div>
-                        %else:
-                            <div class="toolSectionPad"></div>
-                            <div class="toolSectionTitle">
-                                Available Actions
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
-                            </div>
                         %endif
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            Available Actions
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
+                        </div>
                         %if can_review_repositories:
                             <div class="toolSectionPad"></div>
                             <div class="toolSectionTitle">
