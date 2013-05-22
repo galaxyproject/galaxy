@@ -3264,7 +3264,11 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
     def __nonzero__( self ):
         return bool( self.obj ) #FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
     def __str__( self ):
-        return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+        try:
+            return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+        except:
+            #Most likely None, which lacks __module__. 
+            return str( self.obj )
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 
