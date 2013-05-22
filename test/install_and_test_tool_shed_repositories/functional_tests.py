@@ -368,24 +368,34 @@ def parse_exclude_list( xml_filename ):
     ]
     '''
     exclude_list = []
+    exclude_verbose = []
     xml_tree = parse_xml( xml_filename )
     tool_sheds = xml_tree.findall( 'repositories' )
-    xml_element = None
+    xml_element = []
+    exclude_count = 0
     for tool_shed in tool_sheds:
         if galaxy_tool_shed_url != tool_shed.attrib[ 'tool_shed' ]:
             continue
         else:
             xml_element = tool_shed
     for reason_section in xml_element:
-        print reason_section
         reason_text = reason_section.find( 'text' ).text
         repositories = reason_section.findall( 'repository' )
         exclude_dict = dict( reason=reason_text, repositories=[] )
         for repository in repositories:
             repository_tuple = get_repository_tuple_from_elem( repository )
             if repository_tuple not in exclude_dict[ 'repositories' ]:
+                exclude_verbose.append( repository_tuple )
+                exclude_count += 1
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
+    log.debug( '%d repositories excluded from testing...', exclude_count )
+    if '-list_repositories' in sys.argv:
+        for name, owner, changeset_revision in exclude_verbose:
+            if changeset_revision:
+                log.debug( 'Repository %s owned by %s, changeset revision %s.', name, owner, changeset_revision )
+            else:
+                log.debug( 'Repository %s owned by %s, all revisions.', name, owner )
     return exclude_list
 
 def register_test_result( url, metadata_id, test_results_dict, repository_info_dict, params ):
@@ -620,8 +630,8 @@ def main():
     repositories_failed_install = []
     exclude_list = []
     if os.path.exists( exclude_list_file ):
+        log.info( 'Loading the list of repositories excluded from testing from the file %s...', exclude_list_file )
         exclude_list = parse_exclude_list( exclude_list_file )
-    log.info( exclude_list )
     try:
         # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
         log.info( "Retrieving repositories to install from the URL:\n%s\n", str( galaxy_tool_shed_url ) )
