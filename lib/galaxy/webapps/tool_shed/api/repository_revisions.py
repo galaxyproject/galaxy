@@ -4,7 +4,7 @@ from galaxy.web.framework.helpers import time_ago
 from tool_shed.util import metadata_util
 from galaxy import web
 from galaxy import util
-from galaxy.model.orm import and_
+from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
@@ -62,21 +62,17 @@ class RepositoryRevisionsController( BaseAPIController ):
         skip_tool_test = kwd.get( 'skip_tool_test', None )
         if skip_tool_test is not None:
             skip_tool_test = util.string_as_bool( skip_tool_test )
+            skipped_metadata_ids_subquery = select( [ trans.app.model.SkipToolTest.table.c.repository_metadata_id ] )
+            if skip_tool_test:
+                clause_list.append( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) )
+            else:
+                clause_list.append( not_( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) ) )
         # Generate and execute the query.
         try:
-            if skip_tool_test:
-                # The skip_tool_test filter was received as True.
-                query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
-                                        .join( trans.model.SkipToolTest ) \
-                                        .filter( and_( *clause_list ) ) \
-                                        .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
-                                        .all()
-            else:
-                # The skip_tool_test filter was not received or it was received as False.
-                query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
-                                        .filter( and_( *clause_list ) ) \
-                                        .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
-                                        .all()
+            query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
+                                    .filter( and_( *clause_list ) ) \
+                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
+                                    .all()
             for repository_metadata in query:
                 repository_metadata_dict = repository_metadata.get_api_value( view='collection',
                                                                               value_mapper=default_value_mapper( trans, repository_metadata ) )
