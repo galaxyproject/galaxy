@@ -6,6 +6,7 @@ import tempfile
 from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.util import json
+from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -219,6 +220,12 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
 def handle_repository_dependency_elem( trans, elem ):
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
     populated = False
+    toolshed = elem.get( 'toolshed' )
+    if not toolshed:
+        # Default the setting to the current tool shed.
+        toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
+        elem.attrib[ 'toolshed' ] = toolshed
+        populated = True
     name = elem.get( 'name' )
     owner = elem.get( 'owner' )
     changeset_revision = elem.get( 'changeset_revision' )
