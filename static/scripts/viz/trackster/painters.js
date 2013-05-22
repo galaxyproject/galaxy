@@ -1582,6 +1582,11 @@ extend(VariantPainter.prototype, Painter.prototype, {
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
 
+            // Only draw locus data if it's in viewing region.
+            if (pos < this.view_start || pos > this.view_end) {
+                continue;
+            }
+
             // Compute start for drawing variants marker, text.            
             draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
             char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
