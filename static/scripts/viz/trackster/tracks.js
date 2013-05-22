@@ -3139,6 +3139,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var tile_drawn = $.Deferred();
         track.tile_cache.set_elt(key, tile_drawn);
         $.when.apply($, get_tile_data()).then( function() {
+            // If deferred objects ever show up in tile data, that is likely because a
+            // Deferred-subsetting interaction failed. Specifically, a Deferred for a superset 
+            // was returned but then couldn't be used). It's not clear whether this will happen 
+            // in practice, and currently the code doesn't handle it. It could probably handle it
+            // by recursively calling draw_helper.
             var tile_data = get_tile_data(),
                 tracks_data = tile_data,
                 seq_data;
@@ -3313,10 +3318,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Returns true if data can be subsetted. Defaults to false to ensure data is fetched when needed.
+     * Returns true if data can be subsetted.
      */
     can_subset: function(data) {
-        return false;  
+        // Do not subset entries with a message or data with no detail.
+        if (data.dataset_type === 'bigwig' || data.message || data.extra_info === "no_detail")  {
+            return false;
+        }
+
+        return true;
     },
     
     /**
@@ -4116,18 +4126,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         else {
             return true;
         }
-    },
-
-    /**
-     * Returns true if data can be subsetted.
-     */
-    can_subset: function(data) {
-        // Do not subset entries with a message or data with no detail.
-        if (data.dataset_type === 'bigwig' || data.message || data.extra_info === "no_detail")  {
-            return false;
-        }
-
-        return true;
     }
 });
 
