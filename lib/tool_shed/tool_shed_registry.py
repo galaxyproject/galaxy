@@ -11,7 +11,7 @@ log = logging.getLogger( __name__ )
 class Registry( object ):
 
     def __init__( self, root_dir=None, config=None ):
-        self.tool_sheds      = odict()
+        self.tool_sheds = odict()
         self.tool_sheds_auth = odict()
         if root_dir and config:
             # Parse tool_sheds_conf.xml
@@ -20,17 +20,17 @@ class Registry( object ):
             log.debug( 'Loading references to tool sheds from %s' % config )
             for elem in root.findall( 'tool_shed' ):
                 try:
-                    name     = elem.get( 'name', None )
-                    url      = elem.get( 'url', None )
+                    name = elem.get( 'name', None )
+                    url = elem.get( 'url', None )
                     username = elem.get( 'user', None )
                     password = elem.get( 'pass', None )
                     if name and url:
-                        self.tool_sheds[ name ]      = url
+                        self.tool_sheds[ name ] = url
                         self.tool_sheds_auth[ name ] = None
                         log.debug( 'Loaded reference to tool shed: %s' % name )
                     if name and url and username and password:
                         pass_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-                        pass_mgr.add_password(None, url, username, password)
+                        pass_mgr.add_password( None, url, username, password )
                         self.tool_sheds_auth[ name ] = pass_mgr
                 except Exception, e:
                     log.warning( 'Error loading reference to tool shed "%s", problem: %s' % ( name, str( e ) ) )
