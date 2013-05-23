@@ -540,18 +540,19 @@ class UsesHistoryDatasetAssociationMixin:
     def get_hda_dict( self, trans, hda ):
         """Return full details of this HDA in dictionary form.
         """
+        #precondition: the user's access to this hda has already been checked
+        #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
         hda_dict = hda.get_api_value( view='element' )
-        history = hda.history
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        can_access_hda = ( trans.user_is_admin() or can_access_hda )
-        hda_dict[ 'accessible' ] = can_access_hda
+
+        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        hda_dict[ 'accessible' ] = True
 
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
-        if ( hda.deleted and purged ) or not can_access_hda:
+        if ( hda.deleted and purged ):
             #TODO: get_api_value should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
@@ -559,7 +560,7 @@ class UsesHistoryDatasetAssociationMixin:
             hda_dict[ 'file_name' ] = hda.file_name
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
-            history_id = trans.security.encode_id( history.id ),
+            history_id = trans.security.encode_id( hda.history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
 
         # indeces, assoc. metadata files, etc.
@@ -591,6 +592,72 @@ class UsesHistoryDatasetAssociationMixin:
                 hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
+
+    def profile_get_hda_dict( self, trans, hda ):
+        """Profiles returning full details of this HDA in dictionary form.
+        """
+        from galaxy.util.debugging import SimpleProfiler
+        profiler = SimpleProfiler()
+        profiler.start()
+
+        hda_dict = hda.get_api_value( view='element' )
+        profiler.report( '\t\t get_api_value' )
+        history = hda.history
+        hda_dict[ 'api_type' ] = "file"
+
+        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        hda_dict[ 'accessible' ] = can_access_hda
+        profiler.report( '\t\t accessible' )
+
+        # ---- return here if deleted AND purged OR can't access
+        purged = ( hda.purged or hda.dataset.purged )
+        if ( hda.deleted and purged ) or not can_access_hda:
+            #TODO: get_api_value should really go AFTER this - only summary data
+            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
+
+        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            hda_dict[ 'file_name' ] = hda.file_name
+        profiler.report( '\t\t file_name' )
+
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
+            history_id = trans.security.encode_id( history.id ),
+            history_content_id = trans.security.encode_id( hda.id ) )
+        profiler.report( '\t\t download_url' )
+
+        # indeces, assoc. metadata files, etc.
+        meta_files = []
+        for meta_type in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
+                meta_files.append( dict( file_type=meta_type ) )
+        if meta_files:
+            hda_dict[ 'meta_files' ] = meta_files
+        profiler.report( '\t\t meta_files' )
+
+        # currently, the viz reg is optional - handle on/off
+        if trans.app.visualizations_registry:
+            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+        else:
+            hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        profiler.report( '\t\t visualizations' )
+        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+        #           when the visualizations button is clicked (instead of preloading/pre-checking)
+
+        # ---- return here if deleted
+        if hda.deleted and not purged:
+            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
+
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
+        if( ( hda.state in [ 'running', 'queued' ] )
+        and ( hda.creating_job and hda.creating_job.tool_id ) ):
+            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+            if tool_used and tool_used.force_history_refresh:
+                hda_dict[ 'force_history_refresh' ] = True
+            profiler.report( '\t\t force_history_refresh' )
+
+        return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
 
     def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
         return trans.security.encode_dict_ids({

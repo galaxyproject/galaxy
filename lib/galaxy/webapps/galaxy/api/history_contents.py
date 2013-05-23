@@ -54,7 +54,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                             hda_dict = self.get_hda_dict( trans, hda )
                             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
                             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-                            #rval.append( self.get_hda_dict( trans, hda ) )
                             rval.append( hda_dict )
 
                         except Exception, exc:
@@ -115,6 +114,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     check_ownership=False, check_accessible=True )
 
             else:
+                #TODO: do we really need the history?
                 history = self.get_history( trans, history_id,
                     check_ownership=True, check_accessible=True, deleted=False )
                 hda = self.get_history_dataset_association( trans, history, id,

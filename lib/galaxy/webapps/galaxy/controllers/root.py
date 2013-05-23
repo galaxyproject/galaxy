@@ -212,6 +212,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
         history_dictionary = {}
         hda_dictionaries   = []
+        import pprint
         try:
             history = trans.get_history( create=True )
             profiler.report( 'trans.get_history' )
@@ -221,8 +222,10 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
             for hda in hdas:
                 try:
-                    hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+                    ( hda_profiler, hda_dict ) = self.profile_get_hda_dict( trans, hda )
+                    profiler.reports.extend( hda_profiler.get_reports() )
                     profiler.report( '\t hda -> dictionary (%s)' %( hda.name ) )
+                    hda_dictionaries.append( hda_dict )
 
                 except Exception, exc:
                     # don't fail entire list if hda err's, record and move on
