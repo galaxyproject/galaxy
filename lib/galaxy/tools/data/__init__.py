@@ -273,9 +273,12 @@ class TabularToolDataTable( ToolDataTable ):
             found_column = False
             for name, index in self.columns.iteritems():
                 if index == i:
-                    rval.append( name )
+                    if not found_column:
+                        rval.append( name )
+                    elif name == 'value':
+                        #the column named 'value' always has priority over other named columns
+                        rval[ -1 ] = name
                     found_column = True
-                    break
             if not found_column:
                 rval.append( None )
         return rval
