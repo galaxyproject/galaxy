@@ -22,6 +22,7 @@ from fabric.api import settings
 
 log = logging.getLogger( __name__ )
 
+CMD_SEPARATOR = '__CMD_SEP__'
 INSTALLATION_LOG = 'INSTALLATION.log'
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
@@ -48,6 +49,29 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     if return_output:
         return output
     return output.return_code
+
+def handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, set_prior_environment_commands ):
+    env_var_value = env_var_dict[ 'value' ]
+    if '$ENV[' in env_var_value and ']' in env_var_value:
+        # Pull out the name of the environment variable to populate.
+        inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
+        to_replace = '$ENV[%s]' % inherited_env_var_name
+        # Build a command line that outputs CMD_SEPARATOR + environment variable value + CMD_SEPARATOR.
+        set_prior_environment_commands.extend( [ "echo '%s'" % CMD_SEPARATOR, 'echo $%s' % inherited_env_var_name, "echo '%s'" % CMD_SEPARATOR ] )
+        command = ' ; '.join( set_prior_environment_commands )
+        # Run the command and capture the output.
+        command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True )
+        # And extract anything between the two instances of CMD_SEPARATOR.
+        environment_variable_value = command_return.split( CMD_SEPARATOR )[1].split( CMD_SEPARATOR )[0].strip( '\n' )
+        if environment_variable_value:
+            log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, environment_variable_value )
+            env_var_value = env_var_value.replace( to_replace, environment_variable_value )
+        else:
+            # If the return is empty, replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
+            log.error( 'Environment variable %s not found, removing from set_environment.', inherited_env_var_name )
+            env_var_value = env_var_value.replace( to_replace, '$%s' % inherited_env_var_name )
+        env_var_dict[ 'value' ] = env_var_value
+    return env_var_dict
 
 def install_virtualenv( app, venv_dir ):
     if not os.path.exists( venv_dir ):
@@ -149,10 +173,18 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                    destination_dir=os.path.join( action_dict[ 'destination' ] ) )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
+                            # Build a command line from the prior_installation_required, in case an environment variable is referenced
+                            # in the set_environment action.
+                            cmds = []
+                            for env_shell_file_path in env_shell_file_paths:
+                                for i, env_setting in enumerate( open( env_shell_file_path ) ):
+                                    cmds.append( env_setting.strip( '\n' ) )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
-                                cmd = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                # Check for the presence of the $ENV[] key string and populate it if possible.
+                                env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
+                                env_command = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                                return_code = handle_command( app, tool_dependency, install_dir, env_command )
                                 if return_code:
                                     return
                         elif action_type == 'set_environment_for_install':
