@@ -1,6 +1,6 @@
 import logging
 import os
-from galaxy import util
+from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -10,7 +10,7 @@ def data_manager_config_elems_to_xml_file( app, config_elems, config_filename ):
     fh = open( config_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )#% ( shed_tool_conf_filename ))
     for elem in config_elems:
-        fh.write( util.xml_to_string( elem, pretty=True ) )
+        fh.write( xml_util.xml_to_string( elem ) )
     fh.write( '</data_managers>\n' )
     fh.close()
 
@@ -21,7 +21,7 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
         for tool_tup in repository_tools_tups:
             repository_tools_by_guid[ tool_tup[ 1 ] ] = dict( tool_config_filename=tool_tup[ 0 ], tool=tool_tup[ 2 ] )
         # Load existing data managers.
-        config_elems = [ elem for elem in util.parse_xml( shed_data_manager_conf_filename ).getroot() ]
+        config_elems = [ elem for elem in xml_util.parse_xml( shed_data_manager_conf_filename ).getroot() ]
         repo_data_manager_conf_filename = metadata_dict['data_manager'].get( 'config_filename', None )
         if repo_data_manager_conf_filename is None:
             log.debug( "No data_manager_conf.xml file has been defined." )
@@ -29,13 +29,13 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
         data_manager_config_has_changes = False
         relative_repo_data_manager_dir = os.path.join( shed_config_dict.get( 'tool_path', '' ), relative_install_dir )
         repo_data_manager_conf_filename = os.path.join( relative_repo_data_manager_dir, repo_data_manager_conf_filename )
-        tree = util.parse_xml( repo_data_manager_conf_filename )
+        tree = xml_util.parse_xml( repo_data_manager_conf_filename )
         root = tree.getroot()
         for elem in root:
             if elem.tag == 'data_manager':
                 data_manager_id = elem.get( 'id', None )
                 if data_manager_id is None:
-                    log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" % ( util.xml_to_string( elem ) ) )
+                    log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" % ( xml_util.xml_to_string( elem ) ) )
                     continue
                 data_manager_dict = metadata_dict['data_manager'].get( 'data_managers', {} ).get( data_manager_id, None )
                 if data_manager_dict is None:
@@ -77,7 +77,7 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
                 if data_manager:
                     rval.append( data_manager )
             else:
-                log.warning( "Encountered unexpected element '%s':\n%s" % ( elem.tag, util.xml_to_string( elem ) ) )
+                log.warning( "Encountered unexpected element '%s':\n%s" % ( elem.tag, xml_util.xml_to_string( elem ) ) )
             config_elems.append( elem )
             data_manager_config_has_changes = True
         # Persist the altered shed_data_manager_config file.
@@ -89,7 +89,7 @@ def remove_from_data_manager( app, repository ):
     metadata_dict = repository.metadata
     if metadata_dict and 'data_manager' in metadata_dict:
         shed_data_manager_conf_filename = app.config.shed_data_manager_config_file
-        tree = util.parse_xml( shed_data_manager_conf_filename )
+        tree = xml_util.parse_xml( shed_data_manager_conf_filename )
         root = tree.getroot()
         assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
         guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]

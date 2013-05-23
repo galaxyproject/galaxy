@@ -1,8 +1,8 @@
 import os
 import urllib2
-from galaxy import util
 from galaxy.util.odict import odict
 from tool_shed.util import encoding_util
+from tool_shed.util import xml_util
 
 REPOSITORY_OWNER = 'devteam'
 
@@ -11,7 +11,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
     migrated_tool_configs_dict = odict()
-    tree = util.parse_xml( tools_xml_file_path )
+    tree = xml_util.parse_xml( tools_xml_file_path )
     root = tree.getroot()
     tool_shed = root.get( 'name' )
     tool_shed_url = get_tool_shed_url_from_tools_xml_file_path( app, tool_shed )
@@ -48,7 +48,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
             # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
             missing_tool_configs_dict = odict()
             for tool_panel_config in tool_panel_configs:
-                tree = util.parse_xml( tool_panel_config )
+                tree = xml_util.parse_xml( tool_panel_config )
                 root = tree.getroot()
                 for elem in root:
                     if elem.tag == 'tool':
@@ -78,7 +78,7 @@ def get_non_shed_tool_panel_configs( app ):
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
         # <toolbox tool_path="../shed_tools">
-        tree = util.parse_xml( config_filename )
+        tree = xml_util.parse_xml( config_filename )
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
         if tool_path is None:

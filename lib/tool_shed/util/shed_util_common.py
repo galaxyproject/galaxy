@@ -14,7 +14,7 @@ from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
 from tool_shed.util import common_util
-from xml.etree import ElementTree as XmlET
+from tool_shed.util import xml_util
 from galaxy import eggs
 import pkg_resources
 
@@ -36,17 +36,6 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
-
-
-class CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
-    def __init__ ( self, html=0, target=None ):
-        XmlET.XMLTreeBuilder.__init__( self, html, target )
-        self._parser.CommentHandler = self.handle_comment
-    
-    def handle_comment ( self, data ):
-        self._target.start( XmlET.Comment, {} )
-        self._target.data( data )
-        self._target.end( XmlET.Comment )
 
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
@@ -188,7 +177,7 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
     for elem in config_elems:
-        os.write( fd, '%s' % util.xml_to_string( elem, pretty=True ) )
+        os.write( fd, '%s' % xml_util.xml_to_string( elem ) )
     os.write( fd, '</toolbox>\n' )
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
@@ -346,7 +335,7 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
         file_name = strip_path( tool_config )
         guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
-    tree = util.parse_xml( shed_tool_conf )
+    tree = xml_util.parse_xml( shed_tool_conf )
     root = tree.getroot()
     for elem in root:
         if elem.tag == 'tool':
@@ -1084,13 +1073,6 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
         prior_installation_required = util.asbool( str( prior_installation_required ) )
         return tool_shed, name, owner, changeset_revision, prior_installation_required
 
-def parse_xml( fname ):
-    """Returns a parsed xml tree with comments in tact."""
-    fobj = open( fname, 'r' )
-    tree = XmlET.parse( fobj, parser=CommentedTreeBuilder() )
-    fobj.close()
-    return tree
-
 def pretty_print( dict=None ):
     if dict:
         return json.to_json_string( dict, sort_keys=True, indent=4 * ' ' )
@@ -1271,7 +1253,7 @@ def update_in_shed_tool_config( app, repository ):
     for tool_config_filename, guid, tool in repository_tools_tups:
         guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
     config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
+    tree = xml_util.parse_xml( shed_tool_conf )
     root = tree.getroot()
     for elem in root:
         if elem.tag == 'section':

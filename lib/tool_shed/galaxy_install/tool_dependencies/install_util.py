@@ -10,6 +10,7 @@ import tool_shed.util.shed_util_common as suc
 import tool_shed.util.common_util as cu
 from tool_shed.util import encoding_util
 from tool_shed.util import tool_dependency_util
+from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 
@@ -478,7 +479,7 @@ def populate_actions_dict( app, dependent_install_dir, required_install_dir, too
     tool_dependency = None
     action_dict = {}
     if tool_dependencies_config:
-        required_td_tree = parse_xml( tool_dependencies_config )
+        required_td_tree = xml_util.parse_xml( tool_dependencies_config )
         if required_td_tree:
             required_td_root = required_td_tree.getroot()
             for required_td_elem in required_td_root:
@@ -622,17 +623,6 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
-
-def parse_xml( file_name ):
-    """Returns a parsed xml tree."""
-    try:
-        tree = ElementTree.parse( file_name )
-    except Exception, e:
-        print "Exception attempting to parse ", file_name, ": ", str( e )
-        return None
-    root = tree.getroot()
-    ElementInclude.include( root )
-    return tree
 
 def url_join( *args ):
     parts = []

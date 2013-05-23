@@ -12,6 +12,7 @@ from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.web.form_builder import SelectField
+from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 
 import pkg_resources
@@ -36,7 +37,7 @@ def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
+    tree = xml_util.parse_xml( shed_tool_conf )
     root = tree.getroot()
     for elem in root:
         config_elems.append( elem )
@@ -803,7 +804,7 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
     message = ''
     tmp_tool_config = suc.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
     if tmp_tool_config:
-        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree = xml_util.parse_xml( tmp_tool_config )
         element_tree_root = element_tree.getroot()
         # Look for code files required by the tool config.
         tmp_code_files = []
@@ -845,7 +846,7 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
+    tree = xml_util.parse_xml( shed_tool_conf )
     root = tree.getroot()
     for elem in root:
         config_elems.append( elem )
