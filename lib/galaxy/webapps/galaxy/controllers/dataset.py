@@ -826,7 +826,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             trans.sa_session.flush()
         except Exception, e:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
-            log.exception( msg )
+            log.exception( msg + ': ' + str( e ) )
             trans.log_event( msg )
             message = 'Dataset deletion failed'
             status = 'error'
