@@ -9,16 +9,13 @@ from galaxy.util import json
 from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
-
+import xml.etree.ElementTree
 from galaxy import eggs
 
 eggs.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
-
-pkg_resources.require( 'elementtree' )
-from elementtree.ElementTree import tostring
 
 log = logging.getLogger( __name__ )
 
@@ -64,12 +61,13 @@ def check_file_content_for_html_and_images( file_path ):
     return message
 
 def create_and_write_tmp_file( root ):
+    tmp_str = '%s\n' % xml.etree.ElementTree.tostring( root, encoding='utf-8' )
     fh = tempfile.NamedTemporaryFile( 'wb' )
     tmp_filename = fh.name
     fh.close()
     fh = open( tmp_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n' )
-    fh.write( tostring( root, 'utf-8' ) )
+    fh.write( tmp_str )
     fh.close()
     return tmp_filename
 
@@ -200,7 +198,7 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     altered = False
     try:
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree = util.parse_xml( repository_dependencies_config )
+        tree = suc.parse_xml( repository_dependencies_config )
         root = tree.getroot()
     except Exception, e:
         error_message = "Error parsing %s in handle_repository_dependencies_definition: " % str( repository_dependencies_config )
@@ -247,7 +245,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
     altered = False
     try:
         # Make sure we're looking at a valid tool_dependencies.xml file.
-        tree = util.parse_xml( tool_dependencies_config )
+        tree = suc.parse_xml( tool_dependencies_config )
         root = tree.getroot()
     except Exception, e:
         error_message = "Error parsing %s in handle_tool_dependencies_definition: " % str( tool_dependencies_config )
