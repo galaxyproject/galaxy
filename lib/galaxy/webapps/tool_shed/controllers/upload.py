@@ -129,18 +129,18 @@ class UploadController( BaseUIController ):
                     # Move some version of the uploaded file to the load_point within the repository hierarchy.
                     if uploaded_file_filename in [ 'repository_dependencies.xml' ]:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( root )
+                            tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
                     elif uploaded_file_filename in [ 'tool_dependencies.xml' ]:
                         # Inspect the contents of the file to see if it defines a complex repository dependency definition whose changeset_revision values
                         # are missing and if so, set them appropriately.
-                        altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( root )
+                            tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
@@ -266,15 +266,15 @@ class UploadController( BaseUIController ):
                 uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
                 if os.path.split( uploaded_file_name )[ -1 ] == 'repository_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 if ok:
                     repo_path = os.path.join( full_path, relative_path )
@@ -328,15 +328,15 @@ class UploadController( BaseUIController ):
                 uploaded_file_name = os.path.join( full_path, filename )
                 if os.path.split( uploaded_file_name )[ -1 ] == 'repository_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root )
+                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
             return commit_util.handle_directory_changes( trans,
                                                          repository,

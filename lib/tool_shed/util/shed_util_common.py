@@ -14,6 +14,7 @@ from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
 from tool_shed.util import common_util
+from xml.etree import ElementTree as XmlET
 from galaxy import eggs
 import pkg_resources
 
@@ -35,6 +36,17 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
+
+
+class CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
+    def __init__ ( self, html=0, target=None ):
+        XmlET.XMLTreeBuilder.__init__( self, html, target )
+        self._parser.CommentHandler = self.handle_comment
+    
+    def handle_comment ( self, data ):
+        self._target.start( XmlET.Comment, {} )
+        self._target.data( data )
+        self._target.end( XmlET.Comment )
 
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
@@ -1071,6 +1083,13 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
         prior_installation_required = util.asbool( str( prior_installation_required ) )
         return tool_shed, name, owner, changeset_revision, prior_installation_required
+
+def parse_xml( fname ):
+    """Returns a parsed xml tree with comments in tact."""
+    fobj = open( fname, 'r' )
+    tree = XmlET.parse( fobj, parser=CommentedTreeBuilder() )
+    fobj.close()
+    return tree
 
 def pretty_print( dict=None ):
     if dict:
