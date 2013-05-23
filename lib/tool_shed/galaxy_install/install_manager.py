@@ -15,6 +15,7 @@ from tool_shed.util import datatype_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 from galaxy.util.odict import odict
 
 
@@ -37,13 +38,13 @@ class InstallManager( object ):
         self.proprietary_tool_confs = self.non_shed_tool_panel_configs
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
         # Set the location where the repositories will be installed by retrieving the tool_path setting from migrated_tools_config.
-        tree = util.parse_xml( migrated_tools_config )
+        tree = xml_util.parse_xml( migrated_tools_config )
         root = tree.getroot()
         self.tool_path = root.get( 'tool_path' )
         print "Repositories will be installed into configured tool_path location ", str( self.tool_path )
         # Parse tool_shed_install_config to check each of the tools.
         self.tool_shed_install_config = tool_shed_install_config
-        tree = util.parse_xml( tool_shed_install_config )
+        tree = xml_util.parse_xml( tool_shed_install_config )
         root = tree.getroot()
         self.tool_shed = suc.clean_tool_shed_url( root.get( 'name' ) )
         self.repository_owner = common_util.REPOSITORY_OWNER
@@ -107,7 +108,7 @@ class InstallManager( object ):
         tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
         # Parse the XML and load the file attributes for later checking against the integrated elements from self.proprietary_tool_confs.
         migrated_tool_configs = []
-        tree = util.parse_xml( tools_xml_file_path )
+        tree = xml_util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         for elem in root:
             if elem.tag == 'repository':
@@ -116,7 +117,7 @@ class InstallManager( object ):
         # Parse each file in self.proprietary_tool_confs and generate the integrated list of tool panel Elements that contain them.
         tool_panel_elems = []
         for proprietary_tool_conf in self.proprietary_tool_confs:
-            tree = util.parse_xml( proprietary_tool_conf )
+            tree = xml_util.parse_xml( proprietary_tool_conf )
             root = tree.getroot()
             for elem in root:
                 if elem.tag == 'tool':

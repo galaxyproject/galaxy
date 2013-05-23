@@ -17,6 +17,7 @@ from tool_shed.util import common_install_util
 from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 
 import pkg_resources
 
@@ -363,7 +364,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
                               'error_messages': [] }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
     try:
-        tree = util.parse_xml( data_manager_config_filename )
+        tree = xml_util.parse_xml( data_manager_config_filename )
     except Exception, e:
         # We are not able to load any data managers.
         error_message = 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e )
@@ -638,7 +639,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                  or checkers.check_bz2( full_path )[ 0 ] or checkers.check_zip( full_path ) ):
                             try:
                                 # Make sure we're looking at a tool config and not a display application config or something else.
-                                element_tree = util.parse_xml( full_path )
+                                element_tree = xml_util.parse_xml( full_path )
                                 element_tree_root = element_tree.getroot()
                                 is_tool = element_tree_root.tag == 'tool'
                             except Exception, e:
@@ -751,7 +752,7 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
     error_message = ''
     try:
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree = util.parse_xml( repository_dependencies_config )
+        tree = xml_util.parse_xml( repository_dependencies_config )
         root = tree.getroot()
         xml_is_valid = root.tag == 'repositories'
     except Exception, e:

@@ -1,9 +1,8 @@
 import logging
 import sys
 import urllib2
-from galaxy.util import parse_xml
 from galaxy.util.odict import odict
-from xml.etree import ElementTree
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -15,7 +14,7 @@ class Registry( object ):
         self.tool_sheds_auth = odict()
         if root_dir and config:
             # Parse tool_sheds_conf.xml
-            tree = parse_xml( config )
+            tree = xml_util.parse_xml( config )
             root = tree.getroot()
             log.debug( 'Loading references to tool sheds from %s' % config )
             for elem in root.findall( 'tool_shed' ):

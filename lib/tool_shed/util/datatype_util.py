@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 from galaxy import eggs
-from galaxy import util
+from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 
 import pkg_resources
@@ -24,7 +24,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     has been initialized, the registry's contents cannot be overridden by conflicting data types.
     """
     try:
-        tree = util.parse_xml( datatypes_config )
+        tree = xml_util.parse_xml( datatypes_config )
     except Exception, e:
         log.debug( "Error parsing %s, exception: %s" % ( datatypes_config, str( e ) ) )
         return None, None
@@ -83,9 +83,9 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     fd, proprietary_datatypes_config = tempfile.mkstemp()
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<datatypes>\n' )
-    os.write( fd, '%s' % util.xml_to_string( registration ) )
+    os.write( fd, '%s' % xml_util.xml_to_string( registration ) )
     if sniffers:
-        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+        os.write( fd, '%s' % xml_util.xml_to_string( sniffers ) )
     os.write( fd, '</datatypes>\n' )
     os.close( fd )
     os.chmod( proprietary_datatypes_config, 0644 )

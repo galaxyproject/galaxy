@@ -14,6 +14,7 @@ from tool_shed.util import metadata_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -131,7 +132,7 @@ class UploadController( BaseUIController ):
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                         altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                            tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
@@ -140,7 +141,7 @@ class UploadController( BaseUIController ):
                         # are missing and if so, set them appropriately.
                         altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                         if altered:
-                            tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                            tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
@@ -268,13 +269,13 @@ class UploadController( BaseUIController ):
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                        tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                        tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 if ok:
                     repo_path = os.path.join( full_path, relative_path )
@@ -330,13 +331,13 @@ class UploadController( BaseUIController ):
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                        tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if altered:
-                        tmp_filename = commit_util.create_and_write_tmp_file( root_elem )
+                        tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
             return commit_util.handle_directory_changes( trans,
                                                          repository,
