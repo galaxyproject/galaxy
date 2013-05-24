@@ -351,11 +351,17 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
+                if not isinstance( last_selected_value, basestring ):
+                    last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, escape( str( text ), quote=True ) ) )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
+            last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
                      ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
