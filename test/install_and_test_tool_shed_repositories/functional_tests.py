@@ -145,7 +145,15 @@ if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
 else:
     galaxy_encode_secret = os.environ[ 'GALAXY_INSTALL_TEST_SECRET' ]
 
-
+testing_single_repository = {}
+if 'repository_name' in os.environ and 'repository_owner' in os.environ:
+    testing_single_repository[ 'name' ] = os.environ[ 'repository_name' ]
+    testing_single_repository[ 'owner' ] = os.environ[ 'repository_owner' ]
+    if 'repository_revision' in os.environ:
+        testing_single_repository[ 'changeset_revision' ] = os.environ[ 'repository_revision' ]
+    else:
+        testing_single_repository[ 'changeset_revision' ] = None
+        
 class ReportResults( Plugin ):
     '''Simple Nose plugin to record the IDs of all tests run, regardless of success.'''
     name = "reportresults"
@@ -308,6 +316,19 @@ def get_repositories_to_install( tool_shed_url, latest_revision_only=True ):
         skipped_previous = ' and metadata revisions that are not the most recent'
     else:
         skipped_previous = ''
+    if testing_single_repository:
+        log.info( 'Testing single repository with name %s and owner %s.', 
+                  testing_single_repository[ 'name' ], 
+                  testing_single_repository[ 'owner' ])
+        for repository_to_install in detailed_repository_list:
+            if repository_to_install[ 'name' ] == testing_single_repository[ 'name' ] \
+            and repository_to_install[ 'owner' ] == testing_single_repository[ 'owner' ]:
+                if testing_single_repository[ 'changeset_revision' ] is None:
+                    return [ repository_to_install ]
+                else:
+                    if testing_single_repository[ 'changeset_revision' ] == repository_to_install[ 'changeset_revision' ]:
+                        return [ repository_to_install ]
+        return []
     log.info( 'After removing deleted repositories%s from the list, %d remain to be tested.', skipped_previous, repositories_tested )
     return detailed_repository_list
 
