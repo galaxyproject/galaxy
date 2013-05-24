@@ -7,7 +7,7 @@ from elementtree.ElementTree import XML, Element
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
-from galaxy.util import string_as_bool, sanitize_param
+from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
 import validation, dynamic_options
 # For BaseURLToolParameter
@@ -112,7 +112,9 @@ class ToolParameter( object ):
         
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
-        return str( value )
+        if not isinstance( value, basestring ):
+            value = str( value )
+        return unicodify( value )
     
     def to_python( self, value, app ):
         """Convert a value created with to_string back to an object representation"""
@@ -144,13 +146,13 @@ class ToolParameter( object ):
         Convert a value to a text representation suitable for displaying to
         the user
         """
-        return value
+        return unicodify( value )
         
     def to_param_dict_string( self, value, other_values={} ):
         """Called via __str__ when used in the Cheetah template"""
         if value is None:
             value = ""
-        else:
+        elif not isinstance( value, basestring ):
             value = str( value )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
