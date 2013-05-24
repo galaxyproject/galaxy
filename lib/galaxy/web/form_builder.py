@@ -34,8 +34,12 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
+        value = self.value
+        if not isinstance( value, basestring ):
+            value = str( value )
+        value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) ) )
+            % ( prefix, self.name, self.size, escape( value,  quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
         
