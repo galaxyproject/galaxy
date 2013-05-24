@@ -161,10 +161,23 @@ class ToolDataTable( object ):
                 self.tool_data_file = None
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
+        # increment this variable any time a new entry is added, or when the table is totally reloaded
+        # This value has no external meaning, and does not represent an abstract version of the underlying data
+        self._loaded_content_version = 1
 
     def get_empty_field_by_name( self, name ):
         return self.empty_field_values.get( name, self.empty_field_value )
-
+    
+    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        raise NotImplementedError( "Abstract method" )
+    
+    def add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        self._add_entry( entry, persist=persist, persist_on_error=persist_on_error, **kwd )
+        self._loaded_content_version += 1
+        return self._loaded_content_version
+    
+    def is_current_version( self, other_version ):
+        return self._loaded_content_version == other_version
 
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -234,6 +247,9 @@ class TabularToolDataTable( ToolDataTable ):
 
     def get_fields( self ):
         return self.data
+    
+    def get_version_fields( self ):
+        return ( self._loaded_content_version, self.data )
 
     def parse_column_spec( self, config_element ):
         """
@@ -324,6 +340,61 @@ class TabularToolDataTable( ToolDataTable ):
                 rval = fields[ return_col ]
                 break
         return rval
-
+    
+    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        #accepts dict or list of columns
+        if isinstance( entry, dict ):
+            fields = []
+            for column_name in self.get_column_name_list():
+                if column_name not in entry:
+                    log.debug( "Using default column value for column '%s' when adding data table entry (%s) to table '%s'.", column_name, entry, self.name )
+                    field_value = self.get_empty_field_by_name( column_name )
+                else:
+                    field_value = entry[ column_name ]
+                fields.append( field_value )
+        else:
+            fields = entry
+        if self.largest_index < len( fields ):
+            fields = self._replace_field_separators( fields )
+            self.data.append( fields )
+            field_len_error = False
+        else:
+            log.error( "Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len( fields ), self.largest_index + 1 )
+            field_len_error = True
+        if persist and ( not field_len_error or persist_on_error ):
+            #FIXME: Need to lock these files for editing
+            try:
+                data_table_fh = open( self.filename, 'r+b' )
+            except IOError, e:
+                log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                data_table_fh = open( self.filename, 'wb' )
+            if os.stat( self.filename )[6] != 0:
+                # ensure last existing line ends with new line
+                data_table_fh.seek( -1, 2 ) #last char in file
+                last_char = data_table_fh.read( 1 )
+                if last_char not in [ '\n', '\r' ]:
+                    data_table_fh.write( '\n' )
+            data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
+        return not field_len_error
+    
+    def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
+        #make sure none of the fields contain separator
+        #make sure separator replace is different from comment_char,
+        #due to possible leading replace
+        if separator is None:
+            separator = self.separator
+        if replace is None:
+            if separator == " ":
+                if comment_char == "\t":
+                    replace = "_"
+                else:
+                    replace = "\t"
+            else:
+                if comment_char == " ":
+                    replace = "_"
+                else:
+                    replace = " "
+        return map( lambda x: x.replace( separator, replace ), fields )
+    
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )
