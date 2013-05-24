@@ -798,12 +798,13 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                              label='Valid tools' )
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
-            if tool_test_results:
-                # Only create and populate this folder if there are actual tool test results to display, since the
-                # display of the 'Test environment' folder by itself can be misleading.
-                if len( tool_test_results ) > 1:
-                    folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
-                    containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
+            if tool_test_results and len( tool_test_results ) > 1:
+                # Only create and populate this folder if there are actual tool test results to display, since the display of the 'Test environment'
+                # folder by itself can be misleading.  We check for more than a single entry in the tool_test_results dictionary because it may have
+                # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests", "installation_errors", "missing_test_components"
+                # "skipped_tests", "not_tested" or any other entry that may be added in the future.
+                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
+                containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
             if metadata:
                 if 'workflows' in metadata:

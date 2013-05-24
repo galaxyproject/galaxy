@@ -51,6 +51,70 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     return output.return_code
 
 def handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, set_prior_environment_commands ):
+    """
+    This method works with with a combination of three tool dependency definition tag sets, which are defined in the tool_dependencies.xml file in the
+    order discussed here.  The example for this discussion is the tool_dependencies.xml file contained in the osra repository, which is available at:
+    
+    http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra 
+    
+    The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset revision XXX of the repository named
+    package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been previously installed.
+    
+    <tool_dependency>
+        <package name="graphicsmagick" version="1.3.18">
+            <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
+        </package>
+        ...
+    
+    * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks something like this (we'll reference
+    this file later in this discussion.
+    ----
+    GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick; 
+    export GRAPHICSMAGICK_ROOT_DIR
+    ----
+    
+    The second tag set defines a specific package dependency that has been previously installed (guaranteed by the tag set discussed above) and compiled,
+    where the compiled dependency is needed by the tool dependency currently being installed (osra version 2.0.0 in this case) and complied in order for
+    it's installation and compilation to succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
+    version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully compile.  When this tag set is handled,
+    one of the effects is that the env.sh file associated with graphicsmagick version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment
+    variables (e.g. PATH, PYTHONPATH, etc).
+    
+    <!-- populate the environment variables from the dependent repositories -->
+    <action type="set_environment_for_install">
+        <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
+            <package name="graphicsmagick" version="1.3.18" />
+        </repository>
+    </action>
+    
+    The third tag set enables discovery of the same required package dependency discussed above for correctly compiling the osra version 2.0.0 package, but
+    in this case the package can be discovered at tool execution time.  Using the $ENV[] option as shown in this example, the value of the environment
+    variable named GRAPHICSMAGICK_ROOT_DIR (which was set in the environment using the second tag set described above) will be used to automatically alter
+    the env.sh file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we discussed the env.sh file
+    for version 1.3.18 of the graphicsmagick package above. 
+
+    <action type="set_environment">
+        <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[$GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
+        <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/potrace/build/lib/</environment_variable>
+        <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/bin</environment_variable>
+        <!-- OSRA_DATA_FILES is only used by the galaxy wrapper and is not part of OSRA -->
+        <environment_variable action="set_to" name="OSRA_DATA_FILES">$INSTALL_DIR/share</environment_variable>
+    </action>
+
+    The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy that looks something like this.  Notice
+    that the path to the gmagick binary is included here since it expands the defined $ENV[$GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
+    
+    ----
+    LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
+    export LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/potrace/build/lib/:$LD_LIBRARY_PATH;
+    export LD_LIBRARY_PATH
+    PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/bin:$PATH;
+    export PATH
+    OSRA_DATA_FILES=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/share;
+    export OSRA_DATA_FILES
+    ----
+    """
     env_var_value = env_var_dict[ 'value' ]
     if '$ENV[' in env_var_value and ']' in env_var_value:
         # Pull out the name of the environment variable to populate.
@@ -107,6 +171,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
                     if 'target_filename' in action_dict:
+                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
@@ -137,6 +203,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
                     if action_dict[ 'target_filename' ]:
+                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         filename = action_dict[ 'target_filename' ]
                     else:
                         filename = url.split( '/' )[ -1 ]
