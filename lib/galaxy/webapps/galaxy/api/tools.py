@@ -78,7 +78,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if history_id:
             target_history = trans.sa_session.query(trans.app.model.History).get(
                 trans.security.decode_id(history_id))
-            trans.galaxy_session.current_history = target_history
         else:
             target_history = None
         
