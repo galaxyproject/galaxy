@@ -1573,6 +1573,12 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        for config_filename in config_filenames:
+            config_contents = open(config_filename, "r").read()
+            for k, v in fnames.iteritems():
+                config_contents = config_contents.replace(k, v)
+            open(config_filename, "w").write(config_contents)
+
         # FIXME: Build the param file (might return None, DEPRECATED)
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line
