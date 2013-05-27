@@ -307,6 +307,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          is_binary = is_binary,
                          link_data_only = link_data_only,
                          uuid = uuid_str,
+                         to_posix_lines = uploaded_dataset.to_posix_lines,
                          space_to_tab = uploaded_dataset.space_to_tab,
                          in_place = trans.app.config.external_chown_script is None,
                          path = uploaded_dataset.path )

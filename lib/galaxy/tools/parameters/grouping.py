@@ -254,6 +254,9 @@ class UploadDataset( Group ):
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             warnings = []
+            to_posix_lines = False
+            if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
+                to_posix_lines = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
@@ -286,6 +289,7 @@ class UploadDataset( Group ):
                             break
                     if file_bunch.path:
                         break
+            file_bunch.to_posix_lines = to_posix_lines
             file_bunch.space_to_tab = space_to_tab
             return file_bunch, warnings
         def get_filenames( context ):
@@ -295,16 +299,21 @@ class UploadDataset( Group ):
             ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
+            to_posix_lines = False
+            if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
+                to_posix_lines = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
             warnings = []
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
             if file_bunch.path:
+                file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
                 if file_bunch.path:
+                    file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             # look for files uploaded via FTP
@@ -378,11 +387,13 @@ class UploadDataset( Group ):
                 #replace sniff here with just creating an empty file
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
+                dataset.to_posix_lines = True
                 dataset.space_to_tab = False
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
+                dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.space_to_tab = file_bunch.space_to_tab
                 dataset.warnings.extend( warnings )
             if dataset.primary_file is None:#remove this before finish, this should create an empty dataset

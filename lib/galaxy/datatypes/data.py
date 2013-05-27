@@ -498,13 +498,14 @@ class Data( object ):
     def before_setting_metadata( self, dataset ):
         """This function is called on the dataset before metadata is set."""
         dataset.clear_associated_files( metadata_safe = True )
-    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = False, **kwds ):
+    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, to_posix_lines = True, space_to_tab = False, **kwds ):
         kwds[ 'name' ] = name
         kwds[ 'optional' ] = optional
         kwds[ 'mimetype' ] = mimetype
         kwds[ 'description' ] = description
         kwds[ 'substitute_name_with_metadata' ] = substitute_name_with_metadata
         kwds[ 'is_binary' ] = is_binary
+        kwds[ 'to_posix_lines' ] = to_posix_lines
         kwds[ 'space_to_tab' ] = space_to_tab
         return Bunch( **kwds )
     def add_composite_file( self, name, **kwds ):

@@ -264,10 +264,14 @@ def add_file( dataset, registry, json_file, output_path ):
             if link_data_only == 'copy_files':
                 if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
                     in_place = False
-                if dataset.space_to_tab:
-                    line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place )
-                else:
-                    line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place )
+                # Convert universal line endings to Posix line endings, but allow the user to turn it off,
+                # so that is becomes possible to upload gzip, bz2 or zip files with binary data without
+                # corrupting the content of those files.
+                if dataset.to_posix_lines:
+                    if dataset.space_to_tab:
+                        line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place )
+                    else:
+                        line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place )
             if dataset.file_type == 'auto':
                 ext = sniff.guess_ext( dataset.path, registry.sniff_order )
             else:
