@@ -128,6 +128,10 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
+    _add_item_provenance_controller( webapp,
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -233,6 +237,12 @@ def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix
     name = "%sannotation" % name_prefix
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
+
+def _add_item_provenance_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sprovenance" % name_prefix
+    name = "%sprovenance" % name_prefix
+    webapp.mapper.resource(name, "provenance", path_prefix=path_prefix, controller=controller)
+
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """
