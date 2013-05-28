@@ -1060,7 +1060,7 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
             prior_installation_required = False
         elif len( repository_dependency_tuple ) == 6:
             toolshed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
-        prior_installation_required = util.asbool( str( prior_installation_required ) )
+        prior_installation_required = str( prior_installation_required )
         return toolshed, name, owner, changeset_revision, prior_installation_required, error
     else:
         if len( repository_dependency_tuple ) == 4:
@@ -1070,7 +1070,7 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
             prior_installation_required = False
         elif len( repository_dependency_tuple ) == 5:
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
-        prior_installation_required = util.asbool( str( prior_installation_required ) )
+        prior_installation_required = str( prior_installation_required )
         return tool_shed, name, owner, changeset_revision, prior_installation_required
 
 def pretty_print( dict=None ):

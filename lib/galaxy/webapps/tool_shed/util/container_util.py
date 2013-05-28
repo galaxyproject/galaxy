@@ -68,7 +68,7 @@ class Folder( object ):
                                      repository_name=name,
                                      repository_owner=owner,
                                      changeset_revision=changeset_revision,
-                                     prior_installation_required=prior_installation_required )
+                                     prior_installation_required=asbool( prior_installation_required ) )
 
 
 class DataManager( object ):
@@ -467,7 +467,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
                                                repository_name=name,
                                                repository_owner=owner,
                                                changeset_revision=changeset_revision,
-                                               prior_installation_required=prior_installation_required,
+                                               prior_installation_required=asbool( prior_installation_required ),
                                                error=error )
             folder.invalid_repository_dependencies.append( ird )
             invalid_repository_dependencies_folder.folders.append( folder )
@@ -1329,7 +1329,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
                                                           repository_name=repository_name,
                                                           repository_owner=repository_owner,
                                                           changeset_revision=changeset_revision,
-                                                          prior_installation_required=prior_installation_required,
+                                                          prior_installation_required=asbool( prior_installation_required ),
                                                           installation_status=installation_status,
                                                           tool_shed_repository_id=tool_shed_repository_id )
             # Insert the repository_dependency into the folder.
@@ -1339,7 +1339,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
 def is_subfolder_of( folder, repository_dependency ):
     toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
         suc.parse_repository_dependency_tuple( repository_dependency )
-    key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required )
+    key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, asbool( prior_installation_required ) )
     for sub_folder in folder.folders:
         if key == sub_folder.key:
             return True

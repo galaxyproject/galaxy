@@ -202,7 +202,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, current_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, repository.id, repository.status ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), repository.id, repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
@@ -210,7 +210,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
                 else:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, None, 'Never installed' ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), None, 'Never installed' ]
                     if new_rd_tup not in missing_rd_tups:
                         missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
