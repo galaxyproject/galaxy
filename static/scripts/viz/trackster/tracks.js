@@ -1137,9 +1137,11 @@ var TracksterView = Backbone.View.extend({
 
 // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
 extend( TracksterView.prototype, DrawableCollection.prototype, {
+
     changed: function() {
         this.has_changes = true;  
     },
+
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
         if (this.drawables.length === 0) {
@@ -1149,6 +1151,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             this.intro_div.hide();
         }
     },
+
     /**
      * Triggers navigate events as needed. If there is a delay,
      * then event is triggered only after navigation has stopped.
@@ -1171,6 +1174,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
         }
     },
+
     update_location: function(low, high) {
         this.location_span.text( commatize(low) + ' - ' + commatize(high) );
         this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
@@ -1182,6 +1186,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             this.trigger_navigate(chrom, view.low, view.high, true);
         }
     },
+
     /**
      * Load chrom data for the view. Returns a jQuery Deferred.
      */
@@ -1230,6 +1235,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         return chrom_data;
     },
+    
     change_chrom: function(chrom, low, high) {
         var view = this;
         // If chrom data is still loading, wait for it.
@@ -1365,6 +1371,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         var chrom = view.chrom_select.val();
         this.trigger_navigate(chrom, view.low, view.high, true);
     },
+
     /**
      * Add a drawable to the view.
      */
@@ -1374,11 +1381,13 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         this.changed();
         this.update_intro_div();
     },
+
     add_label_track: function (label_track) {
         label_track.view = this;
         label_track.init();
         this.label_tracks.push(label_track);
     },
+
     /**
      * Remove drawable from the view.
      */
@@ -1392,11 +1401,13 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             });
         }
     },
+
     reset: function() {
         this.low = this.max_low;
         this.high = this.max_high;
         this.viewport_container.find(".yaxislabel").remove();
     },
+
     /**
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
@@ -1439,6 +1450,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             this.requested_redraw = true;
         }
     },
+
     /**
      * Redraws view and tracks.
      * NOTE: this method should never be called directly; request_redraw() should be used so
@@ -1503,6 +1515,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             this.label_tracks[i]._draw();
         }
     },
+
     zoom_in: function (point, container) {
         if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
             return;
@@ -1518,6 +1531,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         this.changed();
         this.request_redraw();
     },
+
     zoom_out: function () {
         if (this.max_high === 0) {
             return;
@@ -1530,10 +1544,12 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         this.changed();
         this.request_redraw();
     },
+
     resize_window: function() {
         this.viewport_container.height( this.container.height() - this.top_container.height() - this.bottom_container.height() );
         this.request_redraw();
     },
+
     /** Show a Drawable in the overview. */
     set_overview: function(drawable) {
         if (this.overview_drawable) {
@@ -1561,6 +1577,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         view.overview_drawable.request_draw();
         this.changed();
     },
+    view
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
