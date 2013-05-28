@@ -339,7 +339,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         actions_dict[ 'package_name' ] = package_name
     actions = []
     all_env_shell_file_paths = []
-    for action_elem in actions_elem:
+    # Make sure to skip all comments, since they are now included in the XML tree.
+    for action_elem in actions_elem.findall( 'action' ):
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
         if action_type == 'shell_command':
