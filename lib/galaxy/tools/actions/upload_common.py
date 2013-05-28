@@ -209,13 +209,12 @@ def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, stat
             trans.sa_session.add( dp )
             trans.sa_session.flush()
     return ldda
+
 def new_upload( trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None ):
     if library_bunch:
         return __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state )
-    elif history:
-        return __new_history_upload( trans, uploaded_dataset, history=history, state=state )
     else:
-        raise Exception("new_upload must be called with empty values for library_bunch and history")
+        return __new_history_upload( trans, uploaded_dataset, history=history, state=state )
 
 def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None, history=None ):
     uploaded_datasets = []
