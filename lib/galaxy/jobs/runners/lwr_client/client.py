@@ -19,6 +19,15 @@ class parseJson(object):
         return replacement
 
 
+class OutputNotFoundException(Exception):
+
+    def __init__(self, path):
+        self.path = path
+
+    def __str__(self):
+        return "No remote output found for path %s" % self.path
+
+
 class Client(object):
     """
     Objects of this client class perform low-level communication with a remote LWR server.
@@ -163,7 +172,7 @@ class Client(object):
         elif output_type == "task":
             output_path = os.path.join(working_directory, name)
         else:
-            raise Exception("No remote output found for dataset with path %s" % path)
+            raise OutputNotFoundException(path)
         self.__raw_download_output(name, self.job_id, output_type, output_path)
 
     def __raw_download_output(self, name, job_id, output_type, output_path):
