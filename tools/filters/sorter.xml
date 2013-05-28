@@ -1,19 +1,37 @@
-<tool id="sort1" name="Sort" version="1.0.2">
+<tool id="sort1" name="Sort" version="1.0.3">
     <description>data in ascending or descending order</description>
     <command interpreter="python">
         sorter.py
-        --input=$input
-        --output=$out_file1
         
-        #set $style = '' if (str($style) == 'alpha') else 'n'
+        --input=${input}
+        --output=${out_file1}
+        
+        #if (str($style) == 'num'):
+            #set $style = 'n'
+        #elif (str($style) == 'gennum'):
+            #set $style = 'g'
+        #else:
+            #set $style = ''
+        #end if
+
         #set $order = '' if (str($order) == 'ASC') else 'r'
-        --key=$column,$column$style$order
+        
+        --key=${column},${column}${style}${order}
+        
         
         #for $col in $column_set:
-        #set $other_column = str($col.other_column)
-        #set $other_style = '' if (str($col.other_style) == "alpha") else 'n'
-        #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
-        --key=$other_column,$other_column$other_style$other_order
+            #set $other_column = str($col.other_column)
+            
+            #if (str($col.other_style) == 'num'):
+                #set $other_style = 'n'
+            #elif (str($col.other_style) == 'gennum'):
+                #set $other_style = 'g'
+            #else:
+                #set $other_style = ''
+            #end if
+            
+            #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
+            --key=${other_column},${other_column}${other_style}${other_order}
         #end for
     </command>
     <inputs>
@@ -21,6 +39,7 @@
         <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
         <param name="style" type="select" label="with flavor">
             <option value="num">Numerical sort</option>
+            <option value="gennum">General numeric sort</option>
             <option value="alpha">Alphabetical sort</option>
         </param>
         <param name="order" type="select" label="everything in">
@@ -31,6 +50,7 @@
             <param name="other_column" label="on column" type="data_column" data_ref="input" accept_default="true" />
             <param name="other_style" type="select" label="with flavor">
                 <option value="num">Numerical sort</option>
+                <option value="gennum">General numeric sort</option>
                 <option value="alpha">Alphabetical sort</option>
             </param>
             <param name="other_order" type="select" label="everything in">
@@ -63,6 +83,13 @@
             <param name="other_order" value="ASC"/>
             <output name="out_file1" file="sort_out2.bed"/>
         </test>
+        <test>
+            <param name="input" value="sort_in2.bed"/>
+            <param name="column" value="5"/>
+            <param name="style" value="gennum"/>
+            <param name="order" value="ASC"/>
+            <output name="out_file1" file="sort_out3.bed"/>
+        </test>
     </tests>
     <help>
 .. class:: infomark
@@ -75,8 +102,9 @@
 
 This tool sorts the dataset on any number of columns in either ascending or descending order.
 
-* Numerical sort orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.
-* Alphabetical sort is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
+* **Numerical sort** orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.
+* **General numeric sort** orders numbers by their general numerical value. Unlike the numerical sort option, it can handle numbers in scientific notation too.
+* **Alphabetical sort** is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
         
 -----
 
@@ -106,7 +134,7 @@ Sorting the following::
     A     g    10  H     h    43
     A     g    4   I     h    500
 
-on columns 1 (alpha), 3 (num), and 6 (num) in ascending order will yield::
+on columns 1 (alphabetical), 3 (numerical), and 6 (numerical) in ascending order will yield::
 
     A     kk   4   I     h    111
     A     edf  4   tw    b    234
@@ -127,5 +155,34 @@ on columns 1 (alpha), 3 (num), and 6 (num) in ascending order will yield::
     Pd    gf   7   Gthe  de   567
     Q     d    7   II    jhu  45
     rS    hty  90  YY    LOp  89
+
+
+Sorting the following::
+
+    chr10  100  200  feature1  100.01   +
+    chr20  800  900  feature2  1.1      +
+    chr2   500  600  feature3  1000.1   +
+    chr1   300  400  feature4  1.1e-05  +
+    chr21  300  500  feature5  1.1e2    +
+    chr15  700  800  feature6  1.1e4    +
+
+on column 5 (numerical) in ascending order will yield::
+
+    chr1   300  400  feature4  1.1e-05  +
+    chr15  700  800  feature6  1.1e4    +
+    chr20  800  900  feature2  1.1      +
+    chr21  300  500  feature5  1.1e2    +
+    chr10  100  200  feature1  100.01   +
+    chr2   500  600  feature3  1000.1   +
+
+on column 5 (general numeric) in ascending order will yield::
+
+    chr1   300  400  feature4  1.1e-05  +
+    chr20  800  900  feature2  1.1      +
+    chr10  100  200  feature1  100.01   +
+    chr21  300  500  feature5  1.1e2    +
+    chr2   500  600  feature3  1000.1   +
+    chr15  700  800  feature6  1.1e4    +
+
     </help>
 </tool>
