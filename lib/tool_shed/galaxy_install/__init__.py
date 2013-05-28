@@ -5,12 +5,7 @@ import os, logging
 import tool_shed.util.shed_util_common
 import tool_shed.util.datatype_util
 from galaxy.model.orm import and_
-
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -25,13 +20,10 @@ class InstalledRepositoryManager( object ):
         self.installed_repository_dicts = []
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
-            try:
-                tree = ElementTree.parse( tool_config )
-            except Exception, e:
-                log.debug( "Exception attempting to parse %s: %s" % ( str( tool_config ), str( e ) ) )
+            tree, error_message = xml_util.parse_xml( tool_config )
+            if tree is None:
                 return None
             root = tree.getroot()
-            ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )
             if tool_path:
                 ts = tool_shed.util.shed_util_common.clean_tool_shed_url( tool_shed_repository.tool_shed )

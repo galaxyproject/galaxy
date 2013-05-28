@@ -15,17 +15,12 @@ from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
 from tool_shed.util import common_util
 from tool_shed.util import xml_util
+from xml.etree import ElementTree as XmlET
 from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
 from mercurial import hg, ui, commands
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -290,22 +285,22 @@ def generate_sharable_link_for_repository_in_tool_shed( trans, repository, chang
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     """Create and return an ElementTree tool Element."""
     if tool_section is not None:
-        tool_elem = SubElement( tool_section, 'tool' )
+        tool_elem = XmlET.SubElement( tool_section, 'tool' )
     else:
-        tool_elem = Element( 'tool' )
+        tool_elem = XmlET.Element( 'tool' )
     tool_elem.attrib[ 'file' ] = tool_file_path
     tool_elem.attrib[ 'guid' ] = tool.guid
-    tool_shed_elem = SubElement( tool_elem, 'tool_shed' )
+    tool_shed_elem = XmlET.SubElement( tool_elem, 'tool_shed' )
     tool_shed_elem.text = tool_shed
-    repository_name_elem = SubElement( tool_elem, 'repository_name' )
+    repository_name_elem = XmlET.SubElement( tool_elem, 'repository_name' )
     repository_name_elem.text = repository_name
-    repository_owner_elem = SubElement( tool_elem, 'repository_owner' )
+    repository_owner_elem = XmlET.SubElement( tool_elem, 'repository_owner' )
     repository_owner_elem.text = owner
-    changeset_revision_elem = SubElement( tool_elem, 'installed_changeset_revision' )
+    changeset_revision_elem = XmlET.SubElement( tool_elem, 'installed_changeset_revision' )
     changeset_revision_elem.text = changeset_revision
-    id_elem = SubElement( tool_elem, 'id' )
+    id_elem = XmlET.SubElement( tool_elem, 'id' )
     id_elem.text = tool.id
-    version_elem = SubElement( tool_elem, 'version' )
+    version_elem = XmlET.SubElement( tool_elem, 'version' )
     version_elem.text = tool.version
     return tool_elem
 
@@ -335,7 +330,9 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
         file_name = strip_path( tool_config )
         guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
-    tree = xml_util.parse_xml( shed_tool_conf )
+    tree, error_message = xml_util.parse_xml( shed_tool_conf )
+    if tree is None:
+        return tool_panel_dict
     root = tree.getroot()
     for elem in root:
         if elem.tag == 'tool':
@@ -1253,20 +1250,21 @@ def update_in_shed_tool_config( app, repository ):
     for tool_config_filename, guid, tool in repository_tools_tups:
         guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
     config_elems = []
-    tree = xml_util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'section':
-            for i, tool_elem in enumerate( elem ):
-                guid = tool_elem.attrib.get( 'guid' )
+    tree, error_message = xml_util.parse_xml( shed_tool_conf )
+    if tree:
+        root = tree.getroot()
+        for elem in root:
+            if elem.tag == 'section':
+                for i, tool_elem in enumerate( elem ):
+                    guid = tool_elem.attrib.get( 'guid' )
+                    if guid in guid_to_tool_elem_dict:
+                        elem[i] = guid_to_tool_elem_dict[ guid ]
+            elif elem.tag == 'tool':
+                guid = elem.attrib.get( 'guid' )
                 if guid in guid_to_tool_elem_dict:
-                    elem[i] = guid_to_tool_elem_dict[ guid ]
-        elif elem.tag == 'tool':
-            guid = elem.attrib.get( 'guid' )
-            if guid in guid_to_tool_elem_dict:
-                elem = guid_to_tool_elem_dict[ guid ]
-        config_elems.append( elem )
-    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
+                    elem = guid_to_tool_elem_dict[ guid ]
+            config_elems.append( elem )
+        config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 
 def update_repository( repo, ctx_rev=None ):
     """

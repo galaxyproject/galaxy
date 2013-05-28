@@ -13,16 +13,9 @@ from tool_shed.util import encoding_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies.install_util import install_package
 from tool_shed.galaxy_install.tool_dependencies.install_util import set_environment
-
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 
@@ -318,13 +311,10 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     sa_session = app.model.context.current
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse %s: %s" % ( str( tool_dependencies_config ), str( e ) ) )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return installed_tool_dependencies
     root = tree.getroot()
-    ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
         if elem.tag == 'package':
