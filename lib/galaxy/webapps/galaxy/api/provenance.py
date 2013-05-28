@@ -39,20 +39,14 @@ class BaseProvenanceController( BaseAPIController ):
 
     def _get_record(self, trans, item, follow):
         if item is not None:
-            if follow:
-                if item.copied_from_library_dataset_dataset_association:
-                    item = item.copied_from_library_dataset_dataset_association
-                return {
-                    "id" : trans.security.encode_id(item.id),
-                    "uuid" : item.dataset.uuid,
-                    "tool_id" : item.creating_job.tool_id,
-                    "parameters" : self._get_job_record(trans, item.creating_job, follow)
-                }
-            else:
-                return {
-                    "id" : trans.security.encode_id(item.id),
-                    "uuid" : item.dataset.uuid
-                }
+            if item.copied_from_library_dataset_dataset_association:
+                item = item.copied_from_library_dataset_dataset_association
+            return {
+                "id" : trans.security.encode_id(item.id),
+                "uuid" : item.dataset.uuid,
+                "tool_id" : item.creating_job.tool_id,
+                "parameters" : self._get_job_record(trans, item.creating_job, follow)
+            }
         return None
 
     def _get_job_record(self, trans, job, follow):
@@ -62,6 +56,11 @@ class BaseProvenanceController( BaseAPIController ):
         for in_d in job.input_datasets:
             if follow:
                 out[in_d.name] = self._get_record(trans, in_d.dataset, follow)
+            else:
+                out[in_d.name] = {
+                    "id" : trans.security.encode_id(in_d.dataset.id),
+                    "uuid" : in_d.dataset.dataset.uuid
+                }
         return out
 
 
