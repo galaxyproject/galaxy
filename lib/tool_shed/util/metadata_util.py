@@ -26,10 +26,6 @@ from mercurial import commands
 from mercurial import hg
 from mercurial import ui
 
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-
 log = logging.getLogger( __name__ )
 
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
@@ -363,12 +359,9 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
                               'invalid_data_managers': invalid_data_managers, 
                               'error_messages': [] }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
-    try:
-        tree = xml_util.parse_xml( data_manager_config_filename )
-    except Exception, e:
+    tree, error_message = xml_util.parse_xml( data_manager_config_filename )
+    if tree is None:
         # We are not able to load any data managers.
-        error_message = 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e )
-        log.error( error_message )
         data_manager_metadata[ 'error_messages' ].append( error_message )
         return metadata_dict
     tool_path = None
@@ -436,13 +429,10 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
 
 def generate_datatypes_metadata( app, repository, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
-    try:
-        tree = ElementTree.parse( datatypes_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse %s: %s" % ( str( datatypes_config ), str( e ) ) )
+    tree, error_message = xml_util.parse_xml( datatypes_config )
+    if tree is None:
         return metadata_dict
     root = tree.getroot()
-    ElementInclude.include( root )
     repository_datatype_code_files = []
     datatype_files = root.find( 'datatype_files' )
     if datatype_files:
@@ -637,14 +627,13 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                     if os.path.getsize( full_path ) > 0:
                         if not ( checkers.check_binary( full_path ) or checkers.check_image( full_path ) or checkers.check_gzip( full_path )[ 0 ]
                                  or checkers.check_bz2( full_path )[ 0 ] or checkers.check_zip( full_path ) ):
-                            try:
-                                # Make sure we're looking at a tool config and not a display application config or something else.
-                                element_tree = xml_util.parse_xml( full_path )
+                            # Make sure we're looking at a tool config and not a display application config or something else.
+                            element_tree, error_message = xml_util.parse_xml( full_path )
+                            if element_tree is None:
+                                is_tool = False
+                            else:
                                 element_tree_root = element_tree.getroot()
                                 is_tool = element_tree_root.tag == 'tool'
-                            except Exception, e:
-                                log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
-                                is_tool = False
                             if is_tool:
                                 tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                                 if tool is None:
@@ -750,15 +739,13 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
     is called from the tool shed as well as from Galaxy.
     """
     error_message = ''
-    try:
-        # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree = xml_util.parse_xml( repository_dependencies_config )
+    # Make sure we're looking at a valid repository_dependencies.xml file.
+    tree, error_message = xml_util.parse_xml( repository_dependencies_config )
+    if tree is None:
+        xml_is_valid = False
+    else:
         root = tree.getroot()
         xml_is_valid = root.tag == 'repositories'
-    except Exception, e:
-        error_message = "Error parsing %s, exception: %s" % ( repository_dependencies_config, str( e ) )
-        log.debug( error_message )
-        xml_is_valid = False
     if xml_is_valid:
         invalid_repository_dependencies_dict = dict( description=root.get( 'description' ) )
         invalid_repository_dependency_tups = []
@@ -795,14 +782,10 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     else:
         original_valid_tool_dependencies_dict = None
         original_invalid_tool_dependencies_dict = None
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        error_message = "Exception attempting to parse tool_dependencies.xml: %s" %str( e )
-        log.debug( error_message )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return metadata_dict, error_message
     root = tree.getroot()
-    ElementInclude.include( root )
     tool_dependency_is_valid = True
     valid_tool_dependencies_dict = {}
     invalid_tool_dependencies_dict = {}

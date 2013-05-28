@@ -14,15 +14,6 @@ from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
-
 log = logging.getLogger( __name__ )
 
 def clean_tool_shed_url( base_url ):
@@ -479,7 +470,7 @@ def populate_actions_dict( app, dependent_install_dir, required_install_dir, too
     tool_dependency = None
     action_dict = {}
     if tool_dependencies_config:
-        required_td_tree = xml_util.parse_xml( tool_dependencies_config )
+        required_td_tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if required_td_tree:
             required_td_root = required_td_tree.getroot()
             for required_td_elem in required_td_root:

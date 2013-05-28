@@ -19,6 +19,7 @@ from tool_shed.util import repository_dependency_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
+from xml.etree import ElementTree as XmlET
 
 from galaxy import eggs
 import pkg_resources
@@ -27,10 +28,6 @@ pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree.ElementTree import Element
 
 log = logging.getLogger( __name__ )
 
@@ -401,7 +398,7 @@ def initiate_repository_installation( trans, installation_dict ):
             else:
                 # Appending a new section to trans.app.toolbox.tool_panel
                 log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                elem = Element( 'section' )
+                elem = XmlET.Element( 'section' )
                 elem.attrib[ 'name' ] = new_tool_panel_section
                 elem.attrib[ 'id' ] = section_id
                 elem.attrib[ 'version' ] = ''

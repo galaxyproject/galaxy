@@ -5,14 +5,6 @@ from galaxy import eggs
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
-
 log = logging.getLogger( __name__ )
 
 def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False, override=True ):
@@ -23,10 +15,8 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     be False when a tool shed repository is being installed.  Since installation is occurring after the datatypes registry
     has been initialized, the registry's contents cannot be overridden by conflicting data types.
     """
-    try:
-        tree = xml_util.parse_xml( datatypes_config )
-    except Exception, e:
-        log.debug( "Error parsing %s, exception: %s" % ( datatypes_config, str( e ) ) )
+    tree, error_message = xml_util.parse_xml( datatypes_config )
+    if tree is None:
         return None, None
     datatypes_config_root = tree.getroot()
     registration = datatypes_config_root.find( 'registration' )
