@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import threading
 from galaxy import tools
+from galaxy.util import asbool
 from galaxy.util import json
 from galaxy import web
 from galaxy.model.orm import or_
@@ -214,7 +215,7 @@ def get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_depen
                 continue
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
-                if prior_installation_required:
+                if asbool( prior_installation_required ):
                     repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
                     if repository:
                         encoded_repository_id = trans.security.encode_id( repository.id )

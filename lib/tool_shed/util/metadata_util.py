@@ -206,7 +206,7 @@ def compare_repository_dependencies( ancestor_repository_dependencies, current_r
                     current_repository_name == ancestor_repository_name and \
                     current_repository_owner == ancestor_repository_owner and \
                     current_changeset_revision == ancestor_changeset_revision and \
-                    current_prior_installation_required == ancestor_prior_installation_required:
+                    util.string_as_bool( current_prior_installation_required ) == util.string_as_bool( ancestor_prior_installation_required ):
                     found_in_current = True
                     break
             if not found_in_current:
@@ -771,7 +771,7 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
             else:
                 # Append the error_message to the repository dependencies tuple.
                 toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, error_message )
+                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), error_message )
                 invalid_repository_dependency_tups.append( repository_dependency_tup )
         if invalid_repository_dependency_tups:
             invalid_repository_dependencies_dict[ 'repository_dependencies' ] = invalid_repository_dependency_tups
@@ -823,7 +823,7 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
                     toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, message )
+                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
@@ -1112,7 +1112,7 @@ def handle_repository_elem( app, repository_elem ):
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
     prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
-    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, str( prior_installation_required ) ]
     user = None
     repository = None
     if app.name == 'galaxy':
@@ -1699,8 +1699,8 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                 else:
                     log.debug( "Successfully reset metadata on repository %s" % repository.name )
                     successful_count += 1
-            except Exception, e:
-                log.debug( "Error attempting to reset metadata on repository: %s" % str( e ) )
+            except:
+                log.exception( "Error attempting to reset metadata on repository %s", repository.name )
                 unsuccessful_count += 1
         message = "Successfully reset metadata on %d %s.  " % ( successful_count, inflector.cond_plural( successful_count, "repository" ) )
         if unsuccessful_count:
@@ -1929,7 +1929,6 @@ def update_repository_dependencies_metadata( metadata, repository_dependency_tup
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
         else:
             tool_shed, name, owner, changeset_revision, prior_installation_required, error_message = repository_dependency_tup
-        prior_installation_required = util.asbool( str( prior_installation_required ) )
         if repository_dependencies_dict:
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
             for repository_dependency_tup in repository_dependency_tups:
