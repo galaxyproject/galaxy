@@ -66,9 +66,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # -- Execute tool. --
         
         # Get tool.
-        tool_id = payload[ 'tool_id' ]
-        tool = trans.app.toolbox.get_tool( tool_id )
+        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] ) if 'tool_id' in payload else None
         if not tool:
+            trans.response.status = 404
             return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
 
         # Set running history from payload parameters.
@@ -82,7 +82,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             target_history = None
         
         # Set up inputs.
-        inputs = payload[ 'inputs' ]
+        inputs = payload.get( 'inputs', {} )
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
             if k.startswith("files_"):
@@ -91,17 +91,23 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # HACK: add run button so that tool.handle_input will run tool.
         inputs['runtool_btn'] = 'Execute'
         # TODO: encode data ids and decode ids.
+        # TODO: handle dbkeys
         params = util.Params( inputs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history)
+        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
+        if 'errors' in vars:
+            trans.response.status = 400
+            return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get('out_data', {}).values()
+        output_datasets = vars.get( 'out_data', {} ).values()
         rval = {
             "outputs": []
         }
         outputs = rval[ "outputs" ]
+        #TODO:?? poss. only return ids?
         for output in output_datasets:
-            outputs.append( output.get_api_value() )
+            output_dict = output.get_api_value()
+            outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
         
     #
