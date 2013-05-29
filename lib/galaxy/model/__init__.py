@@ -1684,7 +1684,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
                      misc_blurb = hda.blurb )
 
         if hda.history is not None:
-            rval['history_id'] = hda.history.id,
+            rval['history_id'] = hda.history.id
 
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
