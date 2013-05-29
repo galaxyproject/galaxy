@@ -1458,25 +1458,39 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            trans.model.Repository.table.c.user_id == user.id ) ):
             if not metadata_row.tool_test_results:
                 continue
+            current_repository_errors = []
+            tool_dependency_errors = []
+            repository_dependency_errors = []
+            description_lines = []
             # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
             # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
             time_tested = metadata_row.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
             repository = metadata_row.repository
             # Generate a citable URL for this repository with owner and changeset revision.
             repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
-            title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             passed_tests = len( metadata_row.tool_test_results.get( 'passed_tests', [] ) )
             failed_tests = len( metadata_row.tool_test_results.get( 'failed_tests', [] ) )
             missing_test_components = len( metadata_row.tool_test_results.get( 'missing_test_components', [] ) )
-            description = '%d tests passed, %d tests failed, %d tests missing test components.' % \
-                ( passed_tests, failed_tests, missing_test_components )
+            installation_errors = metadata_row.tool_test_results.get( 'installation_errors', [] )
+            if installation_errors:
+                tool_dependency_errors = installation_errors.get( 'tool_dependencies', [] )
+                repository_dependency_errors = installation_errors.get( 'repository_dependencies', [] )
+                current_repository_errors = installation_errors.get( 'current_repository', [] )
+            description_lines.append( '%d tests passed, %d tests failed, %d tests missing test components.' % \
+                ( passed_tests, failed_tests, missing_test_components ) )
+            if current_repository_errors:
+                description_lines.append( '\nThis repository did not install correctly. ' )
+            if tool_dependency_errors or repository_dependency_errors:
+                description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' % \
+                    len( tool_dependency_errors ), len( repository_dependency_errors ) )
+            title = 'Revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
             # that behavior.
             functional_test_results.append( dict( title=title, 
                                                   guid=repository_citable_url, 
                                                   link=repository_citable_url, 
-                                                  description=description, 
+                                                  description='\n'.join( description_lines ), 
                                                   pubdate=time_tested ) )
         trans.response.set_content_type( 'application/rss+xml' )
         return trans.fill_template( '/rss.mako', 
