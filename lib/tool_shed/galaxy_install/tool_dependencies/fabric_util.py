@@ -22,7 +22,6 @@ from fabric.api import settings
 
 log = logging.getLogger( __name__ )
 
-CMD_SEPARATOR = '__CMD_SEP__'
 INSTALLATION_LOG = 'INSTALLATION.log'
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
@@ -94,7 +93,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
     for version 1.3.18 of the graphicsmagick package above. 
 
     <action type="set_environment">
-        <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[$GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
+        <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
         <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/potrace/build/lib/</environment_variable>
         <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/bin</environment_variable>
         <!-- OSRA_DATA_FILES is only used by the galaxy wrapper and is not part of OSRA -->
@@ -102,7 +101,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
     </action>
 
     The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy that looks something like this.  Notice
-    that the path to the gmagick binary is included here since it expands the defined $ENV[$GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
+    that the path to the gmagick binary is included here since it expands the defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
     
     ----
     LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
@@ -116,20 +115,25 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
     ----
     """
     env_var_value = env_var_dict[ 'value' ]
+    # env_var_value is the text of an environment variable tag like this: <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">
+    # Here is an example of what env_var_value could look like: $ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/
     if '$ENV[' in env_var_value and ']' in env_var_value:
         # Pull out the name of the environment variable to populate.
         inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
         to_replace = '$ENV[%s]' % inherited_env_var_name
-        # Build a command line that outputs CMD_SEPARATOR + environment variable value + CMD_SEPARATOR.
-        set_prior_environment_commands.extend( [ "echo '%s'" % CMD_SEPARATOR, 'echo $%s' % inherited_env_var_name, "echo '%s'" % CMD_SEPARATOR ] )
+        # Build a command line that outputs VARIABLE_NAME: <the value of the variable>.
+        set_prior_environment_commands.append( 'echo "%s: $%s"' % ( inherited_env_var_name, inherited_env_var_name ) )
         command = ' ; '.join( set_prior_environment_commands )
         # Run the command and capture the output.
         command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True )
-        # And extract anything between the two instances of CMD_SEPARATOR.
-        environment_variable_value = command_return.split( CMD_SEPARATOR )[1].split( CMD_SEPARATOR )[0].strip( '\n' )
-        if environment_variable_value:
-            log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, environment_variable_value )
-            env_var_value = env_var_value.replace( to_replace, environment_variable_value )
+        # And extract anything labeled with the name of the environment variable we're populating here.
+        if '%s: ' % inherited_env_var_name in command_return:
+            environment_variable_value = command_return.split( '\n' )
+            for line in environment_variable_value:
+                if line.startswith( inherited_env_var_name ):
+                    inherited_env_var_value = line.replace( '%s: ' % inherited_env_var_name, '' )
+                    log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, inherited_env_var_value )
+                    env_var_value = env_var_value.replace( to_replace, inherited_env_var_value )
         else:
             # If the return is empty, replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
             log.error( 'Environment variable %s not found, removing from set_environment.', inherited_env_var_name )
