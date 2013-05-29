@@ -62,6 +62,7 @@ def set_datatypes_registry( d_registry ):
 
 
 class User( object, APIItem ):
+    use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -87,7 +88,10 @@ class User( object, APIItem ):
         """
         Set user password to the digest of `cleartext`.
         """
-        self.password = galaxy.security.passwords.hash_password( cleartext )
+        if User.use_pbkdf2:
+            self.password = galaxy.security.passwords.hash_password( cleartext )
+        else:
+            self.password = new_secure_hash( text_type=cleartext )
 
     def check_password( self, cleartext ):
         """

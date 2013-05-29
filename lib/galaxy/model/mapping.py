@@ -2008,12 +2008,14 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
     # Connect dataset to object store
     model.Dataset.object_store = object_store
+    # Use PBKDF2 password hashing?
+    model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
     load_egg_for_url( url )
     # Should we use the logging proxy?
