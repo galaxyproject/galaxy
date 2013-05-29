@@ -62,7 +62,8 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
                                    object_store = self.object_store,
-                                   trace_logger=self.trace_logger )
+                                   trace_logger=self.trace_logger,
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
         # Manage installed tool shed repositories.
         self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
