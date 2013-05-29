@@ -339,6 +339,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         actions_dict[ 'package_name' ] = package_name
     actions = []
     all_env_shell_file_paths = []
+    env_var_dicts = []
     # Make sure to skip all comments, since they are now included in the XML tree.
     for action_elem in actions_elem.findall( 'action' ):
         action_dict = {}
@@ -389,7 +390,6 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
             #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
             # </action>
-            env_var_dicts = []
             for env_elem in action_elem:
                 if env_elem.tag == 'environment_variable':
                     env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
