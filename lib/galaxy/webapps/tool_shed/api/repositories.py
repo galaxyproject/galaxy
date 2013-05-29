@@ -33,7 +33,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
         """
-        GET /api/repository/get_ordered_installable_revisions
+        GET /api/repositories/get_ordered_installable_revisions
         
         :param name: the name of the Repository
         :param owner: the owner of the Repository
@@ -59,7 +59,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
         """
-        GET /api/repository/get_repository_revision_install_info
+        GET /api/repositories/get_repository_revision_install_info
         
         :param name: the name of the Repository
         :param owner: the owner of the Repository
