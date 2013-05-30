@@ -121,7 +121,7 @@ class RepositoryGrid( grids.Grid ):
             return escape_html( repository.revision( trans.app ) )
 
 
-    class ToolsFunctionallyCorrectColumn( grids.TextColumn ):
+    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
 
         def get_value( self, trans, grid, repository ):
             # This column will display the value associated with the currently displayed metadata revision.
@@ -1130,7 +1130,7 @@ class RepositoryMetadataGrid( grids.Grid ):
             return ''
 
 
-    class ToolsFunctionallyCorrectColumn( grids.TextColumn ):
+    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
 
         def get_value( self, trans, grid, repository ):
             # This column will display the value associated with the currently displayed metadata revision.
