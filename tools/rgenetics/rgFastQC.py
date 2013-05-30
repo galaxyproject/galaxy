@@ -62,10 +62,9 @@ class FastQC():
         infname = self.opts.inputfilename
         linf = infname.lower()
         trimext = False
-        isgz = linf.endswith('.gz') or linf.endswith('.gzip')
         # decompression at upload currently does NOT remove this now bogus ending - fastqc will barf
         # patched may 29 2013 until this is fixed properly
-        if isgz: 
+        if ( linf.endswith('.gz') or linf.endswith('.gzip') ): 
             f = gzip.open(self.opts.input)
             try:
                testrow = f.readline()
