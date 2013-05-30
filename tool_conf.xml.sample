@@ -397,38 +397,6 @@
   <section name="NGS: Simulation" id="ngs-simulation">
     <tool file="ngs_simulation/ngs_simulation.xml" />
   </section>
-  <section name="SNP/WGA: Data; Filters" id="rgdat">
-    
-    <label text="Data: Import and upload" id="rgimport" />
-    <tool file="data_source/upload.xml"/>
-    <tool file="data_source/access_libraries.xml" />
-    
-    <label text="Data: Filter and Clean" id="rgfilter" />
-    <tool file="rgenetics/rgClean.xml"/>
-    <tool file="rgenetics/rgPedSub.xml"/>
-    <tool file="rgenetics/rgLDIndep.xml"/>
-    
-    <label text="Simulate" id="rgsim" />
-    <tool file="rgenetics/rgfakePhe.xml"/>
-    <tool file="rgenetics/rgfakePed.xml"/>
-  </section>
-  <section name="SNP/WGA: QC; LD; Plots" id="rgqcplot">
-    
-    <label text="QC; Eigenstrat" id="rgvisual" />
-    <tool file="rgenetics/rgQC.xml"/>
-    <tool file="rgenetics/rgEigPCA.xml"/>
-    
-    <label text="LD; Manhattan/QQ; GRR" id="rgld" />
-    <tool file="rgenetics/rgHaploView.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
-    <tool file="rgenetics/rgGRR.xml"/>
-  </section>
-  <section name="SNP/WGA: Statistical Models" id="rgmodel">
-    <tool file="rgenetics/rgCaCo.xml"/>
-    <tool file="rgenetics/rgTDT.xml"/>
-    <tool file="rgenetics/rgGLM.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
-  </section>
   <section name="Phenotype Association" id="hgv">
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />

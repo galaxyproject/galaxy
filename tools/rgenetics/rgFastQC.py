@@ -1,4 +1,5 @@
 """
+# May 2013 ross added check for bogus gz extension - fastqc gets confused
 # added sanitizer for user supplied name
 # removed shell and make cl a sequence for Popen call
 # ross lazarus August 10 2012 in response to anon insecurity report
@@ -24,6 +25,8 @@ import optparse
 import shutil
 import tempfile
 from rgutils import getFileString
+import zipfile
+import gzip
 
 class FastQC():
     """wrapper
@@ -56,7 +59,32 @@ class FastQC():
             cl.append('--contaminants=%s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
-        fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))
+        infname = self.opts.inputfilename
+        linf = infname.lower()
+        trimext = False
+        isgz = linf.endswith('.gz') or linf.endswith('.gzip')
+        # decompression at upload currently does NOT remove this now bogus ending - fastqc will barf
+        # patched may 29 2013 until this is fixed properly
+        if isgz: 
+            f = gzip.open(self.opts.input)
+            try:
+               testrow = f.readline()
+            except:
+               trimext = True
+            f.close()
+        elif linf.endswith('bz2'):
+           f = bz2.open(self.opts.input,'rb')
+           try:
+              f.readline()
+           except:
+              trimext = True
+           f.close()
+        elif linf.endswith('.zip'):
+           if not zipfile.is_zipfile(self.opts.input):
+              trimext = True
+        if trimext:
+           infname = os.path.splitext(infname)[0]
+        fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(infname))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
         cl.append(link_name)        
