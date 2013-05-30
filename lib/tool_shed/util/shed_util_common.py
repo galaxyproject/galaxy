@@ -12,6 +12,7 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 import sqlalchemy.orm.exc
 from tool_shed.util import common_util
 from tool_shed.util import xml_util
@@ -88,19 +89,39 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
 
-def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes' ):
+def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes', my_writable=False ):
     """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
     repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        for repository in trans.sa_session.query( trans.model.Repository ) \
-                                          .filter( trans.model.Repository.table.c.deleted == False ) \
-                                          .order_by( trans.model.Repository.table.c.name,
-                                                     trans.model.Repository.table.c.user_id ):
-            owner = repository.user.username
-            option_label = '%s (%s)' % ( repository.name, owner )
-            option_value = '%s' % trans.security.encode_id( repository.id )
-            repositories_select_field.add_option( option_label, option_value )
+        if my_writable:
+            username = trans.user.username
+            clause_list = []
+            for repository in trans.sa_session.query( trans.model.Repository ) \
+                                              .filter( trans.model.Repository.table.c.deleted == False ):
+                allow_push = repository.allow_push( trans.app )
+                if allow_push:
+                    allow_push_usernames = allow_push.split( ',' )
+                    if username in allow_push_usernames:
+                        clause_list.append( trans.model.Repository.table.c.id == repository.id )
+            if clause_list:
+                for repository in trans.sa_session.query( trans.model.Repository ) \
+                                                  .filter( or_( *clause_list ) ) \
+                                                  .order_by( trans.model.Repository.table.c.name,
+                                                             trans.model.Repository.table.c.user_id ):
+                    owner = repository.user.username
+                    option_label = '%s (%s)' % ( repository.name, owner )
+                    option_value = '%s' % trans.security.encode_id( repository.id )
+                    repositories_select_field.add_option( option_label, option_value )
+        else:
+            for repository in trans.sa_session.query( trans.model.Repository ) \
+                                              .filter( trans.model.Repository.table.c.deleted == False ) \
+                                              .order_by( trans.model.Repository.table.c.name,
+                                                         trans.model.Repository.table.c.user_id ):
+                owner = repository.user.username
+                option_label = '%s (%s)' % ( repository.name, owner )
+                option_value = '%s' % trans.security.encode_id( repository.id )
+                repositories_select_field.add_option( option_label, option_value )
     else:
         # We're in Galaxy.
         for repository in trans.sa_session.query( trans.model.ToolShedRepository ) \

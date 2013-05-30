@@ -2392,6 +2392,19 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           message=message,
                                                           status=status ) )
 
+    @web.expose
+    def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
+        if 'reset_metadata_on_selected_repositories_button' in kwd:
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+        else:
+            message = util.restore_text( kwd.get( 'message', ''  ) )
+            status = kwd.get( 'status', 'done' )
+        repositories_select_field = suc.build_repository_ids_select_field( trans, my_writable=True )
+        return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
+                                    repositories_select_field=repositories_select_field,
+                                    message=message,
+                                    status=status )
+
     def __search_ids_names( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names ):
         for i, tool_id in enumerate( tool_ids ):
             tool_name = tool_names[ i ]
