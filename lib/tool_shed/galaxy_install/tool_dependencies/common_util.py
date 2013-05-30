@@ -1,7 +1,9 @@
 import logging
 import os
 import shutil
+import sys
 import tarfile
+import traceback
 import urllib2
 import zipfile
 import tool_shed.util.shed_util_common as suc
@@ -77,6 +79,10 @@ def extract_tar( file_name, file_path ):
         tar = tarfile.open( file_name )
     tar.extractall( path=file_path )
     tar.close()
+
+def format_traceback():
+    ex_type, ex, tb = sys.exc_info()
+    return ''.join( traceback.format_tb( tb ) )
 
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
@@ -220,6 +226,8 @@ def url_download( install_dir, downloaded_file_name, download_url ):
         dst = open( file_path,'wb' )
         dst.write( data )
     except:
+        raise
+    finally:
         if src:
             src.close()
         if dst:
