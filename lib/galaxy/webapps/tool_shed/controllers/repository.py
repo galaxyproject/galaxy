@@ -778,7 +778,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id )
+                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id, downloadable=True )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
