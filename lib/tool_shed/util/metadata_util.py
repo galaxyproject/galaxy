@@ -899,12 +899,15 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
         metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
 
-def get_latest_repository_metadata( trans, decoded_repository_id ):
+def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=False ):
     """Get last metadata defined for a specified repository from the database."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == decoded_repository_id ) \
-                           .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
-                           .first()
+    repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    if downloadable:
+        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+    else:
+        changeset_revision = suc.get_latest_changeset_revision( trans, repository, repo )
+    return suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
 
 def get_orphan_tool_dependencies( metadata ):
     """Inspect tool dependencies included in the received metadata and determine if any of them are orphans within the repository."""
@@ -1233,7 +1236,7 @@ def new_metadata_required_for_utilities( trans, repository, new_tip_metadata_dic
     dictionaries.  The metadata contained in new_tip_metadata_dict may not be a subset of that contained in the last stored repository_metadata
     record associated with the received repository because one or more Galaxy utilities may have been deleted from the repository in the new tip.
     """
-    repository_metadata = get_latest_repository_metadata( trans, repository.id )
+    repository_metadata = get_latest_repository_metadata( trans, repository.id, downloadable=False )
     datatypes_required = new_datatypes_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
     # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
     # compare_readme_files() method.
@@ -1752,7 +1755,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 suc.handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
             # Update the latest stored repository metadata with the contents and attributes of metadata_dict.
-            repository_metadata = get_latest_repository_metadata( trans, repository.id )
+            repository_metadata = get_latest_repository_metadata( trans, repository.id, downloadable=False )
             if repository_metadata:
                 downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.

@@ -324,11 +324,12 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
     metadata = repository.metadata
     # Create a dictionary of tool guid and tool config file name for each tool in the repository.
     guids_and_configs = {}
-    for tool_dict in metadata[ 'tools' ]:
-        guid = tool_dict[ 'guid' ]
-        tool_config = tool_dict[ 'tool_config' ]
-        file_name = strip_path( tool_config )
-        guids_and_configs[ guid ] = file_name
+    if 'tools' in metadata:
+        for tool_dict in metadata[ 'tools' ]:
+            guid = tool_dict[ 'guid' ]
+            tool_config = tool_dict[ 'tool_config' ]
+            file_name = strip_path( tool_config )
+            guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
     tree, error_message = xml_util.parse_xml( shed_tool_conf )
     if tree is None:
@@ -489,6 +490,16 @@ def get_file_context_from_ctx( ctx, filename ):
 def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+
+def get_latest_changeset_revision( trans, repository, repo ):
+    repository_tip = repository.tip( trans.app )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), repository_tip )
+    if repository_metadata and repository_metadata.downloadable:
+        return repository_tip
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
+    if changeset_revisions:
+        return changeset_revisions[ -1 ]
+    return INITIAL_CHANGELOG_HASH
 
 def get_latest_downloadable_changeset_revision( trans, repository, repo ):
     repository_tip = repository.tip( trans.app )
