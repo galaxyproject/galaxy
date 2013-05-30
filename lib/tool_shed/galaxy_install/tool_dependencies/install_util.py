@@ -165,8 +165,9 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
         # There is currently only one fabric method.
         fabric_util.install_and_build_package( app, tool_dependency, actions_dict )
     except Exception, e:
+        log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-        tool_dependency.error_message = str( e )
+        tool_dependency.error_message = '%s\n%s' % ( common_util.format_traceback(), str( e ) ) 
         sa_session.add( tool_dependency )
         sa_session.flush()
     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
