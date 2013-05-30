@@ -480,10 +480,11 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     """
     Returns a unicode string or None
     """
+
     if isinstance( value, unicode ):
         return value
     try:
-        return unicode( value, encoding, error )
+        return unicode( str( value ), encoding, error )
     except:
         return default
 
