@@ -202,12 +202,14 @@ Credentials section of the AWS Console</a>.  </div>
                     </div>
 
                     <div id="hidden_options">
+                        %if not share_string:
                         <div id='existing_instance_wrapper' style="display:none;" class="form-row">
                                 <label for="id_existing_instance">Instances in your account</label>
                                 <select name="existing_instance" id="id_existing_instance">
                                 </select>
                                 <input id='id_zone' type='hidden' name='zone' value=''/>
                         </div>
+                        %endif
                         <div id='cluster_name_wrapper' class="form-row">
                             <label for="id_cluster_name">Cluster Name</label>
                             <input type="text" size="40" class="text-and-autocomplete-select" name="cluster_name" id="id_cluster_name"/><br/>
@@ -242,6 +244,10 @@ Credentials section of the AWS Console</a>.  </div>
                             <label for="id_share_string">Instance Share String (optional)</label>
                             <input type="text" size="120" name="share_string" id="id_share_string"/><br/>
                         </div>
+                        %endif
+
+                        %if ami:
+                            <input type='hidden' name='ami' value='${ami}'/>
                         %endif
 
                         <div class="form-row">
