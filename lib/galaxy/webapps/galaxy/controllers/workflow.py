@@ -1756,6 +1756,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         data_input_names[ prefixed_name ] = True
+
+                # FIXME: this updates modules silently right now; messages from updates should be provided.
+                module.check_and_update_state()
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
