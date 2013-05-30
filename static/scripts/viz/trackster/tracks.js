@@ -1577,7 +1577,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         view.overview_drawable.request_draw();
         this.changed();
     },
-    view
+
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
