@@ -35,8 +35,12 @@ class CloudController(BaseUIController):
         BaseUIController.__init__(self, app)
 
     @web.expose
-    def index(self, trans, share_string=None, ami=None):
-        return trans.fill_template("cloud/index.mako", default_keypair = DEFAULT_KEYPAIR, share_string=share_string, ami=ami)
+    def index(self, trans, share_string=None, ami=None, bucket_default = None):
+        return trans.fill_template("cloud/index.mako",
+                                    default_keypair = DEFAULT_KEYPAIR,
+                                    share_string=share_string,
+                                    ami=ami,
+                                    bucket_default=bucket_default)
 
     @web.expose
     def get_account_info(self, trans, key_id, secret, **kwargs):
@@ -92,7 +96,7 @@ class CloudController(BaseUIController):
         return to_json_string(account_info)
 
     @web.expose
-    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, ami=DEFAULT_AMI, zone=None, **kwargs):
+    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, ami=DEFAULT_AMI, zone=None, bucket_default=None, **kwargs):
         ec2_error = None
         try:
             # Create security group & key pair used when starting an instance
@@ -113,6 +117,8 @@ class CloudController(BaseUIController):
                 user_provided_data['password'] = password
             if share_string:
                 user_provided_data['share_string'] = share_string
+            if bucket_default:
+                user_provided_data['bucket_default']  = bucket_default
 
             rs = run_instance(ec2_conn=ec2_conn,
                       image_id = ami,
