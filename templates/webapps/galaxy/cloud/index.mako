@@ -250,6 +250,10 @@ Credentials section of the AWS Console</a>.  </div>
                             <input type='hidden' name='ami' value='${ami}'/>
                         %endif
 
+                        %if bucket_default:
+                            <input type='hidden' name='bucket_default' value='${bucket_default}'/>
+                        %endif
+
                         <div class="form-row">
                             <label for="id_instance_type">Instance Type</label>
                             <select name="instance_type" id="id_instance_type">
