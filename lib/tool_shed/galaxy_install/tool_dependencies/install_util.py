@@ -108,7 +108,11 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     text = cu.tool_shed_get( app, tool_shed_url, url )
     return text
 
-def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem ):
+def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem, required_repository ):
+    """
+    Populate a list of actions for creating an env.sh file for a dependent repository.  The received elem is the <package> tag set associated
+    with the tool-dependencies.xml file for one of the received tool_shed_repository's repository dependency.
+    """
     action_dict = {}
     actions = []
     for package_elem in elem:
@@ -124,8 +128,8 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
             # Get the installation method version from a tag like: <install version="1.0">
             package_install_version = package_elem.get( 'version', '1.0' )
             if package_install_version == '1.0':
-                # Since the required tool dependency is installed for a repository dependency, all we need to do
-                # is inspect the <actions> tag set to find the <action type="set_environment"> tag.
+                # Since the required tool dependency is installed for a repository dependency, we first need to inspect the <actions> tag set to find
+                # the <action type="set_environment"> tag.
                 for actions_elem in package_elem:
                     for action_elem in actions_elem:
                         action_type = action_elem.get( 'type', 'shell_command' )
@@ -141,7 +145,7 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                     if env_var_dict:
                                         env_var_dicts.append( env_var_dict )
                         elif action_type == 'setup_virtualenv':
-                            # Add the virtualenv's site-pacakges to PYTHONPATH and bin to PATH.  This is a bit hackish.
+                            # Add the virtualenv's site-packages to PYTHONPATH and bin to PATH.  This is a bit hackish.
                             site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( install_dir, "venv", "bin", "python" )
                             output = fabric_util.handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
                             if output.return_code:
@@ -152,7 +156,37 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                 env_var_dicts.append( dict( name="PYTHONPATH", action="prepend_to", value=output.stdout ) )
                                 env_var_dicts.append( dict( name="PATH", action="prepend_to", value=os.path.join( install_dir, 'venv', 'bin' ) ) )
                     if env_var_dicts:
-                        action_dict[ 'environment_variable' ] = env_var_dicts
+                        if required_repository.status in [ app.model.ToolShedRepository.installation_status.INSTALLED,
+                                                           app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+                            # Handle the case where we have an installed required repository due to the prior_installation_required = True
+                            # setting in the received tool_shed_repository's tool_dependencies.xml file and the required repository's
+                            # tool_dependencies.xml file may include the use of the $ENV[] variable inheritance feature.  To handle this,
+                            # we will replace the current "value" entries in each env_var_dict with the actual path taken from the env.sh
+                            # file generated for the installed required repository.  Each env_var_dict currently looks something like this: 
+                            # {'action': 'append_to', 'name': 'LD_LIBRARY_PATH', 'value': '$BOOST_ROOT_DIR/lib/'}
+                            # We'll read the contents of the received required_repository's env.sh file and replace the 'value' entry of each env_var_dict
+                            # with the associated value in the env.sh file.
+                            new_env_var_dicts = []
+                            env_sh_file_dir = get_tool_dependency_install_dir( app=app,
+                                                                               repository_name=required_repository.name,
+                                                                               repository_owner=required_repository.owner,
+                                                                               repository_changeset_revision=required_repository.installed_changeset_revision,
+                                                                               tool_dependency_type='package',
+                                                                               tool_dependency_name=package_name,
+                                                                               tool_dependency_version=package_version )
+                            env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
+                            for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
+                                env_var_dict = env_var_dicts[ i ]
+                                action = env_var_dict.get( 'action', None )
+                                name = env_var_dict.get( 'name', None )
+                                value = env_var_dict.get( 'value', None )
+                                if action and name and value:
+                                    new_value = parse_env_shell_entry( action, name, value, line )
+                                    env_var_dict[ 'value' ] = new_value
+                                new_env_var_dicts.append( env_var_dict )
+                            action_dict[ 'environment_variable' ] = new_env_var_dicts
+                        else:
+                            action_dict[ 'environment_variable' ] = env_var_dicts
                         actions.append( ( 'set_environment', action_dict ) )
                         return tool_dependency, actions
             else:
@@ -253,6 +287,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                            dependent_install_dir=dependent_install_dir,
                                                                            required_install_dir=required_repository_package_install_dir,
                                                                            tool_shed_repository=tool_shed_repository,
+                                                                           required_repository=required_repository,
                                                                            package_name=package_name,
                                                                            package_version=package_version,
                                                                            tool_dependencies_config=config_to_use )
@@ -324,13 +359,11 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     sa_session = app.model.context.current
 
     def evaluate_template( text ):
-        """ Substitute variables defined in XML blocks obtained loaded from
-        dependencies file. """
+        """ Substitute variables defined in XML blocks obtained loaded from dependencies file. """
+        # # Added for compatibility with CloudBioLinux.
         # TODO: Add tool_version substitution for compat with CloudBioLinux.
-        substitutions = {
-            "INSTALL_DIR": install_dir,
-            "system_install": install_dir,  # Added for compat with CloudBioLinux
-        }
+        substitutions = { "INSTALL_DIR" : install_dir,
+                          "system_install" : install_dir }
         return Template( text ).safe_substitute( substitutions )
 
     if not os.path.exists( install_dir ):
@@ -431,15 +464,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
-        action_tuple = ( action_type, action_dict )
-        # If we're setting environment variables, it's redundant to set the same variable to the same value more than once,
-        # so we only append it to the actions list if it isn't already there.
-        if action_type in [ 'set_environment', 'set_environment_for_install' ]:
-            if action_tuple not in actions:
-                actions.append( action_tuple )
-        # However, there may be cases where other action types should be executed several times with the same parameters.
-        else:
-            actions.append( action_tuple )
+        actions.append( ( action_type, action_dict ) )
     if actions:
         actions_dict[ 'actions' ] = actions
     if proprietary_fabfile_path:
@@ -463,7 +488,24 @@ def listify( item ):
     else:
         return [ item ]
 
-def populate_actions_dict( app, dependent_install_dir, required_install_dir, tool_shed_repository, package_name, package_version, tool_dependencies_config ):
+def parse_env_shell_entry( action, name, value, line ):
+    new_value = value
+    var_name = '$%s' % name
+    tmp_value = line.split( '=' )[ 1 ]
+    if action == 'prepend_to':
+        # PATH=/test/package_rdkit_2012_12/62ebd7bb637a/rdkit/bin:$PATH; export PATH
+        new_value = tmp_value.split( ':%s' % var_name )[ 0 ]
+    elif action == 'set_to':
+        # RDBASE=test/package_rdkit_2012_12/62ebd7bb637a/rdkit; export RDBASE
+        new_value = tmp_value.split( ';' )[ 0 ]
+    elif action == 'append_to':
+        # LD_LIBRARY_PATH=$LD_LIBRARY_PATH:test/package_rdkit_2012_12/62ebd7bb637a/rdkit/lib/; export LD_LIBRARY_PATH
+        new_value = tmp_value.split( ':' )[ 1 ]
+        new_value = new_value.split( ';' )[ 0 ]
+    return new_value
+
+        
+def populate_actions_dict( app, dependent_install_dir, required_install_dir, tool_shed_repository, required_repository, package_name, package_version, tool_dependencies_config ):
     """
     Populate an actions dictionary that can be sent to fabric_util.install_and_build_package.  This method handles the scenario where a tool_dependencies.xml
     file defines a complex repository dependency.  In this case, the tool dependency package will be installed in a separate repository and the tool dependency
@@ -495,7 +537,8 @@ def populate_actions_dict( app, dependent_install_dir, required_install_dir, too
                                                                                              tool_shed_repository=tool_shed_repository,
                                                                                              package_name=package_name,
                                                                                              package_version=package_version,
-                                                                                             elem=required_td_elem )
+                                                                                             elem=required_td_elem,
+                                                                                             required_repository=required_repository )
                         if actions:
                             actions_dict[ 'actions' ] = actions
                         break
