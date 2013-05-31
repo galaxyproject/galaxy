@@ -431,7 +431,15 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
-        actions.append( ( action_type, action_dict ) )
+        action_tuple = ( action_type, action_dict )
+        # If we're setting environment variables, it's redundant to set the same variable to the same value more than once,
+        # so we only append it to the actions list if it isn't already there.
+        if action_type in [ 'set_environment', 'set_environment_for_install' ]:
+            if action_tuple not in actions:
+                actions.append( action_tuple )
+        # However, there may be cases where other action types should be executed several times with the same parameters.
+        else:
+            actions.append( action_tuple )
     if actions:
         actions_dict[ 'actions' ] = actions
     if proprietary_fabfile_path:
