@@ -685,6 +685,8 @@ def get_repository_by_name_and_owner( app, name, owner ):
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
+    if tool_shed.endswith( '/' ):
+        tool_shed = tool_shed.rstrip( '/' )
     repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
                                                                                            tool_shed=tool_shed,
                                                                                            name=name,
