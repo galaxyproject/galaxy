@@ -19,7 +19,15 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Reset all metadata on each selected repository</div>
-        <form name="reset_metadata_on_selected_repositories" id="reset_metadata_on_selected_repositories" action="${h.url_for( controller='admin', action='reset_metadata_on_selected_repositories_in_tool_shed' )}" method="post" >
+        <%
+            if trans.user_is_admin():
+                controller = 'admin'
+                action = 'reset_metadata_on_selected_repositories_in_tool_shed'
+            else:
+                controller = 'repository'
+                action = 'reset_metadata_on_my_writable_repositories_in_tool_shed'
+        %>
+        <form name="reset_metadata_on_selected_repositories" id="reset_metadata_on_selected_repositories" action="${h.url_for( controller=controller, action=action )}" method="post" >
             <div class="form-row">
                 Check each repository for which you want to reset metadata.  Repository names are followed by owners in parentheses.
             </div>
