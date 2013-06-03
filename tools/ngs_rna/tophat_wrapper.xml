@@ -403,7 +403,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
         <test>
             <!-- Tophat commands:
             bowtie-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -445,7 +445,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
         <!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- TopHat commands:
-            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            tophat -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -538,9 +538,6 @@ This is a list of implemented Tophat options::
   -m/--splice-mismatches INT        The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
   -i/--min-intron-length INT        The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
   -I/--max-intron-length INT        The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
-  -F/--min-isoform-fraction 0.0-1.0 TopHat filters out junctions supported by too few alignments. Suppose a junction spanning two exons, is supported by S reads. Let the average depth of coverage of 
-                                    exon A be D, and assume that it is higher than B. If S / D is less than the minimum isoform fraction, the junction is not reported. A value of zero disables the 
-                                    filter. The default is 0.15.
   -g/--max-multihits INT            Instructs TopHat to allow up to this many alignments to the reference for a given read, and suppresses all alignments for reads with more than this many 
                                     alignments. The default is 40.
   -G/--GTF [GTF 2.2 file]           Supply TopHat with a list of gene model annotations. TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping.
