@@ -41,6 +41,28 @@ def create_and_write_tmp_file( elem ):
     fh.close()
     return tmp_filename
 
+def indent( elem, level=0 ):
+    """
+    Prints an XML tree with each node indented according to its depth.  This method is used to print the shed tool config (e.g., shed_tool_conf.xml
+    from the in-memory list of config_elems because each config_elem in the list may be a hierarchical structure that was not created using the
+    parse_xml() method below, and so will not be properly written with xml.etree.ElementTree.tostring() without manually indenting the tree first.
+    """
+    i = "\n" + level * "    "
+    if len( elem ):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for child in elem:
+            indent( child, level+1 )
+        if not child.tail or not child.tail.strip():
+            child.tail = i
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and ( not elem.tail or not elem.tail.strip() ):
+            elem.tail = i
+
 def parse_xml( file_name ):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
@@ -64,9 +86,15 @@ def parse_xml( file_name ):
     fobj.close()
     return tree, error_message
 
-def xml_to_string( elem, encoding='utf-8' ):
-    if using_python_27:
-        xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )
+def xml_to_string( elem, encoding='utf-8', use_indent=False ):
+    if elem:
+        if use_indent:
+            # We were called from suc.config_elems_to_xml_file(), so set the level to 1 since level 0 is the <toolbox> tag set.
+            indent( elem, level=1 )
+        if using_python_27:
+            xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )
+        else:
+            xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding )
     else:
-        xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding )
+        xml_str = ''
     return xml_str

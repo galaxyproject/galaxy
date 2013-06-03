@@ -193,7 +193,7 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
     for elem in config_elems:
-        os.write( fd, '%s' % xml_util.xml_to_string( elem ) )
+        os.write( fd, '%s' % xml_util.xml_to_string( elem, use_indent=True ) )
     os.write( fd, '</toolbox>\n' )
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
