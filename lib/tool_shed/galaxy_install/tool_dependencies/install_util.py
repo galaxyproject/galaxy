@@ -27,7 +27,7 @@ def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, 
     text = cu.tool_shed_get( app, tool_shed_url, url )
     if text:
         # Write the contents to a temporary file on disk so it can be reloaded and parsed.
-        fh = tempfile.NamedTemporaryFile( 'wb' )
+        fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )
         tmp_filename = fh.name
         fh.close()
         fh = open( tmp_filename, 'wb' )
@@ -595,7 +595,7 @@ def run_subprocess( app, cmd ):
     else:
         env[ 'PYTHONPATH' ] = os.path.abspath( os.path.join( app.config.root, 'lib' ) )
     message = ''
-    tmp_name = tempfile.NamedTemporaryFile().name
+    tmp_name = tempfile.NamedTemporaryFile( prefix="tmp-toolshed-rs" ).name
     tmp_stderr = open( tmp_name, 'wb' )
     proc = subprocess.Popen( cmd, shell=True, env=env, stderr=tmp_stderr.fileno() )
     returncode = proc.wait()

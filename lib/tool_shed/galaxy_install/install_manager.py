@@ -268,7 +268,7 @@ class InstallManager( object ):
                 tool_shed_repository.includes_datatypes = True
             self.app.sa_session.add( tool_shed_repository )
             self.app.sa_session.flush()
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-hrc" )
             datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.

@@ -32,7 +32,7 @@ class Py27CommentedTreeBuilder ( XmlET.TreeBuilder ):
 
 def create_and_write_tmp_file( elem ):
     tmp_str = xml_to_string( elem )
-    fh = tempfile.NamedTemporaryFile( 'wb' )
+    fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cawrf"  )
     tmp_filename = fh.name
     fh.close()
     fh = open( tmp_filename, 'wb' )

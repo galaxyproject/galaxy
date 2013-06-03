@@ -248,7 +248,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = metadata_record.repository.repo_path( app )
             repo = hg.repository( get_configured_ui(), repo_dir )
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a

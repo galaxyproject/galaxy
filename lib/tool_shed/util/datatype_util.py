@@ -70,7 +70,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
     # Temporarily persist the proprietary datatypes configuration file so it can be loaded into the datatypes registry.
-    fd, proprietary_datatypes_config = tempfile.mkstemp()
+    fd, proprietary_datatypes_config = tempfile.mkstemp( prefix="tmp-toolshed-acalpd" )
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<datatypes>\n' )
     os.write( fd, '%s' % xml_util.xml_to_string( registration ) )

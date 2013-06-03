@@ -345,7 +345,7 @@ def log_results( command, fabric_AttributeString, file_path ):
 
 @contextmanager
 def make_tmp_dir():
-    work_dir = tempfile.mkdtemp()
+    work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-mtd" )
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
