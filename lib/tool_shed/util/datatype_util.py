@@ -34,7 +34,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
-    if datatype_files:
+    if datatype_files is not None:
         # The <datatype_files> tag set contains any number of <datatype_file> tags.
         # <datatype_files>
         #    <datatype_file name="gmap.py"/>
@@ -74,14 +74,14 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<datatypes>\n' )
     os.write( fd, '%s' % xml_util.xml_to_string( registration ) )
-    if sniffers:
+    if sniffers is not None:
         os.write( fd, '%s' % xml_util.xml_to_string( sniffers ) )
     os.write( fd, '</datatypes>\n' )
     os.close( fd )
     os.chmod( proprietary_datatypes_config, 0644 )
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
-    if datatype_files:
+    if datatype_files is not None:
         try:
             os.unlink( proprietary_datatypes_config )
         except:
