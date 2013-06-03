@@ -203,22 +203,15 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     else:
                         # We're installing a new tool shed repository that does not yet have a database record.  This repository is a repository dependency
                         # of a different repository being installed.
-                        if new_tool_panel_section:
-                            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                            tool_panel_section_key = 'section_%s' % str( section_id )
-                        elif tool_panel_section:
-                            tool_panel_section_key = 'section_%s' % tool_panel_section
-                        else:
-                            tool_panel_section_key = None
+                        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                                    tool_panel_section=tool_panel_section,
+                                                                                                    new_tool_panel_section=new_tool_panel_section )
+                            
                 else:
                     # We're installing a new tool shed repository that does not yet have a database record.
-                    if new_tool_panel_section:
-                        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                        tool_panel_section_key = 'section_%s' % str( section_id )
-                    elif tool_panel_section:
-                        tool_panel_section_key = 'section_%s' % tool_panel_section
-                    else:
-                        tool_panel_section_key = None
+                    tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                                tool_panel_section=tool_panel_section,
+                                                                                                new_tool_panel_section=new_tool_panel_section )
                 tool_shed_repository = suc.create_or_update_tool_shed_repository( app=trans.app,
                                                                                   name=name,
                                                                                   description=description,
@@ -239,7 +232,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     tool_panel_section_keys.append( tool_panel_section_key )
                     filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
-    build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )                     
+    build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
 
 def generate_message_for_invalid_repository_dependencies( metadata_dict ):

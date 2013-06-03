@@ -435,14 +435,14 @@ def generate_datatypes_metadata( app, repository, repository_clone_url, reposito
     root = tree.getroot()
     repository_datatype_code_files = []
     datatype_files = root.find( 'datatype_files' )
-    if datatype_files:
+    if datatype_files is not None:
         for elem in datatype_files.findall( 'datatype_file' ):
             name = elem.get( 'name', None )
             repository_datatype_code_files.append( name )
         metadata_dict[ 'datatype_files' ] = repository_datatype_code_files
     datatypes = []
     registration = root.find( 'registration' )
-    if registration:
+    if registration is not None:
         for elem in registration.findall( 'datatype' ):
             converters = []
             display_app_containers = []

@@ -388,25 +388,9 @@ def initiate_repository_installation( trans, installation_dict ):
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
     # Handle contained tools.
     if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section or tool_panel_section ):
-        if new_tool_panel_section:
-            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-            tool_panel_section_key = 'section_%s' % str( section_id )
-            if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-            else:
-                # Appending a new section to trans.app.toolbox.tool_panel
-                log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                elem = XmlET.Element( 'section' )
-                elem.attrib[ 'name' ] = new_tool_panel_section
-                elem.attrib[ 'id' ] = section_id
-                elem.attrib[ 'version' ] = ''
-                tool_section = tools.ToolSection( elem )
-                trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-        else:
-            tool_panel_section_key = 'section_%s' % tool_panel_section
-            tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                    tool_panel_section=tool_panel_section,
+                                                                                    new_tool_panel_section=new_tool_panel_section )
     else:
         tool_panel_section_key = None
         tool_section = None

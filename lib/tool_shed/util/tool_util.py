@@ -458,6 +458,31 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
                     fh.close()
     return sample_files, deleted_sample_files
 
+def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section=None ):
+    tool_panel_section_key = 'section_%s' % str( tool_panel_section_id )
+    if tool_panel_section_key in trans.app.toolbox.tool_panel:
+        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
+    else:
+        # Appending a new section to trans.app.toolbox.tool_panel
+        try:
+            new_tool_panel_section_name = new_tool_panel_section.name
+        except:
+            new_tool_panel_section_name = new_tool_panel_section
+        if new_tool_panel_section_name:
+            elem = XmlET.Element( 'section' )
+            elem.attrib[ 'name' ] = new_tool_panel_section_name
+            elem.attrib[ 'id' ] = tool_panel_section_id
+            elem.attrib[ 'version' ] = ''
+            tool_section = galaxy.tools.ToolSection( elem )
+            trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+        else:
+            log.debug( "Unable to create new tool pane section using received new_tool_panel_section: %s" % str( new_tool_panel_section ))
+            return None, None
+    return tool_panel_section_key, tool_section
+
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -614,8 +639,8 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
-            # Make sure the no_changes checkbox overrides the new_tool_panel_section if the user checked the checkbox and
-            # entered something into the field.
+            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something
+            # into the field.
             new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -630,41 +655,28 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
                 original_section_id = tool_section_dict[ 'id' ]
                 original_section_name = tool_section_dict[ 'name' ]
                 if original_section_id:
-                    tool_panel_section_key = 'section_%s' % str( original_section_id )
-                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                    else:
-                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                        elem = XmlET.Element( 'section' )
-                        elem.attrib[ 'name' ] = original_section_name
-                        elem.attrib[ 'id' ] = original_section_id
-                        elem.attrib[ 'version' ] = ''
-                        tool_section = galaxy.tools.ToolSection( elem )
-                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+                    tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
+                                                                                       tool_panel_section_id=original_section_id,
+                                                                                       new_tool_panel_section=new_tool_panel_section )
         else:
             # The user elected to change the tool panel section to contain the tools.
-            if new_tool_panel_section:
-                section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                tool_panel_section_key = 'section_%s' % str( section_id )
-                if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                    # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                    log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                else:
-                    # Appending a new section to trans.app.toolbox.tool_panel
-                    log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                    elem = XmlET.Element( 'section' )
-                    elem.attrib[ 'name' ] = new_tool_panel_section
-                    elem.attrib[ 'id' ] = section_id
-                    elem.attrib[ 'version' ] = ''
-                    tool_section = galaxy.tools.ToolSection( elem )
-                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            elif tool_panel_section:
-                tool_panel_section_key = 'section_%s' % tool_panel_section
-                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-            else:
-                tool_section = None
+            tool_panel_section_key, tool_section = handle_tool_panel_section( trans,
+                                                                              tool_panel_section=tool_panel_section,
+                                                                              new_tool_panel_section=new_tool_panel_section )
     return tool_section, new_tool_panel_section, tool_panel_section_key
+
+def handle_tool_panel_section( trans, tool_panel_section=None, new_tool_panel_section=None ):
+    if new_tool_panel_section:
+        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+        tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
+                                                                           tool_panel_section_id=section_id,
+                                                                           new_tool_panel_section=new_tool_panel_section )
+    elif tool_panel_section:
+        tool_panel_section_key = 'section_%s' % str( tool_panel_section )
+        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+    else:
+        return None, None
+    return tool_panel_section_key, tool_section
 
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
