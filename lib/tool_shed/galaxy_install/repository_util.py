@@ -283,6 +283,12 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
     trans.sa_session.flush()
     if 'tool_dependencies' in metadata_dict and not reinstalling:
         tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
+    if 'sample_files' in metadata_dict:
+        sample_files = metadata_dict.get( 'sample_files', [] )
+        tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+        tool_data_table_conf_filename, tool_data_table_elems = tool_util.install_tool_data_tables( trans.app, tool_shed_repository, tool_index_sample_files )
+        if tool_data_table_elems:
+            trans.app.tool_data_tables.add_new_entries_from_config_file( tool_data_table_conf_filename, None, trans.app.config.shed_tool_data_table_config, persist=True )
     if 'tools' in metadata_dict:
         tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         sample_files = metadata_dict.get( 'sample_files', [] )
@@ -483,7 +489,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                 message += "from the installed repository's <b>Repository Actions</b> menu.  "
                 status = 'error'
         if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
             # Install tool dependencies.
             suc.update_tool_shed_repository_status( trans.app,
                                                     tool_shed_repository,

@@ -106,6 +106,7 @@ class DataManager( object ):
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
+        self.tool_shed_repository_info_dict = None
         if elem is not None:
             self.load_from_element( elem, tool_path or self.data_managers.tool_path )
     def load_from_element( self, elem, tool_path ):
@@ -126,6 +127,9 @@ class DataManager( object ):
             repository_name = tool_elem.find( 'repository_name' ).text
             repository_owner = tool_elem.find( 'repository_owner' ).text
             installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
+            #save repository info here
+            self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed, name=repository_name, owner=repository_owner, installed_changeset_revision=installed_changeset_revision )
+            #get tool_shed repo id
             tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app, tool_shed, repository_name, repository_owner, installed_changeset_revision )
             tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
             #use shed_conf_file to determine tool_path
@@ -241,7 +245,7 @@ class DataManager( object ):
                     if name in output_ref_values:
                         moved = self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
-                data_table.add_entry( data_table_value, persist=True )
+                data_table.add_entry( data_table_value, persist=True, entry_source=self )
         
         for data_table_name, data_table_values in data_tables_dict.iteritems():
             #tool returned extra data table entries, but data table was not declared in data manager
@@ -289,3 +293,6 @@ class DataManager( object ):
             value_translation = self.value_translation_by_data_table_column[ data_table_name ][ column_name ]
             value = fill_template( value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd  )
         return value
+    
+    def get_tool_shed_repository_info_dict( self ):
+        return self.tool_shed_repository_info_dict

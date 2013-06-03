@@ -571,12 +571,12 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         app.config.tool_data_table_config_path = repository_files_dir
     else:
         # Use a temporary working directory to copy all sample files.
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-gmfcr" )
         # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
         files_dir = relative_install_dir
         if shed_config_dict.get( 'tool_path' ):
             files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
-        app.config.tool_data_path = work_dir
+        app.config.tool_data_path = work_dir #FIXME: Thread safe?
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
     datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
@@ -598,7 +598,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
             new_table_elems, error_message = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
                                                                                                     tool_data_path=app.config.tool_data_path,
                                                                                                     shed_tool_data_table_config=app.config.shed_tool_data_table_config,
-                                                                                                    persist=persist )
+                                                                                                    persist=False )
             if error_message:
                 invalid_file_tups.append( ( filename, error_message ) )
     for root, dirs, files in os.walk( files_dir ):
@@ -1584,7 +1584,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     invalid_file_tups = []
     home_dir = os.getcwd()
     for changeset in repo.changelog:
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ramorits" )
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
         log.debug( "Cloning repository changeset revision: %s", str( ctx.rev() ) )

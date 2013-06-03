@@ -189,7 +189,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
 
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     """Persist the current in-memory list of config_elems to a file named by the value of config_filename."""
-    fd, filename = tempfile.mkstemp()
+    fd, filename = tempfile.mkstemp( prefix="tmp-toolshed-cetxf"  )
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
     for elem in config_elems:
@@ -293,6 +293,32 @@ def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     toolshed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( repo_info_tup )
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
+
+def generate_repository_info_elem( tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd ):
+    """Create and return an ElementTree repository info Element."""
+    if parent_elem is None:
+        elem = XmlET.Element( 'tool_shed_repository' )
+    else:
+        elem = XmlET.SubElement( parent_elem, 'tool_shed_repository' )
+    
+    tool_shed_elem = XmlET.SubElement( elem, 'tool_shed' )
+    tool_shed_elem.text = tool_shed
+    repository_name_elem = XmlET.SubElement( elem, 'repository_name' )
+    repository_name_elem.text = repository_name
+    repository_owner_elem = XmlET.SubElement( elem, 'repository_owner' )
+    repository_owner_elem.text = owner
+    changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
+    changeset_revision_elem.text = changeset_revision
+    #add additional values
+    #TODO: enhance additional values to allow e.g. use of dict values that will recurse
+    for key, value in kwd.iteritems():
+        new_elem = XmlET.SubElement( elem, key )
+        new_elem.text = value
+    return elem
+    
+def generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=None, **kwd ):
+    return generate_repository_info_elem( tool_shed_repository.tool_shed, tool_shed_repository.name, tool_shed_repository.installed_changeset_revision, tool_shed_repository.owner, parent_elem=parent_elem, **kwd )
+    
 
 def generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None ):
     """Generate the URL for sharing a repository that is in the tool shed."""
@@ -546,7 +572,7 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 fctx = None
                 continue
             if fctx:
-                fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
+                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-gntfc", dir=dir )
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )

@@ -13,9 +13,11 @@ import shutil
 import tempfile
 
 from galaxy import util
+from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
+DEFAULT_TABLE_TYPE = 'tabular'
 
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
@@ -26,9 +28,6 @@ class ToolDataTableManager( object ):
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
-        # Store config elements for on-the-fly persistence to the defined shed_tool_data_table_config file name.
-        self.shed_data_table_elems = []
-        self.data_table_elem_names = []
         if config_filename:
             self.load_from_config_file( config_filename, self.tool_data_path, from_shed_config=False )
 
@@ -58,23 +57,15 @@ class ToolDataTableManager( object ):
         root = tree.getroot()
         table_elems = []
         for table_elem in root.findall( 'table' ):
-            type = table_elem.get( 'type', 'tabular' )
-            assert type in tool_data_table_types, "Unknown data table type '%s'" % type
+            table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
             table_elems.append( table_elem )
-            table_elem_name = table_elem.get( 'name', None )
-            if table_elem_name and table_elem_name not in self.data_table_elem_names:
-                self.data_table_elem_names.append( table_elem_name )
-                if from_shed_config:
-                    self.shed_data_table_elems.append( table_elem )
-            table = tool_data_table_types[ type ]( table_elem, tool_data_path, from_shed_config)
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
             else:
-                for table_row in table.data:
-                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
-                    if table_row not in self.data_tables[ table.name ].data:
-                        self.data_tables[ table.name ].data.append( table_row )
+                log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
+                self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
+                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
     def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):
@@ -100,84 +91,98 @@ class ToolDataTableManager( object ):
 
         """
         error_message = ''
-        table_elems = []
         try:
-            tree = util.parse_xml( config_filename )
-            root = tree.getroot()
-        except Exception, e:
-            error_message = 'Error attempting to parse file %s: %s' % ( str( os.path.split( config_filename )[ 1 ] ), str( e ) )
-            log.debug( error_message )
-            return table_elems, error_message
-        # Make a copy of the current list of data_table_elem_names so we can persist later if changes to the config file are necessary.
-        original_data_table_elem_names = [ name for name in self.data_table_elem_names ]
-        if root.tag == 'tables':
             table_elems = self.load_from_config_file( config_filename=config_filename,
                                                       tool_data_path=tool_data_path,
                                                       from_shed_config=True )
-        else:
-            type = root.get( 'type', 'tabular' )
-            assert type in tool_data_table_types, "Unknown data table type '%s'" % type
-            table_elems.append( root )
-            table_elem_name = root.get( 'name', None )
-            if table_elem_name and table_elem_name not in self.data_table_elem_names:
-                self.data_table_elem_names.append( table_elem_name )
-                self.shed_data_table_elems.append( root )
-            table = tool_data_table_types[ type ]( root, tool_data_path )
-            if table.name not in self.data_tables:
-                self.data_tables[ table.name ] = table
-                log.debug( "Added new tool data table '%s'", table.name )
-        if persist and self.data_table_elem_names != original_data_table_elem_names:
+        except Exception, e:
+            error_message = 'Error attempting to parse file %s: %s' % ( str( os.path.split( config_filename )[ 1 ] ), str( e ) )
+            log.debug( error_message )
+            table_elems = []
+        if persist:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
-            self.to_xml_file( shed_tool_data_table_config )
+            self.to_xml_file( shed_tool_data_table_config, table_elems )
         return table_elems, error_message
 
-    def to_xml_file( self, shed_tool_data_table_config ):
-        """Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk."""
+    def to_xml_file( self, shed_tool_data_table_config, new_elems=None, remove_elems=None ):
+        """
+        Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk.
+        remove_elems are removed before new_elems are added.
+        """
+        if not ( new_elems or remove_elems ):
+            log.debug( 'ToolDataTableManager.to_xml_file called without any elements to add or remove.' )
+            return #no changes provided, no need to persist any changes
+        if not new_elems:
+            new_elems = []
+        if not remove_elems:
+            remove_elems = []
         full_path = os.path.abspath( shed_tool_data_table_config )
-        fd, filename = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<tables>\n' )
-        for elem in self.shed_data_table_elems:
-            os.write( fd, '%s' % util.xml_to_string( elem ) )
-        os.write( fd, '</tables>\n' )
-        os.close( fd )
-        shutil.move( filename, full_path )
+        #FIXME: we should lock changing this file by other threads / head nodes
+        try:
+            tree = util.parse_xml( full_path )
+            root = tree.getroot()
+            out_elems = [ elem for elem in root ]
+        except Exception, e:
+            out_elems = []
+            log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
+        for elem in remove_elems:
+            #handle multiple occurrences of remove elem in existing elems
+            while elem in out_elems:
+                remove_elems.remove( elem )
+        #add new elems
+        out_elems.extend( new_elems )
+        with open( full_path, 'wb' ) as out:
+            out.write( '<?xml version="1.0"?>\n<tables>\n' )
+            for elem in out_elems:
+                out.write( util.xml_to_string( elem ) )
+            out.write( '</tables>\n' )
         os.chmod( full_path, 0644 )
 
-
 class ToolDataTable( object ):
+
+    @classmethod
+    def from_elem( cls, table_elem, tool_data_path, from_shed_config ):
+        table_type = table_elem.get( 'type', 'tabular' )
+        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
+        return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config )
 
     def __init__( self, config_element, tool_data_path, from_shed_config = False):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
         self.empty_field_values = {}
-        for file_elem in config_element.findall( 'file' ):
-            # There should only be one file_elem.
-            if 'path' in file_elem.attrib:
-                tool_data_file_path = file_elem.get( 'path' )
-                self.tool_data_file = os.path.split( tool_data_file_path )[1]
-            else:
-                self.tool_data_file = None
+        self.filenames = odict()
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-
+    
+    def _update_version( self ):
+        self._loaded_content_version += 1
+        return self._loaded_content_version
+    
     def get_empty_field_by_name( self, name ):
         return self.empty_field_values.get( name, self.empty_field_value )
     
-    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+    def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         raise NotImplementedError( "Abstract method" )
     
-    def add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
-        self._add_entry( entry, persist=persist, persist_on_error=persist_on_error, **kwd )
-        self._loaded_content_version += 1
+    def add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
+        self._add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
+        return self._update_version()
+    
+    def add_entries( self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
+        if entries:
+            for entry in entries:
+                self.add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._loaded_content_version
     
     def is_current_version( self, other_version ):
         return self._loaded_content_version == other_version
+    
+    def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
+        raise NotImplementedError( "Abstract method" )
 
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -196,6 +201,7 @@ class TabularToolDataTable( ToolDataTable ):
 
     def __init__( self, config_element, tool_data_path, from_shed_config = False):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config)
+        self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
     def configure_and_load( self, config_element, tool_data_path, from_shed_config = False):
@@ -206,24 +212,37 @@ class TabularToolDataTable( ToolDataTable ):
         self.comment_char = config_element.get( 'comment_char', '#' )
         # Configure columns
         self.parse_column_spec( config_element )
+        
+        #store repo info if available:
+        repo_elem = config_element.find( 'tool_shed_repository' )
+        if repo_elem is not None:
+            repo_info = dict( tool_shed=repo_elem.find( 'tool_shed' ).text, name=repo_elem.find( 'repository_name' ).text, 
+                              owner=repo_elem.find( 'repository_owner' ).text, installed_changeset_revision=repo_elem.find( 'installed_changeset_revision' ).text )
+        else:
+            repo_info = None
         # Read every file
-        all_rows = []
         for file_element in config_element.findall( 'file' ):
+            filename = file_path = file_element.get( 'path', None )
             found = False
+            if file_path is None:
+                log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
+                continue
+            
+            #FIXME: splitting on and merging paths from a configuration file when loading is wonky
+            # Data should exist on disk in the state needed, i.e. the xml configuration should
+            # point directly to the desired file to load. Munging of the tool_data_tables_conf.xml.sample
+            # can be done during installing / testing / metadata resetting with the creation of a proper
+            # tool_data_tables_conf.xml file, containing correct <file path=> attributes. Allowing a 
+            # path.join with a different root should be allowed, but splitting should not be necessary.
             if tool_data_path and from_shed_config:
                 # Must identify with from_shed_config as well, because the
                 # regular galaxy app has and uses tool_data_path.
                 # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
-                filepath = file_element.get( 'path' )
-                filename = os.path.split( filepath )[ 1 ]
+                filename = os.path.split( file_path )[ 1 ]
                 filename = os.path.join( tool_data_path, filename )
-            else:
-               filename = file_element.get( 'path' )
             if os.path.exists( filename ):
                 found = True
-                all_rows.extend( self.parse_file_fields( open( filename ) ) )
-                self.filename = filename
             else:
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
@@ -233,14 +252,32 @@ class TabularToolDataTable( ToolDataTable ):
                 if file_path and file_path != self.tool_data_path:
                     corrected_filename = os.path.join( self.tool_data_path, file_name )
                     if os.path.exists( corrected_filename ):
+                        filename = corrected_filename
                         found = True
-                        all_rows.extend( self.parse_file_fields( open( corrected_filename ) ) )
-                        self.filename = corrected_filename
-            if not found:
+            
+            if found:
+                self.data.extend( self.parse_file_fields( open( filename ) ) )
+                self._update_version()
+            else:
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
-        self.data = all_rows
-
+            
+            if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
+                self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path, 
+                                                   config_element=config_element, tool_shed_repository=repo_info )
+            else:
+                log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
+            
+    
+    def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
+        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )
+        #merge filename info
+        for filename, info in other_table.filenames.iteritems():
+            if filename not in self.filenames:
+                self.filenames[ filename ] = info
+        #add data entries and return current data table version
+        return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
+    
     def handle_found_index_file( self, filename ):
         self.missing_index_file = None
         self.data.extend( self.parse_file_fields( open( filename ) ) )
@@ -341,7 +378,7 @@ class TabularToolDataTable( ToolDataTable ):
                 break
         return rval
     
-    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+    def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         #accepts dict or list of columns
         if isinstance( entry, dict ):
             fields = []
@@ -354,28 +391,53 @@ class TabularToolDataTable( ToolDataTable ):
                 fields.append( field_value )
         else:
             fields = entry
+        is_error = False
         if self.largest_index < len( fields ):
             fields = self._replace_field_separators( fields )
-            self.data.append( fields )
-            field_len_error = False
+            if fields not in self.data or allow_duplicates:
+                self.data.append( fields )
+            else:
+                log.error( "Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name )
+                is_error = True
         else:
             log.error( "Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len( fields ), self.largest_index + 1 )
-            field_len_error = True
-        if persist and ( not field_len_error or persist_on_error ):
-            #FIXME: Need to lock these files for editing
-            try:
-                data_table_fh = open( self.filename, 'r+b' )
-            except IOError, e:
-                log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
-                data_table_fh = open( self.filename, 'wb' )
-            if os.stat( self.filename )[6] != 0:
-                # ensure last existing line ends with new line
-                data_table_fh.seek( -1, 2 ) #last char in file
-                last_char = data_table_fh.read( 1 )
-                if last_char not in [ '\n', '\r' ]:
-                    data_table_fh.write( '\n' )
-            data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
-        return not field_len_error
+            is_error = True
+        filename = None
+                    
+        if persist and ( not is_error or persist_on_error ):
+            if entry_source:
+                #if dict, assume is compatible info dict, otherwise call method
+                if isinstance( entry_source, dict ):
+                    source_repo_info = entry_source
+                else:
+                    source_repo_info = entry_source.get_tool_shed_repository_info_dict()
+            else:
+                source_repo_info = None
+            for name, value in self.filenames.iteritems():
+                repo_info = value.get( 'tool_shed_repository', None )
+                if ( not source_repo_info and not repo_info ) or ( source_repo_info and repo_info and source_repo_info == repo_info ):
+                    filename = name
+                    break
+            if filename is None:
+                #should we default to using any filename here instead?
+                log.error( "Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields )
+                is_error = True
+            else:
+                #FIXME: Need to lock these files for editing
+                log.debug( "Persisting changes to file: %s", filename )
+                try:
+                    data_table_fh = open( filename, 'r+b' )
+                except IOError, e:
+                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                    data_table_fh = open( filename, 'wb' )
+                if os.stat( filename )[6] != 0:
+                    # ensure last existing line ends with new line
+                    data_table_fh.seek( -1, 2 ) #last char in file
+                    last_char = data_table_fh.read( 1 )
+                    if last_char not in [ '\n', '\r' ]:
+                        data_table_fh.write( '\n' )
+                data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
+        return not is_error
     
     def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
         #make sure none of the fields contain separator
