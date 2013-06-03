@@ -42,8 +42,8 @@
             $(function() {
                 // -- Viz set up. --
                 
-                var genome = new visualization_mod.Genome(JSON.parse('${ h.to_json_string( genome ) }'))
-                    vis = new visualization_mod.GenomeVisualization(JSON.parse('${ h.to_json_string( viz_config ) }')),
+                var genome = new visualization_mod.Genome( ${ h.to_json_string( genome ) } )
+                    vis = new visualization_mod.GenomeVisualization( ${ h.to_json_string( viz_config ) } ),
                     viz_view = new circster.CircsterView({
                         el: $('#vis'),
                         // Gap is difficult to set because it very dependent on chromosome size and organization.

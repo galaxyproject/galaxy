@@ -163,7 +163,7 @@ class Registry( object ):
                             # Use default mime type as per datatype spec
                             mimetype = self.datatypes_by_extension[ extension ].get_mime()
                         self.mimetypes_by_extension[ extension ] = mimetype
-                        if hasattr( datatype_class, "get_track_type" ):
+                        if datatype_class.track_type:
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
@@ -379,6 +379,36 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
+        
+    def get_datatype_class_by_name( self, name ):
+        """
+        Return the datatype class where the datatype's `type` attribute
+        (as defined in the datatype_conf.xml file) contains `name`.
+        """
+        #TODO: too roundabout - would be better to generate this once as a map and store in this object
+        found_class = None
+        for ext, datatype_obj in self.datatypes_by_extension.items():
+            datatype_obj_class = datatype_obj.__class__
+            datatype_obj_class_str = str( datatype_obj_class )
+            #print datatype_obj_class_str
+            if name in datatype_obj_class_str:
+                return datatype_obj_class
+        return None
+        # these seem to be connected to the dynamic classes being generated in this file, lines 157-158
+        #   they appear when a one of the three are used in inheritance with subclass="True"
+        #TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
+
+        #remap = {
+        #    'galaxy.datatypes.registry.Tabular'   : galaxy.datatypes.tabular.Tabular,
+        #    'galaxy.datatypes.registry.Text'      : galaxy.datatypes.data.Text,
+        #    'galaxy.datatypes.registry.Binary'    : galaxy.datatypes.binary.Binary
+        #}
+        #datatype_str = str( datatype )
+        #if datatype_str in remap:
+        #    datatype = remap[ datatype_str ]
+        #
+        #return datatype
+
     def get_available_tracks(self):
         return self.available_tracks
     def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
@@ -397,7 +427,7 @@ class Registry( object ):
         except KeyError:
             builder = data.Text()
         return builder
-    def change_datatype(self, data, ext, set_meta = True ):
+    def change_datatype(self, data, ext):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
@@ -405,10 +435,6 @@ class Registry( object ):
         if data.has_data():
             data.set_size()
             data.init_meta( copy_from=data )
-            if set_meta:
-                #metadata is being set internally
-                data.set_meta( overwrite = False )
-                data.set_peek()
         return data
     def old_change_datatype(self, data, ext):
         """Creates and returns a new datatype based on an existing data and an extension"""

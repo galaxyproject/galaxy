@@ -9,6 +9,7 @@ from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
+import tool_shed.util.shed_util_common as suc
 
 #set up logger
 import logging
@@ -112,12 +113,21 @@ class DataManager( object ):
         self.declared_id = elem.get( 'id', None )
         self.guid = elem.get( 'guid', None )
         path = elem.get( 'tool_file', None )
+        self.version = elem.get( 'version', self.version )
+        tool_shed_repository_id = None
         tool_guid = None
         if path is None:
             tool_elem = elem.find( 'tool' )
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( util.xml_to_string( elem ) )
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
+            #need to determine repository info so that dependencies will work correctly
+            tool_shed = tool_elem.find( 'tool_shed' ).text
+            repository_name = tool_elem.find( 'repository_name' ).text
+            repository_owner = tool_elem.find( 'repository_owner' ).text
+            installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
+            tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app, tool_shed, repository_name, repository_owner, installed_changeset_revision )
+            tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
             #use shed_conf_file to determine tool_path
             shed_conf_file = elem.get( "shed_conf_file", None )
             if shed_conf_file:
@@ -125,7 +135,7 @@ class DataManager( object ):
                 if shed_conf:
                     tool_path = shed_conf.get( "tool_path", tool_path )
         assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
-        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id )
+        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id, tool_shed_repository_id=tool_shed_repository_id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
         
@@ -179,8 +189,8 @@ class DataManager( object ):
     @property
     def id( self ):
         return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
-    def load_tool( self, tool_filename, guid=None, data_manager_id=None ):
-        tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id )
+    def load_tool( self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None ):
+        tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id, repository_id=tool_shed_repository_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
         self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
@@ -223,59 +233,21 @@ class DataManager( object ):
                     assert output_ref_dataset is not None, "Referenced output was not found."
                     output_ref_values[ data_table_column ] = output_ref_dataset
             
-            final_data_table_values = []
             if not isinstance( data_table_values, list ):
                 data_table_values = [ data_table_values ]
-            columns = data_table.get_column_name_list()
-            #FIXME: Need to lock these files for editing
-            try:
-                data_table_fh = open( data_table.filename, 'r+b' )
-            except IOError, e:
-                log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s' % ( data_table.filename, e ) )
-                data_table_fh = open( data_table.filename, 'wb' )
-            if os.stat( data_table.filename )[6] != 0:
-                # ensure last existing line ends with new line
-                data_table_fh.seek( -1, 2 ) #last char in file
-                last_char = data_table_fh.read()
-                if last_char not in [ '\n', '\r' ]:
-                    data_table_fh.write( '\n' )
             for data_table_row in data_table_values:
                 data_table_value = dict( **data_table_row ) #keep original values here
                 for name, value in data_table_row.iteritems(): #FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         moved = self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
-                final_data_table_values.append( data_table_value )
-                fields = []
-                for column_name in columns:
-                    if column_name is None or column_name not in data_table_value:
-                        fields.append( data_table.get_empty_field_by_name( column_name ) )
-                    else:
-                        fields.append( data_table_value[ column_name ] )
-                #should we add a comment to file about automatically generated value here?
-                data_table_fh.write( "%s\n" % ( data_table.separator.join( self._replace_field_separators( fields, separator=data_table.separator ) ) ) ) #write out fields to disk
-                data_table.data.append( fields ) #add fields to loaded data table
-            data_table_fh.close()
+                data_table.add_entry( data_table_value, persist=True )
+        
         for data_table_name, data_table_values in data_tables_dict.iteritems():
             #tool returned extra data table entries, but data table was not declared in data manager
             #do not add these values, but do provide messages
             log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename ) )
-    def _replace_field_separators( self, fields, separator="\t", replace=None, comment_char=None ):
-        #make sure none of the fields contain separator
-        #make sure separator replace is different from comment_char,
-        #due to possible leading replace
-        if replace is None:
-            if separator == " ":
-                if comment_char == "\t":
-                    replace = "_"
-                else:
-                    replace = "\t"
-            else:
-                if comment_char == " ":
-                    replace = "_"
-                else:
-                    replace = " "
-        return map( lambda x: x.replace( separator, replace ), fields )
+    
     def process_move( self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd ):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[ data_table_name ]:
             move_dict = self.move_by_data_table_column[ data_table_name ][ column_name ]

@@ -1,14 +1,7 @@
 <%inherit file="/base.mako"/>
 
-<style>
-/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
-.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-</style>
-
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/select2" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
@@ -510,6 +503,6 @@ if wf_parms:
     <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
 </p>
     %endif
-<input type="submit" name="run_workflow" value="Run workflow" />
+<input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
 %endif

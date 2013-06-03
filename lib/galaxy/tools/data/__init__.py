@@ -3,36 +3,47 @@ Manage tool data tables, which store (at the application level) data that is
 used by tools, for example in the generation of dynamic options. Tables are
 loaded and stored by names which tools use to refer to them. This allows
 users to configure data tables for a local Galaxy instance without needing
-to modify the tool configurations. 
+to modify the tool configurations.
 """
 
-import logging, sys, os, os.path, tempfile, shutil
+import logging
+import os
+import os.path
+import shutil
+import tempfile
+
 from galaxy import util
 
 log = logging.getLogger( __name__ )
 
+
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
+
     def __init__( self, tool_data_path, config_filename=None ):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
-        self.data_tables = {}        
+        self.data_tables = {}
         # Store config elements for on-the-fly persistence to the defined shed_tool_data_table_config file name.
         self.shed_data_table_elems = []
         self.data_table_elem_names = []
         if config_filename:
             self.load_from_config_file( config_filename, self.tool_data_path, from_shed_config=False )
+
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
+
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
+
     def get( self, name, default=None ):
         try:
             return self[ name ]
         except KeyError:
             return default
+
     def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
         """
         This method is called under 3 conditions:
@@ -55,11 +66,17 @@ class ToolDataTableManager( object ):
                 self.data_table_elem_names.append( table_elem_name )
                 if from_shed_config:
                     self.shed_data_table_elems.append( table_elem )
-            table = tool_data_table_types[ type ]( table_elem, tool_data_path )
+            table = tool_data_table_types[ type ]( table_elem, tool_data_path, from_shed_config)
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
+            else:
+                for table_row in table.data:
+                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                    if table_row not in self.data_tables[ table.name ].data:
+                        self.data_tables[ table.name ].data.append( table_row )
         return table_elems
+
     def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
@@ -113,6 +130,7 @@ class ToolDataTableManager( object ):
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
             self.to_xml_file( shed_tool_data_table_config )
         return table_elems, error_message
+
     def to_xml_file( self, shed_tool_data_table_config ):
         """Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk."""
         full_path = os.path.abspath( shed_tool_data_table_config )
@@ -125,9 +143,11 @@ class ToolDataTableManager( object ):
         os.close( fd )
         shutil.move( filename, full_path )
         os.chmod( full_path, 0644 )
-    
+
+
 class ToolDataTable( object ):
-    def __init__( self, config_element, tool_data_path ):
+
+    def __init__( self, config_element, tool_data_path, from_shed_config = False):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
@@ -141,14 +161,29 @@ class ToolDataTable( object ):
                 self.tool_data_file = None
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
+        # increment this variable any time a new entry is added, or when the table is totally reloaded
+        # This value has no external meaning, and does not represent an abstract version of the underlying data
+        self._loaded_content_version = 1
+
     def get_empty_field_by_name( self, name ):
         return self.empty_field_values.get( name, self.empty_field_value )
     
+    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        raise NotImplementedError( "Abstract method" )
+    
+    def add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        self._add_entry( entry, persist=persist, persist_on_error=persist_on_error, **kwd )
+        self._loaded_content_version += 1
+        return self._loaded_content_version
+    
+    def is_current_version( self, other_version ):
+        return self._loaded_content_version == other_version
+
 class TabularToolDataTable( ToolDataTable ):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
     files to be merged but all must have the same column definitions::
-    
+
         <table type="tabular" name="test">
             <column name='...' index = '...' />
             <file path="..." />
@@ -156,14 +191,14 @@ class TabularToolDataTable( ToolDataTable ):
         </table>
 
     """
-    
-    type_key = 'tabular'
-    
-    def __init__( self, config_element, tool_data_path ):
-        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
-        self.configure_and_load( config_element, tool_data_path )
 
-    def configure_and_load( self, config_element, tool_data_path ):
+    type_key = 'tabular'
+
+    def __init__( self, config_element, tool_data_path, from_shed_config = False):
+        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config)
+        self.configure_and_load( config_element, tool_data_path, from_shed_config)
+
+    def configure_and_load( self, config_element, tool_data_path, from_shed_config = False):
         """
         Configure and load table from an XML element.
         """
@@ -175,7 +210,9 @@ class TabularToolDataTable( ToolDataTable ):
         all_rows = []
         for file_element in config_element.findall( 'file' ):
             found = False
-            if tool_data_path:
+            if tool_data_path and from_shed_config:
+                # Must identify with from_shed_config as well, because the
+                # regular galaxy app has and uses tool_data_path.
                 # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
                 filepath = file_element.get( 'path' )
@@ -210,6 +247,9 @@ class TabularToolDataTable( ToolDataTable ):
 
     def get_fields( self ):
         return self.data
+    
+    def get_version_fields( self ):
+        return ( self._loaded_content_version, self.data )
 
     def parse_column_spec( self, config_element ):
         """
@@ -217,8 +257,8 @@ class TabularToolDataTable( ToolDataTable ):
         with a name and index (as in dynamic options config), or a shorthand
         comma separated list of names in order as the text of a 'column_names'
         element.
-        
-        A column named 'value' is required. 
+
+        A column named 'value' is required.
         """
         self.columns = {}
         if config_element.find( 'columns' ) is not None:
@@ -247,7 +287,7 @@ class TabularToolDataTable( ToolDataTable ):
     def parse_file_fields( self, reader ):
         """
         Parse separated lines from file and return a list of tuples.
-        
+
         TODO: Allow named access to fields using the column names.
         """
         separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
@@ -263,10 +303,10 @@ class TabularToolDataTable( ToolDataTable ):
                     rval.append( fields )
                 else:
                     log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
-                              "'%s' characters must be used to separate fields):\n%s" 
+                              "'%s' characters must be used to separate fields):\n%s"
                               % ( ( i + 1 ), self.name, separator_char, line ) )
         return rval
-    
+
     def get_column_name_list( self ):
         rval = []
         for i in range( self.largest_index + 1 ):
@@ -282,7 +322,7 @@ class TabularToolDataTable( ToolDataTable ):
             if not found_column:
                 rval.append( None )
         return rval
-    
+
     def get_entry( self, query_attr, query_val, return_attr, default=None ):
         """
         Returns table entry associated with a col/val pair.
@@ -300,6 +340,61 @@ class TabularToolDataTable( ToolDataTable ):
                 rval = fields[ return_col ]
                 break
         return rval
-
+    
+    def _add_entry( self, entry, persist=False, persist_on_error=False, **kwd ):
+        #accepts dict or list of columns
+        if isinstance( entry, dict ):
+            fields = []
+            for column_name in self.get_column_name_list():
+                if column_name not in entry:
+                    log.debug( "Using default column value for column '%s' when adding data table entry (%s) to table '%s'.", column_name, entry, self.name )
+                    field_value = self.get_empty_field_by_name( column_name )
+                else:
+                    field_value = entry[ column_name ]
+                fields.append( field_value )
+        else:
+            fields = entry
+        if self.largest_index < len( fields ):
+            fields = self._replace_field_separators( fields )
+            self.data.append( fields )
+            field_len_error = False
+        else:
+            log.error( "Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len( fields ), self.largest_index + 1 )
+            field_len_error = True
+        if persist and ( not field_len_error or persist_on_error ):
+            #FIXME: Need to lock these files for editing
+            try:
+                data_table_fh = open( self.filename, 'r+b' )
+            except IOError, e:
+                log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                data_table_fh = open( self.filename, 'wb' )
+            if os.stat( self.filename )[6] != 0:
+                # ensure last existing line ends with new line
+                data_table_fh.seek( -1, 2 ) #last char in file
+                last_char = data_table_fh.read( 1 )
+                if last_char not in [ '\n', '\r' ]:
+                    data_table_fh.write( '\n' )
+            data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
+        return not field_len_error
+    
+    def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
+        #make sure none of the fields contain separator
+        #make sure separator replace is different from comment_char,
+        #due to possible leading replace
+        if separator is None:
+            separator = self.separator
+        if replace is None:
+            if separator == " ":
+                if comment_char == "\t":
+                    replace = "_"
+                else:
+                    replace = "\t"
+            else:
+                if comment_char == " ":
+                    replace = "_"
+                else:
+                    replace = " "
+        return map( lambda x: x.replace( separator, replace ), fields )
+    
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

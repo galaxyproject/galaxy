@@ -1,8 +1,8 @@
 import os
 import urllib2
-from galaxy import util
 from galaxy.util.odict import odict
 from tool_shed.util import encoding_util
+from tool_shed.util import xml_util
 
 REPOSITORY_OWNER = 'devteam'
 
@@ -11,7 +11,9 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
     migrated_tool_configs_dict = odict()
-    tree = util.parse_xml( tools_xml_file_path )
+    tree, error_message = xml_util.parse_xml( tools_xml_file_path )
+    if tree is None:
+        return False, odict()
     root = tree.getroot()
     tool_shed = root.get( 'name' )
     tool_shed_url = get_tool_shed_url_from_tools_xml_file_path( app, tool_shed )
@@ -27,9 +29,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                 url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&from_install_manager=True' % \
                 ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
                 try:
-                    response = urllib2.urlopen( url )
-                    text = response.read()
-                    response.close()
+                    text = tool_shed_get( app, tool_shed_url, url )
                     tool_shed_accessible = True
                 except Exception, e:
                     # Tool shed may be unavailable - we have to set tool_shed_accessible since we're looping.
@@ -50,15 +50,16 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
             # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
             missing_tool_configs_dict = odict()
             for tool_panel_config in tool_panel_configs:
-                tree = util.parse_xml( tool_panel_config )
-                root = tree.getroot()
-                for elem in root:
-                    if elem.tag == 'tool':
-                        missing_tool_configs_dict = check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict )
-                    elif elem.tag == 'section':
-                        for section_elem in elem:
-                            if section_elem.tag == 'tool':
-                                missing_tool_configs_dict = check_tool_tag_set( section_elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+                tree, error_message = xml_util.parse_xml( tool_panel_config )
+                if tree:
+                    root = tree.getroot()
+                    for elem in root:
+                        if elem.tag == 'tool':
+                            missing_tool_configs_dict = check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict )
+                        elif elem.tag == 'section':
+                            for section_elem in elem:
+                                if section_elem.tag == 'tool':
+                                    missing_tool_configs_dict = check_tool_tag_set( section_elem, migrated_tool_configs_dict, missing_tool_configs_dict )
     else:
         exception_msg = '\n\nThe entry for the main Galaxy tool shed at %s is missing from the %s file.  ' % ( tool_shed, app.config.tool_sheds_config )
         exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
@@ -80,7 +81,9 @@ def get_non_shed_tool_panel_configs( app ):
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
         # <toolbox tool_path="../shed_tools">
-        tree = util.parse_xml( config_filename )
+        tree, error_message = xml_util.parse_xml( config_filename )
+        if tree is None:
+            continue 
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
         if tool_path is None:
@@ -95,3 +98,16 @@ def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
                 shed_url = shed_url.rstrip( '/' )
             return shed_url
     return None
+
+def tool_shed_get( app, tool_shed_url, uri ):
+    """Make contact with the tool shed via the uri provided."""
+    registry = app.tool_shed_registry
+    urlopener = urllib2.build_opener()
+    password_mgr = registry.password_manager_for_url( tool_shed_url )
+    if ( password_mgr is not None ):
+        auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
+        urlopener.add_handler( auth_handler )
+    response = urlopener.open( uri )
+    content = response.read()
+    response.close()
+    return content

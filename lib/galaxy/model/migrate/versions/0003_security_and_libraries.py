@@ -19,46 +19,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
-
-if migrate_engine.name == 'postgres':
-    # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
-    from sqlalchemy.databases import postgres
-    class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
-        def visit_table(self, table):
-            for column in table.columns:
-                if column.default is not None:
-                    self.traverse_single(column.default)
-            self.append("\nDROP TABLE " +
-                        self.preparer.format_table(table) +
-                        " CASCADE")
-            self.execute()
-    postgres.dialect.schemadropper = PGCascadeSchemaDropper
-
-def nextval( table, col='id' ):
-    if migrate_engine.name == 'postgres':
-        return "nextval('%s_%s_seq')" % ( table, col )
-    elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
-        return "null"
-    else:
-        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-
-def localtimestamp():
-   if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-       return "LOCALTIMESTAMP"
-   elif migrate_engine.name == 'sqlite':
-       return "current_date || ' ' || current_time"
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
-
-def boolean_false():
-   if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-       return False
-   elif migrate_engine.name == 'sqlite':
-       return 0
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db ) 
+metadata = MetaData()
 
 # New tables as of changeset 2341:5498ac35eedd
 Group_table = Table( "galaxy_group", metadata,
@@ -68,7 +29,7 @@ Group_table = Table( "galaxy_group", metadata,
     Column( "name", String( 255 ), index=True, unique=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-UserGroupAssociation_table = Table( "user_group_association", metadata, 
+UserGroupAssociation_table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -168,7 +129,7 @@ DefaultHistoryPermissions_table = Table( "default_history_permissions", metadata
     Column( "action", TEXT ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
-LibraryDataset_table = Table( "library_dataset", metadata, 
+LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
@@ -179,7 +140,7 @@ LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "deleted", Boolean, index=True, default=False ) )
 
-LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata, 
+LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -236,7 +197,7 @@ LibraryItemInfoTemplateElement_table = Table( "library_item_info_template_elemen
     Column( "options", JSONType() ),
     Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ) ) )
 Index( "ix_liite_library_item_info_template_id", LibraryItemInfoTemplateElement_table.c.library_item_info_template_id )
-    
+
 LibraryItemInfoTemplate_table = Table( "library_item_info_template", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -343,25 +304,52 @@ JobExternalOutputMetadata_table = Table( "job_external_output_metadata", metadat
     Column( "job_runner_external_pid", String( 255 ) ) )
 Index( "ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id )
 
-def upgrade():
+def upgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
+
+    def nextval( table, col='id' ):
+        if migrate_engine.name == 'postgres':
+            return "nextval('%s_%s_seq')" % ( table, col )
+        elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+            return "null"
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
+
+    def localtimestamp():
+       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
+           return "LOCALTIMESTAMP"
+       elif migrate_engine.name == 'sqlite':
+           return "current_date || ' ' || current_time"
+       else:
+           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+
+    def boolean_false():
+       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
+           return False
+       elif migrate_engine.name == 'sqlite':
+           return 0
+       else:
+           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+
     # Add 2 new columns to the galaxy_user table
     try:
         User_table = Table( "galaxy_user", metadata, autoload=True )
     except NoSuchTableError:
         User_table = None
         log.debug( "Failed loading table galaxy_user" )
-    if User_table:
+    if User_table is not None:
         try:
             col = Column( 'deleted', Boolean, index=True, default=False )
-            col.create( User_table )
+            col.create( User_table, index_name='ix_user_deleted')
             assert col is User_table.c.deleted
         except Exception, e:
             log.debug( "Adding column 'deleted' to galaxy_user table failed: %s" % ( str( e ) ) )
         try:
             col = Column( 'purged', Boolean, index=True, default=False )
-            col.create( User_table )
+            col.create( User_table, index_name='ix_user_purged')
             assert col is User_table.c.purged
         except Exception, e:
             log.debug( "Adding column 'purged' to galaxy_user table failed: %s" % ( str( e ) ) )
@@ -371,10 +359,10 @@ def upgrade():
     except NoSuchTableError:
         HistoryDatasetAssociation_table = None
         log.debug( "Failed loading table history_dataset_association" )
-    if HistoryDatasetAssociation_table:
+    if HistoryDatasetAssociation_table is not None:
         try:
-            col = Column( 'copied_from_library_dataset_dataset_association_id', Integer, index=True, nullable=True )
-            col.create( HistoryDatasetAssociation_table )
+            col = Column( 'copied_from_library_dataset_dataset_association_id', Integer, nullable=True )
+            col.create( HistoryDatasetAssociation_table)
             assert col is HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
         except Exception, e:
             log.debug( "Adding column 'copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
@@ -384,23 +372,23 @@ def upgrade():
     except NoSuchTableError:
         MetadataFile_table = None
         log.debug( "Failed loading table metadata_file" )
-    if MetadataFile_table:
+    if MetadataFile_table is not None:
         try:
             col = Column( 'lda_id', Integer, index=True, nullable=True )
-            col.create( MetadataFile_table )
+            col.create( MetadataFile_table, index_name='ix_metadata_file_lda_id')
             assert col is MetadataFile_table.c.lda_id
         except Exception, e:
             log.debug( "Adding column 'lda_id' to metadata_file table failed: %s" % ( str( e ) ) )
     # Add 1 new column to the stored_workflow table - changeset 2328
     try:
-        StoredWorkflow_table = Table( "stored_workflow", metadata, 
-            Column( "latest_workflow_id", Integer, 
+        StoredWorkflow_table = Table( "stored_workflow", metadata,
+            Column( "latest_workflow_id", Integer,
                 ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
-            autoload=True, useexisting=True )
+            autoload=True, extend_existing=True )
     except NoSuchTableError:
         StoredWorkflow_table = None
         log.debug( "Failed loading table stored_workflow" )
-    if StoredWorkflow_table:
+    if StoredWorkflow_table is not None:
         try:
             col = Column( 'importable', Boolean, default=False )
             col.create( StoredWorkflow_table )
@@ -413,7 +401,7 @@ def upgrade():
     except NoSuchTableError:
         Job_table = None
         log.debug( "Failed loading table job" )
-    if Job_table:
+    if Job_table is not None:
         try:
             i = Index( 'ix_job_state', Job_table.c.state )
             i.create()
@@ -432,7 +420,7 @@ def upgrade():
     except NoSuchTableError:
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
-    if HistoryDatasetAssociation_table and LibraryDatasetDatasetAssociation_table:
+    if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint( [HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
                                          [LibraryDatasetDatasetAssociation_table.c.id],
@@ -452,22 +440,24 @@ def upgrade():
     except NoSuchTableError:
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
-    if MetadataFile_table and LibraryDatasetDatasetAssociation_table:
-        try:
-            cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
-                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                         name='metadata_file_lda_id_fkey' )
-            # Create the constraint
-            cons.create()
-        except Exception, e:
-            log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
+    if migrate_engine.name != 'sqlite':
+        #Sqlite can't alter table add foreign key.
+        if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
+            try:
+                cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
+                                             [LibraryDatasetDatasetAssociation_table.c.id],
+                                             name='metadata_file_lda_id_fkey' )
+                # Create the constraint
+                cons.create()
+            except Exception, e:
+                log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
     # Make sure we have at least 1 user
     cmd = "SELECT * FROM galaxy_user;"
     users = db_session.execute( cmd ).fetchall()
     if users:
         cmd = "SELECT * FROM role;"
         roles = db_session.execute( cmd ).fetchall()
-        if not roles: 
+        if not roles:
             # Create private roles for each user - pass 1
             cmd = \
                 "INSERT INTO role " + \
@@ -513,7 +503,7 @@ def upgrade():
                 "ORDER BY galaxy_user.id;"
             cmd = cmd % nextval('default_user_permissions')
             db_session.execute( cmd )
-            # Create default history permissions for each active history associated with a user 
+            # Create default history permissions for each active history associated with a user
 
             cmd = \
                 "INSERT INTO default_history_permissions " + \
@@ -543,7 +533,21 @@ def upgrade():
             cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), boolean_false() )
             db_session.execute( cmd )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
+    if migrate_engine.name == 'postgres':
+        # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
+        from sqlalchemy.databases import postgres
+        class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+            def visit_table(self, table):
+                for column in table.columns:
+                    if column.default is not None:
+                        self.traverse_single(column.default)
+                self.append("\nDROP TABLE " +
+                            self.preparer.format_table(table) +
+                            " CASCADE")
+                self.execute()
+        postgres.dialect.schemadropper = PGCascadeSchemaDropper
     # Load existing tables
     metadata.reflect()
     # NOTE: all new data added in the upgrade method is eliminated here via table drops
@@ -558,7 +562,7 @@ def downgrade():
     except NoSuchTableError:
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
-    if MetadataFile_table and LibraryDatasetDatasetAssociation_table:
+    if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
                                          [LibraryDatasetDatasetAssociation_table.c.id],
@@ -578,7 +582,7 @@ def downgrade():
     except NoSuchTableError:
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
-    if HistoryDatasetAssociation_table and LibraryDatasetDatasetAssociation_table:
+    if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
         try:
             cons = ForeignKeyConstraint( [HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
                                          [LibraryDatasetDatasetAssociation_table.c.id],
@@ -718,7 +722,7 @@ def downgrade():
     except NoSuchTableError:
         Job_table = None
         log.debug( "Failed loading table job" )
-    if Job_table:
+    if Job_table is not None:
         try:
             i = Index( 'ix_job_state', Job_table.c.state )
             i.drop()
@@ -730,7 +734,7 @@ def downgrade():
     except NoSuchTableError:
         StoredWorkflow_table = None
         log.debug( "Failed loading table stored_workflow" )
-    if StoredWorkflow_table:
+    if StoredWorkflow_table is not None:
         try:
             col = StoredWorkflow_table.c.importable
             col.drop()
@@ -742,7 +746,7 @@ def downgrade():
     except NoSuchTableError:
         MetadataFile_table = None
         log.debug( "Failed loading table metadata_file" )
-    if MetadataFile_table:
+    if MetadataFile_table is not None:
         try:
             col = MetadataFile_table.c.lda_id
             col.drop()
@@ -754,7 +758,7 @@ def downgrade():
     except NoSuchTableError:
         HistoryDatasetAssociation_table = None
         log.debug( "Failed loading table history_dataset_association" )
-    if HistoryDatasetAssociation_table:
+    if HistoryDatasetAssociation_table is not None:
         try:
             col = HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
             col.drop()
@@ -766,7 +770,7 @@ def downgrade():
     except NoSuchTableError:
         User_table = None
         log.debug( "Failed loading table galaxy_user" )
-    if User_table:
+    if User_table is not None:
         try:
             col = User_table.c.deleted
             col.drop()

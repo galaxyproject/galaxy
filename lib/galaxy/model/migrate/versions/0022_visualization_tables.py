@@ -13,7 +13,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 Visualization_table = Table( "visualization", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -35,7 +35,8 @@ VisualizationRevision_table = Table( "visualization_revision", metadata,
     Column( "config", TEXT )
     )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -48,7 +49,8 @@ def upgrade():
         log.debug( "Could not create page_revision table" )
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     Visualization_table.drop()
     VisualizationRevision_table.drop()

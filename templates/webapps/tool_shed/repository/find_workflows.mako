@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_galaxy_repository_actions" />
 
 <%!
    def inherit(context):
@@ -11,11 +12,7 @@
 <%inherit file="${inherit(context)}"/>
 
 %if trans.webapp.name == 'galaxy':
-    <br/><br/>
-    <ul class="manage-table-actions">
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a></li>
-        <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-    </ul>
+    ${render_galaxy_repository_actions( repository=None )}
 %endif
 
 %if message:

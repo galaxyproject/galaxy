@@ -188,4 +188,6 @@ class APIItem:
                     rval[key] = get_value( key, item )
             except AttributeError:
                 rval[key] = None
+
+        rval['model_class'] = self.__class__.__name__
         return rval

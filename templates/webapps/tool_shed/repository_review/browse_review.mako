@@ -1,12 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
     from galaxy.web.form_builder import CheckboxField
     from galaxy.webapps.tool_shed.util.container_util import STRSEP
     from tool_shed.util.shed_util_common import to_safe_string
-    can_manage_repository = is_admin or repository.user == trans.user
 %>
 
 <%def name="stylesheets()">
@@ -18,17 +18,7 @@
     ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="review-${review.id}-popup" class="menubutton">Review Actions</a></li>
-    <div popupmenu="review-${review.id}-popup">
-        %if can_manage_repository:
-            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">Manage repository</a>
-        %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">View repository</a>
-        %endif
-    </div>
-</ul>
+${render_tool_shed_repository_actions( repository=repository, changeset_revision=review.changeset_revision )}
 
 %if message:
     ${render_msg( message, status )}

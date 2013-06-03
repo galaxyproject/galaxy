@@ -76,9 +76,9 @@ ${render_trackster_js_files()}
                                             vis_id: "${config.get('vis_id')}", 
                                             dbkey: "${config.get('dbkey')}"
                                          },
-                                         JSON.parse('${ h.to_json_string( config.get( 'viewport', dict() ) ) }'),
-                                         JSON.parse('${ h.to_json_string( config['tracks'] ).replace("'", "\\'") }'),
-                                         JSON.parse('${ h.to_json_string( config['bookmarks'] ) }'),
+                                         ${ h.to_json_string( config.get( 'viewport', dict() ) ) },
+                                         ${ h.to_json_string( config['tracks'] ) },
+                                         ${ h.to_json_string( config['bookmarks'] ) },
                                          true
                                          );
             init_editor();
@@ -89,7 +89,7 @@ ${render_trackster_js_files()}
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
-                } );
+                }, ${ h.to_json_string( viewport_config ) } );
                 view.editor = true;
                 init_editor();
                 set_up_router({view: view});
@@ -105,10 +105,7 @@ ${render_trackster_js_files()}
                         "Create": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
-                    $("select[name='dbkey']").combobox({
-                        appendTo: $("#overlay"),
-                        size: 40
-                    });
+                    $("select[name='dbkey']").select2({ width: 'resolve'});
                     // To support the large number of options for dbkey, enable scrolling in overlay.
                     $("#overlay").css("overflow", "auto");
                 }

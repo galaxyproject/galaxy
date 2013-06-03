@@ -17,8 +17,7 @@ from galaxy.model.custom_types import *
 import datetime
 now = datetime.datetime.utcnow
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 PostJobAction_table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),
@@ -34,7 +33,8 @@ PostJobAction_table = Table("post_job_action", metadata,
 
 tables = [PostJobAction_table]#, PostJobActionAssociation_table]
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     for table in tables:
@@ -43,7 +43,8 @@ def upgrade():
         except:
             log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     for table in tables:
         table.drop()

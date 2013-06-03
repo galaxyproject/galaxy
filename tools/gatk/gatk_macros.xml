@@ -1,0 +1,305 @@
+<macros>
+  <template name="standard_gatk_options">      
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
+        #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    #if hasattr( $param.input, 'truevalue' ):
+                        ${param}
+                    #else:
+                        --${name} "${param}"
+                    #end if
+                #end if
+            #end for
+            '
+        #end for
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
+        '
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
+    #end if
+    
+    #if str( $reference_source.reference_source_selector ) == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+  </template>
+  <xml name="gatk_param_type_conditional">
+    <conditional name="gatk_param_type">
+      <param name="gatk_param_type_selector" type="select" label="Basic or Advanced GATK options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <repeat name="pedigree" title="Pedigree file" help="-ped,--pedigree &amp;lt;pedigree&amp;gt;">
+            <param name="pedigree_file" type="data" format="txt" label="Pedigree files for samples"/>
+        </repeat>
+        <repeat name="pedigree_string_repeat" title="Pedigree string" help="-pedString,--pedigreeString &amp;lt;pedigreeString&amp;gt;">
+            <param name="pedigree_string" type="text" value="" label="Pedigree string for samples"/>
+        </repeat>
+        <param name="pedigree_validation_type" type="select" label="How strict should we be in validating the pedigree information" help="-pedValidationType,--pedigreeValidationType &amp;lt;pedigreeValidationType&amp;gt;">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="SILENT">SILENT</option>
+        </param>
+        <repeat name="read_filter" title="Read Filter" help="-rf,--read_filter &amp;lt;read_filter&amp;gt;">
+            <conditional name="read_filter_type">
+              <param name="read_filter_type_selector" type="select" label="Read Filter Type">
+                <option value="BadCigar">BadCigar</option>
+                <option value="BadMate">BadMate</option>
+                <option value="DuplicateRead">DuplicateRead</option>
+                <option value="FailsVendorQualityCheck">FailsVendorQualityCheck</option>
+                <option value="MalformedRead">MalformedRead</option>
+                <option value="MappingQuality">MappingQuality</option>
+                <option value="MappingQualityUnavailable">MappingQualityUnavailable</option>
+                <option value="MappingQualityZero">MappingQualityZero</option>
+                <option value="MateSameStrand">MateSameStrand</option>
+                <option value="MaxInsertSize">MaxInsertSize</option>
+                <option value="MaxReadLength" selected="True">MaxReadLength</option>
+                <option value="MissingReadGroup">MissingReadGroup</option>
+                <option value="NoOriginalQualityScores">NoOriginalQualityScores</option>
+                <option value="NotPrimaryAlignment">NotPrimaryAlignment</option>
+                <option value="Platform454">Platform454</option>
+                <option value="Platform">Platform</option>
+                <option value="PlatformUnit">PlatformUnit</option>
+                <option value="ReadGroupBlackList">ReadGroupBlackList</option>
+                <option value="ReadName">ReadName</option>
+                <option value="ReadStrand">ReadStrand</option>
+                <option value="ReassignMappingQuality">ReassignMappingQuality</option>
+                <option value="Sample">Sample</option>
+                <option value="SingleReadGroup">SingleReadGroup</option>
+                <option value="UnmappedRead">UnmappedRead</option>
+              </param>
+              <when value="BadCigar">
+                  <!-- no extra options -->
+              </when>
+              <when value="BadMate">
+                  <!-- no extra options -->
+              </when>
+              <when value="DuplicateRead">
+                  <!-- no extra options -->
+              </when>
+              <when value="FailsVendorQualityCheck">
+                  <!-- no extra options -->
+              </when>
+              <when value="MalformedRead">
+                  <!-- no extra options -->
+              </when>
+              <when value="MappingQuality">
+                  <param name="min_mapping_quality_score" type="integer" value="10" label="Minimum read mapping quality required to consider a read for calling"/>
+              </when>
+              <when value="MappingQualityUnavailable">
+                  <!-- no extra options -->
+              </when>
+              <when value="MappingQualityZero">
+                  <!-- no extra options -->
+              </when>
+              <when value="MateSameStrand">
+                  <!-- no extra options -->
+              </when>
+              <when value="MaxInsertSize">
+                  <param name="maxInsertSize" type="integer" value="1000000" label="Discard reads with insert size greater than the specified value"/>
+              </when>
+              <when value="MaxReadLength">
+                  <param name="maxReadLength" type="integer" value="76" label="Max Read Length"/>
+              </when>
+              <when value="MissingReadGroup">
+                  <!-- no extra options -->
+              </when>
+              <when value="NoOriginalQualityScores">
+                  <!-- no extra options -->
+              </when>
+              <when value="NotPrimaryAlignment">
+                  <!-- no extra options -->
+              </when>
+              <when value="Platform454">
+                  <!-- no extra options -->
+              </when>
+              <when value="Platform">
+                  <param name="PLFilterName" type="text" value="" label="Discard reads with RG:PL attribute containing this string"/>
+              </when>
+              <when value="PlatformUnit">
+                  <!-- no extra options -->
+              </when>
+              <when value="ReadGroupBlackList">
+                  <!-- no extra options -->
+              </when>
+              <when value="ReadName">
+                  <param name="readName" type="text" value="" label="Filter out all reads except those with this read name"/>
+              </when>
+              <when value="ReadStrand">
+                  <param name="filterPositive" type="boolean" truevalue="--filterPositive" falsevalue="" label="Discard reads on the forward strand"/>
+              </when>
+              <when value="ReassignMappingQuality">
+                  <param name="default_mapping_quality" type="integer" value="60" label="Default read mapping quality to assign to all reads"/>
+              </when>
+              <when value="Sample">
+                  <param name="sample_to_keep" type="text" value="" label="The name of the sample(s) to keep, filtering out all others"/>
+              </when>
+              <when value="SingleReadGroup">
+                  <param name="read_group_to_keep" type="integer" value="76" label="The name of the read group to keep, filtering out all others"/>
+              </when>
+              <when value="UnmappedRead">
+                  <!-- no extra options -->
+              </when>
+            </conditional>
+        </repeat>
+        <repeat name="input_interval_repeat" title="Operate on Genomic intervals" help="-L,--intervals &amp;lt;intervals&amp;gt;">
+          <param name="input_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
+        </repeat>
+        <repeat name="input_exclude_interval_repeat" title="Exclude Genomic intervals" help="-XL,--excludeIntervals &amp;lt;excludeIntervals&amp;gt;">
+          <param name="input_exclude_intervals" type="data" format="bed,gatk_interval,picard_interval_list,vcf" label="Genomic intervals" />
+        </repeat>
+        
+        <param name="interval_set_rule" type="select" label="Interval set rule" help="-isr,--interval_set_rule &amp;lt;interval_set_rule&amp;gt;">
+          <option value="UNION" selected="True">UNION</option>
+          <option value="INTERSECTION">INTERSECTION</option>
+        </param>
+        
+        <conditional name="downsampling_type">
+          <param name="downsampling_type_selector" type="select" label="Type of reads downsampling to employ at a given locus" help="-dt,--downsampling_type &amp;lt;downsampling_type&amp;gt;">
+            <option value="NONE" selected="True">NONE</option>
+            <option value="ALL_READS">ALL_READS</option>
+            <option value="BY_SAMPLE">BY_SAMPLE</option>
+          </param>
+          <when value="NONE">
+              <!-- no more options here -->
+          </when>
+          <when value="ALL_READS">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Downsample method">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &amp;lt;downsample_to_fraction&amp;gt;"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &amp;lt;downsample_to_coverage&amp;gt;"/>
+                  </when>
+              </conditional>
+          </when>
+          <when value="BY_SAMPLE">
+              <conditional name="downsample_to_type">
+                  <param name="downsample_to_type_selector" type="select" label="Downsample method">
+                      <option value="downsample_to_fraction" selected="True">Downsample by Fraction</option>
+                      <option value="downsample_to_coverage">Downsample by Coverage</option>
+                  </param>
+                  <when value="downsample_to_fraction">
+                      <param name="downsample_to_value" type="float" label="Fraction [0.0-1.0] of reads to downsample to" value="1" min="0" max="1" help="-dfrac,--downsample_to_fraction &amp;lt;downsample_to_fraction&amp;gt;"/>
+                  </when>
+                  <when value="downsample_to_coverage">
+                      <param name="downsample_to_value" type="integer" label="Coverage to downsample to at any given locus" value="0" help="-dcov,--downsample_to_coverage &amp;lt;downsample_to_coverage&amp;gt;"/>
+                  </when>
+              </conditional>
+          </when>
+        </conditional>
+        <param name="baq" type="select" label="Type of BAQ calculation to apply in the engine" help="-baq,--baq &amp;lt;baq&amp;gt;">
+          <option value="OFF" selected="True">OFF</option>
+          <option value="CALCULATE_AS_NECESSARY">CALCULATE_AS_NECESSARY</option>
+          <option value="RECALCULATE">RECALCULATE</option>
+        </param>
+        <param name="baq_gap_open_penalty" type="float" label="BAQ gap open penalty (Phred Scaled)" value="40" help="Default value is 40. 30 is perhaps better for whole genome call sets. -baqGOP,--baqGapOpenPenalty &amp;lt;baqGapOpenPenalty&amp;gt;" />
+        <param name="use_original_qualities" type="boolean" truevalue="--useOriginalQualities" falsevalue="" label="Use the original base quality scores from the OQ tag" help="-OQ,--useOriginalQualities" />
+        <param name="default_base_qualities" type="integer" label="Value to be used for all base quality scores, when some are missing" value="-1" help="-DBQ,--defaultBaseQualities &amp;lt;defaultBaseQualities&amp;gt;"/>
+        <param name="validation_strictness" type="select" label="How strict should we be with validation" help="-S,--validation_strictness &amp;lt;validation_strictness&amp;gt;">
+          <option value="STRICT" selected="True">STRICT</option>
+          <option value="LENIENT">LENIENT</option>
+          <option value="SILENT">SILENT</option>
+          <!-- <option value="DEFAULT_STRINGENCY">DEFAULT_STRINGENCY</option> listed in docs, but not valid value...-->
+        </param>
+        <param name="interval_merging" type="select" label="Interval merging rule" help="-im,--interval_merging &amp;lt;interval_merging&amp;gt;">
+          <option value="ALL" selected="True">ALL</option>
+          <option value="OVERLAPPING_ONLY">OVERLAPPING_ONLY</option>
+        </param>
+        
+        <repeat name="read_group_black_list_repeat" title="Read group black list" help="-rgbl,--read_group_black_list &amp;lt;read_group_black_list&amp;gt;">
+          <conditional name="read_group_black_list_type">
+            <param name="read_group_black_list_type_selector" type="select" label="Type of reads read group black list">
+              <option value="file" selected="True">Filters in file</option>
+              <option value="text">Specify filters as a string</option>
+            </param>
+            <when value="file">
+              <param name="read_group_black_list" type="data" format="txt" label="Read group black list file" />
+            </when>
+            <when value="text">
+              <param name="read_group_black_list" type="text" value="tag:string" label="Read group black list tag:string" />
+            </when>
+          </conditional>
+        </repeat>
+        
+        <param name="disable_experimental_low_memory_sharding" type="boolean" truevalue="--disable_experimental_low_memory_sharding" falsevalue="" label="Disable experimental low-memory sharding functionality." checked="False" help="--disable_experimental_low_memory_sharding"/>
+        <param name="non_deterministic_random_seed" type="boolean" truevalue="--nonDeterministicRandomSeed" falsevalue="" label="Makes the GATK behave non deterministically, that is, the random numbers generated will be different in every run" checked="False"  help="-ndrs,--nonDeterministicRandomSeed"/>
+        
+      </when>
+    </conditional>    
+  </xml>
+  <xml name="analysis_type_conditional">
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <yield />
+      </when>
+    </conditional>
+  </xml>
+  <xml name="reference_source_selector_param">
+    <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+      <option value="cached">Locally cached</option>
+      <option value="history">History</option>
+    </param>
+  </xml>
+  <token name="@CITATION_SECTION@">------
+
+**Citation**
+
+For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </token>
+</macros>

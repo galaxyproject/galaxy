@@ -7,7 +7,7 @@
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner"/>
-        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr.LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
+        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
     </plugins>
@@ -40,7 +40,6 @@
         </destination>
         <destination id="dynamic" runner="dynamic">
             <!-- A destination that represents a method in the dynamic runner. -->
-            <param id="type">python</param>
             <param id="function">foo</param>
         </destination>
         <destination id="secure_lwr" runner="lwr">

@@ -1,13 +1,10 @@
 """
 API operations on the contents of a library.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
+import logging
+from galaxy import web
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
+from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest, url_for, UsesLibraryMixin, UsesLibraryMixinItems
 
 log = logging.getLogger( __name__ )
 

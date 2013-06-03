@@ -12,10 +12,10 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -31,9 +31,9 @@ def upgrade():
     try:
         HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
         c = Column( "purged", Boolean, index=True, default=False )
-        c.create( HistoryDatasetAssociation_table )
+        c.create( HistoryDatasetAssociation_table, index_name="ix_history_dataset_association_purged")
         assert c is HistoryDatasetAssociation_table.c.purged
-        db_session.execute(HistoryDatasetAssociation_table.update().values(purged=False))
+        migrate_engine.execute(HistoryDatasetAssociation_table.update().values(purged=False))
     except Exception, e:
         print "Adding purged column to history_dataset_association table failed: %s" % str( e )
         log.debug( "Adding purged column to history_dataset_association table failed: %s" % str( e ) )
@@ -41,7 +41,7 @@ def upgrade():
     try:
         User_table = Table( "galaxy_user", metadata, autoload=True )
         c = Column( 'disk_usage', Numeric( 15, 0 ), index=True )
-        c.create( User_table )
+        c.create( User_table, index_name="ix_galaxy_user_disk_usage")
         assert c is User_table.c.disk_usage
     except Exception, e:
         print "Adding disk_usage column to galaxy_user table failed: %s" % str( e )
@@ -50,13 +50,14 @@ def upgrade():
     try:
         GalaxySession_table = Table( "galaxy_session", metadata, autoload=True )
         c = Column( 'disk_usage', Numeric( 15, 0 ), index=True )
-        c.create( GalaxySession_table )
+        c.create( GalaxySession_table, index_name="ix_galaxy_session_disk_usage")
         assert c is GalaxySession_table.c.disk_usage
     except Exception, e:
         print "Adding disk_usage column to galaxy_session table failed: %s" % str( e )
         log.debug( "Adding disk_usage column to galaxy_session table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Dataset_table = Table( "dataset", metadata, autoload=True )

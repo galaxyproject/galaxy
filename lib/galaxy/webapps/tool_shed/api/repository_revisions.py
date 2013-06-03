@@ -4,7 +4,7 @@ from galaxy.web.framework.helpers import time_ago
 from tool_shed.util import metadata_util
 from galaxy import web
 from galaxy import util
-from galaxy.model.orm import and_
+from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
@@ -42,6 +42,10 @@ class RepositoryRevisionsController( BaseAPIController ):
         tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
         if tools_functionally_correct is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.tools_functionally_correct == util.string_as_bool( tools_functionally_correct ) )
+        # Filter by missing_test_components if received.
+        missing_test_components = kwd.get( 'missing_test_components', None )
+        if missing_test_components is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.missing_test_components == util.string_as_bool( missing_test_components ) )
         # Filter by do_not_test if received.
         do_not_test = kwd.get( 'do_not_test', None )
         if do_not_test is not None:
@@ -50,6 +54,20 @@ class RepositoryRevisionsController( BaseAPIController ):
         includes_tools = kwd.get( 'includes_tools', None )
         if includes_tools is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.includes_tools == util.string_as_bool( includes_tools ) )
+        # Filter by test_install_error if received.
+        test_install_error = kwd.get( 'test_install_error', None )
+        if test_install_error is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.test_install_error == util.string_as_bool( test_install_error ) )
+        # Filter by skip_tool_test if received.
+        skip_tool_test = kwd.get( 'skip_tool_test', None )
+        if skip_tool_test is not None:
+            skip_tool_test = util.string_as_bool( skip_tool_test )
+            skipped_metadata_ids_subquery = select( [ trans.app.model.SkipToolTest.table.c.repository_metadata_id ] )
+            if skip_tool_test:
+                clause_list.append( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) )
+            else:
+                clause_list.append( not_( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) ) )
+        # Generate and execute the query.
         try:
             query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
                                     .filter( and_( *clause_list ) ) \

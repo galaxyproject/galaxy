@@ -7,7 +7,7 @@ from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
 from galaxy.model.custom_types import *
- 
+
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -18,10 +18,7 @@ log.addHandler( handler )
 
 now = datetime.datetime.utcnow
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
-
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 APIKeys_table = Table( "api_keys", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -29,16 +26,18 @@ APIKeys_table = Table( "api_keys", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         APIKeys_table.create()
     except Exception, e:
         log.debug( "Creating api_keys table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         APIKeys_table.drop()

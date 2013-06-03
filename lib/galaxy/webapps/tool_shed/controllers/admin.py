@@ -307,7 +307,7 @@ class AdminController( BaseUIController, Admin ):
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
         repositories_select_field = suc.build_repository_ids_select_field( trans )
-        return trans.fill_template( '/webapps/tool_shed/admin/reset_metadata_on_selected_repositories.mako',
+        return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
                                     status=status )

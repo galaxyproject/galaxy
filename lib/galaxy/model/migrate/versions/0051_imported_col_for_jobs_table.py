@@ -10,10 +10,10 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -22,21 +22,22 @@ def upgrade():
     c = Column( "imported", Boolean, default=False, index=True )
     try:
         # Create
-        c.create( Jobs_table )
+        c.create( Jobs_table, index_name="ix_job_imported")
         assert c is Jobs_table.c.imported
-        
+
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
             default_false = "0"
-        elif migrate_engine.name == 'postgres':
+        elif migrate_engine.name in ['postgres', 'postgresql']:
             default_false = "false"
-        db_session.execute( "UPDATE job SET imported=%s" % default_false )
-        
+        migrate_engine.execute( "UPDATE job SET imported=%s" % default_false )
+
     except Exception, e:
         print "Adding imported column to job table failed: %s" % str( e )
         log.debug( "Adding imported column to job table failed: %s" % str( e ) )
-    
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     # Drop imported column from job table.

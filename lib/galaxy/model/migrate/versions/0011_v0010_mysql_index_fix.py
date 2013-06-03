@@ -1,5 +1,5 @@
 """
-This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  MySQL has a 
+This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  MySQL has a
 name length limit and thus the index "ix_hdadaa_history_dataset_association_id" has to be
 manually created.
 """
@@ -24,8 +24,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -42,7 +41,8 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     if migrate_engine.name == 'mysql':
         # Load existing tables
@@ -51,9 +51,10 @@ def upgrade():
         try:
             i.create()
         except Exception, e:
-            log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
+            log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     if migrate_engine.name == 'mysql':
         # Load existing tables
         metadata.reflect()
@@ -61,4 +62,4 @@ def downgrade():
         try:
             i.drop()
         except Exception, e:
-            log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
+            log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )

@@ -68,45 +68,43 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 });
 
 // ------------------------------------------------------------------- check the empty history for well formedness
-spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
+spaceghost.historypanel.waitForHdas( function testPanelStructure(){
     this.test.comment( 'history panel for anonymous user, new history' );
 
-    this.withHistoryPanel( function(){
-        this.test.comment( "frame should have proper url and title: 'History'" );
-        this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
-        this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
+    this.test.comment( "frame should have proper url and title: 'History'" );
+    this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
+    this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
 
-        this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
-        this.test.assertExists( nameSelector, nameSelector + ' exists' );
-        this.test.assertVisible( nameSelector, 'History name is visible' );
-        this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
+    this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
+    this.test.assertExists( nameSelector, nameSelector + ' exists' );
+    this.test.assertVisible( nameSelector, 'History name is visible' );
+    this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
 
-        this.test.comment( "history subtitle should display size and size should be 0 bytes" );
-        this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
-        this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
-        this.test.assertSelectorHasText( subtitleSelector, initialSizeStr,
-            'History subtitle has "' + initialSizeStr + '"' );
+    this.test.comment( "history subtitle should display size and size should be 0 bytes" );
+    this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
+    this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
+    this.test.assertSelectorHasText( subtitleSelector, initialSizeStr,
+        'History subtitle has "' + initialSizeStr + '"' );
 
-        this.test.comment( "NO tags or annotations icons should be available for an anonymous user" );
-        this.test.assertDoesntExist( tagIconSelector,  'Tag icon button not found' );
-        this.test.assertDoesntExist( annoIconSelector, 'Annotation icon button not found' );
+    this.test.comment( "NO tags or annotations icons should be available for an anonymous user" );
+    this.test.assertDoesntExist( tagIconSelector,  'Tag icon button not found' );
+    this.test.assertDoesntExist( annoIconSelector, 'Annotation icon button not found' );
 
-        this.test.assertExists( emptyMsgSelector, emptyMsgSelector + ' exists' );
-        this.test.comment( "A message about the current history being empty should be displayed" );
-        this.test.assertVisible( emptyMsgSelector, 'Empty history message is visible' );
-        this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
-            'Message contains "' + emptyMsgStr + '"' );
+    this.test.assertExists( emptyMsgSelector, emptyMsgSelector + ' exists' );
+    this.test.comment( "A message about the current history being empty should be displayed" );
+    this.test.assertVisible( emptyMsgSelector, 'Empty history message is visible' );
+    this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
+        'Message contains "' + emptyMsgStr + '"' );
 
-        this.test.comment( 'name should have a tooltip with info on anon-user name editing' );
-        this.historypanel.hoverOver( nameSelector );
-        this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
-        this.test.assertSelectorHasText( tooltipSelector, anonNameTooltip );
+    this.test.comment( 'name should have a tooltip with info on anon-user name editing' );
+    this.historypanel.hoverOver( nameSelector );
+    this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
+    this.test.assertSelectorHasText( tooltipSelector, anonNameTooltip );
 
-        this.test.comment( 'name should NOT be editable when clicked by anon-user' );
-        this.assertDoesntHaveClass( nameSelector, editableTextClass, "Name field is not classed as editable text" );
-        this.click( nameSelector );
-        this.test.assertDoesntExist( editableTextInput, "Clicking on name does not create an input" );
-    });
+    this.test.comment( 'name should NOT be editable when clicked by anon-user' );
+    this.assertDoesntHaveClass( nameSelector, editableTextClass, "Name field is not classed as editable text" );
+    this.click( nameSelector );
+    this.test.assertDoesntExist( editableTextInput, "Clicking on name does not create an input" );
 });
 
 // ------------------------------------------------------------------- anon user can upload file

@@ -88,6 +88,11 @@ sendmail_path = /usr/sbin/sendmail
 # Use the new iframe / javascript based layout
 use_new_layout = true
 
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
+
 # Serving static files (needed if running standalone)
 static_enabled = True
 static_cache_time = 360

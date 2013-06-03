@@ -153,7 +153,9 @@
     <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
 
     % for dep in inherit_chain:
-    <div style="font-size: 36px; text-align: center;">&uarr;</div>
-    <div class="inherit">${dep[0].name | h}<br/>${dep[1]}</div>
+        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+        <div class="inherit">
+            '${dep[0].name | h}' in ${dep[1]}<br/>
+        </div>
     % endfor
 

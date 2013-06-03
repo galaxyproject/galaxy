@@ -2,16 +2,8 @@ import logging
 import os
 import tempfile
 from galaxy import eggs
-from galaxy import util
+from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
-
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 
@@ -23,10 +15,8 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     be False when a tool shed repository is being installed.  Since installation is occurring after the datatypes registry
     has been initialized, the registry's contents cannot be overridden by conflicting data types.
     """
-    try:
-        tree = util.parse_xml( datatypes_config )
-    except Exception, e:
-        log.debug( "Error parsing %s, exception: %s" % ( datatypes_config, str( e ) ) )
+    tree, error_message = xml_util.parse_xml( datatypes_config )
+    if tree is None:
         return None, None
     datatypes_config_root = tree.getroot()
     registration = datatypes_config_root.find( 'registration' )
@@ -44,7 +34,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
-    if datatype_files:
+    if datatype_files is not None:
         # The <datatype_files> tag set contains any number of <datatype_file> tags.
         # <datatype_files>
         #    <datatype_file name="gmap.py"/>
@@ -83,15 +73,15 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     fd, proprietary_datatypes_config = tempfile.mkstemp()
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<datatypes>\n' )
-    os.write( fd, '%s' % util.xml_to_string( registration ) )
-    if sniffers:
-        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+    os.write( fd, '%s' % xml_util.xml_to_string( registration ) )
+    if sniffers is not None:
+        os.write( fd, '%s' % xml_util.xml_to_string( sniffers ) )
     os.write( fd, '</datatypes>\n' )
     os.close( fd )
     os.chmod( proprietary_datatypes_config, 0644 )
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
-    if datatype_files:
+    if datatype_files is not None:
         try:
             os.unlink( proprietary_datatypes_config )
         except:

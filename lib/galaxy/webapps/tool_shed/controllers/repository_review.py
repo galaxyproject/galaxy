@@ -28,7 +28,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     repositories_without_reviews_grid = repository_review_grids.RepositoriesWithoutReviewsGrid()
     repository_reviews_by_user_grid = repository_review_grids.RepositoryReviewsByUserGrid()
     reviewed_repositories_i_own_grid = repository_review_grids.ReviewedRepositoriesIOwnGrid()
-    repositories_with_invalid_tests_grid = repository_review_grids.RepositoriesWithInvalidTestsGrid()
+    repositories_with_no_tool_tests_grid = repository_review_grids.RepositoriesWithNoToolTestsGrid()
 
     @web.expose
     @web.require_login( "approve repository review" )
@@ -417,7 +417,10 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage repositories with invalid tests" )
     def manage_repositories_with_invalid_tests( self, trans, **kwd ):
-        """Display a list of repositories that contain tools, have not yet been reviewed, and have invalid functional tests."""
+        """
+        Display a list of repositories that contain tools, have not yet been reviewed, and have invalid functional tests.  Tests are defined as
+        invalid if they are missing from the tool config or if defined test data is not included in the repository.
+        """
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "inspect repository revisions":
@@ -428,10 +431,10 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
-        message = 'These repositories contain tools with invalid functional tests (they have not yet been reviewed).  '
+        message = 'These repositories contain tools with missing functional tests or test data.  '
         kwd[ 'message' ] = message
         kwd[ 'status' ] = 'warning'
-        return self.repositories_with_invalid_tests_grid( trans, **kwd )
+        return self.repositories_with_no_tool_tests_grid( trans, **kwd )
 
     @web.expose
     @web.require_login( "manage repositories with reviews" )

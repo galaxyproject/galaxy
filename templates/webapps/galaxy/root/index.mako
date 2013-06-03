@@ -2,14 +2,17 @@
 
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}
+
     <script type="text/javascript">
     // Set up GalaxyAsync object.
     var galaxy_async = new GalaxyAsync();
-    galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
+    galaxy_async.set_func_url( galaxy_async.set_user_pref,
+        "${h.url_for( controller='user', action='set_user_pref_async' )}");
     
+    // set up history options menu
     $(function(){
         // Init history options.
-        $("#history-options-button").css( "position", "relative" );
+        //$("#history-options-button").css( "position", "relative" );
         var popupmenu = PopupMenu.make_popupmenu( $("#history-options-button"), {
             "${_("History Lists")}": null,
             "${_("Saved Histories")}": function() {
@@ -40,9 +43,29 @@
             "${_("Resume Paused Jobs")}": function() {
                 galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
             },
+            "${_("Collapse Expanded Datasets")}": function() {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                }
+            },
+            "${_("Include Deleted Datasets")}": function( clickEvent, thisMenuOption ) {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowDeleted();
+                }
+            },
+            "${_("Include Hidden Datasets")}": function( clickEvent, thisMenuOption ) {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowHidden();
+                }
+            },
             "${_("Unhide Hidden Datasets")}": function() {
                 if ( confirm( "Really unhide all hidden datasets?" ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='unhide_datasets', current=True )}";
+                }
+            },
+            "${_("Delete Hidden Datasets")}": function() {
+                if ( confirm( "Really delete all hidden datasets?" ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='delete_hidden_datasets')}";
                 }
             },
             "${_("Purge Deleted Datasets")}": function() {
@@ -71,6 +94,8 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
+        // since we need to communicate state of hpanel with the options menu, cache the popupmenu here
+        Galaxy.historyOptionsMenu = popupmenu;
 
         // Fix iFrame scrolling on iOS
         if( navigator.userAgent.match( /(iPhone|iPod|iPad)/i ) ) {

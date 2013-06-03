@@ -1,21 +1,32 @@
-import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
+"""
+Galaxy Metadata
+
+"""
+from galaxy import eggs
+eggs.require("simplejson")
+
+
+import copy
+import cPickle
+import logging
+import os
+import shutil
+import simplejson
+import sys
+import tempfile
+import weakref
+
 from os.path import abspath
 
-from galaxy.util import string_as_bool, stringify_dictionary_keys, listify
+import galaxy.model
+from galaxy.util import listify, stringify_dictionary_keys, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
-import galaxy.model
 from sqlalchemy.orm import object_session
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
-
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
-
-DATABASE_CONNECTION_AVAILABLE = True #When False, certain metadata parameter types (see FileParameter) will behave differently
 
 class Statement( object ):
     """
@@ -74,8 +85,8 @@ class MetadataCollection( object ):
     def __getattr__( self, name ):
         if name in self.spec:
             if name in self.parent._metadata:
-                return self.spec[name].wrap( self.parent._metadata[name] )
-            return self.spec[name].wrap( self.spec[name].default )
+                return self.spec[name].wrap( self.parent._metadata[name], object_session( self.parent ) )
+            return self.spec[name].wrap( self.spec[name].default, object_session( self.parent ) )
         if name in self.parent._metadata:
             return self.parent._metadata[name]
     def __setattr__( self, name, value ):
@@ -202,7 +213,7 @@ class MetadataParameter( object ):
         self.validate( value )
         return value
     
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         """
         Turns a value into its usable form.
         """
@@ -245,11 +256,11 @@ class MetadataElementSpec( object ):
     def get( self, name, default=None ):
         return self.__dict__.get(name, default)
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         """
         Turns a stored value into its usable form.
         """
-        return self.param.wrap( value )
+        return self.param.wrap( value, session )
 
     def unwrap( self, value ):
         """
@@ -312,7 +323,7 @@ class SelectParameter( MetadataParameter ):
             return ", ".join( map( str, value ) )
         return MetadataParameter.get_html( self, value, context=context, other_values=other_values, values=values, **kwd )
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         value = self.marshal( value ) #do we really need this (wasteful)? - yes because we are not sure that all existing selects have been stored previously as lists. Also this will handle the case where defaults/no_values are specified and are single non-list values.
         if self.multiple:
             return value
@@ -424,26 +435,16 @@ class FileParameter( MetadataParameter ):
     def get_html( self, value=None, context={}, other_values={}, **kwd ):
         return "<div>No display available for Metadata Files</div>"
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         if value is None:
             return None
         if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
-        if DATABASE_CONNECTION_AVAILABLE:
-            try:
-                # FIXME: this query requires a monkey patch in assignmapper.py since
-                # MetadataParameters do not have a handle to the sqlalchemy session
-                return galaxy.model.MetadataFile.get( value )
-            except:
-                #value was not a valid id
-                return None
-        else:
-            mf = galaxy.model.MetadataFile()
-            mf.id = value #we assume this is a valid id, since we cannot check it
-            return mf
+        mf = session.query( galaxy.model.MetadataFile ).get( value )
+        return mf
     
     def make_copy( self, value, target_context, source_context ):
-        value = self.wrap( value )
+        value = self.wrap( value, object_session( target_context.parent ) )
         if value:
             new_value = galaxy.model.MetadataFile( dataset = target_context.parent, name = self.spec.name )
             object_session( target_context.parent ).add( new_value )
@@ -485,13 +486,13 @@ class FileParameter( MetadataParameter ):
         return value
     
     def new_file( self, dataset = None, **kwds ):
-        if DATABASE_CONNECTION_AVAILABLE:
+        if object_session( dataset ):
             mf = galaxy.model.MetadataFile( name = self.spec.name, dataset = dataset, **kwds )
             object_session( dataset ).add( mf )
             object_session( dataset ).flush() #flush to assign id
             return mf
         else:
-            #we need to make a tmp file that is accessable to the head node, 
+            #we need to make a tmp file that is accessable to the head node,
             #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile( **kwds )

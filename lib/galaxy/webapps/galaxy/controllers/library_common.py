@@ -1,17 +1,27 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, urllib2
-from galaxy.web.base.controller import *
-from galaxy import util, jobs
-from galaxy.datatypes import sniff
-from galaxy.security import RBACAgent
-from galaxy.util.json import to_json_string
-from galaxy.tools.actions import upload_common
-from galaxy.model.orm import *
-from galaxy.util.streamball import StreamBall
-from galaxy.util import inflector
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
-import logging, tempfile, zipfile, tarfile, os, sys, operator
+import glob
+import logging
+import operator
+import os
+import os.path
+import string
+import sys
+import tarfile
+import tempfile
+import urllib
+import urllib2
+import zipfile
+from galaxy import util, web
+from galaxy.web import url_for
 from galaxy.eggs import require
 from galaxy.security import Action
+from galaxy.tools.actions import upload_common
+from galaxy.util import inflector
+from galaxy.util.json import to_json_string
+from galaxy.util.streamball import StreamBall
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.model.orm import and_, eagerload_all
+
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
@@ -26,11 +36,6 @@ try:
 except ImportError, e:
     whoosh_search_enabled = False
     schema = None
-
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger( __name__ )
 
@@ -94,7 +99,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return rval
 
     @web.expose
-    def browse_library( self, trans, cntrller, **kwd ):
+    def browse_library( self, trans, cntrller='library', **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1801,13 +1806,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w|' )
+                            archive = StreamBall( 'w|' )
                             outext = 'tar'
                         else:
-                            archive = util.streamball.StreamBall( 'w|gz' )
+                            archive = StreamBall( 'w|gz' )
                             outext = 'tgz'
                     elif action == 'tbz':
-                        archive = util.streamball.StreamBall( 'w|bz2' )
+                        archive = StreamBall( 'w|bz2' )
                         outext = 'tbz2'
                     elif action == 'ngxzip':
                         archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
@@ -2602,25 +2607,16 @@ def datasets_for_lddas( trans, lddas ):
     return datasets 
 
 def active_folders_and_library_datasets( trans, folder ):
-    # SM: TODO: Eliminate timing code
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
-    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2630,11 +2626,8 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
-               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:
@@ -2704,7 +2697,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
     response.close()
-    lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+    lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
@@ -2729,7 +2722,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 if ldda:
                     lddas.append( ldda )
             lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

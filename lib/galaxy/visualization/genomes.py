@@ -31,21 +31,38 @@ class GenomeRegion( object ):
     A genomic region on an individual chromosome.
     """
     
-    def __init__( self, chrom=None, start=None, end=None ):
+    def __init__( self, chrom = None, start = 0, end = 0 ):
         self.chrom = chrom
         self.start = int( start )
         self.end = int( end )
         
     def __str__( self ):
         return self.chrom + ":" + str( self.start ) + "-" + str( self.end )
-        
+
     @staticmethod
     def from_dict( obj_dict ):
-        return GenomeRegion( chrom=obj_dict[ 'chrom' ],
-                             start=obj_dict[ 'start' ],
-                             end=obj_dict[ 'end' ] )
+        return GenomeRegion( chrom = obj_dict[ 'chrom' ],
+                             start = obj_dict[ 'start' ],
+                             end   = obj_dict[ 'end' ] )
         
-        
+    @staticmethod
+    def from_str( obj_str ):
+        # check for gene region
+        gene_region = obj_str.split(':')
+                
+        # split gene region into components
+        if (len(gene_region) == 2):
+            gene_interval = gene_region[1].split('-')
+            
+            # check length
+            if (len(gene_interval) == 2):
+                return GenomeRegion(chrom = gene_region[0],
+                                    start = gene_interval[0],
+                                    end   = gene_interval[1])
+ 
+        # return genome region instance
+        return GenomeRegion()
+
 class Genome( object ):
     """
     Encapsulates information about a known genome/dbkey.
@@ -242,12 +259,16 @@ class Genomes( object ):
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[ dbkey ]
                 dbkey_name = dbkey_attributes[ 'name' ]
+
+                # If there's a fasta for genome, convert to 2bit for later use.
                 if 'fasta' in dbkey_attributes:
                     build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
                     len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
-                    converted_dataset = build_fasta.get_converted_dataset( trans, 'twobit' )
-                    if converted_dataset:
-                        twobit_file = converted_dataset.file_name
+                    build_fasta.get_converted_dataset( trans, 'twobit' )
+                    # HACK: set twobit_file to True rather than a file name because 
+                    # get_converted_dataset returns null during conversion even though
+                    # there will eventually be a twobit file available for genome.
+                    twobit_file = True
                 # Backwards compatibility: look for len file directly.
                 elif 'len' in dbkey_attributes:
                     len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
@@ -275,7 +296,7 @@ class Genomes( object ):
         return rval
 
         
-    def has_reference_data( self, trans, dbkey, dbkey_owner=None ):
+    def has_reference_data( self, dbkey, dbkey_owner=None ):
         """ 
         Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
         dbkey_owner is needed to determine if there is reference data.
@@ -296,7 +317,7 @@ class Genomes( object ):
 
         return False
         
-    def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
+    def reference( self, trans, dbkey, chrom, low, high ):
         """
         Return reference data for a build.
         """
@@ -308,7 +329,7 @@ class Genomes( object ):
         else:
             dbkey_user = trans.user
 
-        if not self.has_reference_data( trans, dbkey, dbkey_user ):
+        if not self.has_reference_data( dbkey, dbkey_user ):
             return None
 
         #    
@@ -321,7 +342,7 @@ class Genomes( object ):
         else:
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
-            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
             msg = fasta_dataset.convert_dataset( trans, 'twobit' )
             if msg:
                 return msg

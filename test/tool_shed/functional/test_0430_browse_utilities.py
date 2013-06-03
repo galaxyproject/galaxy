@@ -1,7 +1,8 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 import logging
-log = logging.getLogger(__name__)
+
+log = logging.getLogger( __name__ )
 
 datatypes_repository_name = 'emboss_datatypes_0430'
 datatypes_repository_description = 'Galaxy applicable datatypes for EMBOSS for test 0430'
@@ -106,7 +107,8 @@ class TestToolShedBrowseUtilities( ShedTwillTestCase ):
         emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0430', additional_paths=[ 'dependencies' ] )
-        self.create_repository_dependency( emboss_repository, depends_on=[ datatypes_repository ], filepath=dependency_xml_path )
+        datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+        self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ datatypes_tuple ], filepath=dependency_xml_path )
         self.check_repository_dependency( emboss_repository, datatypes_repository )
         
     def test_0020_create_tool_dependency_repository( self ):

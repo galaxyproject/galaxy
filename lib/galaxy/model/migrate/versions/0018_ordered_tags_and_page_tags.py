@@ -18,7 +18,7 @@ from galaxy.model.custom_types import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print ""
@@ -57,7 +57,8 @@ PageTagAssociation_table = Table( "page_tag_association", metadata,
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     metadata.reflect()
 
@@ -103,7 +104,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating page_tag_association table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     # No need to downgrade other tagging tables. They work fine with verision 16 code.

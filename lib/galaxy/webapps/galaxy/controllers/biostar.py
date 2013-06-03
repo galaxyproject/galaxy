@@ -81,7 +81,7 @@ class BiostarController( BaseUIController ):
         else:
             encoded = trans.security.encode_id( trans.galaxy_session.id )
             payload['username'] = "anon-" + encoded
-            payload['display_name'] = "Anonymous Galaxy User %d" % encoded[0:8]
+            payload['display_name'] = "Anonymous Galaxy User"
         data, digest = encode_data( trans.app.config.biostar_key, payload )
         return trans.response.send_redirect( url_for( trans.app.config.biostar_url, data=data, digest=digest, name=trans.app.config.biostar_key_name, action=biostar_action ) )
 

@@ -21,10 +21,10 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
@@ -34,7 +34,8 @@ def upgrade():
         assert col is ToolShedRepository_table.c.ctx_rev
     except Exception, e:
         print "Adding ctx_rev column to the tool_shed_repository table failed: %s" % str( e )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:

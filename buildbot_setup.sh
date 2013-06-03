@@ -93,26 +93,49 @@ database/pbs
 
 JARS="/galaxy/software/jars"
 
-for link in $LINKS; do
-    echo "Linking $link"
-    rm -f tool-data/`basename $link`
-    ln -sf $link tool-data
-done
-
-if [ -d "$HYPHY" ]; then
-    echo "Linking $HYPHY"
-    rm -f tool-data/HYPHY
-    ln -sf $HYPHY tool-data/HYPHY
+if [ ! $1 ]; then
+	type="standard"
+elif [ $1 == "-ec2" ]; then
+	type="external-ec2"
+else
+	type="unknown"
 fi
 
-if [ -d "$JARS" ]; then
-    echo "Linking $JARS"
-    rm -f tool-data/shared/jars
-    ln -sf $JARS tool-data/shared/jars
-fi
+case $type in
+	external*)
+		echo "Running standalone buildbot setup..."
+		for sample in tool-data/*.sample; do
+			basename=${sample%.sample}
+			if [ ! -f $basename ]; then
+				echo "Copying $sample to $basename"
+				cp "$sample" "$basename"
+			fi
+		done
+		;;
+	*)
+		echo "Running standard buildbot setup..."
+		for link in $LINKS; do
+		    echo "Linking $link"
+		    rm -f tool-data/`basename $link`
+		    ln -sf $link tool-data
+		done
+		
+		if [ -d "$HYPHY" ]; then
+		    echo "Linking $HYPHY"
+		    rm -f tool-data/HYPHY
+		    ln -sf $HYPHY tool-data/HYPHY
+		fi
+		
+		if [ -d "$JARS" ]; then
+		    echo "Linking $JARS"
+		    rm -f tool-data/shared/jars
+		    ln -sf $JARS tool-data/shared/jars
+		fi
+		;;
+esac
 
 for sample in $SAMPLES; do
-    file=`echo $sample | sed -e 's/\.sample$//'`
+    file=${sample%.sample}
     echo "Copying $sample to $file"
     cp $sample $file
 done
