@@ -130,10 +130,10 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
             if package_install_version == '1.0':
                 # Since the required tool dependency is installed for a repository dependency, we first need to inspect the <actions> tag set to find
                 # the <action type="set_environment"> tag.
+                env_var_dicts = []
                 for actions_elem in package_elem:
                     for action_elem in actions_elem:
                         action_type = action_elem.get( 'type', 'shell_command' )
-                        env_var_dicts = []
                         if action_type == 'set_environment':
                             # <action type="set_environment">
                             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
@@ -143,7 +143,8 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                 if env_elem.tag == 'environment_variable':
                                     env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
                                     if env_var_dict:
-                                        env_var_dicts.append( env_var_dict )
+                                        if env_var_dict not in env_var_dicts:
+                                            env_var_dicts.append( env_var_dict )
                         elif action_type == 'setup_virtualenv':
                             # Add the virtualenv's site-packages to PYTHONPATH and bin to PATH.  This is a bit hackish.
                             site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( install_dir, "venv", "bin", "python" )
@@ -155,40 +156,40 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                             else:
                                 env_var_dicts.append( dict( name="PYTHONPATH", action="prepend_to", value=output.stdout ) )
                                 env_var_dicts.append( dict( name="PATH", action="prepend_to", value=os.path.join( install_dir, 'venv', 'bin' ) ) )
-                    if env_var_dicts:
-                        if required_repository.status in [ app.model.ToolShedRepository.installation_status.INSTALLED,
-                                                           app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
-                            # Handle the case where we have an installed required repository due to the prior_installation_required = True
-                            # setting in the received tool_shed_repository's tool_dependencies.xml file and the required repository's
-                            # tool_dependencies.xml file may include the use of the $ENV[] variable inheritance feature.  To handle this,
-                            # we will replace the current "value" entries in each env_var_dict with the actual path taken from the env.sh
-                            # file generated for the installed required repository.  Each env_var_dict currently looks something like this: 
-                            # {'action': 'append_to', 'name': 'LD_LIBRARY_PATH', 'value': '$BOOST_ROOT_DIR/lib/'}
-                            # We'll read the contents of the received required_repository's env.sh file and replace the 'value' entry of each env_var_dict
-                            # with the associated value in the env.sh file.
-                            new_env_var_dicts = []
-                            env_sh_file_dir = get_tool_dependency_install_dir( app=app,
-                                                                               repository_name=required_repository.name,
-                                                                               repository_owner=required_repository.owner,
-                                                                               repository_changeset_revision=required_repository.installed_changeset_revision,
-                                                                               tool_dependency_type='package',
-                                                                               tool_dependency_name=package_name,
-                                                                               tool_dependency_version=package_version )
-                            env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
-                            for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
-                                env_var_dict = env_var_dicts[ i ]
-                                action = env_var_dict.get( 'action', None )
-                                name = env_var_dict.get( 'name', None )
-                                value = env_var_dict.get( 'value', None )
-                                if action and name and value:
-                                    new_value = parse_env_shell_entry( action, name, value, line )
-                                    env_var_dict[ 'value' ] = new_value
-                                new_env_var_dicts.append( env_var_dict )
-                            action_dict[ 'environment_variable' ] = new_env_var_dicts
-                        else:
-                            action_dict[ 'environment_variable' ] = env_var_dicts
-                        actions.append( ( 'set_environment', action_dict ) )
-                        return tool_dependency, actions
+                if env_var_dicts:
+                    if required_repository.status in [ app.model.ToolShedRepository.installation_status.INSTALLED,
+                                                       app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+                        # Handle the case where we have an installed required repository due to the prior_installation_required = True
+                        # setting in the received tool_shed_repository's tool_dependencies.xml file and the required repository's
+                        # tool_dependencies.xml file may include the use of the $ENV[] variable inheritance feature.  To handle this,
+                        # we will replace the current "value" entries in each env_var_dict with the actual path taken from the env.sh
+                        # file generated for the installed required repository.  Each env_var_dict currently looks something like this: 
+                        # {'action': 'append_to', 'name': 'LD_LIBRARY_PATH', 'value': '$BOOST_ROOT_DIR/lib/'}
+                        # We'll read the contents of the received required_repository's env.sh file and replace the 'value' entry of each env_var_dict
+                        # with the associated value in the env.sh file.
+                        new_env_var_dicts = []
+                        env_sh_file_dir = get_tool_dependency_install_dir( app=app,
+                                                                           repository_name=required_repository.name,
+                                                                           repository_owner=required_repository.owner,
+                                                                           repository_changeset_revision=required_repository.installed_changeset_revision,
+                                                                           tool_dependency_type='package',
+                                                                           tool_dependency_name=package_name,
+                                                                           tool_dependency_version=package_version )
+                        env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
+                        for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
+                            env_var_dict = env_var_dicts[ i ]
+                            action = env_var_dict.get( 'action', None )
+                            name = env_var_dict.get( 'name', None )
+                            value = env_var_dict.get( 'value', None )
+                            if action and name and value:
+                                new_value = parse_env_shell_entry( action, name, value, line )
+                                env_var_dict[ 'value' ] = new_value
+                            new_env_var_dicts.append( env_var_dict )
+                        action_dict[ 'environment_variable' ] = new_env_var_dicts
+                    else:
+                        action_dict[ 'environment_variable' ] = env_var_dicts
+                    actions.append( ( 'set_environment', action_dict ) )
+                    return tool_dependency, actions
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
     return None, actions
@@ -464,7 +465,12 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
-        actions.append( ( action_type, action_dict ) )
+        action_tuple = ( action_type, action_dict )
+        if action_type == 'set_environment':
+            if action_tuple not in actions:
+                actions.append( action_tuple )
+        else:
+            actions.append( action_tuple )
     if actions:
         actions_dict[ 'actions' ] = actions
     if proprietary_fabfile_path:
