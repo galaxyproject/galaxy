@@ -337,6 +337,11 @@
             ${render_failed_test( failed_test, pad, my_row, row_counter )}
         %endfor
     %endif
+    %if folder.not_tested:
+        %for not_tested in folder.not_tested:
+            ${render_not_tested( not_tested, pad, my_row, row_counter )}
+        %endfor
+    %endif
     %if folder.passed_tests:
         %for passed_test in folder.passed_tests:
             ${render_passed_test( passed_test, pad, my_row, row_counter )}
@@ -722,6 +727,35 @@
                 %endif
                 <tr><th>Error</th></tr>
                 <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( not_tested.id ) %>
+    <style type="text/css">
+        #not_tested_table{ table-layout:fixed;
+                           width:100%;
+                           overflow-wrap:normal;
+                           overflow:hidden;
+                           border:0px; 
+                           word-break:keep-all;
+                           word-wrap:break-word;
+                           line-break:strict; }
+    </style>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="not_tested_table">
+                <tr><td>${not_tested.reason | h}</td></tr>
             </table>
         </td>
     </tr>
