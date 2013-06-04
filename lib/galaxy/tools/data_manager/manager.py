@@ -16,6 +16,8 @@ import logging
 log = logging.getLogger( __name__ )
 
 SUPPORTED_DATA_TABLE_TYPES = ( TabularToolDataTable )
+VALUE_TRANSLATION_FUNCTIONS = dict( abspath=os.path.abspath )
+DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 class DataManagers( object ):
     def __init__( self, app, xml_filename=None ):
@@ -160,15 +162,24 @@ class DataManager( object ):
                         if data_table_name not in self.output_ref_by_data_table:
                             self.output_ref_by_data_table[ data_table_name ] = {}
                         self.output_ref_by_data_table[ data_table_name ][ data_table_coumn_name ] = output_ref
-                    value_translation_elem = column_elem.find( 'value_translation' )
-                    if value_translation_elem is not None:
-                        value_translation = value_translation_elem.text
-                    else:
-                        value_translation = None
-                    if value_translation is not None:
-                        if data_table_name not in self.value_translation_by_data_table_column:
-                            self.value_translation_by_data_table_column[ data_table_name ] = {}
-                        self.value_translation_by_data_table_column[ data_table_name ][ data_table_coumn_name ] = value_translation
+                    value_translation_elems = column_elem.findall( 'value_translation' )
+                    if value_translation_elems is not None:
+                        for value_translation_elem in value_translation_elems:
+                            value_translation = value_translation_elem.text
+                            if value_translation is not None:
+                                value_translation_type = value_translation_elem.get( 'type', DEFAULT_VALUE_TRANSLATION_TYPE )
+                                if data_table_name not in self.value_translation_by_data_table_column:
+                                    self.value_translation_by_data_table_column[ data_table_name ] = {}
+                                if data_table_coumn_name not in self.value_translation_by_data_table_column[ data_table_name ]:
+                                    self.value_translation_by_data_table_column[ data_table_name ][ data_table_coumn_name ] = []
+                                if value_translation_type == 'function':
+                                    if value_translation in VALUE_TRANSLATION_FUNCTIONS:
+                                        value_translation = VALUE_TRANSLATION_FUNCTIONS[ value_translation ]
+                                    else:
+                                        raise ValueError( "Unsupported value translation function: '%s'" % ( value_translation ) )
+                                else:
+                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError( "Unsupported value translation type: '%s'" % ( value_translation_type ) )
+                                self.value_translation_by_data_table_column[ data_table_name ][ data_table_coumn_name ].append( value_translation )
 
                     for move_elem in column_elem.findall( 'move' ):
                         move_type = move_elem.get( 'type', 'directory' )
@@ -290,8 +301,11 @@ class DataManager( object ):
     def process_value_translation( self, data_table_name, column_name, **kwd ):
         value = kwd.get( column_name )
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[ data_table_name ]:
-            value_translation = self.value_translation_by_data_table_column[ data_table_name ][ column_name ]
-            value = fill_template( value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd  )
+            for value_translation in self.value_translation_by_data_table_column[ data_table_name ][ column_name ]:
+                if isinstance( value_translation, basestring ):
+                    value = fill_template( value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd  )
+                else:
+                    value = value_translation( value )
         return value
     
     def get_tool_shed_repository_info_dict( self ):
