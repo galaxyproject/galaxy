@@ -8,6 +8,7 @@ from time import gmtime
 from time import strftime
 from galaxy import util
 from galaxy.util import json
+from galaxy.util import unicodify
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
