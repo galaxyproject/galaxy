@@ -2984,7 +2984,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
             tile_region = this._get_tile_bounds(tile_index, resolution);
-            tile_promise = this.draw_helper( force, tile_region, resolution, this.tiles_div, w_scale );
+            tile_promise = this.draw_helper(force, tile_region, resolution, w_scale);
             tile_promises.push(tile_promise);
             $.when(tile_promise).then(function(tile) {
                 tiles.push(tile);
@@ -3060,7 +3060,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             var track = this;
             _.each(non_line_track_tiles, function(tile) {
                 tile.html_elt.remove();
-                track.draw_helper(true, tile.region, tile.resolution, track.tiles_div, w_scale, { mode: 'Coverage' });
+                track.draw_helper(true, tile.region, tile.resolution, w_scale, { mode: 'Coverage' });
             });
 
             track._add_yaxis_label('max');
@@ -3111,8 +3111,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
-     */ 
-    draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
+     */
+    draw_helper: function(force, region, resolution, w_scale, kwargs) {
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
 
@@ -3126,7 +3126,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
         if (tile) {
             if (is_tile(tile)) {
-                track.show_tile(tile, parent_element, w_scale);
+                track.show_tile(tile, w_scale);
             }
             return tile;
         }
@@ -3212,7 +3212,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Don't cache, show if no tile.
             if (tile !== undefined) {
                 track.tile_cache.set_elt(key, tile);
-                track.show_tile(tile, parent_element, w_scale);
+                track.show_tile(tile, w_scale);
             }
 
             tile_drawn.resolve(tile);
@@ -3258,7 +3258,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
      */
-    show_tile: function(tile, parent_element, w_scale) {
+    show_tile: function(tile, w_scale) {
         var track = this,
             tile_element = tile.html_elt;
         
@@ -3280,7 +3280,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
         else {
             // Showing new tile.
-            parent_element.append(tile_element);
+            this.tiles_div.append(tile_element);
         }
 
         // -- Update track, tile heights based on new tile. --
@@ -3614,7 +3614,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < tiles.length; i++) {
             var tile = tiles[i];
             if (tile.html_elt.find("canvas").height() !== max_height) {
-                this.draw_helper(true, tile.region, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
+                this.draw_helper(true, tile.region, tile.resolution, w_scale, { height: max_height } );
                 tile.html_elt.remove();
             }
         }
@@ -3666,10 +3666,10 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Retrieves data and draws tile if reference data can be displayed.
      */
-    draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
+    draw_helper: function(force, region, resolution, w_scale, kwargs) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
              this.tiles_div.show();
-            return TiledTrack.prototype.draw_helper.call(this, force, region, resolution, parent_element, w_scale, kwargs);
+            return TiledTrack.prototype.draw_helper.call(this, force, region, resolution, w_scale, kwargs);
         }
         else {
              this.tiles_div.hide();
@@ -3897,7 +3897,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
-                    track.draw_helper(true, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
+                    track.draw_helper(true, tile.index, tile.resolution, w_scale, { more_tile_data: { max: global_max } } );
                 }
             }
         }
