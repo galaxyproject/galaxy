@@ -1214,7 +1214,7 @@ def to_safe_string( text, to_html=True ):
     if text:
         if to_html:
             try:
-                escaped_text = text.decode( 'utf-8' )
+                escaped_text = unicodify( text )
                 escaped_text = escaped_text.encode( 'ascii', 'ignore' )
                 escaped_text = str( markupsafe.escape( escaped_text ) )
             except UnicodeDecodeError, e:
