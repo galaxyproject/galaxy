@@ -743,6 +743,10 @@ def main():
                     skip_because = reason
                     break
             if skip_this_repository:
+                repository_status[ 'not_tested' ] = dict( reason=skip_because )
+                params[ 'tools_functionally_correct' ] = False
+                params[ 'do_not_test' ] = False
+                register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status, repository_info_dict, params )
                 log.info( "Not testing revision %s of repository %s owned by %s.", changeset_revision, name, owner )
                 continue
             else:
@@ -854,6 +858,10 @@ def main():
                 #                 "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
                 #             },
                 #         ]
+                #      "not_tested":
+                #         { 
+                #             "reason": "The Galaxy development team has determined that this repository should not be installed and tested by the automated framework."
+                #         }
                 # }
                 failed_tool_dependencies = repository.includes_tool_dependencies and repository.tool_dependencies_with_installation_errors
                 failed_repository_dependencies = repository.repository_dependencies_with_installation_errors
