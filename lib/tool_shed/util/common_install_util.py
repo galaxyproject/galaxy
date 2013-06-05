@@ -252,6 +252,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
         # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
         required_repository_tups = []
         for repo_info_dict in repo_info_dicts:
+            if repo_info_dict not in all_repo_info_dicts:
+                all_repo_info_dicts.append( repo_info_dict )
             for repository_name, repo_info_tup in repo_info_dict.items():
                 description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                     suc.get_repo_info_tuple_contents( repo_info_tup )
