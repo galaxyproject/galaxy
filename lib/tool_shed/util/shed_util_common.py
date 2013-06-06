@@ -29,6 +29,7 @@ import markupsafe
         
 log = logging.getLogger( __name__ )
 
+CHUNK_SIZE = 2**20 # 1Mb
 INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768

@@ -21,7 +21,6 @@ log = logging.getLogger( __name__ )
 
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
 UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
-CHUNK_SIZE = 2**20 # 1Mb
 
 def check_archive( archive ):
     for member in archive.getmembers():
@@ -86,7 +85,7 @@ def handle_bz2( repository, uploaded_file_name ):
     bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = bzipped_file.read( CHUNK_SIZE )
+            chunk = bzipped_file.read( suc.CHUNK_SIZE )
         except IOError:
             os.close( fd )
             os.remove( uncompressed )
@@ -170,7 +169,7 @@ def handle_gzip( repository, uploaded_file_name ):
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = gzipped_file.read( CHUNK_SIZE )
+            chunk = gzipped_file.read( suc.CHUNK_SIZE )
         except IOError, e:
             os.close( fd )
             os.remove( uncompressed )

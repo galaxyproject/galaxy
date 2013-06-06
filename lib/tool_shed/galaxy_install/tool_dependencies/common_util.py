@@ -222,9 +222,13 @@ def url_download( install_dir, downloaded_file_name, download_url ):
     dst = None
     try:
         src = urllib2.urlopen( download_url )
-        data = src.read()
-        dst = open( file_path,'wb' )
-        dst.write( data )
+        dst = open( file_path, 'wb' )
+        while True:
+            chunk = src.read( suc.CHUNK_SIZE )
+            if chunk:
+                dst.write( chunk )
+            else:
+                break
     except:
         raise
     finally:
