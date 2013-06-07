@@ -5,31 +5,42 @@ import logging
 import operator
 import os
 import re
-import pkg_resources
 import urllib
+from gettext import gettext
+
+import pkg_resources
 pkg_resources.require("SQLAlchemy >= 0.4")
+from sqlalchemy import func, and_, select
+
 pkg_resources.require( "Routes" )
 import routes
 
-from sqlalchemy import func, and_, select
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
+from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
+from galaxy.exceptions import MessageException
 
-from galaxy import util, web, model
-from gettext import gettext
-from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.genome.visual_analytics import get_tool_def
+from galaxy import web
+from galaxy import model
+from galaxy import security
+from galaxy import util
+
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.security.validate_user_input import validate_publicname
+from galaxy.util.sanitize_html import sanitize_html
+
+from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
+
+from galaxy.visualization.genome.visual_analytics import get_tool_def
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
+
 
 log = logging.getLogger( __name__ )
 
@@ -742,13 +753,105 @@ class UsesLibraryMixin:
 class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
     def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryFolder',
+                                check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation',
+                                check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryDataset',
+                                check_ownership=False, check_accessible=check_accessible )
+
+    #TODO: it makes no sense that I can get roles from a user but not user.is_admin()
+    #def can_user_add_to_library_item( self, trans, user, item ):
+    #    if not user: return False
+    #    return (  ( user.is_admin() )
+    #           or ( trans.app.security_agent.can_add_library_item( user.all_roles(), item ) ) )
+
+    def can_current_user_add_to_library_item( self, trans, item ):
+        if not trans.user: return False
+        return (  ( trans.user_is_admin() )
+               or ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
+
+    def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='' ):
+        #PRECONDITION: permissions for this action on hda and library_folder have been checked
+        roles = roles or []
+
+        # this code was extracted from library_common.add_history_datasets_to_library
+        #TODO: refactor library_common.add_history_datasets_to_library to use this for each hda to copy
+
+        # create the new ldda and apply the folder perms to it
+        ldda = hda.to_library_dataset_dataset_association( trans, target_folder=library_folder,
+                                                           roles=roles, ldda_message=ldda_message )
+        self._apply_library_folder_permissions_to_ldda( trans, library_folder, ldda )
+        self._apply_hda_permissions_to_ldda( trans, hda, ldda )
+        #TODO:?? not really clear on how permissions are being traded here
+        #   seems like hda -> ldda permissions should be set in to_library_dataset_dataset_association
+        #   then they get reset in _apply_library_folder_permissions_to_ldda
+        #   then finally, re-applies hda -> ldda for missing actions in _apply_hda_permissions_to_ldda??
+        return ldda
+
+    def _apply_library_folder_permissions_to_ldda( self, trans, library_folder, ldda ):
+        """
+        Copy actions/roles from library folder to an ldda (and it's library_dataset).
+        """
+        #PRECONDITION: permissions for this action on library_folder and ldda have been checked
+        security_agent = trans.app.security_agent
+        security_agent.copy_library_permissions( trans, library_folder, ldda )
+        security_agent.copy_library_permissions( trans, library_folder, ldda.library_dataset )
+        return security_agent.get_permissions( ldda )
+
+    def _apply_hda_permissions_to_ldda( self, trans, hda, ldda ):
+        """
+        Copy actions/roles from hda to ldda.library_dataset (and then ldda) if ldda
+        doesn't already have roles for the given action.
+        """
+        #PRECONDITION: permissions for this action on hda and ldda have been checked
+        # Make sure to apply any defined dataset permissions, allowing the permissions inherited from the
+        #   library_dataset to over-ride the same permissions on the dataset, if they exist.
+        security_agent = trans.app.security_agent
+        dataset_permissions_dict = security_agent.get_permissions( hda.dataset )
+        library_dataset = ldda.library_dataset
+        library_dataset_actions = [ permission.action for permission in library_dataset.actions ]
+
+        # except that: if DATASET_MANAGE_PERMISSIONS exists in the hda.dataset permissions,
+        #   we need to instead apply those roles to the LIBRARY_MANAGE permission to the library dataset
+        dataset_manage_permissions_action = security_agent.get_action( 'DATASET_MANAGE_PERMISSIONS' ).action
+        library_manage_permissions_action = security_agent.get_action( 'LIBRARY_MANAGE' ).action
+        #TODO: test this and remove if in loop below
+        #TODO: doesn't handle action.action
+        #if dataset_manage_permissions_action in dataset_permissions_dict:
+        #    managing_roles = dataset_permissions_dict.pop( dataset_manage_permissions_action )
+        #    dataset_permissions_dict[ library_manage_permissions_action ] = managing_roles
+
+        flush_needed = False
+        for action, dataset_permissions_roles in dataset_permissions_dict.items():
+            if isinstance( action, security.Action ):
+                action = action.action
+
+            # alter : DATASET_MANAGE_PERMISSIONS -> LIBRARY_MANAGE (see above)
+            if action == dataset_manage_permissions_action:
+                action = library_manage_permissions_action
+
+            #TODO: generalize to util.update_dict_without_overwrite
+            # add the hda actions & roles to the library_dataset
+            #NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
+            if action not in library_dataset_actions:
+                for role in dataset_permissions_roles:
+                    ldps = trans.model.LibraryDatasetPermissions( action, library_dataset, role )
+                    ldps = [ ldps ] if not isinstance( ldps, list ) else ldps
+                    for ldp in ldps:
+                        trans.sa_session.add( ldp )
+                        flush_needed = True
+
+        if flush_needed:
+            trans.sa_session.flush()
+
+        # finally, apply the new library_dataset to it's associated ldda (must be the same)
+        security_agent.copy_library_permissions( trans, library_dataset, ldda )
+        return security_agent.get_permissions( ldda )
 
 
 class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
