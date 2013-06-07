@@ -1542,7 +1542,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         return hda
 
     def to_library_dataset_dataset_association( self, trans, target_folder,
-            replace_dataset=None, parent_id=None, user=None, roles=[], ldda_message='' ):
+            replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -1577,6 +1577,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         object_session( self ).add( ldda )
         object_session( self ).flush()
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
+        roles = roles or []
         for role in roles:
             dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
                                                  ldda.dataset, role )
