@@ -169,12 +169,16 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     return { 'dataset_type': indexer.dataset_type, 'data': None }
                 else:
                     return stats
+            
+            # Stats provides features/base and resolution is bases/pixel, so 
+            # multiplying them yields features/pixel.
+            features_per_pixel = stats[ 'data' ][ 'max' ] * float( kwargs[ 'resolution' ] )
 
-            # Use heuristic based on max depth and region size to determine whether to 
-            # return coverage data. When zoomed out and region is large, max depth
+            # Use heuristic based on features/pixel and region size to determine whether to 
+            # return coverage data. When zoomed out and region is large, features/pixel
             # is determining factor. However, when sufficiently zoomed in and region is 
             # small, coverage data is no longer provided.
-            if int( high ) - int( low ) > 50000 and stats[ 'data' ][ 'max' ] > 1000:
+            if int( high ) - int( low ) > 50000 and features_per_pixel > 1000:
                 return indexer.get_data( chrom, low, high )
  
         #

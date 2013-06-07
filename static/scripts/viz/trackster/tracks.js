@@ -3379,11 +3379,24 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Returns true if data is compatible with a given mode. Defaults to true because, for many tracks,
-     * all data is compatible with all modes.
+     * Returns true if data is compatible with a given mode.
      */
     data_and_mode_compatible: function(data, mode) {
-        return true;
+        // Only handle modes that user can set.
+        if (mode === "Auto") {
+            return true;
+        }
+        // Histogram mode requires bigwig data.
+        else if (mode === "Coverage") {
+            return data.dataset_type === "bigwig";
+        }
+        // All other modes--Dense, Squish, Pack--require data + details.
+        else if (data.extra_info === "no_detail") {
+            return false;
+        }
+        else {
+            return true;
+        }
     },
 
     /**
@@ -4174,27 +4187,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         
         return new FeatureTrackTile(track, region, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
-    },
-
-    /**
-     * Returns true if data is compatible with a given mode.
-     */
-    data_and_mode_compatible: function(data, mode) {
-        // Only handle modes that user can set.
-        if (mode === "Auto") {
-            return true;
-        }
-        // Histogram mode requires bigwig data.
-        else if (mode === "Coverage") {
-            return data.dataset_type === "bigwig";
-        }
-        // All other modes--Dense, Squish, Pack--require data + details.
-        else if (data.extra_info === "no_detail") {
-            return false;
-        }
-        else {
-            return true;
-        }
     }
 });
 
@@ -4209,6 +4201,7 @@ var VariantTrack = function(view, container, obj_dict) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+            { key: 'color', label: 'Histogram color', type: 'color', default_value: util.get_random_color() },
             { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
             { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
             { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
@@ -4296,8 +4289,12 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
+        var line_track_tiles = _.filter(tiles, function(t) {
+            return (t instanceof LineTrackTile);
+        });
+
         // Add summary/sample labels if needed and not already included.
-        if ( !(tiles[0] instanceof LineTrackTile) && this.prefs.show_labels) {
+        if ( line_track_tiles.length === 0 && this.prefs.show_labels) {
             var font_size;
 
             // Add and/or style labels.
