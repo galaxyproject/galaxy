@@ -1,7 +1,14 @@
 <tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.0" hidden="true">
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <command>
-        bedtools genomecov -bg -split -ibam $input -g $chromInfo | wigToBigWig stdin $chromInfo $output
+        bedtools genomecov -bg -split -ibam $input -g $chromInfo 
+
+        ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
+        ## should only be used on systems with large RAM.
+        ## | wigToBigWig stdin $chromInfo $output
+
+        ## This can be used anywhere.
+        > temp.bg ; bedGraphToBigWig temp.bg $chromInfo $output
     </command>
     <inputs>
         <param format="bam" name="input" type="data" label="Choose BAM file"/>

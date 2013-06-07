@@ -21,14 +21,14 @@ data = {}
 for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:      
     """
     This example script will properly handle updating the value of one or more of the following RepositoryMetadata attributes:
-    tools_functionally_correct, do_not_test, tool_test_errors
+    tools_functionally_correct, do_not_test, tool_test_results
     """
     if key in [ 'tools_functionally_correct', 'do_not_test' ]:
         if str( value ).lower() in [ 'true', 'yes', 'on' ]:
             new_value = True
         else:
             new_value = False
-    elif key in [ 'tool_test_errors' ]:
+    elif key in [ 'tool_test_results' ]:
         new_value = from_json_string( value )
     else:
         new_value = str( value )

@@ -30,8 +30,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -112,11 +111,13 @@ SampleEvent_table = Table('sample_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ),
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
     Column( "comment", TEXT ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -125,13 +126,13 @@ def upgrade():
     try:
         FormDefinitionCurrent_table.create()
     except Exception, e:
-        log.debug( "Creating form_definition_current table failed: %s" % str( e ) ) 
+        log.debug( "Creating form_definition_current table failed: %s" % str( e ) )
     try:
         FormDefinition_table.create()
     except Exception, e:
         log.debug( "Creating form_definition table failed: %s" % str( e ) )
     # Add 1 foreign key constraint to the form_definition_current table
-    if FormDefinitionCurrent_table and FormDefinition_table:
+    if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
         try:
             cons = ForeignKeyConstraint( [FormDefinitionCurrent_table.c.latest_form_id],
                                          [FormDefinition_table.c.id],
@@ -143,60 +144,62 @@ def upgrade():
     try:
         FormValues_table.create()
     except Exception, e:
-        log.debug( "Creating form_values table failed: %s" % str( e ) )  
+        log.debug( "Creating form_values table failed: %s" % str( e ) )
     try:
         RequestType_table.create()
     except Exception, e:
-        log.debug( "Creating request_type table failed: %s" % str( e ) )  
+        log.debug( "Creating request_type table failed: %s" % str( e ) )
     try:
         Request_table.create()
     except Exception, e:
-        log.debug( "Creating request table failed: %s" % str( e ) )  
+        log.debug( "Creating request table failed: %s" % str( e ) )
     try:
         Sample_table.create()
     except Exception, e:
-        log.debug( "Creating sample table failed: %s" % str( e ) )  
+        log.debug( "Creating sample table failed: %s" % str( e ) )
     try:
         SampleState_table.create()
     except Exception, e:
-        log.debug( "Creating sample_state table failed: %s" % str( e ) )  
+        log.debug( "Creating sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.create()
     except Exception, e:
-        log.debug( "Creating sample_event table failed: %s" % str( e ) )  
+        log.debug( "Creating sample_event table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:
         FormDefinition_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_definition table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_definition table failed: %s" % str( e ) )
     try:
         FormDefinitionCurrent_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_definition_current table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_definition_current table failed: %s" % str( e ) )
     try:
         FormValues_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_values table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_values table failed: %s" % str( e ) )
     try:
         Request_table.drop()
     except Exception, e:
-        log.debug( "Dropping request table failed: %s" % str( e ) )  
+        log.debug( "Dropping request table failed: %s" % str( e ) )
     try:
         RequestType_table.drop()
     except Exception, e:
-        log.debug( "Dropping request_type table failed: %s" % str( e ) )  
+        log.debug( "Dropping request_type table failed: %s" % str( e ) )
     try:
         Sample_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample table failed: %s" % str( e ) )  
+        log.debug( "Dropping sample table failed: %s" % str( e ) )
     try:
         SampleState_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample_state table failed: %s" % str( e ) )  
+        log.debug( "Dropping sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample_event table failed: %s" % str( e ) )      
+        log.debug( "Dropping sample_event table failed: %s" % str( e ) )

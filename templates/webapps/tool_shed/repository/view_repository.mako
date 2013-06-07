@@ -2,41 +2,20 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="*" />
 
 <%
     from galaxy.web.framework.helpers import time_ago
     from tool_shed.util.shed_util_common import to_safe_string
 
-    if metadata:
-        has_readme = 'readme' in metadata
-    else:
-        has_readme = False
-    has_metadata = repository.metadata_revisions
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
 
     can_browse_contents = trans.webapp.name == 'tool_shed' and not is_new
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_rate = not is_deprecated and not is_new and trans.user and repository.user != trans.user
-    can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
-    can_upload = can_push
+    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
     changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
-
-    if repository_metadata:
-        if repository_metadata.includes_tools and repository_metadata.tool_test_errors is not None:
-            can_display_tool_functional_test_results = True
-        else:
-            can_display_tool_functional_test_results = False
-    else:
-        can_display_tool_functional_test_results = False
-
-    if can_push:
-        browse_label = 'Browse or delete repository tip files'
-    else:
-        browse_label = 'Browse repository tip files'
 
     if changeset_revision_is_repository_tip:
         tip_str = 'repository tip'
@@ -68,61 +47,11 @@
     ${container_javascripts()}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    %if trans.webapp.name == 'tool_shed':
-        %if is_new:
-            %if can_upload:
-                <li><a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a></li>
-            %endif
-        %else:
-            <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-            <div popupmenu="repository-${repository.id}-popup">
-                %if can_review_repository:
-                    %if reviewed_by_user:
-                        <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
-                    %else:
-                        <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
-                    %endif
-                %endif
-                %if can_browse_repository_reviews:
-                    <a class="action-button" href="${h.url_for( controller='repository_review', action='manage_repository_reviews', id=trans.app.security.encode_id( repository.id ) )}">Browse reviews of this repository</a>
-                %endif
-                %if can_display_tool_functional_test_results:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='display_tool_functional_test_results', repository_id=trans.security.encode_id( repository.id ), repository_metadata_id=trans.security.encode_id( repository_metadata.id ) )}">View tool functional test results</a>
-                %endif
-                %if can_upload:
-                    <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-                %endif
-                %if can_view_change_log:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
-                %endif
-                %if can_rate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
-                %endif
-                %if can_browse_contents:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
-                %endif
-                %if can_contact_owner:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
-                %endif
-                %if can_download:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
-                %endif
-            </div>
-        %endif
-    %else:
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to Galaxy</a></li>
-        <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
-        <div popupmenu="repository-${repository.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
-        </div>
-    %endif
-</ul>
+%if trans.webapp.name == 'tool_shed':
+    ${render_tool_shed_repository_actions( repository=repository, changeset_revision=changeset_revision )}
+%else:
+    ${render_galaxy_repository_actions( repository=repository )}
+%endif
 
 %if message:
     ${render_msg( message, status )}
@@ -151,7 +80,7 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name}'</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>${sharable_link_label}</label>

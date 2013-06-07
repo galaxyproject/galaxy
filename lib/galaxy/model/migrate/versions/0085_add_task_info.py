@@ -11,10 +11,10 @@ import logging
 log = logging.getLogger( __name__ )
 from galaxy.model.custom_types import TrimmedString
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -26,7 +26,8 @@ def upgrade():
         print "Adding info column to table table failed: %s" % str( e )
         log.debug( "Adding info column to task table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         task_table = Table( "task", metadata, autoload=True )

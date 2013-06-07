@@ -33,7 +33,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
         """
-        GET /api/repository/get_ordered_installable_revisions
+        GET /api/repositories/get_ordered_installable_revisions
         
         :param name: the name of the Repository
         :param owner: the owner of the Repository
@@ -48,7 +48,7 @@ class RepositoriesController( BaseAPIController ):
             encoded_repository_id = trans.security.encode_id( repository.id )
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
-            ordered_installable_revisions = suc.get_ordered_downloadable_changeset_revisions( repository, repo )
+            ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             return ordered_installable_revisions
         except Exception, e:
             message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: %s" % str( e )
@@ -59,7 +59,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api_anonymous
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
         """
-        GET /api/repository/get_repository_revision_install_info
+        GET /api/repositories/get_repository_revision_install_info
         
         :param name: the name of the Repository
         :param owner: the owner of the Repository

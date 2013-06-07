@@ -1,0 +1,292 @@
+<?xml version="1.0"?>
+<!--
+  This is the xml file to edit to add new visualizations to the framework.
+  NOTE!: this is a work in progress!
+
+  Note: also that visualizations that fail to parse in visualizations/registry will
+    produce an error in the server log, but otherwise will be skipped and not available.
+    If you can't find your visualization in the UI, check the server logs for errors
+    during start up.
+-->
+
+<!-- .......................................................................... DTD -->
+<!-- runnable on NIX with xmllint -->
+<!DOCTYPE visualizations [
+  <!-- 0 or more visualizations -->
+  <!ELEMENT visualizations (visualization*)>
+  <!-- each visualization must have a template (all other elements are optional) -->
+  <!ELEMENT visualization (data_sources*,params*,template_root*,template,link_text*,render_location*)>
+  <!-- visualization name (e.g. 'trackster', 'scatterplot', etc.) is required -->
+  <!ATTLIST visualization
+      name        CDATA #REQUIRED
+  >
+
+  <!ELEMENT data_sources (data_source*)>
+  <!-- data sources are elements that describe what objects (HDAs, LDDAs, Job, User, etc.)
+          are applicable to a visualization. Often these are used to fetch applicable links
+          to the visualizations that use them.
+  -->
+    <!ELEMENT data_source (model_class,(test|to_param)*)>
+      <!ELEMENT model_class (#PCDATA)>
+      <!-- model_class is currently the class name of the object you want to make a visualization
+            applicable to (e.g. HistoryDatasetAssociation). Currently only classes in galaxy.model
+            can be used.
+            REQUIRED and currently limited to: 'HistoryDatasetAssociation', 'LibraryDatasetDatasetAssociation'
+      -->
+      <!ELEMENT test (#PCDATA)>
+      <!-- tests help define what conditions the visualization can be applied to the model_class/target.
+            Currently, all tests are OR'd and there is no logical grouping. Tests are run in order.
+          (text): the text of this element is what the given target will be compared to (REQUIRED)
+          type: what type of test to run (e.g. when the target is an HDA the test will often be of type 'isinstance'
+                  and test whether the HDA's datatype isinstace of a class)
+                  DEFAULT: string comparison.
+          test_attr: what attribute of the target object should be used in the test. For instance, 'datatype'
+                  will attempt to get the HDA.datatype from a target HDA. If the given object doesn't have
+                  that attribute the test will fail (with no error). test_attr can be dot separated attributes,
+                  looking up each in turn. For example, if the target was a history, one could access the
+                  history.user.email by setting test_attr to 'user.email' (why you would want that, I don't know)
+                  DEFAULT: to comparing the object itself (and not any of it's attributes)
+          result_type: if the result (the text of the element mentioned above) needs to be parsed into
+                  something other than a string, result_type will tell the registry how to do this. E.g.
+                  if result_type is 'datatype' the registry will assume the text is a datatype class name
+                  and parse it into the proper class before the test (often 'isinstance') is run.
+                  DEFAULT: no parsing (result should be a string)
+      -->
+      <!ATTLIST test
+          type        CDATA #IMPLIED
+          test_attr   CDATA #IMPLIED
+          result_type CDATA #IMPLIED
+      >
+
+      <!ELEMENT to_param (#PCDATA)>
+      <!-- to_param tells the registry how to parse the data_source into a query string param.
+            For example, HDA data_sources can set param_to text to 'dataset_id' and param_attr to 'id' and the
+              the target HDA (if it passes the tests) will be passed as "dataset_id=HDA.id"
+          (text): the query string param key this source will be parsed into (e.g. dataset_id)
+                  REQUIRED
+          param_attr: the attribute of the data_source object to use as the value in the query string param.
+                  E.g. param_attr='id' for an HDA data_source would use the (encoded) id.
+                  NOTE: a to_param MUST have either a param_attr or assign
+          assign: you can use this to directly assign a value to a query string's param. E.g. if the
+                  data_source is a LDDA we can set 'hda_or_ldda=ldda' using assign='ldda'.
+                  NOTE: a to_param MUST have either a param_attr or assign
+      -->
+      <!ATTLIST to_param
+          param_attr  CDATA #IMPLIED
+          assign      CDATA #IMPLIED
+      >
+
+  <!ELEMENT params ((param|param_modifier)*)>
+  <!-- params describe what data will be sent to a visualization template and
+        how to convert them from a query string in a URL into variables usable in a template.
+        For example,
+       param_modifiers are a special class of parameters that modify other params
+        (e.g. hda_ldda can be 'hda' or 'ldda' and modifies/informs dataset_id to fetch an HDA or LDDA)
+  -->
+    <!ELEMENT param (#PCDATA)>
+      <!-- param tells the registry how to parse the query string param back into a resource/data_source.
+            For example, if a query string has "dataset_id=NNN" and the type is 'dataset', the registry
+            will attempt to fetch the hda with id of NNN from the database and pass it to the template.
+          (text): the query string param key this source will be parsed from (e.g. dataset_id)
+                  REQUIRED
+          type: the type of the resource.
+                  Can be: str (DEFAULT), bool, int, float, json, visualization, dbkey, dataset, or hda_ldda.
+          default: if a param is not passed on the query string (and is not required) OR the given param
+                  fails to parse, this value is used instead.
+                  DEFAULT: None
+          required: set this to true if the param is required for the template. Rendering will with an error
+                  if the param hasn't been sent.
+                  DEFAULT: false
+          csv: set this to true if the param is a comma separated list. The registry will attempt to
+                  parse each value as the given type and send the result as a list to the template.
+                  DEFAULT: false
+          constrain_to: (currently unused) constain a param to a set of values, error if not valid.
+                  DEFAULT: don't constrain
+          var_name_in_template: a new name for the resource/variable to use in the template. E.g. an initial
+                  query string param key might be 'dataset_id' in the URL, the registry parses it into an HDA,
+                  and if var_name_in_template is set to 'hda', the template will be able to access the HDA
+                  with the variable name 'hda' (as in hda.title).
+                  DEFAULT: keep the original query string name
+      -->
+    <!ATTLIST param
+        type        CDATA #IMPLIED
+        default     CDATA #IMPLIED
+        required    CDATA #IMPLIED
+        csv         CDATA #IMPLIED
+        constrain_to          CDATA #IMPLIED
+        var_name_in_template  CDATA #IMPLIED
+    >
+    <!-- param_modifiers are the same as param but have a REQUIRED 'modifies' attribute.
+          'modifies' must point to the param name (the text part of param element) that it will modify.
+          E.g. <param_modifier modifies="dataset_id">hda_ldda</param_modifier>
+    -->
+    <!ELEMENT param_modifier (#PCDATA)>
+    <!ATTLIST param_modifier
+        modifies    CDATA #REQUIRED
+        type        CDATA #IMPLIED
+        default     CDATA #IMPLIED
+        required    CDATA #IMPLIED
+        csv         CDATA #IMPLIED
+        constrain_to          CDATA #IMPLIED
+        var_name_in_template  CDATA #IMPLIED
+    >
+
+  <!-- template_root: the directory to search for the template relative to templates/webapps/galaxy
+        (optional) DEFAULT: visualizations
+  -->
+  <!ELEMENT template_root (#PCDATA)>
+  <!-- template: the template used to render the visualization. REQUIRED -->
+  <!ELEMENT template (#PCDATA)>
+  <!-- link_text: the text component of an html anchor displayed when the registry builds the link information -->
+  <!ELEMENT link_text (#PCDATA)>
+  <!-- render_location: used as the target attribute of the link to the visualization.
+        Can be 'galaxy_main', '_top', '_blank'. DEFAULT: 'galaxy_main'
+  -->
+  <!-- TODO: rename -> render_target -->
+  <!ELEMENT render_location (#PCDATA)>
+]>
+
+<!-- .......................................................................... configuration xml -->
+<visualizations>
+  <visualization name="trackster">
+    <!--not tested yet -->
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="hda">hda_ldda</to_param>
+        <to_param param_attr="dbkey">dbkey</to_param>
+      </data_source>
+      <data_source>
+        <model_class>LibraryDatasetDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="ldda">hda_ldda</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param type="visualization">id</param>
+      <param type="dataset">dataset_id</param>
+      <param type="genome_region">genome_region</param>
+      <param type="dbkey">dbkey</param>
+    </params>
+    <template_root>tracks</template_root>
+    <template>browser.mako</template>
+    <render_location>_top</render_location>
+  </visualization>
+
+  <visualization name="circster">
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="hda">hda_ldda</to_param>
+      </data_source>
+      <data_source>
+        <model_class>LibraryDatasetDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="ldda">hda_ldda</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param type="visualization">id</param>
+      <param type="hda_or_ldda">dataset_id</param>
+      <param_modifier type="string" modifies="dataset_id">hda_ldda</param_modifier>
+      <param type="dbkey">dbkey</param>
+    </params>
+    <template>circster.mako</template>
+    <render_location>_top</render_location>
+  </visualization>
+
+  <!--
+  <visualization name="sweepster">
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="hda">hda_ldda</to_param>
+      </data_source>
+      <data_source>
+        <model_class>LibraryDatasetDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="ldda">hda_ldda</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param type="visualization" var_name_in_template="viz">visualization</param>
+      <param type="hda_or_ldda" var_name_in_template="dataset">dataset_id</param>
+      <param_modifier type="string" modifies="dataset_id">hda_ldda</param_modifier>
+    </params>
+    <template>sweepster.mako</template>
+    <render_location>_top</render_location>
+  </visualization>
+  -->
+
+  <visualization name="phyloviz">
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Newick</test>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Nexus</test>
+        <to_param param_attr="id">dataset_id</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+      <param type="integer" default="0">tree_index</param>
+    </params>
+    <template>phyloviz.mako</template>
+    <render_location>_top</render_location>
+  </visualization>
+
+  <visualization name="scatterplot">
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+        <to_param param_attr="id">dataset_id</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <template>scatterplot.mako</template>
+  </visualization>
+
+  <!--
+  <visualization name="test">
+    <data_sources>
+      <data_source>
+        <model_class>HistoryDatasetAssociation</model_class>
+        <test type="isinstance" test_attr="datatype" result_type="datatype">data.Data</test>
+        <to_param param_attr="id">dataset_id</to_param>
+        <to_param assign="bler">string</to_param>
+        <to_param assign="False">boolean</to_param>
+        <to_param assign="-5">integer</to_param>
+        <to_param assign="3.14">float</to_param>
+        <to_param assign="{}">json</to_param>
+      </data_source>
+    </data_sources>
+    <params>
+      <param>default</param>
+      <param type="str">string</param>
+      <param type="bool">boolean</param>
+      <param type="int">integer</param>
+      <param type="float">float</param>
+      <param type="json">json</param>
+      <param type="str" required="true">string</param>
+      <param type="visualization" var_name_in_template="visualization">visualization_id</param>
+      <param type="dataset" var_name_in_template="dataset">dataset_id</param>
+      <param type="hda_or_ldda">dataset_instance</param>
+      <param_modifier type="str" modifies="dataset_instance">hda_ldda</param_modifier>
+    </params>
+    <template>v_fwork_test.mako</template>
+  </visualization>
+  -->
+
+</visualizations>

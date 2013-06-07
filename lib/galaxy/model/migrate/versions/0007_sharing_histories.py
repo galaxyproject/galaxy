@@ -17,7 +17,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -32,7 +32,8 @@ HistoryUserShareAssociation_table = Table( "history_user_share_association", met
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -47,15 +48,16 @@ def upgrade():
     except NoSuchTableError:
         History_table = None
         log.debug( "Failed loading table history" )
-    if History_table:
+    if History_table is not None:
         try:
             col = Column( 'importable', Boolean, index=True, default=False )
-            col.create( History_table )
+            col.create( History_table, index_name='ix_history_importable')
             assert col is History_table.c.importable
         except Exception, e:
             log.debug( "Adding column 'importable' to history table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     # Drop 1 column from the history table
@@ -64,7 +66,7 @@ def downgrade():
     except NoSuchTableError:
         History_table = None
         log.debug( "Failed loading table history" )
-    if History_table:
+    if History_table is not None:
         try:
             col = History_table.c.importable
             col.drop()

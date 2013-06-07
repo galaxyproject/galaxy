@@ -11,7 +11,7 @@ import simplejson
 log = logging.getLogger( "tools.genomespace.genomespace_exporter" )#( __name__ )
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
-GENOMESPACE_SERVER_URL_PROPERTIES = "http://www.genomespace.org/sites/genomespacefiles/config/serverurl.properties"
+GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 
 CHUNK_SIZE = 2**20 #1mb
 

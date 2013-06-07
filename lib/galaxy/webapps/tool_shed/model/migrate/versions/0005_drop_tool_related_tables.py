@@ -1,6 +1,6 @@
 """
 Drops the tool, tool_category_association, event, tool_event_association, tool_rating_association,
-tool_tag_association and tool_annotation_association tables since they are no longer used in the 
+tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
 from sqlalchemy import *
@@ -24,12 +24,12 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Load and then drop the tool_category_association table
     try:
@@ -96,6 +96,7 @@ def upgrade():
         log.debug( "Dropping tool table failed: %s" % str( e ) )
 def downgrade():
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     # We've lost all of our data, so downgrading is useless. However, we'll
     # at least re-create the dropped tables.
@@ -106,7 +107,7 @@ def downgrade():
         Column( "state", TrimmedString( 255 ), index=True ),
         Column( "comment", TEXT ) )
 
-    Tool_table = Table( "tool", metadata, 
+    Tool_table = Table( "tool", metadata,
         Column( "id", Integer, primary_key=True ),
         Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
         Column( "tool_id", TrimmedString( 255 ), index=True ),

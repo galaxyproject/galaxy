@@ -1,3 +1,0 @@
-"""
-Galaxy specific SQLAlchemy extensions.
-"""

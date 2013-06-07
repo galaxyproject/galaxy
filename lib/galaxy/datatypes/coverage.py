@@ -2,21 +2,14 @@
 Coverage datatypes
 
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
 
-import logging, os, sys, time, tempfile, shutil
-import data
-from galaxy import util
-from galaxy.datatypes.sniff import *
-from galaxy.web import url_for
-from cgi import escape
-import urllib
-from bx.intervals.io import *
+import logging
+import math
+
+from galaxy import eggs
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
-import math
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +27,7 @@ class LastzCoverage( Tabular ):
         Assumes we have a numpy file.
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
-        pkg_resources.require("numpy>=1.2.1")
+        eggs.require("numpy>=1.2.1")
         #from numpy.lib import format
         import numpy
 

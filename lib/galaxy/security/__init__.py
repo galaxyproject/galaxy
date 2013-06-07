@@ -939,9 +939,9 @@ class GalaxyRBACAgent( RBACAgent ):
             in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
-                    item = self.model.Library.get( item_id )
+                    item = self.sa_session.query( self.model.Library ).get( item_id )
                 else:
-                    item = self.model.Dataset.get( item_id )
+                    item = self.sa_session.query( self.model.Dataset ).get( item_id )
                 if ( library and not self.library_is_public( item ) ) or ( not library and not self.dataset_is_public( item ) ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
                     # derived from the roles associated with the access permission on item if it's not public.  This

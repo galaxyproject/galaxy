@@ -1,711 +1,412 @@
-<%namespace file="/message.mako" import="render_msg" />
+<%inherit file="/base.mako"/>
 
-<% _=n_ %>
-<!DOCTYPE HTML>
+<%def name="title()">
+    ${_('Galaxy History')}
+</%def>
 
-<html>
+## ---------------------------------------------------------------------------------------------------------------------
+<%def name="create_localization_json( strings_to_localize )">
+    ## converts strings_to_localize (a list of strings) into a JSON dictionary of { string : localized string }
+${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_localize ]) ) }
+## ?? add: if string != _(string)
+</%def>
 
-<head>
-<title>${_('Galaxy History')}</title>
+<%def name="get_page_localized_strings()">
+    ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
+    ##! change on per page basis
+    <%
+        strings_to_localize = [
+            # not needed?: "Galaxy History",
+            'refresh',
+            'collapse all',
+            'hide deleted',
+            'hide hidden',
+            'You are currently viewing a deleted history!',
+            "Your history is empty. Click 'Get Data' on the left pane to start",
+            
+            # from history_common.mako
+            'Download',
+            'Display Data',
+            'View data',
+            'Edit attributes',
+            'Delete',
+            'Job is waiting to run',
+            'View Details',
+            'Job is currently running',
+            #'Run this job again',
+            'Metadata is being Auto-Detected.',
+            'No data: ',
+            'format: ',
+            'database: ',
+            #TODO localized data.dbkey??
+            'Info: ',
+            #TODO localized display_app.display_name??
+            # _( link_app.name )
+            # localized peek...ugh
+            'Error: unknown dataset state',
+        ]
+        return strings_to_localize
+    %>
+</%def>
 
-## This is now only necessary for tests
-%if bool( [ data for data in history.active_datasets if data.state in ['running', 'queued', '', None ] ] ):
-<!-- running: do not change this comment, used by TwillTestCase.wait -->
-%endif
+## ---------------------------------------------------------------------------------------------------------------------
+## all the possible history urls (primarily from web controllers at this point)
+<%def name="get_history_url_templates()">
+<%
+    from urllib import unquote_plus
 
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta http-equiv="Pragma" content="no-cache">
+    history_class_name      = 'History'
+    encoded_id_template     = '<%= id %>'
 
-${h.css( "base", "history", "autocomplete_tagging" )}
+    url_dict = {
+        'rename'        : h.url_for( controller="history", action="rename_async",
+                            id=encoded_id_template ),
+        'tag'           : h.url_for( controller='tag', action='get_tagging_elt_async',
+                            item_class=history_class_name, item_id=encoded_id_template ),
+        'annotate'      : h.url_for( controller="history", action="annotate_async",
+                            id=encoded_id_template )
+    }
+%>
+${ unquote_plus( h.to_json_string( url_dict ) ) }
+</%def>
+
+## ---------------------------------------------------------------------------------------------------------------------
+## all the possible hda urls (primarily from web controllers at this point) - whether they should have them or not
+##TODO: unify url_for btwn web, api
+<%def name="get_hda_url_templates()">
+<%
+    from urllib import unquote_plus
+
+    hda_class_name      = 'HistoryDatasetAssociation'
+    encoded_id_template = '<%= id %>'
+
+    hda_ext_template    = '<%= file_ext %>'
+    meta_type_template  = '<%= file_type %>'
+
+    url_dict = {
+        # ................................................................ warning message links
+        'purge' : h.url_for( controller='dataset', action='purge_async',
+            dataset_id=encoded_id_template ),
+        #TODO: hide (via api)
+        'unhide' : h.url_for( controller='dataset', action='unhide',
+            dataset_id=encoded_id_template ),
+        #TODO: via api
+        'undelete' : h.url_for( controller='dataset', action='undelete',
+            dataset_id=encoded_id_template ),
+
+        # ................................................................ title actions (display, edit, delete),
+        'display' : h.url_for( controller='dataset', action='display',
+            dataset_id=encoded_id_template, preview=True, filename='' ),
+        'edit' : h.url_for( controller='dataset', action='edit',
+            dataset_id=encoded_id_template ),
+
+        #TODO: via api
+        'delete' : h.url_for( controller='dataset', action='delete_async',
+            dataset_id=encoded_id_template ),
+
+        # ................................................................ download links (and associated meta files),
+        'download' : h.url_for( controller='dataset', action='display',
+            dataset_id=encoded_id_template, to_ext=hda_ext_template ),
+        'meta_download' : h.url_for( controller='dataset', action='get_metadata_file',
+            hda_id=encoded_id_template, metadata_name=meta_type_template ),
+
+        # ................................................................ primary actions (errors, params, rerun),
+        'report_error' : h.url_for( controller='dataset', action='errors',
+            id=encoded_id_template ),
+        'show_params' : h.url_for( controller='dataset', action='show_params',
+            dataset_id=encoded_id_template ),
+        'rerun' : h.url_for( controller='tool_runner', action='rerun',
+            id=encoded_id_template ),
+        'visualization' : h.url_for( controller='visualization', action='index' ),
+
+        # ................................................................ secondary actions (tagging, annotation),
+        'tags' : {
+            'get' : h.url_for( controller='tag', action='get_tagging_elt_async',
+                item_class=hda_class_name, item_id=encoded_id_template ),
+            'set' : h.url_for( controller='tag', action='retag',
+                item_class=hda_class_name, item_id=encoded_id_template ),
+        },
+        'annotation' : {
+            'get' : h.url_for( controller='dataset', action='get_annotation_async',
+                id=encoded_id_template ),
+            'set' : h.url_for( controller='/dataset', action='annotate_async',
+                id=encoded_id_template ),
+        },
+    }
+%>
+${ unquote_plus( h.to_json_string( url_dict ) ) }
+</%def>
+
+
+## -----------------------------------------------------------------------------
+<%def name="get_current_user()">
+<%
+    #TODO: move to root.history, using base.controller.usesUser, unify that with users api
+    user_json = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
+    return user_json
+%>
+</%def>
+
+
+## -----------------------------------------------------------------------------
+<%def name="javascripts()">
+${parent.javascripts()}
+
 ${h.js(
-    "libs/jquery/jquery",
-    "libs/bootstrap",
-    "galaxy.base",
-    "libs/json2",
     "libs/jquery/jstorage",
-    "libs/jquery/jquery.autocomplete",
-    "galaxy.autocom_tagging",
-    "libs/underscore"
+    "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
+    "mvc/base-mvc",
 )}
 
+${h.templates(
+    "helpers-common-templates",
+    "template-warningmessagesmall",
+    
+    "template-history-historyPanel",
+
+    "template-hda-warning-messages",
+    "template-hda-titleLink",
+    "template-hda-failedMetadata",
+    "template-hda-hdaSummary",
+    "template-hda-downloadLinks",
+    "template-hda-tagArea",
+    "template-hda-annotationArea",
+    "template-hda-displayApps",
+)}
+
+##TODO: fix: curr hasta be _after_ h.templates bc these use those templates - move somehow
+${h.js(
+    "mvc/user/user-model", "mvc/user/user-quotameter",
+    "mvc/dataset/hda-model", "mvc/dataset/hda-base", "mvc/dataset/hda-edit",
+    "mvc/history/history-model", "mvc/history/history-panel"
+)}
+    
 <script type="text/javascript">
-
-<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded", "failed_metadata", "paused"] %>
-TERMINAL_STATES = ${ h.to_json_string(TERMINAL_STATES) };
-
-// Tag handling.
-function tag_handling(parent_elt) {
-    $(parent_elt).find("a.icon-button.tags").each( function() {
-        // Use links parameters but custom URL as ajax URL.
-        $(this).click( function() {
-            // Get tag area, tag element.
-            var history_item = $(this).parents(".historyItem");
-            var tag_area = history_item.find(".tag-area");
-            var tag_elt = history_item.find(".tag-elt");
-
-            // Show or hide tag area; if showing tag area and it's empty, fill it.
-            if ( tag_area.is( ":hidden" ) ) {
-                if (!tag_elt.html()) {
-                    // Need to fill tag element.
-                    var href_parms = $(this).attr("href").split("?")[1];
-                    var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
-                    $.ajax({
-                        url: ajax_url,
-                        error: function() { alert( "Tagging failed" ) },
-                        success: function(tag_elt_html) {
-                            tag_elt.html(tag_elt_html);
-                            tag_elt.find(".tooltip").tooltip({ placement : 'bottom' });
-                            tag_area.slideDown("fast");
-                        }
-                    });
-                } else {
-                    // Tag element is filled; show.
-                    tag_area.slideDown("fast");
-                }
-            } else {
-                // Hide.
-                tag_area.slideUp("fast");
-            }
-            return false;        
-        });
-    });
-};
-
-// Annotation handling.
-function annotation_handling(parent_elt) {
-    $(parent_elt).find("a.icon-button.annotate").each( function() {
-        // Use links parameters but custom URL as ajax URL.
-        $(this).click( function() {
-            // Get tag area, tag element.
-            var history_item = $(this).parents(".historyItem");
-            var annotation_area = history_item.find(".annotation-area");
-            var annotation_elt = history_item.find(".annotation-elt");
-
-            // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-            if ( annotation_area.is( ":hidden" ) ) {
-                if (!annotation_elt.html()) {
-                    // Need to fill annotation element.
-                    var href_parms = $(this).attr("href").split("?")[1];
-                    var ajax_url = "${h.url_for( controller='dataset', action='get_annotation_async' )}?" + href_parms;
-                    $.ajax({
-                        url: ajax_url,
-                        error: function() { alert( "Annotations failed" ) },
-                        success: function(annotation) {
-                            if (annotation == "") {
-                                annotation = "<em>Describe or add notes to dataset</em>";
-                            }
-                            annotation_elt.html(annotation);
-                            annotation_area.find(".tooltip").tooltip({ placement : 'bottom' });
-                            async_save_text(
-                                annotation_elt.attr("id"), annotation_elt.attr("id"),
-                                "${h.url_for( controller='dataset', action='annotate_async')}?" + href_parms,
-                                "new_annotation", 18, true, 4);
-                            annotation_area.slideDown("fast");
-                        }
-                    });
-                } else {
-                    // Annotation element is filled; show.
-                    annotation_area.slideDown("fast");
-                }
-            } else {
-                // Hide.
-                annotation_area.slideUp("fast");
-            }
-            return false;        
-        });
-    });
-};
-
-// -----------------------------------------------------------------------------
-function applyTooltip( elem ){
-    // apply twitter bootstrap tooltip to elem
+function galaxyPageSetUp(){
+    //TODO: move to base.mako
+    // moving global functions, objects into Galaxy namespace
+    top.Galaxy                  = top.Galaxy || {};
     
-    //!! 2 line tooltips placed above do not render properly
-    //TODO: hack (github has an issue on this - see how it's resolved)
-    var $this = $( elem );
-    if( $this.hasClass( 'tooltip' ) ){
-    
-        // remove original tooltip
-        if( $this.attr( 'data-original-title' ) ){
-            // documented method - that doesn't seem to work
-            //$( this ).tooltip( 'destroy' );
-            $this.data( 'tooltip', false );
-            
-            // swap title back
-            var title = $this.attr( 'data-original-title' );
-            $this.attr( 'data-original-title', null );
-            $this.attr( 'title', title );
-        }
-    
-        // (re-)apply tooltip
-        // place them on the bottom for now
-        $this.tooltip({ placement : 'bottom' });
+    if( top != window ){
+        top.Galaxy.mainWindow       = top.Galaxy.mainWindow     || top.frames.galaxy_main;
+        top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
+        top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
+
+        //modals
+        top.Galaxy.show_modal       = top.show_modal;
+        top.Galaxy.hide_modal       = top.hide_modal;
     }
-    return this;
+
+    top.Galaxy.localization     = GalaxyLocalization;
+    window.Galaxy = top.Galaxy;
 }
 
-function applyTooltips( elem ){
-    // apply twitter bootstrap tooltips to this element and all children
-    $( $( elem ).find( '.tooltip' ).andSelf() ).each( function(){
-        applyTooltip( this );
-    });
-    return this;
-}
+// set js localizable strings
+GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
 
-// -----------------------------------------------------------------------------
-// Create trackster action function.
-function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
-    return function() {
-        var params = {};
-        if (dbkey) { params['dbkey'] = dbkey; }
-        $.ajax({
-            url: vis_url + '/list_tracks?f-' + $.param(params),
-            dataType: "html",
-            error: function() { alert( "Could not add this dataset to browser." ); },
-            success: function(table_html) {
-                var parent = window.parent;
-                
-                parent.show_modal("View Data in a New or Saved Visualization", "", {
-                    "Cancel": function() {
-                        parent.hide_modal();
-                    },
-                    "View in saved visualization": function() {
-                        // Show new modal with saved visualizations.
-                        parent.show_modal("Add Data to Saved Visualization", table_html, {
-                            "Cancel": function() {
-                                parent.hide_modal();
-                            },
-                            "Add to visualization": function() {
-                                $(parent.document).find('input[name=id]:checked').each(function() {
-                                    var vis_id = $(this).val();
-                                    dataset_params['id'] = vis_id
-                                    parent.location = vis_url + "/trackster?" + $.param(dataset_params);
-                                });
-                            }, 
-                        });
-                    },
-                    "View in new visualization": function() {
-                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
-                    }
-                });
-            }
-        });
-        return false;
-    };
-};
+// add needed controller urls to GalaxyPaths
+if( !galaxy_paths ){ galaxy_paths = top.galaxy_paths || new GalaxyPaths(); }
+galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
+galaxy_paths.set( 'history', ${get_history_url_templates()} );
 
-function create_scatterplot_action_fn( url, params ){
-    action = function() {
-        var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
-            final_url = url + '/scatterplot?' + $.param(params);
-        galaxy_main.attr( 'src', final_url );
-        $( 'div.popmenu-wrapper' ).remove();
-        return false;
-    };
-    return action;
-}
+$(function(){
+    galaxyPageSetUp();
+    // ostensibly, this is the App
 
-/**
- * Create popup menu for visualization icon.
- */
-function init_viz_icon(icon) {
-    var icon = $(icon),
-        vis_url = icon.attr('href'),
-        dataset_id = icon.attr('dataset_id'),
-        visualizations = icon.attr('visualizations').split(','),
-        dbkey = icon.attr('dbkey'),
-        popup_menu_dict = {},
-
-        // Create visualization action.
-        create_viz_action = function(visualization) {
-            var action;
-            switch( visualization ){
-                
-                case 'trackster':
-                    action = create_trackster_action_fn(vis_url, params, dbkey);
-                    break;
-                
-                case 'scatterplot':
-                    action = create_scatterplot_action_fn( vis_url, params );
-                    break;
-            
-                default:
-                    action = function(){
-                        window.parent.location = vis_url + '/' + visualization + '?' + $.param(params);
-                    }
-            }
-            return action;
-        },
-        params = {
-            dataset_id: dataset_id,
-            hda_ldda: 'hda'
-        };
-
-    // Add dbkey to params if it exists.
-    if (dbkey) { params['dbkey'] = dbkey; }
-
-    // Populate menu dict with visualizations.
-    _.each(visualizations, function(visualization) {
-        popup_menu_dict[
-            visualization.charAt(0).toUpperCase() + visualization.slice(1)
-                        ] = create_viz_action(visualization);
-    });
-
-    // Set up action or menu.
-    if (visualizations.length === 1) {
-        // No need for popup menu because there's a single visualization.
-        icon.attr( 'title', visualizations[0] ); 
-        icon.click(create_viz_action(visualizations[0]));
-    }
-    else {
-        make_popupmenu(icon, popup_menu_dict);
-    }
-};
-
-
-// Update the message for async operations
-function render_message(message, status) {
-    $("div#message-container").html( "<div class=\"" + status + "message\">" + message + "</div><br/>" );
-}
-
-$(function() {
-    var historywrapper = $("div.historyItemWrapper");
-    init_history_items(historywrapper);
-    historywrapper.each( function() {
-        // Delete link
-        $(this).find("div.historyItemButtons > .delete" ).each( function() {
-            var data_id = this.id.split( "-" )[1];
-            $(this).click( function() {
-                $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
-                $.ajax({
-                    url: "${h.url_for( controller='dataset', action='delete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { render_message( "Dataset deletion failed", "error" ); },
-                    success: function(msg) {
-                        if (msg === "OK") {
-                            %if show_deleted:
-                            var to_update = {};
-                            to_update[data_id] = "none";
-                            updater( to_update );
-                            %else:
-                            $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-                                $( "#historyItemContainer-" + data_id ).remove();
-                                if ( $( "div.historyItemContainer" ).length < 1 ) {
-                                    $( "#emptyHistoryMessage" ).show();
-                                }
-                            });
-                            %endif
-                        } else {
-                            render_message( "Dataset deletion failed", "error" );
-                        }
-                    }
-                });
-                return false;
-            });
-        });
-        
-        // Check to see if the dataset data is cached or needs to be pulled in
-        // via objectstore
-        $(this).find("a.display").each( function() {
-            var history_item = $(this).parents(".historyItem")[0];
-            var history_id = history_item.id.split( "-" )[1];
-            $(this).click(function() {
-                check_transfer_status($(this), history_id);
-            });
-        });
-        
-        // If dataset data is not cached, keep making ajax calls to check on the
-        // data status and update the dataset UI element accordingly
-        function check_transfer_status(link, history_id) {
-            $.getJSON("${h.url_for( controller='dataset', action='transfer_status', dataset_id='XXX' )}".replace( 'XXX', link.attr("dataset_id") ), 
-                function(ready) {
-                    if (ready === false) {
-                        // $("<div/>").text("Data is loading from S3... please be patient").appendTo(link.parent());
-                        $( '#historyItem-' + history_id).removeClass( "historyItem-ok" );
-                        $( '#historyItem-' + history_id).addClass( "historyItem-running" );
-                        setTimeout(function(){check_transfer_status(link, history_id)}, 4000);
-                    } else {
-                        $( '#historyItem-' + history_id).removeClass( "historyItem-running" );
-                        $( '#historyItem-' + history_id).addClass( "historyItem-ok" );
-                    }
-                }
-            );
-        }
-
-        // Undelete link
-        $(this).find("a.historyItemUndelete").each( function() {
-            var data_id = this.id.split( "-" )[1];
-            $(this).click( function() {
-                $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
-                $.ajax({
-                    url: "${h.url_for( controller='dataset', action='undelete_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { render_message( "Dataset undeletion failed", "error" ); },
-                    success: function() {
-                        var to_update = {};
-                        to_update[data_id] = "none";
-                        updater( to_update );
-                    }
-                });
-                return false;
-            });
-        });
-        
-        // Purge link
-        $(this).find("a.historyItemPurge").each( function() {
-            var data_id = this.id.split( "-" )[1];
-            $(this).click( function() {
-                $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
-                $.ajax({
-                    url: "${h.url_for( controller='dataset', action='purge_async', dataset_id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { render_message( "Dataset removal from disk failed", "error" ) },
-                    success: function() {
-                        var to_update = {};
-                        to_update[data_id] = "none";
-                        updater( to_update );
-                    }
-                });
-                return false;
-            });
-        });
-        
-        // Show details icon -- Disabled since it often gets stuck, etc
-        /* $(this).find("a.show-details").bind("mouseenter.load-detail", function(e) {
-            var anchor = $(this);
-            $.get($(this).attr("href"), function(data) {
-                anchor.attr("title", data);
-                anchor.tipsy( { html: true, gravity: 's', opacity: 1.0, delayOut: 300 } );
-                anchor.unbind("mouseenter.load-detail");
-                anchor.trigger("mouseenter");
-            });
-            return false;
-        });
-        
-        // Disable clickthrough
-        $(this).find("a.show-details").bind("click", function() { return false; });
-        */
-        
-        tag_handling(this);
-        annotation_handling(this);
-        applyTooltips( this );
-    });
-    
-    _.each( $(".visualize-icon"), function(icon) {
-        init_viz_icon(icon);
-    });
-    
-    // History rename functionality.
-    async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
-    
-    // History tagging functionality.
-    var historyTagArea = $('#history-tag-area');
-    $('#history-tag').click( function() {
-        if ( historyTagArea.is( ":hidden" ) ) {
-            historyTagArea.slideDown("fast");
-        } else {
-            historyTagArea.slideUp("fast");
-        }
-        return false;
-    });
-    
-    // History annotation functionality.
-    var historyAnnotationArea = $('#history-annotation-area');
-    $('#history-annotate').click( function() {
-        if ( historyAnnotationArea.is( ":hidden" ) ) {
-            historyAnnotationArea.slideDown("fast");
-        } else {
-            historyAnnotationArea.slideUp("fast");
-        }
-        return false;
-    });
-    async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
-    
-    // Updater
-    updater(
-        ${ h.to_json_string( dict([(trans.app.security.encode_id(data.id), data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
-    );
-    
-    // Navigate to a dataset.
-    %if hda_id:
-        self.location = "#${hda_id}";
+    %if 'profiling' in self.context.kwargs:
+    Galaxy.profiling = ${h.to_json_string( profiling )}.join( '\n' );
     %endif
 
-    // Update the Quota Meter
-    $.ajax( {
-        type: "POST",
-        url: "${h.url_for( controller='root', action='user_get_usage' )}",
-        dataType: "json",
-        success : function ( data ) {
-            $.each( data, function( type, val ) {
-                quota_meter_updater( type, val );
-            });
-        }
-    });
-});
-
-// Updates the Quota Meter
-var quota_meter_updater = function ( type, val ) {
-    if ( type == "usage" ) {
-        $("#quota-meter-bar", window.top.document).css( "width", "0" );
-        $("#quota-meter-text", window.top.document).text( "Using " + val );
-    } else if ( type == "percent" ) {
-        $("#quota-meter-bar", window.top.document).removeClass("quota-meter-bar-warn quota-meter-bar-error");
-        if ( val >= 100 ) {
-            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-error");
-            $("#quota-message-container").slideDown();
-        } else if ( val >= 85 ) {
-            $("#quota-meter-bar", window.top.document).addClass("quota-meter-bar-warn");
-            $("#quota-message-container").slideUp();
-        } else {
-            $("#quota-message-container").slideUp();
-        }
-        $("#quota-meter-bar", window.top.document).css( "width", val + "px" );
-        $("#quota-meter-text", window.top.document).text( "Using " + val + "%" );
+    //NOTE: for debugging on non-local instances (main/test)
+    //  1. load history panel in own tab
+    //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
+    //  -> history panel and hdas will display console logs in console
+    var debugging = false;
+    if( jQuery.jStorage.get( '__history_panel' ) ){
+        debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
     }
-}
 
-// Looks for changes in dataset state using an async request. Keeps
-// calling itself (via setTimeout) until all datasets are in a terminal
-// state.
-var updater = function ( tracked_datasets ) {
-    // Check if there are any items left to track
-    var empty = true;
-    for ( i in tracked_datasets ) {
-        empty = false;
-        break;
-    }
-    if ( !empty ) {
-        setTimeout( function() { updater_callback( tracked_datasets ) }, 4000 );
-    }
-};
-var updater_callback = function ( tracked_datasets ) {
-    // Build request data
-    var ids = [],
-        states = [],
-        force_history_refresh = false,
-        check_history_size = false;
-        
-    $.each( tracked_datasets, function ( id, state ) {
-        ids.push( id );
-        states.push( state );
-    });
-    // Make ajax call
-    $.ajax( {
-        type: "POST",
-        url: "${h.url_for( controller='root', action='history_item_updates' )}",
-        dataType: "json",
-        data: { ids: ids.join( "," ), states: states.join( "," ) },
-        success : function ( data ) {
-            $.each( data, function( id, val ) {
-                // Replace HTML
-                var container = $("#historyItemContainer-" + id);
-                container.html( val.html );
-                init_history_items( $("div.historyItemWrapper"), "noinit" );
-                
-                // apply ui element behaviors
-                tag_handling(container);
-                annotation_handling(container);
-                applyTooltips( container );
-                
-                var viz_icon = container.find(".visualize-icon")[0];
-                if (viz_icon) { init_viz_icon(viz_icon); }
-                
-                // If new state is terminal, stop tracking
-                if (TERMINAL_STATES.indexOf(val.state) !== -1) {
-                    if ( val.force_history_refresh ){
-                        force_history_refresh = true;
-                    }
-                    delete tracked_datasets[id];
-                    // When a dataset becomes terminal, check for changes in history disk size
-                    check_history_size = true;
-                } else {
-                    tracked_datasets[id] = val.state;
-                }
-            });
-            if ( force_history_refresh ) {
-                parent.frames.galaxy_history.location.reload();
-            } else {
-                if ( check_history_size ) {
-                    $.ajax( {
-                        type: "POST",
-                        url: "${h.url_for( controller='root', action='history_get_disk_size' )}",
-                        dataType: "json",
-                        success: function( data ) {
-                            $.each( data, function( type, val ) {
-                                if ( type == "history" ) {
-                                    $("#history-size").text( val );
-                                } else if ( type == "global_usage" ) {
-                                    quota_meter_updater( "usage", val );
-                                } else if ( type == "global_percent" ) {
-                                    quota_meter_updater( "percent", val );
-                                }
-                            });
-                        }
-                    });
-                    check_history_size = false;
-                }
-                // Keep going (if there are still any items to track)
-                updater( tracked_datasets ); 
-            }
-            make_popup_menus();
-        },
-        error: function() {
-            // Just retry, like the old method, should try to be smarter
-            updater( tracked_datasets );
-        }
-    });
-};
+    // get the current user (either from the top frame's Galaxy or if in tab via the bootstrap)
+    Galaxy.currUser = Galaxy.currUser || new User(${ get_current_user() });
+    if( debugging ){ Galaxy.currUser.logger = console; }
 
-</script>
+    var page_show_deleted = ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+        page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
 
-<style>
-.historyItemBody {
-    display: none;
-}
-div.form-row {
-    padding: 5px 5px 5px 0px;
-}
-#top-links {
-    margin-bottom: 15px;
-}
-#history-name-container {
-    color: gray;
-    font-weight: bold;
-}
-#history-name {
-    word-wrap: break-word;
-}
-.editable-text {
-    border: solid transparent 1px;
-    padding: 3px;
-    margin: -4px;
-}
-</style>
+    //  ...use mako to 'bootstrap' the models
+        historyJson = ${ history_json },
+        hdaJson     = ${ hda_json };
 
-<noscript>
-<style>
-.historyItemBody {
-    display: block;
-}
-</style>
-</noscript>
+    //TODO: add these two in root.history
+    // add user data to history
+    // i don't like this history+user relationship, but user authentication changes views/behaviour
+    historyJson.user = Galaxy.currUser.toJSON();
 
-</head>
-
-<body class="historyPage">
-
-<div id="top-links" class="historyLinks">
-    
-    <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for(controller='history', show_deleted=show_deleted)}"></a>
-    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none"></a>
-    
-    %if trans.get_user():
-    <div style="width: 40px; float: right; white-space: nowrap;">
-        <a id="history-tag" title="Edit history tags" class="icon-button tags tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
-        <a id="history-annotate" title="Edit history annotation" class="icon-button annotate tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
-    </div>
-    %endif
-</div>
-
-<div class="clear"></div>
-
-%if show_deleted:
-<div class="historyLinks">
-    <a href="${h.url_for(controller='history', show_deleted=False)}">${_('hide deleted')}</a>
-</div>
-%endif
-
-%if show_hidden:
-<div class="historyLinks">
-    <a href="${h.url_for(controller='history', show_hidden=False)}">${_('hide hidden')}</a>
-</div>
-%endif
-
-<div id="history-name-area" class="historyLinks">
-    
-    <div id="history-name-container" style="position: relative;">
-        %if trans.get_user():
-            <div id="history-size" style="position: absolute; top: 3px; right: 0px;">${history.get_disk_size(nice_size=True)}</div>
-            <div id="history-name" style="margin-right: 50px;" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
-            
-        %else:
-            <div id="history-size">${history.get_disk_size(nice_size=True)}</div>
-        %endif
-    </div>                     
-</div>
-<div style="clear: both;"></div>
-
-%if history.deleted:
-    <div class="warningmessagesmall">
-        ${_('You are currently viewing a deleted history!')}
-    </div>
-    <p></p>
-%endif
-
-<%namespace file="../tagging_common.mako" import="render_individual_tagging_element" />
-<%namespace file="history_common.mako" import="render_dataset" />
-
-%if trans.get_user() is not None:
-    <div style="margin: 0px 5px 10px 5px">
-        ## Tagging elt.
-        <div id="history-tag-area" style="display: none">
-            <b>Tags:</b>
-            ${render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20")}
-        </div>
-    
-        ## Annotation elt.
-        <div id="history-annotation-area" style="display: none">
-            <strong>Annotation / Notes:</strong>
-            <div id="history-annotation-container">
-            <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
-                %if annotation:
-                    ${h.to_unicode( annotation ) | h}
-                %else:
-                    <em>Describe or add notes to history</em>
-                %endif
-            </div>
-            </div>
-        </div>
-        
-    </div>
-%endif
-
-<div id="message-container">
+    // set up messages passed in
     %if message:
-        ${render_msg( message, status )}
+    historyJson.message = "${_( message )}"; historyJson.status = "${status}";
     %endif
-</div>
 
-%if over_quota:
-<div id="quota-message-container">
-%else:
-<div id="quota-message-container" style="display: none;">
-%endif
-    <div id="quota-message" class="errormessage">
-        You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
-    </div>
-    <br/>
-</div>
+    // create the history panel
+    var history = new History( historyJson, hdaJson, ( debugging )?( console ):( null ) );
+    var historyPanel = new HistoryPanel({
+            model           : history,
+            urlTemplates    : galaxy_paths.attributes,
+            logger          : ( debugging )?( console ):( null ),
+            // is page sending in show settings? if so override history's
+            show_deleted    : page_show_deleted,
+            show_hidden     : page_show_hidden
+        });
+    historyPanel.render();
 
-%if not datasets:
+    // set up messages passed in
+    %if hda_id:
+    var hdaId = "${hda_id}";
+    // have to fake 'once' here - simplify when bbone >= 1.0
+    historyPanel.on( 'rendered:initial', function scrollOnce(){
+        this.off( 'rendered:initial', scrollOnce, this );
+        this.scrollToId( hdaId );
+    }, historyPanel );
+    %endif
 
-    <div class="infomessagesmall" id="emptyHistoryMessage">
+    // QUOTA METER is a cross-frame ui element (meter in masthead, watches hist. size built here)
+    //TODO: the quota message (curr. in the history panel) belongs somewhere else
+    //TODO: does not display if in own tab
+    if( Galaxy.quotaMeter ){
+        // unbind prev. so we don't build up massive no.s of event handlers as history refreshes
+        if( top.Galaxy.currHistoryPanel ){
+            Galaxy.quotaMeter.unbind( 'quota:over',  top.Galaxy.currHistoryPanel.showQuotaMessage );
+            Galaxy.quotaMeter.unbind( 'quota:under', top.Galaxy.currHistoryPanel.hideQuotaMessage );
+        }
 
-%else:    
+        // show/hide the 'over quota message' in the history when the meter tells it to
+        Galaxy.quotaMeter.bind( 'quota:over',  historyPanel.showQuotaMessage, historyPanel );
+        Galaxy.quotaMeter.bind( 'quota:under', historyPanel.hideQuotaMessage, historyPanel );
 
-    ## Render requested datasets, ordered from newest to oldest
-    <div>
-    %for data in reversed( datasets ):
-        %if data.visible or show_hidden:
-            <div class="historyItemContainer" id="historyItemContainer-${trans.app.security.encode_id(data.id)}">
-                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = True )}
-            </div>
-        %endif
-    %endfor
-    </div>
+        // update the quota meter when current history changes size
+        //TODO: can we consolidate the two following?
+        historyPanel.model.bind( 'rendered:initial change:nice_size', function(){
+            if( Galaxy.quotaMeter ){ Galaxy.quotaMeter.update() }
+        });
 
-    <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
-%endif
-        ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
-    </div>
+        // having to add this to handle re-render of hview while overquota (the above do not fire)
+        historyPanel.on( 'rendered rendered:initial', function(){
+            if( Galaxy.quotaMeter && Galaxy.quotaMeter.isOverQuota() ){
+                historyPanel.showQuotaMessage();
+            }
+        });
+    }
+    // set it up to be accessible across iframes
+    top.Galaxy.currHistoryPanel = historyPanel;
 
-</body>
-</html>
+    //ANOTHER cross-frame element is the history-options-button...
+    //TODO: the options-menu stuff need to be moved out when iframes are removed
+    //TODO: move to pub-sub
+    //TODO: same strings ("Include...") here as in index.mako - brittle
+    if( ( top.document !== window.document ) &&  ( Galaxy.historyOptionsMenu ) ){
+        Galaxy.historyOptionsMenu.findItemByHtml( "${"Include Deleted Datasets"}" ).checked =
+            Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
+        Galaxy.historyOptionsMenu.findItemByHtml( "${"Include Hidden Datasets"}" ).checked =
+            Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
+    }
+
+    return;
+});
+</script>
+    
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css(
+        "base",
+        "history",
+        "autocomplete_tagging"
+    )}
+    <style>
+        ## TODO: move to base.less
+        /*---- page level */
+        .warningmessagesmall {
+            margin: 8px 0 0 0;
+        }
+        #message-container div {
+        }
+        #message-container [class$="message"] {
+            margin: 8px 0 0 0;
+            cursor: pointer;
+        }
+
+        /*---- history level */
+        #history-controls {
+            margin-bottom: 5px;
+            padding: 5px;
+        }
+
+        #history-title-area {
+            margin: 0px 0px 5px 0px;
+        }
+        #history-name {
+            word-wrap: break-word;
+            font-weight: bold;
+            /*color: gray;*/
+        }
+        .editable-text {
+            border: solid transparent 1px;
+        }
+        #history-name-container input {
+            width: 90%;
+            margin: -2px 0px -3px -4px;
+            font-weight: bold;
+        }
+
+        #quota-message-container {
+            margin: 8px 0px 5px 0px;
+        }
+        #quota-message {
+            margin: 0px;
+        }
+
+        #history-subtitle-area {
+        }
+        #history-size {
+        }
+        #history-secondary-links {
+        }
+
+        #history-secondary-links #history-refresh {
+            text-decoration: none;
+        }
+        /*too tweaky*/
+        #history-annotate {
+            margin-right: 3px;
+        }
+
+        #history-tag-area, #history-annotation-area {
+            margin: 10px 0px 10px 0px;
+        }
+
+        /*---- HDA level */
+        .historyItem div.errormessagesmall {
+            font-size: small;
+            margin: 0px 0px 4px 0px;
+        }
+        .historyItem div.warningmessagesmall {
+            font-size: small;
+            margin: 0px 0px 4px 0px;
+        }
+        .historyItemBody {
+            display: none;
+        }
+
+        .historyItemTitle {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .historyItemTitle:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</%def>
+
+<body class="historyPage"></body>

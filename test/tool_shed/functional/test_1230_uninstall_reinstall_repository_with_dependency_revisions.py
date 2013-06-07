@@ -15,8 +15,10 @@ base_datatypes_count = 0
 repository_datatypes_count = 0
 running_standalone = False
 
+
 class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     '''Test uninstalling and reinstalling a repository with repository dependency revisions.'''
+  
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.galaxy_logout()
@@ -34,6 +36,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
+ 
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0030 category and upload the emboss repository to the tool shed, if necessary.'''
         global repository_datatypes_count
@@ -49,7 +52,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
             running_standalone = True
-            self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
             emboss_5_repository = self.get_or_create_repository( name=emboss_5_repository_name, 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
@@ -66,17 +68,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_5_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_5_repository, repository_tuples=[ datatypes_tuple ], filepath=repository_dependencies_path )
             emboss_6_repository = self.get_or_create_repository( name=emboss_6_repository_name, 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
@@ -93,17 +86,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '6' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_6_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_6_repository, repository_tuples=[ datatypes_tuple ], filepath=repository_dependencies_path )
             emboss_repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
@@ -120,29 +104,12 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ emboss_5_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
-            self.generate_repository_dependency_xml( [ emboss_6_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, emboss_5_repository.name, emboss_5_repository.user.username, self.get_repository_tip( emboss_5_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
+            dependency_tuple = ( self.url, emboss_6_repository.name, emboss_6_repository.user.username, self.get_repository_tip( emboss_6_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
         repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) ) 
+ 
     def test_0010_install_emboss_repository( self ):
         '''Install the emboss repository into the Galaxy instance.'''
         global repository_datatypes_count
@@ -172,12 +139,14 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
             assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
         else:
             assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
+  
     def test_0015_uninstall_emboss_repository( self ):
         '''Uninstall the emboss repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=True )
         strings_not_displayed = [ installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+
     def test_0020_reinstall_emboss_repository( self ):
         '''Reinstall the emboss repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
@@ -191,12 +160,14 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
+ 
     def test_0025_deactivate_emboss_repository( self ):
         '''Deactivate the emboss repository without removing it from disk.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=False )
         strings_not_displayed = [ installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+ 
     def test_0030_reactivate_emboss_repository( self ):
         '''Reactivate the emboss repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )

@@ -2,17 +2,17 @@
 //    "../mvc/base-mvc"
 //], function(){
 
-/* global BaseView, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
+/* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
  * 
- *  @augments BaseView
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDABaseView = BaseView.extend( LoggableMixin ).extend(
+var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends HDABaseView.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -45,18 +45,19 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
 
-        // re-render the entire view on any model change
-        //this.model.bind( 'change', this.render , this );
+        // re-rendering on any model changes
         this.model.bind( 'change', function( event, changed ){
-            //var withoutDisplayApps = _.omit( changed, [ 'display_apps', 'display_types' ] );
-            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), [ 'display_apps', 'display_types' ] );
-
+            // find out if more has changed than just the display applications
+            //TODO: need a better handler for these sorts of partial rendering cases
+            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
             if( nonDisplayAppChanges.length ){
+                // if it's more, render everything
                 this.render();
 
-            //TODO: need a better handler for these sorts of rendering exceptions
+            // if it's just the display links, and it's already expanded
             } else {
                 if( this.expanded ){
+                    // render the links only
                     this._render_displayApps();
                 }
             }
@@ -370,7 +371,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( this.expanded ){
             // only render the body html if it's being shown
             this._render_body_html( body );
-            body.show();
+            //TODO: switch back when jq -> 1.9
+            //body.show();
+            body.css( 'display', 'block' );
         }
         return body;
     },
@@ -433,7 +436,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_new : function( parent ){
-        var newMsg = 'This is a new dataset and not all of its data are available yet';
+        var newMsg = _l( 'This is a new dataset and not all of its data are available yet' );
         parent.append( $( '<div>' + _l( newMsg ) + '</div>' ) );
     },
 
@@ -509,7 +512,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_empty : function( parent ){
-        //TODO: replace i with dataset-misc-info class 
+        //TODO: replace i with dataset-misc-info class
         //?? why are we showing the file size when we know it's zero??
         parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
@@ -586,10 +589,12 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         }
     },
 
+    // ......................................................................... DELETION
     remove : function( callback ){
         var hdaView = this;
         this.$el.fadeOut( 'fast', function(){
             hdaView.$el.remove();
+            hdaView.off();
             if( callback ){ callback(); }
         });
     },

@@ -68,7 +68,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
-    return ( 'isResolved' in d );
+    return ('promise' in d);
 };
 
 // --------- Models ---------
@@ -331,14 +331,6 @@ var GenomeDataManager = Cache.extend({
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
-        // Debugging:
-        //console.log("get_data", low, high, mode);
-        /*
-        console.log("cache contents:")
-        for (var i = 0; i < this.key_ary.length; i++) {
-            console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
-        }
-        */
                 
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
@@ -348,8 +340,7 @@ var GenomeDataManager = Cache.extend({
         }
 
         //
-        // Look in cache for data that can be used. Data can be reused if it
-        // has the requested data and is not summary tree and has details.
+        // Look in cache for data that can be used.
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
         //
@@ -505,9 +496,6 @@ var GenomeDataManager = Cache.extend({
             // FIXME: constant should go somewhere.
             extra_params.num_samples = 1000 * detail_multiplier;
         }
-        else if (cur_data.dataset_type === 'summary_tree') {
-            extra_params.level = Math.min(cur_data.level - 1, 2);
-        }
 
         return this.load_data(region, mode, resolution, extra_params);
     },
@@ -579,7 +567,7 @@ var GenomeDataManager = Cache.extend({
                            data_point[0] <= subregion.get('end');
                 });
             },
-            'refseq': function(data, subregion) {
+            refseq: function(data, subregion) {
                 var seq_start = subregion.get('start') - entry.region.get('start'),
                     seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
                 return entry.data.slice(seq_start, seq_end);
@@ -864,11 +852,17 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = data_mod.Dataset.extend({
+var BackboneTrack = Backbone.RelationalModel.extend({
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'dataset',
+            relatedModel: data_mod.Dataset
+        }
+    ],
 
     initialize: function(options) {
-        // Dataset id is unique ID for now.
-        this.set('id', options.dataset_id);
 
         // -- Set up config settings. -- 
 
@@ -889,7 +883,7 @@ var BackboneTrack = data_mod.Dataset.extend({
             preloaded_data = [];
         }
         this.set('data_manager', new GenomeDataManager({
-            dataset: this,
+            dataset: this.get('dataset'),
             init_data: preloaded_data
         }));
     }

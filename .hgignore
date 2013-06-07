@@ -20,6 +20,7 @@ database/job_working_directory
 database/pbs
 database/tmp
 database/*.sqlite
+database/openid_consumer_cache
 
 # Python bytecode
 *.pyc
@@ -34,6 +35,11 @@ tool_shed_webapp.lock
 tool_shed_webapp.log
 tool_shed_webapp.pid
 hgweb.config*
+
+# Reports Runtime Files
+reports_webapp.lock
+reports_webapp.log
+reports_webapp.pid
 
 # Config files
 universe_wsgi.ini
@@ -54,7 +60,7 @@ shed_tool_data_table_conf.xml
 job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
-
+visualizations_conf.xml
 static/welcome.html.*
 static/welcome.html
 
@@ -75,6 +81,7 @@ tool-data/genome/*
 
 # Test output
 run_functional_tests.html
+test/tool_shed/tmp/*
 
 # Project files
 *.kpf

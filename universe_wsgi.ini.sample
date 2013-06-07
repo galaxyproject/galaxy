@@ -171,6 +171,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
+# Visualizations config file, defines what visualizations apply to particular data and how to pass them
+# the necessary parameters
+#visualizations_conf_path = visualizations_conf.xml
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -263,6 +267,11 @@ use_nglims = False
 nglims_config_file = tool-data/nglims.yaml
 
 # -- UI Localization
+
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
 
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
@@ -624,12 +633,6 @@ use_interactive = True
 # it can "recover" them when it starts).  This is not safe to use if you are
 # running more than one Galaxy server using the same database.
 #enable_job_recovery = True
-
-# Setting metadata on job outputs to in a separate process (or if using a
-# cluster, on the cluster).  Thanks to Python's Global Interpreter Lock and the
-# hefty expense that setting metadata incurs, your Galaxy process may become
-# unresponsive when this operation occurs internally.
-#set_metadata_externally = False
 
 # Although it is fairly reliable, setting metadata can occasionally fail.  In
 # these instances, you can choose to retry setting it internally or leave it in

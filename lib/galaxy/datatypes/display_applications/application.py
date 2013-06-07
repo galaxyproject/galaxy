@@ -12,7 +12,7 @@ from copy import deepcopy
 log = logging.getLogger( __name__ )
 
 #Any basic functions that we want to provide as a basic part of parameter dict should be added to this dict
-BASE_PARAMS = { 'qp': quote_plus, 'url_for':url_for } #url_for has route memory...
+BASE_PARAMS = { 'qp': quote_plus, 'url_for':url_for }
 
 class DisplayApplicationLink( object ):
     @classmethod
@@ -40,7 +40,7 @@ class DisplayApplicationLink( object ):
         self.name = None
     def get_display_url( self, data, trans ):
         dataset_hash, user_hash = encode_dataset_user( trans, data, None )
-        return url_for( controller='/dataset',
+        return url_for( controller='dataset',
                         action="display_application",
                         dataset_id=dataset_hash,
                         user_id=user_hash,

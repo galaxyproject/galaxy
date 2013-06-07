@@ -1,13 +1,12 @@
 """
 API operations on a library.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
-from paste.httpexceptions import *
+import logging
+from galaxy import util
+from galaxy import web
+from galaxy.model.orm import and_, not_, or_
+from galaxy.web.base.controller import BaseAPIController, url_for
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
 log = logging.getLogger( __name__ )
 
@@ -57,7 +56,6 @@ class LibrariesController( BaseAPIController ):
         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
         deleted = util.string_as_bool( deleted )
-        params = util.Params( kwd )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
         except TypeError:

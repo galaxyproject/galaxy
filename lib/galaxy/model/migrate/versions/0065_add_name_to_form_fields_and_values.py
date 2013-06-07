@@ -1,6 +1,6 @@
 """
-Migration script to add 'name' attribute to the JSON dict which describes 
-a form definition field and the form values in the database. In the 'form_values' 
+Migration script to add 'name' attribute to the JSON dict which describes
+a form definition field and the form values in the database. In the 'form_values'
 table, the 'content' column is now a JSON dict instead of a list.
 """
 
@@ -24,11 +24,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -47,7 +47,7 @@ def upgrade():
     # Go through the entire table and add a 'name' attribute for each field
     # in the list of fields for each form definition
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for row in result:
         form_definition_id = row[0]
         fields = str( row[1] )
@@ -64,13 +64,13 @@ def upgrade():
                 cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" %( fields_json, form_definition_id )
             else:
                 cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( fields_json, form_definition_id )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
     # replace the values list in the content field of the form_values table with a name:value dict
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \
           " FROM form_values, form_definition" \
           " WHERE form_values.form_definition_id=form_definition.id" \
           " ORDER BY form_values.id ASC"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for row in result:
         form_values_id = int( row[0] )
         if not str( row[1] ).strip():
@@ -86,9 +86,10 @@ def upgrade():
                 field_name = field[ 'name' ]
                 values_dict[ field_name ] = get_value(values_list, field_index )
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_dict ), form_values_id )
-            db_session.execute( cmd )
-                
-def downgrade():
+            migrate_engine.execute( cmd )
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         FormDefinition_table = Table( "form_definition", metadata, autoload=True )
@@ -104,7 +105,7 @@ def downgrade():
           " FROM form_values, form_definition" \
           " WHERE form_values.form_definition_id=form_definition.id" \
           " ORDER BY form_values.id ASC"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for row in result:
         form_values_id = int( row[0] )
         if not str( row[1] ).strip():
@@ -118,12 +119,12 @@ def downgrade():
             for field_index, field in enumerate( fields_list ):
                 field_name = field[ 'name' ]
                 field_value = values_dict[ field_name ]
-                values_list.append( field_value ) 
+                values_list.append( field_value )
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_list ), form_values_id )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
     # remove name attribute from the field column of the form_definition table
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for row in result:
         form_definition_id = row[0]
         fields = str( row[1] )
@@ -138,4 +139,4 @@ def downgrade():
                 cmd = "UPDATE form_definition AS f SET f.fields='%s' WHERE f.id=%i" %( to_json_string( fields_list ), form_definition_id )
             else:
                 cmd = "UPDATE form_definition SET fields='%s' WHERE id=%i" %( to_json_string( fields_list ), form_definition_id )
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )

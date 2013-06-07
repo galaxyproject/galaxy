@@ -1,14 +1,9 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
-    is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
-    can_browse_contents = not is_new
-    can_browse_contents = not is_new
-    can_rate = repository.user != trans.user
-    can_manage = is_admin or repository.user == trans.user
-    can_view_change_log = not is_new
 %>
 
 <%!
@@ -43,31 +38,15 @@
     ${render_msg( message, status )}
 %endif
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        %if can_manage:
-            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
-        %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
-        %endif
-        %if can_view_change_log:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
-        %endif
-        %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">Browse or delete repository files</a>
-        %endif
-    </div>
-</ul>
+${render_tool_shed_repository_actions( repository=repository)}
 
 <div class="toolForm">
-    <div class="toolFormTitle">Upload a single file or a tarball</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <div class="warningmessage">
-                Uploading may take a while, depending upon the size of the file.  Wait until a message is displayed in your 
-                browser after clicking the <b>Upload</b> button below.
+                Upload a single file or tarball.  Uploading may take a while, depending upon the size of the file.
+                Wait until a message is displayed in your browser after clicking the <b>Upload</b> button below.
             </div>
             <div style="clear: both"></div>
         </div>

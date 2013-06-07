@@ -5,10 +5,7 @@ from galaxy import eggs
 from galaxy import util
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
-
-eggs.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -67,13 +64,10 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
-    ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
         tool_dependency_type = elem.tag

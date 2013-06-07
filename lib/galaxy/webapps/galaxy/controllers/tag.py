@@ -1,11 +1,15 @@
 """
-Tags Controller: handles tagging/untagging of entities and provides autocomplete support.
+Tags Controller: handles tagging/untagging of entities
+and provides autocomplete support.
 """
-import logging
-from galaxy.web.base.controller import *
-from sqlalchemy.sql.expression import func, and_
-from sqlalchemy.sql import select
 
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
+
+from sqlalchemy.sql import select
+from sqlalchemy.sql.expression import and_, func
+
+import logging
 log = logging.getLogger( __name__ )
 
 class TagsController ( BaseUIController, UsesTagsMixin ):
@@ -13,7 +17,9 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
     @web.expose
     @web.require_login( "edit item tags" )
     def get_tagging_elt_async( self, trans, item_id, item_class, elt_context="" ):
-        """ Returns HTML for editing an item's tags. """
+        """
+        Returns HTML for editing an item's tags.
+        """
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         if not item:
             return trans.show_error_message( "No item of class %s with id %s " % ( item_class, item_id ) )
@@ -26,10 +32,13 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
                                     input_size="22",
                                     tag_click_fn="default_tag_click_fn",
                                     use_toggle_link=False )
+
     @web.expose
     @web.require_login( "add tag to an item" )
     def add_tag_async( self, trans, item_id=None, item_class=None, new_tag=None, context=None ):
-        """ Add tag to an item. """   
+        """
+        Add tag to an item.
+        """
         # Apply tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
@@ -38,10 +47,13 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag )
         trans.log_action( user, unicode( "tag" ), context, params )
+
     @web.expose
     @web.require_login( "remove tag from an item" )
     def remove_tag_async( self, trans, item_id=None, item_class=None, tag_name=None, context=None ):
-        """ Remove tag from an item. """
+        """
+        Remove tag from an item.
+        """
         # Remove tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
@@ -50,21 +62,27 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=tag_name )
         trans.log_action( user, unicode( "untag" ), context, params )
+
     # Retag an item. All previous tags are deleted and new tags are applied.
     #@web.expose
     @web.require_login( "Apply a new set of tags to an item; previous tags are deleted." )
     def retag_async( self, trans, item_id=None, item_class=None, new_tags=None ):
-        """ Apply a new set of tags to an item; previous tags are deleted. """
+        """
+        Apply a new set of tags to an item; previous tags are deleted.
+        """
         # Apply tags.  
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
         self.get_tag_handler( trans ).delete_item_tags( trans, item )
         self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tags.encode( 'utf-8' ) )
-        trans.sa_session.flush()    
+        trans.sa_session.flush()
+
     @web.expose
     @web.require_login( "get autocomplete data for an item's tags" )
     def tag_autocomplete_data( self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None ):
-        """ Get autocomplete data for an item's tags. """
+        """
+        Get autocomplete data for an item's tags.
+        """
         # Get item, do security check, and get autocomplete data.
         item = None
         if item_id is not None:
@@ -76,6 +94,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
             return self._get_tag_autocomplete_names( trans, q, limit, timestamp, user, item, item_class )
         else:
             return self._get_tag_autocomplete_values( trans, q, limit, timestamp, user, item, item_class )
+
     def _get_tag_autocomplete_names( self, trans, q, limit, timestamp, user=None, item=None, item_class=None ):
         """
         Returns autocomplete data for tag names ordered from most frequently used to
@@ -115,6 +134,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
             tag_names = self._get_usernames_for_tag( trans, trans.user, tag, item_class, item_tag_assoc_class )
             ac_data += tag_names[0] + "|" + tag_names[0] + "\n"
         return ac_data
+
     def _get_tag_autocomplete_values( self, trans, q, limit, timestamp, user=None, item=None, item_class=None ):
         """
         Returns autocomplete data for tag values ordered from most frequently used to
@@ -155,6 +175,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         for row in result_set:
             ac_data += tag_uname + ":" + row[0] + "|" + row[0] + "\n"
         return ac_data
+
     def _get_usernames_for_tag( self, trans, user, tag, item_class, item_tag_assoc_class ):
         """
         Returns an ordered list of the user names for a tag; list is ordered from
@@ -176,8 +197,11 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         for row in result_set:
             user_tag_names.append( row[0] )
         return user_tag_names
+
     def _get_item( self, trans, item_class_name, id ):
-        """ Get an item based on type and id. """
+        """
+        Get an item based on type and id.
+        """
         item_class = self.get_tag_handler( trans ).item_tag_assoc_info[item_class_name].item_class
-        item = trans.sa_session.query( item_class ).filter( "id=" + str( id ) )[0]
+        item = trans.sa_session.query( item_class ).filter( item_class.id == id)[0]
         return item

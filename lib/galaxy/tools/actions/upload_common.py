@@ -107,11 +107,13 @@ def cleanup_unused_precreated_datasets( precreated_datasets ):
         data.state = data.states.ERROR
         data.info = 'No file contents were available.'
 
-def new_history_upload( trans, uploaded_dataset, state=None ):
+def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
+    if not history:
+        history = trans.history
     hda = trans.app.model.HistoryDatasetAssociation( name = uploaded_dataset.name,
                                                      extension = uploaded_dataset.file_type,
                                                      dbkey = uploaded_dataset.dbkey, 
-                                                     history = trans.history,
+                                                     history = history,
                                                      create_dataset = True,
                                                      sa_session = trans.sa_session )
     if state:
@@ -120,12 +122,13 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
         hda.state = hda.states.QUEUED
     trans.sa_session.add( hda )
     trans.sa_session.flush()
-    trans.history.add_dataset( hda, genome_build = uploaded_dataset.dbkey )
-    permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
+    history.add_dataset( hda, genome_build=uploaded_dataset.dbkey )
+    permissions = trans.app.security_agent.history_get_default_permissions( history )
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
     trans.sa_session.flush()
     return hda
-def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=None ):
+
+def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=None ):
     current_user_roles = trans.get_current_user_roles()
     if not ( ( trans.user_is_admin() and cntrller in [ 'library_admin', 'api' ] ) or trans.app.security_agent.can_add_library_item( current_user_roles, library_bunch.folder ) ):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
@@ -206,19 +209,21 @@ def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=
             trans.sa_session.add( dp )
             trans.sa_session.flush()
     return ldda
-def new_upload( trans, cntrller, uploaded_dataset, library_bunch=None, state=None ):
+
+def new_upload( trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None ):
     if library_bunch:
-        return new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state )
+        return __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state )
     else:
-        return new_history_upload( trans, uploaded_dataset, state )
-def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None ):
+        return __new_history_upload( trans, uploaded_dataset, history=history, state=state )
+
+def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None, history=None ):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
         uploaded_datasets.extend( dataset_upload_input.get_uploaded_datasets( trans, params ) )
     for uploaded_dataset in uploaded_datasets:
         data = get_precreated_dataset( precreated_datasets, uploaded_dataset.name )
         if not data:
-            data = new_upload( trans, cntrller, uploaded_dataset, library_bunch )
+            data = new_upload( trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history )
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
@@ -246,7 +251,9 @@ def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset
                     trans.sa_session.add( info_association )
                 trans.sa_session.flush()
             else:
-                trans.history.genome_build = uploaded_dataset.dbkey
+                if not history:
+                    history = trans.history
+                history.genome_build = uploaded_dataset.dbkey
         uploaded_dataset.data = data
     return uploaded_datasets
 def create_paramfile( trans, uploaded_datasets ):
@@ -320,7 +327,7 @@ def create_paramfile( trans, uploaded_datasets ):
     if trans.app.config.external_chown_script:
         _chown( json_file_path )
     return json_file_path
-def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
+def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None ):
     """
     Create the upload job.
     """
@@ -333,7 +340,9 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     if folder:
         job.library_folder_id = folder.id
     else:
-        job.history_id = trans.history.id
+        if not history:
+            history = trans.history
+        job.history_id = history.id
     job.tool_id = tool.id
     job.tool_version = tool.version
     job.state = job.states.UPLOAD

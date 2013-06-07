@@ -126,7 +126,7 @@
             $(function() {            
                 // -- Viz set up. --    
                 var viz = new sweepster.SweepsterVisualization(
-                    ${ h.to_json_string( config ).replace('\\', '\\\\' )}
+                    ${ h.to_json_string( config )}
                 );
                 var viz_view = new sweepster.SweepsterVisualizationView({ model: viz });
                 viz_view.render();

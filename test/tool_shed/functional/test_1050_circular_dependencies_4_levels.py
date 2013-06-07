@@ -34,8 +34,10 @@ category_description = 'Test circular dependency features'
 
 running_standalone = False
 
+
 class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
     '''Verify that the code correctly handles circular dependencies down to n levels.'''
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -48,6 +50,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
+  
     def test_0005_create_convert_repository( self ):
         '''Create and populate convert_chars_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -71,6 +74,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded convert_chars tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0010_create_column_repository( self ):
         '''Create and populate convert_chars_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -90,6 +94,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded column_maker tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0015_create_emboss_datatypes_repository( self ):
         '''Create and populate emboss_datatypes_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -109,6 +114,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded datatypes_conf.xml.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0020_create_emboss_repository( self ):
         '''Create and populate emboss_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -128,6 +134,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded emboss tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0025_create_filtering_repository( self ):
         '''Create and populate filtering_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -147,6 +154,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded filtering 1.1.0 tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0030_create_freebayes_repository( self ):
         '''Create and populate freebayes_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -166,6 +174,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded freebayes tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0035_create_bismark_repository( self ):
         '''Create and populate bismark_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -185,13 +194,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded bismark tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0040_create_and_upload_dependency_definitions( self ):
         '''Set up the dependency structure.'''
         global running_standalone
         if running_standalone:
             column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
             convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-            emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+            datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
             emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
             filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
@@ -203,14 +213,21 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
             # emboss_datatypes depends on bismark
             # freebayes depends on freebayes, emboss, emboss_datatypes, and column_maker
             # filtering depends on emboss
-            self.create_repository_dependency( convert_repository, depends_on=[ column_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( column_repository, depends_on=[ convert_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( emboss_datatypes_repository, depends_on=[ bismark_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( emboss_repository, depends_on=[ emboss_datatypes_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( freebayes_repository, 
-                                               depends_on=[ freebayes_repository, emboss_datatypes_repository, emboss_repository, column_repository ], 
+            column_tuple = ( self.url, column_repository.name, column_repository.user.username, self.get_repository_tip( column_repository ) )
+            convert_tuple = ( self.url, convert_repository.name, convert_repository.user.username, self.get_repository_tip( convert_repository ) )
+            freebayes_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
+            emboss_tuple = ( self.url, emboss_repository.name, emboss_repository.user.username, self.get_repository_tip( emboss_repository ) )
+            datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            bismark_tuple = ( self.url, bismark_repository.name, bismark_repository.user.username, self.get_repository_tip( bismark_repository ) )
+            self.create_repository_dependency( repository=convert_repository, repository_tuples=[ column_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=column_repository, repository_tuples=[ convert_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=datatypes_repository, repository_tuples=[ bismark_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ datatypes_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=freebayes_repository, 
+                                               repository_tuples=[ freebayes_tuple, datatypes_tuple, emboss_tuple, column_tuple ], 
                                                filepath=dependency_xml_path )
-            self.create_repository_dependency( filtering_repository, depends_on=[ emboss_repository ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ emboss_tuple ], filepath=dependency_xml_path )
+ 
     def test_0045_verify_repository_dependencies( self ):
         '''Verify that the generated dependency circle does not cause an infinite loop.
         Expected structure:
@@ -247,6 +264,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         freebayes_dependencies = [ freebayes_repository, emboss_datatypes_repository, emboss_repository, column_repository ]
         strings_displayed = [ '%s depends on %s.' % ( freebayes_repository.name, ', '.join( repo.name for repo in freebayes_dependencies ) ) ]
         self.display_manage_repository_page( freebayes_repository, strings_displayed=strings_displayed )
+ 
     def test_0050_verify_tool_dependencies( self ):
         '''Check that freebayes and emboss display tool dependencies.'''
         freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
@@ -254,6 +272,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         self.display_manage_repository_page( freebayes_repository, 
                                              strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Tool dependencies' ] )
         self.display_manage_repository_page( emboss_repository, strings_displayed=[ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
+
     def test_0055_install_column_repository( self ):
         '''Install column_maker with repository dependencies.'''
         self.galaxy_logout()
@@ -271,6 +290,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         strings_not_displayed = [ 'emboss_datatypes_0050', 'emboss_0050', 'filtering_0050', 'freebayes_0050', 'bismark_0050' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories=installed_repositories )
+ 
     def test_0060_install_emboss_repository( self ):
         '''Install emboss_5 with repository dependencies.'''
         global running_standalone
@@ -293,6 +313,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         strings_not_displayed = [ 'filtering_0050', 'freebayes_0050' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
+ 
     def test_0065_deactivate_datatypes_repository( self ):
         '''Deactivate emboss_datatypes and verify that the datatypes count is reduced.'''
         original_datatypes = self.get_datatypes_count()
@@ -308,6 +329,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         strings_not_displayed = [ 'emboss_datatypes_0050', 'filtering_0050', 'freebayes_0050' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
+ 
     def test_0070_uninstall_emboss_repository( self ):
         '''Uninstall the emboss_5 repository.'''
         repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
@@ -325,6 +347,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         strings_not_displayed = [ 'emboss_0050', 'emboss_datatypes_0050', 'filtering_0050', 'freebayes_0050' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
+
     def test_0075_install_freebayes_repository( self ):
         '''Install freebayes with repository dependencies. This should also automatically reactivate emboss_datatypes and reinstall emboss_5.'''
         original_datatypes = self.get_datatypes_count()

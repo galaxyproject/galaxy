@@ -58,7 +58,8 @@
                     Info:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <textarea name="info" cols="40" rows="2">${ util.unicodify( data.info ) | h}</textarea>
+                    <% info = data.info if data.info else '' %>
+                    <textarea name="info" cols="40" rows="2">${ util.unicodify( info ) | h}</textarea>
                 </div>
                 <div style="clear: both"></div>
             </div>
@@ -68,7 +69,8 @@
                         Annotation / Notes:
                     </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <textarea name="annotation" cols="40" rows="2">${data_annotation | h}</textarea>
+                        <% annotation = data_annotation if data_annotation else '' %>
+                        <textarea name="annotation" cols="40" rows="2">${annotation | h}</textarea>
                     </div>
                     <div style="clear: both"></div>
                     <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>

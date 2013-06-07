@@ -1,14 +1,10 @@
 
 """
-Contains the main interface in the Universe class
+Contains a basic search interface for Galaxy
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
-from galaxy.model.item_attrs import UsesAnnotations
+import logging
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController
 
 log = logging.getLogger( __name__ )
 

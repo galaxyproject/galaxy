@@ -3,6 +3,7 @@ import galaxy.config
 import galaxy.datatypes.registry
 from galaxy import tools
 from galaxy.tools.data import *
+from galaxy.web import security
 import galaxy.model.mapping
 import galaxy.tools.search
 from galaxy.objectstore import build_object_store_from_config
@@ -32,6 +33,8 @@ class MigrateToolsApplication( object ):
             self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         self.config.update_integrated_tool_panel = True
         self.object_store = build_object_store_from_config( self.config )
+        # Security helper
+        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init( self.config.file_path,
                                                 self.config.database_connection,

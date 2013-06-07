@@ -129,6 +129,13 @@ class DataMetaFilter( Filter ):
                     rval.append( fields )
             return rval
         else:
+            if not self.dynamic_option.columns:
+                self.dynamic_option.columns = {
+                    "name" : 0,
+                    "value" : 1,
+                    "selected" : 2
+                }
+                self.dynamic_option.largest_index = 2
             if not isinstance( meta_value, list ):
                 meta_value = [meta_value]
             for value in meta_value:

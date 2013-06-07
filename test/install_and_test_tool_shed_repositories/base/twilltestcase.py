@@ -88,7 +88,15 @@ class InstallTestRepository( TwillTestCase ):
                 checkbox.selected = False
                 kwd[ 'install_tool_dependencies' ] = 'False'
         if 'install_repository_dependencies' in self.last_page():
-            kwd[ 'install_repository_dependencies' ] = str( install_repository_dependencies ).lower()
+            form = tc.browser.get_form( 'select_tool_panel_section' )
+            checkbox = form.find_control( id="install_repository_dependencies" )
+            checkbox.disabled = False
+            if install_repository_dependencies:
+                checkbox.selected = True
+                kwd[ 'install_repository_dependencies' ] = 'True'
+            else:
+                checkbox.selected = False
+                kwd[ 'install_repository_dependencies' ] = 'False'
         if 'shed_tool_conf' not in kwd:
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:

@@ -3,8 +3,10 @@ import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 from install_and_test_tool_shed_repositories.base.twilltestcase import InstallTestRepository
 log = logging.getLogger(__name__)
 
+
 class InstallTestRepositories( InstallTestRepository ):
     """Abstract test case that installs and uninstalls a predefined list of repositories."""
+
     def do_installation( self, repository_info_dict ):
         self.logout()
         self.login( email='test@bx.psu.edu', username='test' )
@@ -73,7 +75,7 @@ def generate_uninstall_method( repository_dict=None ):
         return test_install_repository
     test_method = make_uninstall_method( repository_dict )
     test_method.__doc__ = "Uninstall the repository %s." % repository_dict[ 'name' ]
-    namespace[ 'install_repository_%s' % repository_dict[ 'name' ] ] = test_method
+    namespace[ 'uninstall_repository_%s' % repository_dict[ 'name' ] ] = test_method
     # The new.classobj function returns a new class object, with name name, derived
     # from baseclasses (which should be a tuple of classes) and with namespace dict.
     new_class_obj = new.classobj( name, baseclasses, namespace )

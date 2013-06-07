@@ -21,10 +21,10 @@ class JobRunnerMapper( object ):
     (in the form of job_wrappers) to job runner url strings.
     """
 
-    def __init__( self, job_wrapper, url_to_destination ):
+    def __init__( self, job_wrapper, url_to_destination, job_config ):
         self.job_wrapper = job_wrapper
         self.url_to_destination = url_to_destination
-        self.rule_modules = self.__get_rule_modules( )
+        self.job_config = job_config
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
@@ -103,8 +103,13 @@ class JobRunnerMapper( object ):
         return dest
 
     def __determine_expand_function_name( self, destination ):
-        # default look for function with same name as tool, unless one specified
-        expand_function_name = destination.params.get('function', self.job_wrapper.tool.id)
+        # default look for function with name matching an id of tool, unless one specified
+        expand_function_name = destination.params.get('function', None)
+        if not expand_function_name:
+            for tool_id in self.job_wrapper.tool.all_ids:
+                if self.__last_rule_module_with_function( tool_id ):
+                    expand_function_name = tool_id
+                    break                
         return expand_function_name
 
     def __get_expand_function( self, expand_function_name ):
@@ -118,39 +123,24 @@ class JobRunnerMapper( object ):
     def __last_rule_module_with_function( self, function_name ):
         # self.rule_modules is sorted in reverse order, so find first
         # wiht function
-        for rule_module in self.rule_modules:
+        for rule_module in self.__get_rule_modules( ):
             if hasattr( rule_module, function_name ):
                 return rule_module
         return None
                 
     def __handle_dynamic_job_destination( self, destination ):
-        expand_type = destination.params.get('type', None)
+        expand_type = destination.params.get('type', "python")
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
             expand_function = self.__get_expand_function( expand_function_name )
-            rval = self.__invoke_expand_function( expand_function )
-            # TODO: test me extensively
-            if isinstance(rval, basestring):
-                # If the function returned a string, check if it's a URL, convert if necessary
-                if '://' in rval:
-                    return self.__convert_url_to_destination(rval)
+            job_destination = self.__invoke_expand_function( expand_function )
+            if not isinstance(job_destination, galaxy.jobs.JobDestination):
+                job_destination_rep = str(job_destination)  # Should be either id or url
+                if '://' in job_destination_rep:
+                    job_destination = self.__convert_url_to_destination(job_destination_rep)
                 else:
-                    return self.app.job_config.get_destination(rval)
-            elif isinstance(rval, galaxy.jobs.JobDestination):
-                # If the function generated a JobDestination, we'll use that
-                # destination directly.  However, for advanced job limiting, a
-                # function may want to set the JobDestination's 'tags'
-                # attribute so that limiting can be done on a destination tag.
-                #id_or_tag = rval.get('id')
-                #if rval.get('tags', None):
-                #    # functions that are generating destinations should only define one tag
-                #    id_or_tag = rval.get('tags')[0]
-                #return id_or_tag, rval
-                return rval
-            else:
-                raise Exception( 'Dynamic function returned a value that could not be understood: %s' % rval )
-        elif expand_type is None:
-            raise Exception( 'Dynamic function type not specified (hint: add <param id="type">python</param> to your <destination>)' )
+                    job_destination = self.job_config.get_destination(job_destination_rep)
+            return job_destination
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 

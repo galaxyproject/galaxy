@@ -1,15 +1,11 @@
 """
 API for searching Galaxy Datasets
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
+import logging
+from galaxy import web
 from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.search import GalaxySearchEngine
 
-#from galaxy.model.orm import *
-#from galaxy.model import *
 
 log = logging.getLogger( __name__ )
 
@@ -34,20 +30,20 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
+                    print results
                 except Exception, e:
                     return {'error' : str(e)}
-                
                 for item in results:
                     append = False
-                    if trans.user_is_admin(): 
+                    if trans.user_is_admin():
                         append = True
                     if not append:
                         if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
                             if (trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
                                 append = True
                     if not append:
-                        if hasattr(row, 'dataset'):
-                            if trans.app.security_agent.can_access_dataset( current_user_roles, row.dataset ):
+                        if hasattr(item, 'dataset'):
+                            if trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ):
                                 append = True
                     if append:
                         row = query.item_to_api_value(item)

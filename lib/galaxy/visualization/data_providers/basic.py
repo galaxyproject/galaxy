@@ -67,11 +67,14 @@ class ColumnDataProvider( BaseDataProvider ):
         # allow throttling
         self.max_lines_returned = max_lines_returned
         
-    def get_data( self, columns, start_val=0, max_vals=None, skip_comments=True, **kwargs ):
+    def get_data( self, columns=None, start_val=0, max_vals=None, skip_comments=True, **kwargs ):
         """
         Returns data from specified columns in dataset. Format is list of lists 
         where each list is a line of data.
         """
+        if not columns:
+            raise TypeError( 'parameter required: columns' )
+
         #TODO: validate kwargs
         try:
             max_vals = int( max_vals )
@@ -88,11 +91,10 @@ class ColumnDataProvider( BaseDataProvider ):
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
         if( skip_comments
-        and start_val == 0
-        and self.original_dataset.metadata.comment_lines ):
-            start_val = int( self.original_dataset.metadata.comment_lines ) + 1
+        and self.original_dataset.metadata.comment_lines
+        and start_val < self.original_dataset.metadata.comment_lines ):
+            start_val = int( self.original_dataset.metadata.comment_lines )
         
-        #TODO bail if columns None, not parsable, not within meta.columns
         # columns is an array of ints for now (should handle column names later)
         columns = from_json_string( columns )
         for column in columns:

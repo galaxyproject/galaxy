@@ -232,6 +232,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
+        galaxy_id_tag = job_wrapper.get_id_tag()
         if job_id is None:
             self.put( job_wrapper )
             return
@@ -252,7 +253,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             cjs.running = False
             self.monitor_queue.put( cjs )
 
-    def __old_state_paths( self, cjs, job ):
+    def __old_state_paths( self, cjs ):
         """For recovery of jobs started prior to standardizing the naming of
         files in the AsychronousJobState object
         """

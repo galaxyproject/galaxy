@@ -46,6 +46,8 @@ class Interval( Tabular ):
     """Tab delimited data containing interval information"""
     file_ext = "interval"
     line_class = "region"
+    track_type = "FeatureTrack"
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -242,7 +244,7 @@ class Interval( Tabular ):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = url_for( controller='/dataset', dataset_id=dataset.id, 
+            internal_url = url_for( controller='dataset', dataset_id=dataset.id, 
                                     action='display_at', filename='ucsc_' + site_name )
             display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" 
                     % (base_url, url_for( controller='root' ), dataset.id, type) )
@@ -328,17 +330,13 @@ class Interval( Tabular ):
 
     def get_track_resolution( self, dataset, start, end):
         return None
-        
-    def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
 
     file_ext = "bedgraph"
-
-    def get_track_type( self ):
-        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
+    track_type = "LineTrack"
+    data_sources = { "data": "bigwig", "index": "bigwig" }
         
     def as_ucsc_display_file( self, dataset, **kwd ):
         """
@@ -356,6 +354,8 @@ class BedGraph( Interval ):
 class Bed( Interval ):
     """Tab delimited data in BED format"""
     file_ext = "bed"
+    data_sources = { "data": "tabix", "index": "bigwig", "feature_search": "fli" }
+    track_type = Interval.track_type
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -510,9 +510,6 @@ class Bed( Interval ):
                 else: return False
             return True
         except: return False
-    
-    def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree", "feature_search": "fli"}
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
@@ -572,6 +569,8 @@ class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
+    data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
+    track_type = Interval.track_type
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
@@ -783,10 +782,6 @@ class Gff( Tabular, _RemoteCallMixin ):
             return True
         except:
             return False
-            
-    def get_track_type( self ):
-        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree", "feature_search": "fli"}
-            
 
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
@@ -794,6 +789,7 @@ class Gff3( Gff ):
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = ['.', '0', '1', '2']
     column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
+    track_type = Interval.track_type
         
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
@@ -898,6 +894,7 @@ class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
     file_ext = "gtf"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
+    track_type = Interval.track_type
     
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
@@ -966,6 +963,8 @@ class Gtf( Gff ):
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
+    track_type = "LineTrack"
+    data_sources = { "data": "bigwig", "index": "bigwig" }
 
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
@@ -1146,9 +1145,6 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = min( resolution, 100000 )
         resolution = max( resolution, 1 )
         return resolution
-        
-    def get_track_type( self ):
-        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
@@ -1292,6 +1288,7 @@ class ENCODEPeak( Interval ):
     
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
+    data_sources = { "data": "tabix", "index": "bigwig" }
     
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -1303,15 +1300,14 @@ class ENCODEPeak( Interval ):
     def sniff( self, filename ):
         return False
         
-    def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
-        
 class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
     '''
     
     file_ext = "chrint"
+    track_type = "DiagonalHeatmapTrack"
+    data_sources = { "data": "tabix", "index": "bigwig" }
     
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
     
@@ -1328,11 +1324,6 @@ class ChromatinInteractions( Interval ):
     
     def sniff( self, filename ):
         return False
-        
-    def get_track_type( self ):
-        return "DiagonalHeatmapTrack", {"data": "tabix", "index": "summary_tree"}
-    
-    
 
 if __name__ == '__main__':
     import doctest, sys

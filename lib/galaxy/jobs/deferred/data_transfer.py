@@ -136,15 +136,11 @@ class DataTransfer( object ):
                     if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                         if spec.get( 'default' ):
                             setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                if self.app.config.set_metadata_externally:
-                    self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( self.app.datatypes_registry.set_external_metadata_tool,
-                                                                                                FakeTrans( self.app,
-                                                                                                           history=sample.history,
-                                                                                                           user=sample.request.user ),
-                                                                                                incoming = { 'input1':ldda } )
-                else:
-                    ldda.set_meta()
-                    ldda.datatype.after_setting_metadata( ldda )
+                self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( self.app.datatypes_registry.set_external_metadata_tool,
+                                                                                            FakeTrans( self.app,
+                                                                                                       history=sample.history,
+                                                                                                       user=sample.request.user ),
+                                                                                            incoming = { 'input1':ldda } )
                 ldda.state = ldda.states.OK
                 # TODO: not sure if this flush is necessary
                 self.sa_session.add( ldda )

@@ -14,7 +14,7 @@ import routes
 from sqlalchemy import func, and_, select
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 
-from galaxy import util, web
+from galaxy import util, web, model
 from gettext import gettext
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
@@ -28,11 +28,8 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
 
-
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
-
-from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
 
 log = logging.getLogger( __name__ )
 
@@ -247,580 +244,6 @@ class SharableItemSecurityMixin:
         return item
 
 
-class UsesHistoryDatasetAssociationMixin:
-    """ Mixin for controllers that use HistoryDatasetAssociation objects. """
-
-    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-        """ Get an HDA object by id. """
-        # DEPRECATION: We still support unencoded ids for backward compatibility
-        try:
-            # encoded id?
-            dataset_id = trans.security.decode_id( dataset_id )
-
-        except ( AttributeError, TypeError ):
-            # unencoded id
-            dataset_id = int( dataset_id )
-
-        try:
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
-        except:
-            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
-
-        if check_ownership:
-            # Verify ownership.
-            user = trans.get_user()
-            if not user:
-                error( "Must be logged in to manage Galaxy items" )
-            if data.history.user != user:
-                error( "%s is not owned by current user" % data.__class__.__name__ )
-
-        if check_accessible:
-            current_user_roles = trans.get_current_user_roles()
-
-            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                error( "You are not allowed to access this dataset" )
-
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                    return trans.show_error_message( "Please wait until this dataset finishes uploading "
-                                                   + "before attempting to view it." )
-        return data
-
-    def get_history_dataset_association( self, trans, history, dataset_id,
-                                         check_ownership=True, check_accessible=False, check_state=False ):
-        """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
-
-        if check_accessible:
-            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
-                error( "You are not allowed to access this dataset" )
-
-                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
-        return hda
-
-    def get_data( self, dataset, preview=True ):
-        """ Gets a dataset's data. """
-
-        # Get data from file, truncating if necessary.
-        truncated = False
-        dataset_data = None
-        if os.path.exists( dataset.file_name ):
-            if isinstance( dataset.datatype, Text ):
-                max_peek_size = 1000000 # 1 MB
-                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = True
-                else:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = False
-            else:
-                # For now, cannot get data from non-text datasets.
-                dataset_data = None
-        return truncated, dataset_data
-
-    def check_dataset_state( self, trans, dataset ):
-        """
-        Returns a message if dataset is not ready to be used in visualization.
-        """
-        if not dataset:
-            return dataset.conversion_messages.NO_DATA
-        if dataset.state == trans.app.model.Job.states.ERROR:
-            return dataset.conversion_messages.ERROR
-        if dataset.state != trans.app.model.Job.states.OK:
-            return dataset.conversion_messages.PENDING
-        return None
-
-    def get_hda_dict( self, trans, hda ):
-        """Return full details of this HDA in dictionary form.
-        """
-        hda_dict = hda.get_api_value( view='element' )
-        history = hda.history
-        hda_dict[ 'api_type' ] = "file"
-
-        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        can_access_hda = ( trans.user_is_admin() or can_access_hda )
-        hda_dict[ 'accessible' ] = can_access_hda
-
-        # ---- return here if deleted AND purged OR can't access
-        purged = ( hda.purged or hda.dataset.purged )
-        if ( hda.deleted and purged ) or not can_access_hda:
-            #TODO: get_api_value should really go AFTER this - only summary data
-            return trans.security.encode_dict_ids( hda_dict )
-
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
-
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
-            history_id = trans.security.encode_id( history.id ),
-            history_content_id = trans.security.encode_id( hda.id ) )
-
-        # indeces, assoc. metadata files, etc.
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-
-        #hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-        hda_dict[ 'visualizations' ] = hda.get_visualizations()
-
-        # ---- return here if deleted
-        if hda.deleted and not purged:
-            return trans.security.encode_dict_ids( hda_dict )
-
-        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
-        # expensive
-        if( ( hda.state in [ 'running', 'queued' ] )
-        and ( hda.creating_job and hda.creating_job.tool_id ) ):
-            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-            if tool_used and tool_used.force_history_refresh:
-                hda_dict[ 'force_history_refresh' ] = True
-
-        return trans.security.encode_dict_ids( hda_dict )
-
-    def get_display_apps( self, trans, hda ):
-        #TODO: make more straightforward (somehow)
-        display_apps = []
-
-        def get_display_app_url( display_app_link, hda, trans ):
-            web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-            dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
-            return web_url_for( controller='dataset',
-                            action="display_application",
-                            dataset_id=dataset_hash,
-                            user_id=user_hash,
-                            app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                            link_name=urllib.quote_plus( display_app_link.id ) )
-
-        for display_app in hda.get_display_applications( trans ).itervalues():
-            app_links = []
-            for display_app_link in display_app.links.itervalues():
-                app_links.append({
-                    'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                    'href' : get_display_app_url( display_app_link, hda, trans ),
-                    'text' : gettext( display_app_link.name )
-                })
-            display_apps.append( dict( label=display_app.name, links=app_links ) )
-
-        return display_apps
-
-    def get_old_display_applications( self, trans, hda ):
-        display_apps = []
-        if not trans.app.config.enable_old_display_applications:
-            return display_apps
-        for display_app_name in hda.datatype.get_display_types():
-            link_generator = get_display_app_link_generator( display_app_name )
-            display_links = link_generator.generate_links( trans, hda )
-
-            app_links = []
-            for display_name, display_link in display_links:
-                app_links.append({
-                    'target' : '_blank',
-                    'href' : display_link,
-                    'text' : display_name
-                })
-            if app_links:
-                display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
-
-        return display_apps
-
-
-class UsesLibraryMixin:
-
-    def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
-        l = self.get_object( trans, id, 'Library' )
-        if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
-            error( "LibraryFolder is not accessible to the current user" )
-        return l
-
-
-class UsesLibraryMixinItems( SharableItemSecurityMixin ):
-
-    def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
-
-    def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
-
-    def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
-
-
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
-                              UsesLibraryMixinItems ):
-    """ Mixin for controllers that use Visualization objects. """
-
-    viz_types = [ "trackster" ]
-
-    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
-        """ Create visualiation and first revision. """
-        visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation, save )
-
-        # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config=config, dbkey=dbkey )
-        visualization.latest_revision = revision
-
-        if save:
-            session = trans.sa_session
-            session.add( revision )
-            session.flush()
-
-        return visualization
-
-    def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
-        session = trans.sa_session
-
-        # Create/get visualization.
-        if not id:
-            # Create new visualization.
-            vis = self._create_visualization( trans, title, type, dbkey, slug, annotation )
-        else:
-            decoded_id = trans.security.decode_id( id )
-            vis = session.query( trans.model.Visualization ).get( decoded_id )
-
-        # Create new VisualizationRevision that will be attached to the viz
-        vis_rev = trans.model.VisualizationRevision()
-        vis_rev.visualization = vis
-        vis_rev.title = vis.title
-        vis_rev.dbkey = dbkey
-
-        # -- Validate config. --
-
-        if vis.type == 'trackster':
-            def unpack_track( track_json ):
-                """ Unpack a track from its json. """
-                return {
-                    "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
-                    "hda_ldda": track_json.get('hda_ldda', 'hda'),
-                    "name": track_json['name'],
-                    "track_type": track_json['track_type'],
-                    "prefs": track_json['prefs'],
-                    "mode": track_json['mode'],
-                    "filters": track_json['filters'],
-                    "tool_state": track_json['tool_state']
-                }
-
-            def unpack_collection( collection_json ):
-                """ Unpack a collection from its json. """
-                unpacked_drawables = []
-                drawables = collection_json[ 'drawables' ]
-                for drawable_json in drawables:
-                    if 'track_type' in drawable_json:
-                        drawable = unpack_track( drawable_json )
-                    else:
-                        drawable = unpack_collection( drawable_json )
-                    unpacked_drawables.append( drawable )
-                return {
-                    "name": collection_json.get( 'name', '' ),
-                    "obj_type": collection_json[ 'obj_type' ],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get( 'prefs' , [] ),
-                    "filters": collection_json.get( 'filters', None )
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks( bookmarks_json ):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection( config[ 'view' ] )
-            bookmarks = unpack_bookmarks( config[ 'bookmarks' ] )
-            vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
-            # Viewport from payload
-            if 'viewport' in config:
-                chrom = config['viewport']['chrom']
-                start = config['viewport']['start']
-                end = config['viewport']['end']
-                overview = config['viewport']['overview']
-                vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
-        vis.latest_revision = vis_rev
-        session.add( vis_rev )
-        session.flush()
-        encoded_id = trans.security.encode_id( vis.id )
-        return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
-
-    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
-        """ Get a Visualization from the database by id, verifying ownership. """
-        # Load workflow from database
-        try:
-            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            visualization = None
-        if not visualization:
-            error( "Visualization not found" )
-        else:
-            return self.security_check( trans, visualization, check_ownership, check_accessible )
-
-    def get_visualization_config( self, trans, visualization ):
-        """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
-        config = None
-        if visualization.type in [ 'trackster', 'genome' ]:
-            # Unpack Trackster config.
-            latest_revision = visualization.latest_revision
-            bookmarks = latest_revision.config.get( 'bookmarks', [] )
-
-            def pack_track( track_dict ):
-                dataset_id = track_dict['dataset_id']
-                hda_ldda = track_dict.get('hda_ldda', 'hda')
-                if hda_ldda == 'ldda':
-                    # HACK: need to encode library dataset ID because get_hda_or_ldda
-                    # only works for encoded datasets.
-                    dataset_id = trans.security.encode_id( dataset_id )
-                dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-
-                try:
-                    prefs = track_dict['prefs']
-                except KeyError:
-                    prefs = {}
-
-                track_type, _ = dataset.datatype.get_track_type()
-                track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
-                                                                                          original_dataset=dataset,
-                                                                                          source='data' )
-                return {
-                    "track_type": track_type,
-                    "name": track_dict['name'],
-                    "hda_ldda": track_dict.get("hda_ldda", "hda"),
-                    "dataset_id": trans.security.encode_id( dataset.id ),
-                    "prefs": prefs,
-                    "mode": track_dict.get( 'mode', 'Auto' ),
-                    "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
-                    "tool": get_tool_def( trans, dataset ),
-                    "tool_state": track_dict.get( 'tool_state', {} )
-                }
-
-            def pack_collection( collection_dict ):
-                drawables = []
-                for drawable_dict in collection_dict[ 'drawables' ]:
-                    if 'track_type' in drawable_dict:
-                        drawables.append( pack_track( drawable_dict ) )
-                    else:
-                        drawables.append( pack_collection( drawable_dict ) )
-                return {
-                    'name': collection_dict.get( 'name', 'dummy' ),
-                    'obj_type': collection_dict[ 'obj_type' ],
-                    'drawables': drawables,
-                    'prefs': collection_dict.get( 'prefs', [] ),
-                    'filters': collection_dict.get( 'filters', {} )
-                }
-
-            def encode_dbkey( dbkey ):
-                """
-                Encodes dbkey as needed. For now, prepends user's public name
-                to custom dbkey keys.
-                """
-                encoded_dbkey = dbkey
-                user = visualization.user
-                if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
-                    encoded_dbkey = "%s:%s" % ( user.username, dbkey )
-                return encoded_dbkey
-
-            # Set tracks.
-            tracks = []
-            if 'tracks' in latest_revision.config:
-                # Legacy code.
-                for track_dict in visualization.latest_revision.config[ 'tracks' ]:
-                    tracks.append( pack_track( track_dict ) )
-            elif 'view' in latest_revision.config:
-                for drawable_dict in visualization.latest_revision.config[ 'view' ][ 'drawables' ]:
-                    if 'track_type' in drawable_dict:
-                        tracks.append( pack_track( drawable_dict ) )
-                    else:
-                        tracks.append( pack_collection( drawable_dict ) )
-
-            config = {  "title": visualization.title,
-                        "vis_id": trans.security.encode_id( visualization.id ),
-                        "tracks": tracks,
-                        "bookmarks": bookmarks,
-                        "chrom": "",
-                        "dbkey": encode_dbkey( visualization.dbkey ) }
-
-            if 'viewport' in latest_revision.config:
-                config['viewport'] = latest_revision.config['viewport']
-        else:
-            # Default action is to return config unaltered.
-            latest_revision = visualization.latest_revision
-            config = latest_revision.config
-
-        return config
-
-    def get_new_track_config( self, trans, dataset ):
-        """
-        Returns track configuration dict for a dataset.
-        """
-        # Get data provider.
-        track_type, _ = dataset.datatype.get_track_type()
-        track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
-
-
-        if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
-            hda_ldda = "hda"
-        elif isinstance( dataset, trans.app.model.LibraryDatasetDatasetAssociation ):
-            hda_ldda = "ldda"
-
-        # Get track definition.
-        return {
-            "track_type": track_type,
-            "name": dataset.name,
-            "hda_ldda": hda_ldda,
-            "dataset_id": trans.security.encode_id( dataset.id ),
-            "prefs": {},
-            "filters": { 'filters' : track_data_provider.get_filters() },
-            "tool": get_tool_def( trans, dataset ),
-            "tool_state": {}
-        }
-
-    def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
-        """ Returns either HDA or LDDA for hda/ldda and id combination. """
-        if hda_ldda == "hda":
-            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        else:
-            return self.get_library_dataset_dataset_association( trans, dataset_id )
-
-    # -- Helper functions --
-
-    def _create_visualization( self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True ):
-        """ Create visualization but not first revision. Returns Visualization object. """
-        user = trans.get_user()
-
-        # Error checking.
-        title_err = slug_err = ""
-        if not title:
-            title_err = "visualization name is required"
-        elif slug and not _is_valid_slug( slug ):
-            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif slug and trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
-            slug_err = "visualization identifier must be unique"
-
-        if title_err or slug_err:
-            return { 'title_err': title_err, 'slug_err': slug_err }
-
-
-        # Create visualization
-        visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
-        if slug:
-            visualization.slug = slug
-        else:
-            self.create_item_slug( trans.sa_session, visualization )
-        if annotation:
-            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
-
-        if save:
-            session = trans.sa_session
-            session.add( visualization )
-            session.flush()
-
-        return visualization
-
-    def _get_genome_data( self, trans, dataset, dbkey=None ):
-        """
-        Returns genome-wide data for dataset if available; if not, message is returned.
-        """
-        rval = None
-
-        # Get data sources.
-        data_sources = dataset.get_datasources( trans )
-        query_dbkey = dataset.dbkey
-        if query_dbkey == "?":
-            query_dbkey = dbkey
-        chroms_info = self.app.genomes.chroms( trans, dbkey=query_dbkey )
-
-        # If there are no messages (messages indicate data is not ready/available), get data.
-        messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        message = self._get_highest_priority_msg( messages_list )
-        if message:
-            rval = message
-        else:
-            # HACK: chromatin interactions tracks use data as source.
-            source = 'index'
-            if isinstance( dataset.datatype, ChromatinInteractions ):
-                source = 'data'
-
-            data_provider = trans.app.data_provider_registry.get_data_provider( trans,
-                                                                                original_dataset=dataset,
-                                                                                source=source )
-            # HACK: pass in additional params which are used for only some
-            # types of data providers; level, cutoffs used for summary tree,
-            # num_samples for BBI, and interchromosomal used for chromatin interactions.
-            rval = data_provider.get_genome_data( chroms_info,
-                                                  level=4, detail_cutoff=0, draw_cutoff=0,
-                                                  num_samples=150,
-                                                  interchromosomal=True )
-
-        return rval
-
-    # FIXME: this method probably belongs down in the model.Dataset class.
-    def _get_highest_priority_msg( self, message_list ):
-        """
-        Returns highest priority message from a list of messages.
-        """
-        return_message = None
-
-        # For now, priority is: job error (dict), no converter, pending.
-        for message in message_list:
-            if message is not None:
-                if isinstance(message, dict):
-                    return_message = message
-                    break
-                elif message == "no converter":
-                    return_message = message
-                elif return_message == None and message == "pending":
-                    return_message = message
-        return return_message
-
-
-class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
-    """ Mixin for controllers that use StoredWorkflow objects. """
-
-    def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
-        """ Get a StoredWorkflow from the database by id, verifying ownership. """
-        # Load workflow from database
-        try:
-            workflow = trans.sa_session.query( trans.model.StoredWorkflow ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            workflow = None
-        if not workflow:
-            error( "Workflow not found" )
-        else:
-            return self.security_check( trans, workflow, check_ownership, check_accessible )
-
-    def get_stored_workflow_steps( self, trans, stored_workflow ):
-        """ Restores states for a stored workflow's steps. """
-        for step in stored_workflow.latest_workflow.steps:
-            step.upgrade_messages = {}
-            if step.type == 'tool' or step.type is None:
-                # Restore the tool state for the step
-                module = module_factory.from_workflow_step( trans, step )
-                if module:
-                    #Check if tool was upgraded
-                    step.upgrade_messages = module.check_and_update_state()
-                    # Any connected input needs to have value DummyDataset (these
-                    # are not persisted so we need to do it every time)
-                    module.add_dummy_datasets( connections=step.input_connections )
-                    # Store state with the step
-                    step.module = module
-                    step.state = module.state
-                else:
-                    step.upgrade_messages = "Unknown Tool ID"
-                    step.module = None
-                    step.state = None
-            else:
-                ## Non-tool specific stuff?
-                step.module = module_factory.from_workflow_step( trans, step )
-                step.state = step.module.get_runtime_state()
-            # Connections by input name
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
-
-
 class UsesHistoryMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use History objects. """
 
@@ -958,20 +381,18 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def get_history_dict( self, trans, history ):
+    def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-
-        #TODO: separate, move to annotation api, fill on the client
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
         if not history_dict[ 'annotation' ]:
             history_dict[ 'annotation' ] = ''
+        #TODO: item_slug url
 
-        #TODO: allow passing as arg
-        hda_summaries = self.get_hda_summary_dicts( trans, history )
+        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
         #TODO remove the following in v2
         ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
         history_dict[ 'state_details' ] = state_counts
@@ -979,6 +400,900 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
 
         return history_dict
+
+    def set_history_from_dict( self, trans, history, new_data ):
+        """
+        Changes history data using the given dictionary new_data.
+        """
+        # precondition: access of the history has already been checked
+
+        # send what we can down into the model
+        changed = history.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # importable (ctrl.history.set_accessible_async)
+        # sharing/permissions?
+        # slugs?
+        # purged - duh duh duhhhhhhnnnnnnnnnn
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
+
+
+class UsesHistoryDatasetAssociationMixin:
+    """
+    Mixin for controllers that use HistoryDatasetAssociation objects.
+    """
+
+    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Get an HDA object by id performing security checks using
+        the current transaction.
+        """
+        # DEPRECATION: We still support unencoded ids for backward compatibility
+        try:
+            # encoded id?
+            dataset_id = trans.security.decode_id( dataset_id )
+
+        except ( AttributeError, TypeError ):
+            # unencoded id
+            dataset_id = int( dataset_id )
+
+        try:
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
+        except:
+            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+
+        if check_ownership:
+            # Verify ownership.
+            user = trans.get_user()
+            if not user:
+                error( "Must be logged in to manage Galaxy items" )
+            if data.history.user != user:
+                error( "%s is not owned by current user" % data.__class__.__name__ )
+
+        if check_accessible:
+            current_user_roles = trans.get_current_user_roles()
+
+            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                error( "You are not allowed to access this dataset" )
+
+            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+                    return trans.show_error_message( "Please wait until this dataset finishes uploading "
+                                                   + "before attempting to view it." )
+        return data
+
+    def get_history_dataset_association( self, trans, history, dataset_id,
+                                         check_ownership=True, check_accessible=False, check_state=False ):
+        """
+        Get a HistoryDatasetAssociation from the database by id, verifying ownership.
+        """
+        #TODO: duplicate of above? alias to above (or vis-versa)
+        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+
+        if check_accessible:
+            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+                error( "You are not allowed to access this dataset" )
+
+                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
+                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+        return hda
+
+    def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Returns one or more datasets in a list.
+
+        If a dataset is not found or is inaccessible to trans.user,
+        add None in its place in the list.
+        """
+        # precondtion: dataset_ids is a list of encoded id strings
+        hdas = []
+        for id in hda_ids:
+            hda = None
+            try:
+                hda = self.get_dataset( trans, id,
+                    check_ownership=check_ownership, check_accesible=check_accesible, check_state=check_state )
+            except Exception, exception:
+                pass
+            hdas.append( hda )
+        return hdas
+
+    def get_data( self, dataset, preview=True ):
+        """
+        Gets a dataset's data.
+        """
+        # Get data from file, truncating if necessary.
+        truncated = False
+        dataset_data = None
+        if os.path.exists( dataset.file_name ):
+            if isinstance( dataset.datatype, Text ):
+                max_peek_size = 1000000 # 1 MB
+                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
+                    dataset_data = open( dataset.file_name ).read(max_peek_size)
+                    truncated = True
+                else:
+                    dataset_data = open( dataset.file_name ).read(max_peek_size)
+                    truncated = False
+            else:
+                # For now, cannot get data from non-text datasets.
+                dataset_data = None
+        return truncated, dataset_data
+
+    def check_dataset_state( self, trans, dataset ):
+        """
+        Returns a message if dataset is not ready to be used in visualization.
+        """
+        if not dataset:
+            return dataset.conversion_messages.NO_DATA
+        if dataset.state == trans.app.model.Job.states.ERROR:
+            return dataset.conversion_messages.ERROR
+        if dataset.state != trans.app.model.Job.states.OK:
+            return dataset.conversion_messages.PENDING
+        return None
+
+    def get_hda_dict( self, trans, hda ):
+        """Return full details of this HDA in dictionary form.
+        """
+        #precondition: the user's access to this hda has already been checked
+        #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
+        hda_dict = hda.get_api_value( view='element' )
+        hda_dict[ 'api_type' ] = "file"
+
+        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
+
+        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        hda_dict[ 'accessible' ] = True
+
+        # ---- return here if deleted AND purged OR can't access
+        purged = ( hda.purged or hda.dataset.purged )
+        if ( hda.deleted and purged ):
+            #TODO: get_api_value should really go AFTER this - only summary data
+            return trans.security.encode_dict_ids( hda_dict )
+
+        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            hda_dict[ 'file_name' ] = hda.file_name
+
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
+            history_id = trans.security.encode_id( hda.history.id ),
+            history_content_id = trans.security.encode_id( hda.id ) )
+
+        # indeces, assoc. metadata files, etc.
+        meta_files = []
+        for meta_type in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
+                meta_files.append( dict( file_type=meta_type ) )
+        if meta_files:
+            hda_dict[ 'meta_files' ] = meta_files
+
+        # currently, the viz reg is optional - handle on/off
+        if trans.app.visualizations_registry:
+            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+        else:
+            hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+        #           when the visualizations button is clicked (instead of preloading/pre-checking)
+
+        # ---- return here if deleted
+        if hda.deleted and not purged:
+            return trans.security.encode_dict_ids( hda_dict )
+
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
+        if( ( hda.state in [ 'running', 'queued' ] )
+        and ( hda.creating_job and hda.creating_job.tool_id ) ):
+            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+            if tool_used and tool_used.force_history_refresh:
+                hda_dict[ 'force_history_refresh' ] = True
+
+        return trans.security.encode_dict_ids( hda_dict )
+
+    def profile_get_hda_dict( self, trans, hda ):
+        """Profiles returning full details of this HDA in dictionary form.
+        """
+        from galaxy.util.debugging import SimpleProfiler
+        profiler = SimpleProfiler()
+        profiler.start()
+
+        hda_dict = hda.get_api_value( view='element' )
+        profiler.report( '\t\t get_api_value' )
+        history = hda.history
+        hda_dict[ 'api_type' ] = "file"
+
+        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        hda_dict[ 'accessible' ] = can_access_hda
+        profiler.report( '\t\t accessible' )
+
+        # ---- return here if deleted AND purged OR can't access
+        purged = ( hda.purged or hda.dataset.purged )
+        if ( hda.deleted and purged ) or not can_access_hda:
+            #TODO: get_api_value should really go AFTER this - only summary data
+            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
+
+        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            hda_dict[ 'file_name' ] = hda.file_name
+        profiler.report( '\t\t file_name' )
+
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
+            history_id = trans.security.encode_id( history.id ),
+            history_content_id = trans.security.encode_id( hda.id ) )
+        profiler.report( '\t\t download_url' )
+
+        # indeces, assoc. metadata files, etc.
+        meta_files = []
+        for meta_type in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
+                meta_files.append( dict( file_type=meta_type ) )
+        if meta_files:
+            hda_dict[ 'meta_files' ] = meta_files
+        profiler.report( '\t\t meta_files' )
+
+        # currently, the viz reg is optional - handle on/off
+        if trans.app.visualizations_registry:
+            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+        else:
+            hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        profiler.report( '\t\t visualizations' )
+        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+        #           when the visualizations button is clicked (instead of preloading/pre-checking)
+
+        # ---- return here if deleted
+        if hda.deleted and not purged:
+            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
+
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
+        if( ( hda.state in [ 'running', 'queued' ] )
+        and ( hda.creating_job and hda.creating_job.tool_id ) ):
+            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+            if tool_used and tool_used.force_history_refresh:
+                hda_dict[ 'force_history_refresh' ] = True
+            profiler.report( '\t\t force_history_refresh' )
+
+        return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
+
+    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'error'     : error_msg
+        })
+
+    def get_display_apps( self, trans, hda ):
+        display_apps = []
+        for display_app in hda.get_display_applications( trans ).itervalues():
+
+            app_links = []
+            for link_app in display_app.links.itervalues():
+                app_links.append({
+                    'target': link_app.url.get( 'target_frame', '_blank' ),
+                    'href'  : link_app.get_display_url( hda, trans ),
+                    'text'  : gettext( link_app.name )
+                })
+            if app_links:
+                display_apps.append( dict( label=display_app.name, links=app_links ) )
+
+        return display_apps
+
+    def get_old_display_applications( self, trans, hda ):
+        display_apps = []
+        if not trans.app.config.enable_old_display_applications:
+            return display_apps
+        
+        for display_app in hda.datatype.get_display_types():
+            target_frame, display_links = hda.datatype.get_display_links( hda,
+                display_app, trans.app, trans.request.base )
+
+            if len( display_links ) > 0:
+                display_label = hda.datatype.get_display_label( display_app )
+
+                app_links = []
+                for display_name, display_link in display_links:
+                    app_links.append({
+                        'target': target_frame,
+                        'href'  : display_link,
+                        'text'  : gettext( display_name )
+                    })
+                if app_links:
+                    display_apps.append( dict( label=display_label, links=app_links ) )
+
+        return display_apps
+
+    def set_hda_from_dict( self, trans, hda, new_data ):
+        """
+        Changes HDA data using the given dictionary new_data.
+        """
+        # precondition: access of the hda has already been checked
+
+        # send what we can down into the model
+        changed = hda.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # sharing/permissions?
+        # purged
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
+
+
+class UsesLibraryMixin:
+
+    def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
+        l = self.get_object( trans, id, 'Library' )
+        if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
+            error( "LibraryFolder is not accessible to the current user" )
+        return l
+
+
+class UsesLibraryMixinItems( SharableItemSecurityMixin ):
+
+    def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+
+    def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+
+    def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
+        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
+
+
+class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+    """
+    Mixin for controllers that use Visualization objects.
+    """
+
+    viz_types = [ "trackster" ]
+
+    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
+        """
+        Get a Visualization from the database by id, verifying ownership.
+        """
+        # Load workflow from database
+        try:
+            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            visualization = None
+        if not visualization:
+            error( "Visualization not found" )
+        else:
+            return self.security_check( trans, visualization, check_ownership, check_accessible )
+
+    def get_visualizations_by_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results of visualizations filtered by a user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        #TODO: move into model (as class attr)
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.user == user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_visualizations_shared_with_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results for visualizations shared with the given user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization ).join( model.VisualizationUserShareAssociation )
+        query = query.filter( model.VisualizationUserShareAssociation.user_id == user.id )
+        # remove duplicates when a user shares with themselves?
+        query = query.filter( model.Visualization.user_id != user.id )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_published_visualizations( self, trans, exclude_user=None, order_by=None, query_only=False ):
+        """
+        Return query or query results for published visualizations optionally excluding
+        the user in `exclude_user`.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
+        if not order_by:
+            order_by = DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.published == True )
+        if exclude_user:
+            query = query.filter( model.Visualization.user != exclude_user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    #TODO: move into model (get_api_value)
+    def get_visualization_summary_dict( self, visualization ):
+        """
+        Return a set of summary attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        #TODO: deleted
+        #TODO: importable
+        return {
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'dbkey'     : visualization.dbkey,
+        }
+
+    def get_visualization_dict( self, visualization ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        The visualization's latest_revision is returned in its own sub-dictionary.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'Visualization',
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'user_id'   : visualization.user.id,
+            'dbkey'     : visualization.dbkey,
+            'slug'      : visualization.slug,
+            # dictify only the latest revision (allow older to be fetched elsewhere)
+            'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
+            'revisions' : [ r.id for r in visualization.revisions ],
+        }
+
+    def get_visualization_revision_dict( self, revision ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'VisualizationRevision',
+            'id'        : revision.id,
+            'visualization_id' : revision.visualization.id,
+            'title'     : revision.title,
+            'dbkey'     : revision.dbkey,
+            'config'    : revision.config,
+        }
+
+    def import_visualization( self, trans, id, user=None ):
+        """
+        Copy the visualization with the given id and associate the copy
+        with the given user (defaults to trans.user).
+
+        Raises `ItemAccessibilityException` if `user` is not passed and
+        the current user is anonymous, and if the visualization is not `importable`.
+        Raises `ItemDeletionException` if the visualization has been deleted.
+        """
+        # default to trans.user, error if anon
+        if not user:
+            if not trans.user:
+                raise ItemAccessibilityException( "You must be logged in to import Galaxy visualizations" )
+            user = trans.user
+
+        # check accessibility
+        visualization = self.get_visualization( trans, id, check_ownership=False )
+        if not visualization.importable:
+            raise ItemAccessibilityException( "The owner of this visualization has disabled imports via this link." )
+        if visualization.deleted:
+            raise ItemDeletionException( "You can't import this visualization because it has been deleted." )
+
+        # copy vis and alter title
+        #TODO: need to handle custom db keys.
+        imported_visualization = visualization.copy( user=user, title="imported: " + visualization.title )
+        trans.sa_session.add( imported_visualization )
+        trans.sa_session.flush()
+        return imported_visualization
+
+    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None,
+                              dbkey=None, annotation=None, config={}, save=True ):
+        """
+        Create visualiation and first revision.
+        """
+        visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation, save )
+        #TODO: handle this error structure better either in _create or here
+        if isinstance( visualization, dict ):
+            err_dict = visualization
+            raise ValueError( err_dict[ 'title_err' ] or err_dict[ 'slug_err' ] )
+
+        # Create and save first visualization revision
+        revision = trans.model.VisualizationRevision( visualization=visualization, title=title,
+                                                      config=config, dbkey=dbkey )
+        visualization.latest_revision = revision
+
+        if save:
+            session = trans.sa_session
+            session.add( revision )
+            session.flush()
+
+        return visualization
+
+    def add_visualization_revision( self, trans, visualization, config, title, dbkey ):
+        """
+        Adds a new `VisualizationRevision` to the given `visualization` with
+        the given parameters and set its parent visualization's `latest_revision`
+        to the new revision.
+        """
+        #precondition: only add new revision on owned vis's
+        #TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
+        revision = trans.model.VisualizationRevision( visualization, title, dbkey, config )
+        visualization.latest_revision = revision
+        #TODO:?? does this automatically add revision to visualzation.revisions?
+        trans.sa_session.add( revision )
+        trans.sa_session.flush()
+        return revision
+
+    def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
+        session = trans.sa_session
+
+        # Create/get visualization.
+        if not id:
+            # Create new visualization.
+            vis = self._create_visualization( trans, title, type, dbkey, slug, annotation )
+        else:
+            decoded_id = trans.security.decode_id( id )
+            vis = session.query( trans.model.Visualization ).get( decoded_id )
+
+        # Create new VisualizationRevision that will be attached to the viz
+        vis_rev = trans.model.VisualizationRevision()
+        vis_rev.visualization = vis
+        # do NOT alter the dbkey
+        vis_rev.dbkey = vis.dbkey
+        # do alter the title and config
+        vis_rev.title = title
+
+        # -- Validate config. --
+
+        if vis.type == 'trackster':
+            def unpack_track( track_dict ):
+                """ Unpack a track from its json. """
+                dataset_dict = track_dict[ 'dataset' ]
+                return {
+                    "dataset_id": trans.security.decode_id( dataset_dict['id'] ),
+                    "hda_ldda": dataset_dict.get('hda_ldda', 'hda'),
+                    "name": track_dict['name'],
+                    "track_type": track_dict['track_type'],
+                    "prefs": track_dict['prefs'],
+                    "mode": track_dict['mode'],
+                    "filters": track_dict['filters'],
+                    "tool_state": track_dict['tool_state']
+                }
+
+            def unpack_collection( collection_json ):
+                """ Unpack a collection from its json. """
+                unpacked_drawables = []
+                drawables = collection_json[ 'drawables' ]
+                for drawable_json in drawables:
+                    if 'track_type' in drawable_json:
+                        drawable = unpack_track( drawable_json )
+                    else:
+                        drawable = unpack_collection( drawable_json )
+                    unpacked_drawables.append( drawable )
+                return {
+                    "name": collection_json.get( 'name', '' ),
+                    "obj_type": collection_json[ 'obj_type' ],
+                    "drawables": unpacked_drawables,
+                    "prefs": collection_json.get( 'prefs' , [] ),
+                    "filters": collection_json.get( 'filters', None )
+                }
+
+            # TODO: unpack and validate bookmarks:
+            def unpack_bookmarks( bookmarks_json ):
+                return bookmarks_json
+
+            # Unpack and validate view content.
+            view_content = unpack_collection( config[ 'view' ] )
+            bookmarks = unpack_bookmarks( config[ 'bookmarks' ] )
+            vis_rev.config = { "view": view_content, "bookmarks": bookmarks }
+            # Viewport from payload
+            if 'viewport' in config:
+                chrom = config['viewport']['chrom']
+                start = config['viewport']['start']
+                end = config['viewport']['end']
+                overview = config['viewport']['overview']
+                vis_rev.config[ "viewport" ] = { 'chrom': chrom, 'start': start, 'end': end, 'overview': overview }
+        else:
+            # Default action is to save the config as is with no validation.
+            vis_rev.config = config
+
+        vis.latest_revision = vis_rev
+        session.add( vis_rev )
+        session.flush()
+        encoded_id = trans.security.encode_id( vis.id )
+        return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
+
+    def get_visualization_config( self, trans, visualization ):
+        """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
+        config = None
+        if visualization.type in [ 'trackster', 'genome' ]:
+            # Unpack Trackster config.
+            latest_revision = visualization.latest_revision
+            bookmarks = latest_revision.config.get( 'bookmarks', [] )
+
+            def pack_track( track_dict ):
+                dataset_id = track_dict['dataset_id']
+                hda_ldda = track_dict.get('hda_ldda', 'hda')
+                if hda_ldda == 'ldda':
+                    # HACK: need to encode library dataset ID because get_hda_or_ldda
+                    # only works for encoded datasets.
+                    dataset_id = trans.security.encode_id( dataset_id )
+                dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+
+                try:
+                    prefs = track_dict['prefs']
+                except KeyError:
+                    prefs = {}
+
+                track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                                                                                          original_dataset=dataset,
+                                                                                          source='data' )
+                return {
+                    "track_type": dataset.datatype.track_type,
+                    "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
+                    "name": track_dict['name'],
+                    "prefs": prefs,
+                    "mode": track_dict.get( 'mode', 'Auto' ),
+                    "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
+                    "tool": get_tool_def( trans, dataset ),
+                    "tool_state": track_dict.get( 'tool_state', {} )
+                }
+
+            def pack_collection( collection_dict ):
+                drawables = []
+                for drawable_dict in collection_dict[ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        drawables.append( pack_track( drawable_dict ) )
+                    else:
+                        drawables.append( pack_collection( drawable_dict ) )
+                return {
+                    'name': collection_dict.get( 'name', 'dummy' ),
+                    'obj_type': collection_dict[ 'obj_type' ],
+                    'drawables': drawables,
+                    'prefs': collection_dict.get( 'prefs', [] ),
+                    'filters': collection_dict.get( 'filters', {} )
+                }
+
+            def encode_dbkey( dbkey ):
+                """
+                Encodes dbkey as needed. For now, prepends user's public name
+                to custom dbkey keys.
+                """
+                encoded_dbkey = dbkey
+                user = visualization.user
+                if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
+                    encoded_dbkey = "%s:%s" % ( user.username, dbkey )
+                return encoded_dbkey
+
+            # Set tracks.
+            tracks = []
+            if 'tracks' in latest_revision.config:
+                # Legacy code.
+                for track_dict in visualization.latest_revision.config[ 'tracks' ]:
+                    tracks.append( pack_track( track_dict ) )
+            elif 'view' in latest_revision.config:
+                for drawable_dict in visualization.latest_revision.config[ 'view' ][ 'drawables' ]:
+                    if 'track_type' in drawable_dict:
+                        tracks.append( pack_track( drawable_dict ) )
+                    else:
+                        tracks.append( pack_collection( drawable_dict ) )
+
+            config = {  "title": visualization.title,
+                        "vis_id": trans.security.encode_id( visualization.id ),
+                        "tracks": tracks,
+                        "bookmarks": bookmarks,
+                        "chrom": "",
+                        "dbkey": encode_dbkey( visualization.dbkey ) }
+
+            if 'viewport' in latest_revision.config:
+                config['viewport'] = latest_revision.config['viewport']
+        else:
+            # Default action is to return config unaltered.
+            latest_revision = visualization.latest_revision
+            config = latest_revision.config
+
+        return config
+
+    def get_new_track_config( self, trans, dataset ):
+        """
+        Returns track configuration dict for a dataset.
+        """
+        # Get data provider.
+        track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
+
+        if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
+            hda_ldda = "hda"
+        elif isinstance( dataset, trans.app.model.LibraryDatasetDatasetAssociation ):
+            hda_ldda = "ldda"
+
+        # Get track definition.
+        return {
+            "track_type": dataset.datatype.track_type,
+            "name": dataset.name,
+            "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
+            "prefs": {},
+            "filters": { 'filters' : track_data_provider.get_filters() },
+            "tool": get_tool_def( trans, dataset ),
+            "tool_state": {}
+        }
+
+    def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
+        """ Returns either HDA or LDDA for hda/ldda and id combination. """
+        if hda_ldda == "hda":
+            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return self.get_library_dataset_dataset_association( trans, dataset_id )
+
+    # -- Helper functions --
+
+    def _create_visualization( self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True ):
+        """ Create visualization but not first revision. Returns Visualization object. """
+        user = trans.get_user()
+
+        # Error checking.
+        title_err = slug_err = ""
+        if not title:
+            title_err = "visualization name is required"
+        elif slug and not _is_valid_slug( slug ):
+            slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
+        elif slug and trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
+            slug_err = "visualization identifier must be unique"
+
+        if title_err or slug_err:
+            return { 'title_err': title_err, 'slug_err': slug_err }
+
+        # Create visualization
+        visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
+        if slug:
+            visualization.slug = slug
+        else:
+            self.create_item_slug( trans.sa_session, visualization )
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            #TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
+            #   right now this is depending on the classes that include this mixin to have UsesAnnotations
+            self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
+
+        if save:
+            session = trans.sa_session
+            session.add( visualization )
+            session.flush()
+
+        return visualization
+
+    def _get_genome_data( self, trans, dataset, dbkey=None ):
+        """
+        Returns genome-wide data for dataset if available; if not, message is returned.
+        """
+        rval = None
+
+        # Get data sources.
+        data_sources = dataset.get_datasources( trans )
+        query_dbkey = dataset.dbkey
+        if query_dbkey == "?":
+            query_dbkey = dbkey
+        chroms_info = self.app.genomes.chroms( trans, dbkey=query_dbkey )
+
+        # If there are no messages (messages indicate data is not ready/available), get data.
+        messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
+        message = self._get_highest_priority_msg( messages_list )
+        if message:
+            rval = message
+        else:
+            # HACK: chromatin interactions tracks use data as source.
+            source = 'index'
+            if isinstance( dataset.datatype, ChromatinInteractions ):
+                source = 'data'
+
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                                                                                original_dataset=dataset,
+                                                                                source=source )
+            # HACK: pass in additional params which are used for only some
+            # types of data providers; level, cutoffs used for summary tree,
+            # num_samples for BBI, and interchromosomal used for chromatin interactions.
+            rval = data_provider.get_genome_data( chroms_info,
+                                                  level=4, detail_cutoff=0, draw_cutoff=0,
+                                                  num_samples=150,
+                                                  interchromosomal=True )
+
+        return rval
+
+    # FIXME: this method probably belongs down in the model.Dataset class.
+    def _get_highest_priority_msg( self, message_list ):
+        """
+        Returns highest priority message from a list of messages.
+        """
+        return_message = None
+
+        # For now, priority is: job error (dict), no converter, pending.
+        for message in message_list:
+            if message is not None:
+                if isinstance(message, dict):
+                    return_message = message
+                    break
+                elif message == "no converter":
+                    return_message = message
+                elif return_message == None and message == "pending":
+                    return_message = message
+        return return_message
+
+
+class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
+    """ Mixin for controllers that use StoredWorkflow objects. """
+
+    def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
+        """ Get a StoredWorkflow from the database by id, verifying ownership. """
+        # Load workflow from database
+        try:
+            workflow = trans.sa_session.query( trans.model.StoredWorkflow ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            workflow = None
+        if not workflow:
+            error( "Workflow not found" )
+        else:
+            return self.security_check( trans, workflow, check_ownership, check_accessible )
+
+    def get_stored_workflow_steps( self, trans, stored_workflow ):
+        """ Restores states for a stored workflow's steps. """
+        for step in stored_workflow.latest_workflow.steps:
+            step.upgrade_messages = {}
+            if step.type == 'tool' or step.type is None:
+                # Restore the tool state for the step
+                module = module_factory.from_workflow_step( trans, step )
+                if module:
+                    #Check if tool was upgraded
+                    step.upgrade_messages = module.check_and_update_state()
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )
+                    # Store state with the step
+                    step.module = module
+                    step.state = module.state
+                else:
+                    step.upgrade_messages = "Unknown Tool ID"
+                    step.module = None
+                    step.state = None
+            else:
+                ## Non-tool specific stuff?
+                step.module = module_factory.from_workflow_step( trans, step )
+                step.state = step.module.get_runtime_state()
+            # Connections by input name
+            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
 
 
 class UsesFormDefinitionsMixin:

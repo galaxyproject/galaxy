@@ -5,6 +5,7 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
+from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
@@ -522,8 +523,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
             ofh = file(ofile, "r")
             efh = file(efile, "r")
             ecfh = file(ecfile, "r")
-            stdout = ofh.read( 32768 )
-            stderr = efh.read( 32768 )
+            stdout = shrink_stream_by_size( ofh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            stderr = shrink_stream_by_size( efh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
             # This should be an 8-bit exit code, but read ahead anyway: 
             exit_code_str = ecfh.read(32)
         except:

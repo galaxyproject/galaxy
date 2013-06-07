@@ -1,12 +1,12 @@
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
  *
- *  @augments BaseModel
+ *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var User = BaseModel.extend( LoggableMixin ).extend(
+var User = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends User.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -25,7 +25,7 @@ var User = BaseModel.extend( LoggableMixin ).extend(
         username                : '(' + _l( "anonymous user" ) + ')',
         email                   : "",
         total_disk_usage        : 0,
-        nice_total_disk_usage   : "0 bytes",
+        nice_total_disk_usage   : "",
         quota_percent           : null
     },
 

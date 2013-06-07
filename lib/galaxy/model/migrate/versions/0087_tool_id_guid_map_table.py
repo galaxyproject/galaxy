@@ -21,8 +21,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -35,15 +34,17 @@ ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
     Column( "repository_name", TrimmedString( 255 ) ),
     Column( "guid", TEXT, index=True, unique=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
         ToolIdGuidMap_table.create()
     except Exception, e:
         log.debug( "Creating tool_id_guid_map table failed: %s" % str( e ) )
-        
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ToolIdGuidMap_table.drop()

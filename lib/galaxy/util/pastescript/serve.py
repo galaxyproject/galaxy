@@ -101,13 +101,6 @@ class BoolOptionParser(optparse.OptionParser):
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-# if sys.version_info >= (2, 6):
-#     from logging.config import fileConfig
-# else:
-#     # Use our custom fileConfig -- 2.5.1's with a custom Formatter class
-#     # and less strict whitespace (which were incorporated into 2.6's)
-#     from paste.script.util.logging_config import fileConfig
-
 class BadCommand(Exception):
 
     def __init__(self, message, exit_code=2):

@@ -222,9 +222,8 @@ ${h.js(
 <script type="text/javascript">
 $(function(){
 
-    var hda             = ${h.to_json_string( hda )},
-        historyID       = '${historyID}',
-        querySettings   = ${h.to_json_string( kwargs )},
+    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.get_api_value() ) )},
+        querySettings   = ${h.to_json_string( query_args )},
         chartConfig     = _.extend( querySettings, {
             containerSelector : '#chart',
             //TODO: move to ScatterplotControlForm.initialize
@@ -250,8 +249,8 @@ $(function(){
 <%def name="body()">
     <!--dataset info-->
     <div id="chart-header" class="header">
-        <h2 class="title">Scatterplot of '${hda['name']}'</h2>
-        <p class="subtitle">${hda['misc_info']}</p>
+        <h2 class="title">Scatterplot of '${hda.name}'</h2>
+        <p class="subtitle">${hda.info}</p>
     </div>
     <div id="scatterplot" class="scatterplot-control-form"></div>
 </%def>

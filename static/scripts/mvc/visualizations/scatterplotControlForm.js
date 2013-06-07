@@ -562,6 +562,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         
         var params = {
             data_type   : 'raw_data',
+            provider    : 'column',
             columns     : '[' + columns + ']'
         };
         this.log( '\t data settings (url params):', params );

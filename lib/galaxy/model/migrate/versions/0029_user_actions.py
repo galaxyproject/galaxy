@@ -11,7 +11,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print ""
@@ -29,7 +29,8 @@ UserAction_table = Table( "user_action", metadata,
     Column( "context", Unicode( 512 ) ),
     Column( "params", Unicode( 1024 ) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     metadata.reflect()
     try:
@@ -38,7 +39,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating user_action table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         UserAction_table.drop()

@@ -1,5 +1,4 @@
 import logging
-import subprocess
 
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
@@ -7,6 +6,7 @@ from galaxy.jobs import JobDestination
 
 import errno
 from time import sleep
+import os
 
 from lwr_client import FileStager, Client, url_to_destination_params
 
@@ -34,15 +34,18 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def check_watched_item(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
-            complete = client.check_complete()
+            status = client.get_status()
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        if complete:
+        if status == "complete":
             self.mark_as_finished(job_state)
             return None
+        if status == "running" and not job_state.running:
+            job_state.running = True
+            job_state.job_wrapper.change_state( model.Job.states.RUNNING )
         return job_state
 
     def queue_job(self, job_wrapper):
@@ -81,7 +84,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_id = file_stager.job_id
             client.launch( rebuilt_command_line )
             job_wrapper.set_job_destination( job_destination, job_id )
-            job_wrapper.change_state( model.Job.states.RUNNING )
+            job_wrapper.change_state( model.Job.states.QUEUED )
 
         except Exception, exc:
             job_wrapper.fail( "failure running job", exception=True )
@@ -92,7 +95,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         lwr_job_state.job_wrapper = job_wrapper
         lwr_job_state.job_id = job_id
         lwr_job_state.old_state = True
-        lwr_job_state.running = True
+        lwr_job_state.running = False
         lwr_job_state.job_destination = job_destination
         self.monitor_job(lwr_job_state)
 
@@ -140,23 +143,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
-            external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
-                                                                            set_extension = True,
-                                                                            kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
-            external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
-                                         shell = True, 
-                                         env = os.environ,
-                                         preexec_fn = os.setpgrp )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
-            external_metadata_proc.wait()
-            log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
-
-        # Finish the job                
+        self._handle_metadata_externally( job_wrapper )
+        # Finish the job
         try:
             job_wrapper.finish( stdout, stderr )
         except:
@@ -222,12 +210,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.get_command_line()
         job_state.job_wrapper = job_wrapper
-        if job.get_state() == model.Job.states.RUNNING:
+        state = job.get_state()
+        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
             log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
             job_state.old_state = True
-            job_state.running = True
+            job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
-        elif job.get_state() == model.Job.states.QUEUED:
-            # LWR doesn't queue currently, so this indicates galaxy was shutoff while 
-            # job was being staged. Not sure how to recover from that. 
-            job_state.job_wrapper.fail( "This job was killed when Galaxy was restarted.  Please retry the job." )

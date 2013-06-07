@@ -1,5 +1,8 @@
-import os, logging,  shutil
+import os
+import logging
+import shutil
 import inspect
+
 from galaxy import model, util
 
 

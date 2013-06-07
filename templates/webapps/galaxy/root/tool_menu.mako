@@ -10,7 +10,7 @@
         <div class="toolTitleNoSection">
     %endif
         <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id )}" target="_parent">${_(workflow.name)}</a>
+        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id )}" target="_parent">${_( util.unicodify( workflow.name ) ) }</a>
     </div>
 </%def>
 
@@ -122,7 +122,7 @@
                     %if t.user.stored_workflow_menu_entries:
                         %for m in t.user.stored_workflow_menu_entries:
                             <div class="toolTitle">
-                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
+                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) }</a>
                             </div>
                         %endfor
                     %endif

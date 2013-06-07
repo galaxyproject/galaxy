@@ -76,5 +76,5 @@ def get_tool_def( trans, hda ):
         
     # If tool has parameters that can be interactively modified, return tool.
     if len( tool_params ) != 0:
-        return { 'name' : tool.name, 'params' : tool_params } 
+        return { 'id': tool.id, 'name' : tool.name, 'params' : tool_params } 
     return None

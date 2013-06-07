@@ -1,9 +1,9 @@
 """
-The GQL (Galaxy Query Language) search engine parsers a simple 'SQL-Like' query 
+The GQL (Galaxy Query Language) search engine parsers a simple 'SQL-Like' query
 syntax to obtain items from the Galaxy installations.
-Rather then allow/force the user to do queries on the Galaxy schema, it uses 
+Rather then allow/force the user to do queries on the Galaxy schema, it uses
 a small set of 'Views' which are simple table representations of complex galaxy ideas.
-So while a history and it's tags may exist in seperate tables in the real schema, in 
+So while a history and it's tags may exist in seperate tables in the real schema, in
 GQL they exist in the same view
 
 Example Queries:
@@ -25,14 +25,17 @@ select * from history where name='Unnamed history'
 """
 
 import logging
-import parsley
 import re
 
+from galaxy import eggs
+eggs.require("Parsley")
+import parsley
+
 from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
-from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex
+from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation
 from galaxy.model import ToolVersion
 
-from sqlalchemy import or_, and_
+from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
 log = logging.getLogger( __name__ )
@@ -42,19 +45,19 @@ class ViewField(object):
     """
     A ViewField defines a field in a view that filter operations can be applied to
     These filter operations are either handled with standard sqlalchemy filter calls,
-    or passed to specialized handlers (such as when a table join would be needed to 
+    or passed to specialized handlers (such as when a table join would be needed to
     do the filtering)
 
     Parameters:
 
-    sqlalchemy_field - Simple filtering using existing table columns, the argument is an sqlalchemy column 
+    sqlalchemy_field - Simple filtering using existing table columns, the argument is an sqlalchemy column
         that the right hand value will be compared against
 
     handler - Requires more specialized code to do filtering, usually requires a table join in order to
         process the conditional
 
     post_filter - Unable to do simple sqlalchemy based table filtering, filter is applied to loaded object
-        Thus methods avalible to the object can be used for filtering. example: a library folder must climb 
+        Thus methods avalible to the object can be used for filtering. example: a library folder must climb
         its chain of parents to find out which library it belongs to
 
     """
@@ -99,7 +102,7 @@ class ViewQueryBaseClass(object):
                 field = self.FIELDS[left_base]
                 if field.sqlalchemy_field is not None:
                     if operator == "=":
-                        #print field.sqlalchemy_field == right, field.sqlalchemy_field, right 
+                        #print field.sqlalchemy_field == right, field.sqlalchemy_field, right
                         self.query = self.query.filter( field.sqlalchemy_field == right )
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
@@ -115,7 +118,7 @@ class ViewQueryBaseClass(object):
             else:
                 raise GalaxyParseError("Unknown field: %s" % (left))
 
-    def search(trans):
+    def search(self, trans):
         raise GalaxyParseError("Unable to search view: %s" % (self.VIEW_NAME))
 
     def get_results(self, force_query=False):
@@ -141,11 +144,11 @@ def library_extended_metadata_filter(view, left, operator, right):
     alias = aliased( ExtendedMetadataIndex )
     field = "/%s" % ("/".join(left.split(".")[1:]))
     #print "FIELD", field
-    view.query = view.query.filter( 
-        and_( 
-            ExtendedMetadata.id == alias.extended_metadata_id, 
+    view.query = view.query.filter(
+        and_(
+            ExtendedMetadata.id == alias.extended_metadata_id,
             alias.path == field,
-            alias.value == str(right) 
+            alias.value == str(right)
         )
     )
 
@@ -159,8 +162,8 @@ def ldda_parent_library_filter(item, left, operator, right):
 
 class LibraryDatasetDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset_dataset"
-    FIELDS = { 
-        'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter), 
+    FIELDS = {
+        'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter),
         'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
         'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
@@ -177,7 +180,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
 
 class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
-    FIELDS = { 
+    FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=Library.name ),
         'id' : ViewField('id', sqlalchemy_field=Library.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=Library.deleted)
@@ -210,7 +213,7 @@ def library_path_filter(item, left, operator, right):
 
 class LibraryFolderView(ViewQueryBaseClass):
     VIEW_NAME = "library_folder"
-    FIELDS = { 
+    FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=LibraryFolder.name ),
         'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id, id_decode=True),
         'parent_id' : ViewField('parent_id', sqlalchemy_field=LibraryFolder.parent_id, id_decode=True ),
@@ -237,7 +240,7 @@ def library_dataset_name_filter(item, left, operator, right):
 
 class LibraryDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset"
-    FIELDS = { 
+    FIELDS = {
         'name' : ViewField('name', post_filter=library_dataset_name_filter),
         'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True),
         'folder_id' : ViewField('folder_id', sqlalchemy_field=LibraryDataset.folder_id, id_decode=True)
@@ -254,9 +257,9 @@ class LibraryDatasetView(ViewQueryBaseClass):
 
 class ToolView(ViewQueryBaseClass):
     VIEW_NAME = "tool"
-    FIELDS = { 
+    FIELDS = {
         'tool_id' : ViewField('name', sqlalchemy_field=ToolVersion.tool_id ),
-        'id' : ViewField('id', sqlalchemy_field=ToolVersion.id) 
+        'id' : ViewField('id', sqlalchemy_field=ToolVersion.id)
     }
 
     def search(self, trans):
@@ -360,7 +363,7 @@ class WorkflowView(ViewQueryBaseClass):
         self.query = trans.sa_session.query( StoredWorkflow )
 
 """
-The view mapping takes a user's name for a table and maps it to a View class that will 
+The view mapping takes a user's name for a table and maps it to a View class that will
 handle queries
 """
 view_mapping = {
@@ -382,33 +385,33 @@ The GQL gramar is defined in Parsley syntax ( http://parsley.readthedocs.org/en/
 """
 
 gqlGrammar = """
-expr = 'select' bs field_desc:f bs 'from' bs word:t ( 
+expr = 'select' bs field_desc:f bs 'from' bs word:t (
     bs 'where' bs conditional:c ws -> GalaxyQuery(f,t,c)
     | ws -> GalaxyQuery(f, t, None) )
 bs = ' '+
 ws = ' '*
 field_desc = ( '*' -> ['*']
     | field_list )
-field_list = field_name:x ( 
-    ws ',' ws field_list:y -> [x] + y 
-    | -> [x] 
+field_list = field_name:x (
+    ws ',' ws field_list:y -> [x] + y
+    | -> [x]
     )
 conditional = logic_statement:x (
-    bs 'and' bs conditional:y -> GalaxyQueryAnd(x,y) 
-    | -> x 
+    bs 'and' bs conditional:y -> GalaxyQueryAnd(x,y)
+    | -> x
     )
-word = alphanum+:x -> "".join(x) 
+word = alphanum+:x -> "".join(x)
 field_name = word:x (
-    '.' quote_word:y  -> x + "." + y 
+    '.' quote_word:y  -> x + "." + y
     |-> x
-    ) 
+    )
 alphanum = anything:x ?(re.search(r'\w', x) is not None) -> x
 logic_statement = field_name:left ws comparison:comp ws value_word:right -> GalaxyQueryComparison(left, comp, right)
-value_word = ( 
-    'false' -> False 
-    | 'False' -> False 
-    | 'true' -> True 
-    | 'True' -> True    
+value_word = (
+    'false' -> False
+    | 'False' -> False
+    | 'true' -> True
+    | 'True' -> True
     | 'None' -> None
     | quote_word )
 comparison = ( '=' -> '='
@@ -434,7 +437,7 @@ class GalaxyQuery:
 
 class GalaxyQueryComparison:
     """
-    This class represents the data structure of the comparison arguments of a 
+    This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
     def __init__(self, left, operator, right):
@@ -444,7 +447,7 @@ class GalaxyQueryComparison:
 
 class GalaxyQueryAnd:
     """
-    This class represents the data structure of the comparison arguments of a 
+    This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
     """
     def __init__(self, left, right):
@@ -460,7 +463,7 @@ class SearchQuery:
     def __init__(self, view, query):
         self.view = view
         self.query = query
-    
+
     def decode_query_ids(self, trans):
         if self.query.conditional is not None:
             self.view.decode_query_ids(trans, self.query.conditional)
@@ -468,8 +471,8 @@ class SearchQuery:
     def process(self, trans):
         self.view.search(trans)
         if self.query.conditional is not None:
-            self.view.filter( 
-                self.query.conditional.left, 
+            self.view.filter(
+                self.query.conditional.left,
                 self.query.conditional.operator,
                 self.query.conditional.right )
         return self.view.get_results(True)
@@ -483,7 +486,7 @@ class SearchQuery:
             if a in self.query.field_list:
                 o[a] = r[a]
         return o
-                            
+
 
 
 class GalaxySearchEngine:
@@ -491,9 +494,9 @@ class GalaxySearchEngine:
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
     def __init__(self):
-        self.parser = parsley.makeGrammar(gqlGrammar, { 
-            're' : re, 
-            'GalaxyQuery' : GalaxyQuery, 
+        self.parser = parsley.makeGrammar(gqlGrammar, {
+            're' : re,
+            'GalaxyQuery' : GalaxyQuery,
             'GalaxyQueryComparison' : GalaxyQueryComparison,
             'GalaxyQueryAnd' : GalaxyQueryAnd
         })

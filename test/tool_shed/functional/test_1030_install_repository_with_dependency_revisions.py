@@ -15,8 +15,10 @@ base_datatypes_count = 0
 repository_datatypes_count = 0
 running_standalone = False
 
+
 class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
     '''Test installing a repository with dependency revisions.'''
+  
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -34,6 +36,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+ 
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0030 category and add repositories to it, if necessary.'''
         global repository_datatypes_count
@@ -74,17 +77,8 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_5_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_5_repository, repository_tuples=[ datatypes_tuple ], filepath=repository_dependencies_path )
             emboss_6_repository = self.get_or_create_repository( name=emboss_6_repository_name, 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
@@ -101,17 +95,8 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '6' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_6_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
+            self.create_repository_dependency( repository=emboss_6_repository, repository_tuples=[ datatypes_tuple ], filepath=repository_dependencies_path )
             emboss_repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
@@ -128,29 +113,12 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               strings_displayed=[], 
                               strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1030', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ emboss_5_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
-            self.generate_repository_dependency_xml( [ emboss_6_repository ], 
-                                                     self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
-            self.upload_file( emboss_repository, 
-                              filename='repository_dependencies.xml', 
-                              filepath=repository_dependencies_path,
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False,
-                              commit_message='Uploaded repository_dependencies.xml.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            dependency_tuple = ( self.url, emboss_5_repository.name, emboss_5_repository.user.username, self.get_repository_tip( emboss_5_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
+            dependency_tuple = ( self.url, emboss_6_repository.name, emboss_6_repository.user.username, self.get_repository_tip( emboss_6_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
         repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
+   
     def test_0010_browse_tool_shed( self ):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
         self.galaxy_logout()
@@ -159,6 +127,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         self.browse_category( category, strings_displayed=[ 'emboss_0030' ] )
         self.preview_repository_in_tool_shed( 'emboss_0030', common.test_user_1_name, strings_displayed=[ 'emboss_0030', 'Valid tools' ] )
+
     def test_0015_install_emboss_repository( self ):
         '''Install the emboss repository without installing tool dependencies.'''
         global repository_datatypes_count
@@ -190,6 +159,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
             assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
         else:
             assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
+  
     def test_0025_verify_installed_repository_metadata( self ):
         '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
         self.verify_installed_repository_metadata_unchanged( 'emboss_0030', common.test_user_1_name )

@@ -13,7 +13,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.panels", "libs/jquery/select2", "libs/jquery/jstorage" )}
+    ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
     <script type="text/javascript">
     $(function() {
         $(window).bind("refresh_on_change", function() {

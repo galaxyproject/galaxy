@@ -44,11 +44,21 @@ var tooltipSelector = spaceghost.data.selectors.tooltipBalloon;
 
 var utils = require( 'utils' ),
     historyFrameInfo = {},
+    filepathToUpload = '../../test-data/1.bam',
+    testUploadInfo = {},
+    //TODO: get from the api module - that doesn't exist yet
+
+    //summaryShouldBeArray = [ '3.5 KB', 'format: bam' ],
+    //infoShouldBe = 'uploaded bam file',
+    //metadataFiles = [ 'bam_index' ],
+    //peekShouldBeArray = [];
+
     filepathToUpload = '../../test-data/1.txt',
     testUploadInfo = {},
     //TODO: get from the api module - that doesn't exist yet
     summaryShouldBeArray = [ '10 lines', 'format: txt' ],
     infoShouldBe = 'uploaded txt file',
+    metadataFiles = null,
     peekShouldBeArray = [];
 
 // ------------------------------------------------------------------- set up
@@ -74,6 +84,42 @@ function testTitle( hdaSelector, name ){
         'HDA contains name (' + name + '): ' + this.fetchText( titleSelector ) );
 }
 
+function testIconButton( hdaDbId, containerSelector, buttonName, expectedButtonData ){
+    this.test.comment( buttonName + ' should exist, be visible, and well formed' );
+    this.debug( 'checking button "' + buttonName + '" within "' + containerSelector + '":\n' +
+        this.jsonStr( expectedButtonData ) );
+    
+    if( !expectedButtonData.selector ){ this.test.fail( 'BAD TEST DATA: no selector given' ); }
+    var btnSelector = containerSelector + ' ' + expectedButtonData.selector;
+    this.test.assertExists( btnSelector,  buttonName + ' button exists' );
+    this.test.assertVisible( btnSelector, buttonName + ' button is visible' );
+
+    var buttonElement = this.getElementInfo( btnSelector );
+    this.debug( 'buttonElement:' + this.jsonStr( this.quickInfo( buttonElement ) ) );
+
+    if( expectedButtonData.nodeName ){
+        this.test.assert( buttonElement.nodeName === expectedButtonData.nodeName,
+            buttonName + ' is proper node type (' + expectedButtonData.nodeName + '): ' + buttonElement.nodeName );
+    }
+
+    if( expectedButtonData.hrefTpl ){
+        var href = buttonElement.attributes.href,
+            hrefShouldBe = utils.format( expectedButtonData.hrefTpl, hdaDbId );
+        this.assertTextContains( href, hrefShouldBe,
+            buttonName + ' has proper href (' + hrefShouldBe + '): ' + href );
+    }
+
+    if( expectedButtonData.tooltip ){
+        this.historypanel.hoverOver( btnSelector );
+        var tooltipText = expectedButtonData.tooltip;
+        this.test.assertVisible( tooltipSelector, buttonName + ' button tooltip is visible when hovering' );
+        this.test.assertSelectorHasText( tooltipSelector, tooltipText,
+            buttonName + ' button has tooltip text: "' + tooltipText + '"' );
+        // clear the tooltip
+        this.page.sendEvent( 'mouseover', 0, 0 );
+    }
+}
+
 function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
     // defaults to the current buttons most states should have
     shouldHaveTheseButtons = shouldHaveTheseButtons || [ 'display', 'edit', 'delete' ];
@@ -84,37 +130,13 @@ function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
 
     this.test.assertVisible( buttonsArea, 'Button area is visible' );
 
-    for( var i=0; i<shouldHaveTheseButtons.length; i++ ){
+    for( var i=0; i<shouldHaveTheseButtons.length; i += 1 ){
         // don't use button names we don't have data for
         var buttonName = shouldHaveTheseButtons[ i ];
         if( !buttons.hasOwnProperty( buttonName ) ){ continue; }
-
-        this.test.comment( buttonName + ' should exist, be visible, and well formed' );
         var button = buttons[ buttonName ];
-        this.debug( 'checking button "' + buttonName + '" on hda "' + hdaDbId + '":\n' + this.jsonStr( button ) );
-        this.test.assertExists( button.selector,  buttonName + ' button exists' );
-        this.test.assertVisible( button.selector, buttonName + ' button is visible' );
 
-        var buttonElement = this.getElementInfo( button.selector );
-        this.debug( 'buttonElement:' + this.jsonStr( this.quickInfo( buttonElement ) ) );
-
-        // should be an anchor
-        this.test.assert( buttonElement.nodeName === button.nodeName,
-            buttonName + ' is proper node type (' + button.nodeName + '): ' + buttonElement.nodeName );
-
-        // should have a proper href
-        var href = buttonElement.attributes.href,
-            hrefShouldBe = utils.format( button.hrefTpl, hdaDbId );
-        this.assertTextContains( href, hrefShouldBe,
-            buttonName + ' has proper href (' + hrefShouldBe + '): ' + href );
-
-        this.historypanel.hoverOver( button.selector );
-        var tooltipText = button.tooltip;
-        this.test.assertVisible( tooltipSelector, buttonName + ' button tooltip is visible when hovering' );
-        this.test.assertSelectorHasText( tooltipSelector, tooltipText,
-            buttonName + ' button has tooltip text: "' + tooltipText + '"' );
-        // clear the tooltip
-        this.page.sendEvent( 'mouseover', 0, 0 );
+        testIconButton.call( this, hdaDbId, buttonsArea, buttonName, button );
     }
 }
 
@@ -153,13 +175,80 @@ function testDbkey( hdaSelector, dbkeySetTo ){
     }
 }
 
-function testPrimaryActionButtons( hdaSelector ){
-    var buttonsSelector = hdaSelector + ' ' + this.historypanel.data.selectors.hda.body
-                                      + ' ' + this.historypanel.data.selectors.hda.primaryActionButtons;
+function testDownloadMenu( hdaSelector, expectedMetadataFiles ){
+    var hdaDbId = this.getElementAttribute( hdaSelector, 'id' ).split( '-' )[1];
+
+    // assert has classes: menubutton split popup
+    // click popup
+}
+
+function testMetadataDownloadLink( menuSelector, metadataFile ){
+
+}
+
+function testPrimaryActionButtons( hdaSelector, expectedMetadataFiles ){
+    //TODO: not abstracted well for all states
+    var hdaDbId = this.getElementAttribute( hdaSelector, 'id' ).split( '-' )[1],
+        buttonsSelector = hdaSelector + ' ' + this.historypanel.data.selectors.hda.body
+                                      + ' ' + this.historypanel.data.selectors.hda.primaryActionButtons,
+        dropdownSelector = '#' + utils.format(
+            this.historypanel.data.hdaPrimaryActionButtons.downloadDropdownButtonIdTpl, hdaDbId );
+
     this.test.comment( 'Primary action buttons div should exist and be visible' );
     this.test.assertExists( buttonsSelector, 'Primary action buttons div exists' );
     this.test.assertVisible( buttonsSelector, 'Primary action buttons div is visible' );
     //TODO: ...
+    // different states, datatypes will have different action buttons
+    testIconButton.call( this, hdaDbId, buttonsSelector, 'info',
+        this.historypanel.data.hdaPrimaryActionButtons.info );
+    testIconButton.call( this, hdaDbId, buttonsSelector, 'rerun',
+        this.historypanel.data.hdaPrimaryActionButtons.rerun );
+
+    //TODO: move to testDownloadButton as its own step
+    if( !expectedMetadataFiles ){
+        this.test.comment( 'no expected metadata, download button should be an icon button' );
+        this.test.assertDoesntExist( dropdownSelector, 'no dropdown selector exists:' + dropdownSelector );
+        testIconButton.call( this, hdaDbId, buttonsSelector, 'download',
+            this.historypanel.data.hdaPrimaryActionButtons.download );
+
+    } else {
+        this.test.comment( 'expecting metadata, download button should be a popup menu' );
+
+        // will be a drop down and should contain links to all metadata files
+        this.test.assertVisible( dropdownSelector, 'dropdown menu button visible: ' + dropdownSelector );
+        testIconButton.call( this, hdaDbId, dropdownSelector, 'download',
+            this.historypanel.data.hdaPrimaryActionButtons.download );
+
+        this.test.comment( 'clicking the button should show a popup menu with download links' );
+        this.click( dropdownSelector );
+        this.wait( 100, function(){
+            //TODO: abstract to popup menu checker
+            var menuSelector = '#' + utils.format(
+                this.historypanel.data.hdaPrimaryActionButtons.downloadDropdownMenuIdTpl, hdaDbId );
+            this.test.assertVisible( menuSelector, 'menu visible: ' + menuSelector );
+
+            var liCounter = 1;
+            var mainDataSelector = menuSelector + ' ' + 'li:nth-child(' + liCounter + ') a';
+            this.assertVisibleWithText( mainDataSelector, 'Download Dataset',
+                mainDataSelector + ' (main data download) has proper text: ' + 'Download Dataset' );
+            liCounter += 1;
+            
+            var splitLabelSelector = menuSelector + ' ' + 'li:nth-child(' + liCounter + ') a';
+            this.test.assertVisible( splitLabelSelector, 'split label visible' );
+            this.test.assertSelectorHasText( splitLabelSelector, 'Additional Files',
+                'split label has proper text' );
+            liCounter += 1;
+
+            var self = this;
+            expectedMetadataFiles.forEach( function( file ){
+                var linkSelector = menuSelector + ' ' + 'li:nth-child(' + liCounter + ') a';
+                self.test.assertVisible( linkSelector, '#' + liCounter + ' link visible' );
+                self.test.assertSelectorHasText( linkSelector, 'Download ' + file,
+                    '#' + liCounter + ' link has proper text: Download ' + file );
+                liCounter += 1;
+            });
+        });
+    }
 }
 
 function testSecondaryActionButtons( hdaSelector ){
@@ -169,6 +258,7 @@ function testSecondaryActionButtons( hdaSelector ){
     this.test.assertExists( buttonsSelector, 'Secondary action buttons div exists' );
     this.test.assertVisible( buttonsSelector, 'Secondary action buttons div is visible' );
     //TODO: ...
+    // tags, annotations
 }
 
 function testPeek( hdaSelector, expectedPeekArray ){
@@ -182,7 +272,7 @@ function testPeek( hdaSelector, expectedPeekArray ){
     });
 }
 
-function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoText, dbkeySetTo ){
+function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoText, dbkeySetTo, expectedMetadata ){
     var body = hdaSelector + ' ' + this.historypanel.data.selectors.hda.body;
     this.test.assertExists( body, 'body exists' );
     this.test.assertVisible( body, 'body is visible' );
@@ -208,7 +298,7 @@ function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoTe
     this.test.assertSelectorHasText( info, expectedInfoText,
         'info has proper text (' + expectedInfoText + '): ' + this.fetchText( info ) );
 
-    testPrimaryActionButtons.call( this, hdaSelector );
+    testPrimaryActionButtons.call( this, hdaSelector, expectedMetadata );
     testSecondaryActionButtons.call( this, hdaSelector ); //TODO: isAnonymous
     testPeek.call( this, hdaSelector, peekShouldBeArray );
 }
@@ -241,7 +331,10 @@ spaceghost.withHistoryPanel( function(){
     this.historypanel.thenExpandHda( uploadSelector, function(){
         // ugh.
         this.jumpToHistory( function(){
-            testExpandedBody.call( spaceghost, uploadSelector, summaryShouldBeArray, infoShouldBe, false );
+            testExpandedBody.call( spaceghost, uploadSelector,
+                summaryShouldBeArray, infoShouldBe, false, metadataFiles );
+            //testExpandedBody.call( spaceghost, uploadSelector,
+            //    summaryShouldBeArray, infoShouldBe, false );
         });
     });
 });
@@ -291,6 +384,29 @@ spaceghost.withHistoryPanel( function(){
             this.test.assertSelectorHasText( bodySelector, expectedBodyText,
                 'HDA body has text: ' + expectedBodyText );
         });
+
+        this.historypanel.then( function(){
+            this.test.comment( 'a simulated error on a new dataset should appear in a message box' );
+            // datasets that error on fetching their data appear as 'new', so do this here
+            // more of a unit test, but ok
+            var errorString = 'Blah!';
+
+            this.evaluate( function( errorString ){
+                return Galaxy.currHistoryPanel.model.hdas.getByHid( 1 ).set( 'error', errorString );
+            }, errorString );
+
+            // wait for re-render
+            this.wait( 1000, function(){
+                var errorMessage = this.historypanel.data.selectors.hda.errorMessage;
+                
+                this.test.assertExists( errorMessage, 'error message exists' );
+                this.test.assertVisible( errorMessage, 'error message is visible' );
+                this.test.assertSelectorHasText( errorMessage, this.historypanel.data.text.hda.datasetFetchErrorMsg,
+                    'error message has text: ' + this.historypanel.data.text.hda.datasetFetchErrorMsg );
+                this.test.assertSelectorHasText( errorMessage, errorString,
+                    'error message has error string: ' + errorString );
+            });
+        });
     });
 });
 // restore state, collapse
@@ -299,6 +415,7 @@ spaceghost.withHistoryPanel( function revertStateAndCollapse(){
 
     this.historypanel.thenCollapseHda( uploadSelector, function(){
         this.evaluate( function(){
+            Galaxy.currHistoryPanel.model.hdas.getByHid( 1 ).unset( 'error' );
             return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'ok' );
         });
     });

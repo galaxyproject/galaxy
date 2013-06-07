@@ -61,6 +61,7 @@
 
 <%def name="render_item( data, data_to_render )">
     ## Chunkable data is rendered in JavaScript above; render unchunkable data below.
+    ${ render_deleted_data_message( data ) }
     %if not data.datatype.CHUNKABLE and data_to_render:
         %if truncated:
             <div class="warningmessagelarge">
@@ -75,6 +76,17 @@
     %endif
 </%def>
 
+<%def name="render_deleted_data_message( data )">
+    %if data.deleted:
+        <div class="errormessagelarge" id="deleted-data-message">
+            You are viewing a deleted dataset.
+            %if data.history and data.history.user == trans.get_user():
+                <br />
+                <a href="#" onclick="$.ajax( {type: 'GET', cache: false, url: '${h.url_for( controller='dataset', action='undelete_async', dataset_id=trans.security.encode_id( data.id ) )}', dataType: 'text', contentType: 'text/html', success: function( data, textStatus, jqXHR ){ if (data == 'OK' ){ $( '#deleted-data-message' ).slideUp( 'slow' ) } else { alert( 'Undelete failed.' ) } }, error: function( data, textStatus, jqXHR ){ alert( 'Undelete failed.' ); } } );">Undelete</a>
+            %endif
+        </div>
+    %endif
+</%def>
 
 <%def name="center_panel()">
     <div class="unified-panel-header" unselectable="on">

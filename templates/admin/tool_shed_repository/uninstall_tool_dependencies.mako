@@ -51,15 +51,15 @@
                                                             tool_dependency.tool_shed_repository.owner,
                                                             tool_dependency.tool_shed_repository.name,
                                                             tool_dependency.tool_shed_repository.installed_changeset_revision )
+                            if not os.path.exists( install_dir ):
+                                install_dir = "This dependency's installation directory does not exist, click <b>Uninstall</b> to reset for installation."
                         %>
-                        %if os.path.exists( install_dir ):
-                            <tr>
-                                <td>${tool_dependency.name}</td>
-                                <td>${tool_dependency.version}</td>
-                                <td>${tool_dependency.type}</td>
-                                <td>${install_dir}</td>
-                            </tr>
-                        %endif
+                        <tr>
+                            <td>${tool_dependency.name}</td>
+                            <td>${tool_dependency.version}</td>
+                            <td>${tool_dependency.type}</td>
+                            <td>${install_dir}</td>
+                        </tr>
                     %endfor
                 </table>
                 <div style="clear: both"></div>

@@ -15,7 +15,6 @@
 
 <%def name="stylesheets()">
 ${parent.stylesheets()}
-${h.css( "embedded_item" )}
 <style>
 .searchResult {
 	border-style:dashed;

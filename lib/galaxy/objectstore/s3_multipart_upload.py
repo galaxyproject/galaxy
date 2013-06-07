@@ -13,10 +13,8 @@ import subprocess
 import contextlib
 import functools
 
-if sys.version_info >= (2, 6):
-    # this is just to prevent unit tests from failing
-    import multiprocessing
-    from multiprocessing.pool import IMapIterator
+import multiprocessing
+from multiprocessing.pool import IMapIterator
 
 from galaxy import eggs
 eggs.require('boto')
