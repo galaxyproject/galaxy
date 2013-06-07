@@ -32,7 +32,9 @@ eggs.require("Parsley")
 import parsley
 
 from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
-from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation
+from galaxy.model import (StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation,
+HistoryDatasetAssociationTagAssociation,
+ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation)
 from galaxy.model import ToolVersion
 
 from sqlalchemy import and_
@@ -269,12 +271,30 @@ class ToolView(ViewQueryBaseClass):
 #History Dataset Searching
 ##################
 
+def history_dataset_handle_tag(view, left, operator, right):
+    if operator == "=":
+        view.do_query = True
+        #aliasing the tag association table, so multiple links to different tags can be formed during a single query
+        tag_table = aliased(HistoryDatasetAssociationTagAssociation)
+
+        view.query = view.query.filter(
+           HistoryDatasetAssociation.id == tag_table.history_dataset_association_id
+        )
+        tmp = right.split(":")
+        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
+        if len(tmp) > 1:
+            view.query = view.query.filter( tag_table.user_value == tmp[1] )
+    else:
+        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
 
 class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
-        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True)
+        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
+        'tag' : ViewField("tag", handler=history_dataset_handle_tag)
+
     }
 
     def search(self, trans):
@@ -289,13 +309,14 @@ class HistoryDatasetView(ViewQueryBaseClass):
 def history_handle_tag(view, left, operator, right):
     if operator == "=":
         view.do_query = True
+        tag_table = aliased(HistoryTagAssociation)
         view.query = view.query.filter(
-           History.id == HistoryTagAssociation.history_id
+           History.id == tag_table.history_id
         )
         tmp = right.split(":")
-        view.query = view.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
+        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
         if len(tmp) > 1:
-            view.query = view.query.filter( HistoryTagAssociation.user_value == tmp[1] )
+            view.query = view.query.filter( tag_table.user_value == tmp[1] )
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
