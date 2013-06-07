@@ -548,7 +548,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def welcome( self, trans ):
-        return trans.response.send_redirect( url_for( '/static/welcome.html' ) )
+        welcome_url = trans.app.config.welcome_url
+        return trans.response.send_redirect( url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):
