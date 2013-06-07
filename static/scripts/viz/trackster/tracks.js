@@ -3031,13 +3031,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         //
-        // If some tiles have line track tiles (which denote coverage data), redraw all tiles using coverage data.
+        // Take different actions depending on whether there are LineTrack/Coverage tiles.
         //
         var non_line_track_tiles = _.filter(tiles, function(tile) {
             return !(tile instanceof LineTrackTile);
         });
 
+        // If some tiles have line track tiles (which denote coverage data), redraw all tiles using coverage data.
         if (non_line_track_tiles.length > 0 && non_line_track_tiles.length < tiles.length) {
+            // -- Drawing in Coverage mode. --
+
             // Clear because this is set when drawing.
             this.max_height_px = 0;
             var track = this;
@@ -3049,24 +3052,26 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             track._add_yaxis_label('max');
         }
         else {
-           // Remove Y-axis labels because there are no line track tiles.
-           this.container_div.find('.yaxislabel').remove();
-        }
+            // -- Drawing in non-Coverage mode. --
 
-        //
-        // If some tiles have icons, set padding of tiles without icons so features and rows align.
-        //
-        var icons_present = _.find(tiles, function(tile) { 
-            return tile.has_icons;
-        });
+            // Remove Y-axis labels because there are no line track tiles.
+            this.container_div.find('.yaxislabel').remove();
 
-        if (icons_present) {
-            _.each(tiles, function(tile) {
-                if (!tile.has_icons) {
-                    // Need to align with other tile(s) that have icons.
-                    tile.html_elt.css("padding-top", ERROR_PADDING);
-                }
+            //
+            // If some tiles have icons, set padding of tiles without icons so features and rows align.
+            //
+            var icons_present = _.find(tiles, function(tile) { 
+                return tile.has_icons;
             });
+
+            if (icons_present) {
+                _.each(tiles, function(tile) {
+                    if (!tile.has_icons) {
+                        // Need to align with other tile(s) that have icons.
+                        tile.html_elt.css("padding-top", ERROR_PADDING);
+                    }
+                });
+            }
         }
     },
 
