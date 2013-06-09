@@ -1482,7 +1482,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 description_lines.append( '\nThis repository did not install correctly. ' )
             if tool_dependency_errors or repository_dependency_errors:
                 description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' % \
-                    len( tool_dependency_errors ), len( repository_dependency_errors ) )
+                    ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
             title = 'Revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
