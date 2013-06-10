@@ -123,12 +123,19 @@ class BaseController( object ):
             log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
         if check_ownership or check_accessible:
-            self.security_check( trans, item, check_ownership, check_accessible, id )
+            self.security_check( trans, item, check_ownership, check_accessible )
         if deleted == True and not item.deleted:
             raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         elif deleted == False and item.deleted:
             raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         return item
+
+    # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
+    #   but *don't* then becomes difficult
+    #def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
+    #    log.warn( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
+    #    # meant to be overridden in SharableSecurityMixin
+    #    return item
 
     def get_user( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'User', check_ownership=False, check_accessible=False, deleted=deleted )
@@ -162,7 +169,9 @@ class BaseUIController( BaseController ):
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
-            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+            return BaseController.get_object( self, trans, id, class_name,
+                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+
         except MessageException:
             raise       # handled in the caller
         except:
@@ -174,7 +183,9 @@ class BaseAPIController( BaseController ):
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
-            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+            return BaseController.get_object( self, trans, id, class_name,
+                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+
         except ItemDeletionException, e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
         except MessageException, e:
@@ -232,24 +243,30 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
-
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
+        # all items are accessible to an admin
+        if trans.user and trans.user_is_admin():
+            return item
+
+        # Verify ownership: there is a current user and that user is the same as the item's
         if check_ownership:
-            # Verify ownership.
             if not trans.user:
                 raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
             if item.user != trans.user:
                 raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
+
+        # Verify accessible:
+        #   if it's part of a lib - can they access via security
+        #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
         if check_accessible:
             if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
-                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
+                if not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
             else:
-                # Verify accessible.
                 if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
