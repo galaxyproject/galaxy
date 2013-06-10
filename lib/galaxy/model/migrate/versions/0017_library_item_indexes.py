@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
     # Load existing tables
     metadata.reflect()
     # Add 1 index to the library_folder table
-    i = Index( 'ix_library_folder_name', LibraryFolder_table.c.name )
+    i = Index( 'ix_library_folder_name', LibraryFolder_table.c.name, mysql_length=200 )
     try:
         i.create()
     except Exception, e:
