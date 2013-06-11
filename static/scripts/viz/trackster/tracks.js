@@ -1952,6 +1952,9 @@ var DrawableConfig = function( options ) {
 };
 
 extend(DrawableConfig.prototype, {
+    /**
+     * Restore config values from a dictionary.
+     */
     restore_values: function( values ) {
         var track_config = this;
         $.each( this.params, function( index, param ) {
@@ -1962,6 +1965,10 @@ extend(DrawableConfig.prototype, {
             }
         }); 
     },
+
+    /**
+     * Build form for modifying parameters.
+     */
     build_form: function() {
         var track_config = this;
         var container = $("<div />");
@@ -2060,6 +2067,10 @@ extend(DrawableConfig.prototype, {
         // Return element containing constructed form
         return container;
     },
+
+    /**
+     * Update configuration from form.
+     */
     update_from_form: function( container ) {
         var track_config = this;
         var changed = false;
