@@ -214,7 +214,7 @@ class DefaultToolAction( object ):
             
             if not chrom_info:
                 # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         
