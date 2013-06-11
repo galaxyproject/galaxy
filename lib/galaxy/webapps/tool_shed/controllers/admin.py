@@ -231,7 +231,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and suc.get_category_by_name( trans, name ):
+                elif category.name != new_name and suc.get_category_by_name( trans, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
