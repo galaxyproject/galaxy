@@ -3084,23 +3084,25 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        var line_track_tiles = _.filter(tiles, function(tile) {
+            return (tile instanceof LineTrackTile);
+        });
+
         //
         // Take different actions depending on whether there are LineTrack/Coverage tiles.
         //
-        var non_line_track_tiles = _.filter(tiles, function(tile) {
-            return !(tile instanceof LineTrackTile);
-        });
 
-        // If some tiles have line track tiles (which denote coverage data), redraw all tiles using coverage data.
-        if (non_line_track_tiles.length > 0 && non_line_track_tiles.length < tiles.length) {
+        if (line_track_tiles.length > 0) {
             // -- Drawing in Coverage mode. --
 
             // Clear because this is set when drawing.
             this.max_height_px = 0;
             var track = this;
-            _.each(non_line_track_tiles, function(tile) {
-                tile.html_elt.remove();
-                track.draw_helper(tile.region, tile.resolution, w_scale, { force: true, mode: 'Coverage' });
+            _.each(tiles, function(tile) {
+                if (!(tile instanceof LineTrackTile)) {
+                    tile.html_elt.remove();
+                    track.draw_helper(tile.region, tile.resolution, w_scale, { force: true, mode: 'Coverage' });
+                }
             });
 
             track._add_yaxis_label('max');
