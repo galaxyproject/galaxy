@@ -1526,8 +1526,13 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        if repository:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        return {}
 
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):
