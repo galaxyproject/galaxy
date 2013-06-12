@@ -13,6 +13,7 @@ from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import xml_util
+from galaxy.tools.actions.upload import UploadToolAction
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
 
@@ -848,6 +849,13 @@ def panel_entry_per_tool( tool_section_dict ):
         if k not in [ 'id', 'version', 'name' ]:
             return True
     return False
+
+def reload_upload_tools( app ):
+    if hasattr( app, 'toolbox' ):
+        for tool_id in app.toolbox.tools_by_id:
+            tool = app.toolbox.tools_by_id[ tool_id ]
+            if isinstance( tool.tool_action, UploadToolAction ):
+                app.toolbox.reload_tool_by_id( tool_id )
 
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list

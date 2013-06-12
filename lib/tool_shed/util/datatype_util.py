@@ -2,6 +2,8 @@ import logging
 import os
 import tempfile
 from galaxy import eggs
+from galaxy.util import asbool
+from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 
@@ -81,12 +83,28 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     os.chmod( proprietary_datatypes_config, 0644 )
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
+    if deactivate:
+        # Reload the upload tool to eliminate deactivated datatype extensions from the file_type select list.
+        tool_util.reload_upload_tools( app )
+    else:
+        append_to_datatypes_registry_upload_file_formats( app, registration )
+        tool_util.reload_upload_tools( app )
     if datatype_files is not None:
         try:
             os.unlink( proprietary_datatypes_config )
         except:
             pass
     return converter_path, display_path
+
+def append_to_datatypes_registry_upload_file_formats( app, elem ):
+    # See if we have any datatypes that should be displayed in the upload tool's file_type select list.
+    for datatype_elem in elem.findall( 'datatype' ):
+        extension = datatype_elem.get( 'extension', None )
+        display_in_upload = datatype_elem.get( 'display_in_upload', None )
+        if extension is not None and display_in_upload is not None:
+            display_in_upload = asbool( str( display_in_upload ) )
+            if display_in_upload and extension not in app.datatypes_registry.upload_file_formats:
+                app.datatypes_registry.upload_file_formats.append( extension )
 
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
