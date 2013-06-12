@@ -120,49 +120,75 @@ _.extend( CanvasManager.prototype, {
 });
 
 /**
- * Generic cache that handles key/value pairs.
+ * Generic cache that handles key/value pairs. Keys can be any object that can be 
+ * converted to a String and compared.
  */ 
 var Cache = Backbone.Model.extend({
     defaults: {
         num_elements: 20,
+        // Objects in cache; indexes into cache are strings of keys. 
         obj_cache: null,
+        // key_ary contains keys for objects in cache.
         key_ary: null
     },
 
     initialize: function(options) {
         this.clear();
     },
-    
+
+    /**
+     * Get an element from the cache using its key.
+     */    
     get_elt: function(key) {
         var obj_cache = this.attributes.obj_cache,
             key_ary = this.attributes.key_ary,
-            index = key_ary.indexOf(key);
+            key_str = key.toString(),
+            index = _.indexOf(key_ary, function(k) {
+                return k.toString() === key_str;
+            });
+
+        // Update cache.
         if (index !== -1) {
-            if (obj_cache[key].stale) {
-                // Object is stale, so remove key and object.
+            // Object is in cache, so update it.
+            if (obj_cache[key_str].stale) {
+                // Object is stale: remove key and object.
                 key_ary.splice(index, 1);
-                delete obj_cache[key];
+                delete obj_cache[key_str];
             }
             else {
+                // Move key to back because it is most recently used.
                 this.move_key_to_end(key, index);
             }
         }
-        return obj_cache[key];
+
+        return obj_cache[key_str];
     },
     
+    /**
+     * Put an element into the cache.
+     */
     set_elt: function(key, value) {
         var obj_cache = this.attributes.obj_cache,
             key_ary = this.attributes.key_ary,
+            key_str = key.toString(),
             num_elements = this.attributes.num_elements;
-        if (!obj_cache[key]) {
+
+        // Update keys, objects.
+        if (!obj_cache[key_str]) {
+            // Add object to cache.
+
             if (key_ary.length >= num_elements) {
-                // Remove first element
+                // Cache full, so remove first element.
                 var deleted_key = key_ary.shift();
-                delete obj_cache[deleted_key];
+                delete obj_cache[deleted_key.toString()];
             }
+
+            // Add key.
             key_ary.push(key);
         }
-        obj_cache[key] = value;
+
+        // Add object.
+        obj_cache[key_str] = value;
         return value;
     },
     
@@ -346,20 +372,19 @@ var GenomeDataManager = Cache.extend({
         //
         var key_ary = this.get('key_ary'),
             obj_cache = this.get('obj_cache'),
-            key, entry_region, is_subregion;
+            entry_region, is_subregion;
         for (var i = 0; i < key_ary.length; i++) {
-            key = key_ary[i];
-            entry_region = new GenomeRegion({from_str: key});
-        
+            entry_region = key_ary[i];
+            
             if (entry_region.contains(region)) {
                 is_subregion = true;
 
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
-                entry = obj_cache[key];
+                entry = obj_cache[entry_region.toString()];
                 if ( is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
-                    this.move_key_to_end(key, i);
+                    this.move_key_to_end(entry_region, i);
 
                     // If there's data, subset it.
                     if ( !is_deferred(entry) ) {
@@ -383,7 +408,7 @@ var GenomeDataManager = Cache.extend({
             // below.
 
             // Use heuristic to extend region: extend relative to last data request.
-            var last_request = new GenomeRegion({from_str: this.most_recently_added()});
+            var last_request = this.most_recently_added();
             if (!last_request || (region.get('start') > last_request.get('start'))) {
                 // This request is after the last request, so extend right.
                 region.set('end', region.get('start') + this.attributes.min_region_size);
@@ -586,20 +611,6 @@ var GenomeDataManager = Cache.extend({
             data: subregion_data,
             dataset_type: entry.dataset_type
         };
-    },
-
-    /**
-     * Get data from the cache.
-     */
-    get_elt: function(region) {
-        return Cache.prototype.get_elt.call(this, region.toString());
-    },
-    
-    /**
-     * Sets data in the cache.
-     */
-    set_elt: function(region, result) {
-        return Cache.prototype.set_elt.call(this, region.toString(), result);
     }
 });
 
@@ -671,6 +682,7 @@ var GenomeRegion = Backbone.RelationalModel.extend({
         chrom: null,
         start: 0,
         end: 0,
+        str_val: null,
         genome: null
     },
 
@@ -698,6 +710,9 @@ var GenomeRegion = Backbone.RelationalModel.extend({
                 end: parseInt(start_end[1], 10)
             });
         }
+
+        // Keep a copy of region's string value for fast lookup.
+        this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
     },
     
     copy: function() {
@@ -714,7 +729,7 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     
     /** Returns region in canonical form chrom:start-end */
     toString: function() {
-        return this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
+        return this.attributes.str_val;
     },
     
     toJSON: function() {
