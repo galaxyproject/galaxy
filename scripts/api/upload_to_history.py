@@ -17,7 +17,7 @@ except ImportError, imp_err:
 
 
 # -----------------------------------------------------------------------------
-def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
+def upload_file( base_url, api_key, history_id, filepath, **kwargs ):
     full_url = base_url + '/api/tools'
 
     payload = {
@@ -33,7 +33,7 @@ def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
         'dbkey'         : '?',
         'file_type'     : kwargs.get( 'file_type', 'auto' ),
         'ajax_upload'   : u'true',
-        'async_datasets': '1',
+        #'async_datasets': '1',
     }
     payload[ 'inputs' ] = json.dumps( inputs )
 
@@ -41,7 +41,7 @@ def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
     with open( filepath, 'rb' ) as file_to_upload:
         files = { 'files_0|file_data' : file_to_upload }
         response = requests.post( full_url, data=payload, files=files )
-    return response
+    return response.json()
     
 
 # -----------------------------------------------------------------------------
