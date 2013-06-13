@@ -3267,7 +3267,7 @@ class DataManagerJobAssociation( object ):
 #end of Data Manager Classes
 
 class UserPreference ( object ):
-    def __init__( self, name=None, value=None ):
+    def __init__( self, name=None, value=None):
         self.name = name
         self.value = value
 

@@ -682,6 +682,18 @@ use_interactive = True
 # if running many handlers.
 #cache_user_job_count = False
 
+# ToolBox filtering
+# Modules from lib/galaxy/tools/filters/ can be specified in the following lines.
+# tool_* filters will be applied for all users and can not be changed by them.
+# user_tool_* filters will be shown under user preferences and can be toogled
+# on and off by runtime
+#tool_filters
+#tool_label_filters
+#tool_section_filters
+#user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+#user_tool_section_filters = examples:restrict_text
+#user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+
 # ---- Galaxy Message Queue -------------------------------------------------
 
 # Galaxy uses AMQ protocol to receive messages from external sources like 

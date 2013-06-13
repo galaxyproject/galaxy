@@ -1,4 +1,5 @@
-
+from galaxy.util import listify
+from copy import deepcopy
 
 class FilterFactory( object ):
     """
@@ -15,17 +16,29 @@ class FilterFactory( object ):
         self.default_filters = dict( tool=[ _not_hidden ], section=[], label=[] )
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
-        self.__init_filters( "tool", config.tool_filters )
-        self.__init_filters( "section", config.tool_section_filters )
-        self.__init_filters( "label", config.tool_label_filters )
+        self.__init_filters( "tool", config.tool_filters, self.default_filters )
+        self.__init_filters( "section", config.tool_section_filters, self.default_filters )
+        self.__init_filters( "label", config.tool_label_filters, self.default_filters )
 
     def build_filters( self, trans, **kwds ):
         """
         Build list of filters to check tools against given current context.
         """
-        filters = self.default_filters.copy()
-
-        if not trans.user:
+        filters = deepcopy( self.default_filters )
+        if trans.user:
+            for name, value in trans.user.preferences.items():
+                if value.strip():
+                    user_filters = listify( value, do_strip=True )
+                    category = ''
+                    if name == 'toolbox_tool_filters':
+                        category = "tool"
+                    elif name == 'toolbox_section_filters':
+                        category = "section"
+                    elif name == 'toolbox_label_filters':
+                        category = "label"
+                    if category:
+                        self.__init_filters( category, user_filters, filters )
+        else:
             filters[ "tool" ].append( _requires_login )
 
         if kwds.get( "trackster", False ):
@@ -33,10 +46,11 @@ class FilterFactory( object ):
 
         return filters
 
-    def __init_filters( self, key, filters ):
+    def __init_filters( self, key, filters, toolbox_filters ):
         for filter in filters:
             filter_function = self.__build_filter_function( filter )
-            self.default_filters[ key ].append( filter_function )
+            toolbox_filters[ key ].append( filter_function )
+        return toolbox_filters
 
     def __build_filter_function( self, filter_name ):
         """Obtain python function (importing a submodule if needed)

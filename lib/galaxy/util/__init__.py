@@ -496,7 +496,7 @@ def string_as_bool_or_none( string ):
     else:
         return False
 
-def listify( item ):
+def listify( item, do_strip=False ):
     """
     Make a single item a single item list, or return a list if passed a
     list.  Passing a None returns an empty list.
@@ -506,7 +506,10 @@ def listify( item ):
     elif isinstance( item, list ):
         return item
     elif isinstance( item, basestring ) and item.count( ',' ):
-        return item.split( ',' )
+        if do_strip:
+            return [token.strip() for token in item.split( ',' )]
+        else:
+            return item.split( ',' )
     else:
         return [ item ]
 
@@ -745,6 +748,32 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
                                                                                                           path,
                                                                                                           current_group,
                                                                                                           e ) )
+
+def docstring_trim(docstring):
+    """Trimming python doc strings. Taken from: http://www.python.org/dev/peps/pep-0257/"""
+    if not docstring:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = docstring.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxint
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxint:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a single string:
+    return '\n'.join(trimmed)
 
 def nice_size(size):
     """
