@@ -178,10 +178,9 @@ class ColumnDataProvider( BaseDataProvider ):
                 meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
                 
                 sorted_data = sorted( response[ 'data' ][ index ] )
-                # even data count -
                 middle_index = ( count / 2 ) - 1
                 if count % 2 == 0:
-                    meta[ 'median' ] = sum( sorted_data[ middle_index : ( middle_index + 1 ) ] ) / 2.0
+                    meta[ 'median' ] = ( ( sorted_data[ middle_index ] + sorted_data[( middle_index + 1 )] ) / 2.0 )
                     
                 else:
                     meta[ 'median' ] = sorted_data[ middle_index ]

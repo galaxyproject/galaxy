@@ -1952,6 +1952,56 @@ var DrawableConfig = function( options ) {
 };
 
 extend(DrawableConfig.prototype, {
+    /**
+     * Set default value for parameter.
+     */
+    set_param_default_value: function(key, default_value) {
+        var param = _.find(this.params, function(p) {
+            return p.key === key;
+        });
+
+        if (param) {
+            param.default_value = default_value;
+        }
+    },
+
+    /**
+     * Set a parameter's value. Returns true if value changed, false if value changed.
+     */
+    set_param_value: function(key, value) {
+        // Find param.
+        var param = _.find(this.params, function(p) {
+            return p.key === key;
+        });
+
+        if (param) {
+            // Parse value from string.
+            if (typeof value === "string" || value instanceof String) {
+                // Parse string.
+                if (value.trim() === '') {
+                   // If empty value, use default.
+                    value = param.default_value;
+                } else if ( param.type === 'float' ) {
+                    value = parseFloat( value );
+                } else if ( param.type === 'int' ) {
+                    value = parseInt( value, 10 );
+                }
+            }
+        }
+
+        // Set value and return true if changed, false otherwise.
+        if (this.values[key] !== value) {
+            this.values[key] = value;
+            return true;
+        }
+        else {
+            return false;
+        }
+    },
+
+    /**
+     * Restore config values from a dictionary.
+     */
     restore_values: function( values ) {
         var track_config = this;
         $.each( this.params, function( index, param ) {
@@ -1962,6 +2012,10 @@ extend(DrawableConfig.prototype, {
             }
         }); 
     },
+
+    /**
+     * Build form for modifying parameters.
+     */
     build_form: function() {
         var track_config = this;
         var container = $("<div />");
@@ -2060,26 +2114,22 @@ extend(DrawableConfig.prototype, {
         // Return element containing constructed form
         return container;
     },
+
+    /**
+     * Update configuration from form.
+     */
     update_from_form: function( container ) {
         var track_config = this;
         var changed = false;
         $.each( this.params, function( index, param ) {
             if ( ! param.hidden ) {
-                // Parse value from form element
+                // Get value from form element.
                 var id = 'param_' + index;
                 var value = container.find( '#' + id ).val();
-                if ( param.type === 'float' ) {
-                    value = parseFloat( value );
-                } else if ( param.type === 'int' ) {
-                    value = parseInt( value, 10 );
-                } else if ( param.type === 'bool' ) {
+                if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
                 }
-                // Save value only if changed
-                if ( value !== track_config.values[ param.key ] ) {
-                    track_config.values[ param.key ] = value;
-                    changed = true;
-                }
+                changed = track_config.set_param_value(param.key, value) || changed;
             }
         });
         if ( changed ) {
@@ -2738,7 +2788,9 @@ extend(Track.prototype, Drawable.prototype, {
                 // but only if it would shrink the range on one side
                 min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
                 max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
-                // Update the prefs
+                // Update config, prefs
+                track.config.set_param_default_value('min_value', min_value);
+                track.config.set_param_default_value('max_value', max_value);
                 track.prefs.min_value = min_value;
                 track.prefs.max_value = max_value;
             }
@@ -3069,8 +3121,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".bs-tooltip").remove();
-                    var new_val = round(parseFloat(new_val), 3);
-                    track.prefs[ pref_name ] = (!isNaN(new_val) ? new_val : null);
+                    track.config.set_param_value(pref_name, new_val);
                     on_change();
                 },
                 help_text: "Set " + text + " value"
@@ -3084,23 +3135,25 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        var line_track_tiles = _.filter(tiles, function(tile) {
+            return (tile instanceof LineTrackTile);
+        });
+
         //
         // Take different actions depending on whether there are LineTrack/Coverage tiles.
         //
-        var non_line_track_tiles = _.filter(tiles, function(tile) {
-            return !(tile instanceof LineTrackTile);
-        });
 
-        // If some tiles have line track tiles (which denote coverage data), redraw all tiles using coverage data.
-        if (non_line_track_tiles.length > 0 && non_line_track_tiles.length < tiles.length) {
+        if (line_track_tiles.length > 0) {
             // -- Drawing in Coverage mode. --
 
             // Clear because this is set when drawing.
             this.max_height_px = 0;
             var track = this;
-            _.each(non_line_track_tiles, function(tile) {
-                tile.html_elt.remove();
-                track.draw_helper(tile.region, tile.resolution, w_scale, { force: true, mode: 'Coverage' });
+            _.each(tiles, function(tile) {
+                if (!(tile instanceof LineTrackTile)) {
+                    tile.html_elt.remove();
+                    track.draw_helper(tile.region, tile.resolution, w_scale, { force: true, mode: 'Coverage' });
+                }
             });
 
             track._add_yaxis_label('max');

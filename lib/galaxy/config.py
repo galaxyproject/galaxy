@@ -73,17 +73,21 @@ class Configuration( object ):
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         try:
-            self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
-            if isinstance( self.hours_between_check, float ):
+            hbc_test = int( self.hours_between_check )
+            self.hours_between_check = hbc_test
+            if self.hours_between_check < 1 or self.hours_between_check > 24:
+                self.hours_between_check = 12
+        except:
+            try:
                 # Float values are supported for functional tests.
+                hbc_test = float( self.hours_between_check )
+                self.hours_between_check = hbc_test
                 if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
                     self.hours_between_check = 12.0
-            else:
-                if self.hours_between_check < 1 or self.hours_between_check > 24:
-                    self.hours_between_check = 12
-        except:
-            self.hours_between_check = 12
+            except:
+                self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
         self.data_manager_config_file = resolve_path( kwargs.get('data_manager_config_file', 'data_manager_conf.xml' ), self.root )
