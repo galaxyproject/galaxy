@@ -64,6 +64,9 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml'
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
