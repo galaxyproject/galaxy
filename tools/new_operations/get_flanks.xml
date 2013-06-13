@@ -50,11 +50,11 @@ This tool finds the upstream and/or downstream flanking region(s) of all the sel
 
 **Example 1**
 
-- For the following query::
+- For the following dataset::
 
    chr22  1000  7000  NM_174568 0 +
 
-- running get flanks with Region: Around start, Offset: -200, Flank-length: 300 and Location: Upstream will return **(Red: Query positive strand; Blue: Flanks output)**::
+- running get flanks with Region: Around start, Offset: -200, Flank-length: 300 and Location: Upstream will return **(Red: Dataset positive strand; Blue: Flanks output)**::
 
    chr22  500  800  NM_174568 0 +
 
@@ -62,11 +62,11 @@ This tool finds the upstream and/or downstream flanking region(s) of all the sel
 
 **Example 2**
 
-- For the following query::
+- For the following dataset::
 
    chr22  1000  7000  NM_028946 0 -
 
-- running get flanks with Region: Whole, Offset: 200, Flank-length: 300 and Location: Downstream will return **(Orange: Query negative strand; Magenta: Flanks output)**::
+- running get flanks with Region: Whole, Offset: 200, Flank-length: 300 and Location: Downstream will return **(Orange: Dataset negative strand; Magenta: Flanks output)**::
 
    chr22  500  800  NM_028946 0 -
 

@@ -19,6 +19,8 @@ sys.path = new_path
 from galaxy import eggs
 
 import pkg_resources
+pkg_resources.require( "decorator" )
+pkg_resources.require( "Tempita" )
 pkg_resources.require( "sqlalchemy-migrate" )
 pkg_resources.require( "SQLAlchemy" )
 
@@ -26,12 +28,12 @@ from ConfigParser import SafeConfigParser
 
 log = logging.getLogger( __name__ )
 
-if sys.argv[-1] in [ 'community' ]:
+if sys.argv[-1] in [ 'tool_shed' ]:
     # Need to pop the last arg so the command line args will be correct
     # for sqlalchemy-migrate 
     webapp = sys.argv.pop()
-    config_file = 'community_wsgi.ini'
-    repo = 'lib/galaxy/webapps/community/model/migrate'
+    config_file = 'tool_shed_wsgi.ini'
+    repo = 'lib/galaxy/webapps/tool_shed/model/migrate'
 else:
     # Poor man's optparse
     config_file = 'universe_wsgi.ini'

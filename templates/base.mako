@@ -1,6 +1,7 @@
 <% _=n_ %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
+    <!--base.mako-->
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -23,29 +24,67 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-  ## <!--[if lt IE 7]>
-  ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
-  ## <![endif]-->
-  
-  ${h.js(
-    "libs/jquery/jquery",
-    "libs/json2",
-    "libs/bootstrap",
-    "galaxy.base",
-    "libs/underscore",
-    "libs/backbone/backbone",
-    "libs/backbone/backbone-relational",
-    "libs/handlebars.runtime",
-    "mvc/ui"
-  )}
-  
-  <script type="text/javascript">
-      // Set up needed paths.
-      var galaxy_paths = new GalaxyPaths({
-          root_path: '${h.url_for( "/" )}',
-          image_path: '${h.url_for( "/static/images" )}'
-      });
-  </script>
+    
+    ## Send errors to Sntry server if configured
+    %if app.config.sentry_dsn:
+        ${h.js( "libs/tracekit", "libs/raven" )}
+        <script>
+            Raven.config('${app.config.sentry_dsn_public}').install();
+            %if trans.user:
+                Raven.setUser( { email: "${trans.user.email}" } );
+            %endif
+        </script>
+    %endif
+
+    ${h.js(
+        "libs/jquery/jquery",
+        "libs/jquery/select2",
+        "libs/json2",
+        "libs/bootstrap",
+        "libs/underscore",
+        "libs/backbone/backbone",
+        "libs/backbone/backbone-relational",
+        "libs/handlebars.runtime",
+        "galaxy.base"
+    )}
+
+    ${h.templates(
+        "template-popupmenu-menu"
+    )}
+
+    ${h.js(
+        "mvc/ui"
+    )}
+
+    <script type="text/javascript">
+        // console protection
+        window.console = window.console || {
+            log     : function(){},
+            debug   : function(){},
+            info    : function(){},
+            warn    : function(){},
+            error   : function(){},
+            assert  : function(){}
+        };
+
+        // Set up needed paths.
+        var galaxy_paths = new GalaxyPaths({
+            root_path: '${h.url_for( "/" )}',
+            image_path: '${h.url_for( "/static/images" )}'
+        });
+    </script>
+
+    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
+        <script type="text/javascript">
+            $(document).ready( function() {
+                // Auto Focus on first item on form
+                if ( $("*:focus").html() == null ) {
+                    $(":input:not([type=hidden]):visible:enabled:first").focus();
+                }
+            });
+        </script>
+    %endif
+
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

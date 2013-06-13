@@ -1,28 +1,18 @@
 """
 API operations on the contents of a history.
 """
-import logging
-import urllib
-from gettext import gettext
 
-from galaxy import web
+from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
 
-from galaxy.web.framework.helpers import to_unicode
-from galaxy.datatypes.display_applications import util
-from galaxy.datatypes.metadata import FileParameter
-
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
-
+import logging
 log = logging.getLogger( __name__ )
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems ):
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents
@@ -45,7 +35,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         try:
             # get the history, if anon user and requesting current history - allow it
             if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+                and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
                 #TODO:?? is secure?
                 history = trans.history
 
@@ -53,28 +43,39 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
 
-            # build the return hda data list
+            # if ids, return _FULL_ data (as show) for each id passed
             if ids:
-                # if ids, return _FULL_ data (as show) for each id passed
-                #NOTE: this might not be the best form (passing all info),
-                #   but we(I?) need an hda collection with full data somewhere
                 ids = ids.split( ',' )
-                for hda in history.datasets:
-                    if trans.security.encode_id( hda.id ) in ids:
-                        rval.append( get_hda_dict( trans, history, hda, for_editing=True ) )
+                for index, hda in enumerate( history.datasets ):
+                    encoded_hda_id = trans.security.encode_id( hda.id )
+                    if encoded_hda_id in ids:
+                        #TODO: share code with show
+                        try:
+                            hda_dict = self.get_hda_dict( trans, hda )
+                            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+                            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+                            rval.append( hda_dict )
 
+                        except Exception, exc:
+                            # don't fail entire list if hda err's, record and move on
+                            log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                                history_id, encoded_hda_id, type( exc ), str( exc ), exc_info=True )
+                            rval.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+
+            # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
-                # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
                 for hda in history.datasets:
                     rval.append( self._summary_hda_dict( trans, history_id, hda ) )
 
         except Exception, e:
-            rval = "Error in history API at listing contents"
-            log.error( rval + ": %s, %s" % ( type( e ), str( e ) ) )
+            # for errors that are not specific to one hda (history lookup or summary list)
+            rval = "Error in history API at listing contents: " + str( e )
+            log.error( rval + ": %s, %s" % ( type( e ), str( e ) ), exc_info=True )
             trans.response.status = 500
 
         return rval
 
+    #TODO: move to model or Mixin
     def _summary_hda_dict( self, trans, history_id, hda ):
         """
         Returns a dictionary based on the HDA in .. _summary form::
@@ -94,13 +95,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'url'   : url_for( 'history_content', history_id=history_id, id=encoded_id, ),
         }
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
         Displays information about a history content (dataset).
-
-        
         """
         hda_dict = {}
         try:
@@ -115,12 +114,15 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     check_ownership=False, check_accessible=True )
 
             else:
+                #TODO: do we really need the history?
                 history = self.get_history( trans, history_id,
                     check_ownership=True, check_accessible=True, deleted=False )
                 hda = self.get_history_dataset_association( trans, history, id,
                     check_ownership=True, check_accessible=True )
 
-            hda_dict = get_hda_dict( trans, history, hda, for_editing=True )
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
 
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
@@ -136,93 +138,119 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         POST /api/histories/{encoded_history_id}/contents
         Creates a new history content item (file, aka HistoryDatasetAssociation).
         """
+        #TODO: copy existing, accessible hda - dataset controller, copy_datasets
+        #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
         from_ld_id = payload.get( 'from_ld_id', None )
-
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
+            #TODO: no way to tell if it failed bc of perms or other (all MessageExceptions)
+            trans.response.status = 500
             return str( e )
 
         if from_ld_id:
             try:
                 ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
-                assert type( ld ) is trans.app.model.LibraryDataset, "Library content id ( %s ) is not a dataset" % from_ld_id
+                assert type( ld ) is trans.app.model.LibraryDataset, (
+                    "Library content id ( %s ) is not a dataset" % from_ld_id )
+
             except AssertionError, e:
                 trans.response.status = 400
                 return str( e )
+
             except Exception, e:
                 return str( e )
+
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.get_api_value()
+
         else:
             # TODO: implement other "upload" methods here.
-            trans.response.status = 403
+            trans.response.status = 501
             return "Not implemented."
 
+    @web.expose_api
+    def update( self, trans, history_id, id, payload, **kwd ):
+        """
+        PUT /api/histories/{encoded_history_id}/contents/{encoded_content_id}
+        Changes an existing history dataset.
+        """
+        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        changed = {}
+        try:
+            hda = self.get_dataset( trans, id,
+                check_ownership=True, check_accessible=True, check_state=True )
+            # validation handled here and some parsing, processing, and conversion
+            payload = self._validate_and_parse_update_payload( payload )
+            # additional checks here (security, etc.)
+            changed = self.set_hda_from_dict( trans, hda, payload )
 
-#TODO: move these into model
-def get_hda_dict( trans, history, hda, for_editing ):
-    hda_dict = hda.get_api_value( view='element' )
+        except Exception, exception:
+            log.error( 'Update of history (%s), HDA (%s) failed: %s',
+                        history_id, id, str( exception ), exc_info=True )
+            # convert to appropo HTTP code
+            if( isinstance( exception, ValueError )
+            or  isinstance( exception, AttributeError ) ):
+                # bad syntax from the validater/parser
+                trans.response.status = 400
+            else:
+                trans.response.status = 500
+            return { 'error': str( exception ) }
 
-    hda_dict[ 'id' ] = trans.security.encode_id( hda.id )
-    hda_dict[ 'history_id' ] = trans.security.encode_id( history.id )
-    hda_dict[ 'hid' ] = hda.hid
+        return changed
 
-    hda_dict[ 'file_ext' ] = hda.ext
-    if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-        hda_dict[ 'file_name' ] = hda.file_name
+    def _validate_and_parse_update_payload( self, payload ):
+        """
+        Validate and parse incomming data payload for an HDA.
+        """
+        # This layer handles (most of the stricter idiot proofing):
+        #   - unknown/unallowed keys
+        #   - changing data keys from api key to attribute name
+        #   - protection against bad data form/type
+        #   - protection against malicious data content
+        # all other conversions and processing (such as permissions, etc.) should happen down the line
 
-    if not hda_dict[ 'deleted' ]:
-        # Problem: Method url_for cannot use the dataset controller
-        # Get the environment from DefaultWebTransaction
-        #   and use default webapp mapper instead of webapp API mapper
-        web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-        # http://routes.groovie.org/generating.html
-        # url_for is being phased out, so new applications should use url
-        hda_dict[ 'download_url' ] = web_url_for( controller='dataset', action='display',
-            dataset_id=trans.security.encode_id( hda.id ), to_ext=hda.ext )
+        # keys listed here don't error when attempting to set, but fail silently
+        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
+        valid_but_uneditable_keys = (
+            'id', 'name', 'type', 'api_type', 'model_class', 'history_id', 'hid',
+            'accessible', 'purged', 'state', 'data_type', 'file_ext', 'file_size', 'misc_blurb',
+            'download_url', 'visualizations', 'display_apps', 'display_types',
+            'metadata_dbkey', 'metadata_column_names', 'metadata_column_types', 'metadata_columns',
+            'metadata_comment_lines', 'metadata_data_lines'
+        )
 
-    can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-    hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
-    hda_dict[ 'api_type' ] = "file"
+        validated_payload = {}
+        for key, val in payload.items():
+            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
+            # typecheck, parse, remap key
+            if   key == 'name':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
+            elif key == 'deleted':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'deleted' ] = val
+            elif key == 'visible':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'visible must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'visible' ] = val
+            elif key == 'genome_build':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'annotation':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'misc_info':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key not in valid_but_uneditable_keys:
+                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+        return validated_payload
 
-    if not( hda.purged or hda.deleted or hda.dataset.purged ):
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-
-    hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
-    hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
-
-    return hda_dict
-
-def get_display_apps( trans, hda ):
-    #TODO: make more straightforward (somehow)
-    display_apps = []
-
-    def get_display_app_url( display_app_link, hda, trans ):
-        web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-        dataset_hash, user_hash = util.encode_dataset_user( trans, hda, None )
-        return web_url_for( controller='/dataset',
-                        action="display_application",
-                        dataset_id=dataset_hash,
-                        user_id=user_hash,
-                        app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                        link_name=urllib.quote_plus( display_app_link.id ) )
-
-    for display_app in hda.get_display_applications( trans ).itervalues():
-        app_links = []
-        for display_app_link in display_app.links.itervalues():
-            app_links.append({
-                'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                'href' : get_display_app_url( display_app_link, hda, trans ),
-                'text' : gettext( display_app_link.name )
-            })
-        display_apps.append( dict( label=display_app.name, links=app_links ) )
-
-    return display_apps

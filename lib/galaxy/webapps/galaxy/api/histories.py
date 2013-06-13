@@ -1,32 +1,29 @@
 """
 API operations on a history.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
+
+from galaxy import web
+from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
-import galaxy.datatypes
-from galaxy.util.bunch import Bunch
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
+from galaxy.web import url_for
+from galaxy.model.orm import desc
 
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
-
+import logging
 log = logging.getLogger( __name__ )
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/histories
         GET /api/histories/deleted
         Displays a collection (list) of histories.
         """
+        #TODO: query (by name, date, etc.)
         rval = []
-        deleted = util.string_as_bool( deleted )
+        deleted = string_as_bool( deleted )
         try:
             if trans.user:
                 query = trans.sa_session.query(trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
@@ -49,7 +46,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             trans.response.status = 500
         return rval
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/histories/{encoded_history_id}
@@ -57,33 +54,10 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         GET /api/histories/most_recently_used
         Displays information about a history.
         """
+        #TODO: GET /api/histories/{encoded_history_id}?as_archive=True
+        #TODO: GET /api/histories/s/{username}/{slug}
         history_id = id
-        params = util.Params( kwd )
-        deleted = util.string_as_bool( deleted )
-
-        states = trans.app.model.Dataset.states
-
-        def get_dataset_state_summaries( datasets ):
-            # cycles through the history's datasets, building counts and id lists for each possible ds state
-            state_counts = {}
-            state_ids = {}
-
-            # init counts, ids for each state
-            for key, state in states.items():
-                state_counts[state] = 0
-                state_ids[state] = []
-
-            # cycle through datasets saving each ds' state
-            for dataset in datasets:
-                dataset_dict = dataset.get_api_value( view='element' )
-                item_state = dataset_dict[ 'state' ]
-
-                if not dataset_dict['deleted']:
-                    state_counts[ item_state ] = state_counts[ item_state ] + 1
-
-                state_ids[ item_state ].append( trans.security.encode_id( dataset_dict[ 'id' ] ) )
-
-            return ( state_counts, state_ids )
+        deleted = string_as_bool( deleted )
 
         # try to load the history, by most_recently_used or the given id
         try:
@@ -91,48 +65,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 if trans.user and len( trans.user.galaxy_sessions ) > 0:
                     # Most recent active history for user sessions, not deleted
                     history = trans.user.galaxy_sessions[0].histories[-1].history
+                    history_id = trans.security.encode_id( history.id )
                 else:
                     return None
             else:
                 history = self.get_history( trans, history_id, check_ownership=False,
                                             check_accessible=True, deleted=deleted )
 
-            history_data = history.get_api_value( view='element', value_mapper={'id':trans.security.encode_id} )
-            history_data[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-
-            #TODO: separate, move to annotation api, fill on the client
-            history_data[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
-            if not history_data[ 'annotation' ]:
-                history_data[ 'annotation' ] = ''
-
-            # get the history state using the state summaries of it's datasets (default to ERROR)
-            num_sets = len([ hda.id for hda in history.datasets if not hda.deleted ])
-            state = states.ERROR
-
-            ( state_counts, state_ids ) = get_dataset_state_summaries( history.datasets )
-
-            if num_sets == 0:
-                state = states.NEW
-
-            else:
-                if( ( state_counts[ states.RUNNING ] > 0 )
-                or    ( state_counts[ states.SETTING_METADATA ] > 0 )
-                or    ( state_counts[ states.UPLOAD ] > 0 ) ):
-                    state = states.RUNNING
-
-                elif state_counts[ states.QUEUED ] > 0:
-                    state = states.QUEUED
-
-                elif( ( state_counts[ states.ERROR ] > 0 )
-                or  ( state_counts[ states.FAILED_METADATA ] > 0 ) ):
-                    state = states.ERROR
-
-                elif state_counts[ states.OK ] == num_sets:
-                    state = states.OK
-
-            history_data[ 'state' ] = state
-            history_data[ 'state_details' ] = state_counts
-            history_data[ 'state_ids' ] = state_ids
+            history_data = self.get_history_dict( trans, history )
             history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
 
         except Exception, e:
@@ -149,16 +89,19 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         POST /api/histories
         Creates a new history.
         """
-        params = util.Params( payload )
         hist_name = None
         if payload.get( 'name', None ):
-            hist_name = util.restore_text( payload['name'] )
+            hist_name = restore_text( payload['name'] )
         new_history = trans.app.model.History( user=trans.user, name=hist_name )
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
         item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for( 'history', id=item['id'] )
+
+        #TODO: copy own history
+        #TODO: import an importable history
+        #TODO: import from archive
         return item
 
     @web.expose_api
@@ -171,7 +114,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         # a request body is optional here
         purge = False
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
@@ -213,3 +156,77 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         trans.sa_session.add( history )
         trans.sa_session.flush()
         return 'OK'
+
+    @web.expose_api
+    def update( self, trans, id, payload, **kwd ):
+        """
+        PUT /api/histories/{encoded_history_id}
+        Changes an existing history.
+        """
+        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        try:
+            history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=True )
+            # validation handled here and some parsing, processing, and conversion
+            payload = self._validate_and_parse_update_payload( payload )
+            # additional checks here (security, etc.)
+            changed = self.set_history_from_dict( trans, history, payload )
+
+        except Exception, exception:
+            log.error( 'Update of history (%s) failed: %s', id, str( exception ), exc_info=True )
+            # convert to appropo HTTP code
+            if( isinstance( exception, ValueError )
+            or  isinstance( exception, AttributeError ) ):
+                # bad syntax from the validater/parser
+                trans.response.status = 400
+            else:
+                trans.response.status = 500
+            return { 'error': str( exception ) }
+
+        return changed
+
+    def _validate_and_parse_update_payload( self, payload ):
+        """
+        Validate and parse incomming data payload for a history.
+        """
+        # This layer handles (most of the stricter idiot proofing):
+        #   - unknown/unallowed keys
+        #   - changing data keys from api key to attribute name
+        #   - protection against bad data form/type
+        #   - protection against malicious data content
+        # all other conversions and processing (such as permissions, etc.) should happen down the line
+
+        # keys listed here don't error when attempting to set, but fail silently
+        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
+        valid_but_uneditable_keys = (
+            'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
+            'state', 'state_details', 'state_ids'
+        )
+
+        validated_payload = {}
+        for key, val in payload.items():
+            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
+            if   key == 'name':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'name' ] = sanitize_html( val, 'utf-8' )
+                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
+            elif key == 'deleted':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'deleted' ] = val
+            elif key == 'published':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'published' ] = val
+            elif key == 'genome_build':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )
+            elif key == 'annotation':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
+            elif key not in valid_but_uneditable_keys:
+                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+        return validated_payload
+

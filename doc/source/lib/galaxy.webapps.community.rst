@@ -42,4 +42,5 @@ Subpackages
     galaxy.webapps.community.framework
     galaxy.webapps.community.model
     galaxy.webapps.community.security
+    galaxy.webapps.community.util
 

@@ -33,6 +33,7 @@ log = logging.getLogger(__name__)
 # we need to ensure that the implementation is such that image files cannot be uploaded
 # to our main public instance.
 
+
 class Image( data.Data ):
     """Class describing an image"""
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -56,94 +57,147 @@ class Image( data.Data ):
                 return True
             else:
                 return False
-    
+
+
 class Jpg( Image ):
+    file_ext = "jpeg"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in jpg format."""
         return check_image_type( filename, ['JPEG'], image )
 
+
 class Png( Image ):
+    file_ext = "png"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in png format."""
         return check_image_type( filename, ['PNG'], image )
-    
+
+
 class Tiff( Image ):
+    file_ext = "tiff"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in tiff format."""
         return check_image_type( filename, ['TIFF'], image )
-    
+
+
 class Bmp( Image ):
+    file_ext = "bmp"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in bmp format."""
         return check_image_type( filename, ['BMP'], image )
 
+
 class Gif( Image ):
+    file_ext = "gif"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in gif format."""
         return check_image_type( filename, ['GIF'], image )
 
+
 class Im( Image ):
+    file_ext = "im"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in im format."""
         return check_image_type( filename, ['IM'], image )
 
+
 class Pcd( Image ):
+    file_ext = "pcd"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in pcd format."""
         return check_image_type( filename, ['PCD'], image )        
 
+
 class Pcx( Image ):
+    file_ext = "pcx"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in pcx format."""
         return check_image_type( filename, ['PCX'], image )
 
+
 class Ppm( Image ):
+    file_ext = "ppm"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in ppm format."""
         return check_image_type( filename, ['PPM'], image )        
 
+
 class Psd( Image ):
+    file_ext = "psd"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in psd format."""
         return check_image_type( filename, ['PSD'], image )        
 
+
 class Xbm( Image ):
+    file_ext = "xbm"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in XBM format."""
         return check_image_type( filename, ['XBM'], image )        
 
+
 class Xpm( Image ):
+    file_ext = "xpm"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in XPM format."""
         return check_image_type( filename, ['XPM'], image )        
 
+
 class Rgb( Image ):
+    file_ext = "rgb"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in RGB format."""
         return check_image_type( filename, ['RGB'], image )
 
+
 class Pbm( Image ):
+    file_ext = "pbm"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in PBM format"""
         return check_image_type( filename, ['PBM'], image )
 
+
 class Pgm( Image ):
+    file_ext = "pgm"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in PGM format"""
         return check_image_type( filename, ['PGM'], image )
 
+
 class Eps( Image ):
+    file_ext = "eps"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in eps format."""
         return check_image_type( filename, ['EPS'], image )        
 
 
 class Rast( Image ):
+    file_ext = "rast"
+
     def sniff(self, filename, image=None):
         """Determine if the file is in rast format"""
         return check_image_type( filename, ['RAST'], image )
 
+
 class Pdf( Image ):
+    file_ext = "pdf"
+
     def sniff(self, filename):
         """Determine if the file is in pdf format."""
         headers = get_headers(filename, None, 1)

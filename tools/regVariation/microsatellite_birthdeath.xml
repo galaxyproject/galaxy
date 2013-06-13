@@ -1,4 +1,4 @@
-<tool id="microsatellite_birthdeath" name="Identify microsatellite births and deaths" version="1.0.2">
+<tool id="microsatellite_birthdeath" name="Identify microsatellite births and deaths" version="1.0.0">
   <description> and causal mutational mechanisms from previously identified orthologous microsatellite sets</description>
   <command interpreter="perl">
       microsatellite_birthdeath.pl 

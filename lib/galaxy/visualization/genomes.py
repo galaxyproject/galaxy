@@ -1,8 +1,10 @@
-import os, re, sys, glob
+import os, re, sys, glob, logging
 from bx.seq.twobit import TwoBitFile
 from galaxy.util.json import from_json_string
-from galaxy import model
+from galaxy import model, util
 from galaxy.util.bunch import Bunch
+
+log = logging.getLogger( __name__ )
 
 # FIXME: copied from tracks.py
 # Message strings returned to browser
@@ -29,27 +31,45 @@ class GenomeRegion( object ):
     A genomic region on an individual chromosome.
     """
     
-    def __init__( self, chrom=None, start=None, end=None ):
+    def __init__( self, chrom = None, start = 0, end = 0 ):
         self.chrom = chrom
         self.start = int( start )
         self.end = int( end )
         
     def __str__( self ):
         return self.chrom + ":" + str( self.start ) + "-" + str( self.end )
-        
+
     @staticmethod
     def from_dict( obj_dict ):
-        return GenomeRegion( chrom=obj_dict[ 'chrom' ],
-                             start=obj_dict[ 'start' ],
-                             end=obj_dict[ 'end' ] )
+        return GenomeRegion( chrom = obj_dict[ 'chrom' ],
+                             start = obj_dict[ 'start' ],
+                             end   = obj_dict[ 'end' ] )
         
-        
+    @staticmethod
+    def from_str( obj_str ):
+        # check for gene region
+        gene_region = obj_str.split(':')
+                
+        # split gene region into components
+        if (len(gene_region) == 2):
+            gene_interval = gene_region[1].split('-')
+            
+            # check length
+            if (len(gene_interval) == 2):
+                return GenomeRegion(chrom = gene_region[0],
+                                    start = gene_interval[0],
+                                    end   = gene_interval[1])
+ 
+        # return genome region instance
+        return GenomeRegion()
+
 class Genome( object ):
     """
     Encapsulates information about a known genome/dbkey.
     """
-    def __init__( self, key, len_file=None, twobit_file=None ):
+    def __init__( self, key, description, len_file=None, twobit_file=None ):
         self.key = key
+        self.description = description
         self.len_file = len_file
         self.twobit_file = twobit_file
         
@@ -158,21 +178,30 @@ class Genomes( object ):
     """
     
     def __init__( self, app ):
-        # Create list of known genomes from len files.
+        # Create list of genomes from util.dbnames
         self.genomes = {}
+        for key, description in util.dbnames:
+            self.genomes[ key ] = Genome( key, description )
+
+        # Add len files to genomes.
         len_files = glob.glob( os.path.join( app.config.len_file_path, "*.len" ) )
         for f in len_files:
             key = os.path.split( f )[1].split( ".len" )[0]
-            self.genomes[ key ] = Genome( key, len_file=f )
+            if key in self.genomes:
+                self.genomes[ key ].len_file = f
                 
         # Add genome data (twobit files) to genomes.
-        for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
-            if line.startswith("#"): continue
-            val = line.split()
-            if len( val ) == 2:
-                key, path = val
-                if key in self.genomes:
-                    self.genomes[ key ].twobit_file = path
+        try:
+            for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
+                if line.startswith("#"): continue
+                val = line.split()
+                if len( val ) == 2:
+                    key, path = val
+                    if key in self.genomes:
+                        self.genomes[ key ].twobit_file = path
+        except IOError, e:
+            # Thrown if twobit.loc does not exist.
+            log.exception( str( e ) )
                     
     def get_build( self, dbkey ):
         """ Returns build for the given key. """
@@ -181,17 +210,29 @@ class Genomes( object ):
             rval = self.genomes[ dbkey ]
         return rval
                     
-    def get_dbkeys_with_chrom_info( self, trans ):
-        """ Returns all valid dbkeys that have chromosome information. """
+    def get_dbkeys( self, trans, chrom_info=False ):
+        """ Returns all known dbkeys. If chrom_info is True, only dbkeys with 
+            chromosome lengths are returned. """
+        dbkeys = []
 
-        # All user keys have a len file.
-        user_keys = {}
+        # Add user's custom keys to dbkeys.
+        user_keys_dict = {}
         user = trans.get_user()
         if 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
+            user_keys_dict = from_json_string( user.preferences[ 'dbkeys' ] )
+        dbkeys.extend( [ (attributes[ 'name' ], key ) for key, attributes in user_keys_dict.items() ] )
 
-        dbkeys = [ (v, k) for k, v in trans.db_builds if ( ( k in self.genomes and self.genomes[ k ].len_file ) or k in user_keys ) ]
+        # Add app keys to dbkeys.
+
+        # If chrom_info is True, only include keys with len files (which contain chromosome info).
+        filter_fn = lambda b: True
+        if chrom_info:
+            filter_fn = lambda b: b.len_file is not None
+
+        dbkeys.extend( [ ( genome.description, genome.key ) for key, genome in self.genomes.items() if filter_fn( genome ) ] )
+        
         return dbkeys
+        
                     
     def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
@@ -217,30 +258,45 @@ class Genomes( object ):
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[ dbkey ]
+                dbkey_name = dbkey_attributes[ 'name' ]
+
+                # If there's a fasta for genome, convert to 2bit for later use.
                 if 'fasta' in dbkey_attributes:
                     build_fasta = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
                     len_file = build_fasta.get_converted_dataset( trans, 'len' ).file_name
-                    converted_dataset = build_fasta.get_converted_dataset( trans, 'twobit' )
-                    if converted_dataset:
-                        twobit_file = converted_dataset.file_name
+                    build_fasta.get_converted_dataset( trans, 'twobit' )
+                    # HACK: set twobit_file to True rather than a file name because 
+                    # get_converted_dataset returns null during conversion even though
+                    # there will eventually be a twobit file available for genome.
+                    twobit_file = True
                 # Backwards compatibility: look for len file directly.
                 elif 'len' in dbkey_attributes:
                     len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[ dbkey ][ 'len' ] ).file_name
                 if len_file:
-                    genome = Genome( dbkey, len_file=len_file, twobit_file=twobit_file )
+                    genome = Genome( dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file )
                     
         
-        # Look in system builds.
+        # Look in history and system builds.
         if not genome:
+            # Look in history for chromosome len file.
             len_ds = trans.db_dataset_for( dbkey )
-            if not len_ds:
+            if len_ds:
+                genome = Genome( dbkey, dbkey_name, len_file=len_ds.file_name )
+            # Look in system builds.
+            elif dbkey in self.genomes:
                 genome = self.genomes[ dbkey ]
-            else:
-                genome = Genome( dbkey, len_file=len_ds.file_name )
+
+        # Set up return value or log exception if genome not found for key.
+        rval = None
+        if genome:
+            rval = genome.to_dict( num=num, chrom=chrom, low=low )
+        else:
+            log.exception( 'genome not found for key %s' % dbkey )
             
-        return genome.to_dict( num=num, chrom=chrom, low=low )
+        return rval
+
         
-    def has_reference_data( self, trans, dbkey, dbkey_owner=None ):
+    def has_reference_data( self, dbkey, dbkey_owner=None ):
         """ 
         Returns true if there is reference data for the specified dbkey. If dbkey is custom, 
         dbkey_owner is needed to determine if there is reference data.
@@ -261,7 +317,7 @@ class Genomes( object ):
 
         return False
         
-    def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
+    def reference( self, trans, dbkey, chrom, low, high ):
         """
         Return reference data for a build.
         """
@@ -273,7 +329,7 @@ class Genomes( object ):
         else:
             dbkey_user = trans.user
 
-        if not self.has_reference_data( trans, dbkey, dbkey_user ):
+        if not self.has_reference_data( dbkey, dbkey_user ):
             return None
 
         #    
@@ -286,10 +342,10 @@ class Genomes( object ):
         else:
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
-            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
-            error = self._convert_dataset( trans, fasta_dataset, 'twobit' )
-            if error:
-                return error
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
+            msg = fasta_dataset.convert_dataset( trans, 'twobit' )
+            if msg:
+                return msg
             else:
                 twobit_dataset = fasta_dataset.get_converted_dataset( trans, 'twobit' )
                 twobit_file_name = twobit_dataset.file_name
@@ -302,31 +358,3 @@ class Genomes( object ):
                 return { 'dataset_type': 'refseq', 'data': seq_data }
         except IOError:
             return None
-
-    ## FIXME: copied from tracks.py (tracks controller) - this should be consolidated when possible.
-    def _convert_dataset( self, trans, dataset, target_type ):
-        """
-        Converts a dataset to the target_type and returns a message indicating 
-        status of the conversion. None is returned to indicate that dataset
-        was converted successfully. 
-        """
-
-        # Get converted dataset; this will start the conversion if necessary.
-        try:
-            converted_dataset = dataset.get_converted_dataset( trans, target_type )
-        except NoConverterException:
-            return messages.NO_CONVERTER
-        except ConverterDependencyException, dep_error:
-            return { 'kind': messages.ERROR, 'message': dep_error.value }
-
-        # Check dataset state and return any messages.
-        msg = None
-        if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
-                        .filter_by( dataset_id=converted_dataset.id ).first().job_id
-            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-            msg = { 'kind': messages.ERROR, 'message': job.stderr }
-        elif not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
-            msg = messages.PENDING
-
-        return msg

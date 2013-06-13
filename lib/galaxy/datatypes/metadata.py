@@ -1,21 +1,32 @@
-import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
+"""
+Galaxy Metadata
+
+"""
+from galaxy import eggs
+eggs.require("simplejson")
+
+
+import copy
+import cPickle
+import logging
+import os
+import shutil
+import simplejson
+import sys
+import tempfile
+import weakref
+
 from os.path import abspath
 
-from galaxy.util import string_as_bool, stringify_dictionary_keys, listify
+import galaxy.model
+from galaxy.util import listify, stringify_dictionary_keys, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
-import galaxy.model
 from sqlalchemy.orm import object_session
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
-
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
-
-DATABASE_CONNECTION_AVAILABLE = True #When False, certain metadata parameter types (see FileParameter) will behave differently
 
 class Statement( object ):
     """
@@ -74,8 +85,8 @@ class MetadataCollection( object ):
     def __getattr__( self, name ):
         if name in self.spec:
             if name in self.parent._metadata:
-                return self.spec[name].wrap( self.parent._metadata[name] )
-            return self.spec[name].wrap( self.spec[name].default )
+                return self.spec[name].wrap( self.parent._metadata[name], object_session( self.parent ) )
+            return self.spec[name].wrap( self.spec[name].default, object_session( self.parent ) )
         if name in self.parent._metadata:
             return self.parent._metadata[name]
     def __setattr__( self, name, value ):
@@ -123,6 +134,7 @@ class MetadataCollection( object ):
     def __getstate__( self ):
         return None #cannot pickle a weakref item (self._parent), when data._metadata_collection is None, it will be recreated on demand
 
+
 class MetadataSpecCollection( odict ):
     """
     A simple extension of dict which allows cleaner access to items
@@ -132,12 +144,20 @@ class MetadataSpecCollection( odict ):
     """
     def __init__( self, dict = None ):
         odict.__init__( self, dict = None )
+
     def append( self, item ):
         self[item.name] = item
+
     def iter( self ):
         return self.itervalues()
+
     def __getattr__( self, name ):
         return self.get( name )
+
+    def __repr__( self ):
+        # force elements to draw with __str__ for sphinx-apidoc
+        return ', '.join([ item.__str__() for item in self.iter() ])
+
 
 class MetadataParameter( object ):
     def __init__( self, spec ):
@@ -185,7 +205,6 @@ class MetadataParameter( object ):
         """
         pass
 
-
     def unwrap( self, form_value ):
         """
         Turns a value into its storable form.
@@ -194,7 +213,7 @@ class MetadataParameter( object ):
         self.validate( value )
         return value
     
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         """
         Turns a value into its usable form.
         """
@@ -205,19 +224,22 @@ class MetadataParameter( object ):
         Turns a value read from an external dict into its value to be pushed directly into the metadata dict.
         """
         return value
+
     def to_external_value( self, value ):
         """
         Turns a value read from a metadata into its value to be pushed directly into the external dict.
         """
         return value
 
+
 class MetadataElementSpec( object ):
     """
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
     """
-
-    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, no_value = None, visible=True, set_in_upload = False, **kwargs ):
+    def __init__( self, datatype,
+                  name=None, desc=None, param=MetadataParameter, default=None, no_value = None,
+                  visible=True, set_in_upload = False, **kwargs ):
         self.name = name
         self.desc = desc or name
         self.default = default
@@ -226,23 +248,36 @@ class MetadataElementSpec( object ):
         self.set_in_upload = set_in_upload
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
-        #set up param last, as it uses values set above
+        # set up param last, as it uses values set above
         self.param = param( self )
-        datatype.metadata_spec.append( self ) #add spec element to the spec
+        # add spec element to the spec
+        datatype.metadata_spec.append( self )
+
     def get( self, name, default=None ):
         return self.__dict__.get(name, default)
-    def wrap( self, value ):
+
+    def wrap( self, value, session ):
         """
         Turns a stored value into its usable form.
         """
-        return self.param.wrap( value )
+        return self.param.wrap( value, session )
+
     def unwrap( self, value ):
         """
         Turns an incoming value into its storable form.
         """
         return self.param.unwrap( value )
 
+    def __str__( self ):
+        #TODO??: assuming param is the class of this MetadataElementSpec - add the plain class name for that
+        spec_dict = dict( param_class=self.param.__class__.__name__ )
+        spec_dict.update( self.__dict__ )
+        return ( "{name} ({param_class}): {desc}, defaults to '{default}'".format( **spec_dict ) )
+
+# create a statement class that, when called,
+#   will add a new MetadataElementSpec to a class's metadata_spec
 MetadataElement = Statement( MetadataElementSpec )
+
 
 """
 MetadataParameter sub-classes.
@@ -288,7 +323,7 @@ class SelectParameter( MetadataParameter ):
             return ", ".join( map( str, value ) )
         return MetadataParameter.get_html( self, value, context=context, other_values=other_values, values=values, **kwd )
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         value = self.marshal( value ) #do we really need this (wasteful)? - yes because we are not sure that all existing selects have been stored previously as lists. Also this will handle the case where defaults/no_values are specified and are single non-list values.
         if self.multiple:
             return value
@@ -400,26 +435,16 @@ class FileParameter( MetadataParameter ):
     def get_html( self, value=None, context={}, other_values={}, **kwd ):
         return "<div>No display available for Metadata Files</div>"
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         if value is None:
             return None
         if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
-        if DATABASE_CONNECTION_AVAILABLE:
-            try:
-                # FIXME: this query requires a monkey patch in assignmapper.py since
-                # MetadataParameters do not have a handle to the sqlalchemy session
-                return galaxy.model.MetadataFile.get( value )
-            except:
-                #value was not a valid id
-                return None
-        else:
-            mf = galaxy.model.MetadataFile()
-            mf.id = value #we assume this is a valid id, since we cannot check it
-            return mf
+        mf = session.query( galaxy.model.MetadataFile ).get( value )
+        return mf
     
     def make_copy( self, value, target_context, source_context ):
-        value = self.wrap( value )
+        value = self.wrap( value, object_session( target_context.parent ) )
         if value:
             new_value = galaxy.model.MetadataFile( dataset = target_context.parent, name = self.spec.name )
             object_session( target_context.parent ).add( new_value )
@@ -461,13 +486,13 @@ class FileParameter( MetadataParameter ):
         return value
     
     def new_file( self, dataset = None, **kwds ):
-        if DATABASE_CONNECTION_AVAILABLE:
+        if object_session( dataset ):
             mf = galaxy.model.MetadataFile( name = self.spec.name, dataset = dataset, **kwds )
             object_session( dataset ).add( mf )
             object_session( dataset ).flush() #flush to assign id
             return mf
         else:
-            #we need to make a tmp file that is accessable to the head node, 
+            #we need to make a tmp file that is accessable to the head node,
             #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile( **kwds )

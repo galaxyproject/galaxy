@@ -1,0 +1,204 @@
+/*
+ * bootsrap.less modified for Galaxy. 
+ *  - only a subset of bootsrap components are used
+ *  - include 'galaxy_bootsrap_variables' instead of 'variables'
+ *  - overrides that can't be set with variables at end 
+ *
+ * ---
+ *
+ * Bootstrap v2.0.4
+ *
+ * Copyright 2012 Twitter, Inc
+ * Licensed under the Apache License v2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Designed and built with all the love in the world @twitter by @mdo and @fat.
+ */
+
+// CSS Reset
+@import "bootstrap/reset.less";
+
+// Core variables and mixins
+@import "galaxy_bootstrap_variables.less"; // Modify this for custom colors, font-sizes, etc
+@import "bootstrap/mixins.less";
+
+// ---- Imports ----
+
+@import "bootstrap/reset.less";
+@import "bootstrap/mixins.less";
+
+// Grid system and page structure
+@import "bootstrap/scaffolding.less";
+
+// Base CSS
+@import "bootstrap/type.less";
+// @import "bootstrap/code.less";
+// @import "bootstrap/forms.less";
+@import "bootstrap/tables.less";
+
+// Components: common
+// @import "bootstrap/sprites.less";
+@import "bootstrap/dropdowns.less";
+@import "bootstrap/wells.less";
+@import "bootstrap/component-animations.less";
+@import "bootstrap/close.less";
+
+// Components: Buttons & Alerts
+@import "bootstrap/buttons.less";
+@import "bootstrap/button-groups.less";
+@import "bootstrap/alerts.less"; // Note: alerts share common CSS with buttons and thus have styles in buttons.less
+
+// Components: Nav
+@import "bootstrap/navs.less";
+@import "bootstrap/navbar.less";
+@import "bootstrap/breadcrumbs.less";
+@import "bootstrap/pagination.less";
+@import "bootstrap/pager.less";
+
+// Components: Popovers
+@import "bootstrap/modals.less";
+//@import "bootstrap/tooltip.less";
+@import "bootstrap/popovers.less";
+
+// Components: Misc
+// @import "bootstrap/thumbnails.less";
+// @import "bootstrap/labels.less";
+@import "bootstrap/progress-bars.less";
+@import "bootstrap/accordion.less";
+@import "bootstrap/carousel.less";
+@import "bootstrap/hero-unit.less";
+
+// Utility classes
+@import "bootstrap/utilities.less"; 
+
+
+// Galaxy overrides 
+
+.btn {
+    padding: 2px 10px 2px;
+    // These are hardcoded in buttons.less
+    border-color: @btnBorder;
+    border-color: rgba(0,0,0,.4) rgba(0,0,0,.4) rgba(0,0,0,.4);
+}
+
+.btn.hover {
+    @btn:hover();
+}
+
+.btn.active, .btn:active {
+    color: inherit;
+}
+
+.dropdown-menu {
+    max-width: auto;
+}
+
+input[type="checkbox"],input[type="radio"] {
+    margin-left: 0.5ex;
+    margin-right: 0.5ex;
+}
+
+// Modal -- wider by default, scroll like Trello
+
+.modal { 
+  position: absolute;
+  top: 50px;
+  width: 660px;
+  margin-left: -330px;
+}
+
+.modal:after {
+  content: "";
+  height: 0px;
+  position: relative;
+  top: 50px;
+  display: block;
+  border: solid transparent 1px;
+}
+
+.modal-body {
+  height: auto;
+  max-height: none;
+}
+
+// Tabs -- border color is hardcoded in navs.less, change to @btnBorder here
+
+.nav-tabs {
+  border-bottom: 1px solid @btnBorder;
+}
+.nav-tabs > li > a {
+  &:hover {
+    border-color: @grayLighter @grayLighter @btnBorder;
+  }
+}
+.nav-tabs > .active > a,
+.nav-tabs > .active > a:hover {
+  border: 1px solid @btnBorder;
+  border-bottom-color: transparent;
+}
+
+// Tooltips -- we use the class tooltip to indicate that an element has a tooltip, so we need to define these differently
+
+.bs-tooltip {
+    position: absolute;
+    z-index: @zindexTooltip;
+    display: block;
+    visibility: visible;
+    padding: 5px;
+    font-size: 11px;
+    .opacity(0);
+    &.in     { .opacity(80); }
+    &.top    { margin-top:  -3px; }
+    &.right  { margin-left:  3px; }
+    &.bottom { margin-top:   3px; }
+    &.left   { margin-left: -3px; }
+
+    // Wrapper for the tooltip content
+    .tooltip-inner {
+      max-width: 200px;
+      padding: 3px 8px;
+      color: @tooltipColor;
+      text-align: center;
+      text-decoration: none;
+      background-color: @tooltipBackground;
+      // .border-radius(@baseBorderRadius);
+    }
+
+    // Arrows
+    .tooltip-arrow {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-color: transparent;
+      border-style: solid;
+    }
+
+    &.top .tooltip-arrow {
+        bottom: 0;
+        left: 50%;
+        margin-left: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth @tooltipArrowWidth 0;
+        border-top-color: @tooltipArrowColor;
+    }
+    &.right .tooltip-arrow {
+        top: 50%;
+        left: 0;
+        margin-top: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth @tooltipArrowWidth @tooltipArrowWidth 0;
+        border-right-color: @tooltipArrowColor;
+    }
+    &.left .tooltip-arrow {
+        top: 50%;
+        right: 0;
+        margin-top: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth 0 @tooltipArrowWidth @tooltipArrowWidth;
+        border-left-color: @tooltipArrowColor;
+    }
+    &.bottom .tooltip-arrow {
+        top: 0;
+        left: 50%;
+        margin-left: -@tooltipArrowWidth;
+        border-width: 0 @tooltipArrowWidth @tooltipArrowWidth;
+        border-bottom-color: @tooltipArrowColor;
+    }
+}

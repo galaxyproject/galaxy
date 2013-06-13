@@ -6,20 +6,22 @@ sys.path = new_path
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "sqlalchemy-migrate" )
+eggs.require( "decorator" )
+eggs.require( "Tempita" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "sqlalchemy_migrate" )
 
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
 
 log = logging.getLogger( __name__ )
 
-if sys.argv[-1] in [ 'community' ]:
+if sys.argv[-1] in [ 'tool_shed' ]:
     # Need to pop the last arg so the command line args will be correct
     # for sqlalchemy-migrate 
     webapp = sys.argv.pop()
-    config_file = 'community_wsgi.ini'
-    repo = 'lib/galaxy/webapps/community/model/migrate'
+    config_file = 'tool_shed_wsgi.ini'
+    repo = 'lib/galaxy/webapps/tool_shed/model/migrate'
 else:
     # Poor man's optparse
     config_file = 'universe_wsgi.ini'
@@ -51,7 +53,7 @@ dialect = ( db_url.split( ':', 1 ) )[0]
 try:
     egg = dialect_to_egg[dialect]
     try:
-        pkg_resources.require( egg )
+        eggs.require( egg )
         log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
     except:
         # If the module is in the path elsewhere (i.e. non-egg), it'll still load.

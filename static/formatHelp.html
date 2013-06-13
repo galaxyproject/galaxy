@@ -63,6 +63,10 @@ to convert them yourself before uploading.
 <li><a href="#fasta">FASTA</a>
 <li><a href="#fastqsolexa">FastqSolexa</a>
 <li><a href="#fped">FPED</a>
+<li><a href="#gd_indivs">gd_indivs</a>
+<li><a href="#gd_ped">gd_ped</a>
+<li><a href="#gd_sap">gd_sap</a>
+<li><a href="#gd_snp">gd_snp</a>
 <li><a href="#gff">GFF</a>
 <li><a href="#gff3">GFF3</a>
 <li><a href="#gtf">GTF</a>
@@ -71,13 +75,16 @@ to convert them yourself before uploading.
 <li><a href="#lav">LAV</a>
 <li><a href="#lped">LPED</a>
 <li><a href="#maf">MAF</a>
+<li><a href="#mastervar">MasterVar</a>
 <li><a href="#pbed">PBED</a>
+<li><a href="#pgSnp">pgSnp</a>
 <li><a href="#psl">PSL</a>
 <li><a href="#scf">SCF</a>
 <li><a href="#sff">SFF</a>
 <li><a href="#table">Table</a>
 <li><a href="#tab">Tabular</a>
 <li><a href="#txtseqzip">Txtseq.zip</a>
+<li><a href="#vcf">VCF</a>
 <li><a href="#wig">Wiggle custom track</a>
 <li><a href="#text">Other text type</a>
 </ul>
@@ -266,6 +273,42 @@ Also known as the FBAT format, for use with the
 It consists of a pedigree file and a phenotype file.
 <p>
 
+<div><a name="gd_indivs"></a></div>
+<hr>
+<strong>ind</strong>
+<p>
+This format is a tabular file with the first column being the column number
+(1 based)
+from the gd_snp file where the individual/group starts.  The second column is
+the label from the metadata for the individual/group.  The third is an alias
+or blank.
+<p>
+
+<div><a name="gd_sap"></a></div>
+<hr>
+<strong>gd_sap</strong>
+<p>
+This is a tabular file describing single amino-acid polymorphisms (SAPs).
+You must manually select this file format when uploading the file.
+<!--
+<a href="http://www.bx.psu.edu/miller_lab/docs/formats/gd_sap_format.html"
+>Field specifications</a>
+-->
+<p>
+
+<div><a name="gd_snp"></a></div>
+<hr>
+<strong>gd_snp</strong>
+<p>
+This is a tabular file describing SNPs in individuals or populations.
+It contains the zero-based position of the SNP but not the range
+required by BED or interval so can not be used in Genomic Operations without
+adding an column for the end position.
+You must manually select this file format when uploading the file.
+<a href="http://www.bx.psu.edu/miller_lab/docs/formats/gd_snp_format.html"
+>Field specifications</a>
+<p>
+
 <div><a name="gff"></a></div>
 <hr>
 <strong>GFF</strong>
@@ -436,6 +479,23 @@ Convert Formats &rarr; MAF to FASTA
 </ul></dl>
 <p>
 
+<div><a name="mastervar"></a></div>
+<hr>
+<strong>MasterVar</strong>
+<p>
+MasterVar is a tab delimited text format with specified fields developed
+by the Complete Genomics life sciences company.  
+<a href="http://media.completegenomics.com/documents/DataFileFormats_Standard_Pipeline_2.2.pdf"
+>Field specifications</a>.
+<dl><dt>Can be converted to:
+<dd><ul>
+<li>pgSnp<br>
+Convert Formats &rarr; MasterVar to pgSnp
+<li>gd_snp<br>
+Convert Formats &rarr; MasterVar to gd_snp
+</ul></dl>
+<p>
+
 <div><a name="pbed"></a></div>
 <hr>
 <strong>PBED</strong>
@@ -445,6 +505,18 @@ This is the binary version of the LPED format.
 <dd><ul>
 <li>LPED<br>Automatic
 </ul></dl>
+<p>
+
+<div><a name="pgSnp"></a></div>
+<hr>
+<strong>pgSnp</strong>
+<p>
+This is the personal genome SNP format used by UCSC.  It is a BED-like
+format with columns chosen for the specialized display in the browser
+for personal genomes.  
+<a href="http://genome.ucsc.edu/FAQ/FAQformat.html#format10"
+>Field specifications</a>.  
+Galaxy treats it the same as an interval file.
 <p>
 
 <div><a name="psl"></a></div>
@@ -530,6 +602,21 @@ in this archive must have the same file extension of
 uploading the file.
 <p>
 
+<div><a name="vcf"></a></div>
+<hr>
+<strong>VCF</strong>
+<p>
+Variant Call Format (VCF) is a tab delimited text file with specified
+fields.  It was developed by the 1000 Genomes Project.
+<a href="http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41"
+>Field specifications</a>.
+<dl><dt>Can be converted to:
+<dd><ul>
+<li>pgSnp<br>
+Convert Formats &rarr; VCF to pgSnp
+</ul></dl>
+<p>
+
 <div><a name="wig"></a></div>
 <hr>
 <strong>Wiggle custom track</strong>
@@ -548,6 +635,13 @@ Get Genomic Scores &rarr; Wiggle-to-Interval
 by removing extra columns using
 Text Manipulation &rarr; Cut columns from a table.
 </ul></dl>
+<p>
+
+<div><a name="gd_ped"></a></div>
+<hr>
+<strong>gd_ped</strong>
+<p>
+Similar to the linkage pedigree format (lped).  
 <p>
 
 <div><a name="text"></a></div>

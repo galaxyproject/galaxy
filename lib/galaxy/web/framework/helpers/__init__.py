@@ -1,7 +1,7 @@
 import pkg_resources
 
 pkg_resources.require( "WebHelpers" )
-from webhelpers import *
+from webhelpers import date, stylesheet_link_tag, javascript_include_tag, url_for
 
 from galaxy.util.json import to_json_string
 from galaxy.util import hash_util
@@ -12,10 +12,13 @@ from cgi import escape
 
 server_starttime = int(time.time())
 
-# If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):
+    """
+    Convert a datetime to a string.
+    """
     delta = timedelta(weeks=1)
     
+    # If the date is more than one week ago, then display the actual date instead of in words
     if (datetime.utcnow() - x) > delta: # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:   
@@ -27,8 +30,10 @@ def iff( a, b, c ):
     else:
         return c
     
-# Smart string truncation
 def truncate(content, length=100, suffix='...'):
+    """
+    Smart string truncation
+    """
     if len(content) <= length:
         return content
     else:

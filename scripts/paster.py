@@ -27,8 +27,7 @@ if 'LOG_TEMPFILES' in os.environ:
     import tempfile
 
 pkg_resources.require( "Paste" )
-pkg_resources.require( "PasteScript" )
 pkg_resources.require( "PasteDeploy" )
 
-from paste.script import command
-command.run()
+from galaxy.util.pastescript import serve
+serve.run()

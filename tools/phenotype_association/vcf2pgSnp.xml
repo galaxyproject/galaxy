@@ -1,26 +1,21 @@
-<tool id="vcf2pgSnp" name="Convert VCF" hidden="false">
-  <description>to pgSnp</description>
+<tool id="vcf2pgSnp" name="VCF to pgSnp" hidden="false">
+  <description>Convert from VCF to pgSnp format</description>
   <command interpreter="perl">
     #if $inType.how == "all" #vcf2pgSnp.pl all $input1 > $out_file1
-    #else if $inType.how == "every" #vcf2pgSnpMult.pl $input1 > $out_file1
     #else #vcf2pgSnp.pl $inType.ind_column $input1 > $out_file1
     #end if
   </command>
   <inputs>
-    <param format="vcf" name="input1" type="data" label="VCF file" />
+    <param format="vcf" name="input1" type="data" label="VCF dataset" />
     <conditional name="inType">
       <param name="how" type="select" label="How to treat individuals">
         <option value="all">Group all as a population</option>
-        <option value="one">Do just one column</option>
-        <option value="every">Convert each column separately</option>
+        <option value="one">Do just one individual</option>
       </param>
       <when value="one">
         <param name="ind_column" type="data_column" data_ref="input1" label="Column to convert" value="10" />
       </when>
       <when value="all">
-          <!-- do nothing -->
-      </when>
-      <when value="every">
           <!-- do nothing -->
       </when>
     </conditional>
@@ -34,20 +29,26 @@
       <param name="how" value="all" />
       <output name="output" file="vcf2pgSnp_output.pgSnp" />
     </test>
-    <test>
-      <param name="input1" value="vcf2pgSnp_input.vcf" ftype="vcf" />
-      <param name="how" value="every" />
-      <output name="output" file="vcf2pgSnp_output2.pgSnp" />
-    </test>
   </tests>
 
   <help>
+**Dataset formats**
+
+The input dataset is VCF_ format.
+The output dataset is pgSnp_.  (`Dataset missing?`_)
+
+.. _Dataset missing?: ./static/formatHelp.html
+.. _VCF: ./static/formatHelp.html#vcf
+.. _pgSnp: ./static/formatHelp.html#pgSnp
+
+-----
+
 **What it does**
 
-This converts a VCF file to a pgSnp file with the frequency counts being
-chromosome counts.  If there is more than 1 column of SNP data it will either
-accumulate all columns as a population, convert the column indicated
-to pgSnp, or add pgSnp allele data columns for each of the individuals.
+This converts a VCF dataset to pgSnp with the frequency counts being
+chromosome counts.  If there is more than one column of SNP data it will either
+accumulate all columns as a population or convert the column indicated
+to pgSnp.
 
 -----
 

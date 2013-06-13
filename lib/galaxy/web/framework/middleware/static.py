@@ -6,7 +6,6 @@ import mimetypes
 from paste import request
 from paste import fileapp
 from paste.util import import_string
-from paste.deploy import converters
 from paste import httpexceptions
 from paste.httpheaders import ETAG
 

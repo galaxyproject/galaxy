@@ -16,6 +16,8 @@ SAMPLES="
     shed_tool_data_table_conf.xml.sample
     tool_data_table_conf.xml.sample
     tool_sheds_conf.xml.sample
+    data_manager_conf.xml.sample
+    shed_data_manager_conf.xml.sample
     openid_conf.xml.sample
     universe_wsgi.ini.sample
     tool-data/shared/ncbi/builds.txt.sample

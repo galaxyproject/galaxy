@@ -1,0 +1,25 @@
+<tool_dependency>
+<!--NUMPY-->
+    <package name="matplotlib" version="1.2.1">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">https://downloads.sourceforge.net/project/matplotlib/matplotlib/matplotlib-1.2.1/matplotlib-1.2.1.tar.gz</action>
+                <action type="shell_command">wget http://downloads.sourceforge.net/project/freetype/freetype2/2.4.11/freetype-2.4.11.tar.bz2</action>
+                <action type="shell_command">tar xfvj freetype-2.4.11.tar.bz2 &amp;&amp; 
+                    cd freetype-2.4.11 &amp;&amp; 
+                    ./configure --prefix=$INSTALL_DIR/freetype/build &amp;&amp;
+                    make &amp;&amp; 
+                    make install</action>
+                <action type="make_directory">$INSTALL_DIR/lib/python</action>
+                <action type="shell_command">export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR/lib/python &amp;&amp; 
+                    export CPLUS_INCLUDE_PATH=$INSTALL_DIR/freetype/build/include:$INSTALL_DIR/freetype/build/include/freetype2/ &amp;&amp; 
+                    export LIBRARY_PATH=$INSTALL_DIR/freetype/build/lib/ &amp;&amp; 
+                    python setup.py install --home $INSTALL_DIR --install-scripts $INSTALL_DIR/bin</action>
+                <action type="set_environment">
+                    <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>Compiling matplotlib requires a C compiler (typically gcc), freetype2, numpy and libpng.</readme>
+    </package>
+</tool_dependency>

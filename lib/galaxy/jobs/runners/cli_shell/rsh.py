@@ -4,6 +4,7 @@ Interface for remote shell commands (rsh, rcp) and derivatives that use the same
 
 import time
 import logging
+import tempfile
 import subprocess
 
 from galaxy.util.bunch import Bunch
@@ -28,7 +29,9 @@ class RemoteShell(BaseShellExec):
             fullcmd = '%s %s %s' % (self.rsh, self.hostname, cmd)
         else:
             fullcmd = '%s -l %s %s %s' % (self.rsh, self.username, self.hostname, cmd)
-        p = subprocess.Popen(fullcmd, shell=True, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Read stdout to a tempfile in case it's large (>65K)
+        outf = tempfile.TemporaryFile()
+        p = subprocess.Popen(fullcmd, shell=True, stdin=None, stdout=outf, stderr=subprocess.PIPE)
         # poll until timeout
         for i in range(timeout/3):
             r = p.poll()
@@ -44,7 +47,8 @@ class RemoteShell(BaseShellExec):
                 except:
                     log.warning('Killing pid %s (cmd: "%s") with signal %s failed' % (p.pid, fullcmd, sig))
             return Bunch(stdout='', stderr='Execution timed out', returncode=-1)
-        return Bunch(stdout=p.stdout.read(), stderr=p.stderr.read(), returncode=p.returncode)
+        outf.seek(0)
+        return Bunch(stdout=outf.read(), stderr=p.stderr.read(), returncode=p.returncode)
 
 
 class SecureShell(RemoteShell):

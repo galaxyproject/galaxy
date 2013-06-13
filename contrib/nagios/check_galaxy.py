@@ -4,7 +4,7 @@ check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 
-import socket, sys, os, time, tempfile, filecmp, htmllib, formatter, getopt
+import socket, sys, os, time, tempfile, filecmp, htmllib, formatter, getopt, json
 from user import home
 
 import warnings
@@ -63,13 +63,6 @@ server = args[0]
 username = args[1]
 password = args[2]
 
-if server.endswith(".g2.bx.psu.edu"):
-    if debug:
-        print "Checking a PSU Galaxy server, using maint file"
-    maint = "/errordocument/502/%s/maint" % args[0].split('.', 1)[0]
-else:
-    maint = None
-
 new_history = False
 for o, a in opts:
     if o == "-n":
@@ -95,13 +88,12 @@ class Browser:
 
     def __init__(self):
         self.server = server
-        self.maint = maint
         self.tool = None
         self.tool_opts = None
-        self.id = None
-        self.status = None
+        self._hda_id = None
+        self._hda_state = None
+        self._history_id = None
         self.check_file = None
-        self.hid = None
         self.cookie_jar = os.path.join( var_dir, "cookie_jar" )
         dprint("cookie jar path: %s" % self.cookie_jar)
         if not os.access(self.cookie_jar, os.R_OK):
@@ -116,19 +108,14 @@ class Browser:
     def reset(self):
         self.tool = None
         self.tool_opts = None
-        self.id = None
-        self.status = None
+        self._hda_id = None
+        self._hda_state = None
+        self._history_id = None
         self.check_file = None
-        self.delete_datasets()
-        self.get("/root/history")
-        p = didParser()
-        p.feed(tc.browser.get_html())
-        if len(p.dids) > 0:
-            print "Remaining datasets ids:", " ".join( p.dids )
-            raise Exception, "History still contains datasets after attempting to delete them"
         if new_history:
             self.get("/history/delete_current")
             tc.save_cookies(self.cookie_jar)
+        self.delete_datasets()
 
     def check_redir(self, url):
         try:
@@ -143,25 +130,9 @@ class Browser:
             dprint( "%s is not returning redirect (302): %s" % (url, e) )
             code = tc.browser.get_code()
             if code == 502:
-                is_maint = self.check_maint()
-                if is_maint:
-                    dprint( "Galaxy is down, but a maint file was found, so not sending alert" )
-                    sys.exit(0)
-                else:
-                    print "Galaxy is down (code 502)"
-                    sys.exit(1)
-            return(False)
-
-    # checks for a maint file
-    def check_maint(self):
-        if self.maint is None:
-            #dprint( "Warning: unable to check maint file for %s" % self.server )
-            return(False)
-        try:
-            self.get(self.maint)
-            return(True)
-        except twill.errors.TwillAssertionError, e:
-            return(False)
+                print "Galaxy is down (code 502)"
+                sys.exit(1)
+            return False
 
     def login(self, user, pw):
         self.get("/user/login")
@@ -210,15 +181,64 @@ class Browser:
         tc.submit("runtool_btn")
         tc.code(200)
 
+    @property
+    def history_id(self):
+        if self._history_id is None:
+            self.get('/api/histories')
+            self._history_id = json.loads(tc.browser.get_html())[0]['id']
+        return self._history_id
+
+    @property
+    def history_contents(self):
+        self.get('/api/histories/%s/contents' % self.history_id)
+        return json.loads(tc.browser.get_html())
+
+    @property
+    def hda_id(self):
+        if self._hda_id is None:
+            self.set_top_hda()
+        return self._hda_id
+
+    @property
+    def hda_state(self):
+        if self._hda_state is None:
+            self.set_top_hda()
+        return self._hda_state
+
+    def set_top_hda(self):
+        self.get(self.history_contents[-1]['url'])
+        hda = json.loads(tc.browser.get_html())
+        self._hda_id = hda['id']
+        self._hda_state = hda['state']
+
+    @property
+    def undeleted_hdas(self):
+        rval = []
+        for item in self.history_contents:
+            self.get(item['url'])
+            hda = json.loads(tc.browser.get_html())
+            if hda['deleted'] == False:
+                rval.append(hda)
+        return rval
+
+    @property
+    def history_state(self):
+        self.get('/api/histories/%s' % self.history_id)
+        return json.loads(tc.browser.get_html())['state']
+
+    @property
+    def history_state_terminal(self):
+        if self.history_state not in ['queued', 'running', 'paused']:
+            return True
+        return False
+
     def wait(self):
         sleep_amount = 1
         count = 0
         maxiter = 16
         while count < maxiter:
             count += 1
-            self.get("/root/history")
-            page = tc.browser.get_html()
-            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
+            if not self.history_state_terminal:
                 time.sleep( sleep_amount )
                 sleep_amount += 1
             else:
@@ -226,20 +246,14 @@ class Browser:
         if count == maxiter:
             raise Exception, "Tool never finished"
 
-    def check_status(self):
-        self.get("/root/history")
-        p = historyParser()
-        p.feed(tc.browser.get_html())
-        if p.status != "ok":
-            self.get("/datasets/%s/stderr" % p.id)
+    def check_state(self):
+        if self.hda_state != "ok":
+            self.get("/datasets/%s/stderr" % self.hda_id)
             print tc.browser.get_html()
-            raise Exception, "HDA %s NOT OK: %s" % (p.id, p.status)
-        self.id = p.id
-        self.status = p.status
-        #return((p.id, p.status))
+            raise Exception, "HDA %s NOT OK: %s" % (self.hda_id, self.hda_state)
 
     def diff(self):
-        self.get("/datasets/%s/display?to_ext=%s" % (self.id, self.tool_opts.get('out_format', 'fasta')))
+        self.get("/datasets/%s/display?to_ext=%s" % (self.hda_id, self.tool_opts.get('out_format', 'fasta')))
         data = tc.browser.get_html()
         tmp = tempfile.mkstemp()
         dprint("tmp file: %s" % tmp[1])
@@ -256,12 +270,12 @@ class Browser:
             os.remove(tmp[1])
 
     def delete_datasets(self):
-        self.get("/root/history")
-        p = didParser()
-        p.feed(tc.browser.get_html())
-        dids = p.dids
-        for did in dids:
-            self.get("/datasets/%s/delete" % did)
+        for hda in self.undeleted_hdas:
+            self.get('/datasets/%s/delete' % hda['id'])
+        hdas = [hda['id'] for hda in self.undeleted_hdas]
+        if hdas:
+            print "Remaining datasets ids:", " ".join(hdas)
+            raise Exception, "History still contains datasets after attempting to delete them"
 
     def check_if_logged_in(self):
         self.get("/user?cntrller=user")
@@ -293,33 +307,6 @@ class userParser(htmllib.HTMLParser):
                 self.bad_pw = True
             elif data == "User with that email already exists":
                 self.already_exists = True
-
-class historyParser(htmllib.HTMLParser):
-    def __init__(self):
-        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
-        self.status = None
-        self.id = None
-    def start_div(self, attrs):
-        # find the top history item
-        for i in attrs:
-            if i[0] == "class" and i[1].startswith("historyItemWrapper historyItem historyItem-"):
-                self.status = i[1].rsplit("historyItemWrapper historyItem historyItem-", 1)[1]
-                dprint("status: %s" % self.status)
-            if i[0] == "id" and i[1].startswith("historyItem-"):
-                self.id = i[1].rsplit("historyItem-", 1)[1]
-                dprint("id: %s" % self.id)
-        if self.status is not None:
-            self.reset()
-
-class didParser(htmllib.HTMLParser):
-    def __init__(self):
-        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
-        self.dids = []
-    def start_div(self, attrs):
-        for i in attrs:
-            if i[0] == "id" and i[1].startswith("historyItemContainer-"):
-                self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
-                dprint("got a dataset id: %s" % self.dids[-1])
 
 class loggedinParser(htmllib.HTMLParser):
     def __init__(self):
@@ -379,15 +366,9 @@ if __name__ == "__main__":
 
         b.runtool()
         b.wait()
-        b.check_status()
+        b.check_state()
         b.diff()
         b.delete_datasets()
-
-        # by this point, everything else has succeeded.  there should be no maint.
-        is_maint = b.check_maint()
-        if is_maint:
-            print "Galaxy is up and fully functional, but a maint file is in place."
-            sys.exit(1)
 
     print "OK"
     sys.exit(0)

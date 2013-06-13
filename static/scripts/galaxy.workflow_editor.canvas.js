@@ -80,9 +80,13 @@ function Connector( handle1, handle2 ) {
 $.extend( Connector.prototype, {
     connect: function ( t1, t2 ) {
         this.handle1 = t1;
-        this.handle1.connect( this );
+        if ( this.handle1 ) {
+            this.handle1.connect( this );
+        }
         this.handle2 = t2;
-        this.handle2.connect( this );
+        if ( this.handle2 ) {
+            this.handle2.connect( this );
+        }
     },
     destroy : function () {
         if ( this.handle1 ) {
@@ -487,7 +491,8 @@ $.extend( Workflow.prototype, {
     },
     rectify_workflow_outputs : function() {
         // Find out if we're using workflow_outputs or not.
-        var using_workflow_outputs, has_existing_pjas = false;
+        var using_workflow_outputs = false;
+        var has_existing_pjas = false;
         $.each( this.nodes, function ( k, node ) {
             if (node.workflow_outputs && node.workflow_outputs.length > 0){
                 using_workflow_outputs = true;
@@ -513,7 +518,7 @@ $.extend( Workflow.prototype, {
                             pjas_to_rem.push(pja_id);
                         }
                     });
-                    if (pjas_to_rem.length > 0 && node == workflow.active_node) {
+                    if (pjas_to_rem.length > 0 ) {
                         $.each(pjas_to_rem, function(i, pja_name){
                             node_changed = true;
                             delete node.post_job_actions[pja_name];

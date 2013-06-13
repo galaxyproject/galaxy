@@ -903,26 +903,10 @@ class GalaxyRBACAgent( RBACAgent ):
                                  .filter( and_( trans.app.model.DatasetPermissions.dataset_id.in_( dataset_ids ),
                                                 trans.app.model.DatasetPermissions.action == self.permitted_actions.DATASET_ACCESS.action ) ) \
                                  .all()
-
         # Every dataset returned has "access" privileges associated with it,
         # so it's not public.
         for permission in access_data_perms:
             datasets_public[ permission.dataset_id ] = False 
-
-        # Test code: Check if the results match up with the original:
-        test_code = False 
-        if test_code:
-            log.debug( "datasets_are_public test: check datasets_are_public matches dataset_is_public:" )
-            test_success = True
-            for dataset in datasets:
-                orig_is_public = self.dataset_is_public( dataset )
-                if orig_is_public == datasets_public[ dataset.id ]:
-                    log.debug( "\tMatch for dataset %d" % dataset.id )
-                else:
-                    success = False
-                    log.error( "\tERROR: Did not match: single is_public: %s; multiple is_public: %s" 
-                             % ( single_is_public, datasets_public[ dataset.id ] ) )
-            log.debug( "datasets_are_public: test succeeded? %s" % test_success )
         return datasets_public
 
 
@@ -955,9 +939,9 @@ class GalaxyRBACAgent( RBACAgent ):
             in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
-                    item = self.model.Library.get( item_id )
+                    item = self.sa_session.query( self.model.Library ).get( item_id )
                 else:
-                    item = self.model.Dataset.get( item_id )
+                    item = self.sa_session.query( self.model.Dataset ).get( item_id )
                 if ( library and not self.library_is_public( item ) ) or ( not library and not self.dataset_is_public( item ) ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
                     # derived from the roles associated with the access permission on item if it's not public.  This

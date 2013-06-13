@@ -1,17 +1,19 @@
 from sqlalchemy.types import *
+
 import pkg_resources
 pkg_resources.require("simplejson")
 import simplejson
 import pickle
 import copy
+import uuid
 import binascii
 from galaxy.util.bunch import Bunch
 from galaxy.util.aliaspickler import AliasPickleModule
 
 # For monkeypatching BIGINT
-import sqlalchemy.databases.sqlite
-import sqlalchemy.databases.postgres
-import sqlalchemy.databases.mysql
+import sqlalchemy.dialects.sqlite
+import sqlalchemy.dialects.postgresql
+import sqlalchemy.dialects.mysql
 
 import logging
 log = logging.getLogger( __name__ )
@@ -37,7 +39,7 @@ class JSONType( TypeDecorator ):
     Defines a JSONType for SQLAlchemy.  Takes a primitive as input and
     JSONifies it.  This should replace PickleType throughout Galaxy.
     """
-    impl = Binary
+    impl = LargeBinary
 
     def process_bind_param( self, value, dialect ):
         if value is None:
@@ -84,6 +86,37 @@ class MetadataType( JSONType ):
                 ret = None
         return ret
 
+class UUIDType(TypeDecorator):
+    """
+    Platform-independent UUID type.
+    
+    Based on http://docs.sqlalchemy.org/en/rel_0_8/core/types.html#backend-agnostic-guid-type
+    Changed to remove sqlalchemy 0.8 specific code
+
+    CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+
+    def load_dialect_impl(self, dialect):
+        return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value)
+            else:
+                # hexstring
+                return "%.32x" % value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            return uuid.UUID(value)
+
+
 class TrimmedString( TypeDecorator ):
     impl = String
     def process_bind_param( self, value, dialect ):
@@ -93,24 +126,24 @@ class TrimmedString( TypeDecorator ):
         return value
 
 
-class BigInteger( Integer ):
-    """
-    A type for bigger ``int`` integers.
+#class BigInteger( Integer ):
+    #"""
+    #A type for bigger ``int`` integers.
 
-    Typically generates a ``BIGINT`` in DDL, and otherwise acts like
-    a normal :class:`Integer` on the Python side.
+    #Typically generates a ``BIGINT`` in DDL, and otherwise acts like
+    #a normal :class:`Integer` on the Python side.
 
-    """
+    #"""
 
-class BIGINT( BigInteger ):
-    """The SQL BIGINT type."""
+#class BIGINT( BigInteger ):
+    #"""The SQL BIGINT type."""
 
-class SLBigInteger( BigInteger ):
-    def get_col_spec( self ):
-        return "BIGINT"
+#class SLBigInteger( BigInteger ):
+    #def get_col_spec( self ):
+        #return "BIGINT"
 
-sqlalchemy.databases.sqlite.SLBigInteger = SLBigInteger
-sqlalchemy.databases.sqlite.colspecs[BigInteger] = SLBigInteger
-sqlalchemy.databases.sqlite.ischema_names['BIGINT'] = SLBigInteger
-sqlalchemy.databases.postgres.colspecs[BigInteger] = sqlalchemy.databases.postgres.PGBigInteger
-sqlalchemy.databases.mysql.colspecs[BigInteger] = sqlalchemy.databases.mysql.MSBigInteger
+#sqlalchemy.dialects.sqlite.SLBigInteger = SLBigInteger
+#sqlalchemy.dialects.sqlite.colspecs[BigInteger] = SLBigInteger
+#sqlalchemy.dialects.sqlite.ischema_names['BIGINT'] = SLBigInteger
+#sqlalchemy.dialects.postgres.colspecs[BigInteger] = sqlalchemy.dialects.postgres.PGBigInteger
+#sqlalchemy.dialects.mysql.colspecs[BigInteger] = sqlalchemy.dialects.mysql.MSBigInteger

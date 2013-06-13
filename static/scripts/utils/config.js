@@ -58,7 +58,6 @@ var ConfigSetting = Backbone.Model.extend({
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: null },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
-        { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
     ]
 });

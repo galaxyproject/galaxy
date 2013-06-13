@@ -62,6 +62,8 @@ def __main__():
     parser.add_option( '-c', '--min-alignment-count', dest='min_alignment_count', help='The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus\' observed changes don\'t contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).' )
     parser.add_option( '--FDR', dest='FDR', help='The allowed false discovery rate. The default is 0.05.' )
     parser.add_option( '-u', '--multi-read-correct', dest='multi_read_correct', action="store_true", help='Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome')
+    parser.add_option( '--library-norm-method', dest='library_norm_method' )
+    parser.add_option( '--dispersion-method', dest='dispersion_method' )
 
     # Advanced Options:	
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
@@ -118,16 +120,13 @@ def __main__():
             raise Exception
     except:
         sys.stdout.write( 'Could not determine Cuffdiff version\n' )
-
-    # Make temp directory for output.
-    tmp_output_dir = tempfile.mkdtemp()
     
     # If doing bias correction, set/link to sequence file.
     if options.do_bias_correction:
         if options.ref_file != 'None':
             # Sequence data from history.
             # Create symbolic link to ref_file so that index will be created in working directory.
-            seq_path = os.path.join( tmp_output_dir, "ref.fa" )
+            seq_path = "ref.fa"
             os.symlink( options.ref_file, seq_path  )
         else:
             # Sequence data from loc file.
@@ -146,6 +145,10 @@ def __main__():
     cmd = "cuffdiff --no-update-check -q"
     
     # Add options.
+    if options.library_norm_method:
+        cmd += ( " --library-norm-method %s" % options.library_norm_method )
+    if options.dispersion_method:
+        cmd += ( " --dispersion-method %s" % options.dispersion_method )
     if options.inner_dist_std_dev:
         cmd += ( " -s %i" % int ( options.inner_dist_std_dev ) )
     if options.num_threads:
@@ -172,7 +175,7 @@ def __main__():
     if options.groups:
         cmd += " --labels "
         for label in options.labels:
-            cmd += label + ","
+            cmd += '"%s",' % label
         cmd = cmd[:-1]
 
         cmd += " " + options.inputA + " "
@@ -189,9 +192,9 @@ def __main__():
 
     # Run command.
     try:
-        tmp_name = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_name = tempfile.NamedTemporaryFile().name
         tmp_stderr = open( tmp_name, 'wb' )
-        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmp_output_dir, stderr=tmp_stderr.fileno() )
+        proc = subprocess.Popen( args=cmd, shell=True, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
         tmp_stderr.close()
         
@@ -213,31 +216,26 @@ def __main__():
             raise Exception, stderr
             
         # check that there are results in the output file
-        if len( open( os.path.join( tmp_output_dir, "isoforms.fpkm_tracking" ), 'rb' ).read().strip() ) == 0:
+        if len( open( "isoforms.fpkm_tracking", 'rb' ).read().strip() ) == 0:
             raise Exception, 'The main output file is empty, there may be an error with your input file or settings.'
     except Exception, e:
         stop_err( 'Error running cuffdiff. ' + str( e ) )
 
         
-    # Copy output files from tmp directory to specified files.
+    # Copy output files to specified files.
     try:
-        try:
-            shutil.copyfile( os.path.join( tmp_output_dir, "isoforms.fpkm_tracking" ), options.isoforms_fpkm_tracking_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "genes.fpkm_tracking" ), options.genes_fpkm_tracking_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "cds.fpkm_tracking" ), options.cds_fpkm_tracking_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "tss_groups.fpkm_tracking" ), options.tss_groups_fpkm_tracking_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "isoform_exp.diff" ), options.isoforms_exp_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "gene_exp.diff" ), options.genes_exp_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "tss_group_exp.diff" ), options.tss_groups_exp_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "splicing.diff" ), options.splicing_diff_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "cds.diff" ), options.cds_diff_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "cds_exp.diff" ), options.cds_exp_fpkm_tracking_output )
-            shutil.copyfile( os.path.join( tmp_output_dir, "promoters.diff" ), options.promoters_diff_output )    
-        except Exception, e:
-            stop_err( 'Error in cuffdiff:\n' + str( e ) ) 
-    finally:
-        # Clean up temp dirs
-        if os.path.exists( tmp_output_dir ):
-            shutil.rmtree( tmp_output_dir )
+        shutil.copyfile( "isoforms.fpkm_tracking", options.isoforms_fpkm_tracking_output )
+        shutil.copyfile( "genes.fpkm_tracking", options.genes_fpkm_tracking_output )
+        shutil.copyfile( "cds.fpkm_tracking", options.cds_fpkm_tracking_output )
+        shutil.copyfile( "tss_groups.fpkm_tracking", options.tss_groups_fpkm_tracking_output )
+        shutil.copyfile( "isoform_exp.diff", options.isoforms_exp_output )
+        shutil.copyfile( "gene_exp.diff", options.genes_exp_output )
+        shutil.copyfile( "tss_group_exp.diff", options.tss_groups_exp_output )
+        shutil.copyfile( "splicing.diff", options.splicing_diff_output )
+        shutil.copyfile( "cds.diff", options.cds_diff_output )
+        shutil.copyfile( "cds_exp.diff", options.cds_exp_fpkm_tracking_output )
+        shutil.copyfile( "promoters.diff", options.promoters_diff_output )    
+    except Exception, e:
+        stop_err( 'Error in cuffdiff:\n' + str( e ) )
 
 if __name__=="__main__": __main__()

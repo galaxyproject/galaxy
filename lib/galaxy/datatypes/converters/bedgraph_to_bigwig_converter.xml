@@ -2,9 +2,7 @@
   <!-- Used internally to generate track indexes -->
   <command>grep -v "^track" $input | wigToBigWig -clip stdin $chromInfo $output</command>
   <inputs>
-    <page>
       <param format="bedgraph" name="input" type="data" label="Choose wiggle"/>
-    </page>
    </inputs>
    <outputs>
       <data format="bigwig" name="output"/>

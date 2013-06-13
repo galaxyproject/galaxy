@@ -1,0 +1,28 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of Samtools indexed sequences data files.  You will need
+#to create these data files and then create a sam_fa_indices.loc file 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The sam_fa_indices.loc 
+#file has this format (white space characters are TAB characters):
+#
+#index	<seq>	<location>
+#
+#So, for example, if you had hg18 indexed stored in 
+#/depot/data2/galaxy/sam/, 
+#then the sam_fa_indices.loc entry would look like this:
+#
+#index	hg18	/depot/data2/galaxy/sam/hg18.fa
+#
+#and your /depot/data2/galaxy/sam/ directory
+#would contain hg18.fa and hg18.fa.fai files:
+#
+#-rw-r--r--  1 james    universe 830134 2005-09-13 10:12 hg18.fa
+#-rw-r--r--  1 james    universe 527388 2005-09-13 10:12 hg18.fa.fai
+#
+#Your sam_fa_indices.loc file should include an entry per line for 
+#each index set you have stored.  The file in the path does actually
+#exist, but it should never be directly used. Instead, the name serves
+#as a prefix for the index file.  For example:
+#
+#index	hg18	/depot/data2/galaxy/sam/hg18.fa
+#index	hg19	/depot/data2/galaxy/sam/hg19.fa

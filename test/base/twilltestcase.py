@@ -2,6 +2,7 @@ import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
 import StringIO, os, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
+import pprint
 
 import twill
 import twill.commands as tc
@@ -241,7 +242,27 @@ class TwillTestCase( unittest.TestCase ):
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
+    def json_from_url( self, url ):
+        self.visit_url( url )
+        return from_json_string( self.last_page() )
+        
     # Functions associated with histories
+    def get_history_from_api( self, encoded_history_id=None ):
+        if encoded_history_id is None:
+            history = self.get_latest_history()
+            encoded_history_id = history[ 'id' ]
+        return self.json_from_url( '/api/histories/%s/contents' % encoded_history_id )
+
+    def get_latest_history( self ):
+        return self.json_from_url( '/api/histories' )[ 0 ]
+    
+    def find_hda_by_dataset_name( self, name, history=None ):
+        if history is None:
+            history = self.get_history_from_api()
+        for hda in history:
+            if hda[ 'name' ] == name:
+                return hda
+
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.home()
@@ -249,8 +270,9 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( 'error' ) > -1:
             raise AssertionError('Errors in the history for user %s' % self.user )
+
     def check_history_for_string( self, patt, show_deleted=False ):
-        """Looks for 'string' in history page"""
+        """Breaks patt on whitespace and searches for each element seperately in the history"""
         self.home()
         if show_deleted:
             self.visit_page( "history?show_deleted=True" )
@@ -264,11 +286,87 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
                 raise AssertionError( errmsg )
         self.home()
+
+    def check_history_for_exact_string( self, string, show_deleted=False ):
+        """Looks for exact match to 'string' in history page"""
+        self.home()
+        if show_deleted:
+            self.visit_page( "history?show_deleted=True" )
+        else:
+            self.visit_page( "history" )
+        try:
+            tc.find( string )
+        except:
+            fname = self.write_temp_file( tc.browser.get_html() )
+            errmsg = "no match to '%s'\npage content written to '%s'" % ( string, fname )
+            raise AssertionError( errmsg )
+        self.home()
+
+    def check_history_json( self, pattern, check_fn, show_deleted=None, multiline=True ):
+        """
+        Tries to find a JSON string in the history page using the regex pattern,
+        parse it, and assert check_fn returns True when called on that parsed
+        data.
+        """
+        self.home()
+        if show_deleted:
+            self.visit_page( "history?show_deleted=True" )
+        elif show_deleted == False:
+            self.visit_page( "history?show_deleted=False" )
+        else:
+            self.visit_page( "history" )
+        try:
+            tc.find( pattern, flags=( 'm' if multiline else '' ) )
+            # twill stores the regex match in a special stack variable
+            match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
+            json_data = from_json_string( match )
+            assert check_fn( json_data ), 'failed check_fn: %s' %( check_fn.func_name )
+
+        except Exception, exc:
+            log.error( exc, exc_info=True )
+            log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
+            fname = self.write_temp_file( tc.browser.get_html() )
+            errmsg = ( "json '%s' could not be found or failed check_fn" % ( pattern ) +
+                       "\npage content written to '%s'" % ( fname ) )
+            raise AssertionError( errmsg )
+
+        self.home()
+
+    def is_history_empty( self ):
+        """
+        Uses history page JSON to determine whether this history is empty
+        (i.e. has no undeleted datasets).
+        """
+        return len( self.get_history_from_api() ) == 0
+
+    def check_hda_json_for_key_value( self, hda_id, key, value, use_string_contains=False ):
+        """
+        Uses the history API to determine whether the current history:
+        (1) Has a history dataset with the required ID.
+        (2) That dataset has the required key.
+        (3) The contents of that key match the provided value.
+        If use_string_contains=True, this will perform a substring match, otherwise an exact match.
+        """
+        #TODO: multi key, value
+        hda = dict()
+        for history_item in self.get_history_from_api():
+            if history_item[ 'id' ] == hda_id:
+                hda = self.json_from_url( history_item[ 'url' ] )
+                break
+        if hda:
+            if key in hda:
+                if use_string_contains:
+                    return value in hda[ key ]
+                else:
+                    return value == hda[ key ]
+        return False
+
     def clear_history( self ):
         """Empties a history of all datasets"""
         self.visit_page( "clear_history" )
         self.check_history_for_string( 'Your history is empty' )
         self.home()
+
     def delete_history( self, id ):
         """Deletes one or more histories"""
         history_list = self.get_histories_as_data_list()
@@ -279,6 +377,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
         self.home()
+
     def delete_current_history( self, strings_displayed=[] ):
         """Deletes the current history"""
         self.home()
@@ -286,16 +385,19 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def get_histories_as_data_list( self ):
         """Returns the data elements of all histories"""
         tree = self.histories_as_xml_tree()
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
+
     def get_history_as_data_list( self, show_deleted=False ):
         """Returns the data elements of a history"""
         tree = self.history_as_xml_tree( show_deleted=show_deleted )
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
+
     def history_as_xml_tree( self, show_deleted=False ):
         """Returns a parsed xml object of a history"""
         self.home()
@@ -303,6 +405,7 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
+
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
@@ -310,6 +413,7 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
+
     def history_options( self, user=False, active_datasets=False, activatable_datasets=False, histories_shared_by_others=False ):
         """Mimics user clicking on history options link"""
         self.home()
@@ -319,7 +423,7 @@ class TwillTestCase( unittest.TestCase ):
             if active_datasets:
                 self.check_page_for_string( 'Create</a> a new empty history' )
                 self.check_page_for_string( 'Construct workflow</a> from current history' )
-                self.check_page_for_string( 'Clone</a> current history' ) 
+                self.check_page_for_string( 'Copy</a> current history' ) 
             self.check_page_for_string( 'Share</a> current history' )
             self.check_page_for_string( 'Change default permissions</a> for current history' )
             if histories_shared_by_others:
@@ -329,6 +433,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Rename</a> current history' )
         self.check_page_for_string( 'Delete</a> current history' )
         self.home()
+
     def new_history( self, name=None ):
         """Creates a new, empty history"""
         self.home()
@@ -338,6 +443,7 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/history_new" % self.url )
         self.check_history_for_string('Your history is empty')
         self.home()
+
     def rename_history( self, id, old_name, new_name ):
         """Rename an existing history"""
         self.home()
@@ -345,6 +451,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
         self.check_page_for_string( check_str )
         self.home()
+
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
@@ -353,6 +460,7 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.new_history()
         self.home()
+
     def share_current_history( self, email, strings_displayed=[], strings_displayed_after_submit=[],
                                action='', action_strings_displayed=[], action_strings_displayed_after_submit=[] ):
         """Share the current history with different users"""
@@ -372,6 +480,7 @@ class TwillTestCase( unittest.TestCase ):
             for check_str in action_strings_displayed_after_submit:
                 self.check_page_for_string( check_str )
         self.home()
+
     def share_histories_with_users( self, ids, emails, strings_displayed=[], strings_displayed_after_submit=[],
                                     action=None, action_strings_displayed=[] ):
         """Share one or more histories with one or more different users"""
@@ -389,6 +498,7 @@ class TwillTestCase( unittest.TestCase ):
             for check_str in action_strings_displayed:
                 self.check_page_for_string( check_str )
         self.home()
+
     def unshare_history( self, history_id, user_id, strings_displayed=[] ):
         """Unshare a history that has been shared with another user"""
         self.visit_url( "%s/history/list?id=%s&operation=share+or+publish" % ( self.url, history_id ) )
@@ -396,12 +506,14 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         self.visit_url( "%s/history/sharing?unshare_user=%s&id=%s" % ( self.url, user_id, history_id ) )
         self.home()
+
     def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
-            self.check_history_for_string( escape( name ) )
+            self.check_history_for_exact_string( name )
         self.home()
+
     def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list" )
@@ -428,13 +540,13 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def clone_history( self, history_id, clone_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def copy_history( self, history_id, copy_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
-        self.visit_page( "history/clone?id=%s" % history_id )
+        self.visit_page( "history/copy?id=%s" % history_id )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        tc.fv( '1', 'clone_choice', clone_choice )
-        tc.submit( 'clone_choice_button' )
+        tc.fv( '1', 'copy_choice', copy_choice )
+        tc.submit( 'copy_choice_button' )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
@@ -698,11 +810,13 @@ class TwillTestCase( unittest.TestCase ):
                 # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
                 if self.keepOutdir:
                     ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
+                    log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
                     try:
                         shutil.copy( temp_name, ofn )
                     except Exception, exc:
                         error_log_msg  = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
                         error_log_msg += str( exc )
+                        log.error( error_log_msg, exc_info=True )
                     else:
                         log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
                         
@@ -954,10 +1068,8 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
-            tc.fv( '1', 'email', email )
-            tc.fv( '1', 'redirect', redirect )
-            tc.fv( '1', 'password', password )
-            tc.submit( 'login_button' )
+            self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
+
     def logout( self ):
         self.home()
         self.visit_page( "user/logout" )
@@ -965,6 +1077,14 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     
     # Functions associated with browsers, cookies, HTML forms and page visits
+
+    def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
+        if strings_displayed:
+            for string in strings_displayed:
+                self.check_page_for_string( string )
+        if strings_not_displayed:
+            for string in strings_not_displayed:
+                self.check_string_not_in_page( string )
 
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""        
@@ -1049,24 +1169,35 @@ class TwillTestCase( unittest.TestCase ):
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
         controls = {}
+        formcontrols = []
         hc_prefix = '<HiddenControl('
         for i, control in enumerate( f.controls ):
-           print "control %d: %s" % ( i, str( control ) )
+            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
+        for i, control in enumerate( f.controls ):
            if not hc_prefix in str( control ):
               try:
                 #check if a repeat element needs to be added
-                if control.name not in kwd and control.name.endswith( '_add' ):
-                    #control name doesn't exist, could be repeat
-                    repeat_startswith = control.name[0:-4]
-                    if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
-                        tc.submit( control.name )
-                        return self.submit_form( form_no=form_no, button=button, **kwd )
+                if control.name is not None:
+                    if control.name not in kwd and control.name.endswith( '_add' ):
+                        #control name doesn't exist, could be repeat
+                        repeat_startswith = control.name[0:-4]
+                        if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                            tc.submit( control.name )
+                            return self.submit_form( form_no=form_no, button=button, **kwd )
                 # Check for refresh_on_change attribute, submit a change if required
                 if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
                     changed = False
-                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] #For DataToolParameter, control.value is the HDA id, but kwd contains the filename.  This loop gets the filename/label for the selected values.
+                    # For DataToolParameter, control.value is the HDA id, but kwd contains the filename. 
+                    # This loop gets the filename/label for the selected values.
+                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
                     for value in kwd[ control.name ]:
-                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
+                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py.
+                        # This (and other places where this is done) should be refactored to use the HDA id.
+                        if len( value ) > 30 and control.is_of_kind( 'singlelist' ):
+                            field_value = '%s..%s' % ( value[:17], value[-11:] )
+                        else:
+                            field_value = value
+                        if field_value not in control.value and True not in [ field_value in item_label for item_label in item_labels ]:
                             changed = True
                             break
                     if changed:
@@ -1074,7 +1205,11 @@ class TwillTestCase( unittest.TestCase ):
                         control.clear()
                         # kwd[control.name] should be a singlelist
                         for elem in kwd[ control.name ]:
-                            tc.fv( f.name, control.name, str( elem ) )
+                            if len( elem ) > 30 and control.is_of_kind( 'singlelist' ):
+                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                            else:
+                                elem_name = elem
+                            tc.fv( f.name, control.name, str( elem_name ) )
                         # Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
@@ -1083,7 +1218,9 @@ class TwillTestCase( unittest.TestCase ):
                         tc.submit( '___refresh_grouping___' )
                         return self.submit_form( form_no=form_no, button=button, **kwd )
               except Exception, e:
-                log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
+                log.exception( "In submit_form, continuing, but caught exception." )
+                for formcontrol in formcontrols:
+                    log.debug( formcontrol )
                 continue
               controls[ control.name ] = control
         # No refresh_on_change attribute found in current form, so process as usual
@@ -1123,15 +1260,25 @@ class TwillTestCase( unittest.TestCase ):
                         for elem in control_value:
                             try:
                                 tc.fv( f.name, control.name, str( elem ) )
-                            except Exception, e2:
-                                print "Attempting to set control '", control.name, "' to value '", elem, "' threw exception: ", e2
-                                # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
-                                if len( elem ) > 30:
-                                    elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
-                                else:
-                                    elem_name = elem
-                                tc.fv( f.name, control.name, str( elem_name ) )
+                            except Exception:
+                                try:
+                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                                    if len( elem ) > 30:
+                                        elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                                        tc.fv( f.name, control.name, str( elem_name ) )
+                                        pass
+                                    else:
+                                        raise
+                                except Exception:
+                                    raise
+                            except Exception:
+                                for formcontrol in formcontrols:
+                                    log.debug( formcontrol )
+                                log.exception( "Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name )
+                                pass
                 except Exception, exc:
+                    for formcontrol in formcontrols:
+                        log.debug( formcontrol )
                     errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
                     errmsg += "control: %s\n" % str( control )
                     errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
@@ -1141,6 +1288,7 @@ class TwillTestCase( unittest.TestCase ):
                 # Add conditions for other control types here when necessary.
                 pass
         tc.submit( button )
+
     def refresh_form( self, control_name, value, form_no=0, **kwd ):
         """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
         # control_name is the name of the form field that requires refresh_on_change, and value is
@@ -1199,15 +1347,25 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
         self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
+    def get_running_datasets( self ):
+        self.visit_url( '/api/histories' )
+        history_id = from_json_string( self.last_page() )[0][ 'id' ]
+        self.visit_url( '/api/histories/%s/contents' % history_id )
+        jsondata = from_json_string( self.last_page() )
+        for history_item in jsondata:
+            self.visit_url( history_item[ 'url' ] )
+            item_json = from_json_string( self.last_page() )
+            if item_json[ 'state' ] in [ 'queued', 'running', 'paused' ]:
+                return True
+        return False
+
     def wait( self, maxseconds=120 ):
         """Waits for the tools to finish"""
         sleep_amount = 0.1
         slept = 0
         self.home()
         while slept <= maxseconds:
-            self.visit_page( "history" )
-            page = tc.browser.get_html()
-            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
+            if self.get_running_datasets():
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
@@ -1225,12 +1383,7 @@ class TwillTestCase( unittest.TestCase ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
-        tc.submit( 'create_user_button' )
+        self.submit_form( 1, 'create_user_button', email=email, redirect=redirect, password=password, confirm=password, username=username )
         previously_created = False
         username_taken = False
         invalid_username = False
@@ -1253,6 +1406,7 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
+
     def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
         self.home()
@@ -2356,3 +2510,6 @@ class TwillTestCase( unittest.TestCase ):
     def add_tag( self, item_id, item_class, context, new_tag ):
         self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
                         ( self.url, item_id, item_class, context, new_tag ) )
+    def get_tags( self, item_id, item_class ):
+        self.visit_url( "%s/tag/get_tagging_elt_async?item_id=%s&item_class=%s" % \
+                        ( self.url, item_id, item_class ) )

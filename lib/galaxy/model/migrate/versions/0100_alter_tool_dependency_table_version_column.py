@@ -21,15 +21,15 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     # Change the tool_dependency table's version column from TrimmedString to Text.
-    if migrate_engine.name == 'postgres':
+    if migrate_engine.name in ['postgresql', 'postgres']:
         cmd = "ALTER TABLE tool_dependency ALTER COLUMN version TYPE Text;"
     elif migrate_engine.name == 'mysql':
         cmd = "ALTER TABLE tool_dependency MODIFY COLUMN version Text;"
@@ -45,9 +45,10 @@ def upgrade():
         cmd = None
     if cmd:
         try:
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         except Exception, e:
             log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Not necessary to change column type Text to TrimmedString(40).
     pass

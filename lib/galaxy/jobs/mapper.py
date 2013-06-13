@@ -6,7 +6,14 @@ log = logging.getLogger( __name__ )
 
 import galaxy.jobs.rules
 
-DYNAMIC_RUNNER_PREFIX = "dynamic:///"
+DYNAMIC_RUNNER_NAME = "dynamic"
+DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
+
+class JobMappingException( Exception ):
+
+    def __init__( self, failure_message ):
+        self.failure_message = failure_message
+
 
 class JobRunnerMapper( object ):
     """
@@ -14,10 +21,10 @@ class JobRunnerMapper( object ):
     (in the form of job_wrappers) to job runner url strings.
     """
 
-    def __init__( self, job_wrapper, job_runner_name=None ):
+    def __init__( self, job_wrapper, url_to_destination, job_config ):
         self.job_wrapper = job_wrapper
-        self.job_runner_name = job_runner_name
-        self.rule_modules = self.__get_rule_modules( )
+        self.url_to_destination = url_to_destination
+        self.job_config = job_config
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
@@ -81,11 +88,28 @@ class JobRunnerMapper( object ):
 
         return expand_function( **actual_args )
 
-    def __determine_expand_function_name( self, option_parts ):
-        # default look for function with same name as tool, unless one specified
-        expand_function_name = self.job_wrapper.tool.id
-        if len( option_parts ) > 1:
-            expand_function_name = option_parts[ 1 ]
+    def __convert_url_to_destination( self, url ):
+        """
+        Job runner URLs are deprecated, but dynamic mapper functions may still
+        be returning them.  Runners are expected to be able to convert these to
+        destinations.
+
+        This method calls
+        JobHandlerQueue.DefaultJobDispatcher.url_to_destination, which in turn
+        calls the url_to_destination method for the appropriate runner.
+        """
+        dest = self.url_to_destination( url )
+        dest['id'] = DYNAMIC_DESTINATION_ID
+        return dest
+
+    def __determine_expand_function_name( self, destination ):
+        # default look for function with name matching an id of tool, unless one specified
+        expand_function_name = destination.params.get('function', None)
+        if not expand_function_name:
+            for tool_id in self.job_wrapper.tool.all_ids:
+                if self.__last_rule_module_with_function( tool_id ):
+                    expand_function_name = tool_id
+                    break                
         return expand_function_name
 
     def __get_expand_function( self, expand_function_name ):
@@ -99,37 +123,47 @@ class JobRunnerMapper( object ):
     def __last_rule_module_with_function( self, function_name ):
         # self.rule_modules is sorted in reverse order, so find first
         # wiht function
-        for rule_module in self.rule_modules:
+        for rule_module in self.__get_rule_modules( ):
             if hasattr( rule_module, function_name ):
                 return rule_module
         return None
                 
-    def __expand_dynamic_job_runner_url( self, options_str ):
-        option_parts = options_str.split( '/' )
-        expand_type = option_parts[ 0 ]
+    def __handle_dynamic_job_destination( self, destination ):
+        expand_type = destination.params.get('type', "python")
         if expand_type == "python":
-            expand_function_name = self.__determine_expand_function_name( option_parts )
+            expand_function_name = self.__determine_expand_function_name( destination )
             expand_function = self.__get_expand_function( expand_function_name )
-            return self.__invoke_expand_function( expand_function )
+            job_destination = self.__invoke_expand_function( expand_function )
+            if not isinstance(job_destination, galaxy.jobs.JobDestination):
+                job_destination_rep = str(job_destination)  # Should be either id or url
+                if '://' in job_destination_rep:
+                    job_destination = self.__convert_url_to_destination(job_destination_rep)
+                else:
+                    job_destination = self.job_config.get_destination(job_destination_rep)
+            return job_destination
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
-    def __cache_job_runner_url( self, params ):
-        # If there's already a runner set in the Job object, don't overwrite from the tool
-        if self.job_runner_name is not None:
-            raw_job_runner_url = self.job_runner_name
+    def __cache_job_destination( self, params ):
+        raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
+        #raw_job_destination_id_or_tag = self.job_wrapper.tool.get_job_destination_id_or_tag( params )
+        if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
+            job_destination = self.__handle_dynamic_job_destination( raw_job_destination )
         else:
-            raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )
-        if raw_job_runner_url.startswith( DYNAMIC_RUNNER_PREFIX ):
-            job_runner_url = self.__expand_dynamic_job_runner_url( raw_job_runner_url[ len( DYNAMIC_RUNNER_PREFIX ) : ] )
-        else:
-            job_runner_url = raw_job_runner_url
-        self.cached_job_runner_url = job_runner_url
+            job_destination = raw_job_destination
+            #job_destination_id_or_tag = raw_job_destination_id_or_tag
+        self.cached_job_destination = job_destination
+        #self.cached_job_destination_id_or_tag = job_destination_id_or_tag
 
-    def get_job_runner_url( self, params ):
+    def get_job_destination( self, params ):
         """
-        Cache the job_runner_url string to avoid recalculation.
+        Cache the job_destination to avoid recalculation.
         """
-        if not hasattr( self, 'cached_job_runner_url' ):
-            self.__cache_job_runner_url( params )
-        return self.cached_job_runner_url
+        if not hasattr( self, 'cached_job_destination' ):
+            self.__cache_job_destination( params )
+        return self.cached_job_destination
+
+    #def get_job_destination_id_or_tag( self, params ):
+    #    if not hasattr( self, 'cached_job_destination_id_or_tag' ):
+    #        self.__cache_job_destination( params )
+    #    return self.cached_job_destination_id_or_tag

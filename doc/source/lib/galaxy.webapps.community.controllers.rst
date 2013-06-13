@@ -65,11 +65,3 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`workflow` Module
-----------------------
-
-.. automodule:: galaxy.webapps.community.controllers.workflow
-    :members:
-    :undoc-members:
-    :show-inheritance:
-

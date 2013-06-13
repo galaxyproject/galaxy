@@ -27,7 +27,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Set quota default</div>
     <div class="toolFormBody">
-        <form name="set_quota_default" id="set_quota_default" action="${h.url_for( action='set_quota_default' )}" method="post" >
+        <form name="set_quota_default" id="set_quota_default" action="${h.url_for(controller='admin', action='set_quota_default' )}" method="post" >
             <input name="id" type="hidden" value="${id}"/>
             <div class="form-row">
                 <label>Is this quota a default for a class of users (if yes, what type)?</label>

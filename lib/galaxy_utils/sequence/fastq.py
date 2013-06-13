@@ -514,9 +514,13 @@ class fastqNamedReader( object ):
         self.apply_galaxy_conventions = apply_galaxy_conventions
     def close( self ):
         return self.file.close()
-    def get( self, sequence_id ):
-        if not isinstance( sequence_id, basestring ):
-            sequence_id = sequence_id.identifier
+    def get( self, sequence_identifier ):
+        # Input is either a sequence ID or a sequence object
+        if not isinstance( sequence_identifier, basestring ):
+            # Input was a sequence object (not a sequence ID). Get the sequence ID
+            sequence_identifier = sequence_identifier.identifier
+        # Get only the ID part of the sequence header
+        sequence_id, sequence_sep, sequence_desc = sequence_identifier.partition(' ')
         rval = None
         if sequence_id in self.offset_dict:
             initial_offset = self.file.tell()
@@ -525,7 +529,7 @@ class fastqNamedReader( object ):
                 del self.offset_dict[ sequence_id ]
             self.file.seek( seq_offset )
             rval = self.reader.next()
-            #assert rval.identifier == sequence_id, 'seq id mismatch' #should be able to remove this
+            #assert rval.id == sequence_id, 'seq id mismatch' #should be able to remove this
             self.file.seek( initial_offset )
         else:
             while True:
@@ -535,13 +539,14 @@ class fastqNamedReader( object ):
                 except StopIteration:
                     self.eof = True
                     break #eof, id not found, will return None
-                if fastq_read.identifier == sequence_id:
+                fastq_read_id, fastq_read_sep, fastq_read_desc = fastq_read.identifier.partition(' ')
+                if fastq_read_id == sequence_id:
                     rval = fastq_read
                     break
                 else:
-                    if fastq_read.identifier not in self.offset_dict:
-                        self.offset_dict[ fastq_read.identifier ] = []
-                    self.offset_dict[ fastq_read.identifier ].append( offset )
+                    if fastq_read_id not in self.offset_dict:
+                        self.offset_dict[ fastq_read_id ] = []
+                    self.offset_dict[ fastq_read_id ].append( offset )
         if rval is not None and self.apply_galaxy_conventions:
             rval.apply_galaxy_conventions()
         return rval
@@ -582,16 +587,20 @@ class fastqJoiner( object ):
         self.format = format
         self.force_quality_encoding = force_quality_encoding
     def join( self, read1, read2 ):
-        if read1.identifier.endswith( '/2' ) and read2.identifier.endswith( '/1' ):
+        read1_id, read1_sep, read1_desc = read1.identifier.partition(' ')
+        read2_id, read2_sep, read2_desc = read2.identifier.partition(' ')
+        if read1_id.endswith( '/2' ) and read2_id.endswith( '/1' ):
             #swap 1 and 2
             tmp = read1
             read1 = read2
             read2 = tmp
             del tmp
-        if read1.identifier.endswith( '/1' ) and read2.identifier.endswith( '/2' ):
-            identifier = read1.identifier[:-2]
-        else:
-            identifier = read1.identifier
+        if read1_id.endswith( '/1' ) and read2_id.endswith( '/2' ):
+            read1_id = read1_id[:-2]
+
+        identifier = read1_id
+        if read1_desc:
+            identifier = identifier + ' ' + read1_desc
         
         #use force quality encoding, if not present force to encoding of first read
         force_quality_encoding = self.force_quality_encoding
@@ -621,17 +630,18 @@ class fastqJoiner( object ):
             rval.quality = "%s %s" % ( new_read1.quality.strip(), new_read2.quality.strip() )
         return rval
     def get_paired_identifier( self, fastq_read ):
-        identifier = fastq_read.identifier
-        if identifier[-2] == '/':
-            if identifier[-1] == "1":
-                identifier = "%s2" % identifier[:-1]
-            elif identifier[-1] == "2":
-                identifier = "%s1" % identifier[:-1]
-        return identifier
+        read_id, read_sep, read_desc = fastq_read.identifier.partition(' ')
+        if read_id[-2] == '/':
+            if read_id[-1] == "1":
+                read_id = "%s2" % read_id[:-1]
+            elif read_id[-1] == "2":
+                read_id = "%s1" % read_id[:-1]
+        return read_id
     def is_first_mate( self, sequence_id ):
         is_first = None
         if not isinstance( sequence_id, basestring ):
             sequence_id = sequence_id.identifier
+        sequence_id, sequence_sep, sequence_desc = sequence_id.partition(' ')
         if sequence_id[-2] == '/':
             if sequence_id[-1] == "1":
                 is_first = True

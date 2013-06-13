@@ -12,7 +12,7 @@
         window.requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
               timeToCall);
             lastTime = currTime + timeToCall;
             return id;
@@ -70,7 +70,7 @@ $.fn.makeAbsolute = function(rebase) {
  */
 function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
-        This allows options to be changed at a later time 
+        This allows options to be changed at a later time
     */
     var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
@@ -82,7 +82,7 @@ function make_popupmenu(button_element, initial_options) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
         
-        // Need setTimeouts so clicks don't interfere with each other        
+        // Need setTimeouts so clicks don't interfere with each other
         setTimeout( function() {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $( "<ul class='dropdown-menu' id='" + button_element.attr('id') + "-menu'></ul>" );
@@ -154,11 +154,11 @@ function make_popup_menus( parent ) {
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
-                // why do we need the DOM (mixed with jq)?
                 link_dom = link.get(0),
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
+            console.debug( link.text(), href, target );
             
             // no href - no function (gen. a label)
             if (!href) {
@@ -171,25 +171,38 @@ function make_popup_menus( parent ) {
                     if ( !confirmtext || confirm( confirmtext ) ) {
                         var f;
                         // relocate the center panel
-                        if ( target == "_parent" ) {
+                        if ( target === "_parent" ) {
                             window.parent.location = href;
                             
                         // relocate the entire window
-                        } else if ( target == "_top" ) {
+                        } else if ( target === "_top" ) {
                             window.top.location = href;
                             
-                        //??...wot?
-                        } else if ( target == "demo" ) {
-                            // Http request target is a window named
-                            // demolocal on the local box
+                        // Http request target is a window named demolocal on the local box
+                        } else if ( target === "demo" ) {
                             if ( f === undefined || f.closed ) {
                                 f = window.open( href,target );
                                 f.creator = self;
                             }
                             
-                        // relocate this panel
+                        // this panel or other, valid panels
                         } else {
-                            window.location = href;
+                            // it may be that the button and menu href are not in the same frame:
+                            //  allow certain frame names to be used as a target
+                            var other_valid_targets = [
+                                'galaxy_main'
+                                // following are blocked until needed
+                                //'galaxy_tools',
+                                //'galaxy_history'
+                            ];
+                            if( ( target && ( target in window )
+                            &&  ( other_valid_targets.indexOf( target ) !== -1 ) ) ){
+                                window[ target ].location = href;
+
+                            // relocate this panel
+                            } else {
+                                window.location = href;
+                            }
                         }
                     }
                 };
@@ -239,10 +252,19 @@ function naturalSort(a, b) {
     return 0;
 }
 
+$.fn.refresh_select2 = function() {
+    var select_elt = $(this);
+    var options = { width: "resolve",
+                    closeOnSelect: !select_elt.is("[MULTIPLE]")
+                  };
+    return select_elt.select2( options );
+}
+
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length, max_length, select_elts) {
-    // To do replace, jQuery's autocomplete plugin must be loaded.
-    if (!jQuery().autocomplete) {
+    // To do replace, the select2 plugin must be loaded.
+
+    if (!jQuery.fn.select2) {
         return;
     }
     
@@ -254,8 +276,8 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         max_length = 3000;
     }
 
-    var select_elts = select_elts || $('select');
-    
+    select_elts = select_elts || $('select');
+
     select_elts.each( function() {
         var select_elt = $(this);
         // Make sure that options is within range.
@@ -263,136 +285,24 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         if ( (num_options < min_length) || (num_options > max_length) ) {
             return;
         }
-            
-        // Skip multi-select because widget cannot handle multi-select.
-        if (select_elt.attr('multiple') === 'multiple') {
-            return;
-        }
-            
+        
         if (select_elt.hasClass("no-autocomplete")) {
             return;
         }
-        
-        // Replace select with text + autocomplete.
-        var start_value = select_elt.attr('value');
-        
-        // Set up text input + autocomplete element.
-        var text_input_elt = $("<input type='text' class='text-and-autocomplete-select'></input>");
-        text_input_elt.attr('size', 40);
-        text_input_elt.attr('name', select_elt.attr('name'));
-        text_input_elt.attr('id', select_elt.attr('id'));
-        text_input_elt.click( function() {
-            // Show all. Also provide note that load is happening since this can be slow.
-            var cur_value = $(this).val();
-            $(this).val('Loading...');
-            $(this).showAllInCache();
-            $(this).val(cur_value);
-            $(this).select();
-        });
 
-        // Get options for select for autocomplete.
-        var select_options = [];
-        var select_mapping = {};
-        select_elt.children('option').each( function() {
-            // Get text, value for option.
-            var text = $(this).text();
-            var value = $(this).attr('value');
-
-            // Set options and mapping. Mapping is (i) [from text to value] AND (ii) [from value to value]. This
-            // enables a user to type the value directly rather than select the text that represents the value. 
-            select_options.push( text );
-            select_mapping[ text ] = value;
-            select_mapping[ value ] = value;
-
-            // If this is the start value, set value of input element.
-            if ( value == start_value ) {
-                text_input_elt.attr('value', text);
-            }
-        });
-        
-        // Set initial text if it's empty.
-        if ( start_value === '' || start_value === '?') {
-            text_input_elt.attr('value', 'Click to Search or Select');
-        }
-        
-        // Sort dbkey options list only.
-        if (select_elt.attr('name') == 'dbkey') {
-            select_options = select_options.sort(naturalSort);
-        }
-        
-        // Do autocomplete.
-        var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: max_length, minChars : 0, hideForLessThanMinChars : false };
-        text_input_elt.autocomplete(select_options, autocomplete_options);
-
-        // Replace select with text input.
-        select_elt.replaceWith(text_input_elt);
-        
-        // Set trigger to replace text with value when element's form is submitted. If text doesn't correspond to value, default to start value.
-        var submit_hook = function() {
-            // Try to convert text to value.
-            var cur_value = text_input_elt.attr('value');
-            var new_value = select_mapping[cur_value];
-            if (new_value !== null && new_value !== undefined) {
-                text_input_elt.attr('value', new_value);
-            } else {
-                // If there is a non-empty start value, use that; otherwise unknown.
-                if (start_value !== "") {
-                    text_input_elt.attr('value', start_value);
-                } else {
-                    // This is needed to make the DB key work.
-                    text_input_elt.attr('value', '?');
-                }
-            }
-        };
-        text_input_elt.parents('form').submit( function() { submit_hook(); } );
-        
-        // Add custom event so that other objects can execute name --> value conversion whenever they want.
-        $(document).bind("convert_to_values", function() { submit_hook(); } );
-        
-        // If select is refresh on change, mirror this behavior.
-        if (select_elt.attr('refresh_on_change') == 'true') {
-            // Get refresh vals.
-            var ref_on_change_vals = select_elt.attr('refresh_on_change_values'),
-                last_selected_value = select_elt.attr("last_selected_value");
-            if (ref_on_change_vals !== undefined) {
-                ref_on_change_vals = ref_on_change_vals.split(',');
-            }
-            // Function that attempts to refresh based on the value in the text element.
-            var try_refresh_fn = function() {
-                // Get new value and see if it can be matched.
-                var new_value = select_mapping[text_input_elt.attr('value')];
-                if (last_selected_value !== new_value && new_value !== null && new_value !== undefined) {
-                    if (ref_on_change_vals !== undefined && $.inArray(new_value, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
-                        return;
-                    }
-                    text_input_elt.attr('value', new_value);
-                    $(window).trigger("refresh_on_change");
-                    text_input_elt.parents('form').submit();
-                }
-            };
-            
-            // Attempt refresh if (a) result event fired by autocomplete (indicating autocomplete occurred) or (b) on keyup (in which
-            // case a user may have manually entered a value that needs to be refreshed).
-            text_input_elt.bind("result", try_refresh_fn);
-            text_input_elt.keyup( function(e) {
-                if (e.keyCode === 13) { // Return key
-                    try_refresh_fn();
-                }
-            });
-            
-            // Disable return key so that it does not submit the form automatically. This is done because element should behave like a 
-            // select (enter = select), not text input (enter = submit form).
-            text_input_elt.keydown( function(e) {
-                if (e.keyCode === 13) { // Return key
-                    return false;
-                }
-            });
-        }
+        /* Replaced jQuery.autocomplete with select2, notes:
+         * - multiple selects are supported
+         * - the original element is updated with the value, convert_to_values should not be needed
+         * - events are fired when updating the original element, so refresh_on_change should just work
+         *
+         * - should we still sort dbkey fields here?
+         */
+        select_elt.refresh_select2();
     });
 }
 
 /**
- * Make an element with text editable: (a) when user clicks on text, a textbox/area 
+ * Make an element with text editable: (a) when user clicks on text, a textbox/area
  * is provided for editing; (b) when enter key pressed, element's text is set and on_finish
  * is called.
  */
@@ -439,12 +349,14 @@ $.fn.make_text_editable = function(config_dict) {
             input_elt, button_elt;
             
         if (use_textarea) {
-            input_elt = $("<textarea/>").attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text)).keyup(function(e) {
-                if (e.keyCode === 27) {
-                    // Escape key.
-                    set_text(cur_text);
-                }
-            });
+            input_elt = $("<textarea/>")
+                .attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text))
+                .keyup(function(e) {
+                    if (e.keyCode === 27) {
+                        // Escape key.
+                        set_text(cur_text);
+                    }
+                });
             button_elt = $("<button/>").text("Done").click(function() {
                 set_text(input_elt.val());
                 // Return false so that click does not propogate to container.
@@ -464,7 +376,7 @@ $.fn.make_text_editable = function(config_dict) {
                     set_text($(this).val());
                 }
             });
-        }               
+        }
                                 
         // Replace text with input object(s) and focus & select.
         container.text("");
@@ -487,10 +399,11 @@ $.fn.make_text_editable = function(config_dict) {
     return container;
 };
 
-/** 
+/**
  * Edit and save text asynchronously.
  */
-function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
+function async_save_text( click_to_edit_elt, text_elt_id, save_url,
+                          text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish ) {
     // Set defaults if necessary.
     if (num_cols === undefined) {
         num_cols = 30;
@@ -534,7 +447,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                 $.ajax({
                     url: save_url,
                     data: ajax_data,
-                    error: function() { 
+                    error: function() {
                         alert( "Text editing for elt " + text_elt_id + " failed" );
                         // TODO: call finish or no? For now, let's not because error occurred.
                     },
@@ -567,6 +480,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
 }
 
 function init_history_items(historywrapper, noinit, nochanges) {
+    //NOTE: still needed for non-panel history views
 
     var action = function() {
         // Load saved state and show as necessary
@@ -593,37 +507,38 @@ function init_history_items(historywrapper, noinit, nochanges) {
             var id = this.id,
                 body = $(this).children( "div.historyItemBody" ),
                 peek = body.find( "pre.peek" );
-            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" ).click( function() {
-                var prefs;
-                if ( body.is(":visible") ) {
-                    // Hiding stuff here
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
-                    body.slideUp( "fast" );
-                    
-                    if (!nochanges) { // Ignore embedded item actions
-                        // Save setting
-                        prefs = $.jStorage.get("history_expand_state");
-                        if (prefs) {
-                            delete prefs[id];
+            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" )
+                .click( function() {
+                    var prefs;
+                    if ( body.is(":visible") ) {
+                        // Hiding stuff here
+                        if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
+                        body.slideUp( "fast" );
+
+                        if (!nochanges) { // Ignore embedded item actions
+                            // Save setting
+                            prefs = $.jStorage.get("history_expand_state");
+                            if (prefs) {
+                                delete prefs[id];
+                                $.jStorage.set("history_expand_state", prefs);
+                            }
+                        }
+                    } else {
+                        // Showing stuff here
+                        body.slideDown( "fast", function() {
+                            if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); }
+                        });
+
+                        if (!nochanges) {
+                            // Save setting
+                            prefs = $.jStorage.get("history_expand_state");
+                            if (!prefs) { prefs = {}; }
+                            prefs[id] = true;
                             $.jStorage.set("history_expand_state", prefs);
                         }
                     }
-                } else {
-                    // Showing stuff here
-                    body.slideDown( "fast", function() { 
-                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    
-                    if (!nochanges) {
-                        // Save setting
-                        prefs = $.jStorage.get("history_expand_state");
-                        if (!prefs) { prefs = {}; }
-                        prefs[id] = true;
-                        $.jStorage.set("history_expand_state", prefs);
-                    }
-                }
-                return false;
-            });
+                    return false;
+                });
         });
         
         // Generate 'collapse all' link
@@ -657,7 +572,7 @@ function commatize( number ) {
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
-    // Function may be called in top frame or in tool_menu_frame; 
+    // Function may be called in top frame or in tool_menu_frame;
     // in either case, get the tool menu frame.
     var tool_menu_frame = $("#galaxy_tools").contents();
     if (tool_menu_frame.length === 0) {
@@ -673,7 +588,7 @@ function reset_tool_search( initValue ) {
     tool_menu_frame.find(".toolTitle").show();
     tool_menu_frame.find(".toolPanelLabel").show();
     tool_menu_frame.find(".toolSectionWrapper").each( function() {
-        if ($(this).attr('id') != 'recently_used_wrapper') {
+        if ($(this).attr('id') !== 'recently_used_wrapper') {
             // Default action.
             $(this).show();
         } else if ($(this).hasClass("user_pref_visible")) {
@@ -729,6 +644,7 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
 };
 
 $(document).ready( function() {
+
     $("select[refresh_on_change='true']").change( function() {
         var select_field = $(this),
             select_val = select_field.val(),

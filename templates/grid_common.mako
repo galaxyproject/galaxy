@@ -1,5 +1,5 @@
-<%! 
-    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter 
+<%!
+    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
 %>
 
@@ -16,7 +16,7 @@
         %endif
         <td style="padding: 0;">
             %if isinstance(column, TextColumn):
-                <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
+                <form class="text-filter-form" column_key="${column.key}" action="${url(dict())}" method="get" >
                     ## Carry forward filtering criteria with hidden inputs.
                     %for temp_column in grid.columns:
                         %if temp_column.key in cur_filter_dict:
@@ -30,7 +30,6 @@
                             %endif
                         %endif
                     %endfor
-                    
                     ## Print current filtering criteria and links to delete.
                     <span id="${column.key}-filtering-criteria">
                         %if column.key in cur_filter_dict:
@@ -40,7 +39,7 @@
                                     <span class='text-filter-val'>
                                         ${cur_filter_dict[column.key]}
                                         <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                                        <a href="${url( filter_all.get_url_args() )}"><span class="delete-search-icon" /></a>                                
+                                        <a href="${url(filter_all.get_url_args())}"><span class="delete-search-icon" /></a>
                                     </span>
                                 %endif
                             %elif isinstance( column_filter, list ):
@@ -54,7 +53,7 @@
                                             del new_filter[ i ]
                                             new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
                                         %>
-                                        <a href="${url( new_column_filter.get_url_args() )}"><span class="delete-search-icon" /></a>
+                                        <a href="${url(new_column_filter.get_url_args())}"><span class="delete-search-icon" /></a>
                                     </span>
                                 %endfor
                             %endif
@@ -91,7 +90,7 @@
                             <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
                         %else:
                             <span class="categorical-filter ${column.key}-filter">
-                                <a href="${url( filter.get_url_args() )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
+                                <a href="${url(filter.get_url_args())}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
                             </span>
                         %endif
                     %endfor
@@ -119,7 +118,7 @@
                 ## Clear the standard search.
                 ##|
                 ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>
+                ##<a href="${url(filter_all.get_url_args())}">Clear All</a>
                 
                 ## Only show advanced search if there are filterable columns.
                 <%
@@ -133,7 +132,7 @@
                 %>
                 %if show_advanced_search_link:
                     <% args = { "advanced-search" : True } %>
-                    <a href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
+                    <a href="${url(args)}" class="advanced-search-toggle">Advanced Search</a>
                 %endif
             </td></tr>
         </table>
@@ -157,13 +156,13 @@
         <table>
             <tr><td style="text-align: left" colspan="100">
                 <% args = { "advanced-search" : False } %>
-                <a href="${url( args )}" class="advanced-search-toggle">Close Advanced Search</a>
+                <a href="${url(args)}" class="advanced-search-toggle">Close Advanced Search</a>
                 ## Link to clear all filters.
                 ##|
                 ##<%
                 ##    no_filter = GridColumnFilter("Clear All", default_filter_dict)
                 ##%>
-                ##<a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
+                ##<a href="${url(no_filter.get_url_args())}">${no_filter.label}</a>
             </td></tr>
             %for column in grid.columns:            
                 %if column.filterable == "advanced":

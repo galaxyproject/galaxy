@@ -14,8 +14,7 @@ from galaxy.util.json import from_json_string, to_json_string
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def _sniffnfix_pg9_hex(value):
     """
@@ -29,14 +28,15 @@ def _sniffnfix_pg9_hex(value):
     except Exception, ex:
         return value
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     cmd = "SELECT form_values.id as id, form_values.content as field_values, form_definition.fields as fdfields " \
           + " FROM form_definition, form_values " \
           + " WHERE form_values.form_definition_id=form_definition.id " \
           + " ORDER BY form_values.id"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     corrupted_rows = 0
     for row in result:
         # first check if loading the dict from the json succeeds
@@ -61,8 +61,8 @@ def upgrade():
                 field_name_key = '"%s": "' % field['name']
                 field_index = field_values_str.find( field_name_key )
                 if field_index == -1:
-                    # if the field name is not present the field values dict then 
-                    # inform the admin that this form values cannot be fixed 
+                    # if the field name is not present the field values dict then
+                    # inform the admin that this form values cannot be fixed
                     print "The 'content' field of row 'id' %i does not have the field '%s' in the 'form_values' table and could not be fixed by this migration script." % ( int( field['id'] ), field['name'] )
                 else:
                     # check if this is the last field
@@ -87,7 +87,7 @@ def upgrade():
             # update the db
             json_values = to_json_string(field_values_dict)
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( json_values, int( row['id'] ) )
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             try:
                 print "Post replacement: %s" % json_values
             except:
@@ -97,6 +97,7 @@ def upgrade():
     else:
         print 'No corrupted rows found.'
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass
 

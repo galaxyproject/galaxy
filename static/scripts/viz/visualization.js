@@ -68,7 +68,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
  * Helper to determine if object is jQuery deferred.
  */
 var is_deferred = function ( d ) {
-    return ( 'isResolved' in d );
+    return ('promise' in d);
 };
 
 // --------- Models ---------
@@ -120,67 +120,105 @@ _.extend( CanvasManager.prototype, {
 });
 
 /**
- * Generic cache that handles key/value pairs.
+ * Generic cache that handles key/value pairs. Keys can be any object that can be 
+ * converted to a String and compared.
  */ 
 var Cache = Backbone.Model.extend({
     defaults: {
         num_elements: 20,
+        // Objects in cache; indexes into cache are strings of keys. 
         obj_cache: null,
+        // key_ary contains keys for objects in cache.
         key_ary: null
     },
 
     initialize: function(options) {
         this.clear();
     },
-    
+
+    /**
+     * Get an element from the cache using its key.
+     */    
     get_elt: function(key) {
         var obj_cache = this.attributes.obj_cache,
             key_ary = this.attributes.key_ary,
-            index = key_ary.indexOf(key);
+            key_str = key.toString(),
+            index = _.indexOf(key_ary, function(k) {
+                return k.toString() === key_str;
+            });
+
+        // Update cache.
         if (index !== -1) {
-            if (obj_cache[key].stale) {
-                // Object is stale, so remove key and object.
+            // Object is in cache, so update it.
+            if (obj_cache[key_str].stale) {
+                // Object is stale: remove key and object.
                 key_ary.splice(index, 1);
-                delete obj_cache[key];
+                delete obj_cache[key_str];
             }
             else {
+                // Move key to back because it is most recently used.
                 this.move_key_to_end(key, index);
             }
         }
-        return obj_cache[key];
+
+        return obj_cache[key_str];
     },
     
+    /**
+     * Put an element into the cache.
+     */
     set_elt: function(key, value) {
         var obj_cache = this.attributes.obj_cache,
             key_ary = this.attributes.key_ary,
+            key_str = key.toString(),
             num_elements = this.attributes.num_elements;
-        if (!obj_cache[key]) {
+
+        // Update keys, objects.
+        if (!obj_cache[key_str]) {
+            // Add object to cache.
+
             if (key_ary.length >= num_elements) {
-                // Remove first element
+                // Cache full, so remove first element.
                 var deleted_key = key_ary.shift();
-                delete obj_cache[deleted_key];
+                delete obj_cache[deleted_key.toString()];
             }
+
+            // Add key.
             key_ary.push(key);
         }
-        obj_cache[key] = value;
+
+        // Add object.
+        obj_cache[key_str] = value;
         return value;
     },
     
-    // Move key to end of cache. Keys are removed from the front, so moving a key to the end 
-    // delays the key's removal.
+    /** 
+     * Move key to end of cache. Keys are removed from the front, so moving a key to the end 
+     * delays the key's removal.
+     */
     move_key_to_end: function(key, index) {
         this.attributes.key_ary.splice(index, 1);
         this.attributes.key_ary.push(key);
     },
     
+    /**
+     * Clear all elements from the cache.
+     */
     clear: function() {
         this.attributes.obj_cache = {};
         this.attributes.key_ary = [];
     },
     
-    // Returns the number of elements in the cache.
+    /** Returns the number of elements in the cache. */
     size: function() {
         return this.attributes.key_ary.length;
+    },
+
+    /** Returns key most recently added to cache. */
+    most_recently_added: function() {
+        return this.size() === 0 ? null : 
+               // Most recent key is at the end of key array. 
+               this.attributes.key_ary[this.attributes.key_ary.length - 1];
     }
 });
 
@@ -190,7 +228,9 @@ var Cache = Backbone.Model.extend({
 var GenomeDataManager = Cache.extend({
     defaults: _.extend({}, Cache.prototype.defaults, {
         dataset: null,
+        genome: null,
         init_data: null,
+        min_region_size: 200,
         filters_manager: null,
         data_type: "data",
         data_mode_compatible: function(entry, mode) { return true; },
@@ -236,8 +276,8 @@ var GenomeDataManager = Cache.extend({
             ready_deferred = $.Deferred(),
             // If requesting raw data, query dataset state; if requesting (converted) data, 
             // need to query converted datasets state.
-            query_type = (this.get('data_type') == 'raw_data' ? 'state' : 
-                          this.get('data_type') == 'data' ? 'converted_datasets_state' : "error" ),
+            query_type = (this.get('data_type') === 'raw_data' ? 'state' : 
+                          this.get('data_type') === 'data' ? 'converted_datasets_state' : "error" ),
             ss_deferred = new util_mod.ServerStateDeferred({
                 ajax_settings: {
                     url: this.get('dataset').url(),
@@ -304,6 +344,8 @@ var GenomeDataManager = Cache.extend({
         // Do request.
         var manager = this,
             entry = $.getJSON(dataset.url(), params, function (result) {
+                // Add region to the result.
+                result.region = region;
                 manager.set_data(region, result);
             });
 
@@ -315,14 +357,6 @@ var GenomeDataManager = Cache.extend({
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
-        // Debugging:
-        //console.log("get_data", low, high, mode);
-        /*
-        console.log("cache contents:")
-        for (var i = 0; i < this.key_ary.length; i++) {
-            console.log("\t", this.key_ary[i], this.obj_cache[this.key_ary[i]]);
-        }
-        */
                 
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
@@ -332,28 +366,61 @@ var GenomeDataManager = Cache.extend({
         }
 
         //
-        // Look in cache for data that can be used. Data can be reused if it
-        // has the requested data and is not summary tree and has details.
+        // Look in cache for data that can be used.
         // TODO: this logic could be improved if the visualization knew whether
         // the data was "index" or "data."
         //
         var key_ary = this.get('key_ary'),
             obj_cache = this.get('obj_cache'),
-            key, entry_region;
+            entry_region, is_subregion;
         for (var i = 0; i < key_ary.length; i++) {
-            key = key_ary[i];
-            entry_region = new GenomeRegion({from_str: key});
-        
+            entry_region = key_ary[i];
+            
             if (entry_region.contains(region)) {
+                is_subregion = true;
+
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
-                entry = obj_cache[key];
+                entry = obj_cache[entry_region.toString()];
                 if ( is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
-                    this.move_key_to_end(key, i);
+                    this.move_key_to_end(entry_region, i);
+
+                    // If there's data, subset it.
+                    if ( !is_deferred(entry) ) {
+                        var subset_entry = this.subset_entry(entry, region);
+                        this.set(region, subset_entry);
+                        entry = subset_entry;
+                    }
+
                     return entry;
                 }
             }
+        }
+
+        // FIXME: There _may_ be instances where region is a subregion of another entry but cannot be 
+        // subsetted. For these cases, do not increase length because region will never be found (and
+        // an infinite loop will occur.)
+        // If needed, extend region to make it minimum size.
+        if (!is_subregion && region.length() < this.attributes.min_region_size) {
+            // IDEA: alternative heuristic is to find adjacent cache entry to region and use that to extend.
+            // This would prevent bad extensions when zooming in/out while still preserving the behavior
+            // below.
+
+            // Use heuristic to extend region: extend relative to last data request.
+            var last_request = this.most_recently_added();
+            if (!last_request || (region.get('start') > last_request.get('start'))) {
+                // This request is after the last request, so extend right.
+                region.set('end', region.get('start') + this.attributes.min_region_size);
+            }
+            else {
+                // This request is after the last request, so extend left.
+                region.set('start', region.get('end') - this.attributes.min_region_size);
+            }
+
+            // Trim region to avoid invalid coordinates.
+            region.set('genome', this.attributes.genome);
+            region.trim();
         }
 
         return this.load_data(region, mode, resolution, extra_params);
@@ -454,9 +521,6 @@ var GenomeDataManager = Cache.extend({
             // FIXME: constant should go somewhere.
             extra_params.num_samples = 1000 * detail_multiplier;
         }
-        else if (cur_data.dataset_type === 'summary_tree') {
-            extra_params.level = Math.min(cur_data.level - 1, 2);
-        }
 
         return this.load_data(region, mode, resolution, extra_params);
     },
@@ -515,23 +579,42 @@ var GenomeDataManager = Cache.extend({
 
         return deferred;
     },
-        
+
     /**
-     * Get data from the cache.
+     * Returns entry with only data in the subregion.
      */
-    get_elt: function(region) {
-        return Cache.prototype.get_elt.call(this, region.toString());
-    },
-    
-    /**
-     * Sets data in the cache.
-     */
-    set_elt: function(region, result) {
-        return Cache.prototype.set_elt.call(this, region.toString(), result);
+    subset_entry: function(entry, subregion) {
+        // Dictionary from entry type to function for subsetting data.
+        var subset_fns = {
+            bigwig: function(data, subregion) {
+                return _.filter(data, function(data_point) {
+                    return data_point[0] >= subregion.get('start') && 
+                           data_point[0] <= subregion.get('end');
+                });
+            },
+            refseq: function(data, subregion) {
+                var seq_start = subregion.get('start') - entry.region.get('start'),
+                    seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
+                return entry.data.slice(seq_start, seq_end);
+            }
+        };
+
+        // Subset entry if there is a function for subsetting and regions are not the same.
+        var subregion_data = entry.data;
+        if (!entry.region.same(subregion) && entry.dataset_type in subset_fns) {
+            subregion_data = subset_fns[entry.dataset_type](entry.data, subregion);
+        }
+
+        // Return entry with subregion's data.
+        return {
+            region: subregion,
+            data: subregion_data,
+            dataset_type: entry.dataset_type
+        };
     }
 });
 
-var ReferenceTrackDataManager = GenomeDataManager.extend({
+var GenomeReferenceDataManager = GenomeDataManager.extend({
     initialize: function(options) {
         // Use generic object in place of dataset and set urlRoot to fetch data.
         var dataset_placeholder = new Backbone.Model();
@@ -540,13 +623,11 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
     },
 
     load_data: function(region, mode, resolution, extra_params) {
-        if (resolution > 1) {
-            // Now that data is pre-fetched before draw, we don't load reference tracks
-            // unless it's at the bottom level.
-            return { data: null };
-        }
-        return GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params);
-    } 
+        // Fetch data if region is not too large.
+        return ( region.length() <= 100000 ? 
+                 GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params) :
+                 { data: null, region: region } );
+    }
 });
  
 /**
@@ -574,13 +655,22 @@ var Genome = Backbone.Model.extend({
      * Returns a GenomeRegion object denoting a complete chromosome.
      */
     get_chrom_region: function(chr_name) {
+        // FIXME: use findWhere in underscore 1.4
         var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) { 
-            return chrom_info.chrom == chr_name;
+            return chrom_info.chrom === chr_name;
         });
         return new GenomeRegion({
             chrom: chrom_info.chrom,
             end: chrom_info.len
         });
+    },
+
+    /** Returns the length of a chromosome. */
+    get_chrom_len: function(chr_name) {
+        // FIXME: use findWhere in underscore 1.4
+        return _.find(this.get_chroms_info(), function(chrom_info) { 
+            return chrom_info.chrom === chr_name;
+        }).len;
     }
 });
 
@@ -591,7 +681,19 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     defaults: {
         chrom: null,
         start: 0,
-        end: 0
+        end: 0,
+        str_val: null,
+        genome: null
+    },
+
+    /**
+     * Returns true if this region is the same as a given region.
+     * It does not test the genome right now.
+     */
+    same: function(region) {
+        return this.attributes.chrom === region.get('chrom') &&
+               this.attributes.start === region.get('start') &&
+               this.attributes.end === region.get('end');
     },
     
     /**
@@ -608,6 +710,9 @@ var GenomeRegion = Backbone.RelationalModel.extend({
                 end: parseInt(start_end[1], 10)
             });
         }
+
+        // Keep a copy of region's string value for fast lookup.
+        this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
     },
     
     copy: function() {
@@ -624,7 +729,7 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     
     /** Returns region in canonical form chrom:start-end */
     toString: function() {
-        return this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
+        return this.attributes.str_val;
     },
     
     toJSON: function() {
@@ -645,24 +750,24 @@ var GenomeRegion = Backbone.RelationalModel.extend({
             first_end = this.get('end'), second_end = a_region.get('end'),
             overlap;
             
-        // Look at chroms.
+        // Compare chroms.
         if (first_chrom && second_chrom && first_chrom !== second_chrom) {
             return GenomeRegion.overlap_results.DIF_CHROMS;
         }
         
-        // Look at regions.
+        // Compare regions.
         if (first_start < second_start) {
             if (first_end < second_start) {
                 overlap = GenomeRegion.overlap_results.BEFORE;
             }
-            else if (first_end <= second_end) {
+            else if (first_end < second_end) {
                 overlap = GenomeRegion.overlap_results.OVERLAP_START;
             }
-            else { // first_end > second_end
+            else { // first_end >= second_end
                 overlap = GenomeRegion.overlap_results.CONTAINS;
             }
         }
-        else { // first_start >= second_start
+        else if (first_start > second_start) {
             if (first_start > second_end) {
                 overlap = GenomeRegion.overlap_results.AFTER;
             }
@@ -673,8 +778,33 @@ var GenomeRegion = Backbone.RelationalModel.extend({
                 overlap = GenomeRegion.overlap_results.OVERLAP_END;
             }
         }
+        else { // first_start === second_start
+            overlap = (first_end >= second_end ? 
+                       GenomeRegion.overlap_results.CONTAINS : 
+                       GenomeRegion.overlap_results.CONTAINED_BY);
+        }
 
         return overlap;
+    },
+
+    /**
+     * Trim a region to match genome's constraints.
+     */
+    trim: function(genome) {
+        // Assume that all chromosome/contigs start at 0.
+        if (this.attributes.start < 0) {
+            this.attributes.start = 0;
+        }
+
+        // Only try to trim the end if genome is set.
+        if (this.attributes.genome) {
+            var chrom_len = this.attributes.genome.get_chrom_len(this.attributes.chrom);
+            if (this.attributes.end > chrom_len) {
+                this.attributes.end = chrom_len - 1;
+            }
+        }
+
+        return this;
     },
     
     /**
@@ -737,11 +867,17 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = data_mod.Dataset.extend({
+var BackboneTrack = Backbone.RelationalModel.extend({
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'dataset',
+            relatedModel: data_mod.Dataset
+        }
+    ],
 
     initialize: function(options) {
-        // Dataset id is unique ID for now.
-        this.set('id', options.dataset_id);
 
         // -- Set up config settings. -- 
 
@@ -762,7 +898,7 @@ var BackboneTrack = data_mod.Dataset.extend({
             preloaded_data = [];
         }
         this.set('data_manager', new GenomeDataManager({
-            dataset: this,
+            dataset: this.get('dataset'),
             init_data: preloaded_data
         }));
     }
@@ -870,7 +1006,7 @@ return {
     GenomeRegion: GenomeRegion,
     GenomeRegionCollection: GenomeRegionCollection,
     GenomeVisualization: GenomeVisualization,
-    ReferenceTrackDataManager: ReferenceTrackDataManager,
+    GenomeReferenceDataManager: GenomeReferenceDataManager,
     TrackBrowserRouter: TrackBrowserRouter,
     TrackConfig: TrackConfig,
     Visualization: Visualization,

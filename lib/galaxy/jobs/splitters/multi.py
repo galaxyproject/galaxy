@@ -1,4 +1,8 @@
-import os, logging,  shutil
+import os
+import logging
+import shutil
+import inspect
+
 from galaxy import model, util
 
 
@@ -8,7 +12,7 @@ def do_split (job_wrapper):
     parent_job = job_wrapper.get_job()
     working_directory = os.path.abspath(job_wrapper.working_directory)
 
-    parallel_settings = job_wrapper.tool.parallelism.attributes
+    parallel_settings = job_wrapper.get_parallelism().attributes
     # Syntax: split_inputs="input1,input2" shared_inputs="genome"
     # Designates inputs to be split or shared
     split_inputs=parallel_settings.get("split_inputs")
@@ -18,8 +22,10 @@ def do_split (job_wrapper):
         split_inputs = [x.strip() for x in split_inputs.split(",")]
 
     shared_inputs=parallel_settings.get("shared_inputs")
+    auto_shared_inputs = False
     if shared_inputs is None:
         shared_inputs = []
+        auto_shared_inputs = True
     else:
         shared_inputs = [x.strip() for x in shared_inputs.split(",")]
     illegal_inputs = [x for x in shared_inputs if x in split_inputs]
@@ -44,6 +50,8 @@ def do_split (job_wrapper):
             type_to_input_map.setdefault(input.dataset.datatype,  []).append(input.name)
         elif input.name in shared_inputs:
             pass # pass original file name
+        elif auto_shared_inputs:
+            shared_inputs.append(input.name)
         else:
             log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
             log.exception(log_error)
@@ -91,7 +99,7 @@ def do_split (job_wrapper):
 
 
 def do_merge( job_wrapper,  task_wrappers):
-    parallel_settings = job_wrapper.tool.parallelism.attributes
+    parallel_settings = job_wrapper.get_parallelism().attributes
     # Syntax: merge_outputs="export" pickone_outputs="genomesize"
     # Designates outputs to be merged, or selected from as a representative
     merge_outputs = parallel_settings.get("merge_outputs")
@@ -125,7 +133,8 @@ def do_merge( job_wrapper,  task_wrappers):
             output_file_name = str(outputs[output][1])
             base_output_name = os.path.basename(output_file_name)
             if output in merge_outputs:
-                output_type = outputs[output][0].datatype
+                output_dataset = outputs[output][0]
+                output_type = output_dataset.datatype
                 output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
                 # Just include those files f in the output list for which the 
                 # file f exists; some files may not exist if a task fails.
@@ -135,7 +144,13 @@ def do_merge( job_wrapper,  task_wrappers):
                     if len(output_files) < len(task_dirs):
                         log.debug('merging only %i out of expected %i files for %s'
                                   % (len(output_files), len(task_dirs), output_file_name))
-                    output_type.merge(output_files, output_file_name)
+                    # First two args to merge always output_files and path of dataset. More
+                    # complicated merge methods may require more parameters. Set those up here.
+                    extra_merge_arg_names = inspect.getargspec( output_type.merge ).args[2:]
+                    extra_merge_args = {}
+                    if "output_dataset" in extra_merge_arg_names:
+                        extra_merge_args["output_dataset"] = output_dataset
+                    output_type.merge(output_files, output_file_name, **extra_merge_args)
                     log.debug('merge finished: %s' % output_file_name)
                 else:
                     msg = 'nothing to merge for %s (expected %i files)' \

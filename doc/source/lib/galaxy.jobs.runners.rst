@@ -57,14 +57,6 @@ runners Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`sge` Module
------------------
-
-.. automodule:: galaxy.jobs.runners.sge
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`tasks` Module
 -------------------
 
@@ -80,4 +72,5 @@ Subpackages
 
     galaxy.jobs.runners.cli_job
     galaxy.jobs.runners.cli_shell
+    galaxy.jobs.runners.lwr_client
 

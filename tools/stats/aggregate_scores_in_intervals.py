@@ -25,7 +25,7 @@ import bx.wiggle
 from bx.binned_array import BinnedArray, FileBinnedArray
 from bx.bitset import *
 from bx.bitset_builders import *
-from fpconst import isNaN
+from math import isnan
 from bx.cookbook import doc_optparse
 from galaxy.tools.exception_handling import *
 

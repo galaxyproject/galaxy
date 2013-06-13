@@ -34,8 +34,12 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
+        value = self.value
+        if not isinstance( value, basestring ):
+            value = str( value )
+        value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) ) )
+            % ( prefix, self.name, self.size, escape( value,  quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
         
@@ -67,8 +71,10 @@ class TextArea(BaseField):
     >>> print TextArea( "bins", size="4x5", value="default" ).get_html()
     <textarea name="bins" rows="4" cols="5">default</textarea>
     """
-    def __init__( self, name, size="5x25", value=None ):
+    _DEFAULT_SIZE = "5x25"
+    def __init__( self, name, size=None, value=None ):
         self.name = name
+        size = size or self._DEFAULT_SIZE
         self.size = size.split("x")
         self.rows = int(self.size[0])
         self.cols = int(self.size[-1])
@@ -298,7 +304,12 @@ class SelectField(BaseField):
             rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
-            escaped_value = escape( str( value ), quote=True )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            text = unicodify( text )
+            escaped_value = escape( unicodify( value ), quote=True )
             uniq_id = "%s%s|%s" % (prefix, self.name, escaped_value)
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
@@ -306,7 +317,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( str( text ), quote=True ) ) )
+                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
     def get_html_radio( self, prefix="", disabled=False ):
@@ -349,11 +360,17 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
+                if not isinstance( last_selected_value, basestring ):
+                    last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, escape( str( text ), quote=True ) ) )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
+            last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
                      ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
@@ -394,9 +411,9 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option1" >Option 1
     </div>
@@ -404,9 +421,9 @@ class DrillDownField( BaseField ):
     <input type="checkbox" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option3" >Option 3
     </div>
@@ -425,9 +442,9 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option1" >Option 1
     </div>
@@ -435,9 +452,9 @@ class DrillDownField( BaseField ):
     <input type="radio" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option3" >Option 3
     </div>
@@ -499,10 +516,10 @@ class DrillDownField( BaseField ):
                 html.append( '<div class="form-row-input">')
                 drilldown_group_id = "%s-%s" % ( base_id, hexlify( option['value'] ) )
                 if option['options']:
-                    html.append( '<span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
+                    html.append( '<div><span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
                 html.append( '<input type="%s" name="%s%s" value="%s" %s>%s' % ( self.display, prefix, self.name, escaped_option_value, selected, option['name']) )
                 if option['options']:
-                    html.append( '<div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
+                    html.append( '</div><div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
                     recurse_options( html, option['options'], drilldown_group_id, expanded_options )
                     html.append( '</div>')
                 html.append( '</div>')

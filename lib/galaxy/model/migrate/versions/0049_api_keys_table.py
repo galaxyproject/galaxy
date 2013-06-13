@@ -13,7 +13,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 APIKeys_table = Table( "api_keys", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -21,7 +21,8 @@ APIKeys_table = Table( "api_keys", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -29,7 +30,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating api_keys table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:

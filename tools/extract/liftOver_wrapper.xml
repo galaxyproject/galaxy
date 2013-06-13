@@ -39,8 +39,8 @@
     		<param name="minChainT" type="hidden" value="0" />
     	</when>
     	<when value="1">
-    	    <param name="minSizeQ" size="10" type="integer" value="0" label="Minimum matching region size in query" help="Recommended value: set to >= 300 bases for complete transcripts"/>
-    		<param name="minChainQ" size="10" type="integer" value="500" label="Minimum chain size in query"/>
+    	    <param name="minSizeQ" size="10" type="integer" value="0" label="Minimum matching region size in dataset" help="Recommended value: set to >= 300 bases for complete transcripts"/>
+    		<param name="minChainQ" size="10" type="integer" value="500" label="Minimum chain size in dataset"/>
     		<param name="minChainT" size="10" type="integer" value="500" label="Minimum chain size in target"/>
     	</when>
 	</conditional>

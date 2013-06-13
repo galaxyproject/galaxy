@@ -25,6 +25,14 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`debugging` Module
+-----------------------
+
+.. automodule:: galaxy.util.debugging
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`expressions` Module
 -------------------------
 
@@ -113,6 +121,14 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`shed_util_common` Module
+------------------------------
+
+.. automodule:: galaxy.util.shed_util_common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`streamball` Module
 ------------------------
 
@@ -143,4 +159,5 @@ Subpackages
 .. toctree::
 
     galaxy.util.backports
+    galaxy.util.log
 

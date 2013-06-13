@@ -1,11 +1,10 @@
 <!DOCTYPE HTML>
 
 <%
-    self.has_left_panel=True
-    self.has_right_panel=True
-    self.message_box_visible=False
+    self.has_left_panel = hasattr( self, 'left_panel' )
+    self.has_right_panel = hasattr( self, 'right_panel' )
+    self.message_box_visible = app.config.message_box_visible
     self.overlay_visible=False
-    self.message_box_class=""
     self.active_view=None
     self.body_class=""
     self.require_javascript=False
@@ -17,15 +16,8 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
     <style type="text/css">
-    body, html {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
     #center {
         %if not self.has_left_panel:
             left: 0 !important;
@@ -45,21 +37,49 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    <!--[if lt IE 7]>
-    ${h.js( 'libs/IE/IE7', 'libs/IE/ie7-recalc' )}
-    <![endif]-->
+
+    ## Send errors to Sntry server if configured
+    %if app.config.sentry_dsn:
+        ${h.js( "libs/tracekit", "libs/raven" )}
+        <script>
+            Raven.config('${app.config.sentry_dsn_public}').install();
+            %if trans.user:
+                Raven.setUser( { email: "${trans.user.email}" } );
+            %endif
+        </script>
+    %endif
+
     ${h.js(
         'libs/jquery/jquery',
         'libs/json2',
+        'libs/jquery/select2',
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
         'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
-        'mvc/ui',
         'galaxy.base'
     )}
+
+    ${h.templates(
+        "template-popupmenu-menu"
+    )}
+
+    ${h.js(
+        "mvc/ui"
+    )}
+
     <script type="text/javascript">
+        // console protection
+        window.console = window.console || {
+            log     : function(){},
+            debug   : function(){},
+            info    : function(){},
+            warn    : function(){},
+            error   : function(){},
+            assert  : function(){}
+        };
+
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
             root_path: '${h.url_for( "/" )}',
@@ -225,15 +245,16 @@
     </div>
 </%def>
 
-## Messagebox
-<%def name="message_box_content()">
-</%def>
-
 ## Document
 <html>
+    <!--base_panels.mako-->
     ${self.init()}    
     <head>
-        <title>${self.title()}</title>
+        %if app.config.brand:
+            <title>${self.title()} / ${app.config.brand}</title>
+        %else:
+            <title>${self.title()}</title>
+        %endif
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ## For mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
@@ -243,7 +264,7 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="${self.body_class}">
+    <body scroll="no" class="full-content ${self.body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">
@@ -263,9 +284,9 @@
                     ${self.masthead()}
                 </div>
             </div>
-            <div id="messagebox" class="panel-${self.message_box_class}-message">
-                %if self.message_box_visible:
-                    ${self.message_box_content()}
+            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
+                %if self.message_box_visible and app.config.message_box_content:
+                        ${app.config.message_box_content}
                 %endif
             </div>
             ${self.overlay(visible=self.overlay_visible)}

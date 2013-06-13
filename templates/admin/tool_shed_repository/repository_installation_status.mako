@@ -13,7 +13,7 @@
         elif repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
             bgcolor = trans.model.ToolShedRepository.states.WARNING
         elif repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-            if repository.missing_tool_dependencies:
+            if repository.missing_tool_dependencies or repository.missing_repository_dependencies:
                 bgcolor = trans.model.ToolShedRepository.states.WARNING
             else:
                 bgcolor = trans.model.ToolShedRepository.states.OK

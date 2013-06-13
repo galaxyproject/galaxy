@@ -4,9 +4,11 @@ import os, sys, shutil, tempfile, re
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
-new_path = [ os.path.join( cwd, "lib" ) ]
+new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
+
+from base.util import parse_tool_panel_config
 
 from galaxy import eggs
 
@@ -50,68 +52,39 @@ default_galaxy_test_file_dir = "test-data"
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
-def parse_tool_panel_config( config, shed_tools_dict ):
-    """
-    Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
-    """
-    last_galaxy_test_file_dir = None
-    last_tested_repository_name = None
-    last_tested_changeset_revision = None
-    tree = util.parse_xml( config )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'tool':
-            galaxy_test_file_dir, \
-            last_tested_repository_name, \
-            last_tested_changeset_revision = get_installed_repository_info( elem,
-                                                                            last_galaxy_test_file_dir,
-                                                                            last_tested_repository_name,
-                                                                            last_tested_changeset_revision )
-            if galaxy_test_file_dir:
-                if galaxy_test_file_dir != last_galaxy_test_file_dir:
-                    if not os.path.isabs( galaxy_test_file_dir ):
-                        galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-                guid = elem.get( 'guid' )
-                shed_tools_dict[ guid ] = galaxy_test_file_dir
-                last_galaxy_test_file_dir = galaxy_test_file_dir
-        elif elem.tag == 'section':
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    galaxy_test_file_dir, \
-                    last_tested_repository_name, \
-                    last_tested_changeset_revision = get_installed_repository_info( section_elem,
-                                                                                    last_galaxy_test_file_dir,
-                                                                                    last_tested_repository_name,
-                                                                                    last_tested_changeset_revision )
-                    if galaxy_test_file_dir:
-                        if galaxy_test_file_dir != last_galaxy_test_file_dir:
-                            if not os.path.isabs( galaxy_test_file_dir ):
-                                galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-                        guid = section_elem.get( 'guid' )
-                        shed_tools_dict[ guid ] = galaxy_test_file_dir
-                        last_galaxy_test_file_dir = galaxy_test_file_dir
-    return shed_tools_dict
+# should this serve static resources (scripts, images, styles, etc.)
+STATIC_ENABLED = True
 
-def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision ):
+def get_static_settings():
+    """Returns dictionary of the settings necessary for a galaxy App
+    to be wrapped in the static middleware.
+
+    This mainly consists of the filesystem locations of url-mapped
+    static resources.
     """
-    Return the GALAXY_TEST_FILE_DIR, the containing repository name and the change set revision for the tool elem.
-    This only happens when testing tools installed from the tool shed.
+    cwd = os.getcwd()
+    static_dir = os.path.join( cwd, 'static' )
+    #TODO: these should be copied from universe_wsgi.ini
+    return dict(
+        #TODO: static_enabled needed here?
+        static_enabled      = True,
+        static_cache_time   = 360,
+        static_dir          = static_dir,
+        static_images_dir   = os.path.join( static_dir, 'images', '' ),
+        static_favicon_dir  = os.path.join( static_dir, 'favicon.ico' ),
+        static_scripts_dir  = os.path.join( static_dir, 'scripts', '' ),
+        static_style_dir    = os.path.join( static_dir, 'june_2007_style', 'blue' ),
+        static_robots_txt   = os.path.join( static_dir, 'robots.txt' ),
+    )
+
+def get_webapp_global_conf():
+    """Get the global_conf dictionary sent as the first argument to app_factory.
     """
-    tool_config_path = elem.get( 'file' )
-    installed_tool_path_items = tool_config_path.split( '/repos/' )
-    sans_shed = installed_tool_path_items[ 1 ]
-    path_items = sans_shed.split( '/' )
-    repository_owner = path_items[ 0 ]
-    repository_name = path_items[ 1 ]
-    changeset_revision = path_items[ 2 ]
-    if repository_name != last_tested_repository_name or changeset_revision != last_tested_changeset_revision:
-        # Locate the test-data directory.
-        installed_tool_path = os.path.join( installed_tool_path_items[ 0 ], 'repos', repository_owner, repository_name, changeset_revision )
-        for root, dirs, files in os.walk( installed_tool_path ):
-            if 'test-data' in dirs:
-                return os.path.join( root, 'test-data' ), repository_name, changeset_revision
-        return None, repository_name, changeset_revision
-    return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
+    # (was originally sent 'dict()') - nothing here for now except static settings
+    global_conf = dict()
+    if STATIC_ENABLED:
+        global_conf.update( get_static_settings() )
+    return global_conf
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -212,7 +185,6 @@ def main():
                            cluster_files_directory = cluster_files_directory,
                            job_working_directory = job_working_directory,
                            outputs_to_working_directory = 'True',
-                           set_metadata_externally = 'True',
                            static_enabled = 'False',
                            debug = 'False',
                            track_jobs_in_database = 'True',
@@ -225,9 +197,11 @@ def main():
                 db_path = os.environ['GALAXY_TEST_DBPATH']
             else: 
                 tempdir = tempfile.mkdtemp()
-                db_path = os.path.join( tempdir, 'database' )
-            file_path = os.path.join( db_path, 'files' )
-            new_file_path = os.path.join( db_path, 'tmp' )
+                db_path = tempfile.mkdtemp( prefix='database_', dir=tempdir )
+            # FIXME: This is a workaround for cases where metadata is being set externally.
+            file_path = os.path.join( 'database', 'files' )
+            new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
+            job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
@@ -235,10 +209,11 @@ def main():
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
-                os.makedirs( dir )
+                if not os.path.exists( dir ):
+                    os.makedirs( dir )
             except OSError:
-                pass 
-    print "Database connection:", database_connection
+                pass
+
     # ---- Build Application -------------------------------------------------- 
     app = None 
     if start_server:
@@ -247,44 +222,47 @@ def main():
             global_conf = None
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
+            kwargs[ 'database_engine_option_pool_size' ] = '10'
         if tool_dependency_dir is not None:
             kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
         if use_distributed_object_store:
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
-        app = UniverseApplication( job_queue_workers = 5,
-                                   id_secret = 'changethisinproductiontoo',
-                                   template_path = "templates",
-                                   database_connection = database_connection,
-                                   database_engine_option_pool_size = '10',
-                                   file_path = file_path,
-                                   new_file_path = new_file_path,
-                                   tool_path = tool_path,
-                                   update_integrated_tool_panel = False,
-                                   tool_config_file = tool_config_file,
-                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                   tool_parse_help = False,
-                                   test_conf = "test.conf",
-                                   tool_data_table_config_path = tool_data_table_config_path,
-                                   shed_tool_data_table_config = shed_tool_data_table_config,
-                                   log_destination = "stdout",
-                                   use_heartbeat = False,
+        app = UniverseApplication( admin_users = 'test@bx.psu.edu',
+                                   allow_library_path_paste = True,
                                    allow_user_creation = True,
                                    allow_user_deletion = True,
-                                   admin_users = 'test@bx.psu.edu',
-                                   allow_library_path_paste = True,
-                                   library_import_dir = library_import_dir,
-                                   user_library_import_dir = user_library_import_dir,
+                                   database_connection = database_connection,
+                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                                   file_path = file_path,
                                    global_conf = global_conf,
-                                   running_functional_tests=True,
+                                   id_secret = 'changethisinproductiontoo',
+                                   job_queue_workers = 5,
+                                   job_working_directory = job_working_directory,
+                                   library_import_dir = library_import_dir,
+                                   log_destination = "stdout",
+                                   new_file_path = new_file_path,
+                                   running_functional_tests = True,
+                                   shed_tool_data_table_config = shed_tool_data_table_config,
+                                   template_path = "templates",
+                                   test_conf = "test.conf",
+                                   tool_config_file = tool_config_file,
+                                   tool_data_table_config_path = tool_data_table_config_path,
+                                   tool_path = tool_path,
+                                   tool_parse_help = False,
+                                   update_integrated_tool_panel = False,
+                                   use_heartbeat = False,
+                                   user_library_import_dir = user_library_import_dir,
                                    **kwargs )
         log.info( "Embedded Universe application started" )
+
     # ---- Run webserver ------------------------------------------------------
     server = None
     
     if start_server:
-        webapp = buildapp.app_factory( dict(), use_translogger=False, static_enabled=False, app=app )
+        webapp = buildapp.app_factory( get_webapp_global_conf(), app=app,
+            use_translogger=False, static_enabled=STATIC_ENABLED )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:
@@ -337,6 +315,7 @@ def main():
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
+        tool_configs = app.config.tool_configs
         # What requires these? Handy for (eg) functional tests to save outputs?        
         if galaxy_test_save:
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
@@ -345,10 +324,10 @@ def main():
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
-                shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
+                has_test_data, shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
             elif testing_installed_tools:
                 for shed_tool_config in installed_tool_panel_configs:
-                    shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
+                    has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
             shed_tools_file.write( to_json_string( shed_tools_dict ) )
@@ -360,7 +339,6 @@ def main():
                 # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
                 # and reload the app's toolbox.
                 relative_migrated_tool_panel_config = os.path.join( app.config.root, migrated_tool_panel_config )
-                tool_configs = app.config.tool_configs
                 if relative_migrated_tool_panel_config in tool_configs:
                     tool_configs.remove( relative_migrated_tool_panel_config )
                 for installed_tool_panel_config in installed_tool_panel_configs:
@@ -408,6 +386,8 @@ def main():
         if os.path.exists( tempdir ) and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
             log.info( "Cleaning up temporary files in %s" % tempdir )
             shutil.rmtree( tempdir )
+        else:
+            log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
     except:
         pass
     if psu_production and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:

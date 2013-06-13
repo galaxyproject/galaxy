@@ -7,9 +7,6 @@
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
-        %if repository.has_readme:
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_readme', id=trans.security.encode_id( repository.id ) )}">View README</a>
-        %endif
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get repository updates</a>
         %if repository.can_reset_metadata:
@@ -62,7 +59,7 @@
                     <div class="toolParamHelp" style="clear: both;">
                             * The repository and all of it's contents will remain on disk.
                     </div>
-                    %if repository.includes_tools:
+                    %if repository.includes_tools_for_display_in_tool_panel:
                         <div class="toolParamHelp" style="clear: both;">
                             * The repository's tools will not be loaded into the tool panel.
                         </div>
@@ -90,7 +87,7 @@
                 <div class="toolParamHelp" style="clear: both;">
                     * The repository and all of it's contents will be removed from disk.
                 </div>
-                %if repository.includes_tools:
+                %if repository.includes_tools_for_display_in_tool_panel:
                     <div class="toolParamHelp" style="clear: both;">
                         * The repository's tool tag sets will be removed from the tool config file in which they are defined.
                     </div>

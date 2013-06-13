@@ -36,6 +36,7 @@ try:
     in_column_types = sys.argv[5].split( ',' )
 except:
     stop_err( "Data does not appear to be tabular.  This tool can only be used with tab-delimited data." )
+num_header_lines = int( sys.argv[6] )
 
 # Unescape if input has been escaped
 mapped_str = {
@@ -98,6 +99,12 @@ code = '''
 for i, line in enumerate( file( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
+
+    if i < num_header_lines:
+        lines_kept += 1
+        print >> out, line
+        continue
+
     if not line or line.startswith( '#' ):
         skipped_lines += 1
         continue

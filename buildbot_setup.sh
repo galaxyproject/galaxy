@@ -68,8 +68,11 @@ SAMPLES="
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
+tool_sheds_conf.xml.sample
 shed_tool_data_table_conf.xml.sample
 migrated_tools_conf.xml.sample
+data_manager_conf.xml.sample
+shed_data_manager_conf.xml.sample
 tool-data/shared/ensembl/builds.txt.sample
 tool-data/shared/igv/igv_build_sites.txt.sample
 tool-data/shared/ncbi/builds.txt.sample
@@ -90,29 +93,55 @@ database/pbs
 
 JARS="/galaxy/software/jars"
 
-for link in $LINKS; do
-    echo "Linking $link"
-    rm -f tool-data/`basename $link`
-    ln -sf $link tool-data
-done
-
-if [ -d "$HYPHY" ]; then
-    echo "Linking $HYPHY"
-    rm -f tool-data/HYPHY
-    ln -sf $HYPHY tool-data/HYPHY
+if [ ! $1 ]; then
+	type="standard"
+elif [ $1 == "-ec2" ]; then
+	type="external-ec2"
+else
+	type="unknown"
 fi
 
-if [ -d "$JARS" ]; then
-    echo "Linking $JARS"
-    rm -f tool-data/shared/jars
-    ln -sf $JARS tool-data/shared/jars
-fi
+case $type in
+	external*)
+		echo "Running standalone buildbot setup..."
+		for sample in tool-data/*.sample; do
+			basename=${sample%.sample}
+			if [ ! -f $basename ]; then
+				echo "Copying $sample to $basename"
+				cp "$sample" "$basename"
+			fi
+		done
+		;;
+	*)
+		echo "Running standard buildbot setup..."
+		for link in $LINKS; do
+		    echo "Linking $link"
+		    rm -f tool-data/`basename $link`
+		    ln -sf $link tool-data
+		done
+		
+		if [ -d "$HYPHY" ]; then
+		    echo "Linking $HYPHY"
+		    rm -f tool-data/HYPHY
+		    ln -sf $HYPHY tool-data/HYPHY
+		fi
+		
+		if [ -d "$JARS" ]; then
+		    echo "Linking $JARS"
+		    rm -f tool-data/shared/jars
+		    ln -sf $JARS tool-data/shared/jars
+		fi
+		;;
+esac
 
 for sample in $SAMPLES; do
-    file=`echo $sample | sed -e 's/\.sample$//'`
+    file=${sample%.sample}
     echo "Copying $sample to $file"
     cp $sample $file
 done
+
+echo "Copying job_conf.xml.sample_basic to job_conf.xml"
+cp job_conf.xml.sample_basic job_conf.xml
 
 for dir in $DIRS; do
     if [ ! -d $dir ]; then

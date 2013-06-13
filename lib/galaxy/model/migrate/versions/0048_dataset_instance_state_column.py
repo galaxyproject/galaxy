@@ -21,12 +21,12 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 DATASET_INSTANCE_TABLE_NAMES = [ 'history_dataset_association', 'library_dataset_dataset_association' ]
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     dataset_instance_tables = []
@@ -37,18 +37,16 @@ def upgrade():
             log.debug( "Failed loading table %s" % table_name )
     if dataset_instance_tables:
         for table_name, dataset_instance_table in dataset_instance_tables:
+            index_name = "ix_%s_state" % table_name
             try:
                 col = Column( "state", TrimmedString( 64 ), index=True, nullable=True )
-                col.create( dataset_instance_table )
+                col.create( dataset_instance_table, index_name = index_name)
                 assert col is dataset_instance_table.c.state
             except Exception, e:
                 log.debug( "Adding column 'state' to %s table failed: %s" % ( table_name, str( e ) ) )
-            try:
-                i = Index( "ix_%s_state" % table_name, dataset_instance_table.c.state )
-                i.create()
-            except Exception, e:
-                log.debug( "Adding index 'ix_%s_state' failed: %s" % ( table_name, str( e ) ) )
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     dataset_instance_tables = []
     for table_name in DATASET_INSTANCE_TABLE_NAMES:

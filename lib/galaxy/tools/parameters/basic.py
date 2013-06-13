@@ -7,7 +7,7 @@ from elementtree.ElementTree import XML, Element
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
-from galaxy.util import string_as_bool, sanitize_param
+from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
 import validation, dynamic_options
 # For BaseURLToolParameter
@@ -112,7 +112,9 @@ class ToolParameter( object ):
         
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
-        return str( value )
+        if not isinstance( value, basestring ):
+            value = str( value )
+        return unicodify( value )
     
     def to_python( self, value, app ):
         """Convert a value created with to_string back to an object representation"""
@@ -144,13 +146,13 @@ class ToolParameter( object ):
         Convert a value to a text representation suitable for displaying to
         the user
         """
-        return value
+        return unicodify( value )
         
     def to_param_dict_string( self, value, other_values={} ):
         """Called via __str__ when used in the Cheetah template"""
         if value is None:
             value = ""
-        else:
+        elif not isinstance( value, basestring ):
             value = str( value )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
@@ -475,7 +477,7 @@ class FTPFileToolParameter( ToolParameter ):
         if trans is None or trans.user is None:
             user_ftp_dir = None
         else:
-            user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+            user_ftp_dir = trans.user_ftp_dir
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
     def from_html( self, value, trans=None, other_values={} ):
         try:
@@ -623,6 +625,8 @@ class SelectToolParameter( ToolParameter ):
     def __init__( self, tool, elem, context=None ):
         ToolParameter.__init__( self, tool, elem )
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+        # Multiple selects are optional by default, single selection is the inverse.
+        self.optional = string_as_bool( elem.get( 'optional', self.multiple ) )
         self.display = elem.get( 'display', None )
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
@@ -712,9 +716,21 @@ class SelectToolParameter( ToolParameter ):
                 rval.append( v )
             return rval
         else:
+            value_is_none =  ( value == "None" and "None" not in legal_values )
+            if value_is_none:
+                if self.multiple:
+                    if self.optional:
+                        return []
+                    else:
+                        raise ValueError( "No option was selected but input is not optional." )
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
-            return value    
+            return value
+    def to_html_value( self, value, app ):
+        if isinstance( value, list ):
+            return value
+        else:
+            return str( value )
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
@@ -742,9 +758,9 @@ class SelectToolParameter( ToolParameter ):
             return { "__class__": "RuntimeValue" }
         return value
     def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
+        if isinstance( value, dict ) and value.get( "__class__", None ) == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
-        return super( SelectToolParameter, self ).value_from_basic( value, app )
+        return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
     def need_late_validation( self, trans, context ):
         """
         Determine whether we need to wait to validate this parameters value
@@ -875,6 +891,9 @@ class GenomeBuildParameter( SelectToolParameter ):
     >>> print p.filter_value( "hg17" )
     hg17
     """
+    def __init__( self, *args, **kwds ):
+        super( GenomeBuildParameter, self ).__init__( *args, **kwds )
+        self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
     def get_options( self, trans, other_values ):
         if not trans.history:
             yield 'unspecified', '?', False
@@ -938,7 +957,7 @@ class ColumnListParameter( SelectToolParameter ):
                 if not isinstance( value, list ):
                     value = value.split( '\n' )
                 for column in value:
-                    for column2 in column.split( ',' ):
+                    for column2 in str( column ).split( ',' ):
                         column2 = column2.strip()
                         if column2:
                             column_list.append( column2 )
@@ -1067,9 +1086,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option1" >Option 1
     </div>
@@ -1077,9 +1096,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="checkbox" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option3" >Option 3
     </div>
@@ -1113,9 +1132,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option1" >Option 1
     </div>
@@ -1123,9 +1142,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="radio" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option3" >Option 3
     </div>
@@ -1342,7 +1361,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( rval ) + suffix
+        return "\n".join( map( str, rval ) ) + suffix
         
     def get_dependencies( self ):
         """
@@ -1435,10 +1454,7 @@ class DataToolParameter( ToolParameter ):
         def dataset_collector( hdas, parent_hid ):
             current_user_roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
-                if len( hda.name ) > 30:
-                    hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
-                else:
-                    hda_name = hda.name
+                hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
@@ -1548,10 +1564,12 @@ class DataToolParameter( ToolParameter ):
         # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
-        if not value:
+        if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None
+        if isinstance( value, str ) and value.find( "," ) > 0:
+            value = [ int( value_part ) for value_part in  value.split( "," ) ]
         if isinstance( value, list ):
             rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
@@ -1580,8 +1598,11 @@ class DataToolParameter( ToolParameter ):
         elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
             return None
         elif isinstance( value, list ):
-            return ",".join( [ val if isinstance( val, basestring ) else str(val.id) for val in value] )
-        return value.id
+            return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
+        try:
+            return value.id
+        except:
+            return str( value )
 
     def to_python( self, value, app ):
         # Both of these values indicate that no dataset is selected.  However, 'None' 
@@ -1599,10 +1620,14 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
+        if value and not isinstance( value, list ):
+            value = [ value ]
         if value:
-            return "%s: %s" % ( value.hid, value.name )
-        else:
-            return "No dataset"
+            try:
+                return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
+            except:
+                pass
+        return "No dataset"
 
     def validate( self, value, history=None ):
         for validator in self.validators:

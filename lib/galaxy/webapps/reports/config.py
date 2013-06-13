@@ -35,11 +35,17 @@ class Configuration( object ):
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cookie_path = kwargs.get( "cookie_path", "/" )
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         #Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

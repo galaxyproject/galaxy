@@ -1,0 +1,4 @@
+tracking_id	class_code	nearest_ref_id	gene_id	gene_short_name	tss_id	locus	length	coverage	replicate 1_FPKM	replicate 1_conf_lo	replicate 1_conf_hi	replicate 1_status	replicate 2_FPKM	replicate 2_conf_lo	replicate 2_conf_hi	replicate 2_status
+CUFF.1.1	-	-	CUFF.1	-	-	chr19:305598-306225	627	-	0	0	0	OK	206.177	0	694.583	OK
+CUFF.100.1	-	-	CUFF.100	-	-	chr19:1625589-1652356	888	-	0	0	0	OK	172.566	0	2879.98	OK
+CUFF.100.2	-	-	CUFF.100	-	-	chr19:1625589-1652356	581	-	0	0	0	OK	1147.8	0	5922.31	OK

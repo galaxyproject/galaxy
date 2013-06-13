@@ -17,11 +17,10 @@ from galaxy.web.framework import NOT_SET
 from galaxy.web.framework import MessageException, FormBuilder, FormInput, FormData, Bunch
 import galaxy.web.framework.base
 
+from galaxy.util import asbool
+
 pkg_resources.require( "simplejson" )
 import simplejson
-
-pkg_resources.require( "PasteDeploy" )
-from paste.deploy.converters import asbool
 
 pkg_resources.require( "Mako" )
 import mako.template

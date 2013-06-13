@@ -1,3 +1,4 @@
+import os
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.align import maf
 from galaxy import datatypes, config, jobs 
@@ -38,7 +39,8 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             app.model.context.add( history )
             app.model.context.flush()
             try:
-                move(filepath,newdata.file_name)
+                app.object_store.update_from_file( newdata.dataset, file_name=filepath, create=True )
+                os.unlink( filepath )
                 newdata.info = newdata.name
                 newdata.state = newdata.states.OK
             except:

@@ -1,3 +1,4 @@
+//==============================================================================
 /*
 TODO:
     ?? superclass dataloader, subclass lazydataloader??
@@ -80,11 +81,11 @@ function LazyDataLoader( config ){
         //  it's the responsibility of the code using this to combine them properly
         data    : [],
         // ms btwn recursive loads
-        delay   : 500,
+        delay   : 4000,
         // starting line, element, whatever
         start   : 0,
         // size to fetch per load
-        size    : 1000,
+        size    : 4000,
         
         // loader init func: extends loader with config and calls config.init if there
         //@param {object} config : object containing variables to override (or additional)
@@ -96,7 +97,6 @@ function LazyDataLoader( config ){
             if( config.hasOwnProperty( 'initialize' ) ){
                 config.initialize.call( loader, config );
             }
-            
             this.log( this + ' initialized:', loader );
         },
         
@@ -114,6 +114,23 @@ function LazyDataLoader( config ){
         
         //OVERRIDE: to handle ajax errors differently
         ajaxErrorFn : function( xhr, status, error ){
+            console.error( 'ERROR fetching data:', error );
+        },
+
+        // converters passed to the jQuery ajax call for data type parsing
+        //OVERRIDE: to provide custom parsing
+        converters : {
+            '* text'    : window.String,
+            'text html' : true,
+            'text xml'  : jQuery.parseXML,
+
+            // add NaN, inf, -inf handling to jquery json parser (by default)
+            'text json' : function( json ){
+                json = json.replace( /NaN/g, 'null' );
+                json = json.replace( /-Infinity/g, 'null' );
+                json = json.replace( /Infinity/g, 'null' );
+                return jQuery.parseJSON( json );
+            }
         },
 
         // interface to begin load (and first recursive call)
@@ -148,7 +165,9 @@ function LazyDataLoader( config ){
                 
                 jQuery.ajax({
                     url         : loader.buildUrl( start, size ),
+                    converters  : loader.converters,
                     dataType    : 'json',
+
                     error       : function( xhr, status, error ){
                         loader.log( '\t ajax error, status:', status, 'error:', error );
                         if( loader.currentIntervalId ){
@@ -213,3 +232,5 @@ function LazyDataLoader( config ){
     loader.initialize( config );
     return loader;
 }
+
+//==============================================================================

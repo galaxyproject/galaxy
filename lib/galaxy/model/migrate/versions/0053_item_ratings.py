@@ -10,8 +10,7 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 # Rating tables.
 
@@ -20,32 +19,33 @@ HistoryRatingAssociation_table = Table( "history_rating_association", metadata,
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 HistoryDatasetAssociationRatingAssociation_table = Table( "history_dataset_association_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 StoredWorkflowRatingAssociation_table = Table( "stored_workflow_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 PageRatingAssociation_table = Table( "page_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 VisualizationRatingAssociation_table = Table( "visualization_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
-def upgrade():
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -55,7 +55,7 @@ def upgrade():
     except Exception, e:
         print str(e)
         log.debug( "Creating history_rating_association table failed: %s" % str( e ) )
-        
+
     # Create history_dataset_association_rating_association table.
     try:
         HistoryDatasetAssociationRatingAssociation_table.create()
@@ -71,32 +71,33 @@ def upgrade():
                 log.debug( "Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed: %s" % str( e ) )
         else:
             print str(e)
-            log.debug( "Creating history_dataset_association_rating_association table failed: %s" % str( e ) )    
-        
+            log.debug( "Creating history_dataset_association_rating_association table failed: %s" % str( e ) )
+
     # Create stored_workflow_rating_association table.
     try:
         StoredWorkflowRatingAssociation_table.create()
     except Exception, e:
         print str(e)
         log.debug( "Creating stored_workflow_rating_association table failed: %s" % str( e ) )
-        
+
     # Create page_rating_association table.
     try:
         PageRatingAssociation_table.create()
     except Exception, e:
         print str(e)
         log.debug( "Creating page_rating_association table failed: %s" % str( e ) )
-        
+
     # Create visualization_rating_association table.
     try:
         VisualizationRatingAssociation_table.create()
     except Exception, e:
         print str(e)
         log.debug( "Creating visualization_rating_association table failed: %s" % str( e ) )
-                
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
-        
+
     # Drop history_rating_association table.
     try:
        HistoryRatingAssociation_table.drop()
@@ -109,7 +110,7 @@ def downgrade():
        HistoryDatasetAssociationRatingAssociation_table.drop()
     except Exception, e:
        print str(e)
-       log.debug( "Dropping history_dataset_association_rating_association table failed: %s" % str( e ) )    
+       log.debug( "Dropping history_dataset_association_rating_association table failed: %s" % str( e ) )
 
     # Drop stored_workflow_rating_association table.
     try:
@@ -123,8 +124,8 @@ def downgrade():
        PageRatingAssociation_table.drop()
     except Exception, e:
        print str(e)
-       log.debug( "Dropping page_rating_association table failed: %s" % str( e ) )    
-   
+       log.debug( "Dropping page_rating_association table failed: %s" % str( e ) )
+
     # Drop visualization_rating_association table.
     try:
        VisualizationRatingAssociation_table.drop()

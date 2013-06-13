@@ -1,5 +1,5 @@
 /**
- * Simple base model for any visible element. Includes useful attributes and ability 
+ * Simple base model for any visible element. Includes useful attributes and ability
  * to set and track visibility.
  */
 var BaseModel = Backbone.RelationalModel.extend({
@@ -38,19 +38,24 @@ var BaseView = Backbone.View.extend({
         } else {
             this.$el.show();
         }
-    }    
+    }
 });
 
 
 //==============================================================================
-/**
- * Adds logging capabilities to your Models/Views
- *  can be used with plain browser console (or something more complex like an AJAX logger)
+/** @class Mixin to add logging capabilities to an object.
+ *      Designed to allow switching an objects log output off/on at one central
+ *      statement. Can be used with plain browser console (or something more
+ *      complex like an AJAX logger).
+ *  <br />NOTE: currently only uses the console.debug log function
+ *  (as opposed to debug, error, warn, etc.)
+ *  @name LoggableMixin
  *
- *  add to your models/views at the definition using chaining:
+ *  @example
+ *  // Add to your models/views at the definition using chaining:
  *      var MyModel = BaseModel.extend( LoggableMixin ).extend({ // ... });
  * 
- *  or - more explicitly AFTER the definition:
+ *  // or - more explicitly AFTER the definition:
  *      var MyModel = BaseModel.extend({
  *          logger  : console
  *          // ...
@@ -58,15 +63,26 @@ var BaseView = Backbone.View.extend({
  *      })
  *      _.extend( MyModel.prototype, LoggableMixin )
  *
- * NOTE: currently only uses the console.debug log function (as opposed to debug, error, warn, etc.)
  */
-var LoggableMixin = {
+var LoggableMixin =  /** @lends LoggableMixin# */{
+
+    /** The logging object whose log function will be used to output
+     *      messages. Null will supress all logging. Commonly set to console.
+     */
     // replace null with console (if available) to see all logs
     logger      : null,
     
+    /** Output log messages/arguments to logger.
+     *  @param {Arguments} ... (this function is variadic)
+     *  @returns undefined if not this.logger
+     */
     log : function(){
         if( this.logger ){
-            return this.logger.log.apply( this.logger, arguments );
+            var log = this.logger.log;
+            if( typeof this.logger.log === 'object' ){
+                log = Function.prototype.bind.call( this.logger.log, this.logger );
+            }
+            return log.apply( this.logger, arguments );
         }
         return undefined;
     }
@@ -74,21 +90,29 @@ var LoggableMixin = {
 
 
 // =============================================================================
-/** Global string localization object (and global short form alias)
- *      set with either:
- *          GalaxyLocalization.setLocalizedString( original, localized )
- *          GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
- *      get with either:
- *          GalaxyLocalization.localize( string )
- *          _l( string )
+/** @class string localizer (and global short form alias)
+ *
+ *  @example
+ *  // set with either:
+ *      GalaxyLocalization.setLocalizedString( original, localized )
+ *      GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
+ *  // get with either:
+ *      GalaxyLocalization.localize( string )
+ *      _l( string )
+ *
+ *  @constructs
  */
 //TODO: move to Galaxy.Localization (maybe galaxy.base.js)
 var GalaxyLocalization = jQuery.extend( {}, {
+    /** shortened, alias reference to GalaxyLocalization.localize */
     ALIAS_NAME : '_l',
+    /** map of available localized strings (english -> localized) */
     localizedStrings : {},
 
-    // Set a single English string -> localized string association, or set an entire map of those associations
-    // Pass in either two strings (english, localized) or just an obj (map) of english : localized
+    /** Set a single English string -> localized string association, or set an entire map of those associations
+     *  @param {String or Object} str_or_obj english (key) string or a map of english -> localized strings
+     *  @param {String} localized string if str_or_obj was a string
+     */
     setLocalizedString : function( str_or_obj, localizedString ){
         //console.debug( this + '.setLocalizedString:', str_or_obj, localizedString );
         var self = this;
@@ -112,12 +136,15 @@ var GalaxyLocalization = jQuery.extend( {}, {
             });
             
         } else {
-            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' + 
+            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' +
                    ' given: ' + str_or_obj );
         }
     },
     
-    // Attempt to get a localized string for strToLocalize. If not found, return the original strToLocalize
+    /** Attempt to get a localized string for strToLocalize. If not found, return the original strToLocalize.
+     * @param {String} strToLocalize the string to localize
+     * @returns either the localized string if found or strToLocalize if not found
+     */
     localize : function( strToLocalize ){
         //console.debug( this + '.localize:', strToLocalize );
 
@@ -132,30 +159,27 @@ var GalaxyLocalization = jQuery.extend( {}, {
         return this.localizedStrings[ strToLocalize ] || strToLocalize;
     },
     
+    /** String representation. */
     toString : function(){ return 'GalaxyLocalization'; }
 });
 
 // global localization alias
 window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocalization.localize( str ); };
 
-//TEST: setLocalizedString( string, string ), _l( string )
-//TEST: setLocalizedString( hash ), _l( string )
-//TEST: setLocalizedString( string === string ), _l( string )
-//TEST: _l( non assigned string )
-
 
 //==============================================================================
 /**
- *  @class PersistantStorage
- *      persistant storage adapter to:
- *          provide an easy interface to object based storage using method chaining
- *          allow easy change of the storage engine used (h5's local storage?)
+ *  @class persistant storage adapter.
+ *      Provides an easy interface to object based storage using method chaining.
+ *      Allows easy change of the storage engine used (h5's local storage?).
+ *  @augments StorageRecursionHelper
  *
  *  @param {String} storageKey : the key the storage engine will place the storage object under
  *  @param {Object} storageDefaults : [optional] initial object to set up storage with
  *
- *  @example :
- *  HistoryPanel.storage = new PersistanStorage( HistoryPanel.toString(), { visibleItems, {} })
+ *  @example
+ *  // example of construction and use
+ *  HistoryPanel.storage = new PersistanStorage( HistoryPanel.toString(), { visibleItems, {} });
  *  itemView.bind( 'toggleBodyVisibility', function( id, visible ){
  *      if( visible ){
  *          HistoryPanel.storage.get( 'visibleItems' ).set( id, true );
@@ -163,6 +187,7 @@ window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocaliza
  *          HistoryPanel.storage.get( 'visibleItems' ).deleteKey( id );
  *      }
  *  });
+ *  @constructor
  */
 var PersistantStorage = function( storageKey, storageDefaults ){
     if( !storageKey ){
@@ -176,16 +201,21 @@ var PersistantStorage = function( storageKey, storageDefaults ){
         STORAGE_ENGINE_SETTER       = jQuery.jStorage.set,
         STORAGE_ENGINE_KEY_DELETER  = jQuery.jStorage.deleteKey;
 
-    // recursion helper for method chaining access
-    var StorageRecursionHelper = function( data, parent ){
+    /** Inner, recursive, private class for method chaining access.
+     *  @name StorageRecursionHelper
+     *  @constructor
+     */
+    function StorageRecursionHelper( data, parent ){
         //console.debug( 'new StorageRecursionHelper. data:', data );
         data = data || {};
         parent = parent || null;
-        return {
-            // get a value from the storage obj named 'key',
-            //  if it's an object - return a new StorageRecursionHelper wrapped around it
-            //  if it's something simpler - return the value
-            //  if this isn't passed a key - return the data at this level of recursion
+
+        return /** @lends StorageRecursionHelper.prototype */{
+            /** get a value from the storage obj named 'key',
+             *  if it's an object - return a new StorageRecursionHelper wrapped around it
+             *  if it's something simpler - return the value
+             *  if this isn't passed a key - return the data at this level of recursion
+             */
             get : function( key ){
                 //console.debug( this + '.get', key );
                 if( key === undefined ){
@@ -197,32 +227,33 @@ var PersistantStorage = function( storageKey, storageDefaults ){
                 }
                 return undefined;
             },
+            /** get the underlying data based on this key */
             // set a value on the current data - then pass up to top to save current entire object in storage
             set : function( key, value ){
                 //TODO: add parameterless variation setting the data somehow
                 //  ??: difficult bc of obj by ref, closure
                 //console.debug( this + '.set', key, value );
                 data[ key ] = value;
-                this.save();
+                this._save();
                 return this;
             },
             // remove a key at this level - then save entire (as 'set' above)
             deleteKey : function( key ){
                 //console.debug( this + '.deleteKey', key );
                 delete data[ key ];
-                this.save();
+                this._save();
                 return this;
             },
             // pass up the recursion chain (see below for base case)
-            save : function(){
+            _save : function(){
                 //console.debug( this + '.save', parent );
-                return parent.save();
+                return parent._save();
             },
             toString : function(){
                 return ( 'StorageRecursionHelper(' + data + ')' );
             }
         };
-    };
+    }
 
     //??: more readable to make another class?
     var returnedStorage = {};
@@ -238,17 +269,26 @@ var PersistantStorage = function( storageKey, storageDefaults ){
 
     // the object returned by this constructor will be a modified StorageRecursionHelper
     returnedStorage = new StorageRecursionHelper( data );
-    // the base case for save()'s upward recursion - save everything to storage
-    returnedStorage.save = function( newData ){
-        //console.debug( returnedStorage, '.save:', JSON.stringify( returnedStorage.get() ) );
-        STORAGE_ENGINE_SETTER( storageKey, returnedStorage.get() );
-    };
-    // delete function to remove the base data object from the storageEngine
-    returnedStorage.destroy = function(){
-        //console.debug( returnedStorage, '.destroy:' );
-        STORAGE_ENGINE_KEY_DELETER( storageKey );
-    };
-    returnedStorage.toString = function(){ return 'PersistantStorage(' + data + ')'; };
+
+    jQuery.extend( returnedStorage, /**  @lends PersistantStorage.prototype */{
+        /** The base case for save()'s upward recursion - save everything to storage.
+         *  @private
+         *  @param {Any} newData data object to save to storage
+         */
+        _save : function( newData ){
+            //console.debug( returnedStorage, '._save:', JSON.stringify( returnedStorage.get() ) );
+            return STORAGE_ENGINE_SETTER( storageKey, returnedStorage.get() );
+        },
+        /** Delete function to remove the entire base data object from the storageEngine.
+         */
+        destroy : function(){
+            //console.debug( returnedStorage, '.destroy:' );
+            return STORAGE_ENGINE_KEY_DELETER( storageKey );
+        },
+        /** String representation.
+         */
+        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
+    });
     
     return returnedStorage;
 };

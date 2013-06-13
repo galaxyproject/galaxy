@@ -30,11 +30,14 @@
                     (invalidates old key)
                 %endif
                 <div class="toolParamHelp" style="clear: both;">
-                    An API key will allow you to access Galaxy via its web
-                    API (documentation forthcoming).  Please note that
-                    <strong>this key acts as an alternate means to access
-                    your account, and should be treated with the same care
-                    as your login password</strong>.
+                    <%
+                        if trans.webapp.name == 'galaxy':
+                            webapp_str = 'Galaxy'
+                        else:
+                            webapp_str = 'the Tool Shed'
+                    %>
+                    An API key will allow you to access ${webapp_str} via its web API.  Please note that <strong>this key acts as an alternate means 
+                    to access your account and should be treated with the same care as your login password</strong>.
                 </div>
             </div>
         </form>

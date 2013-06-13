@@ -2,14 +2,15 @@
 API operations on User objects.
 """
 import logging
+from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
+from galaxy import util, web
 from galaxy.web.base.controller import BaseAPIController, url_for
-from galaxy import web, util
-from elementtree.ElementTree import XML
-from paste.httpexceptions import *
 
 log = logging.getLogger( __name__ )
 
+
 class UserAPIController( BaseAPIController ):
+
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
         """
@@ -45,7 +46,7 @@ class UserAPIController( BaseAPIController ):
             rval.append( item )
         return rval
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/users/{encoded_user_id}
@@ -67,26 +68,22 @@ class UserAPIController( BaseAPIController ):
                     user = trans.user
             else:
                 user = self.get_user( trans, id, deleted=deleted )
-
             # check that the user is requesting themselves (and they aren't del'd) unless admin
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
-
         except:
             if trans.user_is_admin():
                 raise
             else:
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
-
         item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                  'total_disk_usage': float } )    
+                                                                  'total_disk_usage': float } )
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??
         item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
-
         return item
-    
+
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
@@ -98,7 +95,7 @@ class UserAPIController( BaseAPIController ):
         if trans.app.config.use_remote_user and trans.user_is_admin():
             user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
             item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                      'total_disk_usage': float } )    
+                                                                      'total_disk_usage': float } )
         else:
             raise HTTPNotImplemented()
         return item

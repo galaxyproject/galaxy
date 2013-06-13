@@ -10,15 +10,17 @@ from inspect import isclass
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
+
 import pkg_resources
 
-log = logging.getLogger( __name__ )
+from galaxy.util import asbool
 
 import config
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
+
+log = logging.getLogger( __name__ )
 
 class ReportsWebApplication( galaxy.web.framework.WebApplication ):
     pass
@@ -130,11 +132,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

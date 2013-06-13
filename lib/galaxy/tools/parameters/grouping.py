@@ -68,21 +68,25 @@ class Repeat( Group ):
         return rval
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = []
-        for i, d in enumerate( value ):
-            rval_dict = {}
-            # If the special __index__ key is not set, create it (for backward
-            # compatibility)
-            rval_dict['__index__'] = d.get( '__index__', i )
-            # Restore child inputs
-            for input in self.inputs.itervalues():
-                if ignore_errors and input.name not in d:
-                    # If we do not have a value, and are ignoring errors, we simply
-                    # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.     
-                    pass
-                else:
-                    rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
-            rval.append( rval_dict )
+        try:
+            for i, d in enumerate( value ):
+                rval_dict = {}
+                # If the special __index__ key is not set, create it (for backward
+                # compatibility)
+                rval_dict['__index__'] = d.get( '__index__', i )
+                # Restore child inputs
+                for input in self.inputs.itervalues():
+                    if ignore_errors and input.name not in d:
+                        # If we do not have a value, and are ignoring errors, we simply
+                        # do nothing. There will be no value for the parameter in the
+                        # conditional's values dictionary.     
+                        pass
+                    else:
+                        rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
+                rval.append( rval_dict )
+        except Exception, e:
+            if not ignore_errors:
+                raise e
         return rval 
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
@@ -266,7 +270,7 @@ class UploadDataset( Group ):
                 if file_bunch.path and ftp_files is not None:
                     warnings.append( "All FTP uploaded file selections were ignored." )
             elif ftp_files is not None and trans.user is not None: # look for files uploaded via FTP
-                user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                user_ftp_dir = trans.user_ftp_dir
                 for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
@@ -314,7 +318,7 @@ class UploadDataset( Group ):
                     ftp_files = []
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
-                    user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                    user_ftp_dir = trans.user_ftp_dir
                     for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
                         for filename in filenames:
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
@@ -441,24 +445,28 @@ class Conditional( Group ):
         return rval
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
-        current_case = rval['__current_case__'] = value['__current_case__']
-        # Test param
-        if ignore_errors and self.test_param.name not in value:
-            # If ignoring errors, do nothing. However this is potentially very
-            # problematic since if we are missing the value of test param,
-            # the entire conditional is wrong.
-            pass
-        else:
-            rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
-        # Inputs associated with current case
-        for input in self.cases[current_case].inputs.itervalues():
-            if ignore_errors and input.name not in value:
-                # If we do not have a value, and are ignoring errors, we simply
-                # do nothing. There will be no value for the parameter in the
-                # conditional's values dictionary.                 
+        try:
+            current_case = rval['__current_case__'] = value['__current_case__']
+            # Test param
+            if ignore_errors and self.test_param.name not in value:
+                # If ignoring errors, do nothing. However this is potentially very
+                # problematic since if we are missing the value of test param,
+                # the entire conditional is wrong.
                 pass
             else:
-                rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
+                rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+            # Inputs associated with current case
+            for input in self.cases[current_case].inputs.itervalues():
+                if ignore_errors and input.name not in value:
+                    # If we do not have a value, and are ignoring errors, we simply
+                    # do nothing. There will be no value for the parameter in the
+                    # conditional's values dictionary.                 
+                    pass
+                else:
+                    rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
+        except Exception, e:
+            if not ignore_errors:
+                raise e
         return rval
     def visit_inputs( self, prefix, value, callback ):
         current_case = value['__current_case__']

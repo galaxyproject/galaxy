@@ -6,6 +6,9 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
+UPDATEWORKDIR = /tmp/galaxySphinxUpdate
+UPDATEWORKSOURCELIB = $(UPDATEWORKDIR)/source/lib
+SPHINXAPIDOC  = sphinx-apidoc
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -21,7 +24,7 @@ TOOLDATABUILDFILES = $(TOOLDATASHAREDDIR)/ensembl/builds.txt \
                      $(TOOLDATASHAREDDIR)/ncbi/builds.txt \
                      $(TOOLDATASHAREDDIR)/ucsc/publicbuilds.txt
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext updaterst
 
 
 # Sphinx wants the build files to be there;  Copy the sample files into
@@ -51,9 +54,13 @@ help:
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
+	@echo "  updaterst  to update sphinx rst to reflect code structure changes"
 
+
+# might also want to do
+# cd source/lib; hg revert; rm *.rst.orig;  or not.
 clean:
-	-rm -rf $(BUILDDIR)/*
+	-rm -rf $(BUILDDIR)/* $(UPDATEWORKDIR)
 
 html: $(TOOLDATABUILDFILES)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -165,3 +172,20 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+# Targets for updating the structure of the Sphinx RST doc for lib/
+
+$(UPDATEWORKSOURCELIB):
+	mkdir -p $(UPDATEWORKSOURCELIB)
+
+# Create a fresh version of the RST files for the lib, and then create a 
+# unified patch file (ignore all emacs leftovers).
+# Feed that to our custom version of patch.py, which applies patches that
+# are only adds, and reports everything else to the user to deal with manually
+#
+# Note: this is still a very rough process.  the run of patch.py gets some 
+# errors that don't mean anything to us.  And the manual process is not fun.
+updaterst: $(UPDATEWORKSOURCELIB)
+	$(SPHINXAPIDOC) -o $(UPDATEWORKSOURCELIB) ../lib
+	-diff -x '*.rst~' -ru source/lib $(UPDATEWORKSOURCELIB) >  $(UPDATEWORKDIR)/alldifs.patch
+	./patch.py $(UPDATEWORKDIR)/alldifs.patch

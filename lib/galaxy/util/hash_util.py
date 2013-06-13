@@ -32,3 +32,10 @@ def new_secure_hash( text_type=None ):
 
 def hmac_new( key, value ):
     return hmac.new( key, value, sha ).hexdigest()
+
+def is_hashable( value ):
+    try:
+        hash( value )
+    except:
+        return False
+    return True

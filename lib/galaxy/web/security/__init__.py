@@ -30,10 +30,13 @@ else:
         random_pool.stir()
         return str( number.getRandomNumber( nbits, random_pool.get_bytes ) )
 
+
 class SecurityHelper( object ):
+
     def __init__( self, **config ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )
+
     def encode_id( self, obj_id ):
         # Convert to string
         s = str( obj_id )
@@ -41,17 +44,32 @@ class SecurityHelper( object ):
         s = ( "!" * ( 8 - len(s) % 8 ) ) + s
         # Encrypt
         return self.id_cipher.encrypt( s ).encode( 'hex' )
+
+    def encode_dict_ids( self, a_dict ):
+        """
+        Encode all ids in dictionary. Ids are identified by (a) an 'id' key or
+        (b) a key that ends with '_id'
+        """
+        for key, val in a_dict.items():
+            if key == 'id' or key.endswith('_id'):
+                a_dict[ key ] = self.encode_id( val )
+
+        return a_dict
+
     def decode_id( self, obj_id ):
         return int( self.id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
+
     def encode_guid( self, session_key ):
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!" 
         s = ( "!" * ( 8 - len( session_key ) % 8 ) ) + session_key
         # Encrypt
         return self.id_cipher.encrypt( s ).encode( 'hex' )
+
     def decode_guid( self, session_key ):
         # Session keys are strings
         return self.id_cipher.decrypt( session_key.decode( 'hex' ) ).lstrip( "!" )
+
     def get_new_guid( self ):
         # Generate a unique, high entropy 128 bit random number
         return get_random_bytes( 16 )

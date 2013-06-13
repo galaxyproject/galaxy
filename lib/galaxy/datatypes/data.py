@@ -1,20 +1,24 @@
-import logging, os, sys, time, tempfile
-from galaxy import util
-from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
-from galaxy.util import inflector
-from galaxy.util.sanitize_html import sanitize_html
-from cgi import escape
-import mimetypes
+import logging
 import metadata
+import mimetypes
+import os
+import shutil
+import sys
+import tempfile
 import zipfile
-from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
+from cgi import escape
+from galaxy import util
+from galaxy.datatypes.metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import inflector
+from galaxy.util.bunch import Bunch
+from galaxy.util.odict import odict
+from galaxy.util.sanitize_html import sanitize_html
 
+from galaxy import eggs
+eggs.require( "Paste" )
+import paste
 
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
+log = logging.getLogger(__name__)
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
@@ -36,7 +40,6 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-log = logging.getLogger(__name__)
 
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
@@ -69,6 +72,12 @@ class Data( object ):
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
 
     """
+    # Data is not chunkable by default.
+    CHUNKABLE = False
+
+    #: dictionary of metadata fields for this datatype::
+    metadata_spec = None
+
     __metaclass__ = DataMeta
     # Add metadata elements
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
@@ -88,6 +97,12 @@ class Data( object ):
     primary_file_name = 'index'
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
+
+    # Trackster track type.
+    track_type = None
+
+    # Data sources.
+    data_sources = {}
 
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -329,6 +344,7 @@ class Data( object ):
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
+        preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
@@ -434,12 +450,12 @@ class Data( object ):
         apply anyway.
         """
         try:
-            if type in self.get_display_types():
+            if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr ( self, self.supported_display_apps[type]['links_function'] ) ( dataset, type, app, base_url, **kwd )
         except:
             log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' \
                            % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
-        return []
+        return target_frame, []
     def get_converter_types(self, original_dataset, datatypes_registry):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
@@ -536,21 +552,21 @@ class Data( object ):
         """
         datatype_classes = tuple( [ datatype.__class__ for datatype in target_datatypes ] )
         return isinstance( self, datatype_classes )
-
     def merge( split_files, output_file):
         """
-        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
-        but might be brittle. Need to revisit this.
+            Merge files with copy.copyfileobj() will not hit the
+            max argument limitation of cat. gz and bz2 files are also working.
         """
         if not split_files:
             raise ValueError('Asked to merge zero files as %s' % output_file)
         elif len(split_files) == 1:
-            cmd = 'mv -f %s %s' % ( split_files[0], output_file )
+            shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            fdst = open(output_file, 'wb')
+            for fsrc in split_files:
+                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
+            fdst.close()
+
     merge = staticmethod(merge)
 
     def get_visualizations( self, dataset ):
@@ -558,7 +574,7 @@ class Data( object ):
         Returns a list of visualizations for datatype.
         """
 
-        if hasattr( self, 'get_track_type' ):
+        if self.track_type:
             return [ 'trackster', 'circster' ]
         return []
 
@@ -731,6 +747,10 @@ class Text( Data ):
         f.close()
     split = classmethod(split)
 
+class GenericAsn1( Text ):
+    """Class for generic ASN.1 text format"""
+    file_ext = 'asn1'
+
 class LineCount( Text ):
     """
     Dataset contains a single line with a single integer that denotes the
@@ -851,8 +871,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         text = "%s file" % file_type
     else:
         try:
-            text = unicode( '\n'.join( lines ), 'utf-8' )
+            text = util.unicodify( '\n'.join( lines ) )
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text
-

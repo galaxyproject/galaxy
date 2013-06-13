@@ -1,17 +1,27 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, urllib2
-from galaxy.web.base.controller import *
-from galaxy import util, jobs
-from galaxy.datatypes import sniff
-from galaxy.security import RBACAgent
-from galaxy.util.json import to_json_string
-from galaxy.tools.actions import upload_common
-from galaxy.model.orm import *
-from galaxy.util.streamball import StreamBall
-from galaxy.util import inflector
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
-import logging, tempfile, zipfile, tarfile, os, sys, operator
+import glob
+import logging
+import operator
+import os
+import os.path
+import string
+import sys
+import tarfile
+import tempfile
+import urllib
+import urllib2
+import zipfile
+from galaxy import util, web
+from galaxy.web import url_for
 from galaxy.eggs import require
 from galaxy.security import Action
+from galaxy.tools.actions import upload_common
+from galaxy.util import inflector
+from galaxy.util.json import to_json_string
+from galaxy.util.streamball import StreamBall
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.model.orm import and_, eagerload_all
+
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
@@ -26,11 +36,6 @@ try:
 except ImportError, e:
     whoosh_search_enabled = False
     schema = None
-
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger( __name__ )
 
@@ -94,7 +99,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return rval
 
     @web.expose
-    def browse_library( self, trans, cntrller, **kwd ):
+    def browse_library( self, trans, cntrller='library', **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -944,11 +949,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         
         # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
-        # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
-        def get_dbkey_options( last_used_build ):
-            for dbkey, build_name in util.dbnames:
-                yield build_name, dbkey, ( dbkey==last_used_build )
-        dbkeys = get_dbkey_options( last_used_build )
+        dbkeys = trans.app.genomes.get_dbkeys( trans )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         if history is not None:
@@ -1074,11 +1075,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
         job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
+        uuid_str =  params.get( 'uuid', None )
+        file_type = params.file_type
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1093,13 +1097,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         uploaded_dataset.path = path
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
-        uploaded_dataset.file_type = params.file_type
+        uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.dbkey
         uploaded_dataset.space_to_tab = params.space_to_tab
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
         uploaded_dataset.link_data_only = link_data_only
+        uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
             # Since we are not copying the file into Galaxy's managed
@@ -1109,6 +1114,16 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
+        dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
+        files = dir_response[0]
+        if not files:
+            return dir_response
+        uploaded_datasets = []
+        for file in files:
+            name = os.path.basename( file )
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
+        return uploaded_datasets, 200, None
+    def _get_server_dir_files( self, params, full_dir, import_dir_desc ):
         files = []
         try:
             for entry in os.listdir( full_dir ):
@@ -1143,50 +1158,59 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             message = "The directory '%s' contains no valid files" % full_dir
             response_code = 400
             return None, response_code, message
-        uploaded_datasets = []
-        for file in files:
-            name = os.path.basename( file )
-            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
-        return uploaded_datasets, 200, None
+        return files, None, None
     def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
+        preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
+        uploaded_datasets = []
+        (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
+        if _response_code:
+            return (uploaded_datasets, _response_code, _message)
+        for (path, name, folder) in files_and_folders:
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch, folder ) )
+        return uploaded_datasets, 200, None
+
+    def _get_path_files_and_folders( self, params, preserve_dirs ):
+        problem_response = self._check_path_paste_params( params )
+        if problem_response:
+            return problem_response
+        files_and_folders = []
+        for (line, path) in self._paths_list( params ):
+            line_files_and_folders = self._get_single_path_files_and_folders( line, path, preserve_dirs )
+            files_and_folders.extend( line_files_and_folders )
+        return files_and_folders, None, None
+
+    def _get_single_path_files_and_folders(self, line, path, preserve_dirs):
+        files_and_folders = []
+        if os.path.isfile( path ):
+            name = os.path.basename( path )
+            files_and_folders.append((path, name, None))
+        for basedir, dirs, files in os.walk( line ):
+            for file in files:
+                file_path = os.path.abspath( os.path.join( basedir, file ) )
+                if preserve_dirs:
+                    in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
+                else:
+                    in_folder = None
+                files_and_folders.append((file_path, file, in_folder))
+        return files_and_folders
+    def _paths_list(self, params):
+        return [ (l.strip(), os.path.abspath(l.strip())) for l in params.filesystem_paths.splitlines() if l.strip() ]
+
+    def _check_path_paste_params(self, params):
         if params.get( 'filesystem_paths', '' ) == '':
             message = "No paths entered in the upload form"
             response_code = 400
             return None, response_code, message
-        preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
-        # locate files
         bad_paths = []
-        uploaded_datasets = []
-        for line in [ l.strip() for l in params.filesystem_paths.splitlines() if l.strip() ]:
-            path = os.path.abspath( line )
+        for (_, path) in self._paths_list( params ):
             if not os.path.exists( path ):
                 bad_paths.append( path )
-                continue
-            # don't bother processing if we're just going to return an error
-            if not bad_paths:
-                if os.path.isfile( path ):
-                    name = os.path.basename( path )
-                    uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch ) )
-                for basedir, dirs, files in os.walk( line ):
-                    for file in files:
-                        file_path = os.path.abspath( os.path.join( basedir, file ) )
-                        if preserve_dirs:
-                            in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
-                        else:
-                            in_folder = None
-                        uploaded_datasets.append( self.make_library_uploaded_dataset( trans,
-                                                                                      cntrller,
-                                                                                      params,
-                                                                                      file,
-                                                                                      file_path,
-                                                                                      'path_paste',
-                                                                                      library_bunch,
-                                                                                      in_folder ) )
         if bad_paths:
             message = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
             response_code = 400
             return None, response_code, message
-        return uploaded_datasets, 200, None
+        return None
+
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
@@ -1782,13 +1806,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w|' )
+                            archive = StreamBall( 'w|' )
                             outext = 'tar'
                         else:
-                            archive = util.streamball.StreamBall( 'w|gz' )
+                            archive = StreamBall( 'w|gz' )
                             outext = 'tgz'
                     elif action == 'tbz':
-                        archive = util.streamball.StreamBall( 'w|bz2' )
+                        archive = StreamBall( 'w|bz2' )
                         outext = 'tbz2'
                     elif action == 'ngxzip':
                         archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
@@ -2583,25 +2607,16 @@ def datasets_for_lddas( trans, lddas ):
     return datasets 
 
 def active_folders_and_library_datasets( trans, folder ):
-    # SM: TODO: Eliminate timing code
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
-    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2611,11 +2626,8 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
-               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:
@@ -2685,7 +2697,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
     response.close()
-    lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+    lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
@@ -2710,7 +2722,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 if ldda:
                     lddas.append( ldda )
             lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

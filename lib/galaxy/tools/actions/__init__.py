@@ -64,7 +64,11 @@ class DefaultToolAction( object ):
                     # If there are multiple inputs with the same name, they
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
-                        input_datasets[ prefix + input.name + str( i + 1 ) ] = process_dataset( v )
+                        processed_dataset = process_dataset( v )
+                        if i == 0:
+                            # Allow copying metadata to output, first item will be source.
+                            input_datasets[ prefix + input.name ] = processed_dataset
+                        input_datasets[ prefix + input.name + str( i + 1 ) ] = processed_dataset
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], conversion_datatypes )
@@ -74,10 +78,10 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions )
                         if parent:
-                            parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
@@ -147,6 +151,12 @@ class DefaultToolAction( object ):
                     values = input_values[ input.name ]
                     current = values[ "__current_case__" ]
                     wrap_values( input.cases[current].inputs, values, skip_missing_values = skip_missing_values )
+                elif isinstance( input, DataToolParameter ) and input.multiple:
+                    input_values[ input.name ] = \
+                        galaxy.tools.DatasetListWrapper( input_values[ input.name ],
+                                                         datatypes_registry = trans.app.datatypes_registry,
+                                                         tool = tool,
+                                                         name = input.name )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
                         galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
@@ -160,7 +170,7 @@ class DefaultToolAction( object ):
         
         # Set history.
         if not history:
-            history = trans.history
+            history = tool.get_default_history_by_trans( trans, create=True )
         
         out_data = odict()
         # Collect any input datasets from the incoming parameters
@@ -201,12 +211,12 @@ class DefaultToolAction( object ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
                 if 'fasta' in custom_build_dict:
-                    build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
+                    build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
             
             if not chrom_info:
                 # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         
@@ -336,9 +346,10 @@ class DefaultToolAction( object ):
                     params['on_string'] = on_text
                     data.name = fill_template( output.label, context=params )
                 else:
-                    data.name = tool.name 
-                    if on_text:
-                        data.name += ( " on " + on_text )
+                    if params is None:
+                        params = make_dict_copy( incoming )
+                        wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
+                    data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
                 # Store output 
                 out_data[ name ] = data
                 if output.actions:
@@ -396,6 +407,7 @@ class DefaultToolAction( object ):
         job.object_store_id = object_store_id
         if job_params:
             job.params = to_json_string( job_params )
+        job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
@@ -419,7 +431,13 @@ class DefaultToolAction( object ):
             trans.sa_session.flush()
             trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
         else:
-            # Queue the job for execution
-            trans.app.job_queue.put( job.id, tool )
+            # Put the job in the queue if tracking in memory
+            trans.app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
+
+    def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
+        name = tool.name
+        if on_text:
+            name += ( " on " + on_text )
+        return name

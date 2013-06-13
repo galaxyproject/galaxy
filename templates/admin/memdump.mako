@@ -37,7 +37,7 @@
             id = None
         new_s += re.sub( id_re, r'\1<a href="' + h.url_for( controller='admin', action='memdump', ids=ids, sorts=sorts, new_id=id ) + r'">\2</a>', line )
         if id and heap[int(id)].count == 1:
-            new_s += " <a href='%s'>theone</a>\n" % h.url_for( ids=ids, sorts=sorts, new_id=id, theone=True )
+            new_s += " <a href='%s'>theone</a>\n" % h.url_for( controller='admin', action='memdump', ids=ids, sorts=sorts, new_id=id, theone=True )
         else:
             new_s += "\n"
     return new_s

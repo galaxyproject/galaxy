@@ -6,18 +6,27 @@ use File::Basename;
 use IO::Handle;
 use Cwd;
 use File::Path;
-#use File::Temp qw/ tempfile tempdir /;
 use vars qw($distance @thresholds @tags $species_set @allspecies $printer $treeSpeciesNum $focalspec $mergestarts $mergeends $mergemicros $interrtypecord $microscanned $interrcord $interr_poscord $no_of_interruptionscord $infocord $typecord $startcord $strandcord $endcord $microsatcord $motifcord $sequencepos $no_of_species $gapcord $prinkter);
+use File::Path qw(make_path remove_tree);
+use File::Temp qw/ tempfile tempdir /;
+my $tdir = tempdir( CLEANUP => 1 );
+chdir $tdir;
+my $dir = getcwd;  
+#print "dir = $dir\n";
 
 #$ENV{'PATH'} .= ':' . dirname($0);
 my $date = `date`;
 
 my ($mafile, $mafile_sputt, $orthfile, $threshold_array,  $allspeciesin, $tree_definition_all, $separation) = @ARGV;
 if (!$mafile or !$mafile_sputt or !$orthfile or !$threshold_array or !$separation or !$tree_definition_all or !$allspeciesin) { die "missing arguments\n"; }
+
+$tree_definition_all =~ s/\s+//g;
+$threshold_array =~ s/\s+//g;
+$allspeciesin =~ s/\s+//g;
 #-------------------------------------------------------------------------------
 # WHICH SPUTNIK USED?
 my $sputnikpath = ();
-$sputnikpath = "bx-sputnik" ;
+$sputnikpath = "sputnik_lowthresh_MATCH_MIN_SCORE3" ;
 #$sputnikpath = "/Users/ydk/work/rhesus_microsat/codes/./sputnik_Mac-PowerPC";
 #print "sputnik_Mac-PowerPC non-existant\n" if !-e $sputnikpath;
 #exit if !-e $sputnikpath;
@@ -38,7 +47,6 @@ my @outputfiles = ();
 my $round = 0;
 #my $tdir = tempdir( CLEANUP => 0 );
 #chdir $tdir;
-my $dir = getcwd;  
 
 foreach my $tree_definition (@tree_definitions){
 	my @commas = ($tree_definition =~ /,/g) ;
@@ -113,8 +121,6 @@ foreach my $tree_definition (@tree_definitions){
 		my @sp_tags = ();
 		
 #		print "$ptag _ orthfile\n"; <STDIN>;
-
-		
 		#print "orgs=@orgs, pchr=$pchr, hence, ptag = $ptag\n";
 		foreach my $sp (@tag){
 			push(@sp_tags, ($sp.".".$ptag));
@@ -191,7 +197,7 @@ foreach my $tree_definition (@tree_definitions){
 			my $sputnikinput = $pipedir.$sp."_nogap_op_unrand";
 			push(@sput_filelist, $sputnikinput);
 			my $sputnikcommand = $sputnikpath." ".$sputnikinput." > ".$sputnikoutput;
-			#print "$sputnikcommand\n";
+		#	print "$sputnikcommand\n";
 			my @sputnikcommand_system = $sputnikcommand;
 			system(@sputnikcommand_system);
 		}
@@ -472,6 +478,11 @@ foreach my $tree_definition (@tree_definitions){
 }
 
 `cat @outputfiles > $orthfile`;
+
+my $rootdir = $dir;
+$rootdir =~ s/\/[A-Za-z0-9\-_]+$//;
+chdir $rootdir;
+remove_tree($dir);
 
 #print "date = $date\n";
 #remove_tree($tdir);

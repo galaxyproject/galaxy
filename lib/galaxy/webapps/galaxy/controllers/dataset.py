@@ -20,11 +20,6 @@ import pkg_resources;
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
 
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
-
 tmpd = tempfile.mkdtemp()
 comptypes=[]
 ziptype = '32'
@@ -163,25 +158,23 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
     
-    def _can_access_dataset( self, trans, dataset_association, allow_admin=True ):
-        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset_association.dataset )
+    def _can_access_dataset( self, trans, dataset_association, allow_admin=True, additional_roles=None ):
+        roles = trans.get_current_user_roles()
+        if additional_roles:
+            roles = roles + additional_roles
+        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( roles, dataset_association.dataset )
     
     @web.expose
     def errors( self, trans, id ):
-        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
+        try:
+            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
+        except:
+            hda = None
+        if not hda:
+            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( trans.security.decode_id( id ) )
         if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
-    @web.expose
-    def stdoutX( self, trans, dataset_id=None, **kwargs ):
-        trans.response.set_content_type( 'text/plain' )
-        try:
-            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-            assert hda and self._can_access_dataset( trans, hda )
-            job = hda.creating_job_associations[0].job
-        except:
-            return "Invalid dataset ID or you are not allowed to access this dataset"
-        return job.stdout
 
     @web.expose
     def stdout( self, trans, dataset_id=None, **kwargs ):
@@ -217,7 +210,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code 
     @web.expose
-    def report_error( self, trans, id, email='', message="" ):
+    def report_error( self, trans, id, email='', message="", **kwd ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this galaxy instance" )
@@ -255,7 +248,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             to = to_address + ", " + email
         else:
             to = to_address
-        subject = "Galaxy tool error report from " + email
+        subject = "Galaxy tool error report from %s" % email
         # Send it
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
@@ -297,6 +290,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( hda_id ) )
         if not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
+        if data.purged:
+            return trans.show_error_message( "The dataset you are attempting to view has been purged." )
+        if data.deleted and not ( trans.user_is_admin() or ( data.history and trans.get_user() == data.history.user ) ):
+            return trans.show_error_message( "The dataset you are attempting to view has been deleted." )
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
         return data
@@ -384,10 +381,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                         error = True
                     else:
-                        trans.app.datatypes_registry.change_datatype( data, params.datatype, set_meta = not trans.app.config.set_metadata_externally )
+                        trans.app.datatypes_registry.change_datatype( data, params.datatype )
                         trans.sa_session.flush()
-                        if trans.app.config.set_metadata_externally:
-                            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
                         message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
                         refresh_frames=['history']
                 else:
@@ -395,8 +391,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     error = True
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                data.name  = params.name
-                data.info  = params.info
+                data.name  = params.name if params.name else ''
+                data.info  = params.info if params.info else ''
                 message = ''
                 if __ok_to_edit_metadata( data.id ):
                     # The following for loop will save all metadata_spec items
@@ -441,13 +437,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                             if spec.get( 'default' ):
                                 setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                    if trans.app.config.set_metadata_externally:
-                        message = 'Attributes have been queued to be updated'
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
-                    else:
-                        message = 'Attributes updated'
-                        data.set_meta()
-                        data.datatype.after_setting_metadata( data )
+                    message = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
                     trans.sa_session.flush()
                     refresh_frames=['history']
             elif params.convert_data:
@@ -553,8 +544,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
-                    # Copy a dataset to the current history.
+                    #
+                    # Copy datasets to the current history.
+                    #
+
                     target_histories = [ trans.get_history() ]
+                    
+                    # Reverse HDAs so that they appear in the history in the order they are provided.
+                    hda_ids.reverse()
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.
@@ -591,7 +588,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
         dataset = self.get_dataset( trans, id, False, True )
-        return_dict = { "name" : dataset.name, "link" : url_for( action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
+        return_dict = { "name" : dataset.name, "link" : url_for( controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
 
     @web.expose
@@ -634,6 +631,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
 
+            # If dataset is chunkable, get first chunk.
+            first_chunk = None
+            if dataset.datatype.CHUNKABLE:
+                first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
+
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
@@ -650,8 +652,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, dataset )
 
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated,
-                                                user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, 
+                                                 truncated=truncated, user_item_rating = user_item_rating, 
+                                                 ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                                 first_chunk=first_chunk )
         else:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -692,6 +696,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
         """Sets up a dataset permissions so it is viewable at an external site"""
+        if not trans.app.config.enable_old_display_applications:
+            return trans.show_error_message( "This method of accessing external display applications has been disabled by a Galaxy administrator." )
         site = filename
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
@@ -731,7 +737,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         link_name = urllib.unquote_plus( link_name )
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
-        if self._can_access_dataset( trans, data ):
+        if self._can_access_dataset( trans, data, additional_roles=user_roles ):
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
@@ -820,7 +826,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             trans.sa_session.flush()
         except Exception, e:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
-            log.exception( msg )
+            log.exception( msg + ': ' + str( e ) )
             trans.log_event( msg )
             message = 'Dataset deletion failed'
             status = 'error'
@@ -992,6 +998,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         params_objects = None
         job = None
         tool = None
+        upgrade_messages = {}
+        has_parameter_errors = False
         inherit_chain = hda.source_dataset_chain
         if inherit_chain:
             job_dataset_association, dataset_association_container_name = inherit_chain[-1]
@@ -1008,12 +1016,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    params_objects = job.get_param_values( trans.app )
+                    #Load parameter objects, if a parameter type has changed, its possible for the value to no longer be valid
+                    try:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=False )
+                    except:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=True )
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ), trans, update_values=False ) #use different param_objects here, since we want to display original values as much as possible
+                        has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message( "Job information is not available for this dataset." )
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects )
+        #TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
@@ -1021,8 +1036,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         user = trans.get_user()
         if source_history is not None:
             history = self.get_history(trans, source_history)
+            current_history = trans.get_history()
         else:
-            history = trans.get_history()
+            history = current_history = trans.get_history()
         refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
@@ -1070,7 +1086,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     else:
                         for hist in target_histories:
                             hist.add_dataset( hda.copy( copy_children = True ) )
-                if history in target_histories:
+                if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
@@ -1087,7 +1103,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
            target_histories = user.active_histories
         return trans.fill_template( "/dataset/copy_view.mako",
                                     source_history = history,
-                                    current_history = trans.get_history(),
+                                    current_history = current_history,
                                     source_dataset_ids = source_dataset_ids,
                                     target_history_id = target_history_id,
                                     target_history_ids = target_history_ids,

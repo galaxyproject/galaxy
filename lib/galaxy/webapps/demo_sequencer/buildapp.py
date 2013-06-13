@@ -10,7 +10,7 @@ from inspect import isclass
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
 import pkg_resources
 
 log = logging.getLogger( __name__ )
@@ -55,7 +55,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.webapps.demo_sequencer.framework.WebApplication( app, session_cookie='galaxydemo_sequencersession' )
+    webapp = galaxy.webapps.demo_sequencer.framework.WebApplication( app, session_cookie='galaxydemo_sequencersession', name="demo_sequencer" )
     add_ui_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', action='index' )
@@ -125,11 +125,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

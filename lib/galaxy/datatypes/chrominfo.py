@@ -1,7 +1,3 @@
-import data
-from galaxy import util
-from galaxy.datatypes.sniff import *
-from galaxy.web import url_for
 from tabular import Tabular
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement

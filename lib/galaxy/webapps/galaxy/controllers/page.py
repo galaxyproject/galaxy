@@ -1,9 +1,11 @@
-from galaxy import model
-from galaxy.model.item_attrs import *
-from galaxy.web.base.controller import *
+from sqlalchemy import desc, and_
+from galaxy import model, web
+from galaxy.web import error, url_for
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
+from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
-from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
 
 def format_bool( b ):
@@ -16,7 +18,7 @@ class PageListGrid( grids.Grid ):
     # Custom column.
     class URLColumn( grids.PublicURLColumn ):
         def get_value( self, trans, grid, item ):
-            return url_for( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
+            return url_for(controller='page', action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
     
     # Grid definition
     use_panels = True
@@ -91,6 +93,7 @@ class ItemSelectionGrid( grids.Grid ):
                 return item.name
 
     # Grid definition.
+    show_item_checkboxes = True
     template = "/page/select_items_grid.mako"
     async_template = "/page/select_items_grid_async.mako" 
     default_filter = { "deleted" : "False" , "sharing" : "All" }
@@ -338,7 +341,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 page_title_err = "Page name is required"
             elif not page_slug:
                 page_slug_err = "Page id is required"
-            elif not VALID_SLUG_RE.match( page_slug ):
+            elif not self._is_valid_slug( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"
@@ -362,9 +365,9 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 session.flush()
                 # Display the management page
                 ## trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Create new page", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
                 .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
                            help="""A unique identifier that will be used for
@@ -394,7 +397,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 page_title_err = "Page name is required"
             elif not page_slug:
                 page_slug_err = "Page id is required"
-            elif not VALID_SLUG_RE.match( page_slug ):
+            elif not self._is_valid_slug( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif page_slug != page.slug and trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"
@@ -407,7 +410,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 session.flush()
                 # Redirect to page list.
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
@@ -415,7 +418,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
             if not page_annotation:
                 page_annotation = ""
         return trans.show_form( 
-            web.FormBuilder( web.url_for( id=encoded_id ), "Edit page attributes", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='page', action='edit', id=encoded_id ), "Edit page attributes", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
                 .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
                            help="""A unique identifier that will be used for
@@ -653,7 +656,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
 
         if self.create_item_slug( trans.sa_session, page ):
             trans.sa_session.flush()
-        return_dict = { "name" : page.title, "link" : url_for( action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
+        return_dict = { "name" : page.title, "link" : url_for(controller='page', action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
         return return_dict
         
     @web.expose
@@ -712,7 +715,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
-            err+msg( "Page not found" )
+            error( "Page not found" )
         else:
             return self.security_check( trans, page, check_ownership, check_accessible )
             

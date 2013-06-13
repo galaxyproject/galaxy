@@ -182,10 +182,13 @@ class MetadataValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( message=elem.get( 'message', None ), check=elem.get( 'check', "" ), skip=elem.get( 'skip', "" ) )
     def validate( self, value, history=None ):
-        if value and value.missing_meta( check = self.check, skip = self.skip ):
-            if self.message is None:
-                self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
-            raise ValueError( self.message )
+        if value:
+            if not isinstance( value, model.DatasetInstance ):
+                raise ValueError( 'A non-dataset value was provided.' )
+            if value.missing_meta( check = self.check, skip = self.skip ):
+                if self.message is None:
+                    self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
+                raise ValueError( self.message )
 
 class UnspecifiedBuildValidator( Validator ):
     """
@@ -290,18 +293,31 @@ class MetadataInDataTableColumnValidator( Validator ):
         if line_startswith:
             line_startswith = line_startswith.strip()
         return cls( tool_data_table, metadata_name, metadata_column, message, line_startswith )
+    
     def __init__( self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
+        self._data_table_content_version = None
+        self._tool_data_table = tool_data_table
         if isinstance( metadata_column, basestring ):
             metadata_column = tool_data_table.columns[ metadata_column ]
-        for fields in tool_data_table.get_fields():
-            if metadata_column < len( fields ):
-                self.valid_values.append( fields[ metadata_column ] )
+        self._metadata_column = metadata_column
+        self._load_values()
+    
+    def _load_values( self ):
+        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields()
+        self.valid_values = []
+        for fields in data_fields:
+            if self._metadata_column < len( fields ):
+                self.valid_values.append( fields[ self._metadata_column ] )
+    
     def validate( self, value, history = None ):
         if not value: return
         if hasattr( value, "metadata" ):
+            if not self._tool_data_table.is_current_version( self._data_table_content_version ):
+                log.debug( 'MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name )
+                self._load_values()
             if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
         raise ValueError( self.message )

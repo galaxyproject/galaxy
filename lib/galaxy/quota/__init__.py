@@ -2,11 +2,8 @@
 Galaxy Quotas
 
 """
-import logging, socket, operator
-from datetime import datetime, timedelta
-from galaxy import util
-from galaxy.util.bunch import Bunch
-from galaxy.model.orm import *
+import logging
+import galaxy.util
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +85,7 @@ class QuotaAgent( NoQuotaAgent ):
                 rval = 0
         if nice_size:
             if rval is not None:
-                rval = util.nice_size( rval )
+                rval = galaxy.util.nice_size( rval )
             else:
                 rval = 'unlimited'
         return rval
@@ -149,7 +146,7 @@ class QuotaAgent( NoQuotaAgent ):
                 flush_needed = False
                 for a in quota.users + quota.groups:
                     self.sa_session.delete( a )
-                    flush_neeeded = True
+                    flush_needed = True
                 if flush_needed:
                     self.sa_session.flush()
             for user in users:

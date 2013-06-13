@@ -7,51 +7,38 @@
         <requirement type="package">bowtie2</requirement>
         <requirement type="package">tophat2</requirement>
     </requirements>
-    <command interpreter="python">
-        tophat2_wrapper.py
+
+    <command>
+        ##
+        ## Set path to index, building the reference if necessary.
+        ##
+
+        #set index_path = ''
+        #if $refGenomeSource.genomeSource == "history":
+            bowtie2-build "$refGenomeSource.ownFile" genome ; ln -s "$refGenomeSource.ownFile" genome.fa ;
+            #set index_path = 'genome'
+        #else:
+            #set index_path = $refGenomeSource.index.fields.path
+        #end if
+
+        ##
+        ## Run tophat.
+        ##
+
+        tophat2
         
         ## Change this to accommodate the number of threads you have available.
-        --num-threads="4"
-
-        ## Provide outputs.
-        --junctions-output=$junctions
-        --hits-output=$accepted_hits
-
-        ## Handle reference file.
-        #if $refGenomeSource.genomeSource == "history":
-            --own-file=$refGenomeSource.ownFile
-        #else:
-            --indexes-path="${refGenomeSource.index.fields.path}"
-        #end if
-
-        ## Are reads single-end or paired?
-        --single-paired=$singlePaired.sPaired
-
-        ## First input file always required.
-        --input1=$input1
-        
-        ## Second input only if input is paired-end.
-        ## Also set parameters specific to paired data.
-        #if $singlePaired.sPaired == "paired"
-            --input2=$singlePaired.input2
-            -r $singlePaired.mate_inner_distance
-            --mate-std-dev=$singlePaired.mate_std_dev
-            
-            #if str($singlePaired.report_discordant_pairs) == "Yes":
-                --report-discordant-pair-alignments
-            #end if
-        #end if
+        --num-threads 4
 
         ## Set params.
-        --settings=$params.settingsType
         #if $params.settingsType == "full":
-            -n $params.transcriptome_mismatches
-            --genome-read-mismatches $params.genome_read_mismatches
             --read-mismatches $params.read_mismatches
             #if str($params.bowtie_n) == "Yes":
                 --bowtie-n
             #end if
         
+            --read-edit-dist $params.read_edit_dist
+            --read-realign-edit-dist $params.read_realign_edit_dist
             -a $params.anchor_length
             -m $params.splice_mismatches
             -i $params.min_intron_length
@@ -59,9 +46,9 @@
             -g $params.max_multihits
             --min-segment-intron $params.min_segment_intron
             --max-segment-intron $params.max_segment_intron
-            --seg-mismatches=$params.seg_mismatches
-            --seg-length=$params.seg_length
-            --library-type=$params.library_type
+            --segment-mismatches $params.seg_mismatches
+            --segment-length $params.seg_length
+            --library-type $params.library_type
             
             ## Indel search.
             #if $params.indel_search.allow_indel_search == "Yes":
@@ -80,7 +67,6 @@
                 #if $params.own_junctions.raw_juncs.use_juncs == "Yes":
                     -j $params.own_junctions.raw_juncs.raw_juncs
                 #end if
-                ## TODO: No idea why a string cast is necessary, but it is:
                 #if str($params.own_junctions.no_novel_juncs) == "Yes":
                     --no-novel-juncs
                 #end if
@@ -93,7 +79,7 @@
             #else:
                 --no-coverage-search
             #end if
-            ## TODO: No idea why the type conversion is necessary, but it seems to be.
+            
             #if str($params.microexon_search) == "Yes":
                 --microexon-search
             #end if
@@ -115,7 +101,30 @@
             #end if
                         
         #end if
+
+        ## Read group information.
+        #if $readGroup.specReadGroup == "yes"
+          --rg-id "$readGroup.rgid"
+          --rg-library "$readGroup.rglb"
+          --rg-platform "$readGroup.rgpl"
+          --rg-sample "$readGroup.rgsm"
+        #end if
+
+        ## Set index path, inputs and parameters specific to paired data.
+        #if $singlePaired.sPaired == "paired"
+            -r $singlePaired.mate_inner_distance
+            --mate-std-dev=$singlePaired.mate_std_dev
+            
+            #if str($singlePaired.report_discordant_pairs) == "No":
+                --no-discordant
+            #end if
+
+            ${index_path} $singlePaired.input1 $singlePaired.input2
+        #else
+            ${index_path} $singlePaired.input1
+        #end if
     </command>
+    
     <inputs>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Is this library mate-paired?">
@@ -132,28 +141,17 @@
                 <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
                 <!-- Discordant pairs. -->
                 <param name="report_discordant_pairs" type="select" label="Report discordant pair alignments?">
-                    <option selected="true" value="No">No</option>
-                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                    <option selected="True" value="Yes">Yes</option>
                 </param>
             </when>
         </conditional>
-        <conditional name="refGenomeSource">
-          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
-            <option value="indexed">Use a built-in index</option>
-            <option value="history">Use one from the history</option>
-          </param>
-          <when value="indexed">
-            <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_data_table="tophat2_indexes">
-                <filter type="sort_by" column="2"/>
-                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
-              </options>
-            </param>
-          </when>
-          <when value="history">
-            <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
-          </when>  <!-- history -->
-        </conditional>  <!-- refGenomeSource -->
+        <expand macro="refGenomeSourceConditional">
+          <options from_data_table="tophat2_indexes">
+            <filter type="sort_by" column="2"/>
+            <validator type="no_options" message="No genomes are available for the selected input dataset"/>
+          </options>
+        </expand>
         <conditional name="params">
             <param name="settingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
               <option value="preSet">Use Defaults</option>
@@ -162,13 +160,15 @@
             <when value="preSet" />
             <!-- Full/advanced params. -->
             <when value="full">
+              <param name="read_realign_edit_dist" type="integer" value="1000" label="Max realign edit distance" help="Some of the reads spanning multiple exons may be mapped incorrectly as a contiguous alignment to the genome even though the correct alignment should be a spliced one - this can happen in the presence of processed pseudogenes that are rarely (if at all) transcribed or expressed. This option can direct TopHat to re-align reads for which the edit distance of an alignment obtained in a previous mapping step is above or equal to this option value. If you set this option to 0, TopHat will map every read in all the mapping steps (transcriptome if you provided gene annotations, genome, and finally splice variants detected by TopHat), reporting the best possible alignment found in any of these mapping steps. This may greatly increase the mapping accuracy at the expense of an increase in running time. The default value for this option is set such that TopHat will not try to realign reads already mapped in earlier steps." />
+
+              <param name="read_edit_dist" type="integer" value="2" label="Max edit distance" help="Final read alignments having more than these many edit distance are discarded." />
+
               <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
                   <option value="fr-unstranded">FR Unstranded</option>
                   <option value="fr-firststrand">FR First Strand</option>
                   <option value="fr-secondstrand">FR Second Strand</option>
               </param>
-              <param name="transcriptome_mismatches" type="integer" value="2" label="Transcriptome mismatches" help="Maximum number of mismatches allowed when reads are aligned to the transcriptome. When Bowtie2 is used, this number is also used to decide whether or not to further re-align some of the transcriptome-mapped reads to the genome.	If the alignment score of the best alignment among multiple candidates for a read is lower than 'bowtie2-min-score', which is internally defined as (max_penalty - 1) * max_mismatches, then the reads will be kept for re-alignment through the rest of the pipeline.  You can specify max_penalty via '--b2-mp' option." />
-              <param name="genome_read_mismatches" type="integer" value="2" label="Genome read mismatches" help="When whole reads are first mapped on the genome, this many mismatches in each read alignment are allowed. The default is 2. This number is also used to decide whether to further re-align some of the reads (by splitting them into segments) with a similar scoring threshold scheme as described for the --transcriptome-mismatches option above." />
               <param name="read_mismatches" type="integer" value="2" label="Final read mismatches" help="Final read alignments having more than these many mismatches are discarded." />
               <param name="bowtie_n" type="select" label="Use bowtie -n mode">
                   <option selected="true" value="No">No</option>
@@ -178,17 +178,7 @@
               <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
               <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
               <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
-              <conditional name="indel_search">
-                  <param name="allow_indel_search" type="select" label="Allow indel search">
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                  </param>
-                  <when value="No"/>
-                  <when value="Yes">
-                     <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
-                     <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
-                  </when>
-              </conditional>
+              <expand macro="indel_searchConditional" />
     alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
               <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
               <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
@@ -197,40 +187,7 @@
               <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
           
               <!-- Options for supplying own junctions. -->
-              <conditional name="own_junctions">
-                  <param name="use_junctions" type="select" label="Use Own Junctions">
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                  </param>
-                  <when value="Yes">
-                      <conditional name="gene_model_ann">
-                         <param name="use_annotations" type="select" label="Use Gene Annotation Model">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                         </param>
-                         <when value="No" />
-                         <when value="Yes">
-                           <param format="gtf,gff3" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
-                         </when>
-                      </conditional>
-                      <conditional name="raw_juncs">
-                         <param name="use_juncs" type="select" label="Use Raw Junctions">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                         </param>
-                         <when value="No" />
-                         <when value="Yes">
-                           <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
-                         </when>
-                      </conditional>
-                      <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
-                        <option value="No">No</option>
-                        <option value="Yes">Yes</option>
-                      </param>
-                  </when>
-                  <when value="No" />
-              </conditional> <!-- /own_junctions -->
-          
+              <expand macro="own_junctionsConditional" />
               <!-- Coverage search. -->
               <conditional name="coverage_search">
                 <param name="use_search" type="select" label="Use Coverage Search" help="Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.">
@@ -295,90 +252,66 @@
               </conditional>
             </when>  <!-- full -->
       </conditional>  <!-- params -->
+      <conditional name="readGroup">
+        <param name="specReadGroup" type="select" label="Specify read group?">
+            <option value="yes">Yes</option>
+            <option value="no" selected="True">No</option>
+        </param>
+        <when value="yes">
+            <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
+            <param name="rglb" type="text" size="25" label="Library name (LB)" help="Required if RG specified" />
+            <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads (PL)" help="Required if RG specified. Valid values : CAPILLARY, LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT and PACBIO" />
+            <param name="rgsm" type="text" size="25" label="Sample (SM)" help="Required if RG specified. Use pool name where a pool is being sequenced" />
+        </when>
+        <when value="no" />
+      </conditional> <!-- readGroup -->
     </inputs>
+
+    <stdio>
+        <regex match="Exception" source="both" level="error" description="Tool exception"/>
+        <regex match=".*" source="both" level="log" description="tool progress"/>
+    </stdio>
 
     <outputs>
         <data format="tabular" name="fusions" label="${tool.name} on ${on_string}: fusions" from_work_dir="tophat_out/fusions.out">
             <filter>(params['settingsType'] == 'full' and params['fusion_search']['do_search'] == 'Yes')</filter>
         </data>
         <data format="bed" name="insertions" label="${tool.name} on ${on_string}: insertions" from_work_dir="tophat_out/insertions.bed">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+            <expand macro="dbKeyActions" />
         </data>
         <data format="bed" name="deletions" label="${tool.name} on ${on_string}: deletions" from_work_dir="tophat_out/deletions.bed">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+          <expand macro="dbKeyActions" />
         </data>
-        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions" from_work_dir="tophat_out/junctions.bed">
+          <expand macro="dbKeyActions" />
         </data>
-        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+        <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits" from_work_dir="tophat_out/accepted_hits.bam">
+          <expand macro="dbKeyActions" />
         </data>
     </outputs>
 
+    <macros>
+      <import>tophat_macros.xml</import>
+      <macro name="dbKeyActions">
+        <actions>
+          <conditional name="refGenomeSource.genomeSource">
+            <when value="indexed">
+              <action type="metadata" name="dbkey">
+                <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
+                  <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                  <filter type="param_value" ref="refGenomeSource.index" column="0"/>
+                </option>
+              </action>
+            </when>
+            <when value="history">
+              <action type="metadata" name="dbkey">
+                <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
+              </action>
+            </when>
+          </conditional>
+        </actions>
+      </macro>
+    </macros>
     <tests>
         <!-- Test base-space single-end reads with pre-built index and preset parameters -->
         <test>
@@ -391,7 +324,8 @@
             <param name="genomeSource" value="indexed" />
             <param name="index" value="tophat_test" />
             <param name="settingsType" value="preSet" />
-            <output name="junctions" file="tophat_out1j.bed" />
+            <param name="specReadGroup" value="No" />
+            <output name="junctions" file="tophat2_out1j.bed" />
             <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
         <!-- Test using base-space test data: paired-end reads, index from history. -->
@@ -408,6 +342,7 @@
             <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
             <param name="mate_inner_distance" value="20" />
             <param name="settingsType" value="preSet" />
+            <param name="specReadGroup" value="No" />
             <output name="junctions" file="tophat2_out2j.bed" />
             <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
         </test>
@@ -415,7 +350,7 @@
         <test>
             <!-- Tophat commands:
             bowtie2-build -f test-data/tophat_in1.fasta tophat_in1
-            tophat2 -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
+            tophat2 -o tmp_dir -p 1 -a 8 -m 0 -i 70 -I 500000 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search tophat_in1 test-data/tophat_in2.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -425,8 +360,6 @@
             <param name="ownFile" value="tophat_in1.fasta"/>
             <param name="settingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
-            <param name="transcriptome_mismatches" value="2"/>
-            <param name="genome_read_mismatches" value="2"/>
             <param name="read_mismatches" value="2"/>
             <param name="bowtie_n" value="No"/>
             <param name="anchor_length" value="8"/>
@@ -445,11 +378,11 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
-            <param name="report_discordant_pairs" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
+            <param name="b2_settings" value="No" />
             <!-- Fusion search params -->
             <param name="do_search" value="Yes" />            
             <param name="anchor_len" value="21" />
@@ -458,6 +391,7 @@
             <param name="multireads" value="4" />
             <param name="multipairs" value="5" />
             <param name="ignore_chromosomes" value="chrM"/>
+            <param name="specReadGroup" value="No" />
             <output name="insertions" file="tophat_out3i.bed" />
             <output name="deletions" file="tophat_out3d.bed" />
             <output name="junctions" file="tophat2_out3j.bed" />
@@ -466,7 +400,7 @@
         <!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
         <test>
             <!-- TopHat commands:
-            tophat2 -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search +report_discordant_pairs tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+            tophat2 -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search +report_discordant_pairs tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -478,8 +412,6 @@
             <param name="mate_inner_distance" value="20"/>
             <param name="settingsType" value="full"/>
             <param name="library_type" value="FR Unstranded"/>
-            <param name="transcriptome_mismatches" value="3"/>
-            <param name="genome_read_mismatches" value="4"/>
             <param name="read_mismatches" value="5"/>
             <param name="bowtie_n" value="Yes"/>
             <param name="mate_std_dev" value="20"/>
@@ -500,6 +432,7 @@
             <param name="report_discordant_pairs" value="Yes" />
             <param name="use_search" value="No" />
             <param name="microexon_search" value="Yes" />
+            <param name="b2_settings" value="No" />
             <!-- Fusion search params -->
             <param name="do_search" value="Yes" />            
             <param name="anchor_len" value="21" />
@@ -508,6 +441,7 @@
             <param name="multireads" value="4" />
             <param name="multipairs" value="5" />
             <param name="ignore_chromosomes" value="chrM"/>
+            <param name="specReadGroup" value="No" />
             <output name="junctions" file="tophat2_out4j.bed" />
             <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
         </test>
@@ -572,9 +506,6 @@ This is a list of implemented Tophat options::
   -m/--splice-mismatches INT        The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
   -i/--min-intron-length INT        The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
   -I/--max-intron-length INT        The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
-  -F/--min-isoform-fraction 0.0-1.0 TopHat filters out junctions supported by too few alignments. Suppose a junction spanning two exons, is supported by S reads. Let the average depth of coverage of 
-                                    exon A be D, and assume that it is higher than B. If S / D is less than the minimum isoform fraction, the junction is not reported. A value of zero disables the 
-                                    filter. The default is 0.15.
   -g/--max-multihits INT            Instructs TopHat to allow up to this many alignments to the reference for a given read, and suppresses all alignments for reads with more than this many 
                                     alignments. The default is 40.
   -G/--GTF [GTF 2.2 file]           Supply TopHat with a list of gene model annotations. TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping.

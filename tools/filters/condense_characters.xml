@@ -12,7 +12,7 @@
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
     </param>
-    <param format="txt" name="input" type="data" label="in this Query"/>
+    <param format="txt" name="input" type="data" label="in this Dataset"/>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input" />

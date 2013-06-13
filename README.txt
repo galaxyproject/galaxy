@@ -10,7 +10,7 @@ HOW TO START
 Galaxy requires Python 2.5, 2.6 or 2.7. To check your python version, run:
 
 % python -V
-Python 2.4.4
+Python 2.7.3
 
 Start Galaxy:
 

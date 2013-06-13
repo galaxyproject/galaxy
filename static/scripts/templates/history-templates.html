@@ -3,10 +3,10 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 -->
 <script type="text/template" class="template-history" id="template-history-historyPanel">
 <div id="history-controls">
-    <div id="history-title-area" class="historyLinks">
 
+    <div id="history-title-area" class="historyLinks">
         {{! history name (if any) }}
-        <div id="history-name-container" style="float: left;">
+        <div id="history-name-container">
             {{! TODO: factor out conditional css }}
             {{#if user.email}}
             <div id="history-name" class="tooltip editable-text"
@@ -16,30 +16,21 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
                 title="{{#local}}You must be logged in to edit your history name{{/local}}">{{name}}</div>
             {{/if}}
         </div>
-
-        <a id="history-action-popup" class="tooltip" title="{{#local}}Click to see more actions{{/local}}"
-            href="javascript:void(0);" style="float: right;">
-            <span class="ficon cog large"></span>
-        </a>
-        <div style="clear: both;"></div>
     </div>
 
     <div id="history-subtitle-area">
         <div id="history-size" style="float:left;">{{nice_size}}</div>
-        {{#if user.email}}
+
         <div id="history-secondary-links" style="float: right;">
+            {{#if user.email}}
             <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
                 class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
             <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
                 class="icon-button annotate tooltip" target="galaxy_main" href="javascript:void(0)"></a>
+            {{/if}}
         </div>
-        {{/if}}
         <div style="clear: both;"></div>
     </div>
-
-    {{#if deleted}}
-    {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
-    {{/if}}
 
     {{! tags and annotations }}
     {{! TODO: move inline styles out }}
@@ -67,18 +58,20 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     </div>
     {{/if}}
 
-    {{#if message}}
-    <div id="message-container">
-        <div class="{{status}}message">
-        {{message}}
-        </div><br />
-    </div>
+    {{#if deleted}}
+    {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
     {{/if}}
+
+    <div id="message-container">
+        {{#if message}}{{! should already be localized }}
+        <div class="{{status}}message">{{message}}</div>
+        {{/if}}
+    </div>
 
     <div id="quota-message-container" style="display: none">
         <div id="quota-message" class="errormessage">
-            {{#local}}You are over your disk quota.
-            Tool execution is on hold until your disk usage drops below your allocated quota.{{/local}}
+            {{#local}}You are over your disk quota{{/local}}.
+            {{#local}}Tool execution is on hold until your disk usage drops below your allocated quota{{/local}}.
         </div>
     </div>
 </div>

@@ -16,6 +16,7 @@
     <tool file="data_source/flymine.xml" />
     <tool file="data_source/flymine_test.xml" />
     <tool file="data_source/modmine.xml" />
+    <tool file="data_source/mousemine.xml" />
     <tool file="data_source/ratmine.xml" />
     <tool file="data_source/yeastmine.xml" />
     <tool file="data_source/metabolicmine.xml" />
@@ -194,8 +195,8 @@
     <tool file="regVariation/compute_motif_frequencies_for_all_motifs.xml" />
     <tool file="regVariation/categorize_elements_satisfying_criteria.xml" />s
     <tool file="regVariation/draw_stacked_barplots.xml" />
-    <!-- <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
-    <tool file="regVariation/microsatellite_birthdeath.xml" /> -->
+    <tool file="regVariation/multispecies_MicrosatDataGenerator_interrupted_GALAXY.xml" />
+    <tool file="regVariation/microsatellite_birthdeath.xml" />
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />
@@ -305,11 +306,7 @@
   </section>
   -->
   <section name="NGS: Mapping" id="solexa_tools">
-    <tool file="sr_mapping/lastz_wrapper.xml" />
-    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_wrapper.xml" />
     <tool file="sr_mapping/bowtie2_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_color_wrapper.xml" />
     <tool file="sr_mapping/bfast_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
@@ -331,9 +328,9 @@
     <tool file="ngs_rna/tophat_color_wrapper.xml" />
     <tool file="ngs_rna/cufflinks_wrapper.xml" />
     <tool file="ngs_rna/cuffcompare_wrapper.xml" />
-    <tool file="ngs_rna/express_wrapper.xml" />
- 	  <tool file="ngs_rna/cuffmerge_wrapper.xml" />
+    <tool file="ngs_rna/cuffmerge_wrapper.xml" />
     <tool file="ngs_rna/cuffdiff_wrapper.xml" />
+    <tool file="ngs_rna/express_wrapper.xml" />
     <!-- Trinity is very memory-intensive and should only be enabled/run
     on instances with sufficient resources. 
     <label text="De novo Assembly" id="de_novo_assembly "/>
@@ -399,38 +396,6 @@
   </section>
   <section name="NGS: Simulation" id="ngs-simulation">
     <tool file="ngs_simulation/ngs_simulation.xml" />
-  </section>
-  <section name="SNP/WGA: Data; Filters" id="rgdat">
-    
-    <label text="Data: Import and upload" id="rgimport" />
-    <tool file="data_source/upload.xml"/>
-    <tool file="data_source/access_libraries.xml" />
-    
-    <label text="Data: Filter and Clean" id="rgfilter" />
-    <tool file="rgenetics/rgClean.xml"/>
-    <tool file="rgenetics/rgPedSub.xml"/>
-    <tool file="rgenetics/rgLDIndep.xml"/>
-    
-    <label text="Simulate" id="rgsim" />
-    <tool file="rgenetics/rgfakePhe.xml"/>
-    <tool file="rgenetics/rgfakePed.xml"/>
-  </section>
-  <section name="SNP/WGA: QC; LD; Plots" id="rgqcplot">
-    
-    <label text="QC; Eigenstrat" id="rgvisual" />
-    <tool file="rgenetics/rgQC.xml"/>
-    <tool file="rgenetics/rgEigPCA.xml"/>
-    
-    <label text="LD; Manhattan/QQ; GRR" id="rgld" />
-    <tool file="rgenetics/rgHaploView.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
-    <tool file="rgenetics/rgGRR.xml"/>
-  </section>
-  <section name="SNP/WGA: Statistical Models" id="rgmodel">
-    <tool file="rgenetics/rgCaCo.xml"/>
-    <tool file="rgenetics/rgTDT.xml"/>
-    <tool file="rgenetics/rgGLM.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
   </section>
   <section name="Phenotype Association" id="hgv">
     <tool file="evolution/codingSnps.xml" />

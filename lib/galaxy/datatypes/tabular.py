@@ -4,21 +4,25 @@ Tabular datatype
 """
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
+import gzip
 import logging
-import data
-from galaxy import util
+import os
 from cgi import escape
+from galaxy import util
+from galaxy.datatypes import data
 from galaxy.datatypes import metadata
+from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
-import galaxy_utils.sequence.vcf
-from sniff import *
+from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger(__name__)
 
 class Tabular( data.Text ):
     """Tab delimited data"""
+
+    # All tabular data is chunkable.
+    CHUNKABLE = True
     CHUNK_SIZE = 50000
 
     """Add metadata elements"""
@@ -31,19 +35,19 @@ class Tabular( data.Text ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
-        Tries to determine the number of columns as well as those columns
-        that contain numerical values in the dataset.  A skip parameter is
-        used because various tabular data types reuse this function, and
-        their data type classes are responsible to determine how many invalid
-        comment lines should be skipped. Using None for skip will cause skip
-        to be zero, but the first line will be processed as a header. A
+        Tries to determine the number of columns as well as those columns that
+        contain numerical values in the dataset.  A skip parameter is used
+        because various tabular data types reuse this function, and their data
+        type classes are responsible to determine how many invalid comment
+        lines should be skipped. Using None for skip will cause skip to be
+        zero, but the first line will be processed as a header. A
         max_data_lines parameter is used because various tabular data types
         reuse this function, and their data type classes are responsible to
         determine how many data lines should be processed to ensure that the
         non-optional metadata parameters are properly set; if used, optional
         metadata parameters will be set to None, unless the entire file has
-        already been read. Using None (default) for max_data_lines will
-        process all data lines.
+        already been read. Using None for max_data_lines will process all data
+        lines.
 
         Items of interest:
 
@@ -261,14 +265,26 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
-        return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
+        return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
-        #TODO Prevent failure when displaying extremely long > 50kb lines.
+        preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
-        if to_ext or not preview:
+        elif to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
+        elif dataset.metadata.columns > 50:
+            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+            #We should add a new datatype 'matrix', with it's own draw method, suitable for this kind of data.
+            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+            max_peek_size = 1000000 # 1 MB
+            if os.stat( dataset.file_name ).st_size < max_peek_size:
+                return open( dataset.file_name )
+            else:
+                trans.response.set_content_type( "text/html" )
+                return trans.stream_template_mako( "/dataset/large_file.mako",
+                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            data = dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -312,7 +328,6 @@ class Tabular( data.Text ):
         """
         Returns a list of visualizations for datatype.
         """
-
         # Can visualize tabular data as scatterplot if there are 2+ numerical
         # columns.
         num_numerical_cols = 0
@@ -342,6 +357,9 @@ class Taxonomy( Tabular ):
 
 class Sam( Tabular ):
     file_ext = 'sam'
+    track_type = "ReadTrack"
+    data_sources = { "data": "bam", "index": "bigwig" }
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         Tabular.__init__( self, **kwd )
@@ -451,17 +469,16 @@ class Sam( Tabular ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
-    def get_track_type( self ):
-        return "ReadTrack", {"data": "bam", "index": "summary_tree"}
-
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
     line_class = "genomic coordinate"
+    data_sources = { "data": "tabix" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=2, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter )
 
     def init_meta( self, dataset, copy_from=None ):
@@ -509,8 +526,7 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-
-
+            
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
 
@@ -519,23 +535,39 @@ class ElandMulti( Tabular ):
 
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
+    track_type = "VariantTrack"
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True, visible=False )
+    MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
-    def get_track_type( self ):
-        return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
+    def set_meta( self, dataset, **kwd ):
+        Tabular.set_meta( self, dataset, **kwd )
+        source = open( dataset.file_name )
+
+        # Skip comments.
+        line = None
+        for line in source:
+            if not line.startswith( '##' ):
+                break
+
+        if line and line.startswith( '#' ):
+            # Found header line, get sample names.
+            dataset.metadata.sample_names = line.split()[ 9: ]
+
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
@@ -589,7 +621,6 @@ class Eland( Tabular ):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        import gzip
         try:
             compress = is_gzip(filename)
             if compress:

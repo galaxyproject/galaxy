@@ -34,8 +34,7 @@ class ImportHistoryToolAction( ToolAction ):
         archive_dir = os.path.abspath( tempfile.mkdtemp() )
         jiha = trans.app.model.JobImportHistoryArchive( job=job, archive_dir=archive_dir )
         trans.sa_session.add( jiha )
-        job_wrapper = JobImportHistoryArchiveWrapper( job )
-
+        
         #
         # Add parameters to job_parameter table.
         #
@@ -46,10 +45,11 @@ class ImportHistoryToolAction( ToolAction ):
             job.add_parameter( name, value )
 
         job.state = start_job_state #job inputs have been configured, restore initial job state
+        job.set_handler(tool.get_job_handler(None))
         trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_queue.put( job.id, tool )
+        trans.app.job_queue.put( job.id, tool.id )
         trans.log_event( "Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 
         return job, odict()
@@ -118,11 +118,12 @@ class ExportHistoryToolAction( ToolAction ):
             job.add_parameter( name, value )
 
         job.state = start_job_state #job inputs have been configured, restore initial job state
+        job.set_handler(tool.get_job_handler(None))
         trans.sa_session.flush()
 
 
         # Queue the job for execution
-        trans.app.job_queue.put( job.id, tool )
+        trans.app.job_queue.put( job.id, tool.id )
         trans.log_event( "Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 
         return job, odict()

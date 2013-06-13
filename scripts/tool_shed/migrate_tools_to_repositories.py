@@ -10,7 +10,7 @@ associated with them, and migrates old tool shed stuff to new tool shed stuff.
 
 0. This script must be run on a repo updated to changeset:   5621:4618be57481b
 
-1. Before running this script, make sure the following config setting is set in community_wsgi.ini
+1. Before running this script, make sure the following config setting is set in tool_shed_wsgi.ini
 
 # Enable next-gen tool shed features
 enable_next_gen_tool_shed = True
@@ -32,7 +32,7 @@ import pkg_resources
 pkg_resources.require( "psycopg2" )
 import psycopg2
 
-import galaxy.webapps.community.app
+import galaxy.webapps.tool_shed.app
 from mercurial import hg, ui, httprepo, commands
 from time import strftime
 
@@ -262,7 +262,7 @@ def main():
     print " "
     print "##########################################"
     print "%s - Migrating current tool archives to new tool repositories" % now
-    # community_wsgi.ini file
+    # tool_shed_wsgi.ini file
     ini_file = sys.argv[1]
     conf_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
     conf_parser.read( ini_file )
@@ -286,7 +286,7 @@ def main():
     configuration = {}
     for key, value in conf_parser.items( "app:main" ):
         configuration[key] = value
-    app = galaxy.webapps.community.app.UniverseApplication( global_conf=dict( __file__=ini_file ), **configuration )
+    app = galaxy.webapps.tool_shed.app.UniverseApplication( global_conf=dict( __file__=ini_file ), **configuration )
     sa_session = app.model.context
     # Remove the hgweb.config file if it exists
     hgweb_config = "%s/hgweb.config" %  os.getcwd()
