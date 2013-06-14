@@ -158,7 +158,6 @@ function make_popup_menus( parent ) {
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
-            console.debug( link.text(), href, target );
             
             // no href - no function (gen. a label)
             if (!href) {
