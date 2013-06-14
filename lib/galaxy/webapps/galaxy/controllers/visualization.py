@@ -848,7 +848,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         get the visualization with the given id; otherwise, create a new visualization using
         a given dataset and regions.
         """
-        print 'sweepster:', id, hda_ldda, dataset_id, regions
         regions = regions or '{}'
         # Need to create history if necessary in order to create tool form.
         trans.get_history( create=True )
@@ -861,7 +860,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            print 'dataset:', dataset
             job = get_dataset_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,

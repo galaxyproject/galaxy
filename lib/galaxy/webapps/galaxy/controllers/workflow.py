@@ -132,7 +132,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def index( self, trans ):
-        print trans.request.host_url
         return self.list( trans )
 
     @web.expose
