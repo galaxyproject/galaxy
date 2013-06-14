@@ -30,7 +30,6 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
-                    print results
                 except Exception, e:
                     return {'error' : str(e)}
                 for item in results:
