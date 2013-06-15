@@ -399,3 +399,5 @@ class TwoBit (Binary):
             return dataset.peek
         except:
             return "Binary TwoBit format nucleotide file (%s)" % (data.nice_size(dataset.get_size()))
+
+Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
