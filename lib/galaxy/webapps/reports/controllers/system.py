@@ -1,9 +1,9 @@
-import operator, os
+import os
+import logging
 from datetime import datetime, timedelta
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
-from galaxy.model.orm import and_, not_, or_, desc
-import logging
+from galaxy.model.orm import and_, desc, eagerload
 log = logging.getLogger( __name__ )
 
 class System( BaseUIController ):
