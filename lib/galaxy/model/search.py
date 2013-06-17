@@ -432,6 +432,7 @@ def job_output_hda_filter(view, left, operator, right):
 class JobView(ViewQueryBaseClass):
     DOMAIN = "job"
     FIELDS = {
+        'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
         'param' : ViewField('param', handler=job_param_filter),
         'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
         'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
