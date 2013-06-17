@@ -689,6 +689,10 @@ $(document).ready( function() {
     //     $(".tooltip").tipsy( { gravity: 's' } );
     // }
     if ( $.fn.tooltip ) {
+        // Put tooltips below items in panel header so that they do not overlap masthead.
+        $(".unified-panel-header .tooltip").tooltip( { placement: 'bottom' } );
+        
+        // Default tooltip location to be above item.
         $(".tooltip").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
