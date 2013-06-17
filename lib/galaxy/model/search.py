@@ -34,8 +34,10 @@ import parsley
 from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, 
 History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation, 
 StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
-ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, ToolVersion)
+ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter, 
+JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion)
 
+from galaxy.util.json import to_json_string
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
@@ -388,9 +390,51 @@ class WorkflowView(ViewQueryBaseClass):
 #Job Searching
 ##################
 
+
+
+def job_param_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobParameter )
+    param_name = re.sub(r'^param.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.value == to_json_string(right)
+        )
+    )
+
+def job_input_hda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToInputDatasetAssociation )
+    param_name = re.sub(r'^input_hda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.dataset_id == right
+        )
+    )
+
+def job_output_hda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToOutputDatasetAssociation )
+    param_name = re.sub(r'^output_hda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.dataset_id == right
+        )
+    )
+
+
 class JobView(ViewQueryBaseClass):
     DOMAIN = "job"
     FIELDS = {
+        'param' : ViewField('param', handler=job_param_filter),
+        'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
+        'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
     }
 
     def search(self, trans):

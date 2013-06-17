@@ -367,14 +367,20 @@ class Job( object, APIItem ):
         rval = super( Job, self ).get_api_value( view=view )
         rval['tool_name'] = self.tool_id
         param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        rval['params'] = param_dict
+
+        input_dict = {}
         for i in self.input_datasets:
             if i.dataset is not None:
-                param_dict[i.name] = {"hda_id" : i.dataset.id}
+                input_dict[i.name] = {"hda_id" : i.dataset.id}
         for i in self.input_library_datasets:
             if i.dataset is not None:
-                param_dict[i.name] = {"ldda_id" : i.dataset.id}
-        rval['params'] = param_dict
-        
+                input_dict[i.name] = {"ldda_id" : i.dataset.id}
+        for k in input_dict:
+            if k in param_dict:
+                del param_dict[k]
+        rval['inputs'] = input_dict
+
         output_dict = {}
         for i in self.output_datasets:
             if i.dataset is not None:
@@ -383,7 +389,7 @@ class Job( object, APIItem ):
             if i.dataset is not None:
                 output_dict[i.name] = {"ldda_id" : i.dataset.id}
         rval['outputs'] = output_dict
-        
+
         return rval
 
 class Task( object ):
