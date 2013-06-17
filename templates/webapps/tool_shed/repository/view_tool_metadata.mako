@@ -21,7 +21,7 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-%if trans.webapp.name == 'tool_shed':
+%if render_repository_actions_for == 'tool_shed':
     ${render_tool_shed_repository_actions( repository=repository, changeset_revision=changeset_revision )}
 %else:
     ${render_galaxy_repository_actions( repository=repository )}
