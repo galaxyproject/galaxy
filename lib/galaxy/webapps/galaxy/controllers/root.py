@@ -547,6 +547,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
 
     @web.expose
+    def welcome( self, trans ):
+        welcome_url = trans.app.config.welcome_url
+        return trans.response.send_redirect( url_for( welcome_url  ) )
+
+    @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):
         if bucket:
             trans.response.set_content_type( 'text/xml' )

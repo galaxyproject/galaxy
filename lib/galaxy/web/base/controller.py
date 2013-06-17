@@ -5,31 +5,42 @@ import logging
 import operator
 import os
 import re
-import pkg_resources
 import urllib
+from gettext import gettext
+
+import pkg_resources
 pkg_resources.require("SQLAlchemy >= 0.4")
+from sqlalchemy import func, and_, select
+
 pkg_resources.require( "Routes" )
 import routes
 
-from sqlalchemy import func, and_, select
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
+from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
+from galaxy.exceptions import MessageException
 
-from galaxy import util, web, model
-from gettext import gettext
-from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.genome.visual_analytics import get_tool_def
+from galaxy import web
+from galaxy import model
+from galaxy import security
+from galaxy import util
+
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.security.validate_user_input import validate_publicname
+from galaxy.util.sanitize_html import sanitize_html
+
+from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
+
+from galaxy.visualization.genome.visual_analytics import get_tool_def
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
+
 
 log = logging.getLogger( __name__ )
 
@@ -112,12 +123,19 @@ class BaseController( object ):
             log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
         if check_ownership or check_accessible:
-            self.security_check( trans, item, check_ownership, check_accessible, id )
+            self.security_check( trans, item, check_ownership, check_accessible )
         if deleted == True and not item.deleted:
             raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         elif deleted == False and item.deleted:
             raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         return item
+
+    # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
+    #   but *don't* then becomes difficult
+    #def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
+    #    log.warn( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
+    #    # meant to be overridden in SharableSecurityMixin
+    #    return item
 
     def get_user( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'User', check_ownership=False, check_accessible=False, deleted=deleted )
@@ -151,7 +169,9 @@ class BaseUIController( BaseController ):
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
-            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+            return BaseController.get_object( self, trans, id, class_name,
+                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+
         except MessageException:
             raise       # handled in the caller
         except:
@@ -163,7 +183,9 @@ class BaseAPIController( BaseController ):
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
-            return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
+            return BaseController.get_object( self, trans, id, class_name,
+                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+
         except ItemDeletionException, e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
         except MessageException, e:
@@ -221,24 +243,30 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
-
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
+        # all items are accessible to an admin
+        if trans.user and trans.user_is_admin():
+            return item
+
+        # Verify ownership: there is a current user and that user is the same as the item's
         if check_ownership:
-            # Verify ownership.
             if not trans.user:
                 raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
             if item.user != trans.user:
                 raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
+
+        # Verify accessible:
+        #   if it's part of a lib - can they access via security
+        #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
         if check_accessible:
             if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
-                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
+                if not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
             else:
-                # Verify accessible.
                 if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
@@ -742,13 +770,105 @@ class UsesLibraryMixin:
 class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
     def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryFolder',
+                                check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation',
+                                check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
-        return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
+        return self.get_object( trans, id, 'LibraryDataset',
+                                check_ownership=False, check_accessible=check_accessible )
+
+    #TODO: it makes no sense that I can get roles from a user but not user.is_admin()
+    #def can_user_add_to_library_item( self, trans, user, item ):
+    #    if not user: return False
+    #    return (  ( user.is_admin() )
+    #           or ( trans.app.security_agent.can_add_library_item( user.all_roles(), item ) ) )
+
+    def can_current_user_add_to_library_item( self, trans, item ):
+        if not trans.user: return False
+        return (  ( trans.user_is_admin() )
+               or ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
+
+    def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='' ):
+        #PRECONDITION: permissions for this action on hda and library_folder have been checked
+        roles = roles or []
+
+        # this code was extracted from library_common.add_history_datasets_to_library
+        #TODO: refactor library_common.add_history_datasets_to_library to use this for each hda to copy
+
+        # create the new ldda and apply the folder perms to it
+        ldda = hda.to_library_dataset_dataset_association( trans, target_folder=library_folder,
+                                                           roles=roles, ldda_message=ldda_message )
+        self._apply_library_folder_permissions_to_ldda( trans, library_folder, ldda )
+        self._apply_hda_permissions_to_ldda( trans, hda, ldda )
+        #TODO:?? not really clear on how permissions are being traded here
+        #   seems like hda -> ldda permissions should be set in to_library_dataset_dataset_association
+        #   then they get reset in _apply_library_folder_permissions_to_ldda
+        #   then finally, re-applies hda -> ldda for missing actions in _apply_hda_permissions_to_ldda??
+        return ldda
+
+    def _apply_library_folder_permissions_to_ldda( self, trans, library_folder, ldda ):
+        """
+        Copy actions/roles from library folder to an ldda (and it's library_dataset).
+        """
+        #PRECONDITION: permissions for this action on library_folder and ldda have been checked
+        security_agent = trans.app.security_agent
+        security_agent.copy_library_permissions( trans, library_folder, ldda )
+        security_agent.copy_library_permissions( trans, library_folder, ldda.library_dataset )
+        return security_agent.get_permissions( ldda )
+
+    def _apply_hda_permissions_to_ldda( self, trans, hda, ldda ):
+        """
+        Copy actions/roles from hda to ldda.library_dataset (and then ldda) if ldda
+        doesn't already have roles for the given action.
+        """
+        #PRECONDITION: permissions for this action on hda and ldda have been checked
+        # Make sure to apply any defined dataset permissions, allowing the permissions inherited from the
+        #   library_dataset to over-ride the same permissions on the dataset, if they exist.
+        security_agent = trans.app.security_agent
+        dataset_permissions_dict = security_agent.get_permissions( hda.dataset )
+        library_dataset = ldda.library_dataset
+        library_dataset_actions = [ permission.action for permission in library_dataset.actions ]
+
+        # except that: if DATASET_MANAGE_PERMISSIONS exists in the hda.dataset permissions,
+        #   we need to instead apply those roles to the LIBRARY_MANAGE permission to the library dataset
+        dataset_manage_permissions_action = security_agent.get_action( 'DATASET_MANAGE_PERMISSIONS' ).action
+        library_manage_permissions_action = security_agent.get_action( 'LIBRARY_MANAGE' ).action
+        #TODO: test this and remove if in loop below
+        #TODO: doesn't handle action.action
+        #if dataset_manage_permissions_action in dataset_permissions_dict:
+        #    managing_roles = dataset_permissions_dict.pop( dataset_manage_permissions_action )
+        #    dataset_permissions_dict[ library_manage_permissions_action ] = managing_roles
+
+        flush_needed = False
+        for action, dataset_permissions_roles in dataset_permissions_dict.items():
+            if isinstance( action, security.Action ):
+                action = action.action
+
+            # alter : DATASET_MANAGE_PERMISSIONS -> LIBRARY_MANAGE (see above)
+            if action == dataset_manage_permissions_action:
+                action = library_manage_permissions_action
+
+            #TODO: generalize to util.update_dict_without_overwrite
+            # add the hda actions & roles to the library_dataset
+            #NOTE: only apply an hda perm if it's NOT set in the library_dataset perms (don't overwrite)
+            if action not in library_dataset_actions:
+                for role in dataset_permissions_roles:
+                    ldps = trans.model.LibraryDatasetPermissions( action, library_dataset, role )
+                    ldps = [ ldps ] if not isinstance( ldps, list ) else ldps
+                    for ldp in ldps:
+                        trans.sa_session.add( ldp )
+                        flush_needed = True
+
+        if flush_needed:
+            trans.sa_session.flush()
+
+        # finally, apply the new library_dataset to it's associated ldda (must be the same)
+        security_agent.copy_library_permissions( trans, library_dataset, ldda )
+        return security_agent.get_permissions( ldda )
 
 
 class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):

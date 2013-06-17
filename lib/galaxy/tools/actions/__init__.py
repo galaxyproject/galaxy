@@ -34,9 +34,11 @@ class DefaultToolAction( object ):
         input_datasets = dict()
         def visitor( prefix, input, value, parent = None ):
             def process_dataset( data, formats = None ):
+                if not data:
+                    return data
                 if formats is None:
                     formats = input.formats
-                if data and not isinstance( data.datatype, formats ):
+                if not data.datatype.matches_any( formats ):
                     # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
                     trans.sa_session.refresh( data )
                     target_ext, converted_dataset = data.find_conversion_destination( formats )
@@ -54,7 +56,7 @@ class DefaultToolAction( object ):
                             trans.sa_session.flush()
                             data = new_data
                 current_user_roles = trans.get_current_user_roles()
-                if data and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -70,7 +72,7 @@ class DefaultToolAction( object ):
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], conversion_datatypes )
-                            if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                            if not new_data or new_data.datatype.matches_any( conversion_datatypes ):
                                 input_datasets[ prefix + conversion_name + str( i + 1 ) ] = new_data
                                 conversions.append( ( conversion_name, new_data ) )
                             else:
@@ -90,7 +92,7 @@ class DefaultToolAction( object ):
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset( input_datasets[ prefix + input.name ], conversion_datatypes )
-                        if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                        if not new_data or new_data.datatype.matches_any( conversion_datatypes ):
                             input_datasets[ prefix + conversion_name ] = new_data
                             conversions.append( ( conversion_name, new_data ) )
                         else:
@@ -214,7 +216,7 @@ class DefaultToolAction( object ):
             
             if not chrom_info:
                 # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         
@@ -271,7 +273,9 @@ class DefaultToolAction( object ):
                         ext = input_ext
                     if output.format_source is not None and output.format_source in inp_data:
                         try:
-                            ext = inp_data[output.format_source].ext
+                            input_dataset = inp_data[output.format_source]
+                            input_extension = input_dataset.ext
+                            ext = input_extension
                         except Exception, e:
                             pass
                     

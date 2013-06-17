@@ -801,7 +801,7 @@ class SelectToolParameter( ToolParameter ):
             if isinstance( dep_value, RuntimeValue ):
                 return True
             #dataset not ready yet
-            if hasattr( self, 'ref_input' ) and isinstance( dep_value, self.tool.app.model.HistoryDatasetAssociation ) and ( dep_value.is_pending or not isinstance( dep_value.datatype, self.ref_input.formats ) ):
+            if hasattr( self, 'ref_input' ) and isinstance( dep_value, self.tool.app.model.HistoryDatasetAssociation ) and ( dep_value.is_pending or not dep_value.datatype.matches_any( self.ref_input.formats ) ):
                 return True
         # Dynamic, but all dependenceis are known and have values
         return False 
@@ -1056,7 +1056,7 @@ class ColumnListParameter( SelectToolParameter ):
             if not dataset.metadata.columns:
                 # Only allow late validation if the dataset is not yet ready
                 # (since we have reason to expect the metadata to be ready eventually)
-                if dataset.is_pending or not isinstance( dataset.datatype, self.ref_input.formats ):
+                if dataset.is_pending or not dataset.datatype.matches_any( self.ref_input.formats ):
                     return True
         # No late validation
         return False
@@ -1390,25 +1390,26 @@ class DataToolParameter( ToolParameter ):
         # Add metadata validator
         if not string_as_bool( elem.get( 'no_validation', False ) ):
             self.validators.append( validation.MetadataValidator() )
+        # Find datatypes_registry
+        if tool is None:
+            if trans:
+                # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
+                # A handle to the transaction (and thus app) will be given by the module.
+                datatypes_registry = trans.app.datatypes_registry
+            else:
+                #This occurs for things such as unit tests
+                import galaxy.datatypes.registry
+                datatypes_registry = galaxy.datatypes.registry.Registry()
+                datatypes_registry.load_datatypes()
+        else:
+            datatypes_registry = tool.app.datatypes_registry
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
-        for extension in self.extensions:
-            extension = extension.strip()
-            if tool is None:
-                if trans:
-                    # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
-                    # A handle to the transaction (and thus app) will be given by the module.
-                    formats.append( trans.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
-                else:
-                    #This occurs for things such as unit tests
-                    import galaxy.datatypes.registry
-                    datatypes_registry = galaxy.datatypes.registry.Registry()
-                    datatypes_registry.load_datatypes()
-                    formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
-            else:
-                formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
-        self.formats = tuple( formats )
+        normalized_extensions = [extension.strip().lower() for extension in self.extensions]
+        for extension in normalized_extensions:
+            formats.append( datatypes_registry.get_datatype_by_extension( extension ) )
+        self.formats = formats
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
         #       only the special case key='build' of type='data_meta' is
@@ -1432,7 +1433,7 @@ class DataToolParameter( ToolParameter ):
             conv_extensions = conv_elem.get( "type" ) #target datatype extension
             # FIXME: conv_extensions should be able to be an ordered list
             assert None not in [ name, type ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, type )
-            conv_types = tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ).__class__
+            conv_types = tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() )
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -1467,7 +1468,7 @@ class DataToolParameter( ToolParameter ):
                         continue
                     if self.options and self._options_filter_attribute( hda ) != filter_value:
                         continue
-                    if isinstance( hda.datatype, self.formats):
+                    if hda.datatype.matches_any( self.formats ):
                         selected = ( value and ( hda in value ) )
                         if hda.visible:
                             hidden_text = ""
@@ -1534,7 +1535,7 @@ class DataToolParameter( ToolParameter ):
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
                     is_valid = False
-                    if isinstance( data.datatype, self.formats ):
+                    if data.datatype.matches_any( self.formats ):
                         is_valid = True
                     else:
                         target_ext, converted_dataset = data.find_conversion_destination( self.formats )

@@ -29,7 +29,7 @@ def upgrade(migrate_engine):
     # Initialize.
     if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         default_false = "0"
-    elif migrate_engine.name == 'postgres':
+    elif migrate_engine.name in ['postgres', 'postgresql']:
         default_false = "false"
     # Create and initialize tools_functionally_correct, do_not_test, time_last_tested, and tool_test_errors columns in repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )

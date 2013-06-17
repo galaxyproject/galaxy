@@ -149,7 +149,7 @@
     elif m_c is not None:
         center_url = h.url_for( controller=m_c, action=m_a )
     else:
-        center_url = h.url_for( '/static/welcome.html' )
+        center_url = h.url_for( controller="root", action="welcome" )
     %>
     
     <div style="position: absolute; width: 100%; height: 100%">

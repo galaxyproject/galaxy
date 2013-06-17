@@ -15,7 +15,10 @@ except ImportError, imp_err:
              + "install with 'pip install requests'" )
     raise
 
-def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
+
+# -----------------------------------------------------------------------------
+def upload_file( base_url, api_key, history_id, filepath, **kwargs ):
+    full_url = base_url + '/api/tools'
 
     payload = {
         'key'           : api_key,
@@ -30,7 +33,7 @@ def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
         'dbkey'         : '?',
         'file_type'     : kwargs.get( 'file_type', 'auto' ),
         'ajax_upload'   : u'true',
-        'async_datasets': '1',
+        #'async_datasets': '1',
     }
     payload[ 'inputs' ] = json.dumps( inputs )
 
@@ -38,8 +41,10 @@ def upload_file( full_url, api_key, history_id, filepath, **kwargs ):
     with open( filepath, 'rb' ) as file_to_upload:
         files = { 'files_0|file_data' : file_to_upload }
         response = requests.post( full_url, data=payload, files=files )
-    return response
+    return response.json()
     
+
+# -----------------------------------------------------------------------------
 if __name__ == '__main__':
 
     if len( sys.argv ) < 5:
@@ -47,9 +52,8 @@ if __name__ == '__main__':
         sys.exit( 1 )
 
     api_key, base_url, history_id, filepath = sys.argv[1:5]
-    full_url = base_url + '/api/tools'
     kwargs = dict([ kwarg.split('=', 1) for kwarg in sys.argv[5:]])
 
-    response = upload_file( full_url, api_key, history_id, filepath, **kwargs )
+    response = upload_file( base_url, api_key, history_id, filepath, **kwargs )
     print >> sys.stderr, response
     print response.content

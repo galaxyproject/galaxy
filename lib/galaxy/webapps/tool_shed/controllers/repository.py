@@ -1482,7 +1482,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 description_lines.append( '\nThis repository did not install correctly. ' )
             if tool_dependency_errors or repository_dependency_errors:
                 description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' % \
-                    len( tool_dependency_errors ), len( repository_dependency_errors ) )
+                    ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
             title = 'Revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
@@ -1516,8 +1516,13 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        if repository:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        return {}
 
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):

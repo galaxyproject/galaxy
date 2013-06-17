@@ -52,7 +52,7 @@ class ToolRunner( BaseUIController ):
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
+            return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
                                                                              get_loaded_tools_by_lineage=False,
