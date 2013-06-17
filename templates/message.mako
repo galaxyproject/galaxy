@@ -52,8 +52,10 @@
         }
     %endif
     %if 'tools' in refresh_frames:
-        if ( parent.frames && parent.frames.galaxy_tools ) {
-            parent.frames.galaxy_tools.location.href="${h.url_for( controller='root', action='tool_menu')}";
+        if ( parent.frames && Galaxy.toolPanel ) {
+            // FIXME: refreshing the tool menu does not work with new JS-based approach, 
+            // but refreshing the tool menu is not used right now, either.
+
             if ( parent.force_left_panel ) {
                 parent.force_left_panel( 'show' );
             }

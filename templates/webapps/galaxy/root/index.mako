@@ -1,5 +1,17 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
+<%namespace file="/root/tool_menu.mako" import="*" />
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css("tool_menu")}
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${tool_menu_javascripts()}
+</%def>
+
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}
 
@@ -131,8 +143,8 @@
             ${n_('Tools')}
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: hidden;">
-        <iframe name="galaxy_tools" id="galaxy_tools" src="${h.url_for( controller='root', action='tool_menu' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
+    <div class="unified-panel-body" style="overflow: auto">
+        ${render_tool_menu()}
     </div>
 </%def>
 
