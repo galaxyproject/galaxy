@@ -22,6 +22,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
+import dataproviders
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class Binary( data.Data ):
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
 
+
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
@@ -93,12 +95,15 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
 
 Binary.register_unsniffable_binary_ext("asn1-binary")
 
+
+@dataproviders.decorators.has_dataproviders
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
@@ -255,8 +260,91 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+    # ------------- Dataproviders
+    # pipe through samtools view
+    #ALSO: (as Sam)
+    # bam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
+    #TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
+    #TODO: incorporate samtools options to control output: regions first, then flags, etc.
+    @dataproviders.decorators.dataprovider_factory( 'line' )
+    def line_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.line.FilteredLineDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'regex-line' )
+    def regex_line_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
     
+    @dataproviders.decorators.dataprovider_factory( 'column' )
+    def column_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.column.ColumnarDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'map' )
+    def map_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.column.MapDataProvider( samtools_source, **settings )
+
+    # these can't be used directly - may need BamColumn, BamMap (Bam metadata -> column/map)
+    # OR - see genomic_region_dataprovider
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-column' )
+    #def dataset_column_dataprovider( self, dataset, **settings ):
+    #    settings[ 'comment_char' ] = '@'
+    #    return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
+
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-map' )
+    #def dataset_map_dataprovider( self, dataset, **settings ):
+    #    settings[ 'comment_char' ] = '@'
+    #    return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'header' )
+    def header_dataprovider( self, dataset, **settings ):
+        # in this case we can use an option of samtools view to provide just what we need (w/o regex)
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset, '-H' )
+        return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual' )
+    def id_seq_qual_dataprovider( self, dataset, **settings ):
+        settings[ 'indeces' ] = [ 0, 9, 10 ]
+        settings[ 'column_types' ] = [ 'str', 'str', 'str' ]
+        settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
+        return self.map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region' )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
+        #TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
+        #   or remove altogether...
+        #samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        #return dataproviders.dataset.GenomicRegionDataProvider( samtools_source, metadata_source=dataset,
+        #                                                        2, 3, 3, **settings )
+
+        # instead, set manually and use in-class column gen
+        settings[ 'indeces' ] = [ 2, 3, 3 ]
+        settings[ 'column_types' ] = [ 'str', 'int', 'int' ]
+        return self.column_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map' )
+    def genomic_region_map_dataprovider( self, dataset, **settings ):
+        settings[ 'indeces' ] = [ 2, 3, 3 ]
+        settings[ 'column_types' ] = [ 'str', 'int', 'int' ]
+        settings[ 'column_names' ] = [ 'chrom', 'start', 'end' ]
+        return self.map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'samtools' )
+    def samtools_dataprovider( self, dataset, **settings ):
+        """Generic samtools interface - all options available through settings."""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
+
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
+
 
 class H5( Binary ):
     """Class describing an HDF5 file"""
@@ -277,6 +365,7 @@ class H5( Binary ):
 
 Binary.register_unsniffable_binary_ext("h5")
 
+
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
@@ -295,6 +384,7 @@ class Scf( Binary ):
             return "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
 Binary.register_unsniffable_binary_ext("scf")
+
 
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
@@ -326,6 +416,7 @@ class Sff( Binary ):
             return "Binary sff file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
 Binary.register_sniffable_binary_format("sff", "sff", Sff)
+
 
 class BigWig(Binary):
     """
@@ -363,6 +454,7 @@ class BigWig(Binary):
     
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
+
 class BigBed(BigWig):
     """BigBed support from UCSC."""
 
@@ -374,6 +466,7 @@ class BigBed(BigWig):
         self._name = "BigBed"
 
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
+
 
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
