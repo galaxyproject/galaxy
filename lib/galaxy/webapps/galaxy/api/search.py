@@ -40,8 +40,10 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                         if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
                             if (trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
                                 append = True
-                    if not append:
-                        if hasattr(item, 'dataset'):
+                        elif type( item ) in trans.app.model.Job:
+                            if item.used_id == trans.user or trans.user_is_admin():
+                                append = True
+                        elif hasattr(item, 'dataset'):
                             if trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ):
                                 append = True
                     if append:
