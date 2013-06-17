@@ -31,11 +31,10 @@ from galaxy import eggs
 eggs.require("Parsley")
 import parsley
 
-from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
-from galaxy.model import (StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation,
-HistoryDatasetAssociationTagAssociation,
-ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation)
-from galaxy.model import ToolVersion
+from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, 
+History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation, 
+StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
+ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, ToolVersion)
 
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
@@ -383,6 +382,22 @@ class WorkflowView(ViewQueryBaseClass):
     def search(self, trans):
         self.query = trans.sa_session.query( StoredWorkflow )
 
+
+
+##################
+#Job Searching
+##################
+
+class JobView(ViewQueryBaseClass):
+    DOMAIN = "job"
+    FIELDS = {
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( Job )
+
+
+
 """
 The view mapping takes a user's name for a table and maps it to a View class that will
 handle queries
@@ -398,7 +413,8 @@ view_mapping = {
     'hda' : HistoryDatasetView,
     'history' : HistoryView,
     'workflow' : WorkflowView,
-    'tool' : ToolView
+    'tool' : ToolView,
+    'job' : JobView,
 }
 
 """

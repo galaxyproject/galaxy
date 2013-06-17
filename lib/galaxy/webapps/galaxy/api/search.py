@@ -46,5 +46,5 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                                 append = True
                     if append:
                         row = query.item_to_api_value(item)
-                        out.append( self.encode_all_ids( trans, row) )
+                        out.append( self.encode_all_ids( trans, row, True) )
         return { 'results' : out }

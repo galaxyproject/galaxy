@@ -146,7 +146,7 @@ class BaseController( object ):
     def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
 
-    def encode_all_ids( self, trans, rval ):
+    def encode_all_ids( self, trans, rval, recursive=False ):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
 
@@ -160,6 +160,9 @@ class BaseController( object ):
                     rval[k] = trans.security.encode_id( v )
                 except:
                     pass # probably already encoded
+            else:
+                if recursive and type(v) == dict:
+                    rval[k] = self.encode_all_ids(trans, v, recursive)
         return rval
 
 Root = BaseController
