@@ -1,11 +1,11 @@
 /*! 
- * jquery.event.drag - v 2.1.0 
+ * jquery.event.drag - v 2.2
  * Copyright (c) 2010 Three Dub Media - http://threedubmedia.com
  * Open Source MIT License - http://threedubmedia.com/code/license
  */
 // Created: 2008-06-04 
-// Updated: 2010-09-15
-// REQUIRES: jquery 1.4.2+
+// Updated: 2012-05-21
+// REQUIRES: jquery 1.7.x
 
 ;(function( $ ){
 
@@ -43,7 +43,10 @@ drag = $special.drag = {
 	
 	// the key name for stored drag data
 	datakey: "dragdata",
-		
+	
+	// prevent bubbling for better performance
+	noBubble: true,
+	
 	// count bound related events
 	add: function( obj ){ 
 		// read the interaction data
@@ -115,11 +118,7 @@ drag = $special.drag = {
 		if ( dd.handle && !$( event.target ).closest( dd.handle, event.currentTarget ).length ) 
 			return;
 
-		// store/reset some initial attributes
-		if ( event.type == "touchstart" ){
-			drag.touched = this;
-			drag.touchFix( event, dd );
-		}
+		drag.touched = event.type == 'touchstart' ? this : null;
 		dd.propagates = 1;
 		dd.mousedown = this;
 		dd.interactions = [ drag.interaction( this, dd ) ];
@@ -158,17 +157,6 @@ drag = $special.drag = {
 			return false;
 	},	
 	
-	// fix event properties for touch events
-	touchFix: function( event, dd ){
-		var orig = event.originalEvent, i = 0;
-		// iOS webkit: touchstart, touchmove, touchend
-		if ( orig && orig.changedTouches ){ 
-			event.pageX = orig.changedTouches[0].pageX;
-			event.pageY = orig.changedTouches[0].pageY;	
-		}
-		//console.log( event.type, event );
-	},
-	
 	// returns an interaction object
 	interaction: function( elem, dd ){
 		var offset = $( elem )[ dd.relative ? "position" : "offset" ]() || { top:0, left:0 };
@@ -183,9 +171,7 @@ drag = $special.drag = {
 	// handle drag-releatd DOM events
 	handler: function( event ){ 
 		// read the data before hijacking anything
-		var dd = event.data;
-		if ( drag.touched )
-			drag.touchFix( event, dd );		
+		var dd = event.data;	
 		// handle various events
 		switch ( event.type ){
 			// mousemove, check distance, start dragging
@@ -217,22 +203,20 @@ drag = $special.drag = {
 			// mouseup, stop dragging
 			case 'touchend': 
 			case 'mouseup': 
+			default:
 				if ( drag.touched )
 					$event.remove( drag.touched, "touchmove touchend", drag.handler ); // remove touch events
 				else 
 					$event.remove( document, "mousemove mouseup", drag.handler ); // remove page events	
 				if ( dd.dragging ){
-					if ( dd.drop !== false && $special.drop ) 
+					if ( dd.drop !== false && $special.drop )
 						$special.drop.handler( event, dd ); // "drop"
 					drag.hijack( event, "dragend", dd ); // trigger "dragend"	
-					} else {
-					drag.hijack( event, "dragclickonly", dd ); // trigger "dragclickonly"	
-                    }
+				}
 				drag.textselect( true ); // enable text selection
 				// if suppressing click events...
-				if ( dd.click === false && dd.dragging ){
+				if ( dd.click === false && dd.dragging )
 					$.data( dd.mousedown, "suppress.click", new Date().getTime() + 5 );
-				}
 				dd.dragging = drag.touched = false; // deactivate element	
 				break;
 		}
@@ -244,7 +228,7 @@ drag = $special.drag = {
 		if ( !dd ) 
 			return;
 		// remember the original event and type
-		var orig = { event:event.originalEvent, type: event.type },
+		var orig = { event:event.originalEvent, type:event.type },
 		// is the event drag related or drog related?
 		mode = type.indexOf("drop") ? "drag" : "drop",
 		// iteration vars
@@ -269,8 +253,10 @@ drag = $special.drag = {
 			$( elem || ia[ mode ] || dd.droppable ).each(function( p, subject ){
 				// identify drag or drop targets individually
 				callback.target = subject;
+				// force propagtion of the custom event
+				event.isPropagationStopped = function(){ return false; };
 				// handle the event	
-				result = subject ? $event.handle.call( subject, event, callback ) : null;
+				result = subject ? $event.dispatch.call( subject, event, callback ) : null;
 				// stop the drag interaction for this element
 				if ( result === false ){
 					if ( mode == "drag" ){
@@ -378,14 +364,36 @@ drag.callback.prototype = {
 	}
 };
 
-// patch $.event.handle to allow suppressing clicks
-var orighandle = $event.handle;
-$event.handle = function( event ){
+// patch $.event.$dispatch to allow suppressing clicks
+var $dispatch = $event.dispatch;
+$event.dispatch = function( event ){
 	if ( $.data( this, "suppress."+ event.type ) - new Date().getTime() > 0 ){
 		$.removeData( this, "suppress."+ event.type );
 		return;
 	}
-	return orighandle.apply( this, arguments );
+	return $dispatch.apply( this, arguments );
+};
+
+// event fix hooks for touch events...
+var touchHooks = 
+$event.fixHooks.touchstart = 
+$event.fixHooks.touchmove = 
+$event.fixHooks.touchend =
+$event.fixHooks.touchcancel = {
+	props: "clientX clientY pageX pageY screenX screenY".split( " " ),
+	filter: function( event, orig ) {
+		if ( orig ){
+			var touched = ( orig.touches && orig.touches[0] )
+				|| ( orig.changedTouches && orig.changedTouches[0] )
+				|| null; 
+			// iOS webkit: touchstart, touchmove, touchend
+			if ( touched ) 
+				$.each( touchHooks.props, function( i, prop ){
+					event[ prop ] = touched[ prop ];
+				});
+		}
+		return event;
+	}
 };
 
 // share the same special event configuration with related events...

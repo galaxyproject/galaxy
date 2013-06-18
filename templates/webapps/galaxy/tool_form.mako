@@ -74,7 +74,7 @@
             $(this).append(select_link).append(" ").append(unselect_link);
         });
 
-        $(".add-librarydataset").live("click", function() {
+        $(".add-librarydataset").click(function() {
             var link = $(this);
             $.ajax({
                 url: "/visualization/list_libraries",

@@ -415,7 +415,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/tags.js
         return $( HDAEditView.templates.tagArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
 
     /** Render area to display annotation.
@@ -428,7 +428,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/annotations.js
         return $( HDAEditView.templates.annotationArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
     
     // ......................................................................... state body renderers

@@ -412,7 +412,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live("click", function() {
+    $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;

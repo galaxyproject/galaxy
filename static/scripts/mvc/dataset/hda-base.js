@@ -290,7 +290,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             _.extend( this.model.toJSON(), { urls: this.urls } )
         );
         //this.log( this + '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
-        return $( downloadLinkHTML );
+        return $( downloadLinkHTML.trim() );
     },
     
     /** Render icon-button to show the input and output (stdout/err) for the job that created this hda.
