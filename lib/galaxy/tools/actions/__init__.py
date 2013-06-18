@@ -442,9 +442,9 @@ class DefaultToolAction( object ):
                             trans.sa_session.add(jtid)
                     jtod.dataset.visible = False
                     trans.sa_session.add(jtod)
-                    trans.sa_session.flush()
             except Exception, e:
                 log.exception('Cannot remap rerun dependencies.')
+        trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
