@@ -848,7 +848,10 @@ class DefaultToolState( object ):
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )
-        self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
+        if '__rerun_remap_job_id__' in values:
+            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
+        else:
+            self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
 class ToolOutput( object ):
