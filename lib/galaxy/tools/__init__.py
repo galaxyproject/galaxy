@@ -1938,8 +1938,8 @@ class Tool( object ):
             elif state.page == self.last_page:
                 try:
                     rerun_remap_job_id = None
-                    if state.rerun_remap_job_id is not None:
-                        rerun_remap_job_id = trans.app.security.decode_id(state.rerun_remap_job_id)
+                    if 'rerun_remap_job_id' in incoming:
+                        rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
                     _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
                 except httpexceptions.HTTPFound, e:
                     #if it's a paste redirect exception, pass it up the stack
