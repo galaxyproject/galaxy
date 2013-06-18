@@ -179,7 +179,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False )">
+<%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( folder.id )
         
@@ -275,7 +275,7 @@
         %>
     %endif
     %for sub_folder in folder.folders:
-        ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False )}
+        ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for readme in folder.readme_files:
         ${render_readme( readme, pad, my_row, row_counter )}
@@ -297,16 +297,16 @@
     %if folder.valid_tools:
         %for index, tool in enumerate( folder.valid_tools ):
             <% row_is_header = index == 0 %>
-            ${render_tool( tool, pad, my_row, row_counter, row_is_header )}
+            ${render_tool( tool, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %for invalid_tool in folder.invalid_tools:
-        ${render_invalid_tool( invalid_tool, pad, my_row, row_counter )}
+        ${render_invalid_tool( invalid_tool, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %if folder.workflows:
         %for index, workflow in enumerate( folder.workflows ):
             <% row_is_header = index == 0 %>
-            ${render_workflow( workflow, pad, my_row, row_counter, row_is_header )}
+            ${render_workflow( workflow, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.datatypes:
@@ -472,7 +472,7 @@
     %>
 </%def>
 
-<%def name="render_invalid_tool( invalid_tool, pad, parent, row_counter, valid=True )">
+<%def name="render_invalid_tool( invalid_tool, pad, parent, row_counter, valid=True, render_repository_actions_for='tool_shed' )">
     <% encoded_id = trans.security.encode_id( invalid_tool.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -481,7 +481,7 @@
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             %if trans.webapp.name == 'tool_shed' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
-                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
+                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">
                     ${invalid_tool.tool_config | h}
                 </a>
             %else:
@@ -796,7 +796,7 @@
     %>
 </%def>
 
-<%def name="render_tool( tool, pad, parent, row_counter, row_is_header )">
+<%def name="render_tool( tool, pad, parent, row_counter, row_is_header, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( tool.id )
         if row_is_header:
@@ -816,10 +816,10 @@
                 %if tool.repository_id:
                     %if trans.webapp.name == 'tool_shed':
                         <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
-                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision )}">${tool.name | h}</a>
+                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
                         </div>
                         <div popupmenu="tool-${encoded_id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
                         </div>
                     %else:
                         %if tool.repository_installation_status == trans.model.ToolShedRepository.installation_status.INSTALLED:
@@ -965,7 +965,7 @@
     %>
 </%def>
 
-<%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode
         encoded_id = trans.security.encode_id( workflow.id )
@@ -990,7 +990,7 @@
             %if row_is_header:
                 ${workflow.workflow_name | h}
             %elif trans.webapp.name == 'tool_shed' and encoded_repository_metadata_id:
-                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id )}">${workflow.workflow_name | h}</a>
+                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id, render_repository_actions_for=render_repository_actions_for )}">${workflow.workflow_name | h}</a>
             %elif trans.webapp.name == 'galaxy' and encoded_repository_id:
                 <a href="${h.url_for( controller='admin_toolshed', action='view_workflow', workflow_name=encoded_workflow_name, repository_id=encoded_repository_id )}">${workflow.workflow_name | h}</a>
             %else:
@@ -1007,7 +1007,7 @@
     %>
 </%def>
 
-<%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False )">
+<%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode
 
@@ -1118,14 +1118,14 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
-                        ${render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if invalid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
-                        ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if valid_data_managers_root_folder:
@@ -1146,7 +1146,7 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="workflows">
-                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if datatypes_root_folder:

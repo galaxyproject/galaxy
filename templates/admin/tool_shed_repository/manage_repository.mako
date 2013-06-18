@@ -107,5 +107,5 @@
 </div>
 <p/>
 %if not in_error_state:
-    ${render_repository_items( repository.metadata, containers_dict, can_set_metadata=False )}
+    ${render_repository_items( repository.metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='galaxy' )}
 %endif

@@ -197,7 +197,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
         </form>
     </div>
 </div>
-${render_repository_items( metadata, containers_dict, can_set_metadata=True )}
+${render_repository_items( metadata, containers_dict, can_set_metadata=True, render_repository_actions_for='tool_shed' )}
 %if includes_tools:
     <p/>
     <div class="toolForm">
