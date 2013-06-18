@@ -891,56 +891,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use workflows" )
-    def import_from_myexp( self, trans, myexp_id, **kwd ):
-        """
-        Imports a workflow from the myExperiment website.
-        Authenticates either by using HTTP basic, or with a cookie.
-        !!! This isn't currently used. MyExperiment uses the generic import_workflow method !!!
-        """
-        # Parse parameters
-        myexp_username = kwd.get( 'myexp_username', None )
-        myexp_password = kwd.get( 'myexp_password', None )
-        myexp_cookie = kwd.get( 'myexp_cookie', None )
-        # Get workflow content.
-        conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
-        # NOTE: blocks web thread.
-        headers = {}
-        if myexp_username and myexp_password:
-            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
-            headers = { "Authorization" : "Basic %s" % auth_header }
-        elif myexp_cookie:
-            headers = { "Cookie" : "myexperiment_session=%s" % myexp_cookie }
-        conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
-        response = conn.getresponse()
-        response_data = response.read()
-        conn.close()
-        if response.status == 200:
-            parser = SingleTagContentsParser( "content" )
-            parser.feed( response_data )
-            workflow_content = base64.b64decode( parser.tag_content )
-            # Process workflow JSON and create workflow.
-            workflow_dict = from_json_string( workflow_content )
-            # Create workflow.
-            workflow, missing_tool_tups = self._workflow_from_dict( trans, workflow_dict, source="myExperiment" )
-            workflow = workflow.latest_workflow
-            if missing_tool_tups:
-                # TODO: handle the case where the imported workflow requires tools that are not available in
-                # the local Galaxy instance.
-                pass
-
-        # Provide user feedback.
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( controller='workflow', action='list' )
-        if response.status != 200:
-            return trans.show_error_message( "There was a problem importing the workflow. Error: %s %s" % (response_data, workflow_list_str) )
-        if workflow.has_errors:
-            return trans.show_warn_message( "Imported, but some steps in this workflow have validation errors. %s" % workflow_list_str )
-        if workflow.has_cycles:
-            return trans.show_warn_message( "Imported, but this workflow contains cycles. %s" % workflow_list_str )
-        else:
-            return trans.show_message( "Workflow '%s' imported. %s" % (workflow.name, workflow_list_str) )
-
-    @web.expose
-    @web.require_login( "use workflows" )
     def export_to_myexp( self, trans, id, myexp_username, myexp_password ):
         """
         Exports a workflow to myExperiment website.
