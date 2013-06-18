@@ -420,7 +420,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 repository_id=repository_id,
                                                                                 changeset_revision=changeset_revision )
             # Save the workflow in the Galaxy database.
-            stored_workflow = workflow_util.save_workflow( trans, workflow )
+            # Pass workflow_dict along to create annotation at this point 
+            stored_workflow = workflow_util.save_workflow( trans, workflow, workflow_dict )
             # Use the latest version of the saved workflow.
             workflow = stored_workflow.latest_workflow
             if workflow_name:
