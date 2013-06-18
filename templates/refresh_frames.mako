@@ -1,9 +1,10 @@
 ## Include JavaScript code to refresh Galaxy application frames as needed.
 <%def name="handle_refresh_frames()">
-    <script type="text/javascript">
     <%
         if not refresh_frames: return
     %>
+
+    <script type="text/javascript">
     %if 'everything' in refresh_frames:
         parent.location.href="${h.url_for( controller='root' )}";
     %endif
