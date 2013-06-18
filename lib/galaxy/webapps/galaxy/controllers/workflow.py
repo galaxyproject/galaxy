@@ -102,7 +102,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         grids.GridOperation( "Export",
                             condition=( lambda item: not item.deleted ),
                             allow_multiple=False,
-                            url_args=dict( webapp="galaxy", action="export_to_file" ) ),
+                            url_args=dict( action="export_to_file" ) ),
     ]
 
     def build_initial_query( self, trans, **kwargs ):
@@ -1023,8 +1023,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.json_pretty
     def export_to_file( self, trans, id, **kwd ):
-        ## NOTE: kwd added to allow passing custom named arguments like '?webapp=galaxy' as while
-        ## exporting published_workflows directly from '/list_published'
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
