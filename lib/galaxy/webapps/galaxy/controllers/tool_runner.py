@@ -295,7 +295,7 @@ class ToolRunner( BaseUIController ):
             tool_state.decode( encoded_state, tool, trans.app )
         else:
             tool_state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
+        tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
         datasets = []
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
