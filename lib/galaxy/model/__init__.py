@@ -157,7 +157,10 @@ class User( object, APIItem ):
         return total
 
 
-class Job( object ):
+class Job( object, APIItem ):
+    api_collection_visible_keys = [ 'id'  ]
+    api_element_visible_keys = [ 'id' ]
+
     """
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
@@ -360,6 +363,34 @@ class Job( object ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
+    def get_api_value( self, view='collection' ):
+        rval = super( Job, self ).get_api_value( view=view )
+        rval['tool_name'] = self.tool_id
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        rval['params'] = param_dict
+
+        input_dict = {}
+        for i in self.input_datasets:
+            if i.dataset is not None:
+                input_dict[i.name] = {"hda_id" : i.dataset.id}
+        for i in self.input_library_datasets:
+            if i.dataset is not None:
+                input_dict[i.name] = {"ldda_id" : i.dataset.id}
+        for k in input_dict:
+            if k in param_dict:
+                del param_dict[k]
+        rval['inputs'] = input_dict
+
+        output_dict = {}
+        for i in self.output_datasets:
+            if i.dataset is not None:
+                output_dict[i.name] = {"hda_id" : i.dataset.id}
+        for i in self.output_library_datasets:
+            if i.dataset is not None:
+                output_dict[i.name] = {"ldda_id" : i.dataset.id}
+        rval['outputs'] = output_dict
+
+        return rval
 
 class Task( object ):
     """
