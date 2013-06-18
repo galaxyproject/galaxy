@@ -213,6 +213,9 @@ drag = $special.drag = {
 						$special.drop.handler( event, dd ); // "drop"
 					drag.hijack( event, "dragend", dd ); // trigger "dragend"	
 				}
+				else {
+					drag.hijack( event, "dragclickonly", dd ); // trigger "dragclickonly"	
+				}
 				drag.textselect( true ); // enable text selection
 				// if suppressing click events...
 				if ( dd.click === false && dd.dragging )
