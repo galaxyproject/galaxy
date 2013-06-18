@@ -12,9 +12,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
-import pkg_resources
-
-pkg_resources.require( "SVGFig" )
+eggs.require( "SVGFig" )
 import svgfig
 
 log = logging.getLogger( __name__ )
@@ -386,6 +384,28 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             workflow.has_errors = True
         # Stick this in the step temporarily.
         step.temp_input_connections = step_dict[ 'input_connections' ]
+
+        # This should be considered a *temporary* hack.
+        # Usually we'd use the UsesAnnotation mixin, but
+        # that's not possible here. This entire module
+        # needs to die and get replaced with the regular
+        # galaxy/workflow methods.
+        from galaxy.util.sanitize_html import sanitize_html
+        annotation = step_dict.get( 'annotation', '')
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
+            new_step_annotation.annotation = annotation
+            new_step_annotation.user = trans.user
+            step.annotations.append(new_step_annotation)
+        # Unpack and add post-job actions.
+        post_job_actions = step_dict.get( 'post_job_actions', {} )
+        for name, pja_dict in post_job_actions.items():
+            trans.model.PostJobAction( pja_dict[ 'action_type' ],
+                                 step, pja_dict[ 'output_name' ],
+                                 pja_dict[ 'action_arguments' ] )
+        # End temporary hack
+
         steps.append( step )
         steps_by_external_id[ step_dict[ 'id' ] ] = step
     # Second pass to deal with connections between steps.
