@@ -29,7 +29,7 @@
                 Galaxy.toolPanel = tool_panel;
 
                 ## Populate tool panel if (a) anonymous use possible or (b) user is logged in.
-                %if trans.app.config.require_login and trans.user:
+                %if trans.user or not trans.app.config.require_login:
                     tool_panel.reset( tool_panel.parse( ${h.to_json_string( trans.app.toolbox.to_dict( trans ) )} ) );
                 %endif
 
