@@ -431,7 +431,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                     if env_var_dict:
                         env_var_dicts.append( env_var_dict )
             if env_var_dicts:
-                action_dict[ env_elem.tag ] = env_var_dicts
+                # The last child of an <action type="set_environment"> might be a comment, so manually set it to be 'environment_variable'.
+                action_dict[ 'environment_variable' ] = env_var_dicts
             else:
                 continue
         elif action_type == 'set_environment_for_install':
