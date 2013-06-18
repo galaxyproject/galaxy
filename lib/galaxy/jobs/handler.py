@@ -10,7 +10,7 @@ from Queue import Queue, Empty
 
 from sqlalchemy.sql.expression import and_, or_, select, func
 
-from galaxy import util, model
+from galaxy import model
 from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper, JobDestination
 
 log = logging.getLogger( __name__ )

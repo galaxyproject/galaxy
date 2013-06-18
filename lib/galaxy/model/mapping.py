@@ -1616,17 +1616,27 @@ mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetI
                                                primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
                               ) )
 
-mapper( model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.HistoryDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
+mapper( model.JobToInputDatasetAssociation,
+        model.JobToInputDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.HistoryDatasetAssociation, lazy=False,
+                backref="dependent_jobs" ) ) )
 
-mapper( model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.HistoryDatasetAssociation, lazy=False ) ) )
+mapper( model.JobToOutputDatasetAssociation,
+        model.JobToOutputDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.HistoryDatasetAssociation, lazy=False ) ) )
 
-mapper( model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.LibraryDatasetDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
+mapper( model.JobToInputLibraryDatasetAssociation,
+        model.JobToInputLibraryDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.LibraryDatasetDatasetAssociation, lazy=False,
+                backref="dependent_jobs" ) ) )
 
-mapper( model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
+mapper( model.JobToOutputLibraryDatasetAssociation,
+        model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
 
 mapper( model.JobParameter, model.JobParameter.table )
 

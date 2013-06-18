@@ -692,7 +692,10 @@ class JobWrapper( object ):
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )

@@ -1,15 +1,16 @@
-from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
-from galaxy.util.json import to_json_string
-from galaxy.tools.parameters import *
-from galaxy.tools.parameters.grouping import *
-from galaxy.util.template import fill_template
-from galaxy.util.none_like import NoneDataset
-from galaxy.web import url_for
-from galaxy.exceptions import ObjectInvalid
+import os
 import galaxy.tools
-from types import *
+
+from galaxy.exceptions import ObjectInvalid
+from galaxy.model import LibraryDatasetDatasetAssociation
+from galaxy.tools.parameters import DataToolParameter, SelectToolParameter
+from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string
+from galaxy.util.none_like import NoneDataset
+from galaxy.util.odict import odict
+from galaxy.util.template import fill_template
+from galaxy.web import url_for
 
 import logging
 log = logging.getLogger( __name__ )
@@ -107,7 +108,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -409,7 +410,41 @@ class DefaultToolAction( object ):
             job.params = to_json_string( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
-        trans.sa_session.flush()
+        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # This functionality requires tracking jobs in the database.
+        if trans.app.config.track_jobs_in_database and rerun_remap_job_id is not None:
+            try:
+                old_job = trans.sa_session.query( trans.app.model.Job ).get(rerun_remap_job_id)
+                assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, job.id)
+                assert old_job.tool_id == job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, job.id, old_job.tool_id, job.tool_id)
+                if trans.user is not None:
+                    assert old_job.user_id == trans.user.id, '(%s/%s): Old user id (%s) does not match rerun user id (%s)' % (old_job.id, job.id, old_job.user_id, trans.user.id)
+                elif trans.user is None and type( galaxy_session ) == trans.model.GalaxySession:
+                    assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, job.id, old_job.session_id, galaxy_session.id)
+                else:
+                    raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, job.id))
+                for jtod in old_job.output_datasets:
+                    for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
+                        if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (trans.user is None and job_to_remap.session_id == galaxy_session.id):
+                            if job_to_remap.state == job_to_remap.states.PAUSED:
+                                job_to_remap.state = job_to_remap.states.NEW
+                            for hda in [ dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets ]:
+                                if hda.state == hda.states.PAUSED:
+                                    hda.state = hda.states.NEW
+                                    hda.info = None
+                            for p in job_to_remap.parameters:
+                                if p.name == jtid.name and p.value == str(jtod.dataset.id):
+                                    p.value = str(out_data[jtod.name].id)
+                            jtid.dataset = out_data[jtod.name]
+                            jtid.dataset.hid = jtod.dataset.hid
+                            log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+                            trans.sa_session.add(job_to_remap)
+                            trans.sa_session.add(jtid)
+                    jtod.dataset.visible = False
+                    trans.sa_session.add(jtod)
+                    trans.sa_session.flush()
+            except Exception, e:
+                log.exception('Cannot remap rerun dependencies.')
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
