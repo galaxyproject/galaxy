@@ -682,7 +682,8 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if email is not None:
             user = trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first()
             if user:
-                trans.set_user( user )
+                trans.handle_user_logout()
+                trans.handle_user_login(user)
                 message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % ( email, url_for( controller='root' ) )
                 emails = []
             else:

@@ -62,7 +62,8 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
                                    object_store = self.object_store,
-                                   trace_logger=self.trace_logger )
+                                   trace_logger=self.trace_logger,
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
         # Manage installed tool shed repositories.
         self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
@@ -91,7 +92,7 @@ class UniverseApplication( object ):
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=True )
+                                                     from_shed_config=False )
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.

@@ -51,6 +51,7 @@
 
     ${h.js(
         'libs/jquery/jquery',
+        'libs/jquery/jquery.migrate',
         'libs/json2',
         'libs/jquery/select2',
         'libs/bootstrap',

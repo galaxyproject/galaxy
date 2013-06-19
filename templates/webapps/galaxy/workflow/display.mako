@@ -8,7 +8,6 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "workflow" )}
 </%def>
 
 <%def name="do_inputs( inputs, values, prefix, step, other_values=None )">
@@ -68,10 +67,12 @@
     %if workflow.importable:
     <a
         href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
-        class="icon-button import"
-        ## Needed to overwide initial width so that link is floated left appropriately.
-        style="width: 100%"
-        title="Import workflow">Import workflow</a>
+        class="icon-button import tooltip"
+        title="Import workflow"></a>
+    <a
+        href="${h.url_for( controller='/workflow', action='export_to_file', id=trans.security.encode_id(workflow.id) )}"
+        class="icon-button disk tooltip"
+        title="Save workflow"></a>
     %endif
 </%def>
 

@@ -114,6 +114,9 @@
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories' )}">My writable repositories</a>
                             </div>
                             <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='reset_metadata_on_my_writable_repositories_in_tool_shed' )}">Reset metadata on my repositories</a>
+                            </div>
+                            <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
                             </div>
                             <div class="toolTitle">

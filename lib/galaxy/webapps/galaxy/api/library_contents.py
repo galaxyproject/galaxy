@@ -2,13 +2,18 @@
 API operations on the contents of a library.
 """
 import logging
+
 from galaxy import web
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
-from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest, url_for, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import HTTPBadRequest, url_for
+from galaxy import util
 
 log = logging.getLogger( __name__ )
 
-class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
+class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems,
+                                 UsesHistoryDatasetAssociationMixin ):
 
     @web.expose_api
     # TODO: Add parameter to only get top level of datasets/subfolders.
@@ -32,7 +37,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                     rval.extend( traverse( subfolder ) )
             for ld in folder.datasets:
                 if not admin:
-                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
+                    can_access = trans.app.security_agent.can_access_dataset(
+                        current_user_roles, ld.library_dataset_dataset_association.dataset )
                 if (admin or can_access) and not ld.deleted:
                     log.debug( "type(folder): %s" % type( folder ) )
                     log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
@@ -99,6 +105,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if create_type not in ( 'file', 'folder' ):
             trans.response.status = 400
             return "Invalid value for 'create_type' parameter ( %s ) specified." % create_type
+
         if 'folder_id' not in payload:
             trans.response.status = 400
             return "Missing requred 'folder_id' parameter."
@@ -112,6 +119,12 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return str( e )
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id( parent.id )
+
+        # are we copying an HDA to the library folder?
+        #   we'll need the id and any message to attach, then branch to that private function
+        from_hda_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'ldda_message', '' ) )
+        if create_type == 'file' and from_hda_id:
+            return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
 
         #check for extended metadata, store it and pop it out of the param 
         #otherwise sanitize_param will have a fit
@@ -179,6 +192,48 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             #BUG: Everything is cast to string, which can lead to false positives
             #for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+
+    def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='' ):
+        """
+        Copies hda `from_hda_id` to library folder `library_folder_id` optionally
+        adding `ldda_message` to the new ldda's `message`.
+
+        `library_contents.create` will branch to this if called with 'from_hda_id'
+        in it's payload.
+        """
+        log.debug( '_copy_hda_to_library_folder: %s' %( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
+        #PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
+        #TODO: allow name and other, editable ldda attrs?
+        if ldda_message:
+            ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
+
+        rval = {}
+        try:
+            # check permissions on (all three?) resources: hda, library, folder
+            #TODO: do we really need the library??
+            hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
+            library = self.get_library( trans, library_id, check_accessible=True )
+            folder = self.get_library_folder( trans, folder_id, check_accessible=True )
+
+            if not self.can_current_user_add_to_library_item( trans, folder ):
+                trans.response.status = 403
+                return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
+
+            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
+            rval = ldda.get_api_value()
+
+        except Exception, exc:
+            #TODO: grrr...
+            if 'not accessible to the current user' in str( exc ):
+                trans.response.status = 403
+                return { 'error' : str( exc ) }
+            else:
+                log.exception( exc )
+                trans.response.status = 500
+                return { 'error' : str( exc ) }
+
+        return rval
+
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):

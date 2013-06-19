@@ -99,6 +99,8 @@
                     $( this ).attr( "selected", "selected" );
                 });
             });
+            // Temporary removal of select2 for all permissions forms
+            $('#edit_role_associations select').select2("destroy");
         });
     </script>
     <div class="toolForm">

@@ -62,6 +62,7 @@ def set_datatypes_registry( d_registry ):
 
 
 class User( object, APIItem ):
+    use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -87,7 +88,10 @@ class User( object, APIItem ):
         """
         Set user password to the digest of `cleartext`.
         """
-        self.password = galaxy.security.passwords.hash_password( cleartext )
+        if User.use_pbkdf2:
+            self.password = galaxy.security.passwords.hash_password( cleartext )
+        else:
+            self.password = new_secure_hash( text_type=cleartext )
 
     def check_password( self, cleartext ):
         """
@@ -153,7 +157,10 @@ class User( object, APIItem ):
         return total
 
 
-class Job( object ):
+class Job( object, APIItem ):
+    api_collection_visible_keys = [ 'id'  ]
+    api_element_visible_keys = [ 'id' ]
+
     """
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
@@ -356,6 +363,34 @@ class Job( object ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
+    def get_api_value( self, view='collection' ):
+        rval = super( Job, self ).get_api_value( view=view )
+        rval['tool_name'] = self.tool_id
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        rval['params'] = param_dict
+
+        input_dict = {}
+        for i in self.input_datasets:
+            if i.dataset is not None:
+                input_dict[i.name] = {"hda_id" : i.dataset.id}
+        for i in self.input_library_datasets:
+            if i.dataset is not None:
+                input_dict[i.name] = {"ldda_id" : i.dataset.id}
+        for k in input_dict:
+            if k in param_dict:
+                del param_dict[k]
+        rval['inputs'] = input_dict
+
+        output_dict = {}
+        for i in self.output_datasets:
+            if i.dataset is not None:
+                output_dict[i.name] = {"hda_id" : i.dataset.id}
+        for i in self.output_library_datasets:
+            if i.dataset is not None:
+                output_dict[i.name] = {"ldda_id" : i.dataset.id}
+        rval['outputs'] = output_dict
+
+        return rval
 
 class Task( object ):
     """
@@ -1538,7 +1573,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         return hda
 
     def to_library_dataset_dataset_association( self, trans, target_folder,
-            replace_dataset=None, parent_id=None, user=None, roles=[], ldda_message='' ):
+            replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -1573,6 +1608,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         object_session( self ).add( ldda )
         object_session( self ).flush()
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
+        roles = roles or []
         for role in roles:
             dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
                                                  ldda.dataset, role )
@@ -1680,7 +1716,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
                      misc_blurb = hda.blurb )
 
         if hda.history is not None:
-            rval['history_id'] = hda.history.id,
+            rval['history_id'] = hda.history.id
 
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():

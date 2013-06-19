@@ -778,7 +778,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id )
+                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id, downloadable=True )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
@@ -1049,6 +1049,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository, tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
@@ -1057,6 +1058,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
+                                        render_repository_actions_for=render_repository_actions_for,
                                         metadata=metadata,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
@@ -1065,7 +1067,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                         status=status )
         except Exception, e:
             message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
-        if trans.webapp.name == 'galaxy':
+        if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -1458,25 +1460,39 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            trans.model.Repository.table.c.user_id == user.id ) ):
             if not metadata_row.tool_test_results:
                 continue
+            current_repository_errors = []
+            tool_dependency_errors = []
+            repository_dependency_errors = []
+            description_lines = []
             # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
             # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
             time_tested = metadata_row.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
             repository = metadata_row.repository
             # Generate a citable URL for this repository with owner and changeset revision.
             repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
-            title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             passed_tests = len( metadata_row.tool_test_results.get( 'passed_tests', [] ) )
             failed_tests = len( metadata_row.tool_test_results.get( 'failed_tests', [] ) )
             missing_test_components = len( metadata_row.tool_test_results.get( 'missing_test_components', [] ) )
-            description = '%d tests passed, %d tests failed, %d tests missing test components.' % \
-                ( passed_tests, failed_tests, missing_test_components )
+            installation_errors = metadata_row.tool_test_results.get( 'installation_errors', [] )
+            if installation_errors:
+                tool_dependency_errors = installation_errors.get( 'tool_dependencies', [] )
+                repository_dependency_errors = installation_errors.get( 'repository_dependencies', [] )
+                current_repository_errors = installation_errors.get( 'current_repository', [] )
+            description_lines.append( '%d tests passed, %d tests failed, %d tests missing test components.' % \
+                ( passed_tests, failed_tests, missing_test_components ) )
+            if current_repository_errors:
+                description_lines.append( '\nThis repository did not install correctly. ' )
+            if tool_dependency_errors or repository_dependency_errors:
+                description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' % \
+                    ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
+            title = 'Revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
             # that behavior.
             functional_test_results.append( dict( title=title, 
                                                   guid=repository_citable_url, 
                                                   link=repository_citable_url, 
-                                                  description=description, 
+                                                  description='\n'.join( description_lines ), 
                                                   pubdate=time_tested ) )
         trans.response.set_content_type( 'application/rss+xml' )
         return trans.fill_template( '/rss.mako', 
@@ -1502,8 +1518,13 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        if repository:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    return readme_util.build_readme_files_dict( repository_metadata.metadata )
+        return {}
 
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):
@@ -1759,7 +1780,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     @web.expose
     def help( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', ''  ) )
+        message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         return trans.fill_template( '/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd )
 
@@ -1877,6 +1898,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'error' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         invalid_file_tups = []
@@ -1893,6 +1915,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
+                                        render_repository_actions_for=render_repository_actions_for,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
@@ -1959,15 +1982,15 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage repository" )
     def manage_repository( self, trans, id, **kwd ):
-        message = util.restore_text( kwd.get( 'message', ''  ) )
+        message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        repo_name = util.restore_text( kwd.get( 'repo_name', repository.name ) )
-        changeset_revision = util.restore_text( kwd.get( 'changeset_revision', repository.tip( trans.app ) ) )
-        description = util.restore_text( kwd.get( 'description', repository.description ) )
-        long_description = util.restore_text( kwd.get( 'long_description', repository.long_description ) )
+        repo_name = kwd.get( 'repo_name', repository.name )
+        changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
+        description = kwd.get( 'description', repository.description )
+        long_description = kwd.get( 'long_description', repository.long_description )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         alerts = kwd.get( 'alerts', '' )
@@ -2356,6 +2379,19 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           id=id,
                                                           message=message,
                                                           status=status ) )
+
+    @web.expose
+    def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
+        if 'reset_metadata_on_selected_repositories_button' in kwd:
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+        else:
+            message = kwd.get( 'message', ''  )
+            status = kwd.get( 'status', 'done' )
+        repositories_select_field = suc.build_repository_ids_select_field( trans, my_writable=True )
+        return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
+                                    repositories_select_field=repositories_select_field,
+                                    message=message,
+                                    status=status )
 
     def __search_ids_names( self, tool_dict, exact_matches_checked, match_tuples, repository_metadata, tool_ids, tool_names ):
         for i, tool_id in enumerate( tool_ids ):
@@ -2879,7 +2915,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
-        display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
+        display_reviews = kwd.get( 'display_reviews', False )
         alerts = kwd.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
         if repository.email_alerts:
@@ -2958,6 +2994,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def view_tool_metadata( self, trans, repository_id, changeset_revision, tool_id, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_files_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
@@ -3012,6 +3049,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                             downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template( "/webapps/tool_shed/repository/view_tool_metadata.mako",
+                                    render_repository_actions_for=render_repository_actions_for,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
@@ -3029,6 +3067,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )
         repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -3037,6 +3076,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         metadata = repository_metadata.metadata
         return trans.fill_template( "/webapps/tool_shed/repository/view_workflow.mako",
                                     repository=repository,
+                                    render_repository_actions_for=render_repository_actions_for,
                                     changeset_revision=changeset_revision,
                                     repository_metadata_id=repository_metadata_id,
                                     workflow_name=workflow_name,

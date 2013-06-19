@@ -52,7 +52,7 @@ class ToolRunner( BaseUIController ):
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
+            return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
                                                                              get_loaded_tools_by_lineage=False,
@@ -218,6 +218,14 @@ class ToolRunner( BaseUIController ):
         # Create a fake tool_state for the tool, with the parameters values
         state = tool.new_state( trans )
         state.inputs = params_objects
+        # If the job failed and has dependencies, allow dependency remap
+        if job.state == job.states.ERROR:
+            try:
+                if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
+                    state.rerun_remap_job_id = trans.app.security.encode_id(job.id)
+            except:
+                # Job has no outputs?
+                pass
         #create an incoming object from the original job's dataset-modified param objects
         incoming = {}
         params_to_incoming( incoming, tool.inputs, params_objects, trans.app )
@@ -287,7 +295,7 @@ class ToolRunner( BaseUIController ):
             tool_state.decode( encoded_state, tool, trans.app )
         else:
             tool_state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
+        tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
         datasets = []
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():

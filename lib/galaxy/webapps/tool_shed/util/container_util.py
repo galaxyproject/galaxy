@@ -36,6 +36,7 @@ class Folder( object ):
         self.tool_dependencies = []
         self.failed_tests = []
         self.missing_test_components = []
+        self.not_tested = []
         self.passed_tests = []
         self.test_environments = []
         self.repository_dependencies = []
@@ -68,7 +69,7 @@ class Folder( object ):
                                      repository_name=name,
                                      repository_owner=owner,
                                      changeset_revision=changeset_revision,
-                                     prior_installation_required=prior_installation_required )
+                                     prior_installation_required=asbool( prior_installation_required ) )
 
 
 class DataManager( object ):
@@ -159,6 +160,14 @@ class MissingTestComponent( object ):
         self.tool_guid = tool_guid
         self.tool_id = tool_id
         self.tool_version = tool_version
+
+
+class NotTested( object ):
+    """NotTested object"""
+
+    def __init__( self, id=None, reason=None ):
+        self.id = id
+        self.reason = reason
 
 
 class PassedTest( object ):
@@ -467,7 +476,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
                                                repository_name=name,
                                                repository_owner=owner,
                                                changeset_revision=changeset_revision,
-                                               prior_installation_required=prior_installation_required,
+                                               prior_installation_required=asbool( prior_installation_required ),
                                                error=error )
             folder.invalid_repository_dependencies.append( ird )
             invalid_repository_dependencies_folder.folders.append( folder )
@@ -1048,6 +1057,15 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                                                 tool_shed_mercurial_version=test_environment_dict.get( 'tool_shed_mercurial_version', '' ),
                                                 tool_shed_revision=test_environment_dict.get( 'tool_shed_revision', '' ) )
             folder.test_environments.append( test_environment )
+        not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
+        if not_tested_dict:
+            folder_id += 1
+            folder = Folder( id=folder_id, key='not_tested', label='Not tested', parent=test_results_folder )
+            test_results_folder.folders.append( folder )
+            not_tested_id = 0
+            not_tested = NotTested( id=not_tested_id,
+                                    reason=not_tested_dict.get( 'reason', '' ) )
+            folder.not_tested.append( not_tested )
         passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
         if passed_tests_dicts:
             folder_id += 1
@@ -1329,7 +1347,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
                                                           repository_name=repository_name,
                                                           repository_owner=repository_owner,
                                                           changeset_revision=changeset_revision,
-                                                          prior_installation_required=prior_installation_required,
+                                                          prior_installation_required=asbool( prior_installation_required ),
                                                           installation_status=installation_status,
                                                           tool_shed_repository_id=tool_shed_repository_id )
             # Insert the repository_dependency into the folder.
@@ -1339,7 +1357,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
 def is_subfolder_of( folder, repository_dependency ):
     toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
         suc.parse_repository_dependency_tuple( repository_dependency )
-    key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required )
+    key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, asbool( prior_installation_required ) )
     for sub_folder in folder.folders:
         if key == sub_folder.key:
             return True

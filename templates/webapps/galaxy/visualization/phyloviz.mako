@@ -168,9 +168,9 @@
             };
 
             $(function firstVizLoad(){       // calls when viz is loaded for the first time
-                var config = JSON.parse( '${ h.to_json_string( config )}');
+                var config = ${ h.to_json_string( config )};
                 window.config = config;
-                var data = JSON.parse('${h.to_json_string(data)}');
+                var data = ${h.to_json_string(data)};
                 window.data = data;
                 initPhyloViz(data, config);
             });

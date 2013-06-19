@@ -26,10 +26,6 @@ from mercurial import commands
 from mercurial import hg
 from mercurial import ui
 
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-
 log = logging.getLogger( __name__ )
 
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
@@ -206,7 +202,7 @@ def compare_repository_dependencies( ancestor_repository_dependencies, current_r
                     current_repository_name == ancestor_repository_name and \
                     current_repository_owner == ancestor_repository_owner and \
                     current_changeset_revision == ancestor_changeset_revision and \
-                    current_prior_installation_required == ancestor_prior_installation_required:
+                    util.string_as_bool( current_prior_installation_required ) == util.string_as_bool( ancestor_prior_installation_required ):
                     found_in_current = True
                     break
             if not found_in_current:
@@ -363,12 +359,9 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
                               'invalid_data_managers': invalid_data_managers, 
                               'error_messages': [] }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
-    try:
-        tree = xml_util.parse_xml( data_manager_config_filename )
-    except Exception, e:
+    tree, error_message = xml_util.parse_xml( data_manager_config_filename )
+    if tree is None:
         # We are not able to load any data managers.
-        error_message = 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e )
-        log.error( error_message )
         data_manager_metadata[ 'error_messages' ].append( error_message )
         return metadata_dict
     tool_path = None
@@ -436,23 +429,20 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
 
 def generate_datatypes_metadata( app, repository, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
-    try:
-        tree = ElementTree.parse( datatypes_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse %s: %s" % ( str( datatypes_config ), str( e ) ) )
+    tree, error_message = xml_util.parse_xml( datatypes_config )
+    if tree is None:
         return metadata_dict
     root = tree.getroot()
-    ElementInclude.include( root )
     repository_datatype_code_files = []
     datatype_files = root.find( 'datatype_files' )
-    if datatype_files:
+    if datatype_files is not None:
         for elem in datatype_files.findall( 'datatype_file' ):
             name = elem.get( 'name', None )
             repository_datatype_code_files.append( name )
         metadata_dict[ 'datatype_files' ] = repository_datatype_code_files
     datatypes = []
     registration = root.find( 'registration' )
-    if registration:
+    if registration is not None:
         for elem in registration.findall( 'datatype' ):
             converters = []
             display_app_containers = []
@@ -581,12 +571,12 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         app.config.tool_data_table_config_path = repository_files_dir
     else:
         # Use a temporary working directory to copy all sample files.
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-gmfcr" )
         # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
         files_dir = relative_install_dir
         if shed_config_dict.get( 'tool_path' ):
             files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
-        app.config.tool_data_path = work_dir
+        app.config.tool_data_path = work_dir #FIXME: Thread safe?
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
     datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
@@ -608,7 +598,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
             new_table_elems, error_message = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
                                                                                                     tool_data_path=app.config.tool_data_path,
                                                                                                     shed_tool_data_table_config=app.config.shed_tool_data_table_config,
-                                                                                                    persist=persist )
+                                                                                                    persist=False )
             if error_message:
                 invalid_file_tups.append( ( filename, error_message ) )
     for root, dirs, files in os.walk( files_dir ):
@@ -637,14 +627,13 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                     if os.path.getsize( full_path ) > 0:
                         if not ( checkers.check_binary( full_path ) or checkers.check_image( full_path ) or checkers.check_gzip( full_path )[ 0 ]
                                  or checkers.check_bz2( full_path )[ 0 ] or checkers.check_zip( full_path ) ):
-                            try:
-                                # Make sure we're looking at a tool config and not a display application config or something else.
-                                element_tree = xml_util.parse_xml( full_path )
+                            # Make sure we're looking at a tool config and not a display application config or something else.
+                            element_tree, error_message = xml_util.parse_xml( full_path )
+                            if element_tree is None:
+                                is_tool = False
+                            else:
                                 element_tree_root = element_tree.getroot()
                                 is_tool = element_tree_root.tag == 'tool'
-                            except Exception, e:
-                                log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
-                                is_tool = False
                             if is_tool:
                                 tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                                 if tool is None:
@@ -750,15 +739,13 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
     is called from the tool shed as well as from Galaxy.
     """
     error_message = ''
-    try:
-        # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree = xml_util.parse_xml( repository_dependencies_config )
+    # Make sure we're looking at a valid repository_dependencies.xml file.
+    tree, error_message = xml_util.parse_xml( repository_dependencies_config )
+    if tree is None:
+        xml_is_valid = False
+    else:
         root = tree.getroot()
         xml_is_valid = root.tag == 'repositories'
-    except Exception, e:
-        error_message = "Error parsing %s, exception: %s" % ( repository_dependencies_config, str( e ) )
-        log.debug( error_message )
-        xml_is_valid = False
     if xml_is_valid:
         invalid_repository_dependencies_dict = dict( description=root.get( 'description' ) )
         invalid_repository_dependency_tups = []
@@ -771,7 +758,7 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
             else:
                 # Append the error_message to the repository dependencies tuple.
                 toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, error_message )
+                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), error_message )
                 invalid_repository_dependency_tups.append( repository_dependency_tup )
         if invalid_repository_dependency_tups:
             invalid_repository_dependencies_dict[ 'repository_dependencies' ] = invalid_repository_dependency_tups
@@ -795,14 +782,10 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     else:
         original_valid_tool_dependencies_dict = None
         original_invalid_tool_dependencies_dict = None
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        error_message = "Exception attempting to parse tool_dependencies.xml: %s" %str( e )
-        log.debug( error_message )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return metadata_dict, error_message
     root = tree.getroot()
-    ElementInclude.include( root )
     tool_dependency_is_valid = True
     valid_tool_dependencies_dict = {}
     invalid_tool_dependencies_dict = {}
@@ -823,7 +806,7 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
                     toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, prior_installation_required, message )
+                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
@@ -916,12 +899,15 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
         metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
 
-def get_latest_repository_metadata( trans, decoded_repository_id ):
+def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=False ):
     """Get last metadata defined for a specified repository from the database."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == decoded_repository_id ) \
-                           .order_by( trans.model.RepositoryMetadata.table.c.id.desc() ) \
-                           .first()
+    repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    if downloadable:
+        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+    else:
+        changeset_revision = suc.get_latest_changeset_revision( trans, repository, repo )
+    return suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
 
 def get_orphan_tool_dependencies( metadata ):
     """Inspect tool dependencies included in the received metadata and determine if any of them are orphans within the repository."""
@@ -1112,7 +1098,7 @@ def handle_repository_elem( app, repository_elem ):
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
     prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
-    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, str( prior_installation_required ) ]
     user = None
     repository = None
     if app.name == 'galaxy':
@@ -1250,7 +1236,7 @@ def new_metadata_required_for_utilities( trans, repository, new_tip_metadata_dic
     dictionaries.  The metadata contained in new_tip_metadata_dict may not be a subset of that contained in the last stored repository_metadata
     record associated with the received repository because one or more Galaxy utilities may have been deleted from the repository in the new tip.
     """
-    repository_metadata = get_latest_repository_metadata( trans, repository.id )
+    repository_metadata = get_latest_repository_metadata( trans, repository.id, downloadable=False )
     datatypes_required = new_datatypes_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
     # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
     # compare_readme_files() method.
@@ -1598,7 +1584,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     invalid_file_tups = []
     home_dir = os.getcwd()
     for changeset in repo.changelog:
-        work_dir = tempfile.mkdtemp()
+        work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ramorits" )
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
         log.debug( "Cloning repository changeset revision: %s", str( ctx.rev() ) )
@@ -1699,8 +1685,8 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                 else:
                     log.debug( "Successfully reset metadata on repository %s" % repository.name )
                     successful_count += 1
-            except Exception, e:
-                log.debug( "Error attempting to reset metadata on repository: %s" % str( e ) )
+            except:
+                log.exception( "Error attempting to reset metadata on repository %s", repository.name )
                 unsuccessful_count += 1
         message = "Successfully reset metadata on %d %s.  " % ( successful_count, inflector.cond_plural( successful_count, "repository" ) )
         if unsuccessful_count:
@@ -1769,7 +1755,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 suc.handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
             # Update the latest stored repository metadata with the contents and attributes of metadata_dict.
-            repository_metadata = get_latest_repository_metadata( trans, repository.id )
+            repository_metadata = get_latest_repository_metadata( trans, repository.id, downloadable=False )
             if repository_metadata:
                 downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
@@ -1929,7 +1915,6 @@ def update_repository_dependencies_metadata( metadata, repository_dependency_tup
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
         else:
             tool_shed, name, owner, changeset_revision, prior_installation_required, error_message = repository_dependency_tup
-        prior_installation_required = util.asbool( str( prior_installation_required ) )
         if repository_dependencies_dict:
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
             for repository_dependency_tup in repository_dependency_tups:

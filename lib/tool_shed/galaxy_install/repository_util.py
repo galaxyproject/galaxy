@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import threading
 from galaxy import tools
+from galaxy.util import asbool
 from galaxy.util import json
 from galaxy import web
 from galaxy.model.orm import or_
@@ -18,6 +19,7 @@ from tool_shed.util import repository_dependency_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
+from xml.etree import ElementTree as XmlET
 
 from galaxy import eggs
 import pkg_resources
@@ -26,10 +28,6 @@ pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree.ElementTree import Element
 
 log = logging.getLogger( __name__ )
 
@@ -214,7 +212,7 @@ def get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_depen
                 continue
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
-                if prior_installation_required:
+                if asbool( prior_installation_required ):
                     repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
                     if repository:
                         encoded_repository_id = trans.security.encode_id( repository.id )
@@ -285,6 +283,12 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
     trans.sa_session.flush()
     if 'tool_dependencies' in metadata_dict and not reinstalling:
         tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
+    if 'sample_files' in metadata_dict:
+        sample_files = metadata_dict.get( 'sample_files', [] )
+        tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+        tool_data_table_conf_filename, tool_data_table_elems = tool_util.install_tool_data_tables( trans.app, tool_shed_repository, tool_index_sample_files )
+        if tool_data_table_elems:
+            trans.app.tool_data_tables.add_new_entries_from_config_file( tool_data_table_conf_filename, None, trans.app.config.shed_tool_data_table_config, persist=True )
     if 'tools' in metadata_dict:
         tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         sample_files = metadata_dict.get( 'sample_files', [] )
@@ -390,25 +394,9 @@ def initiate_repository_installation( trans, installation_dict ):
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
     # Handle contained tools.
     if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section or tool_panel_section ):
-        if new_tool_panel_section:
-            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-            tool_panel_section_key = 'section_%s' % str( section_id )
-            if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-            else:
-                # Appending a new section to trans.app.toolbox.tool_panel
-                log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                elem = Element( 'section' )
-                elem.attrib[ 'name' ] = new_tool_panel_section
-                elem.attrib[ 'id' ] = section_id
-                elem.attrib[ 'version' ] = ''
-                tool_section = tools.ToolSection( elem )
-                trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-        else:
-            tool_panel_section_key = 'section_%s' % tool_panel_section
-            tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                    tool_panel_section=tool_panel_section,
+                                                                                    new_tool_panel_section=new_tool_panel_section )
     else:
         tool_panel_section_key = None
         tool_section = None
@@ -501,7 +489,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                 message += "from the installed repository's <b>Repository Actions</b> menu.  "
                 status = 'error'
         if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
             # Install tool dependencies.
             suc.update_tool_shed_repository_status( trans.app,
                                                     tool_shed_repository,

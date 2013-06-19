@@ -545,6 +545,7 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
+        this.$el.find('.tooltip').tooltip();
         return this;
     },
     
@@ -579,7 +580,7 @@ var ToolPanelView = Backbone.View.extend({
     className: 'toolMenu',
     
     /**
-     * Waits for collection to load and then renders.
+     * Set up view.
      */
     initialize: function() {
         this.collection.tool_search.on("change:results", this.handle_search_results, this);

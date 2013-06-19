@@ -89,7 +89,7 @@ ${render_trackster_js_files()}
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
-                }, JSON.parse('${ h.to_json_string( viewport_config ) }'));
+                }, ${ h.to_json_string( viewport_config ) } );
                 view.editor = true;
                 init_editor();
                 set_up_router({view: view});

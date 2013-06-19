@@ -13,16 +13,9 @@ from tool_shed.util import encoding_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies.install_util import install_package
 from tool_shed.galaxy_install.tool_dependencies.install_util import set_environment
-
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 
@@ -202,7 +195,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, current_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, repository.id, repository.status ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), repository.id, repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
@@ -210,7 +203,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
                 else:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, None, 'Never installed' ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), None, 'Never installed' ]
                     if new_rd_tup not in missing_rd_tups:
                         missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
@@ -259,6 +252,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
         # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
         required_repository_tups = []
         for repo_info_dict in repo_info_dicts:
+            if repo_info_dict not in all_repo_info_dicts:
+                all_repo_info_dicts.append( repo_info_dict )
             for repository_name, repo_info_tup in repo_info_dict.items():
                 description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                     suc.get_repo_info_tuple_contents( repo_info_tup )
@@ -318,13 +313,10 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     sa_session = app.model.context.current
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse %s: %s" % ( str( tool_dependencies_config ), str( e ) ) )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return installed_tool_dependencies
     root = tree.getroot()
-    ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
         if elem.tag == 'package':

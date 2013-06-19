@@ -108,7 +108,7 @@ class Cleanup(object):
         args = url.translate_connect_args()
         args.update(url.query)
 
-        assert url.get_dialect().name == 'postgres', 'This script can only be used with PostgreSQL.'
+        assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'
 
         self.conn = psycopg2.connect(**args)
 

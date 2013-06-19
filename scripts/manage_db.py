@@ -6,6 +6,7 @@ sys.path = new_path
 
 from galaxy import eggs
 
+eggs.require( "decorator" )
 eggs.require( "Tempita" )
 eggs.require( "SQLAlchemy" )
 eggs.require( "sqlalchemy_migrate" )

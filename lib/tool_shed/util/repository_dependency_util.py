@@ -203,22 +203,15 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     else:
                         # We're installing a new tool shed repository that does not yet have a database record.  This repository is a repository dependency
                         # of a different repository being installed.
-                        if new_tool_panel_section:
-                            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                            tool_panel_section_key = 'section_%s' % str( section_id )
-                        elif tool_panel_section:
-                            tool_panel_section_key = 'section_%s' % tool_panel_section
-                        else:
-                            tool_panel_section_key = None
+                        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                                    tool_panel_section=tool_panel_section,
+                                                                                                    new_tool_panel_section=new_tool_panel_section )
+                            
                 else:
                     # We're installing a new tool shed repository that does not yet have a database record.
-                    if new_tool_panel_section:
-                        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                        tool_panel_section_key = 'section_%s' % str( section_id )
-                    elif tool_panel_section:
-                        tool_panel_section_key = 'section_%s' % tool_panel_section
-                    else:
-                        tool_panel_section_key = None
+                    tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                                tool_panel_section=tool_panel_section,
+                                                                                                new_tool_panel_section=new_tool_panel_section )
                 tool_shed_repository = suc.create_or_update_tool_shed_repository( app=trans.app,
                                                                                   name=name,
                                                                                   description=description,
@@ -239,7 +232,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     tool_panel_section_keys.append( tool_panel_section_key )
                     filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
-    build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )                     
+    build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
 
 def generate_message_for_invalid_repository_dependencies( metadata_dict ):
@@ -372,7 +365,7 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                                                                                                                      changeset_revision )
                     if repository_metadata:
                         new_key_rd_dict = {}
-                        new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision, rd_prior_installation_required ]
+                        new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision, str( rd_prior_installation_required ) ]
                         # We have the updated changset revision.
                         updated_key_rd_dicts.append( new_key_rd_dict )
                     else:
@@ -681,7 +674,7 @@ def remove_ropository_dependency_reference_to_self( key_rd_dicts ):
 
 def get_repository_dependency_as_key( repository_dependency ):
     tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
-    return container_util.generate_repository_dependencies_key_for_repository( tool_shed, name, owner, changeset_revision, prior_installation_required )
+    return container_util.generate_repository_dependencies_key_for_repository( tool_shed, name, owner, changeset_revision, str( prior_installation_required ) )
 
 def get_repository_dependency_by_repository_id( trans, decoded_repository_id ):
     return trans.sa_session.query( trans.model.RepositoryDependency ) \

@@ -9,7 +9,7 @@ log = logging.getLogger( __name__ )
 class SetMetadataToolAction( ToolAction ):
     """Tool action used for setting external metadata on an existing dataset"""
 
-    def execute( self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None ):
+    def execute( self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs ):
         """
         Execute using a web transaction.
         """
