@@ -590,6 +590,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored = self.get_stored_workflow( trans, id )
         # Mark as deleted and save
         stored.deleted = True
+        trans.user.stored_workflow_menu_entries = [entry for entry in trans.user.stored_workflow_menu_entries if entry.stored_workflow != stored]
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         # Display the management page
