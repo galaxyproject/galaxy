@@ -237,6 +237,10 @@ class ToolModule( WorkflowModule ):
             if tool:
                 tool_id = tool.id
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
+            if step.config:
+                # This step has its state saved in the config field due to the
+                # tool being previously unavailable.
+                return module_factory.from_dict(trans, from_json_string(step.config), secure=False)
             module = Class( trans, tool_id )
             module.state = galaxy.tools.DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )

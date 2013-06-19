@@ -25,6 +25,7 @@ from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
 from galaxy.util.odict import odict
+from galaxy.util.json import to_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
@@ -1770,12 +1771,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # FIXME: Position should be handled inside module
             step.position = step_dict['position']
             module = module_factory.from_dict( trans, step_dict, secure=False )
+            module.save_to_step( step )
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
                 missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
-            module.save_to_step( step )
+                # Save the entire step_dict in the unused config field, be parsed later
+                # when we do have the too when we do have the tool
+                step.config = to_json_string(step_dict)
             if step.tool_errors:
                 workflow.has_errors = True
             # Stick this in the step temporarily
