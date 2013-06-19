@@ -24,7 +24,6 @@ from galaxy.model.mapping import desc
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.json import from_json_string
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
