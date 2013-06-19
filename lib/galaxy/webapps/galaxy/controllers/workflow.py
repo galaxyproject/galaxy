@@ -1291,6 +1291,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Build the state for each step
         errors = {}
         has_upgrade_messages = False
+        step_version_changes = []
         # has_errors is never used
         # has_errors = False
         saved_history = None
@@ -1448,6 +1449,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         step.upgrade_messages = step.module.check_and_update_state()
                         if step.upgrade_messages:
                             has_upgrade_messages = True
+                        if step.type == 'tool' and step.module.version_changes:
+                            step_version_changes.extend(step.module.version_changes)
                         # Any connected input needs to have value DummyDataset (these
                         # are not persisted so we need to do it every time)
                         step.module.add_dummy_datasets( connections=step.input_connections )
@@ -1478,6 +1481,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         steps=workflow.steps,
                         workflow=stored,
                         has_upgrade_messages=has_upgrade_messages,
+                        step_version_changes=step_version_changes,
                         errors=errors,
                         incoming=kwargs,
                         history_id=history_id,

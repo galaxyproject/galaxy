@@ -201,6 +201,7 @@ class ToolModule( WorkflowModule ):
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
+        self.version_changes = []
         if self.tool:
             self.errors = None
         else:
@@ -219,6 +220,8 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
+            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, d.get('tool_version', 'Unspecified'), module.get_tool_version()) )
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
