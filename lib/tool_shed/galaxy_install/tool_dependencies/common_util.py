@@ -74,9 +74,9 @@ def create_or_update_env_shell_file_with_command( install_dir, command ):
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
         # Open for reading with transparent compression.
-        tar = tarfile.open( file_name, 'r:*' )
+        tar = tarfile.open( file_name, 'r:*', errorlevel=0 )
     else:
-        tar = tarfile.open( file_name )
+        tar = tarfile.open( file_name, errorlevel=0 )
     tar.extractall( path=file_path )
     tar.close()
 
