@@ -3,13 +3,13 @@ API operations provenance
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import BaseAPIController, SharableItemSecurityMixin
 from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
 
 log = logging.getLogger( __name__ )
 
 
-class BaseProvenanceController( BaseAPIController ):
+class BaseProvenanceController( BaseAPIController, SharableItemSecurityMixin ):
     """
     """
     @web.expose_api
