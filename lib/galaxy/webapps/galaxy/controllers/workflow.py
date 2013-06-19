@@ -99,7 +99,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
                             condition=( lambda item: not item.deleted ),
                             allow_multiple=False,
                             url_args=dict( webapp="galaxy", action="imp" ) ),
-        grids.GridOperation( "Export",
+        grids.GridOperation( "Save as File",
                             condition=( lambda item: not item.deleted ),
                             allow_multiple=False,
                             url_args=dict( action="export_to_file" ) ),
