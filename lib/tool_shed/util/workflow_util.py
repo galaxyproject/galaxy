@@ -385,13 +385,6 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             workflow.has_errors = True
         # Stick this in the step temporarily.
         step.temp_input_connections = step_dict[ 'input_connections' ]
-
-        # This should be considered a *temporary* hack.
-        # Usually we'd use the UsesAnnotation mixin, but
-        # that's not possible here. This entire module
-        # needs to die and get replaced with the regular
-        # galaxy/workflow methods.
-        # See WORKFLOW_REFACTOR below.
         annotation = step_dict.get( 'annotation', '')
         if annotation:
             annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
@@ -405,8 +398,6 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             trans.model.PostJobAction( pja_dict[ 'action_type' ],
                                  step, pja_dict[ 'output_name' ],
                                  pja_dict[ 'action_arguments' ] )
-        # End temporary hack
-
         steps.append( step )
         steps_by_external_id[ step_dict[ 'id' ] ] = step
     # Second pass to deal with connections between steps.
@@ -444,18 +435,12 @@ def save_workflow( trans, workflow, workflow_dict = None):
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     stored.user = trans.user
-
-    # One more temporary hack like above to support workflow level annotations.
-    # Same caveats.
-    # WORKFLOW_REFACTOR
     if workflow_dict and workflow_dict.get('annotation',''):
         annotation = sanitize_html( workflow_dict['annotation'], 'utf-8', 'text/html' )
         new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
         new_annotation.annotation = annotation
         new_annotation.user = trans.user
         stored.annotations.append(new_annotation)
-    # End temporary hack
-
     trans.sa_session.add( stored )
     trans.sa_session.flush()
     # Add a new entry to the Workflows menu.

@@ -135,6 +135,17 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
             repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
+def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled=False ):
+    """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
+    tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
+    for tool_dependency in tool_shed_repository.tool_dependencies:
+        if uninstalled and tool_dependency.status != trans.model.ToolDependency.installation_status.UNINSTALLED:
+            continue
+        option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
+        option_value = trans.security.encode_id( tool_dependency.id )
+        tool_dependencies_select_field.add_option( option_label, option_value )
+    return tool_dependencies_select_field
+
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )

@@ -867,7 +867,7 @@
                         ${tool_dependency.name | h}
                     </a>
                 %elif tool_dependency.installation_status != 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
                 %else:

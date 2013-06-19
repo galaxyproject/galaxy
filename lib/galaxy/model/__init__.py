@@ -3569,7 +3569,7 @@ class ToolShedRepository( object ):
     def repository_dependencies_being_installed( self ):
         required_repositories_being_installed = []
         for required_repository in self.repository_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
+            if required_repository.status == self.installation_status.INSTALLING:
                 required_repositories_being_installed.append( required_repository )
         return required_repositories_being_installed
     @property

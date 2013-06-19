@@ -31,7 +31,7 @@
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
                 %endif
                 %if tool_dependency_ids:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
+                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
                 %endif
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
             %endif
