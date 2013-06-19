@@ -56,19 +56,19 @@ class RepoToolModule( ToolModule ):
         self.tool_id = tool_id
         self.tool = None
         self.errors = None
-        for tool_dict in tools_metadata:
-            if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                if trans.webapp.name == 'tool_shed':
-                    # We're in the tool shed.
+        if trans.webapp.name == 'tool_shed':
+            # We're in the tool shed.
+            for tool_dict in tools_metadata:
+                if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
                     repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break
-                else:
-                    # We're in Galaxy.
-                    self.tool = trans.app.toolbox.tools_by_id.get( self.tool_id, None )
-                    if self.tool is None:
-                        self.errors = 'unavailable'
+        else:
+            # We're in Galaxy.
+            self.tool = trans.app.toolbox.get_tool( self.tool_id )
+            if self.tool is None:
+                self.errors = 'unavailable'
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
