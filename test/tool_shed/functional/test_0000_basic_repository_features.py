@@ -353,5 +353,5 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
         # unicode decoding error message. 
         strings_displayed = [ 'Changeset %d:%s' % ( revision_number, revision_hash ), 'filtering_0000', 'user1', 'repos', 'added:',
-                              'Error&nbsp;decoding&nbsp;string:', "codec&nbsp;can't&nbsp;decode&nbsp;byte" ]
+                              '+These&nbsp;characters&nbsp;should&nbsp;not' ]
         self.load_changeset_in_tool_shed( repository_id, changeset_revision, strings_displayed=strings_displayed )
