@@ -588,7 +588,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         # Load workflow from database
         stored = self.get_stored_workflow( trans, id )
-        # Marke as deleted and save
+        # Mark as deleted and save
         stored.deleted = True
         trans.sa_session.add( stored )
         trans.sa_session.flush()
