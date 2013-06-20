@@ -70,7 +70,7 @@ def get_directory( url_opener, dm_url, path ):
     return ( dir_dict, path )
 
 def get_default_directory( url_opener, dm_url ):
-    return get_directory( url_opener, dm_url, ["defaultdirectory"] )[0]
+    return get_directory( url_opener, dm_url, ["%s/defaultdirectory" % ( GENOMESPACE_API_VERSION_STRING ) ] )[0]
 
 def get_personal_directory( url_opener, dm_url ):
     return get_directory( url_opener, dm_url, [ "%s/personaldirectory" % ( GENOMESPACE_API_VERSION_STRING ) ] )[0]
@@ -143,8 +143,9 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         url_opener = get_cookie_opener( username, token )
         genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
         dm_url = genomespace_site_dict['dmServer']
-        #get default directory
-        directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None )
+        #get export root directory
+        #directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None ) #This directory contains shares and other items outside of the users home
+        directory_dict = get_personal_directory( url_opener, dm_url ).get( 'directory', None ) #Limit export list to only user's home dir
         if directory_dict is None:
             return []
         #what directory to stuff this in
