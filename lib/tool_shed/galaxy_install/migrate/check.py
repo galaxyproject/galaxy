@@ -9,6 +9,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning import repository, schema
 from sqlalchemy import *
 from galaxy.util.odict import odict
+from galaxy.model.mapping import dialect_to_egg
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -16,11 +17,6 @@ log = logging.getLogger( __name__ )
 # Path relative to galaxy
 migrate_repository_directory = os.path.dirname( __file__ ).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
-dialect_to_egg = { 
-    "sqlite" : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql" : "MySQL_python"
-}
 
 def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
