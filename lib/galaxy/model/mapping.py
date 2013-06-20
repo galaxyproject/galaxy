@@ -32,6 +32,7 @@ context.current = Session
 dialect_to_egg = {
     "sqlite"   : "pysqlite>=2",
     "postgres" : "psycopg2",
+    "postgresql" : "psycopg2",
     "mysql"    : "MySQL_python"
 }
 
