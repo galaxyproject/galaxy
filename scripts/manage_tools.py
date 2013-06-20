@@ -15,7 +15,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
 
-from galaxy.model.mapping import dialect_to_egg
+from galaxy.model.orm import dialect_to_egg
 
 log = logging.getLogger( __name__ )
 

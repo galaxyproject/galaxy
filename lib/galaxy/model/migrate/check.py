@@ -12,7 +12,7 @@ from sqlalchemy import *
 from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
 
-from galaxy.model.mapping import dialect_to_egg
+from galaxy.model.orm import dialect_to_egg
 
 log = logging.getLogger( __name__ )
 

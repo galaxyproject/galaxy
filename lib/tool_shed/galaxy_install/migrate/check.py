@@ -9,7 +9,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning import repository, schema
 from sqlalchemy import *
 from galaxy.util.odict import odict
-from galaxy.model.mapping import dialect_to_egg
+from galaxy.model.orm import dialect_to_egg
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )

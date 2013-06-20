@@ -12,7 +12,7 @@ from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.model.mapping import dialect_to_egg
+from galaxy.model.orm import dialect_to_egg
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
