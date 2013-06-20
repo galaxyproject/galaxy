@@ -83,7 +83,12 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         else:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
-        required_repo_info_dicts = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
+        all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
+        has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
+        includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+        includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
+        includes_tools = all_repo_info_dict.get( 'includes_tools', False )        
+        required_repo_info_dicts = all_repo_info_dict.get( 'all_repo_info_dicts', [] )
         # Display tool dependencies defined for each of the repository dependencies.
         if required_repo_info_dicts:
             all_tool_dependencies = {}
@@ -120,10 +125,24 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
                         if td_key not in missing_td:
                             missing_td[ td_key ] = td_dict
     else:
+        has_repository_dependencies = False
+        includes_tools = False
+        includes_tools_for_display_in_tool_panel = False
         installed_rd = None
         missing_rd = None
         missing_td = None
-    return name, repository_owner, changeset_revision, includes_tool_dependencies, installed_rd, missing_rd, installed_td, missing_td
+    dependencies_for_repository_dict = dict( changeset_revision=changeset_revision,
+                                             has_repository_dependencies=has_repository_dependencies,
+                                             includes_tool_dependencies=includes_tool_dependencies,
+                                             includes_tools=includes_tools,
+                                             includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+                                             installed_repository_dependencies=installed_rd,
+                                             installed_tool_dependencies=installed_td,
+                                             missing_repository_dependencies=missing_rd,
+                                             missing_tool_dependencies=missing_td,
+                                             name=name,
+                                             repository_owner=repository_owner )
+    return dependencies_for_repository_dict
 
 def get_installed_and_missing_repository_dependencies( trans, repository ):
     """
@@ -247,6 +266,7 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
     repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
     this method is required to retrieve all repository dependencies.
     """
+    all_required_repo_info_dict = {}
     all_repo_info_dicts = []
     if repo_info_dicts:
         # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
@@ -292,15 +312,24 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                         log.exception( e )
                         return all_repo_info_dicts
                     required_repo_info_dicts = []
-                    encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
-                    for encoded_dict_str in encoded_dict_strings:
-                        decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
-                        required_repo_info_dicts.append( decoded_dict )                        
-                    if required_repo_info_dicts:                            
-                        for required_repo_info_dict in required_repo_info_dicts:
-                            if required_repo_info_dict not in all_repo_info_dicts:
-                                all_repo_info_dicts.append( required_repo_info_dict )
-    return all_repo_info_dicts
+                    for k, v in required_repo_info_dict.items():
+                        if k == 'repo_info_dicts':
+                            encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
+                            for encoded_dict_str in encoded_dict_strings:
+                                decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
+                                required_repo_info_dicts.append( decoded_dict )
+                        else:
+                            if k not in all_required_repo_info_dict:
+                                all_required_repo_info_dict[ k ] = v
+                            else:
+                                if v and not all_required_repo_info_dict[ k ]:
+                                    all_required_repo_info_dict[ k ] = v
+                        if required_repo_info_dicts:                            
+                            for required_repo_info_dict in required_repo_info_dicts:
+                                if required_repo_info_dict not in all_repo_info_dicts:
+                                    all_repo_info_dicts.append( required_repo_info_dict )
+                    all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
+    return all_required_repo_info_dict
                     
 def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
     """

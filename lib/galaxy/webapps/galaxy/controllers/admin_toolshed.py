@@ -857,11 +857,17 @@ class AdminToolshed( AdminGalaxy ):
                                 'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s' % \
                                 ( repository_ids, changeset_revisions ) )
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-            repo_information_dict = json.from_json_string( raw_text )
-            includes_tools = util.string_as_bool( repo_information_dict.get( 'includes_tools', False ) )
-            includes_tools_for_display_in_tool_panel = util.string_as_bool( repo_information_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
-            has_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'has_repository_dependencies', False ) )
-            includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
+            repo_information_dict = json.from_json_string( raw_text )            
+            for encoded_repo_info_dict in repo_information_dict.get( 'repo_info_dicts', [] ):
+                decoded_repo_info_dict = encoding_util.tool_shed_decode( encoded_repo_info_dict )
+                if not includes_tools:
+                    includes_tools = util.string_as_bool( decoded_repo_info_dict.get( 'includes_tools', False ) )
+                if not includes_tools_for_display_in_tool_panel:
+                    includes_tools_for_display_in_tool_panel = util.string_as_bool( decoded_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
+                if not has_repository_dependencies:
+                    has_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'has_repository_dependencies', False ) )
+                if not includes_tool_dependencies:
+                    includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
             encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         if ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
@@ -925,9 +931,25 @@ class AdminToolshed( AdminGalaxy ):
         if len( repo_info_dicts ) == 1:
             # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
             repo_info_dict = repo_info_dicts[ 0 ]
-            name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
-                missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
-                common_install_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
+            dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
+                                                                                                    tool_shed_url,
+                                                                                                    repo_info_dict,
+                                                                                                    includes_tool_dependencies )
+            changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
+            if not has_repository_dependencies:
+                has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
+            if not includes_tool_dependencies:
+                includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
+            if not includes_tools:
+                includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
+            if not includes_tools_for_display_in_tool_panel:
+                includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+            installed_repository_dependencies = dependencies_for_repository_dict.get( 'installed_repository_dependencies', None )
+            installed_tool_dependencies = dependencies_for_repository_dict.get( 'installed_tool_dependencies', None )
+            missing_repository_dependencies = dependencies_for_repository_dict.get( 'missing_repository_dependencies', None )
+            missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
+            name = dependencies_for_repository_dict.get( 'name', None )
+            repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
             readme_files_dict = readme_util.get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict )
             # We're handling 1 of 2 scenarios here: (1) we're installing a tool shed repository for the first time, so we've retrieved the list of installed
             # and missing repository dependencies from the database (2) we're handling the scenario where an error occurred during the installation process,
@@ -946,9 +968,25 @@ class AdminToolshed( AdminGalaxy ):
             # We're installing a list of repositories, each of which may have tool dependencies or repository dependencies.
             containers_dicts = []
             for repo_info_dict in repo_info_dicts:
-                name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
-                    missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
-                    common_install_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
+                dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
+                                                                                                        tool_shed_url,
+                                                                                                        repo_info_dict,
+                                                                                                        includes_tool_dependencies )
+                changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
+                if not has_repository_dependencies:
+                    has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
+                if not includes_tool_dependencies:
+                    includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
+                if not includes_tools:
+                    includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
+                if not includes_tools_for_display_in_tool_panel:
+                    includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+                installed_repository_dependencies = dependencies_for_repository_dict.get( 'installed_repository_dependencies', None )
+                installed_tool_dependencies = dependencies_for_repository_dict.get( 'installed_tool_dependencies', None )
+                missing_repository_dependencies = dependencies_for_repository_dict.get( 'missing_repository_dependencies', None )
+                missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
+                name = dependencies_for_repository_dict.get( 'name', None )
+                repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
                 containers_dict = repository_util.populate_containers_dict_for_new_install( trans=trans,
                                                                                             tool_shed_url=tool_shed_url,
                                                                                             tool_path=tool_path,
@@ -1241,9 +1279,22 @@ class AdminToolshed( AdminGalaxy ):
                                                                     repository_metadata=None,
                                                                     tool_dependencies=tool_dependencies,
                                                                     repository_dependencies=repository_dependencies )
-        repository_name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
-            missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
-            common_install_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
+        dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
+                                                                                                tool_shed_url,
+                                                                                                repo_info_dict,
+                                                                                                includes_tool_dependencies )
+        changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
+        has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
+        includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
+        includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
+        includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+        installed_repository_dependencies = dependencies_for_repository_dict.get( 'installed_repository_dependencies', None )
+        installed_tool_dependencies = dependencies_for_repository_dict.get( 'installed_tool_dependencies', None )
+        missing_repository_dependencies = dependencies_for_repository_dict.get( 'missing_repository_dependencies', None )
+        missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
+        repository_name = dependencies_for_repository_dict.get( 'name', None )
+        repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
+
         if installed_repository_dependencies or missing_repository_dependencies:
             has_repository_dependencies = True
         else:
