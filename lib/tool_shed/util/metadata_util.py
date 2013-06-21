@@ -28,7 +28,14 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
-REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
+# Repository metadata comparisons for changeset revisions.
+EQUAL = 'equal'
+NO_METADATA = 'no metadata'
+NOT_EQUAL_AND_NOT_SUBSET = 'not equal and not subset'
+SUBSET = 'subset'
+SUBSET_VALUES = [ EQUAL, SUBSET ]
+
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml', REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
@@ -62,7 +69,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     """Compare the contents of two changeset revisions to determine if a new repository metadata revision should be created."""
     # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
     # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
-    # when this method returns the string 'not equal and not subset'.
+    # when this method returns the constant value NOT_EQUAL_AND_NOT_SUBSET.
     ancestor_datatypes = ancestor_metadata_dict.get( 'datatypes', [] )
     ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
     ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
@@ -93,7 +100,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     no_workflows = not ancestor_workflows and not current_workflows
     no_data_manager = not ancestor_data_manager and not current_data_manager
     if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows and no_data_manager:
-        return 'no metadata'
+        return NO_METADATA
     # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
     # compare_readme_files() method.
     # readme_file_comparision = compare_readme_files( ancestor_readme_files, current_readme_files )
@@ -103,22 +110,20 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
     data_manager_comparison = compare_data_manager( ancestor_data_manager, current_data_manager )
     # Handle case where all metadata is the same.
-    # TODO: these values, ('equal', etc), should be abstracted out to constants
     if ancestor_guids == current_guids and \
-        repository_dependency_comparison == 'equal' and \
-        tool_dependency_comparison == 'equal' and \
-        workflow_comparison == 'equal' and \
-        datatype_comparison == 'equal' and \
-        data_manager_comparison == 'equal':
-        return 'equal'
+        repository_dependency_comparison == EQUAL and \
+        tool_dependency_comparison == EQUAL and \
+        workflow_comparison == EQUAL and \
+        datatype_comparison == EQUAL and \
+        data_manager_comparison == EQUAL:
+        return EQUAL
     # Handle case where ancestor metadata is a subset of current metadata.
-    # readme_file_is_subset = readme_file_comparision in [ 'equal', 'subset' ]
-    # TODO: this list [ 'equal', 'subset' ] should be created once
-    repository_dependency_is_subset = repository_dependency_comparison in [ 'equal', 'subset' ]
-    tool_dependency_is_subset = tool_dependency_comparison in [ 'equal', 'subset' ]
-    workflow_dependency_is_subset = workflow_comparison in [ 'equal', 'subset' ]
-    datatype_is_subset = datatype_comparison in [ 'equal', 'subset' ]
-    datamanager_is_subset = data_manager_comparison in [ 'equal', 'subset' ]
+    # readme_file_is_subset = readme_file_comparision in [ EQUAL, SUBSET ]
+    repository_dependency_is_subset = repository_dependency_comparison in SUBSET_VALUES
+    tool_dependency_is_subset = tool_dependency_comparison in SUBSET_VALUES
+    workflow_dependency_is_subset = workflow_comparison in SUBSET_VALUES
+    datatype_is_subset = datatype_comparison in SUBSET_VALUES
+    datamanager_is_subset = data_manager_comparison in SUBSET_VALUES
     if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset and datamanager_is_subset:
         is_subset = True
         for guid in ancestor_guids:
@@ -126,8 +131,8 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
                 is_subset = False
                 break
         if is_subset:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_data_manager( ancestor_metadata, current_metadata ):
     """Determine if ancestor_metadata is the same as or a subset of current_metadata for data_managers."""
@@ -140,9 +145,9 @@ def compare_data_manager( ancestor_metadata, current_metadata ):
     # use set comparisons
     if ancestor_metadata.issubset( current_metadata ):
         if ancestor_metadata == current_metadata:
-            return 'equal'
-        return 'subset'
-    return 'not equal and not subset'
+            return EQUAL
+        return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_datatypes( ancestor_datatypes, current_datatypes ):
     """Determine if ancestor_datatypes is the same as or a subset of current_datatypes."""
@@ -161,12 +166,12 @@ def compare_datatypes( ancestor_datatypes, current_datatypes ):
                     found_in_current = True
                     break
             if not found_in_current:
-                return 'not equal and not subset'
+                return NOT_EQUAL_AND_NOT_SUBSET
         if len( ancestor_datatypes ) == len( current_datatypes ):
-            return 'equal'
+            return EQUAL
         else:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_readme_files( ancestor_readme_files, current_readme_files ):
     """Determine if ancestor_readme_files is equal to or a subset of current_readme_files."""
@@ -181,12 +186,12 @@ def compare_readme_files( ancestor_readme_files, current_readme_files ):
     if len( ancestor_readme_files ) <= len( current_readme_files ):
         for ancestor_readme_file in ancestor_readme_files:
             if ancestor_readme_file not in current_readme_files:
-                return 'not equal and not subset'
+                return NOT_EQUAL_AND_NOT_SUBSET
         if len( ancestor_readme_files ) == len( current_readme_files ):
-            return 'equal'
+            return EQUAL
         else:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_repository_dependencies( ancestor_repository_dependencies, current_repository_dependencies ):
     """Determine if ancestor_repository_dependencies is the same as or a subset of current_repository_dependencies."""
@@ -206,12 +211,12 @@ def compare_repository_dependencies( ancestor_repository_dependencies, current_r
                     found_in_current = True
                     break
             if not found_in_current:
-                return 'not equal and not subset'
+                return NOT_EQUAL_AND_NOT_SUBSET
         if len( ancestor_repository_dependencies ) == len( current_repository_dependencies ):
-            return 'equal'
+            return EQUAL
         else:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependencies ):
     """Determine if ancestor_tool_dependencies is the same as or a subset of current_tool_dependencies."""
@@ -225,13 +230,13 @@ def compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependen
                 # shouldn't be generated.
                 continue
             else:
-                return 'not equal and not subset'
+                return NOT_EQUAL_AND_NOT_SUBSET
         # At this point we know that ancestor_tool_dependencies is at least a subset of current_tool_dependencies.
         if len( ancestor_tool_dependencies ) == len( current_tool_dependencies ):
-            return 'equal'
+            return EQUAL
         else:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def compare_workflows( ancestor_workflows, current_workflows ):
     """Determine if ancestor_workflows is the same as current_workflows or if ancestor_workflows is a subset of current_workflows."""
@@ -251,12 +256,12 @@ def compare_workflows( ancestor_workflows, current_workflows ):
                     found_in_current = True
                     break
             if not found_in_current:
-                return 'not equal and not subset'
+                return NOT_EQUAL_AND_NOT_SUBSET
         if len( ancestor_workflows ) == len( current_workflows ):
-            return 'equal'
+            return EQUAL
         else:
-            return 'subset'
-    return 'not equal and not subset'
+            return SUBSET
+    return NOT_EQUAL_AND_NOT_SUBSET
 
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     """Create or update a repository_metadatqa record in the tool shed."""
@@ -1212,7 +1217,7 @@ def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict )
                     ancestor_datatypes = metadata[ 'datatypes' ]
                     # The saved metadata must be a subset of the new metadata.
                     datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
-                    if datatype_comparison == 'not equal and not subset':
+                    if datatype_comparison == NOT_EQUAL_AND_NOT_SUBSET:
                         return True
                     else:
                         return False
@@ -1265,7 +1270,7 @@ def new_readme_files_metadata_required( trans, repository_metadata, metadata_dic
                     ancestor_readme_files = metadata[ 'readme_files' ]
                     # The saved metadata must be a subset of the new metadata.
                     readme_file_comparison = compare_readme_files( ancestor_readme_files, current_readme_files )
-                    if readme_file_comparison == 'not equal and not subset':
+                    if readme_file_comparison == NOT_EQUAL_AND_NOT_SUBSET:
                         return True
                     else:
                         return False
@@ -1610,18 +1615,18 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     metadata_dict = current_metadata_dict
                 if ancestor_changeset_revision:
                     # Compare metadata from ancestor and current.  The value of comparison will be one of:
-                    # 'no metadata' - no metadata for either ancestor or current, so continue from current
-                    # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
-                    # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
-                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
+                    # NO_METADATA - no metadata for either ancestor or current, so continue from current
+                    # EQUAL - ancestor metadata is equivalent to current metadata, so continue from current
+                    # SUBSET - ancestor metadata is a subset of current metadata, so continue from current
+                    # NOT_EQUAL_AND_NOT_SUBSET - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
                     comparison = compare_changeset_revisions( ancestor_changeset_revision,
                                                               ancestor_metadata_dict,
                                                               current_changeset_revision,
                                                               current_metadata_dict )
-                    if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                    if comparison in [ NO_METADATA, EQUAL, SUBSET ]:
                         ancestor_changeset_revision = current_changeset_revision
                         ancestor_metadata_dict = current_metadata_dict
-                    elif comparison == 'not equal and not subset':
+                    elif comparison == NOT_EQUAL_AND_NOT_SUBSET:
                         metadata_changeset_revision = ancestor_changeset_revision
                         metadata_dict = ancestor_metadata_dict
                         repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
