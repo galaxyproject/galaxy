@@ -1,6 +1,10 @@
 <tool id="CONVERTER_interval_to_bigwig_0" name="Convert Genomic Intervals To Coverage">
   <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
   <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package">bedtools</requirement>
+    </requirements>
   <command>
 
     ## Remove comments and sort by chromosome.
