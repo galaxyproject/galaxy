@@ -1182,6 +1182,19 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
+def reset_previously_installed_repository( trans, repository ):
+    """
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a 
+    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
+    """
+    repository.deleted = False
+    repository.update_available = False
+    repository.uninstalled = False
+    repository.status = trans.model.ToolShedRepository.installation_status.NEW
+    repository.error_message = None
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
+    
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and

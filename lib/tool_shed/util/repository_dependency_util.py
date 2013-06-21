@@ -147,41 +147,48 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                             dist_to_shed = installed_tool_shed_repository.dist_to_shed
                         elif installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
                             # The current tool shed repository is deactivated, so updating it's database record is not necessary - just activate it.
+                            log.debug( "Reactivating deactivated tool_shed_repository '%s'." % str( installed_tool_shed_repository.name ) )
                             common_install_util.activate_repository( trans, installed_tool_shed_repository )
                             can_update = False
                         else:
                             # The tool shed repository currently being processed is already installed or is in the process of being installed, so it's record
                             # in the database cannot be updated.
+                            if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+                                log.debug( "Skipping installation of tool_shed_repository '%s' because it is already installed." % \
+                                           str( installed_tool_shed_repository.name ) )
+                            else:
+                                log.debug( "Skipping installation of tool_shed_repository '%s' because it's installation status is '%s'." % \
+                                           ( str( installed_tool_shed_repository.name ), str( installed_tool_shed_repository.status ) ) )
                             can_update = False
                     else:
                         # This block will be reached only if reinstalling is True, install_repository_dependencies is False and is_in_repo_info_dicts is False.
                         # The tool shed repository currently being processed must be a repository dependency that the user elected to not install, so it's
                         # record in the database cannot be updated.
+                        debug_msg = "Skipping installation of tool_shed_repository '%s' because it is likely a " % str( installed_tool_shed_repository.name )
+                        debug_msg += "repository dependency that was elected to not be installed."
+                        log.debug( debug_msg )
                         can_update = False
                 else:
                     # This block will be reached only if reinstalling is False and install_repository_dependencies is False.  This implies that the tool shed
                     # repository currently being processed has already been installed.
-                    if len( all_repo_info_dicts ) == 1:
-                        # If only a single repository is being installed, return an informative message to the user.
-                        message += "Revision <b>%s</b> of tool shed repository <b>%s</b> owned by <b>%s</b> " % ( changeset_revision, name, repository_owner )
-                        if installed_changeset_revision != changeset_revision:
-                            message += "was previously installed using changeset revision <b>%s</b>.  " % installed_changeset_revision
-                        else:
-                            message += "was previously installed.  "
-                        if installed_tool_shed_repository.uninstalled:
-                            message += "The repository has been uninstalled, however, so reinstall the original repository instead of installing it again.  "
-                        elif installed_tool_shed_repository.deleted:
-                            message += "The repository has been deactivated, however, so activate the original repository instead of installing it again.  "
-                        if installed_changeset_revision != changeset_revision:
-                            message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
-                            message += "<b>Repository Actions</b> pop-up menu.  "
-                        created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
-                        tool_panel_section_keys.append( tool_panel_section_key )
-                        return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
-                    else:
-                        # We're in the process of installing multiple tool shed repositories into Galaxy.  Since the repository currently being processed
-                        # has already been installed, skip it and process the next repository in the list.
+                    if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+                        # Since the repository currently being processed is already in the INSTALLED state, skip it and process the next repository in the
+                        # list if there is one.
+                        log.debug( "Skipping installation of tool_shed_repository '%s' because it's installation status is '%s'." % \
+                                   ( str( installed_tool_shed_repository.name ), str( installed_tool_shed_repository.status ) ) )
                         can_update = False
+                    else:
+                        # The repository currently being processed is in some state other than INSTALLED, so reset it for installation.
+                        debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( installed_tool_shed_repository.name )
+                        debug_msg += "The current state of the tool_shed_repository is:\n"
+                        debug_msg += "deleted: %s\n" % str( installed_tool_shed_repository.deleted )
+                        debug_msg += "update_available: %s\n" % str( installed_tool_shed_repository.update_available )
+                        debug_msg += "uninstalled: %s\n" % str( installed_tool_shed_repository.uninstalled )
+                        debug_msg += "status: %s\n" % str( installed_tool_shed_repository.status )
+                        debug_msg += "error_message: %s\n" % str( installed_tool_shed_repository.error_message )
+                        log.debug( debug_msg )
+                        suc.reset_previously_installed_repository( trans, installed_tool_shed_repository )
+                        can_update = True
             else:
                 # A tool shed repository is being installed into a Galaxy instance for the first time, or we're attempting to install it or reinstall it resulted
                 # in an error.  In the latter case, the repository record in the database has no metadata and it's status has been set to 'New'.  In either case,
