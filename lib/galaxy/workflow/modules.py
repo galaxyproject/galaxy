@@ -246,8 +246,8 @@ class ToolModule( WorkflowModule ):
                 return module_factory.from_dict(trans, from_json_string(step.config), secure=False)
             module = Class( trans, tool_id )
             module.state = galaxy.tools.DefaultToolState()
-            if step.tool_version and (step.tool_version !=  tool.version):
-                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, tool.version, step.tool_version))
+            if step.tool_version and (step.tool_version != module.tool.version):
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
             # module.post_job_actions = step.post_job_actions
