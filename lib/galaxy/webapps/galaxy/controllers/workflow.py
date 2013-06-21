@@ -81,7 +81,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
-        grids.PublicURLColumn( "Name", key="name", filterable="advanced" ),
+        grids.PublicURLColumn( "Name", key="name", filterable="advanced", attach_popup=True ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.StoredWorkflowAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ),
@@ -94,7 +94,16 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    operations = []
+    operations = [
+        grids.GridOperation( "Import",
+                            condition=( lambda item: not item.deleted ),
+                            allow_multiple=False,
+                            url_args=dict( webapp="galaxy", action="imp" ) ),
+        grids.GridOperation( "Save as File",
+                            condition=( lambda item: not item.deleted ),
+                            allow_multiple=False,
+                            url_args=dict( action="export_to_file" ) ),
+    ]
 
     def build_initial_query( self, trans, **kwargs ):
         # Join so that searching stored_workflow.user makes sense.
@@ -1827,7 +1836,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored.user = trans.user
         if data[ 'annotation' ]:
             self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
-        
+
         # Persist
         trans.sa_session.add( stored )
         trans.sa_session.flush()
