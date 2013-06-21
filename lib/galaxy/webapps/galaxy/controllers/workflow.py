@@ -98,7 +98,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         grids.GridOperation( "Import",
                             condition=( lambda item: not item.deleted ),
                             allow_multiple=False,
-                            url_args=dict( webapp="galaxy", action="imp" ) ),
+                            url_args=dict( action="imp" ) ),
         grids.GridOperation( "Save as File",
                             condition=( lambda item: not item.deleted ),
                             allow_multiple=False,
