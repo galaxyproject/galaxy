@@ -220,7 +220,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
-            rval = ldda.get_api_value()
+            ldda_dict = ldda.get_api_value()
+            rval = trans.security.encode_dict_ids( ldda_dict )
 
         except Exception, exc:
             #TODO: grrr...
@@ -233,7 +234,6 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 return { 'error' : str( exc ) }
 
         return rval
-
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
