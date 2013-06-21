@@ -107,6 +107,8 @@ class ViewQueryBaseClass(object):
                     if operator == "=":
                         #print field.sqlalchemy_field == right, field.sqlalchemy_field, right
                         self.query = self.query.filter( field.sqlalchemy_field == right )
+                    elif operator == "!=":
+                        self.query = self.query.filter( field.sqlalchemy_field != right )                        
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
                     else:
@@ -433,6 +435,7 @@ class JobView(ViewQueryBaseClass):
     DOMAIN = "job"
     FIELDS = {
         'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
+        'state' : ViewField('state', sqlalchemy_field=Job.state),
         'param' : ViewField('param', handler=job_param_filter),
         'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
         'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
@@ -499,6 +502,7 @@ value_word = (
 comparison = ( '=' -> '='
     | '>' -> '>'
     | '<' -> '<'
+    | '!=' -> '!='
     | '>=' -> '>='
     | '<=' -> '<='
     | 'like' -> 'like'

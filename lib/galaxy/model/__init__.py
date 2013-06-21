@@ -158,8 +158,8 @@ class User( object, APIItem ):
 
 
 class Job( object, APIItem ):
-    api_collection_visible_keys = [ 'id'  ]
-    api_element_visible_keys = [ 'id' ]
+    api_collection_visible_keys = [ 'id', 'state'  ]
+    api_element_visible_keys = [ 'id', 'state' ]
 
     """
     A job represents a request to run a tool given input datasets, tool
