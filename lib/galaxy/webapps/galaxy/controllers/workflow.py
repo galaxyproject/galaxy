@@ -1022,7 +1022,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return self._workflow_to_dict( trans, stored )
 
     @web.json_pretty
-    def export_to_file( self, trans, id, **kwd ):
+    def export_to_file( self, trans, id):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
