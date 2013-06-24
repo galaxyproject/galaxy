@@ -1,4 +1,4 @@
-<tool id="cufflinks" name="Cufflinks" version="0.0.5">
+<tool id="cufflinks" name="Cufflinks" version="0.0.6">
     <!-- Wrapper supports Cufflinks versions v1.3.0 and newer -->
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
@@ -28,14 +28,12 @@
             
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
-	           -b
+                -b
                 #if $bias_correction.seq_source.index_source == "history":
                     --ref_file=$bias_correction.seq_source.ref_file
                 #else:
-                    --ref_file="None"
+                    --index=${bias_correction.seq_source.index.fields.path}
                 #end if
-                --dbkey=${input.metadata.dbkey} 
-                --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
 
             ## Multi-read correct?
@@ -66,15 +64,15 @@
             <when value="No"></when>
             <when value="Use reference annotation">
                 <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
-            	</when>
-	        <when value="Use reference annotation guide">
+            </when>
+            <when value="Use reference annotation guide">
                 <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
-                </when>
+            </when>
         </conditional>
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
                 <option value="No" selected="true">No</option>
-		            <option value="Yes">Yes</option>
+                <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
                 <conditional name="seq_source">
@@ -82,7 +80,14 @@
                     <option value="cached"  selected="true">Locally cached</option>
                     <option value="history">History</option>
                   </param>
-                  <when value="cached"></when>
+                  <when value="cached">
+                    <param name="index" type="select" label="Using reference genome">
+                      <options from_data_table="sam_fa_indexes">
+                        <filter type="data_meta" ref="input" key="dbkey" column="1" />
+                        <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+                      </options>
+                    </param>
+                  </when>
                   <when value="history">
                       <param name="ref_file" type="data" format="fasta" label="Using reference file" />
                   </when>
