@@ -15,22 +15,27 @@ import logging
 log = logging.getLogger( __name__ )
 
 __TODO__ = """
-    BUGS:
-        anon users clicking a viz link gets 'must be' msg in galaxy_main (w/ masthead)
-            should not show visualizations (no icon)?
-        newick files aren't being sniffed prop? - datatype is txt
+BUGS:
+    anon users clicking a viz link gets 'must be' msg in galaxy_main (w/ masthead)
+        should not show visualizations (no icon)?
+    newick files aren't being sniffed prop? - datatype is txt
 
-    have parsers create objects instead of dicts
-    allow data_sources with no model_class but have tests (isAdmin, etc.)
-        maybe that's an instance of User model_class?
-    some confused vocabulary in docs, var names
-    tests:
-        anding, grouping, not
-    data_sources:
-        lists of
-    add description element to visualization.
+have parsers create objects instead of dicts
+allow data_sources with no model_class but have tests (isAdmin, etc.)
+    maybe that's an instance of User model_class?
+some confused vocabulary in docs, var names
+tests:
+    anding, grouping, not
+data_sources:
+    lists of
+add description element to visualization.
+
+TESTS to add:
+    has dataprovider
+    user is admin
 """
 
+# ------------------------------------------------------------------- the registry
 class VisualizationsRegistry( object ):
     """
     Main responsibilities are:
@@ -93,6 +98,12 @@ class VisualizationsRegistry( object ):
         """
         self.listings = VisualizationsConfigParser.parse( self.configuration_filepath )
 
+    #TODO: def get_visualization( self, trans, visualization_name, target_object ):
+    #    """
+    #    Is the visualization with the given `visualization_name` applicable
+    #    to the `target_object`?
+    #    """
+
     # -- building links to visualizations from objects --
     def get_visualizations( self, trans, target_object ):
         """
@@ -151,10 +162,11 @@ class VisualizationsRegistry( object ):
                     # convert datatypes to their actual classes (for use with isinstance)
                     test_result = trans.app.datatypes_registry.get_datatype_class_by_name( test_result )
                     if not test_result:
-                        # warn if can't find class, but continue
+                        # warn if can't find class, but continue (with other tests)
                         log.warn( 'visualizations_registry cannot find class (%s) for applicability test', test_result )
                         continue
 
+            #NOTE: tests are OR'd, if any test passes - the visualization can be applied
             if test_fn( target_object, test_result ):
                 #log.debug( 'test passed' )
                 return True

@@ -141,7 +141,7 @@ class DatasetDataProvider( base.DataProvider ):
         """
         # metadata columns are 1-based indeces
         column = getattr( self.dataset.metadata, name )
-        return ( column - 1 ) if isinstance( column, int ) else None
+        return ( column - 1 ) if ( isinstance( column, int ) and column > 0 ) else None
 
     def get_genomic_region_indeces( self, check=False ):
         """
@@ -271,6 +271,12 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
     """
     # dictionary keys when named_columns=True
     COLUMN_NAMES = [ 'chrom', 'start', 'end' ]
+    settings = {
+        'chrom_column'  : 'int',
+        'start_column'  : 'int',
+        'end_column'    : 'int',
+        'named_columns' : 'bool',
+    }
 
     def __init__( self, dataset, chrom_column=None, start_column=None, end_column=None, named_columns=False, **kwargs ):
         """
@@ -333,6 +339,14 @@ class IntervalDataProvider( column.ColumnarDataProvider ):
     'chrom', 'start', 'end' (and 'strand' and 'name' if available).
     """
     COLUMN_NAMES = [ 'chrom', 'start', 'end', 'strand', 'name' ]
+    settings = {
+        'chrom_column'  : 'int',
+        'start_column'  : 'int',
+        'end_column'    : 'int',
+        'strand_column' : 'int',
+        'name_column'   : 'int',
+        'named_columns' : 'bool',
+    }
 
     def __init__( self, dataset, chrom_column=None, start_column=None, end_column=None,
                   strand_column=None, name_column=None, named_columns=False, **kwargs ):
@@ -349,25 +363,40 @@ class IntervalDataProvider( column.ColumnarDataProvider ):
         dataset_source = DatasetDataProvider( dataset )
 
         # get genomic indeces and add strand and name
+        self.column_names = []
+        indeces = []
+        #TODO: this is sort of involved and oogly
         if chrom_column == None:
             chrom_column = dataset_source.get_metadata_column_index_by_name( 'chromCol' )
+            if chrom_column != None:
+                self.column_names.append( 'chrom' )
+                indeces.append( chrom_column )
         if start_column == None:
             start_column = dataset_source.get_metadata_column_index_by_name( 'startCol' )
+            if start_column != None:
+                self.column_names.append( 'start' )
+                indeces.append( start_column )
         if end_column == None:
             end_column = dataset_source.get_metadata_column_index_by_name( 'endCol' )
+            if end_column != None:
+                self.column_names.append( 'end' )
+                indeces.append( end_column )
         if strand_column == None:
             strand_column = dataset_source.get_metadata_column_index_by_name( 'strandCol' )
+            if strand_column != None:
+                self.column_names.append( 'strand' )
+                indeces.append( strand_column )
         if name_column == None:
             name_column = dataset_source.get_metadata_column_index_by_name( 'nameCol' )
-        indeces = [ chrom_column, start_column, end_column, strand_column, name_column ]
-        kwargs.update({ 'indeces' : indeces })
+            if name_column != None:
+                self.column_names.append( 'name' )
+                indeces.append( name_column )
 
+        kwargs.update({ 'indeces' : indeces })
         if not kwargs.get( 'column_types', None ):
             kwargs.update({ 'column_types' : dataset_source.get_metadata_column_types( indeces=indeces ) })
 
         self.named_columns = named_columns
-        if self.named_columns:
-            self.column_names = self.COLUMN_NAMES
 
         super( IntervalDataProvider, self ).__init__( dataset_source, **kwargs )
 
@@ -390,6 +419,10 @@ class FastaDataProvider( base.FilteredDataProvider ):
             sequence: <joined lines of nucleotide/amino data>
         }
     """
+    settings = {
+        'ids'  : 'list:str',
+    }
+
     def __init__( self, source, ids=None, **kwargs ):
         """
         :param ids: optionally return only ids (and sequences) that are in this list.
@@ -419,6 +452,10 @@ class TwoBitFastaDataProvider( DatasetDataProvider ):
             sequence: <joined lines of nucleotide/amino data>
         }
     """
+    settings = {
+        'ids'  : 'list:str',
+    }
+
     def __init__( self, source, ids=None, **kwargs ):
         """
         :param ids: optionally return only ids (and sequences) that are in this list.
@@ -445,6 +482,10 @@ class WiggleDataProvider( base.LimitedOffsetDataProvider ):
     Class that returns chrom, pos, data from a wiggle source.
     """
     COLUMN_NAMES = [ 'chrom', 'pos', 'value' ]
+    settings = {
+        'named_columns' : 'bool',
+        'column_names'  : 'list:str',
+    }
 
     def __init__( self, source, named_columns=False, column_names=None, **kwargs ):
         """
@@ -483,6 +524,10 @@ class BigWigDataProvider( base.LimitedOffsetDataProvider ):
     Class that returns chrom, pos, data from a wiggle source.
     """
     COLUMN_NAMES = [ 'chrom', 'pos', 'value' ]
+    settings = {
+        'named_columns' : 'bool',
+        'column_names'  : 'list:str',
+    }
 
     def __init__( self, source, chrom, start, end, named_columns=False, column_names=None, **kwargs ):
         """
