@@ -3,43 +3,24 @@
 Converts SAM data to sorted BAM data.
 usage: sam_to_bam.py [options]
    --input1: SAM file to be converted
-   --dbkey: dbkey value
+   --index: path of the indexed reference genome
    --ref_file: Reference file if choosing from history
    --output1: output dataset in bam format
-   --index_dir: GALAXY_DATA_INDEX_DIR
 """
 
-import optparse, os, sys, subprocess, tempfile, shutil, gzip
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.cookbook import doc_optparse
-from galaxy import util
+import optparse, os, sys, subprocess, tempfile, shutil
 
 def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
-def check_seq_file( dbkey, cached_seqs_pointer_file ):
-    seq_path = ''
-    for line in open( cached_seqs_pointer_file ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ) and line.startswith( 'index' ):
-            fields = line.split( '\t' )
-            if len( fields ) < 3:
-                continue
-            if fields[1] == dbkey:
-                seq_path = fields[2].strip()
-                break
-    return seq_path
-
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option( '', '--input1', dest='input1', help='The input SAM dataset' )
-    parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
+    parser.add_option( '', '--index', dest='index', help='The path of the indexed reference genome' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
     parser.add_option( '', '--output1', dest='output1', help='The output BAM dataset' )
-    parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
     ( options, args ) = parser.parse_args()
 
     # output version # of tool
@@ -61,24 +42,17 @@ def __main__():
     except:
         sys.stdout.write( 'Could not determine Samtools version\n' )
 
-    cached_seqs_pointer_file = '%s/sam_fa_indices.loc' % options.index_dir
-    if not os.path.exists( cached_seqs_pointer_file ):
-        stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
-    # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
-    # and the equCab2.fa file will contain fasta sequences.
-    seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
     tmp_dir = tempfile.mkdtemp()
     if not options.ref_file or options.ref_file == 'None':
         # We're using locally cached reference sequences( e.g., /galaxy/data/equCab2/sam_index/equCab2.fa ).
         # The indexes for /galaxy/data/equCab2/sam_index/equCab2.fa will be contained in
         # a file named /galaxy/data/equCab2/sam_index/equCab2.fa.fai
-        fai_index_file_base = seq_path
-        fai_index_file_path = '%s.fai' % seq_path 
+        fai_index_file_path = '%s.fai' % options.index
         if not os.path.exists( fai_index_file_path ):
             #clean up temp files
             if os.path.exists( tmp_dir ):
                 shutil.rmtree( tmp_dir )
-            stop_err( 'No sequences are available for build (%s), request them by reporting this error.' % options.dbkey )
+            stop_err( 'Indexed genome %s not present, request it by reporting this error.' % options.index )
     else:
         try:
             # Create indexes for history reference ( e.g., ~/database/files/000/dataset_1.dat ) using samtools faidx, which will:

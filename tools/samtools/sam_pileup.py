@@ -8,8 +8,7 @@ usage: %prog [options]
    -o, --output1=o: Output pileup
    -R, --ref=R: Reference file type
    -n, --ownFile=n: User-supplied fasta reference file
-   -d, --dbkey=d: dbkey of user-supplied file
-   -x, --indexDir=x: Index directory
+   -g, --index=g: Path of the indexed reference genome
    -b, --bamIndex=b: BAM index file
    -s, --lastCol=s: Print the mapping quality as the last column
    -i, --indels=i: Only output lines containing indels
@@ -31,24 +30,9 @@ def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
-def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
-    seqFile = '%s/sam_fa_indices.loc' % GALAXY_DATA_INDEX_DIR
-    seqPath = ''
-    for line in open( seqFile ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ) and line.startswith( 'index' ):
-            fields = line.split( '\t' )
-            if len( fields ) < 3:
-                continue
-            if fields[1] == dbkey:
-                seqPath = fields[2].strip()
-                break
-    return seqPath
-
 def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
-    seqPath = check_seq_file( options.dbkey, options.indexDir )
     # output version # of tool
     try:
         tmp = tempfile.NamedTemporaryFile().name
@@ -77,7 +61,6 @@ def __main__():
     tmpf1 = tempfile.NamedTemporaryFile( dir=tmpDir )
     tmpf1_name = tmpf1.name
     tmpf1.close()
-    tmpf1fai_name = '%s.fai' % tmpf1_name
     #link bam and bam index to working directory (can't move because need to leave original)
     os.symlink( options.input1, tmpf0bam_name )
     os.symlink( options.bamIndex, tmpf0bambai_name )
@@ -100,9 +83,9 @@ def __main__():
         try:
             #index reference if necessary and prepare pileup command
             if options.ref == 'indexed':
-                if not os.path.exists( "%s.fai" % seqPath ):
-                    raise Exception, "No sequences are available for '%s', request them by reporting this error." % options.dbkey
-                cmd = cmd % ( opts, seqPath, tmpf0bam_name, options.output1 )
+                if not os.path.exists( "%s.fai" % options.index ):
+                    raise Exception, "Indexed genome %s not present, request it by reporting this error." % options.index
+                cmd = cmd % ( opts, options.index, tmpf0bam_name, options.output1 )
             elif options.ref == 'history':
                 os.symlink( options.ownFile, tmpf1_name )
                 cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
