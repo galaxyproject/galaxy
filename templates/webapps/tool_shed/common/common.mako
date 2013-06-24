@@ -1,8 +1,15 @@
-<%def name="common_misc_javascripts()">
+<%def name="common_misc_javascripts( element_id=None )">
     <script type="text/javascript">
-        function checkAllFields( name )
+        function checkAllFields( name, element_id=element_id )
         {
-            var chkAll = document.getElementById( 'checkAll' );
+            if ( element_id )
+            {
+                chkAll = document.getElementById( element_id );
+            }
+            else
+            {
+                var chkAll = document.getElementById( 'checkAll' );
+            }
             var checks = document.getElementsByTagName( 'input' );
             var boxLength = checks.length;
             var allChecked = false;

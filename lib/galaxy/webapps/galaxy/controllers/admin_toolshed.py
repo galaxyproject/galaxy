@@ -482,9 +482,7 @@ class AdminToolshed( AdminGalaxy ):
     def install_tool_dependencies( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
-        if not tool_dependency_ids:
-            tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         tool_dependencies = []
         for tool_dependency_id in tool_dependency_ids:
             tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
@@ -731,11 +729,11 @@ class AdminToolshed( AdminGalaxy ):
                         kwd[ 'status' ] = 'error'
         installed_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                              tool_shed_repository=tool_shed_repository,
-                                                                                             name='tool_dependency_ids',
+                                                                                             name='inst_td_ids',
                                                                                              uninstalled=False )
         uninstalled_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                                tool_shed_repository=tool_shed_repository,
-                                                                                               name='tool_dependency_ids',
+                                                                                               name='uninstalled_tool_dependency_ids',
                                                                                                uninstalled=True )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository_tool_dependencies.mako',
                                     repository=tool_shed_repository,
@@ -1517,7 +1515,7 @@ class AdminToolshed( AdminGalaxy ):
     def uninstall_tool_dependencies( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if not tool_dependency_ids:
             tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
         tool_dependencies = []

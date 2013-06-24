@@ -220,9 +220,16 @@ def get_tool_dependency_by_name_version_type_repository( app, repository, name, 
 
 def get_tool_dependency_ids( as_string=False, **kwd ):
     tool_dependency_id = kwd.get( 'tool_dependency_id', None )
-    tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
-    if not tool_dependency_ids:
-        tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+    if 'tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'tool_dependency_ids' ] )
+    elif 'id' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'id' ] )
+    elif 'inst_td_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'inst_td_ids' ] )
+    elif 'uninstalled_tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'uninstalled_tool_dependency_ids' ] )
+    else:
+        tool_dependency_ids = []
     if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
         tool_dependency_ids.append( tool_dependency_id )
     if as_string:
