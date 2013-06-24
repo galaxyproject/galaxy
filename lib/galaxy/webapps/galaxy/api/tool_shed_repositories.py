@@ -179,6 +179,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
+        if install_tool_dependencies:
+            if trans.app.config.tool_dependency_dir is None:
+                no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set the value of your 'tool_dependency_dir' "
+                no_tool_dependency_dir_message += "setting in your Galaxy configuration file (universe_wsgi.ini) and restart your Galaxy server."
+                raise HTTPBadRequest( detail=no_tool_dependency_dir_message )
         new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         if shed_tool_conf:
