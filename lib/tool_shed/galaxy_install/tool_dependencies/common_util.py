@@ -240,13 +240,13 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
         if istar( file_path ):
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             extract_tar( file_path, install_dir )
-            dir = tar_extraction_directory( install_dir, file_path )
+            dir = tar_extraction_directory( install_dir, downloaded_file_name )
         elif isjar( file_path ):
             dir = os.path.curdir
         elif iszip( file_path ):
             # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
             zip_archive_extracted = extract_zip( file_path, install_dir )
-            dir = zip_extraction_directory( install_dir, file_path )
+            dir = zip_extraction_directory( install_dir, downloaded_file_name )
         else:
             dir = install_dir
     else:
