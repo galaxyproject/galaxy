@@ -150,7 +150,7 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
                          [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/trackster'});"],
                          [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '/visualization/list'});" ]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/trackster'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/list'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.

@@ -735,7 +735,6 @@ var GalaxyFrameManager = Backbone.View.extend(
             
             // untoggle
             $(".galaxy-frame-active .icon").removeClass("f-toggle");
-            
         } else {
             // activate
             this.active = true;
@@ -1034,7 +1033,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                    '<div class="number f-corner">0</div>' +
                    '<div class="icon fa-icon-2x"></div>' +
                 '</div>'+
-                '<div title="Enable/Disable Scratchbook Viewer" class="galaxy-frame-active f-corner">' +
+                '<div class="galaxy-frame-active f-corner">' +
                    '<div class="icon fa-icon-2x fa-icon-th"></div>' +
                 '</div>';
     },
