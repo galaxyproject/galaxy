@@ -64,7 +64,7 @@ ${render_trackster_js_files()}
         $("#center .unified-panel-header-inner").append(ui.buttonMenu.$el);
         
         // Hide bookmarks by default right now.
-        parent.force_right_panel("hide"); 
+        force_right_panel("hide"); 
         
         // Resize view when showing/hiding right panel (bookmarks for now).
         $("#right-border").click(function() { view.resize_window(); });
@@ -118,6 +118,7 @@ ${render_trackster_js_files()}
         function init_editor() {
             $("#title").text(view.name + " (" + view.dbkey + ")");
            
+            if (!is_in_galaxy_frame())
             window.onbeforeunload = function() {
                 if (view.has_changes) {
                     return "There are unsaved changes to your visualization which will be lost.";

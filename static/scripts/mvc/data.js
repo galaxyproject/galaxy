@@ -367,13 +367,34 @@ var TabularButtonTracksterView = Backbone.View.extend(
                                     $(parent.document).find('input[name=id]:checked').each(function() {
                                         var vis_id = $(this).val();
                                         dataset_params.id = vis_id;
-                                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                                        
+                                        // add widget
+                                        parent.frame_manager.frame_new(
+                                        {
+                                            title    : "Trackster",
+                                            type     : "url",
+                                            content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                        });
+
+                                        // hide
+                                        parent.hide_modal();
                                     });
                                 }
                             });
                         },
                         "View in new visualization": function() {
-                            parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                            var url = vis_url + "/trackster?" + $.param(dataset_params);
+
+                            // add widget
+                            parent.frame_manager.frame_new(
+                            {
+                                title    : "Trackster",
+                                type     : "url",
+                                content  : url
+                            });
+
+                            // hide
+                            parent.hide_modal();
                         }
                     });
                 }

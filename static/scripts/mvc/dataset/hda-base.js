@@ -237,7 +237,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             
         } else {
             displayBtnData.title = _l( 'View data' );
-            displayBtnData.href  = this.urls.display;
+            displayBtnData.href  = "javascript:parent.frame_manager.frame_new({title: 'Data Viewer', type: 'url', center: true, content: '" + this.urls.display + "'});";
         }
 
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });

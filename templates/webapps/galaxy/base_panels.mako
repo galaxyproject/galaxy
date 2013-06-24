@@ -142,13 +142,15 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
         tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
     %>
 
+
+                                    
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' ) ],
-                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
+                         [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/trackster'});"],
+                         [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '/visualization/list'});" ]
                        ]
-        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/trackster'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.
