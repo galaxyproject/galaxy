@@ -1,4 +1,4 @@
-<tool id="sam_pileup" name="Generate pileup" version="1.1.1">
+<tool id="sam_pileup" name="Generate pileup" version="1.1.2">
   <description>from BAM dataset</description>
   <requirements>
     <requirement type="package" version="0.1.16">samtools</requirement>
@@ -11,10 +11,8 @@
       #if $refOrHistory.reference == "history":
         --ownFile=$refOrHistory.ownFile
       #else:
-        --ownFile="None"
+        --index=${refOrHistory.index.fields.path}
       #end if
-       --dbkey=${input1.metadata.dbkey}
-       --indexDir=${GALAXY_DATA_INDEX_DIR}
        --bamIndex=${input1.metadata.bam_index}
        --lastCol=$lastCol
        --indels=$indels
@@ -41,7 +39,13 @@
       <when value="indexed">
         <param name="input1" type="data" format="bam" label="Select the BAM file to generate the pileup file for">
            <validator type="unspecified_build" />
-           <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
+           <validator type="dataset_metadata_in_data_table" table_name="sam_fa_indexes" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." />
+        </param>
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="sam_fa_indexes">
+            <filter type="data_meta" ref="input1" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
         </param>
       </when>
       <when value="history">
@@ -100,6 +104,7 @@
       -->
       <param name="reference" value="indexed" />
       <param name="input1" value="sam_pileup_in1.bam" ftype="bam" dbkey="equCab2" />
+      <param name="index" value="chr_m" />
       <param name="lastCol" value="no" />
       <param name="indels" value="no" />
       <param name="mapCap" value="60" />
