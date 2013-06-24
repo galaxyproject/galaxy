@@ -180,19 +180,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
-                    downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, url )
-                    if common_util.istar( downloaded_file_path ):
-                        # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
-                        common_util.extract_tar( downloaded_file_path, work_dir )
-                        dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
-                    elif common_util.isjar( downloaded_file_path ):
-                        dir = os.path.curdir
-                    elif common_util.iszip( downloaded_file_path ):
-                        # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
-                        zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
-                        dir = common_util.zip_extraction_directory( work_dir, downloaded_filename )
-                    else:
-                        dir = os.path.curdir
+                    dir = common_util.url_download( work_dir, downloaded_filename, url, extract=True )
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
@@ -227,10 +215,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 if not os.path.exists( full_path_to_dir ):
                     os.makedirs( full_path_to_dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
-                with lcd( dir ):
-                    for action_tup in filtered_actions:
+                for action_tup in filtered_actions:
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
                         action_type, action_dict = action_tup
-                        current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                         if action_type == 'make_directory':
                             common_util.make_directory( full_path=action_dict[ 'full_path' ] )
                         elif action_type == 'move_directory_files':
@@ -316,13 +304,21 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 if return_code:
                                     return
                         elif action_type == 'download_file':
-                            # Download a single file to the current directory.
+                            # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
-                            if action_dict[ 'target_filename' ]:
+                            if 'target_filename' in action_dict:
                                 filename = action_dict[ 'target_filename' ]
                             else:
                                 filename = url.split( '/' )[ -1 ]
-                            common_util.url_download( current_dir, filename, url )
+                            extract = action_dict.get( 'extract', False )
+                            common_util.url_download( current_dir, filename, url, extract=extract )
+                        elif action_type == 'change_directory':
+                            target_directory = os.path.realpath( os.path.join( current_dir, dir, action_dict[ 'directory' ] ) )
+                            current_working_dir = os.path.realpath( dir )
+                            if target_directory.startswith( current_working_dir ) and os.path.exists( target_directory ):
+                                dir = target_directory
+                            else:
+                                log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """
