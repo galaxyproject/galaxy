@@ -216,13 +216,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                   tool_path=tool_path,
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
-        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=True )
-        if message and len( repo_info_dicts ) == 1:
-            # We're attempting to install a single repository that has already been installed into this Galaxy instance.
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
         if created_or_updated_tool_shed_repositories:
             # Build the dictionary of information necessary for installing the repositories.
             installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,

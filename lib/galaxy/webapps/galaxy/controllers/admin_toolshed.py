@@ -884,15 +884,8 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_panel_section=tool_panel_section,
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
-            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
                 repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=False )
-            if message and len( repo_info_dicts ) == 1:
-                # We're undoubtedly attempting to install a repository that has been previously installed.
-                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                  action='browse_repositories',
-                                                                  message=message,
-                                                                  status='error' ) )
-
             if created_or_updated_tool_shed_repositories:
                 installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
                                           filtered_repo_info_dicts=filtered_repo_info_dicts,
@@ -1126,7 +1119,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                     repository_dependencies=repository_dependencies )
         repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
-        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_dependency_util.create_repository_dependency_objects( trans=trans,
                                                                              tool_path=tool_path,
                                                                              tool_shed_url=tool_shed_url,
