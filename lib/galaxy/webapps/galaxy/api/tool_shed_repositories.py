@@ -266,11 +266,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                                       action='show',
                                                                       id=trans.security.encode_id( tool_shed_repository.id ) )
                     installed_tool_shed_repositories.append( tool_shed_repository_dict )
-        elif message:
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
-        elif not created_or_updated_tool_shed_repositories and not message:
+        else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
             return dict( status='error', error='All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
