@@ -194,7 +194,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # Download a single file to the working directory.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
-                    if action_dict[ 'target_filename' ]:
+                    if 'target_filename' in action_dict:
                         # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
                         # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         filename = action_dict[ 'target_filename' ]
