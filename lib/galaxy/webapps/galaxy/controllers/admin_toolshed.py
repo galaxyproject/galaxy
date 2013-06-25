@@ -155,7 +155,8 @@ class AdminToolshed( AdminGalaxy ):
     def browse_tool_dependency( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency = tool_dependency_util.get_tool_dependency( trans, kwd[ 'id' ] )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
+        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
         if tool_dependency.in_error_state:
             message = "This tool dependency is not installed correctly (see the <b>Tool dependency installation error</b> below).  "
             message += "Choose <b>Uninstall this tool dependency</b> from the <b>Repository Actions</b> menu, correct problems "
@@ -1165,6 +1166,18 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_shed_repositories=tool_shed_repositories,
                                     initiate_repository_installation_ids=encoded_repository_ids,
                                     reinstalling=True )
+
+    @web.expose
+    @web.require_admin
+    def repair_repository( self, trans, **kwd ):
+        """
+        Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
+        each repository's tool dependencies.
+        """
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        repository_id = kwd[ 'id' ]
+        tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
 
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
