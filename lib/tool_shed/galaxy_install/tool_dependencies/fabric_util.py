@@ -313,9 +313,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             extract = action_dict.get( 'extract', False )
                             common_util.url_download( current_dir, filename, url, extract=extract )
                         elif action_type == 'change_directory':
-                            target_directory = os.path.realpath( os.path.join( current_dir, dir, action_dict[ 'directory' ] ) )
-                            current_working_dir = os.path.realpath( dir )
-                            if target_directory.startswith( current_working_dir ) and os.path.exists( target_directory ):
+                            target_directory = os.path.realpath( os.path.join( current_dir, action_dict[ 'directory' ] ) )
+                            if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
                                 dir = target_directory
                             else:
                                 log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
