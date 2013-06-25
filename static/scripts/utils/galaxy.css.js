@@ -28,7 +28,7 @@ function get_attribute (classname, name)
 function load_file (url)
 {
     // check if css is already available
-    if (!$('link[href="' + url + '"]').length)
+    if (!$('link[href^="' + url + '"]').length)
         $('<link href="' + url + '" rel="stylesheet">').appendTo('head');
 };
 
