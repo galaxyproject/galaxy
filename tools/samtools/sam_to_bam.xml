@@ -1,4 +1,4 @@
-<tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.2">
+<tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.3">
   <description>converts SAM format to BAM format</description>
   <requirements>
     <requirement type="package">samtools</requirement>
@@ -7,13 +7,11 @@
     sam_to_bam.py
       --input1=$source.input1
       #if $source.index_source == "history":
-        --dbkey=${ref_file.metadata.dbkey} 
         --ref_file=$source.ref_file
       #else
-        --dbkey=${input1.metadata.dbkey} 
+        --index=${source.index.fields.path}
       #end if
       --output1=$output1
-      --index_dir=${GALAXY_DATA_INDEX_DIR}
   </command>
   <inputs>
     <conditional name="source">
@@ -22,13 +20,19 @@
         <option value="history">History</option>
       </param>
       <when value="cached">
-        <param name="input1" type="data" format="sam" metadata_name="dbkey" label="SAM File to Convert">
-           <validator type="unspecified_build" />
-           <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
+        <param name="input1" type="data" format="sam" metadata_name="dbkey" label="SAM file to convert">
+          <validator type="unspecified_build" />
+          <validator type="dataset_metadata_in_data_table" table_name="sam_fa_indexes" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." />
+        </param>
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="sam_fa_indexes">
+            <filter type="data_meta" ref="input1" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
         </param>
       </when>
       <when value="history">
-        <param name="input1" type="data" format="sam" label="Convert SAM file" />
+        <param name="input1" type="data" format="sam" label="SAM file to convert" />
         <param name="ref_file" type="data" format="fasta" metadata_name="dbkey" label="Using reference file" />
       </when>
     </conditional>
@@ -76,6 +80,7 @@
       -->
       <param name="index_source" value="cached" />
       <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" dbkey="chrM" />
+      <param name="index" value="chr_m" />
       <output name="output1" file="sam_to_bam_out2.bam" ftype="bam" />
     </test>
   </tests>

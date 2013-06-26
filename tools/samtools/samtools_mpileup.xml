@@ -1,4 +1,4 @@
-<tool id="samtools_mpileup" name="MPileup" version="0.0.1">
+<tool id="samtools_mpileup" name="MPileup" version="0.0.2">
   <description>SNP and indel caller</description>
   <requirements>
       <requirement type="package">samtools</requirement>
@@ -59,22 +59,22 @@
       </param>
       <when value="cached">
         <repeat name="input_bams" title="BAM file" min="1">
-            <param name="input_bam" type="data" format="bam" label="BAM file">
-              <validator type="unspecified_build" />
-              <validator type="dataset_metadata_in_data_table" table_name="sam_fa_indexes" metadata_name="dbkey" metadata_column="value" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
-            </param>
+          <param name="input_bam" type="data" format="bam" label="BAM file">
+            <validator type="unspecified_build" />
+            <validator type="dataset_metadata_in_data_table" table_name="sam_fa_indexes" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+          </param>
         </repeat>
         <param name="ref_file" type="select" label="Using reference genome">
           <options from_data_table="sam_fa_indexes">
-            <!-- <filter type="data_meta" key="dbkey" ref="input_bam" column="value"/> does not yet work in a repeat...--> 
+            <!-- <filter type="data_meta" ref="input_bam" key="dbkey" column="1" /> does not yet work in a repeat...-->
           </options>
         </param>
       </when>
       <when value="history"> <!-- FIX ME!!!! -->
         <repeat name="input_bams" title="BAM file" min="1">
-            <param name="input_bam" type="data" format="bam" label="BAM file" >
-              <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue."/>
-            </param>
+          <param name="input_bam" type="data" format="bam" label="BAM file">
+            <validator type="metadata" check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue." />
+          </param>
         </repeat>
         <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>

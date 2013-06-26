@@ -103,7 +103,6 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     the dependency relationships between installed repositories.  This method is called when new repositories are being installed into a Galaxy
     instance and when uninstalled repositories are being reinstalled.
     """
-    message = ''
     # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository dependencies
     # that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
@@ -241,7 +240,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
-    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
+    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
 
 def generate_message_for_invalid_repository_dependencies( metadata_dict ):
     """Return the error message associated with an invalid repository dependency for display in the caller."""

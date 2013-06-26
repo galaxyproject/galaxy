@@ -26,6 +26,10 @@ class ChunkDataProvider( base.DataProvider ):
     """
     MAX_CHUNK_SIZE = 2**16
     DEFAULT_CHUNK_SIZE = MAX_CHUNK_SIZE
+    settings = {
+        'chunk_index'   : 'int',
+        'chunk_size'    : 'int'
+    }
 
     #TODO: subclass from LimitedOffsetDataProvider?
     # see web/framework/base.iterate_file, util/__init__.file_reader, and datatypes.tabular
@@ -38,8 +42,8 @@ class ChunkDataProvider( base.DataProvider ):
             (gen. in bytes).
         """
         super( ChunkDataProvider, self ).__init__( source, **kwargs )
-        self.chunk_size = chunk_size
-        self.chunk_pos = chunk_index * self.chunk_size
+        self.chunk_size = int( chunk_size )
+        self.chunk_pos = int( chunk_index ) * self.chunk_size
 
     def validate_source( self, source ):
         """

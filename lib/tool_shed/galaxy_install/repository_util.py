@@ -358,7 +358,7 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
     tool_panel_section = installation_dict[ 'tool_panel_section' ]
     tool_path = installation_dict[ 'tool_path' ]
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
-    created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+    created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
         repository_dependency_util.create_repository_dependency_objects( trans=trans,
                                                                          tool_path=tool_path,
                                                                          tool_shed_url=tool_shed_url,
@@ -368,11 +368,7 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
                                                                          no_changes_checked=no_changes_checked,
                                                                          tool_panel_section=tool_panel_section,
                                                                          new_tool_panel_section=new_tool_panel_section )
-    if message and len( repo_info_dicts ) == 1 and not using_api:
-        installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
-        message += 'Click <a href="%s">here</a> to manage the repository.  ' % \
-            ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
-    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message
+    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts
 
 def initiate_repository_installation( trans, installation_dict ):
     # The following installation_dict entries are all required.

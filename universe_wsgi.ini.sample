@@ -40,6 +40,9 @@ use_threadpool = True
 # Number of threads in the web server thread pool.
 #threadpool_workers = 10
 
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
+ 
 # ---- Filters --------------------------------------------------------------
 
 # Filters sit between Galaxy and the HTTP server.

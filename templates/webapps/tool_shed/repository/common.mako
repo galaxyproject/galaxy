@@ -862,12 +862,12 @@
             %if row_is_header:
                 ${tool_dependency.name | h}
             %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
-                %if tool_dependency.repository_id and tool_dependency.installation_status == 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name | h}
                     </a>
-                %elif tool_dependency.installation_status != 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                %elif tool_dependency.installation_status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
                 %else:

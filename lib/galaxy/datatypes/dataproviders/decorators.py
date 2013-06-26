@@ -87,17 +87,40 @@ def has_dataproviders( cls ):
     #    log.debug( '\t\t ', fn.__doc__ )
     return cls
 
-def dataprovider_factory( name ):
+def dataprovider_factory( name, settings=None ):
     """
-    Wraps a class method and marks it as a dataprovider factory.
+    Wraps a class method and marks it as a dataprovider factory and creates a
+    function to parse query strings to __init__ arguments as the
+    `parse_query_string_settings` attribute of the factory function.
+
+    An example use of the `parse_query_string_settings`:
+    ..example::
+    kwargs = dataset.datatype.dataproviders[ provider ].parse_query_string_settings( query_kwargs )
+    return list( dataset.datatype.dataprovider( dataset, provider, **kwargs ) )
 
     :param name: what name/key to register the factory under in `cls.dataproviders`
-    :param type: any hashable var
+    :type name: any hashable var
+    :param settings: dictionary containing key/type pairs for parsing query strings
+    to __init__ arguments
+    :type settings: dictionary
     """
+    #TODO:?? use *args for settings allowing mulitple dictionaries
+    # make a function available through the name->provider dispatch to parse query strings
+    #   callable like:
+    # settings_dict = dataproviders[ provider_name ].parse_query_string_settings( query_kwargs )
+    #TODO: ugh - overly complicated but the best I could think of
+    def parse_query_string_settings( query_kwargs ):
+        return _parse_query_string_settings( query_kwargs, settings )
+
     #log.debug( 'dataprovider:', name )
     def named_dataprovider_factory( func ):
         #log.debug( 'named_dataprovider_factory:', name, '->', func.__name__ )
         setattr( func, _DATAPROVIDER_METHOD_NAME_KEY, name )
+
+        setattr( func, 'parse_query_string_settings', parse_query_string_settings )
+        setattr( func, 'settings', settings )
+        #TODO: I want a way to inherit settings from the previous provider( this_name ) instead of defining over and over
+
         #log.debug( '\t setting:', getattr( func, _DATAPROVIDER_METHOD_NAME_KEY ) )
         @wraps( func )
         def wrapped_dataprovider_factory( self, *args, **kwargs ):
@@ -105,3 +128,38 @@ def dataprovider_factory( name ):
             return func( self, *args, **kwargs )
         return wrapped_dataprovider_factory
     return named_dataprovider_factory
+
+def _parse_query_string_settings( query_kwargs, settings=None ):
+    """
+    Parse the values in `query_kwargs` from strings to the proper types
+    listed in the same key in `settings`.
+    """
+    def list_from_query_string( s ):
+        # assume csv
+        return s.split( ',' )
+
+    parsers = {
+        'int'   : int,
+        'float' : float,
+        'bool'  : bool,
+        'list:str'  : lambda s: list_from_query_string( s ),
+        'list:int'  : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
+    }
+    settings = settings or {}
+    # yay! yet another set of query string parsers! <-- sarcasm
+    # work through the keys in settings finding matching keys in query_kwargs
+    #   if found in both, get the expected/needed type from settings and store the new parsed value
+    #   if we can't parse it (no parser, bad value), delete the key from query_kwargs so the provider will use the defaults
+    for key in settings:
+        if key in query_kwargs:
+            #TODO: this would be the place to sanitize any strings
+            query_value = query_kwargs[ key ]
+            needed_type = settings[ key ]
+            try:
+                query_kwargs[ key ] = parsers[ needed_type ]( query_value )
+            except ( KeyError, ValueError ):
+                del query_kwargs[ key ]
+
+        #TODO:?? do we want to remove query_kwarg entries NOT in settings?
+    return query_kwargs
+

@@ -267,25 +267,25 @@ class Bam( Binary ):
     # bam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     #TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     #TODO: incorporate samtools options to control output: regions first, then flags, etc.
-    @dataproviders.decorators.dataprovider_factory( 'line' )
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
         settings[ 'comment_char' ] = '@'
         return dataproviders.line.FilteredLineDataProvider( samtools_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'regex-line' )
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
     def regex_line_dataprovider( self, dataset, **settings ):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
         settings[ 'comment_char' ] = '@'
         return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
     
-    @dataproviders.decorators.dataprovider_factory( 'column' )
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
     def column_dataprovider( self, dataset, **settings ):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
         settings[ 'comment_char' ] = '@'
         return dataproviders.column.ColumnarDataProvider( samtools_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map' )
+    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
     def map_dataprovider( self, dataset, **settings ):
         samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
         settings[ 'comment_char' ] = '@'
@@ -293,30 +293,30 @@ class Bam( Binary ):
 
     # these can't be used directly - may need BamColumn, BamMap (Bam metadata -> column/map)
     # OR - see genomic_region_dataprovider
-    #@dataproviders.decorators.dataprovider_factory( 'dataset-column' )
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-column', dataproviders.column.ColumnarDataProvider.settings )
     #def dataset_column_dataprovider( self, dataset, **settings ):
     #    settings[ 'comment_char' ] = '@'
     #    return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
 
-    #@dataproviders.decorators.dataprovider_factory( 'dataset-map' )
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
     #def dataset_map_dataprovider( self, dataset, **settings ):
     #    settings[ 'comment_char' ] = '@'
     #    return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'header' )
+    @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
     def header_dataprovider( self, dataset, **settings ):
         # in this case we can use an option of samtools view to provide just what we need (w/o regex)
         samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset, '-H' )
         return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual' )
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', dataproviders.column.MapDataProvider.settings )
     def id_seq_qual_dataprovider( self, dataset, **settings ):
         settings[ 'indeces' ] = [ 0, 9, 10 ]
         settings[ 'column_types' ] = [ 'str', 'str', 'str' ]
         settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
         return self.map_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region', dataproviders.column.ColumnarDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         #TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
@@ -330,7 +330,7 @@ class Bam( Binary ):
         settings[ 'column_types' ] = [ 'str', 'int', 'int' ]
         return self.column_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map', dataproviders.column.MapDataProvider.settings )
     def genomic_region_map_dataprovider( self, dataset, **settings ):
         settings[ 'indeces' ] = [ 2, 3, 3 ]
         settings[ 'column_types' ] = [ 'str', 'int', 'int' ]

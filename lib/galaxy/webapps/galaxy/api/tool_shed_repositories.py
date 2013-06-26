@@ -179,6 +179,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
+        if install_tool_dependencies:
+            if trans.app.config.tool_dependency_dir is None:
+                no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set the value of your 'tool_dependency_dir' "
+                no_tool_dependency_dir_message += "setting in your Galaxy configuration file (universe_wsgi.ini) and restart your Galaxy server."
+                raise HTTPBadRequest( detail=no_tool_dependency_dir_message )
         new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         if shed_tool_conf:
@@ -211,13 +216,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                   tool_path=tool_path,
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
-        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=True )
-        if message and len( repo_info_dicts ) == 1:
-            # We're attempting to install a single repository that has already been installed into this Galaxy instance.
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
         if created_or_updated_tool_shed_repositories:
             # Build the dictionary of information necessary for installing the repositories.
             installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
@@ -266,11 +266,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                                       action='show',
                                                                       id=trans.security.encode_id( tool_shed_repository.id ) )
                     installed_tool_shed_repositories.append( tool_shed_repository_dict )
-        elif message:
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
-        elif not created_or_updated_tool_shed_repositories and not message:
+        else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
             return dict( status='error', error='All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.

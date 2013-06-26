@@ -155,7 +155,8 @@ class AdminToolshed( AdminGalaxy ):
     def browse_tool_dependency( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency = tool_dependency_util.get_tool_dependency( trans, kwd[ 'id' ] )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
+        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
         if tool_dependency.in_error_state:
             message = "This tool dependency is not installed correctly (see the <b>Tool dependency installation error</b> below).  "
             message += "Choose <b>Uninstall this tool dependency</b> from the <b>Repository Actions</b> menu, correct problems "
@@ -482,9 +483,7 @@ class AdminToolshed( AdminGalaxy ):
     def install_tool_dependencies( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
-        if not tool_dependency_ids:
-            tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         tool_dependencies = []
         for tool_dependency_id in tool_dependency_ids:
             tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
@@ -731,11 +730,11 @@ class AdminToolshed( AdminGalaxy ):
                         kwd[ 'status' ] = 'error'
         installed_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                              tool_shed_repository=tool_shed_repository,
-                                                                                             name='tool_dependency_ids',
+                                                                                             name='inst_td_ids',
                                                                                              uninstalled=False )
         uninstalled_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                                tool_shed_repository=tool_shed_repository,
-                                                                                               name='tool_dependency_ids',
+                                                                                               name='uninstalled_tool_dependency_ids',
                                                                                                uninstalled=True )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository_tool_dependencies.mako',
                                     repository=tool_shed_repository,
@@ -886,15 +885,8 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_panel_section=tool_panel_section,
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
-            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
                 repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=False )
-            if message and len( repo_info_dicts ) == 1:
-                # We're undoubtedly attempting to install a repository that has been previously installed.
-                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                  action='browse_repositories',
-                                                                  message=message,
-                                                                  status='error' ) )
-
             if created_or_updated_tool_shed_repositories:
                 installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
                                           filtered_repo_info_dicts=filtered_repo_info_dicts,
@@ -1128,7 +1120,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                     repository_dependencies=repository_dependencies )
         repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
-        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_dependency_util.create_repository_dependency_objects( trans=trans,
                                                                              tool_path=tool_path,
                                                                              tool_shed_url=tool_shed_url,
@@ -1174,6 +1166,18 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_shed_repositories=tool_shed_repositories,
                                     initiate_repository_installation_ids=encoded_repository_ids,
                                     reinstalling=True )
+
+    @web.expose
+    @web.require_admin
+    def repair_repository( self, trans, **kwd ):
+        """
+        Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
+        each repository's tool dependencies.
+        """
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        repository_id = kwd[ 'id' ]
+        tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
 
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
@@ -1517,7 +1521,7 @@ class AdminToolshed( AdminGalaxy ):
     def uninstall_tool_dependencies( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if not tool_dependency_ids:
             tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
         tool_dependencies = []
