@@ -268,7 +268,7 @@
     </inputs>
 
     <stdio>
-        <regex match="Exception" source="both" level="error" description="Tool exception"/>
+        <regex match="Exception" source="both" level="fatal" description="Tool exception"/>
         <regex match=".*" source="both" level="log" description="tool progress"/>
     </stdio>
 
