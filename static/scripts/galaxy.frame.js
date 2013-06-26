@@ -161,17 +161,20 @@ var GalaxyFrameManager = Backbone.View.extend(
         /*if (!this.is_mobile())
         {*/
             this.events = {
+                // global page events
                 'mousedown'                                 : 'event_frame_mouse_down',
-                'mousedown .f-close'                        : 'event_frame_close',
-                'mousedown .f-pin'                          : 'event_frame_lock',
                 'mousemove'                                 : 'event_frame_mouse_move',
                 'mouseup'                                   : 'event_frame_mouse_up',
                 'mouseleave'                                : 'event_frame_mouse_up',
+                'mousewheel'                                : 'event_panel_scroll',
+                'DOMMouseScroll'                            : 'event_panel_scroll',
+                
+                // events fixed to elements
+                'mousedown .f-close'                        : 'event_frame_close',
+                'mousedown .f-pin'                          : 'event_frame_lock',
                 'mousedown .galaxy-frame-active'            : 'event_panel_active',
                 'mousedown .galaxy-frame-load'              : 'event_panel_load',
                 'mousedown .galaxy-frame-background'        : 'event_panel_load',
-                'mousewheel'                                : 'event_panel_scroll',
-                'DOMMouseScroll'                            : 'event_panel_scroll',
                 'mousedown .galaxy-frame-scroll-up'         : 'event_panel_scroll_up',
                 'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down'
             };
@@ -421,6 +424,10 @@ var GalaxyFrameManager = Backbone.View.extend(
     // scroll
     event_panel_scroll: function(e)
     {
+        // check
+        if (this.event.type !== null || !this.visible)
+            return;
+            
         // get wheel delta
         var delta = e.originalEvent.detail ? e.originalEvent.detail : e.originalEvent.wheelDelta / -3;
         
@@ -431,12 +438,22 @@ var GalaxyFrameManager = Backbone.View.extend(
     // scroll up
     event_panel_scroll_up: function()
     {
+        // check
+        if (this.event.type !== null)
+            return;
+  
+        // scroll up
         this.panel_scroll(-this.options.scroll);
     },
     
     // scroll down
     event_panel_scroll_down: function()
     {
+        // check
+        if (this.event.type !== null)
+            return;
+     
+        // scroll down
         this.panel_scroll(this.options.scroll);
     },
     
