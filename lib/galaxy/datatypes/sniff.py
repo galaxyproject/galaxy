@@ -6,6 +6,7 @@ import registry
 from galaxy import util
 from galaxy.datatypes.checkers import *
 from encodings import search_function as encodings_search_function
+from binary import Binary
 
 log = logging.getLogger(__name__)
 
