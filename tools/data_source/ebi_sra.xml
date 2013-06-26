@@ -9,7 +9,7 @@
     </inputs>
     <uihints minwidth="800"/>
     <outputs>
-        <data name="output" format="fastq"/>
+        <data name="output" format="auto"/>
     </outputs>
     <options sanitize="False" refresh="True"/>
 </tool>
