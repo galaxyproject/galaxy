@@ -72,6 +72,13 @@
     )}
 
     <script type="text/javascript">
+        ## path to style sheets
+        var galaxy_config = {
+            url: {
+                styles : "${h.url_for('/static/style')}"
+            }
+        };
+
         ## check if its in a galaxy iframe
         function is_in_galaxy_frame()
         {
@@ -92,7 +99,7 @@
 
         ## load additional style sheet
         if (is_in_galaxy_frame())
-            load_css('/static/style/galaxy.frame.masthead.css');
+            load_css(galaxy_config.url.styles + '/galaxy.frame.masthead.css');
         
         // console protection
         window.console = window.console || {
@@ -129,7 +136,7 @@
         
         ## frame manager
         var frame_manager = null;
-        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(); });
+        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(galaxy_config); });
     </script>
 </%def>
 

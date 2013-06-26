@@ -147,10 +147,10 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/trackster'});"],
-                         [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '/visualization/list'});" ]
+                         [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
+                         [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '/visualization/list'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.

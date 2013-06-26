@@ -5,9 +5,6 @@
 // dependencies
 define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
        
-// load required css files
-css.load_file("/static/style/galaxy.frame.css");
-css.load_file("/static/style/base.css");
 
 // frame manager
 var GalaxyFrameManager = Backbone.View.extend(
@@ -77,6 +74,9 @@ var GalaxyFrameManager = Backbone.View.extend(
     // initialize
     initialize : function(options)
     {
+        // load required css files
+        css.load_file(options.url.styles + "/galaxy.frame.css");
+        
         // read in defaults
         if (options)
             this.options = _.defaults(options, this.options);
