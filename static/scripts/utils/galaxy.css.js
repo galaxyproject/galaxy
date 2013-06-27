@@ -15,7 +15,7 @@ function get_attribute (classname, name)
     el.appendTo(':eq(0)');
     
     // get value
-    var value = el.css(name).replace(/[^-\d\.]/g, '');
+    var value = el.css(name);
     
     // remove element
     el.remove();

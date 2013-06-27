@@ -48,11 +48,6 @@
     z-index         : 14002;
     overflow        : hidden;
     position        : absolute;
-    top             : 0px;
-    left            : 0px;
-    height          : 100%;
-    width           : 100%;
-    opacity         : 1.0;
     background      : #FFFFFF;
     border          : 1px solid #D0D0D0;
     -webkit-box-shadow: 0 0 5px rgba(0,0,0,0.3);
@@ -88,7 +83,6 @@
     position        : absolute;
     top             : 8px;
     right           : 120px;
-    padding         : 0px 0px 0px 0px;
     cursor          : pointer;
     color           : #D0D0D0;
 }
@@ -102,7 +96,6 @@
     position        : absolute;
     top             : 6px;
     right           : 165px;
-    padding         : 0px 0px 0px 0px;
     cursor          : pointer;
     color           : #BCC800;
 }
