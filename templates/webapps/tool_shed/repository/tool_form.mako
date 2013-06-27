@@ -104,10 +104,10 @@
             </div>
         </%def>
 
-        %if trans.webapp.name == 'galaxy':
+        %if render_repository_actions_for == 'galaxy':
             ${render_galaxy_repository_actions( repository=repository )}
         %else:
-            ${render_tool_shed_repository_actions( repository, repo=None, metadata=None, changeset_revision=None )}
+            ${render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )}
         %endif
 
         %if message:

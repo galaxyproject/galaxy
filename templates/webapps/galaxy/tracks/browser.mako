@@ -64,7 +64,7 @@ ${render_trackster_js_files()}
         $("#center .unified-panel-header-inner").append(ui.buttonMenu.$el);
         
         // Hide bookmarks by default right now.
-        parent.force_right_panel("hide"); 
+        force_right_panel("hide"); 
         
         // Resize view when showing/hiding right panel (bookmarks for now).
         $("#right-border").click(function() { view.resize_window(); });
@@ -89,7 +89,7 @@ ${render_trackster_js_files()}
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
-                }, JSON.parse('${ h.to_json_string( viewport_config ) }'));
+                }, ${ h.to_json_string( viewport_config ) } );
                 view.editor = true;
                 init_editor();
                 set_up_router({view: view});
@@ -105,10 +105,7 @@ ${render_trackster_js_files()}
                         "Create": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
-                    $("select[name='dbkey']").combobox({
-                        appendTo: $("#overlay"),
-                        size: 40
-                    });
+                    $("select[name='dbkey']").select2({ width: 'resolve'});
                     // To support the large number of options for dbkey, enable scrolling in overlay.
                     $("#overlay").css("overflow", "auto");
                 }
@@ -121,6 +118,7 @@ ${render_trackster_js_files()}
         function init_editor() {
             $("#title").text(view.name + " (" + view.dbkey + ")");
            
+            if (!is_in_galaxy_frame())
             window.onbeforeunload = function() {
                 if (view.has_changes) {
                     return "There are unsaved changes to your visualization which will be lost.";

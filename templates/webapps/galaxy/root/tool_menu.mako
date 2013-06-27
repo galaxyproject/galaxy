@@ -1,27 +1,7 @@
-<%inherit file="/base.mako"/>
-
-<%namespace file="/tagging_common.mako" import="render_tool_tagging_elements" />
-
-## Render a workflow
-<%def name="render_workflow( key, workflow, section )">
-    %if section:
-        <div class="toolTitle">
-    %else:
-        <div class="toolTitleNoSection">
-    %endif
-        <% encoded_id = key.lstrip( 'workflow_' ) %>
-        <a id="link-${workflow.id}" href="${ h.url_for( controller='workflow', action='run', id=encoded_id )}" target="_parent">${_(workflow.name)}</a>
-    </div>
-</%def>
-
-<%def name="javascripts()">
-    ${parent.javascripts()}
+## Javascript required for tool menu.
+<%def name="tool_menu_javascripts()">
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
     ${h.js( "libs/require", "galaxy.autocom_tagging" )}
-    
-    <%        
-        dictified_panel = trans.app.toolbox.to_dict( trans )
-    %>
     
     <script type="text/javascript">
 
@@ -35,48 +15,32 @@
         require(["mvc/tools"], function(tools) {
 
             // Init. on document load.
-            var tool_panel, tool_panel_view, tool_search;
             $(function() {
-            
-                // Set up search.
-                tool_search = new tools.ToolSearch({ 
-                    spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                    search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                    hidden: false 
-                });
-                                               
-                // Set up tool panel.
-                tool_panel = new tools.ToolPanel( { tool_search: tool_search } );
-                tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );
+                // Create tool search, tool panel, and tool panel view.
+                var tool_search = new tools.ToolSearch({ 
+                        spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
+                        search_url: "${h.url_for( controller='root', action='tool_search' )}",
+                        hidden: false 
+                    }),
+                    tool_panel = new tools.ToolPanel({ tool_search: tool_search }),
+                    tool_panel_view = new tools.ToolPanelView({ collection: tool_panel });
+
+                // Add tool panel to Galaxy object.
+                Galaxy.toolPanel = tool_panel;
+
+                ## Populate tool panel if (a) anonymous use possible or (b) user is logged in.
+                %if trans.user or not trans.app.config.require_login:
+                    tool_panel.reset( tool_panel.parse( ${h.to_json_string( trans.app.toolbox.to_dict( trans ) )} ) );
+                %endif
+
+                // If there are tools, render panel and display everything.
+                if (tool_panel.length > 1) { // > 1 because tool_search counts as a model
+                    tool_panel_view.render();
+                    $('.toolMenu').show();
+                }
+                $('.toolMenuContainer').prepend(tool_panel_view.$el);
                 
-                // Set up tool panel view and initialize.
-                tool_panel_view = new tools.ToolPanelView( {collection: tool_panel} );
-                tool_panel_view.render();
-                $('body').prepend(tool_panel_view.$el);
-                            
                 // Minsize init hint.
-                $( "a[minsizehint]" ).click( function() {
-                    if ( parent.handle_minwidth_hint ) {
-                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
-                    }
-                });
-                
-                // Log clicks on tools.
-                /*
-                $("div.toolTitle > a").click( function() {
-                    var tool_title = $(this).attr('id').split("-")[1];
-                    var section_title = $.trim( $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text() );
-                    var search_active = $(this).parents("div.toolTitle").hasClass("search_match");
-                    
-                    // Log action.
-                    galaxy_async.log_user_action("tool_menu_click." + tool_title, section_title, 
-                                                    JSON.stringify({"search_active" : search_active}));
-                });
-                */
-                
-                $( '.tooltip' ).tooltip();
-                
-                // TODO: is this necessary?
                 $( "a[minsizehint]" ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
                         parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
@@ -88,50 +52,42 @@
     </script>
 </%def>
 
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css("tool_menu")}
-</%def>
-
-
-<%def name="title()">
-    ${_('Galaxy Tools')}
-</%def>
-
-## Default body
-<body class="toolMenuContainer">
-    
-    <div class="toolMenu">
-        ## Feedback when search returns no results.
-        <div id="search-no-results" style="display: none; padding-top: 5px">
-            <em><strong>Search did not match any tools.</strong></em>
-        </div>
+## Render tool menu.
+<%def name="render_tool_menu()">
+    <div class="toolMenuContainer">
         
-        ## Link to workflow management. The location of this may change, but eventually
-        ## at least some workflows will appear here (the user should be able to
-        ## configure which of their stored workflows appear in the tools menu). 
-        
-        %if t.user:
-            <div class="toolSectionPad"></div>
-            <div class="toolSectionPad"></div>
-            <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-              <span>Workflows</span>
+        <div class="toolMenu" style="display: none">
+            ## Feedback when search returns no results.
+            <div id="search-no-results" style="display: none; padding-top: 5px">
+                <em><strong>Search did not match any tools.</strong></em>
             </div>
-            <div id="XXinternalXXworkflow" class="toolSectionBody">
-                <div class="toolSectionBg">
-                    %if t.user.stored_workflow_menu_entries:
-                        %for m in t.user.stored_workflow_menu_entries:
-                            <div class="toolTitle">
-                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${m.stored_workflow.name}</a>
-                            </div>
-                        %endfor
-                    %endif
-                    <div class="toolTitle">
-                        <a href="${h.url_for( controller='workflow', action='list_for_run')}" target="galaxy_main">All workflows</a>
+            
+            ## Link to workflow management. The location of this may change, but eventually
+            ## at least some workflows will appear here (the user should be able to
+            ## configure which of their stored workflows appear in the tools menu). 
+            
+            %if t.user:
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                  <span>Workflows</span>
+                </div>
+                <div id="XXinternalXXworkflow" class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        %if t.user.stored_workflow_menu_entries:
+                            %for m in t.user.stored_workflow_menu_entries:
+                                <div class="toolTitle">
+                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) }</a>
+                                </div>
+                            %endfor
+                        %endif
+                        <div class="toolTitle">
+                            <a href="${h.url_for( controller='workflow', action='list_for_run')}" target="galaxy_main">All workflows</a>
+                        </div>
                     </div>
                 </div>
-            </div>
-        %endif
-        
+            %endif
+            
+        </div>
     </div>
-</body>
+</%def>

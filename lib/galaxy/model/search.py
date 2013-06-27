@@ -31,10 +31,13 @@ from galaxy import eggs
 eggs.require("Parsley")
 import parsley
 
-from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
-from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation
-from galaxy.model import ToolVersion
+from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, 
+History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation, 
+StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
+ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter, 
+JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion)
 
+from galaxy.util.json import to_json_string
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
@@ -269,12 +272,30 @@ class ToolView(ViewQueryBaseClass):
 #History Dataset Searching
 ##################
 
+def history_dataset_handle_tag(view, left, operator, right):
+    if operator == "=":
+        view.do_query = True
+        #aliasing the tag association table, so multiple links to different tags can be formed during a single query
+        tag_table = aliased(HistoryDatasetAssociationTagAssociation)
+
+        view.query = view.query.filter(
+           HistoryDatasetAssociation.id == tag_table.history_dataset_association_id
+        )
+        tmp = right.split(":")
+        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
+        if len(tmp) > 1:
+            view.query = view.query.filter( tag_table.user_value == tmp[1] )
+    else:
+        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
 
 class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
-        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True)
+        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
+        'tag' : ViewField("tag", handler=history_dataset_handle_tag)
+
     }
 
     def search(self, trans):
@@ -289,13 +310,14 @@ class HistoryDatasetView(ViewQueryBaseClass):
 def history_handle_tag(view, left, operator, right):
     if operator == "=":
         view.do_query = True
+        tag_table = aliased(HistoryTagAssociation)
         view.query = view.query.filter(
-           History.id == HistoryTagAssociation.history_id
+           History.id == tag_table.history_id
         )
         tmp = right.split(":")
-        view.query = view.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
+        view.query = view.query.filter( tag_table.user_tname == tmp[0] )
         if len(tmp) > 1:
-            view.query = view.query.filter( HistoryTagAssociation.user_value == tmp[1] )
+            view.query = view.query.filter( tag_table.user_value == tmp[1] )
     else:
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
@@ -362,6 +384,65 @@ class WorkflowView(ViewQueryBaseClass):
     def search(self, trans):
         self.query = trans.sa_session.query( StoredWorkflow )
 
+
+
+##################
+#Job Searching
+##################
+
+
+
+def job_param_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobParameter )
+    param_name = re.sub(r'^param.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.value == to_json_string(right)
+        )
+    )
+
+def job_input_hda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToInputDatasetAssociation )
+    param_name = re.sub(r'^input_hda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.dataset_id == right
+        )
+    )
+
+def job_output_hda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToOutputDatasetAssociation )
+    param_name = re.sub(r'^output_hda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.dataset_id == right
+        )
+    )
+
+
+class JobView(ViewQueryBaseClass):
+    DOMAIN = "job"
+    FIELDS = {
+        'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
+        'param' : ViewField('param', handler=job_param_filter),
+        'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
+        'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( Job )
+
+
+
 """
 The view mapping takes a user's name for a table and maps it to a View class that will
 handle queries
@@ -377,7 +458,8 @@ view_mapping = {
     'hda' : HistoryDatasetView,
     'history' : HistoryView,
     'workflow' : WorkflowView,
-    'tool' : ToolView
+    'tool' : ToolView,
+    'job' : JobView,
 }
 
 """

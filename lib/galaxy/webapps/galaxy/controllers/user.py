@@ -463,6 +463,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     message=message,
                                     status=status,
                                     openid_providers=trans.app.openid_providers,
+                                    form_input_auto_focus=True,
                                     active_view="user" )
     def __validate_login( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
@@ -491,7 +492,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
                     ( user.email, redirect, url_for( '/' ) )
                 if trans.app.config.require_login:
-                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
+                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( controller="root", action="welcome" )
             success = True
         return ( message, status, user, success )
 

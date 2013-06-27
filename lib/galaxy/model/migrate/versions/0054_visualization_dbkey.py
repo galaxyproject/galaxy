@@ -23,10 +23,15 @@ def upgrade(migrate_engine):
     Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
 
     # Create dbkey columns.
-    x = Column( "dbkey", TEXT, index=True )
-    y = Column( "dbkey", TEXT, index=True )
-    x.create( Visualization_table, index_name = "ix_visualization_dbkey" )
-    y.create( Visualization_revision_table, index_name = "ix_visualization_revision_dbkey" )
+    x = Column( "dbkey", TEXT )
+    y = Column( "dbkey", TEXT )
+    x.create( Visualization_table )
+    y.create( Visualization_revision_table )
+    # Manually create indexes for compatability w/ mysql_length.
+    xi = Index( "ix_visualization_dbkey", Visualization_table.c.dbkey, mysql_length = 200)
+    xi.create()
+    yi = Index( "ix_visualization_revision_dbkey", Visualization_revision_table.c.dbkey, mysql_length = 200)
+    yi.create()
     assert x is Visualization_table.c.dbkey
     assert y is Visualization_revision_table.c.dbkey
 

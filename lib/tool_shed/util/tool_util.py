@@ -12,7 +12,10 @@ from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.web.form_builder import SelectField
+from tool_shed.util import xml_util
+from galaxy.tools.actions.upload import UploadToolAction
 import tool_shed.util.shed_util_common as suc
+from xml.etree import ElementTree as XmlET
 
 import pkg_resources
 
@@ -20,12 +23,6 @@ pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
-from elementtree.ElementTree import Element
-from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 
@@ -36,15 +33,16 @@ def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        config_elems.append( elem )
-    # Add the elements to the in-memory list of config_elems.
-    for elem_entry in elem_list:
-        config_elems.append( elem_entry )
-    # Persist the altered shed_tool_config file.
-    suc.config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
+    tree, error_message = xml_util.parse_xml( shed_tool_conf )
+    if tree:
+        root = tree.getroot()
+        for elem in root:
+            config_elems.append( elem )
+        # Add the elements to the in-memory list of config_elems.
+        for elem_entry in elem_list:
+            config_elems.append( elem_entry )
+        # Persist the altered shed_tool_config file.
+        suc.config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 
 def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner, shed_tool_conf, tool_panel_dict,
                        new_install=True ):
@@ -380,7 +378,7 @@ def generate_tool_section_element_from_dict( tool_section_dict ):
     # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
     if tool_section_dict[ 'id' ]:
         # Create a new tool section.
-        tool_section = Element( 'section' )
+        tool_section = XmlET.Element( 'section' )
         tool_section.attrib[ 'id' ] = tool_section_dict[ 'id' ]
         tool_section.attrib[ 'name' ] = tool_section_dict[ 'name' ]
         tool_section.attrib[ 'version' ] = tool_section_dict[ 'version' ]
@@ -419,7 +417,7 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
                     # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
                     # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
                     continue
-                fh = tempfile.NamedTemporaryFile( 'wb' )
+                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-gltcrfrm" )
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )
@@ -460,6 +458,31 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
                     fh.write( fctx.data() )
                     fh.close()
     return sample_files, deleted_sample_files
+
+def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section=None ):
+    tool_panel_section_key = 'section_%s' % str( tool_panel_section_id )
+    if tool_panel_section_key in trans.app.toolbox.tool_panel:
+        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
+    else:
+        # Appending a new section to trans.app.toolbox.tool_panel
+        try:
+            new_tool_panel_section_name = new_tool_panel_section.name
+        except:
+            new_tool_panel_section_name = new_tool_panel_section
+        if new_tool_panel_section_name:
+            elem = XmlET.Element( 'section' )
+            elem.attrib[ 'name' ] = new_tool_panel_section_name
+            elem.attrib[ 'id' ] = tool_panel_section_id
+            elem.attrib[ 'version' ] = ''
+            tool_section = galaxy.tools.ToolSection( elem )
+            trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+        else:
+            log.debug( "Unable to create new tool pane section using received new_tool_panel_section: %s" % str( new_tool_panel_section ))
+            return None, None
+    return tool_panel_section_key, tool_section
 
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
@@ -516,8 +539,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
         sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
         if sample_tool_data_table_conf:
-            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
-            # data_table_elem_names.
+            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
             error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
             if error:
                 # TODO: Do more here than logging an exception.
@@ -617,6 +639,9 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
+            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something
+            # into the field.
+            new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
                 if not tool_panel_dict:
@@ -630,41 +655,28 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
                 original_section_id = tool_section_dict[ 'id' ]
                 original_section_name = tool_section_dict[ 'name' ]
                 if original_section_id:
-                    tool_panel_section_key = 'section_%s' % str( original_section_id )
-                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                    else:
-                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                        elem = Element( 'section' )
-                        elem.attrib[ 'name' ] = original_section_name
-                        elem.attrib[ 'id' ] = original_section_id
-                        elem.attrib[ 'version' ] = ''
-                        tool_section = galaxy.tools.ToolSection( elem )
-                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+                    tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
+                                                                                       tool_panel_section_id=original_section_id,
+                                                                                       new_tool_panel_section=new_tool_panel_section )
         else:
             # The user elected to change the tool panel section to contain the tools.
-            if new_tool_panel_section:
-                section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                tool_panel_section_key = 'section_%s' % str( section_id )
-                if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                    # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                    log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                else:
-                    # Appending a new section to trans.app.toolbox.tool_panel
-                    log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                    elem = Element( 'section' )
-                    elem.attrib[ 'name' ] = new_tool_panel_section
-                    elem.attrib[ 'id' ] = section_id
-                    elem.attrib[ 'version' ] = ''
-                    tool_section = galaxy.tools.ToolSection( elem )
-                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            elif tool_panel_section:
-                tool_panel_section_key = 'section_%s' % tool_panel_section
-                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-            else:
-                tool_section = None
+            tool_panel_section_key, tool_section = handle_tool_panel_section( trans,
+                                                                              tool_panel_section=tool_panel_section,
+                                                                              new_tool_panel_section=new_tool_panel_section )
     return tool_section, new_tool_panel_section, tool_panel_section_key
+
+def handle_tool_panel_section( trans, tool_panel_section=None, new_tool_panel_section=None ):
+    if new_tool_panel_section:
+        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+        tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
+                                                                           tool_panel_section_id=section_id,
+                                                                           new_tool_panel_section=new_tool_panel_section )
+    elif tool_panel_section:
+        tool_panel_section_key = 'section_%s' % str( tool_panel_section )
+        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+    else:
+        return None, None
+    return tool_panel_section_key, tool_section
 
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
@@ -693,6 +705,60 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+
+def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
+    """Only ever called from Galaxy end when installing"""
+    TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
+    TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % ( TOOL_DATA_TABLE_FILE_NAME )
+    SAMPLE_SUFFIX = '.sample'
+    SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
+    tool_path, relative_target_dir = tool_shed_repository.get_tool_relative_path( app )
+    target_dir = os.path.join( app.config.shed_tool_data_path, relative_target_dir ) #this is where index files will reside on a per repo/installed version
+    if not os.path.exists( target_dir ):
+        os.makedirs( target_dir )
+    for sample_file in tool_index_sample_files:
+        path, filename = os.path.split ( sample_file )
+        target_filename = filename
+        if target_filename.endswith( SAMPLE_SUFFIX ):
+            target_filename = target_filename[ : SAMPLE_SUFFIX_OFFSET ]
+        source_file = os.path.join( tool_path, sample_file )
+        #we're not currently uninstalling index files, do not overwrite existing files
+        target_path_filename = os.path.join( target_dir, target_filename )
+        if not os.path.exists( target_path_filename ) or target_filename == TOOL_DATA_TABLE_FILE_NAME:
+            shutil.copy2( source_file, target_path_filename )
+        else:
+            log.debug( "Did not copy sample file '%s' to install directory '%s' because file already exists.", filename, target_dir )
+        #for provenance and to simplify introspection, lets keep the original data table sample file around
+        if filename == TOOL_DATA_TABLE_FILE_SAMPLE_NAME:
+            shutil.copy2( source_file, os.path.join( target_dir, filename ) )
+    tool_data_table_conf_filename = os.path.join( target_dir, TOOL_DATA_TABLE_FILE_NAME )
+    elems = []
+    if os.path.exists( tool_data_table_conf_filename ):
+        tree, error_message = xml_util.parse_xml( tool_data_table_conf_filename )
+        if tree:
+            for elem in tree.getroot():
+                #append individual table elems or other elemes, but not tables elems
+                if elem.tag == 'tables':
+                    for table_elem in elems:
+                        elems.append( elem )
+                else:
+                    elems.append( elem )
+    else:
+        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.", tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
+    for elem in elems:
+        if elem.tag == 'table':
+            for file_elem in elem.findall( 'file' ):
+                path = file_elem.get( 'path', None )
+                if path:
+                    file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
+            #store repository info in the table tagset for traceability
+            repo_elem = suc.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
+    if elems:
+        os.unlink( tool_data_table_conf_filename ) #remove old data_table
+        app.tool_data_tables.to_xml_file( tool_data_table_conf_filename, elems ) #persist new data_table content
+    
+    return tool_data_table_conf_filename, elems
+    
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """See if the file is column based with respect to a separator."""
@@ -751,7 +817,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     tool = None
     can_use_disk_file = False
     tool_config_filepath = suc.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
-    work_dir = tempfile.mkdtemp()
+    work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ltfcr" )
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
@@ -800,7 +866,9 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
     message = ''
     tmp_tool_config = suc.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
     if tmp_tool_config:
-        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree, error_message = xml_util.parse_xml( tmp_tool_config )
+        if element_tree is None:
+            return tool, message
         element_tree_root = element_tree.getroot()
         # Look for code files required by the tool config.
         tmp_code_files = []
@@ -835,6 +903,13 @@ def panel_entry_per_tool( tool_section_dict ):
             return True
     return False
 
+def reload_upload_tools( app ):
+    if hasattr( app, 'toolbox' ):
+        for tool_id in app.toolbox.tools_by_id:
+            tool = app.toolbox.tools_by_id[ tool_id ]
+            if isinstance( tool.tool_action, UploadToolAction ):
+                app.toolbox.reload_tool_by_id( tool_id )
+
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -842,30 +917,31 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        config_elems.append( elem )
-    config_elems_to_remove = []
-    for config_elem in config_elems:
-        if config_elem.tag == 'section':
-            tool_elems_to_remove = []
-            for tool_elem in config_elem:
-                if tool_elem.get( 'guid' ) in guids_to_remove:
-                    tool_elems_to_remove.append( tool_elem )
-            for tool_elem in tool_elems_to_remove:
-                # Remove all of the appropriate tool sub-elements from the section element.
-                config_elem.remove( tool_elem )
-            if len( config_elem ) < 1:
-                # Keep a list of all empty section elements so they can be removed.
-                config_elems_to_remove.append( config_elem )
-        elif config_elem.tag == 'tool':
-            if config_elem.get( 'guid' ) in guids_to_remove:
-                config_elems_to_remove.append( config_elem )
-    for config_elem in config_elems_to_remove:
-        config_elems.remove( config_elem )
-    # Persist the altered in-memory version of the tool config.
-    suc.config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
+    tree, error_message = xml_util.parse_xml( shed_tool_conf )
+    if tree:
+        root = tree.getroot()
+        for elem in root:
+            config_elems.append( elem )
+        config_elems_to_remove = []
+        for config_elem in config_elems:
+            if config_elem.tag == 'section':
+                tool_elems_to_remove = []
+                for tool_elem in config_elem:
+                    if tool_elem.get( 'guid' ) in guids_to_remove:
+                        tool_elems_to_remove.append( tool_elem )
+                for tool_elem in tool_elems_to_remove:
+                    # Remove all of the appropriate tool sub-elements from the section element.
+                    config_elem.remove( tool_elem )
+                if len( config_elem ) < 1:
+                    # Keep a list of all empty section elements so they can be removed.
+                    config_elems_to_remove.append( config_elem )
+            elif config_elem.tag == 'tool':
+                if config_elem.get( 'guid' ) in guids_to_remove:
+                    config_elems_to_remove.append( config_elem )
+        for config_elem in config_elems_to_remove:
+            config_elems.remove( config_elem )
+        # Persist the altered in-memory version of the tool config.
+        suc.config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
 
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""

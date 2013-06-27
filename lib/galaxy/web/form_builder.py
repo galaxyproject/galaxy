@@ -34,8 +34,12 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
+        value = self.value
+        if not isinstance( value, basestring ):
+            value = str( value )
+        value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) ) )
+            % ( prefix, self.name, self.size, escape( value,  quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
         
@@ -300,7 +304,12 @@ class SelectField(BaseField):
             rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
-            escaped_value = escape( str( value ), quote=True )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            text = unicodify( text )
+            escaped_value = escape( unicodify( value ), quote=True )
             uniq_id = "%s%s|%s" % (prefix, self.name, escaped_value)
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
@@ -308,7 +317,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( str( text ), quote=True ) ) )
+                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
     def get_html_radio( self, prefix="", disabled=False ):
@@ -351,11 +360,17 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
+                if not isinstance( last_selected_value, basestring ):
+                    last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, escape( str( text ), quote=True ) ) )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
+            last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
                      ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )

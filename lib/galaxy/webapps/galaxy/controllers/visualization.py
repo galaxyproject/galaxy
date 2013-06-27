@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
+import os
+
 from sqlalchemy import desc, or_, and_
+from paste.httpexceptions import HTTPNotFound
+
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
@@ -15,6 +19,9 @@ from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
 
 from .library import LibraryListGrid
+
+import logging
+log = logging.getLogger( __name__ )
 
 #
 # -- Grids --
@@ -689,6 +696,54 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                     default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def render( self, trans, visualization_name, embedded=None, **kwargs ):
+        """
+        Render the appropriate visualization template, parsing the `kwargs`
+        into appropriate variables and resources (such as ORM models)
+        based on this visualizations `param` data in visualizations_conf.xml.
+
+        URL: /visualization/show/{visualization_name}
+        """
+        # validate name vs. registry
+        registry = trans.app.visualizations_registry
+        if not registry:
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)')
+        if visualization_name not in registry.listings:
+            raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
+            # or redirect to list?
+        registry_listing = registry.listings[ visualization_name ]
+
+        returned = None
+        try:
+            # convert query string to resources for template based on registry config
+            #NOTE: passing in controller to keep resource lookup within the controller's responsibilities
+            #   (and not the ResourceParser)
+            resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
+
+            # look up template and render
+            template_root = registry_listing.get( 'template_root', registry.TEMPLATE_ROOT )
+            template = registry_listing[ 'template' ]
+            template_path = os.path.join( template_root, template )
+            #NOTE: passing *unparsed* kwargs as query_args
+            #NOTE: shared_vars is a dictionary for shared data in the template
+            #   this feels hacky to me but it's what mako recommends:
+            #   http://docs.makotemplates.org/en/latest/runtime.html
+            #TODO: embedded
+            returned = trans.fill_template( template_path, visualization_name=visualization_name,
+                embedded=embedded, query_args=kwargs, shared_vars={}, **resources )
+
+        except Exception, exception:
+            log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+            if trans.debug: raise
+            returned = trans.show_error_message(
+                "There was an error rendering the visualization. " +
+                "Contact your Galaxy administrator if the problem persists." +
+                "<br/>Details: " + str( exception ), use_panels=False )
+
+        return returned
+
+    @web.expose
     @web.require_login()
     def trackster(self, trans, id=None, **kwargs):
         """
@@ -777,7 +832,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Add genome-wide data to each track in viz.
         tracks = viz_config.get( 'tracks', [] )
         for track in tracks:
-            dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
+            dataset_dict = track[ 'dataset' ]
+            dataset = self.get_hda_or_ldda( trans, dataset_dict[ 'hda_ldda'], dataset_dict[ 'id' ] )
 
             genome_data = self._get_genome_data( trans, dataset, dbkey )
             if not isinstance( genome_data, str ):
@@ -792,6 +848,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         get the visualization with the given id; otherwise, create a new visualization using
         a given dataset and regions.
         """
+        regions = regions or '{}'
         # Need to create history if necessary in order to create tool form.
         trans.get_history( create=True )
 
@@ -825,48 +882,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         """
         Returns a page that controls and renders a scatteplot graph.
         """
-        # Get HDA.
         hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        hda_dict = hda.get_api_value()
-        hda_dict[ 'id' ] = dataset_id
-
-        if( ( hda_dict[ 'metadata_column_names' ] == None )
-        and ( hasattr( hda.datatype, 'column_names' ) ) ):
-                hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
-
-        # try to get the first line (assuming it's a header)
-        #TODO: doesn't belong here
-        try:
-            num_comment_lines = 1
-            if hda_dict[ 'metadata_comment_lines' ]:
-                num_comment_lines = hda_dict[ 'metadata_comment_lines' ]
-
-            infile = open( hda.file_name )
-            for index, line in enumerate( infile ):
-                if 'comment_lines' not in hda_dict:
-                    hda_dict[ 'comment_lines' ] = []
-                hda_dict[ 'comment_lines' ].append( line )
-                if index >= num_comment_lines:
-                    break
-            infile.close()
-
-        except Exception, exc:
-            if infile:
-                infile.close()
-            log.error( str( exc ) )
-
-        history_id = trans.security.encode_id( hda.history.id )
-        
-        #TODO: add column data
-        # Read data.
-        #data_provider = ColumnDataProvider( original_dataset=hda, **kwargs )
-        #data = data_provider.get_data()
-        
-        # Return plot.
         return trans.fill_template_mako( "visualization/scatterplot.mako",
-                                         hda=hda_dict,
-                                         historyID=history_id,
-                                         kwargs=kwargs )
+                                         hda=hda,
+                                         query_args=kwargs )
 
     @web.expose    
     def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):

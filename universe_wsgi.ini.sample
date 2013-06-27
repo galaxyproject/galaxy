@@ -40,6 +40,9 @@ use_threadpool = True
 # Number of threads in the web server thread pool.
 #threadpool_workers = 10
 
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
+ 
 # ---- Filters --------------------------------------------------------------
 
 # Filters sit between Galaxy and the HTTP server.
@@ -171,6 +174,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
+# Visualizations config file, defines what visualizations apply to particular data and how to pass them
+# the necessary parameters
+#visualizations_conf_path = visualizations_conf.xml
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -263,6 +270,11 @@ use_nglims = False
 nglims_config_file = tool-data/nglims.yaml
 
 # -- UI Localization
+
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
 
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None

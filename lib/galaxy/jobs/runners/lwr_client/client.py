@@ -19,6 +19,15 @@ class parseJson(object):
         return replacement
 
 
+class OutputNotFoundException(Exception):
+
+    def __init__(self, path):
+        self.path = path
+
+    def __str__(self):
+        return "No remote output found for path %s" % self.path
+
+
 class Client(object):
     """
     Objects of this client class perform low-level communication with a remote LWR server.
@@ -163,7 +172,7 @@ class Client(object):
         elif output_type == "task":
             output_path = os.path.join(working_directory, name)
         else:
-            raise Exception("No remote output found for dataset with path %s" % path)
+            raise OutputNotFoundException(path)
         self.__raw_download_output(name, self.job_id, output_type, output_path)
 
     def __raw_download_output(self, name, job_id, output_type, output_path):
@@ -210,11 +219,25 @@ class Client(object):
         check_complete_response = self.__raw_execute("check_complete", {"job_id": self.job_id})
         return check_complete_response
 
-    def check_complete(self):
+    def check_complete(self, response=None):
         """
         Return boolean indicating whether the job is complete.
         """
-        return self.raw_check_complete()["complete"] == "true"
+        if response == None:
+            response = self.raw_check_complete()
+        return response["complete"] == "true"
+
+    def get_status(self):
+        check_complete_response = self.raw_check_complete()
+        # Older LWR instances won't set status so use 'complete', at some
+        # point drop backward compatibility.
+        complete = self.check_complete(check_complete_response)
+        old_status = "complete" if complete else "running"
+        status = check_complete_response.get("status", old_status)
+        # Bug in certains older LWR instances returned literal "status".
+        if status not in ["complete", "running", "queued"]:
+            status = old_status
+        return status
 
     def clean(self):
         """

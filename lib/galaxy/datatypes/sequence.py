@@ -397,6 +397,7 @@ class Fasta( Sequence ):
         f.close()
     _count_split = classmethod(_count_split)
 
+
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     file_ext = "csfasta"
@@ -444,6 +445,7 @@ class csFasta( Sequence ):
             dataset.metadata.sequences = None
             return
         return Sequence.set_meta( self, dataset, **kwd )
+
 
 class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
@@ -660,6 +662,7 @@ def COPIED_build_maf_index_species_chromosomes( filename, index_species = None )
         return ( None, [], {}, 0 )
     return ( indexes, species, species_chromosomes, blocks )
 
+
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
     file_ext = "maf"
@@ -766,6 +769,7 @@ class Maf( Alignment ):
         except:
             return False
 
+
 class MafCustomTrack( data.Text ):
     file_ext = "mafcustomtrack"
     
@@ -802,6 +806,7 @@ class MafCustomTrack( data.Text ):
                 dataset.metadata.vp_end = forward_strand_end
         except:
             pass
+
 
 class Axt( data.Text ):
     """Class describing an axt alignment"""
@@ -854,6 +859,7 @@ class Axt( data.Text ):
                     return False
                 else:
                     return True
+
 
 class Lav( data.Text ):
     """Class describing a LAV alignment"""

@@ -15,9 +15,11 @@ from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import to_json_string
+import dataproviders
 
 log = logging.getLogger(__name__)
 
+@dataproviders.decorators.has_dataproviders
 class Tabular( data.Text ):
     """Tab delimited data"""
 
@@ -265,7 +267,7 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
-        return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
+        return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
         preview = util.string_as_bool( preview )
@@ -328,7 +330,6 @@ class Tabular( data.Text ):
         """
         Returns a list of visualizations for datatype.
         """
-
         # Can visualize tabular data as scatterplot if there are 2+ numerical
         # columns.
         num_numerical_cols = 0
@@ -343,6 +344,31 @@ class Tabular( data.Text ):
 
         return  vizs
 
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
+    def column_dataprovider( self, dataset, **settings ):
+        """Uses column settings that are passed in"""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.column.ColumnarDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
+                                                    dataproviders.column.ColumnarDataProvider.settings )
+    def dataset_column_dataprovider( self, dataset, **settings ):
+        """Attempts to get column settings from dataset.metadata"""
+        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
+    def map_dataprovider( self, dataset, **settings ):
+        """Uses column settings that are passed in"""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.column.MapDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
+    def dataset_map_dataprovider( self, dataset, **settings ):
+        """Attempts to get column settings from dataset.metadata"""
+        return dataproviders.dataset.DatasetMapDataProvider( dataset, **settings )
+
+
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
@@ -356,10 +382,12 @@ class Taxonomy( Tabular ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
+
+@dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
     file_ext = 'sam'
     track_type = "ReadTrack"
-    data_sources = { "data": "bam", "index": "summary_tree" }
+    data_sources = { "data": "bam", "index": "bigwig" }
 
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
@@ -470,6 +498,72 @@ class Sam( Tabular ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
+    # ------------- Dataproviders
+    # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
+    #TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
+    def line_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).line_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
+    def regex_line_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).regex_line_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
+    def column_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).column_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
+                                                    dataproviders.column.ColumnarDataProvider.settings )
+    def dataset_column_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
+    def map_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
+    def dataset_map_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
+    def header_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        headers_source = dataproviders.line.RegexLineDataProvider( dataset_source, regex_list=[ '^@' ] )
+        return dataproviders.line.RegexLineDataProvider( headers_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', map_dataprovider.settings )
+    def id_seq_qual_dataprovider( self, dataset, **settings ):
+        # provided as an example of a specified column map (w/o metadata)
+        settings[ 'indeces' ] = [ 0, 9, 10 ]
+        settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
+        return self.map_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_map_dataprovider( self, dataset, **settings ):
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, True, **settings )
+
+    #@dataproviders.decorators.dataprovider_factory( 'samtools' )
+    #def samtools_dataprovider( self, dataset, **settings ):
+    #    dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+    #    return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
+
+
+@dataproviders.decorators.has_dataproviders
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
@@ -528,16 +622,24 @@ class Pileup( Tabular ):
         except:
             return False
             
-class ElandMulti( Tabular ):
-    file_ext = 'elandmulti'
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    def sniff( self, filename ):
-        return False
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_map_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.genomic_region_dataprovider( dataset, **settings )
 
+
+@dataproviders.decorators.has_dataproviders
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     track_type = "VariantTrack"
-    data_sources = { "data": "tabix", "index": "summary_tree" }
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
@@ -568,6 +670,18 @@ class Vcf( Tabular ):
         if line and line.startswith( '#' ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
+
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 1, 1, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_map_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.genomic_region_dataprovider( dataset, **settings )
 
 
 class Eland( Tabular ):
@@ -698,6 +812,13 @@ class Eland( Tabular ):
             dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
             dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
             dataset.metadata.reads = reads.keys()
+
+
+class ElandMulti( Tabular ):
+    file_ext = 'elandmulti'
+
+    def sniff( self, filename ):
+        return False
 
 
 class FeatureLocationIndex( Tabular ):

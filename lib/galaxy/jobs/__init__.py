@@ -27,14 +27,14 @@ from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
 
+DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
+DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
+
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
 # This interface is currently experimental, is only used by the upload tool,
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-
-DATABASE_MAX_STRING_SIZE = 32768
-DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 class Sleeper( object ):
     """
@@ -692,7 +692,10 @@ class JobWrapper( object ):
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
@@ -919,8 +922,6 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-        #DBTODO unused
-        #job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
@@ -1573,6 +1574,12 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        for config_filename in config_filenames:
+            config_contents = open(config_filename, "r").read()
+            for k, v in fnames.iteritems():
+                config_contents = config_contents.replace(k, v)
+            open(config_filename, "w").write(config_contents)
+
         # FIXME: Build the param file (might return None, DEPRECATED)
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line

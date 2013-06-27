@@ -85,8 +85,8 @@ class MetadataCollection( object ):
     def __getattr__( self, name ):
         if name in self.spec:
             if name in self.parent._metadata:
-                return self.spec[name].wrap( self.parent._metadata[name] )
-            return self.spec[name].wrap( self.spec[name].default )
+                return self.spec[name].wrap( self.parent._metadata[name], object_session( self.parent ) )
+            return self.spec[name].wrap( self.spec[name].default, object_session( self.parent ) )
         if name in self.parent._metadata:
             return self.parent._metadata[name]
     def __setattr__( self, name, value ):
@@ -213,7 +213,7 @@ class MetadataParameter( object ):
         self.validate( value )
         return value
     
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         """
         Turns a value into its usable form.
         """
@@ -256,11 +256,11 @@ class MetadataElementSpec( object ):
     def get( self, name, default=None ):
         return self.__dict__.get(name, default)
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         """
         Turns a stored value into its usable form.
         """
-        return self.param.wrap( value )
+        return self.param.wrap( value, session )
 
     def unwrap( self, value ):
         """
@@ -323,7 +323,7 @@ class SelectParameter( MetadataParameter ):
             return ", ".join( map( str, value ) )
         return MetadataParameter.get_html( self, value, context=context, other_values=other_values, values=values, **kwd )
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         value = self.marshal( value ) #do we really need this (wasteful)? - yes because we are not sure that all existing selects have been stored previously as lists. Also this will handle the case where defaults/no_values are specified and are single non-list values.
         if self.multiple:
             return value
@@ -435,17 +435,16 @@ class FileParameter( MetadataParameter ):
     def get_html( self, value=None, context={}, other_values={}, **kwd ):
         return "<div>No display available for Metadata Files</div>"
 
-    def wrap( self, value ):
+    def wrap( self, value, session ):
         if value is None:
             return None
         if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
-        mf = galaxy.model.MetadataFile()
-        mf.id = value #we assume this is a valid id, since we cannot check it
+        mf = session.query( galaxy.model.MetadataFile ).get( value )
         return mf
     
     def make_copy( self, value, target_context, source_context ):
-        value = self.wrap( value )
+        value = self.wrap( value, object_session( target_context.parent ) )
         if value:
             new_value = galaxy.model.MetadataFile( dataset = target_context.parent, name = self.spec.name )
             object_session( target_context.parent ).add( new_value )

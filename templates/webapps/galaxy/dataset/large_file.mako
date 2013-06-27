@@ -1,4 +1,7 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/dataset/display.mako" import="render_deleted_data_message" />
+
+${ render_deleted_data_message( data ) }
 
 <div class="warningmessagelarge">
     This dataset is large and only the first megabyte is shown below.<br />
@@ -7,5 +10,5 @@
 </div>
 
 <pre>
-${ unicode( truncated_data, 'utf-8' ) | h }
+${ util.unicodify( truncated_data ) | h }
 </pre>

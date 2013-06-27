@@ -12,6 +12,7 @@ from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.model.orm import dialect_to_egg
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
@@ -21,12 +22,6 @@ context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=Tr
 
 # For backward compatibility with "context.current"
 context.current = Session
-
-dialect_to_egg = { 
-    "sqlite"   : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql"    : "MySQL_python"
-}
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the 
@@ -132,6 +127,7 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "downloadable", Boolean, default=True ),
     Column( "tools_functionally_correct", Boolean, default=False, index=True ),
     Column( "do_not_test", Boolean, default=False, index=True ),
+    Column( "test_install_error", Boolean, default=False, index=True ),
     Column( "time_last_tested", DateTime, default=None, nullable=True ),
     Column( "missing_test_components", Boolean, default=False, index=True ),
     Column( "tool_test_results", JSONType, nullable=True ),
@@ -140,6 +136,14 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "includes_tools", Boolean, default=False, index=True ),
     Column( "includes_tool_dependencies", Boolean, default=False, index=True ),
     Column( "includes_workflows", Boolean, default=False, index=True ) )
+
+SkipToolTest.table = Table( "skip_tool_test", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_metadata_id", Integer, ForeignKey( "repository_metadata.id" ), index=True ),
+    Column( "initial_changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "comment" , TEXT ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -267,10 +271,14 @@ mapper( RepositoryMetadata, RepositoryMetadata.table,
                                        foreign_keys=[ RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision ],
                                        primaryjoin=( ( RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id ) & ( RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision ) ) ) ) )
 
+mapper( SkipToolTest, SkipToolTest.table,
+    properties=dict( repository_revision=relation( RepositoryMetadata,
+                                                   backref='skip_tool_tests' ) ) )
+
 mapper( RepositoryReview, RepositoryReview.table,
     properties=dict( repository=relation( Repository,
                                           primaryjoin=( RepositoryReview.table.c.repository_id == Repository.table.c.id ) ),
-                     # Take case when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
+                     # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
                      # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
                      # reset on a repository!
                      repository_metadata=relation( RepositoryMetadata,

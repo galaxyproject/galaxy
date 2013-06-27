@@ -197,9 +197,11 @@ def main():
                 db_path = os.environ['GALAXY_TEST_DBPATH']
             else: 
                 tempdir = tempfile.mkdtemp()
-                db_path = os.path.join( tempdir, 'database' )
-            file_path = os.path.join( db_path, 'files' )
-            new_file_path = os.path.join( db_path, 'tmp' )
+                db_path = tempfile.mkdtemp( prefix='database_', dir=tempdir )
+            # FIXME: This is a workaround for cases where metadata is being set externally.
+            file_path = os.path.join( 'database', 'files' )
+            new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
+            job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
@@ -207,7 +209,8 @@ def main():
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
-                os.makedirs( dir )
+                if not os.path.exists( dir ):
+                    os.makedirs( dir )
             except OSError:
                 pass
 
@@ -226,30 +229,31 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
-        app = UniverseApplication( job_queue_workers = 5,
-                                   id_secret = 'changethisinproductiontoo',
-                                   template_path = "templates",
-                                   database_connection = database_connection,
-                                   file_path = file_path,
-                                   new_file_path = new_file_path,
-                                   tool_path = tool_path,
-                                   update_integrated_tool_panel = False,
-                                   tool_config_file = tool_config_file,
-                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                   tool_parse_help = False,
-                                   test_conf = "test.conf",
-                                   tool_data_table_config_path = tool_data_table_config_path,
-                                   shed_tool_data_table_config = shed_tool_data_table_config,
-                                   log_destination = "stdout",
-                                   use_heartbeat = False,
+        app = UniverseApplication( admin_users = 'test@bx.psu.edu',
+                                   allow_library_path_paste = True,
                                    allow_user_creation = True,
                                    allow_user_deletion = True,
-                                   admin_users = 'test@bx.psu.edu',
-                                   allow_library_path_paste = True,
-                                   library_import_dir = library_import_dir,
-                                   user_library_import_dir = user_library_import_dir,
+                                   database_connection = database_connection,
+                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                                   file_path = file_path,
                                    global_conf = global_conf,
-                                   running_functional_tests=True,
+                                   id_secret = 'changethisinproductiontoo',
+                                   job_queue_workers = 5,
+                                   job_working_directory = job_working_directory,
+                                   library_import_dir = library_import_dir,
+                                   log_destination = "stdout",
+                                   new_file_path = new_file_path,
+                                   running_functional_tests = True,
+                                   shed_tool_data_table_config = shed_tool_data_table_config,
+                                   template_path = "templates",
+                                   test_conf = "test.conf",
+                                   tool_config_file = tool_config_file,
+                                   tool_data_table_config_path = tool_data_table_config_path,
+                                   tool_path = tool_path,
+                                   tool_parse_help = False,
+                                   update_integrated_tool_panel = False,
+                                   use_heartbeat = False,
+                                   user_library_import_dir = user_library_import_dir,
                                    **kwargs )
         log.info( "Embedded Universe application started" )
 

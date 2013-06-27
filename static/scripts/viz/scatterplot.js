@@ -138,16 +138,16 @@ function TwoVarScatterplot( config ){
         bottom = bottom || 0;
         left = left || 0;
         this.svg
-            .attr( "width",  this.config.width +  ( this.config.marginRight  + right ) + 
-                                                  ( this.config.marginLeft   + left ) )
-            .attr( "height", this.config.height + ( this.config.marginTop    + top ) +
-                                                  ( this.config.marginBottom + bottom ) )
+            .attr( "width",  this.config.width  + ( this.config.marginRight  + right )
+                                                + ( this.config.marginLeft   + left ) )
+            .attr( "height", this.config.height + ( this.config.marginTop    + top )
+                                                + ( this.config.marginBottom + bottom ) )
             // initial is hidden - show it
             .style( 'display', 'block' );
             
         // move content group away from margins
         //TODO: allow top, right axis
-        this.content = this.svg.select( "g.content" )       
+        this.content = this.svg.select( "g.content" )
             .attr( "transform", this.translateStr( this.config.marginLeft + left, this.config.marginTop + top ) );
     };
     
@@ -260,7 +260,7 @@ function TwoVarScatterplot( config ){
             .attr( 'text-anchor', 'middle' )
             .attr( 'transform', this.rotateStr( -90, this.config.yAxisLabelBumpX, this.config.height / 2 ) )
             .text( this.config.yLabel );
-        //this.log( 'yAxisLabel:', this.yAxisLabel ); 
+        //this.log( 'yAxisLabel:', this.yAxisLabel );
     };
     
     // ........................................................ grid lines
@@ -284,7 +284,7 @@ function TwoVarScatterplot( config ){
             
         // remove unneeded (less ticks)
         this.vGridLines.exit().remove();
-        //this.log( 'vGridLines:', this.vGridLines ); 
+        //this.log( 'vGridLines:', this.vGridLines );
 
         // HORIZONTAL
         this.hGridLines = this.content.selectAll( 'line.h-grid-line' )

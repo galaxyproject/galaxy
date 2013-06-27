@@ -51,17 +51,20 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
+    
     # allow for subdirectories in extra_files_path
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
-    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param', controller='dataset', action='display_application', dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None )
+    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
+        controller='dataset', action='display_application', dataset_id=None, user_id=None,
+        app_name = None, link_name = None, app_action = None, action_param = None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
-    
+
     # Add the web API
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
     # The /folders section is experimental at this point:
@@ -129,6 +132,10 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
+    _add_item_provenance_controller( webapp,
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -148,6 +155,10 @@ def app_factory( global_conf, **kwargs ):
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )    
 
+    # visualizations registry generic template renderer
+    webapp.add_route( '/visualization/show/:visualization_name',
+        controller='visualization', action='render', visualization_name=None )
+
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
     webapp.mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
@@ -156,12 +167,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
-                                'tool_shed_repositories',
-                                controller='tool_shed_repositories',
-                                name_prefix='tool_shed_repository_',
-                                path_prefix='/api',
-                                new={ 'install_repository_revision' : 'POST' },
-                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+                            'tool_shed_repositories',
+                            member={ 'repair_repository_revision' : 'POST' },
+                            controller='tool_shed_repositories',
+                            name_prefix='tool_shed_repository_',
+                            path_prefix='/api',
+                            new={ 'install_repository_revision' : 'POST' },
+                            parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
@@ -234,6 +246,12 @@ def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix
     name = "%sannotation" % name_prefix
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
+
+def _add_item_provenance_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sprovenance" % name_prefix
+    name = "%sprovenance" % name_prefix
+    webapp.mapper.resource(name, "provenance", path_prefix=path_prefix, controller=controller)
+
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """

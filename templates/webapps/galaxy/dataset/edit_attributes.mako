@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/message.mako" name="message_ns" import="handle_refresh_frames" />
+<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 
 <%def name="title()">${_('Edit Dataset Attributes')}</%def>
 
@@ -10,7 +10,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${message_ns.handle_refresh_frames()}
+    ${handle_refresh_frames()}
     ${h.js( "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
 </%def>
 

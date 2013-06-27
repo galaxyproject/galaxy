@@ -121,6 +121,8 @@ class Registry( object ):
                         # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.
                         self.log.debug( "Removing datatype with extension '%s' from the registry." % extension )
                         del self.datatypes_by_extension[ extension ]
+                        if extension in self.upload_file_formats:
+                            self.upload_file_formats.remove( extension )
                         can_process_datatype = False
                     else:
                         can_process_datatype = ( extension and ( dtype or type_extension ) ) and ( extension not in self.datatypes_by_extension or override )
@@ -165,7 +167,7 @@ class Registry( object ):
                         self.mimetypes_by_extension[ extension ] = mimetype
                         if datatype_class.track_type:
                             self.available_tracks.append( extension )
-                        if display_in_upload:
+                        if display_in_upload and extension not in self.upload_file_formats:
                             self.upload_file_formats.append( extension )
                         # Max file size cut off for setting optional metadata
                         self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
@@ -379,6 +381,36 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
+        
+    def get_datatype_class_by_name( self, name ):
+        """
+        Return the datatype class where the datatype's `type` attribute
+        (as defined in the datatype_conf.xml file) contains `name`.
+        """
+        #TODO: too roundabout - would be better to generate this once as a map and store in this object
+        found_class = None
+        for ext, datatype_obj in self.datatypes_by_extension.items():
+            datatype_obj_class = datatype_obj.__class__
+            datatype_obj_class_str = str( datatype_obj_class )
+            #print datatype_obj_class_str
+            if name in datatype_obj_class_str:
+                return datatype_obj_class
+        return None
+        # these seem to be connected to the dynamic classes being generated in this file, lines 157-158
+        #   they appear when a one of the three are used in inheritance with subclass="True"
+        #TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
+
+        #remap = {
+        #    'galaxy.datatypes.registry.Tabular'   : galaxy.datatypes.tabular.Tabular,
+        #    'galaxy.datatypes.registry.Text'      : galaxy.datatypes.data.Text,
+        #    'galaxy.datatypes.registry.Binary'    : galaxy.datatypes.binary.Binary
+        #}
+        #datatype_str = str( datatype )
+        #if datatype_str in remap:
+        #    datatype = remap[ datatype_str ]
+        #
+        #return datatype
+
     def get_available_tracks(self):
         return self.available_tracks
     def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
@@ -583,7 +615,7 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
+            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset

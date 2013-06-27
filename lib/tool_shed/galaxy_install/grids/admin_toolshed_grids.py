@@ -319,11 +319,11 @@ class ToolDependencyGrid( grids.Grid ):
     use_paging = False
     columns = [
         NameColumn( "Name",
-                    link=( lambda item: iff( item.status in \
-                                             [ model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                               model.ToolDependency.installation_status.INSTALLING,
-                                               model.ToolDependency.installation_status.UNINSTALLED ], \
-                                             None, dict( action="manage_tool_dependencies", operation='browse', id=item.id ) ) ),
+                    link=( lambda item: iff( item.status in [ model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                              model.ToolDependency.installation_status.INSTALLING,
+                                                              model.ToolDependency.installation_status.UNINSTALLED ],
+                                             None,
+                                             dict( action="manage_tool_dependencies", operation='browse', id=item.id ) ) ),
                     filterable="advanced" ),
         VersionColumn( "Version",
                        filterable="advanced" ),
@@ -331,17 +331,6 @@ class ToolDependencyGrid( grids.Grid ):
                     filterable="advanced" ),
         StatusColumn( "Installation Status",
                       filterable="advanced" ),
-    ]
-    operations = [
-        grids.GridOperation( "Install",
-                             allow_multiple=True,
-                             condition=( lambda item: item.status in [ model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                                       model.ToolDependency.installation_status.UNINSTALLED ] ) ),
-        grids.GridOperation( "Uninstall",
-                             allow_multiple=True,
-                             allow_popup=False,
-                             condition=( lambda item: item.status in [ model.ToolDependency.installation_status.INSTALLED,
-                                                                       model.ToolDependency.installation_status.ERROR ] ) )
     ]
 
     def build_initial_query( self, trans, **kwd ):

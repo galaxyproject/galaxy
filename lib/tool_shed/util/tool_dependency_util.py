@@ -5,10 +5,7 @@ from galaxy import eggs
 from galaxy import util
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
-
-eggs.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -67,13 +64,10 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
-    ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
         tool_dependency_type = elem.tag
@@ -226,9 +220,16 @@ def get_tool_dependency_by_name_version_type_repository( app, repository, name, 
 
 def get_tool_dependency_ids( as_string=False, **kwd ):
     tool_dependency_id = kwd.get( 'tool_dependency_id', None )
-    tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
-    if not tool_dependency_ids:
-        tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+    if 'tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'tool_dependency_ids' ] )
+    elif 'id' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'id' ] )
+    elif 'inst_td_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'inst_td_ids' ] )
+    elif 'uninstalled_tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'uninstalled_tool_dependency_ids' ] )
+    else:
+        tool_dependency_ids = []
     if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
         tool_dependency_ids.append( tool_dependency_id )
     if as_string:
@@ -343,3 +344,12 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
+
+def set_tool_dependency_attributes( trans, tool_dependency, status, error_message, remove_from_disk=False ):
+    if remove_from_disk:
+        installation_directory = tool_dependency.installation_directory( trans.app )
+        removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
+    tool_dependency.error_message = error_message
+    tool_dependency.status = status
+    trans.sa_session.add( tool_dependency )
+    trans.sa_session.flush()

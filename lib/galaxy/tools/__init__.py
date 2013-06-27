@@ -48,6 +48,7 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
+from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
@@ -120,6 +121,7 @@ class ToolBox( object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self.tool_root_dir = tool_root_dir
         self.app = app
+        self.filter_factory = FilterFactory( self )
         self.init_dependency_manager()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
@@ -680,76 +682,19 @@ class ToolBox( object ):
         """
         return self.app.model.context
 
-    def to_dict( self, trans, in_panel=True, trackster=False ):
-
-        def filter_for_panel( item, filters ):
-            """
-            Filters tool panel elements so that only those that are compatible
-            with provided filters are kept.
-            """
-            def _apply_filter( filter_item, filter_list ):
-                for filter_method in filter_list:
-                    if not filter_method( filter_item ):
-                        return False
-                return True
-            if isinstance( item, Tool ):
-                if _apply_filter( item, filters[ 'tool' ] ):
-                    return item
-            elif isinstance( item, ToolSectionLabel ):
-                if _apply_filter( item, filters[ 'label' ] ):
-                    return item
-            elif isinstance( item, ToolSection ):
-                # Filter section item-by-item. Only show a label if there are
-                # non-filtered tools below it.
-
-                if _apply_filter( item, filters[ 'section' ] ):
-                    cur_label_key = None
-                    tools_under_label = False
-                    filtered_elems = item.elems.copy()
-                    for key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
-                            # Filter tool.
-                            if _apply_filter( section_item, filters[ 'tool' ] ):
-                                tools_under_label = True
-                            else:
-                                del filtered_elems[ key ]
-                        elif isinstance( section_item, ToolSectionLabel ):
-                            # If there is a label and it does not have tools,
-                            # remove it.
-                            if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
-                                del filtered_elems[ cur_label_key ]
-
-                            # Reset attributes for new label.
-                            cur_label_key = key
-                            tools_under_label = False
-
-
-                    # Handle last label.
-                    if cur_label_key and not tools_under_label:
-                        del filtered_elems[ cur_label_key ]
-
-                    # Only return section if there are elements.
-                    if len( filtered_elems ) != 0:
-                        copy = item.copy()
-                        copy.elems = filtered_elems
-                        return copy
-
-            return None
-
+    def to_dict( self, trans, in_panel=True, **kwds ):
         #
         # Dictify toolbox.
         #
-
+        context = Bunch( toolbox=self, trans=trans, **kwds )
         if in_panel:
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
 
-            # Filter if necessary.
-            filters = dict( tool=[ lambda x: not x._is_hidden_for_user( trans.user ) ], section=[], label=[] ) #hidden tools filter
-            if trackster:
-                filters[ 'tool' ].append( lambda x: x.trackster_conf ) # If tool has a trackster config, it can be used in Trackster.
+            filters = self.filter_factory.build_filters( trans, **kwds )
+
             filtered_panel_elts = []
             for index, elt in enumerate( panel_elts ):
-                elt = filter_for_panel( elt, filters )
+                elt = _filter_for_panel( elt, filters, context )
                 if elt:
                     filtered_panel_elts.append( elt )
             panel_elts = filtered_panel_elts
@@ -760,11 +705,66 @@ class ToolBox( object ):
                 rval.append( elt.to_dict( trans, for_link=True ) )
         else:
             tools = []
-            for id, tool in self.app.toolbox.tools_by_id.items():
+            for id, tool in self.toolbox.tools_by_id.items():
                 tools.append( tool.to_dict( trans ) )
             rval = tools
 
         return rval
+
+
+def _filter_for_panel( item, filters, context ):
+    """
+    Filters tool panel elements so that only those that are compatible
+    with provided filters are kept.
+    """
+    def _apply_filter( filter_item, filter_list ):
+        for filter_method in filter_list:
+            if not filter_method( context, filter_item ):
+                return False
+        return True
+    if isinstance( item, Tool ):
+        if _apply_filter( item, filters[ 'tool' ] ):
+            return item
+    elif isinstance( item, ToolSectionLabel ):
+        if _apply_filter( item, filters[ 'label' ] ):
+            return item
+    elif isinstance( item, ToolSection ):
+        # Filter section item-by-item. Only show a label if there are
+        # non-filtered tools below it.
+
+        if _apply_filter( item, filters[ 'section' ] ):
+            cur_label_key = None
+            tools_under_label = False
+            filtered_elems = item.elems.copy()
+            for key, section_item in item.elems.items():
+                if isinstance( section_item, Tool ):
+                    # Filter tool.
+                    if _apply_filter( section_item, filters[ 'tool' ] ):
+                        tools_under_label = True
+                    else:
+                        del filtered_elems[ key ]
+                elif isinstance( section_item, ToolSectionLabel ):
+                    # If there is a label and it does not have tools,
+                    # remove it.
+                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                        del filtered_elems[ cur_label_key ]
+
+                    # Reset attributes for new label.
+                    cur_label_key = key
+                    tools_under_label = False
+
+            # Handle last label.
+            if cur_label_key and not tools_under_label:
+                del filtered_elems[ cur_label_key ]
+
+            # Only return section if there are elements.
+            if len( filtered_elems ) != 0:
+                copy = item.copy()
+                copy.elems = filtered_elems
+                return copy
+
+    return None
+
 
 
 class ToolSection( object ):
@@ -816,6 +816,7 @@ class DefaultToolState( object ):
     """
     def __init__( self ):
         self.page = 0
+        self.rerun_remap_job_id = None
         self.inputs = None
     def encode( self, tool, app, secure=True ):
         """
@@ -825,6 +826,7 @@ class DefaultToolState( object ):
         # page in that dict
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
+        value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         value = simplejson.dumps( value )
         # Make it secure
         if secure:
@@ -846,6 +848,10 @@ class DefaultToolState( object ):
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )
+        if '__rerun_remap_job_id__' in values:
+            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
+        else:
+            self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
 class ToolOutput( object ):
@@ -933,6 +939,7 @@ class Tool( object ):
         self.input_required = False
         self.display_interface = True
         self.require_login = False
+        self.rerun = False
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -952,6 +959,8 @@ class Tool( object ):
         self.version = None
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
+        #populate toolshed repository info, if available
+        self.populate_tool_shed_info()
         # Parse XML element containing configuration
         self.parse( root, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script
@@ -1266,23 +1275,23 @@ class Tool( object ):
         """
         # TODO: Allow raw HTML or an external link.
         self.help = root.find("help")
-        # Handle tool shelp image display for tools that are contained in repositories that are in the lool shed or installed into Galaxy.
-        # When tool config files use the speical string $PATH_TO_IMAGES, the folloing code will replace that string with the path on disk.
-        if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
-            if self.app.name == 'galaxy':
-                repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
-                if repository:
-                    path_to_images = '/tool_runner/static/images/%s' % self.repository_id
-                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
-            elif self.app.name == 'tool_shed':
-                repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
-                if repository:
-                    path_to_images = '/repository/static/images/%s' % self.repository_id
-                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
         self.help_by_page = list()
         help_header = ""
         help_footer = ""
         if self.help is not None:
+            # Handle tool help image display for tools that are contained in repositories that are in the tool shed or installed into Galaxy.
+            # When tool config files use the special string $PATH_TO_IMAGES, the following code will replace that string with the path on disk.
+            if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
+                if self.app.name == 'galaxy':
+                    repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/tool_runner/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+                elif self.app.name == 'tool_shed':
+                    repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/repository/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
@@ -1519,7 +1528,8 @@ class Tool( object ):
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug( "Error level %s did not match warning/fatal" % err_level )
+                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" % 
+                               ( self.id, err_level ) )
         except Exception:
             log.error( "Exception in parse_error_level "
                      + str(sys.exc_info() ) )
@@ -1775,6 +1785,17 @@ class Tool( object ):
             version = requirement_elem.get( "version", None )
             requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
+    
+    def populate_tool_shed_info( self ):
+        if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
+            repository_id = self.app.security.decode_id( self.repository_id )
+            tool_shed_repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( repository_id )
+            if tool_shed_repository:
+                self.tool_shed = tool_shed_repository.tool_shed
+                self.repository_name = tool_shed_repository.name
+                self.repository_owner = tool_shed_repository.owner
+                self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+    
     def check_workflow_compatible( self, root ):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1920,7 +1941,10 @@ class Tool( object ):
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
                 try:
-                    _, out_data = self.execute( trans, incoming=params, history=history )
+                    rerun_remap_job_id = None
+                    if 'rerun_remap_job_id' in incoming:
+                        rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
+                    _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
                 except httpexceptions.HTTPFound, e:
                     #if it's a paste redirect exception, pass it up the stack
                     raise e
@@ -2489,7 +2513,6 @@ class Tool( object ):
                                                            datatypes_registry = self.app.datatypes_registry,
                                                            tool = self,
                                                            name = name )
-
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
@@ -2901,11 +2924,6 @@ class Tool( object ):
                     self.sa_session.flush()
         return primary_datasets
 
-    def _is_hidden_for_user( self, user ):
-        if self.hidden or ( not user and self.require_login ):
-            return True
-        return False
-
     def to_dict( self, trans, for_link=False, for_display=False ):
         """ Returns dict of tool. """
 
@@ -3157,6 +3175,10 @@ class DataManagerTool( OutputParameterJSONTool ):
         #process results of tool
         if job and job.state == job.states.ERROR:
             return
+        #Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
+        for dataset in out_data.itervalues():
+            if dataset.state != dataset.states.OK:
+                return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager( data_manager_id, None )
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
@@ -3247,7 +3269,11 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
     def __nonzero__( self ):
         return bool( self.obj ) #FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
     def __str__( self ):
-        return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+        try:
+            return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+        except:
+            #Most likely None, which lacks __module__. 
+            return str( self.obj )
     def __getattr__( self, key ):
         return getattr( self.obj, key )
 

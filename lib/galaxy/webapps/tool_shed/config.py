@@ -6,7 +6,7 @@ import sys, os
 import logging, logging.config
 from optparse import OptionParser
 import ConfigParser
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool, listify
 
 from galaxy import eggs
 import pkg_resources
@@ -44,6 +44,9 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
@@ -79,6 +82,10 @@ class Configuration( object ):
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.blog_url = kwargs.get( 'blog_url', None )

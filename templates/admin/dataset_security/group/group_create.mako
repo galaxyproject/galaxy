@@ -40,6 +40,8 @@ $().ready(function() {
             $(this).attr("selected", "selected");
         });
     });
+    //Temporary removal of select2 for inputs -- refactor this later.
+    $('select').select2("destroy");
 });
 </script>
 

@@ -1,5 +1,5 @@
-<tool id="cuffdiff" name="Cuffdiff" version="0.0.5">
-    <!-- Wrapper supports Cuffdiff versions v1.3.0-v2.0 -->
+<tool id="cuffdiff" name="Cuffdiff" version="0.0.6">
+    <!-- Wrapper supports Cuffdiff versions 2.1.0-2.1.1 -->
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -9,6 +9,8 @@
             --FDR=$fdr
             --num-threads="4"
             --min-alignment-count=$min_alignment_count
+            --library-norm-method=$library_norm_method
+            --dispersion-method=$dispersion_method
 
             --isoforms_fpkm_tracking_output=$isoforms_fpkm_tracking
             --genes_fpkm_tracking_output=$genes_fpkm_tracking
@@ -40,14 +42,12 @@
 
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
-	        -b
+                -b
                 #if $bias_correction.seq_source.index_source == "history":
                     --ref_file=$bias_correction.seq_source.ref_file
                 #else:
-                    --ref_file="None"
+                    --index=${bias_correction.seq_source.index.fields.path}
                 #end if
-                --dbkey=${gtf_input.metadata.dbkey} 
-                --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
                 
             ## Inputs.
@@ -92,6 +92,18 @@
             </when>
         </conditional>
 
+        <param name="library_norm_method" type="select" label="Library normalization method">
+            <option value="geometric" selected="True">geometric</option>
+            <option value="classic-fpkm">classic-fpkm</option>
+            <option value="quartile">quartile</option>
+        </param>
+
+        <param name="dispersion_method" type="select" label="Dispersion estimation method" help="If using only one sample per condition, you must use 'blind.'">
+            <option value="pooled" selected="True">pooled</option>
+            <option value="per-condition">per-condition</option>
+            <option value="blind">blind</option>
+        </param>
+
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
 
         <param name="min_alignment_count" type="integer" value="10" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
@@ -117,7 +129,14 @@
                     <option value="cached">Locally cached</option>
                     <option value="history">History</option>
                   </param>
-                  <when value="cached"></when>
+                  <when value="cached">
+                    <param name="index" type="select" label="Using reference genome">
+                      <options from_data_table="sam_fa_indexes">
+                        <filter type="data_meta" ref="gtf_input" key="dbkey" column="1" />
+                        <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+                      </options>
+                    </param>
+                  </when>
                   <when value="history">
                       <param name="ref_file" type="data" format="fasta" label="Using reference file" />
                   </when>

@@ -88,7 +88,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                         %endif
                         <div class="form-row">
                             <label>Description:</label>
-                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset[ 'description' ] | h}</a>
+                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${ util.unicodify( changeset[ 'description' ] ) | h}</a>
                         </div>
                         <div class="form-row">
                             <label>Commit:</label>

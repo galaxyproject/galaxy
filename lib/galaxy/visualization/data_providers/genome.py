@@ -14,7 +14,6 @@ from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.tracks.summary import summary_tree_from_file
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 from galaxy.datatypes.interval import Bed, Gff, Gtf
@@ -799,79 +798,6 @@ class RawVcfDataProvider( VcfDataProvider ):
                     yield data_line
         
         return line_filter_iter()
-
-class SummaryTreeDataProvider( GenomeDataProvider ):
-    """
-    Summary tree data provider for the Galaxy track browser. 
-    """
-
-    dataset_type = 'summary_tree'
-    
-    CACHE = LRUCache( 20 ) # Store 20 recently accessed indices for performance
-    
-    def valid_chroms( self ):
-        st = summary_tree_from_file( self.converted_dataset.file_name )
-        return st.chrom_blocks.keys()
-    
-    def get_data( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None, **kwargs ):
-        """
-        Returns summary tree data for a given genomic region.
-        """
-        filename = self.converted_dataset.file_name
-        st = self.CACHE[filename]
-        if st is None:
-            st = summary_tree_from_file( self.converted_dataset.file_name )
-            self.CACHE[filename] = st
-
-        # Look for chrom in tree using both naming conventions.
-        if chrom not in st.chrom_blocks:
-            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-            if chrom not in st.chrom_blocks:
-                return None
-
-        # Get or compute level.
-        if level:
-            level = int( level )
-        elif resolution:
-            resolution = max( 1, ceil( float( resolution ) ) )
-            level = ceil( log( resolution, st.block_size ) ) - 1
-            level = int( max( level, 0 ) )
-        else:
-            # Either level or resolution is required.
-            return None
-
-        if level <= 1:
-            return "detail"
-
-        # Use level to get results.
-        stats = st.chrom_stats[ chrom ]
-        results = st.query( chrom, int(start), int(end), level, detail_cutoff=detail_cutoff, draw_cutoff=draw_cutoff )
-        if results == "detail" or results == "draw":
-            return results
-        else:
-            return {
-                'dataset_type': self.dataset_type,
-                'data': results,
-                'max': stats[ level ][ "max" ],
-                'avg': stats[ level ][ "avg" ],
-                'delta': stats[ level ][ "delta" ],
-                'level': level
-            }
-            
-    def has_data( self, chrom ):
-        """
-        Returns true if dataset has data for this chrom
-        """
-        
-        # Get summary tree.
-        filename = self.converted_dataset.file_name
-        st = self.CACHE[filename]
-        if st is None:
-            st = summary_tree_from_file( self.converted_dataset.file_name )
-            self.CACHE[filename] = st
-            
-        # Check for data.
-        return st.chrom_blocks.get(chrom, None) or st.chrom_blocks.get(_convert_between_ucsc_and_ensemble_naming(chrom), None)
 
 class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """

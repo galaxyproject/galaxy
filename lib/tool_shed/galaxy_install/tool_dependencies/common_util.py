@@ -1,7 +1,9 @@
 import logging
 import os
 import shutil
+import sys
 import tarfile
+import traceback
 import urllib2
 import zipfile
 import tool_shed.util.shed_util_common as suc
@@ -47,27 +49,40 @@ def create_or_update_env_shell_file( install_dir, env_var_dict ):
         changed_value = '%s' % env_var_value
     elif env_var_action == 'append_to':
         changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+    line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
+    return create_or_update_env_shell_file_with_command(install_dir, line)
+
+
+def create_or_update_env_shell_file_with_command( install_dir, command ):
+    """
+    Return a shell expression which when executed will create or update
+    a Galaxy env.sh dependency file in the specified install_dir containing
+    the supplied command.
+    """
     env_shell_file_path = '%s/env.sh' % install_dir
     if os.path.exists( env_shell_file_path ):
         write_action = '>>'
     else:
         write_action = '>'
-    cmd = "echo '%s=%s; export %s' %s %s;chmod +x %s" % ( env_var_name,
-                                                          changed_value,
-                                                          env_var_name,
-                                                          write_action,
-                                                          env_shell_file_path,
-                                                          env_shell_file_path )
+    cmd = "echo %s %s %s;chmod +x %s" % ( __shellquote(command),
+                                          write_action,
+                                          __shellquote(env_shell_file_path),
+                                          __shellquote(env_shell_file_path))
     return cmd
+
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
         # Open for reading with transparent compression.
-        tar = tarfile.open( file_name, 'r:*' )
+        tar = tarfile.open( file_name, 'r:*', errorlevel=0 )
     else:
-        tar = tarfile.open( file_name )
+        tar = tarfile.open( file_name, errorlevel=0 )
     tar.extractall( path=file_path )
     tar.close()
+
+def format_traceback():
+    ex_type, ex, tb = sys.exc_info()
+    return ''.join( traceback.format_tb( tb ) )
 
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
@@ -122,7 +137,14 @@ def get_env_shell_file_paths( app, elem ):
                         tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )
                         installation_directory = tool_dependency.installation_directory( app )
                         env_shell_file_path = get_env_shell_file_path( installation_directory )
-                        env_shell_file_paths.append( env_shell_file_path )
+                        if env_shell_file_path:
+                            env_shell_file_paths.append( env_shell_file_path )
+                        else:
+                            error_message = "Skipping tool dependency definition because unable to locate env.sh file for tool dependency "
+                            error_message += "type %s, name %s, version %s for repository %s" % \
+                                ( str( tool_dependency_type ), str( tool_dependency_name ), str( tool_dependency_version ), str( repository.name ) )
+                            log.debug( error_message )
+                            continue
                     else:
                         error_message = "Skipping tool dependency definition because unable to locate tool dependency "
                         error_message += "type %s, name %s, version %s for repository %s" % \
@@ -150,6 +172,9 @@ def isbz2( file_path ):
 
 def isgzip( file_path ):
     return checkers.is_gzip( file_path )
+
+def isjar( file_path ):
+    return iszip( file_path ) and file_path.endswith( '.jar' )
 
 def istar( file_path ):
     return tarfile.is_tarfile( file_path )
@@ -191,21 +216,42 @@ def tar_extraction_directory( file_path, file_name ):
         return os.path.abspath( file_path )
     raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
 
-def url_download( install_dir, downloaded_file_name, download_url ):
+def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
     dst = None
     try:
         src = urllib2.urlopen( download_url )
-        data = src.read()
-        dst = open( file_path,'wb' )
-        dst.write( data )
+        dst = open( file_path, 'wb' )
+        while True:
+            chunk = src.read( suc.CHUNK_SIZE )
+            if chunk:
+                dst.write( chunk )
+            else:
+                break
     except:
+        raise
+    finally:
         if src:
             src.close()
         if dst:
             dst.close()
-    return os.path.abspath( file_path )
+    if extract:
+        if istar( file_path ):
+            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
+            extract_tar( file_path, install_dir )
+            dir = tar_extraction_directory( install_dir, downloaded_file_name )
+        elif isjar( file_path ):
+            dir = os.path.curdir
+        elif iszip( file_path ):
+            # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
+            zip_archive_extracted = extract_zip( file_path, install_dir )
+            dir = zip_extraction_directory( install_dir, downloaded_file_name )
+        else:
+            dir = os.path.abspath( install_dir )
+    else:
+        dir = os.path.abspath( install_dir )
+    return dir
 
 def zip_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""
@@ -230,3 +276,10 @@ def zipfile_ok( path_to_archive ):
         if not member_path.startswith( basename ):
             return False
     return True
+
+
+def __shellquote(s):
+    """
+    Quote and escape the supplied string for use in shell expressions.
+    """
+    return "'" + s.replace("'", "'\\''") + "'"

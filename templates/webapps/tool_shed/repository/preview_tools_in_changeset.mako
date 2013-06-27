@@ -44,7 +44,7 @@ ${render_galaxy_repository_actions( repository=repository )}
                     %>
                     ${changeset_revision_select_field.get_html()} <i>${tip_str | h}</i>
                     <div class="toolParamHelp" style="clear: both;">
-                        Select a revision to inspect and download versions of tools from this repository.
+                        Select a revision to inspect and download versions of Galaxy utilities from this repository.
                     </div>
                 </div>
             </form>
@@ -57,4 +57,4 @@ ${render_galaxy_repository_actions( repository=repository )}
     </div>
 </div>
 <p/>
-${render_repository_items( metadata, containers_dict, can_set_metadata=False )}
+${render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='galaxy' )}

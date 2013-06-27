@@ -6,6 +6,7 @@ from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataP
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
+from galaxy.datatypes import dataproviders
 
 import logging
 log = logging.getLogger( __name__ )
@@ -23,7 +24,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         return 'not implemented'
         
     @web.expose_api
-    def show( self, trans, id, hda_ldda='hda', data_type=None, **kwd ):
+    def show( self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd ):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
@@ -46,7 +47,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             elif data_type == 'features':
                 rval = self._search_features( trans, dataset, kwd.get( 'query' ) )
             elif data_type == 'raw_data':
-                rval = self._raw_data( trans, dataset, **kwd )
+                rval = self._raw_data( trans, dataset, provider, **kwd )
             elif data_type == 'track_config':
                 rval = self.get_new_track_config( trans, dataset )
             elif data_type == 'genome_data':
@@ -145,32 +146,45 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
-        # Handle histogram mode uniquely for now:
         data_provider_registry = trans.app.data_provider_registry
+
+        # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, detail_cutoff=0, draw_cutoff=0, **kwargs )
-            if summary == "detail":
-                # Use maximum level of detail--2--to get summary data no matter the resolution.
-                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ],
-                                            level=2, detail_cutoff=0, draw_cutoff=0 )
-            return summary
+            return indexer.get_data( chrom, low, high, **kwargs )
 
-        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
-            # Only check for summary_tree if it's Auto mode (which is the default)
-            # 
-            # Have to choose between indexer and data provider
+        # TODO: 
+        # (1) add logic back in for no_detail
+        # (2) handle scenario where mode is Squish/Pack but data requested is large, so reduced data needed to be returned.
+            
+        # If mode is Auto, need to determine what type of data to return.
+        if mode == "Auto":
+            # Get stats from indexer.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
-            if summary is None:
-                return { 'dataset_type': indexer.dataset_type, 'data': None }
-                
-            if summary == "draw":
-                kwargs["no_detail"] = True # meh
-                extra_info = "no_detail"
-            elif summary != "detail":
-                return summary
+            stats = indexer.get_data( chrom, low, high, stats=True )
+
+            # If stats were requested, return them.
+            if 'stats' in kwargs:
+                if stats[ 'data' ][ 'max' ] == 0:
+                    return { 'dataset_type': indexer.dataset_type, 'data': None }
+                else:
+                    return stats
+            
+            # Stats provides features/base and resolution is bases/pixel, so 
+            # multiplying them yields features/pixel.
+            features_per_pixel = stats[ 'data' ][ 'max' ] * float( kwargs[ 'resolution' ] )
+
+            # Use heuristic based on features/pixel and region size to determine whether to 
+            # return coverage data. When zoomed out and region is large, features/pixel
+            # is determining factor. However, when sufficiently zoomed in and region is 
+            # small, coverage data is no longer provided.
+            if int( high ) - int( low ) > 50000 and features_per_pixel > 1000:
+                return indexer.get_data( chrom, low, high )
+ 
+        #
+        # Provide individual data points.
+        #
         
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
@@ -192,7 +206,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
-    def _raw_data( self, trans, dataset, **kwargs ):
+    def _raw_data( self, trans, dataset, provider=None, **kwargs ):
         """
         Uses original (raw) dataset to return data. This method is useful 
         when the dataset is not yet indexed and hence using data would
@@ -203,8 +217,29 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if msg:
             return msg
     
+        registry = trans.app.data_provider_registry
+
+        # allow the caller to specifiy which provider is used
+        #   pulling from the original providers if possible, then the new providers
+        if provider:
+            if provider in registry.dataset_type_name_to_data_provider:
+                data_provider = registry.dataset_type_name_to_data_provider[ provider ]( dataset )
+
+            elif dataset.datatype.has_dataprovider( provider ):
+                kwargs = dataset.datatype.dataproviders[ provider ].parse_query_string_settings( kwargs )
+                # use dictionary to allow more than the data itself to be returned (data totals, other meta, etc.)
+                return {
+                    'data': list( dataset.datatype.dataprovider( dataset, provider, **kwargs ) )
+                }
+
+            else:
+                raise dataproviders.exceptions.NoProviderAvailable( dataset.datatype, provider )
+
+        # no provider name: look up by datatype
+        else:
+            data_provider = registry.get_data_provider( trans, raw=True, original_dataset=dataset )
+
         # Return data.
-        data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
         data = data_provider.get_data( **kwargs )
 
         return data

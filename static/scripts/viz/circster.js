@@ -238,10 +238,7 @@ var CircsterView = Backbone.View.extend({
 
         // Create a view for each track in the visualiation and render.
         this.circular_views = circular_tracks.map(function(track, index) {
-            var track_view_class = (track.get('track_type') === 'LineTrack' ? 
-                                    CircsterBigWigTrackView : 
-                                    CircsterSummaryTreeTrackView ),
-                view = new track_view_class({
+            var view = new CircsterBigWigTrackView({
                     el: svg.append('g')[0],
                     track: track,
                     radius_bounds: tracks_bounds[index],
@@ -324,10 +321,7 @@ var CircsterView = Backbone.View.extend({
 
             // Render new track.
             var track_index = this.circular_views.length,
-                track_view_class = (new_track.get('track_type') === 'LineTrack' ? 
-                                        CircsterBigWigTrackView : 
-                                        CircsterSummaryTreeTrackView ),
-                track_view = new track_view_class({
+                track_view = new CircsterBigWigTrackView({
                     el: d3.select('g.tracks').append('g')[0],
                     track: new_track,
                     radius_bounds: new_track_bounds[track_index],
@@ -858,22 +852,6 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
 
 });
 _.extend(CircsterQuantitativeTrackView.prototype, UsesTicks);
-
-
-/**
- * Layout for summary tree data in a circster visualization.
- */
-var CircsterSummaryTreeTrackView = CircsterQuantitativeTrackView.extend({
-
-    get_data_bounds: function(data) {
-        // Get max across data.
-        var max_data = _.map(data, function(d) {
-            if (typeof d === 'string' || !d.max) { return 0; }
-            return d.max;
-        });
-        return [ 0, (max_data && typeof max_data !== 'string' ? this._quantile(max_data, 0.98) : 0) ];
-    }
-});
 
 /**
  * Bigwig track view in Circster.

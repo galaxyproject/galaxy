@@ -70,7 +70,7 @@ def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
         rv = u = _pseudorandom(salt + _pack_int(block))
         for i in xrange(iterations - 1):
             u = _pseudorandom(''.join(map(chr, u)))
-            rv = starmap(xor, izip(rv, u))
+            rv = starmap( xor, zip( rv, u ) ) #Python < 2.6.8: starmap requires function inputs to be tuples, so we need to use zip instead of izip
         buf.extend(rv)
     return ''.join(map(chr, buf))[:keylen]
 
