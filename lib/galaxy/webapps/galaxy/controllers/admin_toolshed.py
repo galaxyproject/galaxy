@@ -1147,8 +1147,6 @@ class AdminToolshed( AdminGalaxy ):
         Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
         each repository's tool dependencies.
         """
-        # TODO: figure out how to handle installing repositories and tool dependencies consecutively since each redirects to an ajaxian grid.  This
-        # is not a problem in that Galaxy API.
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
@@ -1160,15 +1158,27 @@ class AdminToolshed( AdminGalaxy ):
                                                               message=message,
                                                               status=status ) )
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
+        if kwd.get( 'repair_repository_button', False ):
+            repair_dict = kwd.get( 'repair_dict', None )
+            if not repair_dict:
+                repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+                ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
+                ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
+                if ordered_tsr_ids and ordered_repo_info_dicts:
+                    return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                      action='manage_repositories',
+                                                                      operation='repair',
+                                                                      ordered_tsr_ids=ordered_tsr_ids,
+                                                                      ordered_repo_info_dicts=ordered_repo_info_dicts ) )
+        tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
         ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
-        if ordered_tsr_ids and ordered_repo_info_dicts:
-            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                              action='manage_repositories',
-                                                              operation='repair',
-                                                              ordered_tsr_ids=ordered_tsr_ids,
-                                                              ordered_repo_info_dicts=ordered_repo_info_dicts ) )
+        return trans.fill_template( 'admin/tool_shed_repository/repair_repository.mako',
+                                    repository=tool_shed_repository,
+                                    repair_dict=repair_dict,
+                                    message=message,
+                                    status=status )
 
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
