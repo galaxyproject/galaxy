@@ -782,7 +782,7 @@
     </div>
 
     <div class="unified-panel-body">
-        <textarea name="page_content">${page.latest_revision.content.decode('utf-8')}</textarea>
+        <textarea name="page_content">${util.unicodify( page.latest_revision.content) }</textarea>
     </div>
 
 </%def>
