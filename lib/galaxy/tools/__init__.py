@@ -1852,7 +1852,7 @@ class Tool( object, Dictifiable ):
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
-    def new_state( self, trans, all_pages=False ):
+    def new_state( self, trans, all_pages=False, history=None ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs.
@@ -1866,16 +1866,16 @@ class Tool( object, Dictifiable ):
             inputs = self.inputs
         else:
             inputs = self.inputs_by_page[ 0 ]
-        self.fill_in_new_state( trans, inputs, state.inputs )
+        self.fill_in_new_state( trans, inputs, state.inputs, history=history )
         return state
-    def fill_in_new_state( self, trans, inputs, state, context=None ):
+    def fill_in_new_state( self, trans, inputs, state, context=None, history=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
         in the dictionary `inputs`. Grouping elements are filled in recursively.
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
-            state[ input.name ] = input.get_initial_value( trans, context )
+            state[ input.name ] = input.get_initial_value( trans, context, history=history )
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each
@@ -1938,7 +1938,7 @@ class Tool( object, Dictifiable ):
             state = DefaultToolState()
             state.decode( encoded_state, self, trans.app )
         else:
-            state = self.new_state( trans )
+            state = self.new_state( trans, history=history )
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button

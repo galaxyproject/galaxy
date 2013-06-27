@@ -41,8 +41,7 @@ class Group( object, Dictifiable ):
         into the preferred value form.
         """
         return value
-
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         """
         Return the initial state/value for this group
         """
@@ -109,7 +108,7 @@ class Repeat( Group ):
                     callback( new_prefix, input, d[input.name], parent = d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
@@ -202,14 +201,14 @@ class UploadDataset( Group ):
                     callback( new_prefix, input, d[input.name], parent = d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
             rval_dict['__index__'] = i # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context ) #input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history ) #input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
     def get_uploaded_datasets( self, trans, context, override_name = None, override_info = None ):
@@ -489,12 +488,12 @@ class Conditional( Group ):
                 callback( prefix, input, value[input.name], parent = value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
-    def get_initial_value( self, trans, context ):
-        # State for a conditional is a plain dictionary.
+    def get_initial_value( self, trans, context, history=None ):
+        # State for a conditional is a plain dictionary. 
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context )
+        test_value = self.test_param.get_initial_value( trans, context, history=None )
         current_case = self.get_current_case( test_value, trans )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
@@ -503,7 +502,7 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=None )
         return rval
 
 class ConditionalWhen( object ):
