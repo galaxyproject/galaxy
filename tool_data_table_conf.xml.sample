@@ -55,10 +55,26 @@
         <columns>value, name, path</columns>
         <file path="tool-data/perm_color_index.loc" />
     </table>
-    <!-- Location of SAMTools indexes and other files -->
-    <table name="sam_fa_indexes" comment_char="#">
+    <!-- Location of SAMTools indexes and other files (new version)
+         Warning: until Galaxy release_2013.06.03 the format of this
+         table was:
+
         <columns>line_type, value, path</columns>
         <file path="tool-data/sam_fa_indices.loc" />
+
+         If you are updating your tool_data_table_conf.xml to the current
+         version you should first migrate your
+         tool-data/sam_fa_indices.loc file to a new
+         tool-data/sam_fa_new_indices.loc file with the format specified
+         below, which is explained in the relative sample file
+         tool-data/sam_fa_new_indices.loc.sample .
+         By using the new format it is possible to let the user choose
+         among multiple indexed genome variants having the same dbkey,
+         e.g. hg19canon vs. hg19full variants for hg19 dbkey.
+    -->
+    <table name="sam_fa_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/sam_fa_new_indices.loc" />
     </table>
     <!-- Location of Picard dict file and other files -->
     <table name="picard_indexes" comment_char="#">

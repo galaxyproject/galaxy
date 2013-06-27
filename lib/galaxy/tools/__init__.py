@@ -1528,7 +1528,8 @@ class Tool( object ):
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug( "Error level %s did not match warning/fatal" % err_level )
+                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" % 
+                               ( self.id, err_level ) )
         except Exception:
             log.error( "Exception in parse_error_level "
                      + str(sys.exc_info() ) )

@@ -400,21 +400,21 @@
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( failed_test.id ) %>
-    <style type="text/css">
-        #failed_test_table{ table-layout:fixed;
-                            width:100%;
-                            overflow-wrap:normal;
-                            overflow:hidden;
-                            border:0px; 
-                            word-break:keep-all;
-                            word-wrap:break-word;
-                            line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #failed_test_table{ table-layout:fixed;
+                                width:100%;
+                                overflow-wrap:normal;
+                                overflow:hidden;
+                                border:0px; 
+                                word-break:keep-all;
+                                word-wrap:break-word;
+                                line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="failed_test_table">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
@@ -528,21 +528,21 @@
 
 <%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( missing_test_component.id ) %>
-    <style type="text/css">
-        #missing_table{ table-layout:fixed;
-                        width:100%;
-                        overflow-wrap:normal;
-                        overflow:hidden;
-                        border:0px; 
-                        word-break:keep-all;
-                        word-wrap:break-word;
-                        line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #missing_table{ table-layout:fixed;
+                            width:100%;
+                            overflow-wrap:normal;
+                            overflow:hidden;
+                            border:0px; 
+                            word-break:keep-all;
+                            word-wrap:break-word;
+                            line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="missing_table">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
@@ -659,21 +659,21 @@
 
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( installation_error.id ) %>
-    <style type="text/css">
-        #td_install_error_table{ table-layout:fixed;
-                                 width:100%;
-                                 overflow-wrap:normal;
-                                 overflow:hidden;
-                                 border:0px; 
-                                 word-break:keep-all;
-                                 word-wrap:break-word;
-                                 line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #td_install_error_table{ table-layout:fixed;
+                                     width:100%;
+                                     overflow-wrap:normal;
+                                     overflow:hidden;
+                                     border:0px; 
+                                     word-break:keep-all;
+                                     word-wrap:break-word;
+                                     line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="td_install_error_table">
                 <tr bgcolor="#FFFFCC">
@@ -697,21 +697,21 @@
 
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
     <% encoded_id = trans.security.encode_id( installation_error.id ) %>
-    <style type="text/css">
-        #rd_install_error_table{ table-layout:fixed;
-                                 width:100%;
-                                 overflow-wrap:normal;
-                                 overflow:hidden;
-                                 border:0px; 
-                                 word-break:keep-all;
-                                 word-wrap:break-word;
-                                 line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #rd_install_error_table{ table-layout:fixed;
+                                     width:100%;
+                                     overflow-wrap:normal;
+                                     overflow:hidden;
+                                     border:0px; 
+                                     word-break:keep-all;
+                                     word-wrap:break-word;
+                                     line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="rd_install_error_table">
                 %if not is_current_repository:
@@ -738,21 +738,21 @@
 
 <%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( not_tested.id ) %>
-    <style type="text/css">
-        #not_tested_table{ table-layout:fixed;
-                           width:100%;
-                           overflow-wrap:normal;
-                           overflow:hidden;
-                           border:0px; 
-                           word-break:keep-all;
-                           word-wrap:break-word;
-                           line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #not_tested_table{ table-layout:fixed;
+                               width:100%;
+                               overflow-wrap:normal;
+                               overflow:hidden;
+                               border:0px; 
+                               word-break:keep-all;
+                               word-wrap:break-word;
+                               line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="not_tested_table">
                 <tr><td>${not_tested.reason | h}</td></tr>
@@ -767,21 +767,21 @@
 
 <%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( passed_test.id ) %>
-    <style type="text/css">
-        #passed_tests_table{ table-layout:fixed;
-                             width:100%;
-                             overflow-wrap:normal;
-                             overflow:hidden;
-                             border:0px; 
-                             word-break:keep-all;
-                             word-wrap:break-word;
-                             line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
+        <style type="text/css">
+            #passed_tests_table{ table-layout:fixed;
+                                 width:100%;
+                                 overflow-wrap:normal;
+                                 overflow:hidden;
+                                 border:0px; 
+                                 word-break:keep-all;
+                                 word-wrap:break-word;
+                                 line-break:strict; }
+        </style>
         <td style="padding-left: ${pad+20}px;">
             <table id="passed_tests_table">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
@@ -862,12 +862,12 @@
             %if row_is_header:
                 ${tool_dependency.name | h}
             %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
-                %if tool_dependency.repository_id and tool_dependency.installation_status == 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name | h}
                     </a>
-                %elif tool_dependency.installation_status != 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                %elif tool_dependency.installation_status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
                 %else:

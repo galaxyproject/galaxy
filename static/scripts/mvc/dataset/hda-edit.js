@@ -288,8 +288,14 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 case 'scatterplot':
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
-                    return function(){
-                        window.parent.location = visualization_url + '/' + visualization + '?' + $.param( params ); };
+                    return function(){// add widget
+                        parent.frame_manager.frame_new(
+                        {
+                            title    : "Visualization",
+                            type     : "url",
+                            content  : visualization_url + '/' + visualization + '?' + $.param( params )
+                        });
+                    };
             }
         }
 
@@ -604,9 +610,15 @@ HDAEditView.templates = {
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
 function create_scatterplot_action_fn( url, params ){
     action = function() {
-        var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
-            final_url = url + '/scatterplot?' + $.param(params);
-        galaxy_main.attr( 'src', final_url );
+        // add widget
+        parent.frame_manager.frame_new(
+        {
+            title      : "Scatterplot",
+            type       : "url",
+            content    : url + '/scatterplot?' + $.param(params),
+            center     : true
+        });
+
         //TODO: this needs to go away
         $( 'div.popmenu-wrapper' ).remove();
         return false;
@@ -650,13 +662,32 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
                                 $(parent.document).find('input[name=id]:checked').each(function() {
                                     var vis_id = $(this).val();
                                     dataset_params.id = vis_id;
-                                    parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+
+                                    // hide modal
+                                    parent.hide_modal();
+
+                                    // add widget
+                                    parent.frame_manager.frame_new(
+                                    {
+                                        title    : "Trackster",
+                                        type     : "url",
+                                        content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                    });
                                 });
                             }
                         });
                     },
                     "View in new visualization": function() {
-                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                        // hide modal
+                        parent.hide_modal();
+
+                        // add widget
+                        parent.frame_manager.frame_new(
+                        {
+                            title    : "Trackster",
+                            type     : "url",
+                            content  : vis_url + "/trackster?" + $.param(dataset_params)
+                        });
                     }
                 });
             }

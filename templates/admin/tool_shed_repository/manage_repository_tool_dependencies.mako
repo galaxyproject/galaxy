@@ -35,7 +35,7 @@ ${render_galaxy_repository_actions( repository )}
                     else:
                         error_message = ''
                     if not can_install:
-                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
                         if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
@@ -44,7 +44,7 @@ ${render_galaxy_repository_actions( repository )}
                 <tr>
                     <td>
                         %if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
-                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', id=trans.security.encode_id( tool_dependency.id ) )}">
+                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ) )}">
                                 ${tool_dependency.name}
                             </a>
                         %else:
@@ -66,7 +66,7 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAll" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllFields('tool_dependency_ids');"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'uninstalled_tool_dependency_ids', 'checkAllUninstalled' );"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
@@ -87,7 +87,7 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAll" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllFields('tool_dependency_ids');"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'inst_td_ids', 'checkAllInstalled' );"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">

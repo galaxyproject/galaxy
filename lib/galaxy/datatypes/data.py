@@ -593,7 +593,6 @@ class Data( object ):
         Base dataprovider factory for all datatypes that returns the proper provider
         for the given `data_format` or raises a `NoProviderAvailable`.
         """
-        #TODO:?? is this handling super class providers?
         if self.has_dataprovider( data_format ):
             return self.dataproviders[ data_format ]( self, dataset, **settings )
         raise dataproviders.exceptions.NoProviderAvailable( self, data_format )
@@ -603,12 +602,12 @@ class Data( object ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.base.DataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'chunk' )
+    @dataproviders.decorators.dataprovider_factory( 'chunk', dataproviders.chunk.ChunkDataProvider.settings )
     def chunk_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.chunk.ChunkDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'chunk64' )
+    @dataproviders.decorators.dataprovider_factory( 'chunk64', dataproviders.chunk.Base64ChunkDataProvider.settings )
     def chunk64_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.chunk.Base64ChunkDataProvider( dataset_source, **settings )
@@ -785,7 +784,7 @@ class Text( Data ):
     split = classmethod(split)
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory( 'line' )
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         """
         Returns an iterator over the dataset's lines (that have been `strip`ed)
@@ -794,7 +793,7 @@ class Text( Data ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.line.FilteredLineDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'regex-line' )
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
     def regex_line_dataprovider( self, dataset, **settings ):
         """
         Returns an iterator over the dataset's lines

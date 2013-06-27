@@ -4,6 +4,7 @@ from galaxy import eggs
 from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
@@ -103,7 +104,6 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     the dependency relationships between installed repositories.  This method is called when new repositories are being installed into a Galaxy
     instance and when uninstalled repositories are being reinstalled.
     """
-    message = ''
     # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository dependencies
     # that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
@@ -241,7 +241,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
-    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
+    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
 
 def generate_message_for_invalid_repository_dependencies( metadata_dict ):
     """Return the error message associated with an invalid repository dependency for display in the caller."""
@@ -285,6 +285,23 @@ def get_prior_installation_required_for_key( toolshed_base_url, repository, repo
                 return rd_prior_installation_required
     # Default prior_installation_required to False.
     return False
+
+def get_repository_dependencies_for_installed_tool_shed_repository( trans, repository ):
+    """
+    Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined for the received repository which is
+    installed into Galaxy.  This method is called only from Galaxy.
+    """
+    tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
+    url = suc.url_join( tool_shed_url,
+                        'repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
+                        ( str( repository.name ), str( repository.owner ), str( repository.changeset_revision ) ) )
+    raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+    if len( raw_text ) > 2:
+        encoded_text = json.from_json_string( raw_text )
+        text = encoding_util.tool_shed_decode( encoded_text )
+    else:
+        text = ''
+    return text
 
 def get_repository_dependencies_for_changeset_revision( trans, repository, repository_metadata, toolshed_base_url,
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,

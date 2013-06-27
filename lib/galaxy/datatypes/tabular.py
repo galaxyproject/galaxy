@@ -345,26 +345,25 @@ class Tabular( data.Text ):
         return  vizs
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory( 'column' )
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
     def column_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
-        print 'Tabular.comment_char:', settings.get( 'comment_char', None )
-
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.ColumnarDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-column' )
+    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
+                                                    dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map' )
+    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
     def map_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.MapDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map' )
+    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
     def dataset_map_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         return dataproviders.dataset.DatasetMapDataProvider( dataset, **settings )
@@ -502,55 +501,58 @@ class Sam( Tabular ):
     # ------------- Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     #TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
-    @dataproviders.decorators.dataprovider_factory( 'line' )
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).line_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'regex-line' )
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
     def regex_line_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).regex_line_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'column' )
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
     def column_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).column_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-column' )
+    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
+                                                    dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map' )
+    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
     def map_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).map_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map' )
+    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
     def dataset_map_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'header' )
+    @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
     def header_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         headers_source = dataproviders.line.RegexLineDataProvider( dataset_source, regex_list=[ '^@' ] )
         return dataproviders.line.RegexLineDataProvider( headers_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual' )
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', map_dataprovider.settings )
     def id_seq_qual_dataprovider( self, dataset, **settings ):
         # provided as an example of a specified column map (w/o metadata)
         settings[ 'indeces' ] = [ 0, 9, 10 ]
         settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
         return self.map_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_map_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, True, **settings )
@@ -621,11 +623,13 @@ class Pileup( Tabular ):
             return False
             
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_map_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
@@ -668,11 +672,13 @@ class Vcf( Tabular ):
             dataset.metadata.sample_names = line.split()[ 9: ]
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 1, 1, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map' )
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_map_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
