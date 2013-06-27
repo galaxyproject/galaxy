@@ -230,6 +230,7 @@ class Data( object ):
                 if (params.do_action == 'zip'):
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
                     if ziptype == '64':
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
