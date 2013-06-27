@@ -39,27 +39,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                     params=kwd )
         
     ## ---- Tool related -----------------------------------------------------
-    @web.expose
-    def tool_menu( self, trans ):
-        """Renders the tool panel of the Galaxy UI.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
-        toolbox = self.get_toolbox()
-        ## Get most recently used tools.
-        # recent_tools = []
-        # if trans.user:
-        #     for row in trans.sa_session.query( self.app.model.Job.tool_id ) \
-        #                                 .filter( self.app.model.Job.user == trans.user ) \
-        #                                 .order_by( self.app.model.Job.create_time.desc() ):
-        #         tool_id = row[0]
-        #         a_tool = toolbox.get_tool( tool_id )
-        #         if a_tool and not a_tool.hidden and a_tool not in recent_tools:
-        #             recent_tools.append( a_tool )
-        #             ## TODO: make number of recently used tools a user preference.
-        #             if len( recent_tools ) == 5:
-        #                 break
-        return trans.fill_template( '/root/tool_menu.mako', toolbox=toolbox )
 
     @web.json
     def tool_search( self, trans, **kwd ):

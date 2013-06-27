@@ -27,6 +27,12 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
     to return.
     """
     DEFAULT_COMMENT_CHAR = '#'
+    settings = {
+        'string_lines'  : 'bool',
+        'provide_blank' : 'bool',
+        'comment_char'  : 'str',
+    }
+
     def __init__( self, source, strip_lines=True, provide_blank=False, comment_char=DEFAULT_COMMENT_CHAR, **kwargs ):
         """
         :param strip_lines: remove whitespace from the beginning an ending
@@ -78,6 +84,11 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
     the line it is considered valid and will be provided).
     """
+    settings = {
+        'regex_list'    : 'list:str',
+        'invert'        : 'bool',
+    }
+
     def __init__( self, source, regex_list=None, invert=False, **kwargs ):
         """
         :param regex_list: list of strings or regular expression strings that will

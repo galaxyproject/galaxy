@@ -84,30 +84,30 @@
         (e.g. hda_ldda can be 'hda' or 'ldda' and modifies/informs dataset_id to fetch an HDA or LDDA)
   -->
     <!ELEMENT param (#PCDATA)>
-      <!-- param tells the registry how to parse the query string param back into a resource/data_source.
-            For example, if a query string has "dataset_id=NNN" and the type is 'dataset', the registry
-            will attempt to fetch the hda with id of NNN from the database and pass it to the template.
-          (text): the query string param key this source will be parsed from (e.g. dataset_id)
-                  REQUIRED
-          type: the type of the resource.
-                  Can be: str (DEFAULT), bool, int, float, json, visualization, dbkey, dataset, or hda_ldda.
-          default: if a param is not passed on the query string (and is not required) OR the given param
-                  fails to parse, this value is used instead.
-                  DEFAULT: None
-          required: set this to true if the param is required for the template. Rendering will with an error
-                  if the param hasn't been sent.
-                  DEFAULT: false
-          csv: set this to true if the param is a comma separated list. The registry will attempt to
-                  parse each value as the given type and send the result as a list to the template.
-                  DEFAULT: false
-          constrain_to: (currently unused) constain a param to a set of values, error if not valid.
-                  DEFAULT: don't constrain
-          var_name_in_template: a new name for the resource/variable to use in the template. E.g. an initial
-                  query string param key might be 'dataset_id' in the URL, the registry parses it into an HDA,
-                  and if var_name_in_template is set to 'hda', the template will be able to access the HDA
-                  with the variable name 'hda' (as in hda.title).
-                  DEFAULT: keep the original query string name
-      -->
+    <!-- param tells the registry how to parse the query string param back into a resource/data_source.
+          For example, if a query string has "dataset_id=NNN" and the type is 'dataset', the registry
+          will attempt to fetch the hda with id of NNN from the database and pass it to the template.
+        (text): the query string param key this source will be parsed from (e.g. dataset_id)
+                REQUIRED
+        type: the type of the resource.
+                Can be: str (DEFAULT), bool, int, float, json, visualization, dbkey, dataset, or hda_ldda.
+        default: if a param is not passed on the query string (and is not required) OR the given param
+                fails to parse, this value is used instead.
+                DEFAULT: None
+        required: set this to true if the param is required for the template. Rendering will with an error
+                if the param hasn't been sent.
+                DEFAULT: false
+        csv: set this to true if the param is a comma separated list. The registry will attempt to
+                parse each value as the given type and send the result as a list to the template.
+                DEFAULT: false
+        constrain_to: (currently unused) constain a param to a set of values, error if not valid.
+                DEFAULT: don't constrain
+        var_name_in_template: a new name for the resource/variable to use in the template. E.g. an initial
+                query string param key might be 'dataset_id' in the URL, the registry parses it into an HDA,
+                and if var_name_in_template is set to 'hda', the template will be able to access the HDA
+                with the variable name 'hda' (as in hda.title).
+                DEFAULT: keep the original query string name
+    -->
     <!ATTLIST param
         type        CDATA #IMPLIED
         default     CDATA #IMPLIED

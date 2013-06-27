@@ -135,6 +135,17 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
             repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
+def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled=False ):
+    """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
+    tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
+    for tool_dependency in tool_shed_repository.tool_dependencies:
+        if uninstalled and tool_dependency.status != trans.model.ToolDependency.installation_status.UNINSTALLED:
+            continue
+        option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
+        option_value = trans.security.encode_id( tool_dependency.id )
+        tool_dependencies_select_field.add_option( option_label, option_value )
+    return tool_dependencies_select_field
+
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -535,6 +546,24 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+
+def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
+    installing_repository_ids = []
+    new_status = trans.model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
+                                                              trans.model.ToolShedRepository.status == cloning_status,
+                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+        installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
+    if as_string:
+        return ','.join( installing_repository_ids )
+    return installing_repository_ids
 
 def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
@@ -1171,6 +1200,19 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
+def reset_previously_installed_repository( trans, repository ):
+    """
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a 
+    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
+    """
+    repository.deleted = False
+    repository.update_available = False
+    repository.uninstalled = False
+    repository.status = trans.model.ToolShedRepository.installation_status.NEW
+    repository.error_message = None
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
+    
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
@@ -1198,20 +1240,6 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
-
-def set_repository_attributes( trans, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
-    if remove_from_disk:
-        relative_install_dir = repository.repo_path( trans.app )
-        if relative_install_dir:
-            clone_dir = os.path.abspath( relative_install_dir )
-            shutil.rmtree( clone_dir )
-            log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
-    repository.error_message = error_message
-    repository.status = status
-    repository.deleted = deleted
-    repository.uninstalled = uninstalled
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
 
 def set_prior_installation_required( repository, required_repository ):
     """Return True if the received required_repository must be installed before the received repository."""

@@ -163,12 +163,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
-                                'tool_shed_repositories',
-                                controller='tool_shed_repositories',
-                                name_prefix='tool_shed_repository_',
-                                path_prefix='/api',
-                                new={ 'install_repository_revision' : 'POST' },
-                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+                            'tool_shed_repositories',
+                            member={ 'repair_repository_revision' : 'POST' },
+                            controller='tool_shed_repositories',
+                            name_prefix='tool_shed_repository_',
+                            path_prefix='/api',
+                            new={ 'install_repository_revision' : 'POST' },
+                            parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger

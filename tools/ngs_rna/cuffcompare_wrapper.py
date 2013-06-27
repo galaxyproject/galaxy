@@ -8,20 +8,6 @@ def stop_err( msg ):
     sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
-# Copied from sam_to_bam.py:
-def check_seq_file( dbkey, cached_seqs_pointer_file ):
-    seq_path = ''
-    for line in open( cached_seqs_pointer_file ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ) and line.startswith( 'index' ):
-            fields = line.split( '\t' )
-            if len( fields ) < 3:
-                continue
-            if fields[1] == dbkey:
-                seq_path = fields[2].strip()
-                break
-    return seq_path
-
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -30,8 +16,7 @@ def __main__():
     parser.add_option( '-s', dest='use_seq_data', action="store_true", help='Causes cuffcompare to look into for fasta files with the underlying genomic sequences (one file per contig) against which your reads were aligned for some optional classification functions. For example, Cufflinks transcripts consisting mostly of lower-case bases are classified as repeats. Note that <seq_dir> must contain one fasta file per reference chromosome, and each file must be named after the chromosome, and have a .fa or .fasta extension.')
     
     # Wrapper / Galaxy options.
-    parser.add_option( '', '--dbkey', dest='dbkey', help='The build of the reference dataset' )
-    parser.add_option( '', '--index_dir', dest='index_dir', help='GALAXY_DATA_INDEX_DIR' )
+    parser.add_option( '', '--index', dest='index', help='The path of the reference genome' )
     parser.add_option( '', '--ref_file', dest='ref_file', help='The reference dataset from the history' )
     
     # Outputs.
@@ -60,21 +45,16 @@ def __main__():
         
     # Set/link to sequence file.
     if options.use_seq_data:
-        if options.ref_file != 'None':
+        if options.ref_file:
             # Sequence data from history.
             # Create symbolic link to ref_file so that index will be created in working directory.
             seq_path = "ref.fa"
             os.symlink( options.ref_file, seq_path  )
         else:
             # Sequence data from loc file.
-            cached_seqs_pointer_file = os.path.join( options.index_dir, 'sam_fa_indices.loc' )
-            if not os.path.exists( cached_seqs_pointer_file ):
-                stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
-            # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
-            # and the equCab2.fa file will contain fasta sequences.
-            seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
-            if seq_path == '':
-                stop_err( 'No sequence data found for dbkey %s, so sequence data cannot be used.' % options.dbkey  )
+            if not os.path.exists( options.index ):
+                stop_err( 'Reference genome %s not present, request it by reporting this error.' % options.index )
+            seq_path = options.index
     
     # Build command.
     

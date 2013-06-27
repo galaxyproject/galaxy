@@ -412,7 +412,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live("click", function() {
+    $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -689,6 +689,10 @@ $(document).ready( function() {
     //     $(".tooltip").tipsy( { gravity: 's' } );
     // }
     if ( $.fn.tooltip ) {
+        // Put tooltips below items in panel header so that they do not overlap masthead.
+        $(".unified-panel-header .tooltip").tooltip( { placement: 'bottom' } );
+        
+        // Default tooltip location to be above item.
         $(".tooltip").tooltip( { placement: 'top' } );
     }
     // Make popup menus.

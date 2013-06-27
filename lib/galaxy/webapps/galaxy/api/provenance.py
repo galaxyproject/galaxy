@@ -3,13 +3,13 @@ API operations provenance
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
 
 log = logging.getLogger( __name__ )
 
 
-class BaseProvenanceController( BaseAPIController ):
+class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
     """
     """
     @web.expose_api
@@ -43,7 +43,7 @@ class BaseProvenanceController( BaseAPIController ):
                 item = item.copied_from_library_dataset_dataset_association
             return {
                 "id" : trans.security.encode_id(item.id),
-                "uuid" : item.dataset.uuid,
+                "uuid" : ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
                 "tool_id" : item.creating_job.tool_id,
                 "parameters" : self._get_job_record(trans, item.creating_job, follow)
             }
@@ -59,7 +59,7 @@ class BaseProvenanceController( BaseAPIController ):
             else:
                 out[in_d.name] = {
                     "id" : trans.security.encode_id(in_d.dataset.id),
-                    "uuid" : in_d.dataset.dataset.uuid
+                    "uuid" : ( lambda uuid: str( uuid ) if uuid else None )( in_d.dataset.dataset.uuid )
                 }
         return out
 

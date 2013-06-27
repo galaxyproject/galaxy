@@ -51,6 +51,7 @@
 
     ${h.js(
         'libs/jquery/jquery',
+        'libs/jquery/jquery.migrate',
         'libs/json2',
         'libs/jquery/select2',
         'libs/bootstrap',
@@ -58,7 +59,8 @@
         'libs/backbone/backbone',
         'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
-        'galaxy.base'
+        'galaxy.base',
+        'libs/require'
     )}
 
     ${h.templates(
@@ -70,6 +72,35 @@
     )}
 
     <script type="text/javascript">
+        ## path to style sheets
+        var galaxy_config = {
+            url: {
+                styles : "${h.url_for('/static/style')}"
+            }
+        };
+
+        ## check if its in a galaxy iframe
+        function is_in_galaxy_frame()
+        {
+            var iframes = parent.document.getElementsByTagName("iframe");
+            for (var i=0, len=iframes.length; i < len; ++i)
+                if (document == iframes[i].contentDocument || self == iframes[i].contentWindow)
+                    return $(iframes[i]).hasClass('f-iframe');
+            return false;
+        };
+
+        ## load css
+        function load_css (url)
+        {
+            ## check if css is already available
+            if (!$('link[href="' + url + '"]').length)
+                $('<link href="' + url + '" rel="stylesheet">').appendTo('head');
+        };
+
+        ## load additional style sheet
+        if (is_in_galaxy_frame())
+            load_css(galaxy_config.url.styles + '/galaxy.frame.masthead.css');
+        
         // console protection
         window.console = window.console || {
             log     : function(){},
@@ -92,6 +123,20 @@
             sweepster_url: '${h.url_for( controller="/visualization", action="sweepster" )}',
             visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
         });
+
+        ## configure require
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts') }",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/backbone/backbone": { exports: "Backbone" },
+                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+            }
+        });
+        
+        ## frame manager
+        var frame_manager = null;
+        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(galaxy_config); });
     </script>
 </%def>
 
@@ -275,7 +320,7 @@
                 </div>
             </noscript>
         %endif
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
+        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds

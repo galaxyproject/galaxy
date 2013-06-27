@@ -15,8 +15,6 @@ import galaxy.model
 from galaxy import util
 from sniff import *
 
-from galaxy.datatypes import dataproviders
-
 import pkg_resources
 pkg_resources.require("simplejson")
 import simplejson
@@ -398,15 +396,6 @@ class Fasta( Sequence ):
             raise
         f.close()
     _count_split = classmethod(_count_split)
-
-    def provider( self, dataset, data_format, **settings ):
-        from galaxy.dataproviders import dataset as dataset_providers
-
-        if  data_format == 'id_seq':
-            source = dataset_providers.DatasetDataProvider( dataset )
-            return dataset_providers.FastaDataProvider( source, **settings )
-
-        return super( Fasta, self ).provider( dataset, data_format, **settings )
 
 
 class csFasta( Sequence ):

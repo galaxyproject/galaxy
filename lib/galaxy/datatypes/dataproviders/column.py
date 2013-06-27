@@ -29,6 +29,14 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
     the same number of columns as the number of indeces asked for (even if they
     are filled with None).
     """
+    settings = {
+        'indeces'       : 'list:int',
+        'column_count'  : 'int',
+        'column_types'  : 'list:str',
+        'parse_columns' : 'bool',
+        'deliminator'   : 'str'
+    }
+
     def __init__( self, source, indeces=None,
             column_count=None, column_types=None, parsers=None, parse_columns=True,
             deliminator='\t', **kwargs ):
@@ -91,11 +99,11 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         # how/whether to parse each column value
         self.parsers = {}
         if parse_columns:
-            self.parsers = self._get_default_parsers()
+            self.parsers = self.get_default_parsers()
             # overwrite with user desired parsers
             self.parsers.update( parsers or {} )
 
-    def _get_default_parsers( self ):
+    def get_default_parsers( self ):
         """
         Return parser dictionary keyed for each columnar type
         (as defined in datatypes).
@@ -132,7 +140,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             #'gffstrand': # -, +, ?, or '.' for None, etc.
         }
 
-    def _parse_value( self, val, type ):
+    def parse_value( self, val, type ):
         """
         Attempt to parse and return the given value based on the given type.
 
@@ -153,7 +161,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             return None
         return val
 
-    def _get_column_type( self, index ):
+    def get_column_type( self, index ):
         """
         Get the column type for the parser from `self.column_types` or `None`
         if the type is unavailable.
@@ -165,18 +173,18 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         except IndexError, ind_err:
             return None
 
-    def _parse_column_at_index( self, columns, parser_index, index ):
+    def parse_column_at_index( self, columns, parser_index, index ):
         """
         Get the column type for the parser from `self.column_types` or `None`
         if the type is unavailable.
         """
         try:
-            return self._parse_value( columns[ index ], self._get_column_type( parser_index ) )
+            return self.parse_value( columns[ index ], self.get_column_type( parser_index ) )
         # if a selected index is not within columns, return None
         except IndexError, index_err:
             return None
 
-    def _parse_columns_from_line( self, line ):
+    def parse_columns_from_line( self, line ):
         """
         Returns a list of the desired, parsed columns.
         :param line: the line to parse
@@ -188,13 +196,13 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         selected_indeces = self.selected_column_indeces or list( xrange( len( all_columns ) ) )
         parsed_columns = []
         for parser_index, column_index in enumerate( selected_indeces ):
-            parsed_columns.append( self._parse_column_at_index( all_columns, parser_index, column_index ) )
+            parsed_columns.append( self.parse_column_at_index( all_columns, parser_index, column_index ) )
         return parsed_columns
 
     def __iter__( self ):
         parent_gen = super( ColumnarDataProvider, self ).__iter__()
         for line in parent_gen:
-            columns = self._parse_columns_from_line( line )
+            columns = self.parse_columns_from_line( line )
             yield columns
 
     #TODO: implement column filters here and not below - flatten hierarchy
@@ -223,6 +231,10 @@ class MapDataProvider( ColumnarDataProvider ):
     .. note: that the subclass constructors are passed kwargs - so they're
     params (limit, offset, etc.) are also applicable here.
     """
+    settings = {
+        'column_names'  : 'list:str',
+    }
+
     def __init__( self, source, column_names=None, **kwargs ):
         """
         :param column_names: an ordered list of strings that will be used as the keys

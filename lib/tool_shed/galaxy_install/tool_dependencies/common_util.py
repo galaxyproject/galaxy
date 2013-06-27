@@ -74,9 +74,9 @@ def create_or_update_env_shell_file_with_command( install_dir, command ):
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
         # Open for reading with transparent compression.
-        tar = tarfile.open( file_name, 'r:*' )
+        tar = tarfile.open( file_name, 'r:*', errorlevel=0 )
     else:
-        tar = tarfile.open( file_name )
+        tar = tarfile.open( file_name, errorlevel=0 )
     tar.extractall( path=file_path )
     tar.close()
 
@@ -216,7 +216,7 @@ def tar_extraction_directory( file_path, file_name ):
         return os.path.abspath( file_path )
     raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
 
-def url_download( install_dir, downloaded_file_name, download_url ):
+def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
     dst = None
@@ -236,7 +236,22 @@ def url_download( install_dir, downloaded_file_name, download_url ):
             src.close()
         if dst:
             dst.close()
-    return os.path.abspath( file_path )
+    if extract:
+        if istar( file_path ):
+            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
+            extract_tar( file_path, install_dir )
+            dir = tar_extraction_directory( install_dir, downloaded_file_name )
+        elif isjar( file_path ):
+            dir = os.path.curdir
+        elif iszip( file_path ):
+            # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
+            zip_archive_extracted = extract_zip( file_path, install_dir )
+            dir = zip_extraction_directory( install_dir, downloaded_file_name )
+        else:
+            dir = os.path.abspath( install_dir )
+    else:
+        dir = os.path.abspath( install_dir )
+    return dir
 
 def zip_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""

@@ -816,6 +816,7 @@ class DefaultToolState( object ):
     """
     def __init__( self ):
         self.page = 0
+        self.rerun_remap_job_id = None
         self.inputs = None
     def encode( self, tool, app, secure=True ):
         """
@@ -825,6 +826,7 @@ class DefaultToolState( object ):
         # page in that dict
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
+        value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         value = simplejson.dumps( value )
         # Make it secure
         if secure:
@@ -846,6 +848,10 @@ class DefaultToolState( object ):
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )
+        if '__rerun_remap_job_id__' in values:
+            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
+        else:
+            self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
 class ToolOutput( object ):
@@ -933,6 +939,7 @@ class Tool( object ):
         self.input_required = False
         self.display_interface = True
         self.require_login = False
+        self.rerun = False
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -1521,7 +1528,8 @@ class Tool( object ):
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug( "Error level %s did not match warning/fatal" % err_level )
+                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" % 
+                               ( self.id, err_level ) )
         except Exception:
             log.error( "Exception in parse_error_level "
                      + str(sys.exc_info() ) )
@@ -1933,7 +1941,10 @@ class Tool( object ):
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
                 try:
-                    _, out_data = self.execute( trans, incoming=params, history=history )
+                    rerun_remap_job_id = None
+                    if 'rerun_remap_job_id' in incoming:
+                        rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
+                    _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
                 except httpexceptions.HTTPFound, e:
                     #if it's a paste redirect exception, pass it up the stack
                     raise e
@@ -2502,7 +2513,6 @@ class Tool( object ):
                                                            datatypes_registry = self.app.datatypes_registry,
                                                            tool = self,
                                                            name = name )
-
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )

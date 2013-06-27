@@ -22,12 +22,42 @@ add datum entry/exit point methods: possibly decode, encode
 
 icorporate existing visualization/dataproviders
 some of the sources (esp. in datasets) don't need to be re-created
-
 YAGNI: InterleavingMultiSourceDataProvider, CombiningMultiSourceDataProvider
+
+datasets API entry point:
+    kwargs should be parsed from strings 2 layers up (in the DatasetsAPI) - that's the 'proper' place for that.
+    but how would it know how/what to parse if it doesn't have access to the classes used in the provider?
+        Building a giant list by sweeping all possible dprov classes doesn't make sense
+    For now - I'm burying them in the class __init__s - but I don't like that
 """
 
 import logging
 log = logging.getLogger( __name__ )
+
+
+# ----------------------------------------------------------------------------- base classes
+class HasSettings( type ):
+    """
+    Metaclass for data providers that allows defining and inheriting
+    a dictionary named 'settings'.
+
+    Useful for allowing class level access to expected variable types
+    passed to class `__init__` functions so they can be parsed from a query string.
+    """
+    # yeah - this is all too acrobatic
+    def __new__( cls, name, base_classes, attributes ):
+        settings = {}
+        # get settings defined in base classes
+        for base_class in base_classes:
+            base_settings = getattr( base_class, 'settings', None )
+            if base_settings:
+                settings.update( base_settings )
+        # get settings defined in this class
+        new_settings = attributes.pop( 'settings', None )
+        if new_settings:
+            settings.update( new_settings )
+        attributes[ 'settings' ] = settings
+        return type.__new__( cls, name, base_classes, attributes )
 
 
 # ----------------------------------------------------------------------------- base classes
@@ -39,6 +69,12 @@ class DataProvider( object ):
         (c) do not allow write methods
             (but otherwise implement the other file object interface methods)
     """
+    # a definition of expected types for keyword arguments sent to __init__
+    #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
+    #   empty in this base class
+    __metaclass__ = HasSettings
+    settings = {}
+
     def __init__( self, source, **kwargs ):
         """
         :param source: the source that this iterator will loop over.
@@ -130,13 +166,16 @@ class FilteredDataProvider( DataProvider ):
         - `num_valid_data_read`: how many data have been returned from `filter`.
         - `num_data_returned`: how many data has this provider yielded.
     """
+    # not useful here - we don't want functions over the query string
+    #settings.update({ 'filter_fn': 'function' })
+
     def __init__( self, source, filter_fn=None, **kwargs ):
         """
         :param filter_fn: a lambda or function that will be passed a datum and
             return either the (optionally modified) datum or None.
         """
         super( FilteredDataProvider, self ).__init__( source, **kwargs )
-        self.filter_fn = filter_fn
+        self.filter_fn = filter_fn if hasattr( filter_fn, '__call__' ) else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -179,6 +218,12 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
 
     Useful for grabbing sections from a source (e.g. pagination).
     """
+    # define the expected types of these __init__ arguments so they can be parsed out from query strings
+    settings = {
+        'limit' : 'int',
+        'offset': 'int'
+    }
+
     #TODO: may want to squash this into DataProvider
     def __init__( self, source, offset=0, limit=None, **kwargs ):
         """

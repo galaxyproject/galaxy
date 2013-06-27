@@ -1049,6 +1049,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository, tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
@@ -1057,6 +1058,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
+                                        render_repository_actions_for=render_repository_actions_for,
                                         metadata=metadata,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
@@ -1065,7 +1067,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                         status=status )
         except Exception, e:
             message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
-        if trans.webapp.name == 'galaxy':
+        if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -1896,6 +1898,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'error' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         invalid_file_tups = []
@@ -1912,6 +1915,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
+                                        render_repository_actions_for=render_repository_actions_for,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
@@ -2990,6 +2994,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def view_tool_metadata( self, trans, repository_id, changeset_revision, tool_id, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_files_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
@@ -3044,6 +3049,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                             downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template( "/webapps/tool_shed/repository/view_tool_metadata.mako",
+                                    render_repository_actions_for=render_repository_actions_for,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
@@ -3061,6 +3067,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )
         repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -3069,6 +3076,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         metadata = repository_metadata.metadata
         return trans.fill_template( "/webapps/tool_shed/repository/view_workflow.mako",
                                     repository=repository,
+                                    render_repository_actions_for=render_repository_actions_for,
                                     changeset_revision=changeset_revision,
                                     repository_metadata_id=repository_metadata_id,
                                     workflow_name=workflow_name,

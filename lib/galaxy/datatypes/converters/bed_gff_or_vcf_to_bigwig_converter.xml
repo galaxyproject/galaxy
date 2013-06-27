@@ -1,5 +1,9 @@
 <tool id="CONVERTER_bed_gff_or_vcf_to_bigwig_0" name="Convert BED, GFF, or VCF to BigWig" version="1.0.0" hidden="true">
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package">bedtools</requirement>
+    </requirements>
     <command>
         ## Remove comments and sort by chromosome.
         grep -v '^#' $input | sort -k1,1 | 

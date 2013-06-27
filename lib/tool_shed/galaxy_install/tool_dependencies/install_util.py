@@ -13,6 +13,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
+from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
@@ -390,21 +391,31 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
-                if 'target_filename' in action_elem.attrib:
-                    action_dict[ 'target_filename' ] = action_elem.attrib[ 'target_filename' ]
+                target_filename = action_elem.get( 'target_filename', None )
+                if target_filename:
+                    action_dict[ 'target_filename' ] = target_filename
             else:
                 continue
         elif action_type == 'download_file':
             # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
-                action_dict[ 'target_filename' ] = action_elem.attrib.get( 'target_filename', None )
+                target_filename = action_elem.get( 'target_filename', None )
+                if target_filename:
+                    action_dict[ 'target_filename' ] = target_filename
+                action_dict[ 'extract' ] = asbool( action_elem.get( 'extract', False ) )
             else:
                 continue
         elif action_type == 'make_directory':
             # <action type="make_directory">$INSTALL_DIR/lib/python</action>
             if action_elem.text:
                 action_dict[ 'full_path' ] = evaluate_template( action_elem.text )
+            else:
+                continue
+        elif action_type == 'change_directory':
+            # <action type="change_directory">PHYLIP-3.6b</action>
+            if action_elem.text:
+                action_dict[ 'directory' ] = action_elem.text
             else:
                 continue
         elif action_type in [ 'move_directory_files', 'move_file' ]:
@@ -431,7 +442,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                     if env_var_dict:
                         env_var_dicts.append( env_var_dict )
             if env_var_dicts:
-                action_dict[ env_elem.tag ] = env_var_dicts
+                # The last child of an <action type="set_environment"> might be a comment, so manually set it to be 'environment_variable'.
+                action_dict[ 'environment_variable' ] = env_var_dicts
             else:
                 continue
         elif action_type == 'set_environment_for_install':

@@ -10,7 +10,7 @@ This example requires a tool panel config file (e.g., tool_conf.xml, shed_tool_c
 </section>
 
 Here is a working example of how to use this script to install a repository from the test tool shed.
-./install_repository_tools.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --revision f28d5018f9cb --tool-deps
+./install_tool_shed_repositories.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --revision f28d5018f9cb --tool-deps
 """
 
 import os
@@ -34,7 +34,7 @@ def main( options ):
         data[ 'install_repository_dependencies' ] = options.install_repository_dependencies
     if options.install_tool_dependencies:
         data[ 'install_tool_dependencies' ] = options.install_tool_dependencies
-    submit( options.api, '%s%s' % ( options.local_url.strip('/'), '/api/tool_shed_repositories/new/install_repository_revision' ), data )
+    submit( options.api, '%s%s' % ( options.local_url.strip( '/' ), '/api/tool_shed_repositories/new/install_repository_revision' ), data )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Installation of tool shed repositories via the Galaxy API.' )
