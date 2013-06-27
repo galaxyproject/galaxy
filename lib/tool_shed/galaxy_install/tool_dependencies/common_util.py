@@ -248,9 +248,9 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
             zip_archive_extracted = extract_zip( file_path, install_dir )
             dir = zip_extraction_directory( install_dir, downloaded_file_name )
         else:
-            dir = install_dir
+            dir = os.path.abspath( install_dir )
     else:
-        dir = install_dir
+        dir = os.path.abspath( install_dir )
     return dir
 
 def zip_extraction_directory( file_path, file_name ):
