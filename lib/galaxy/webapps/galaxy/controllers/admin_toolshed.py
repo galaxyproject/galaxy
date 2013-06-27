@@ -319,27 +319,6 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def get_repository_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
-        """
-        Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined for the received repository
-        name, owner and changeset revision.  The received repository_id is the encoded id of the installed tool shed repository in Galaxy.  We
-        need it so that we can derive the tool shed from which it was installed.
-        """
-        repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
-        url = suc.url_join( tool_shed_url,
-                            'repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
-                            ( repository_name, repository_owner, changeset_revision ) )
-        raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-        if len( raw_text ) > 2:
-            encoded_text = json.from_json_string( raw_text )
-            text = encoding_util.tool_shed_decode( encoded_text )
-        else:
-            text = ''
-        return text
-
-    @web.expose
-    @web.require_admin
     def get_tool_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
         """
         Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for the received repository name, 
@@ -548,12 +527,7 @@ class AdminToolshed( AdminGalaxy ):
     def manage_repositories( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tsrid = kwd.get( 'tool_shed_repository_id', None )
-        tsridslist = util.listify( kwd.get( 'tool_shed_repository_ids', None ) )
-        if not tsridslist:
-            tsridslist = util.listify( kwd.get( 'id', None ) )
-        if tsrid and tsrid not in tsridslist:
-            tsridslist.append( tsrid )
+        tsridslist = repository_util.get_tool_shed_repository_ids( **kwd )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tsridslist:
@@ -596,7 +570,7 @@ class AdminToolshed( AdminGalaxy ):
                 # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
                 # order the list of tsr_ids to ensure all repositories install in the required order.
                 ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                    repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys )
+                    repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
                 for tsr_id in ordered_tsr_ids:
                     repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                     if repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
@@ -615,6 +589,14 @@ class AdminToolshed( AdminGalaxy ):
                 else:
                     kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
                     kwd[ 'status' ] = 'error'
+            elif operation == "repair":
+                # In this case, tsridslist is ordered.
+                repositories_for_repair = []
+                for tsr_id in tsridslist:
+                    repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                    repositories_for_repair.append( repository )
+                ordered_repo_info_dicts = kwd.get( 'ordered_repo_info_dicts', [] )
+                self.repair_tool_shed_repositories( trans, repositories_for_repair, ordered_repo_info_dicts )
         return self.repository_installation_grid( trans, **kwd )
 
     @web.expose
@@ -799,14 +781,9 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def monitor_repository_installation( self, trans, **kwd ):
-        tsrid = kwd.get( 'tool_shed_repository_id', None )
-        tsridslist = util.listify( kwd.get( 'tool_shed_repository_ids', None ) )
+        tsridslist = repository_util.get_tool_shed_repository_ids( **kwd )
         if not tsridslist:
-            tsridslist = util.listify( kwd.get( 'id', None ) )
-        if tsrid and tsrid not in tsridslist:
-            tsridslist.append( tsrid )
-        if not tsridslist:
-            tsridslist = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False )
+            tsridslist = suc.get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False )
         kwd[ 'tool_shed_repository_ids' ] = tsridslist
         return self.repository_installation_grid( trans, **kwd )
 
@@ -1097,11 +1074,7 @@ class AdminToolshed( AdminGalaxy ):
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.
             if install_repository_dependencies:
-                repository_dependencies = self.get_repository_dependencies( trans=trans,
-                                                                            repository_id=repository_id,
-                                                                            repository_name=tool_shed_repository.name,
-                                                                            repository_owner=tool_shed_repository.owner,
-                                                                            changeset_revision=tool_shed_repository.changeset_revision )
+                repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, tool_shed_repository )
             else:
                 repository_dependencies = None
             if metadata:
@@ -1174,10 +1147,28 @@ class AdminToolshed( AdminGalaxy ):
         Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
         each repository's tool dependencies.
         """
+        # TODO: figure out how to handle installing repositories and tool dependencies consecutively since each redirects to an ajaxian grid.  This
+        # is not a problem in that Galaxy API.
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        repository_id = kwd[ 'id' ]
+        repository_id = kwd.get( 'id', None )
+        if not repository_id:
+            message = 'Invalid installed tool shed repository id %s received.' % str( repository_id )
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='browse_repositories',
+                                                              message=message,
+                                                              status=status ) )
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
+        repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+        ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
+        ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
+        if ordered_tsr_ids and ordered_repo_info_dicts:
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='manage_repositories',
+                                                              operation='repair',
+                                                              ordered_tsr_ids=ordered_tsr_ids,
+                                                              ordered_repo_info_dicts=ordered_repo_info_dicts ) )
 
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
@@ -1199,6 +1190,21 @@ class AdminToolshed( AdminGalaxy ):
                                                                                  repository=repository ),
                                                                                  'utf-8' ) ) )
         return rval
+
+    @web.expose
+    @web.require_admin
+    def repair_tool_shed_repositories( self, trans, tool_shed_repositories, repo_info_dicts, **kwd  ):
+        """Repair specified tool shed repositories."""
+        # The received lists of tool_shed_repositories and repo_info_dicts are ordered.
+        for index, tool_shed_repository in enumerate( tool_shed_repositories ):
+            repo_info_dict = repo_info_dicts[ index ]
+            repair_dict = repository_util.repair_tool_shed_repository( trans,
+                                                                       tool_shed_repository,
+                                                                       encoding_util.tool_shed_encode( repo_info_dict ) )
+        tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='monitor_repository_installation',
+                                                          tool_shed_repository_ids=tsr_ids_for_monitoring ) )
 
     @web.expose
     @web.require_admin
@@ -1268,11 +1274,7 @@ class AdminToolshed( AdminGalaxy ):
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
-            repository_dependencies = self.get_repository_dependencies( trans=trans,
-                                                                        repository_id=repository_id,
-                                                                        repository_name=tool_shed_repository.name,
-                                                                        repository_owner=tool_shed_repository.owner,
-                                                                        changeset_revision=tool_shed_repository.changeset_revision )
+            repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, tool_shed_repository )
             repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
                                                                     repository_clone_url=repository_clone_url,
                                                                     changeset_revision=tool_shed_repository.changeset_revision,
@@ -1439,13 +1441,13 @@ class AdminToolshed( AdminGalaxy ):
         """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
         if kwd.get( 'reset_repository', False ):
-            suc.set_repository_attributes( trans,
-                                           repository,
-                                           status=trans.model.ToolShedRepository.installation_status.NEW,
-                                           error_message=None,
-                                           deleted=False,
-                                           uninstalled=False,
-                                           remove_from_disk=True )
+            repository_util.set_repository_attributes( trans,
+                                                       repository,
+                                                       status=trans.model.ToolShedRepository.installation_status.NEW,
+                                                       error_message=None,
+                                                       deleted=False,
+                                                       uninstalled=False,
+                                                       remove_from_disk=True )
             new_kwd = {}
             new_kwd[ 'message' ] = "You can now attempt to install the repository named <b>%s</b> again." % repository.name
             new_kwd[ 'status' ] = "done"

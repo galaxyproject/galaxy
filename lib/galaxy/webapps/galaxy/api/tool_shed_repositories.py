@@ -9,6 +9,7 @@ from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
+from tool_shed.util import encoding_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -244,7 +245,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             # order the list of tsr_ids to ensure all repositories install in the required order.
             tsr_ids = [ trans.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
             ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys )
+                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
             for index, tsr_id in enumerate( ordered_tsr_ids ):
                 tool_shed_repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
@@ -358,3 +359,56 @@ class ToolShedRepositoriesController( BaseAPIController ):
             elif isinstance( installed_tool_shed_repositories, list ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
+
+    @web.expose_api
+    def repair_repository_revision( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/repair_repository_revision
+        Repair a specified repository revision previously installed into Galaxy.
+        
+        :param key: the current Galaxy admin user's API key
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        """
+        api_key = kwd.get( 'key', None )
+        # Get the information about the repository to be installed from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        changeset_revision = payload.get( 'changeset_revision', '' )
+        if not changeset_revision:
+            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+        tool_shed_repositories = []
+        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
+        repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+        ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
+        ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
+        if ordered_tsr_ids and ordered_repo_info_dicts:
+            repositories_for_repair = []
+            for index, tsr_id in enumerate( ordered_tsr_ids ):
+                repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                repo_info_dict = ordered_repo_info_dicts[ index ]
+                # TODO: handle errors in repair_dict.
+                repair_dict = repository_util.repair_tool_shed_repository( trans,
+                                                                           repository,
+                                                                           encoding_util.tool_shed_encode( repo_info_dict ) )
+                repository_dict = repository.get_api_value( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
+                repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                        action='show',
+                                                        id=trans.security.encode_id( repository.id ) )
+                if repair_dict:
+                    errors = repair_dict.get( repository.name, [] )
+                    repository_dict[ 'errors_attempting_repair' ] = '  '.join( errors )
+                tool_shed_repositories.append( repository_dict )
+        # Display the list of repaired repositories.
+        return tool_shed_repositories

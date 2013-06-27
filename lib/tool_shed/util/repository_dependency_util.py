@@ -4,6 +4,7 @@ from galaxy import eggs
 from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
@@ -284,6 +285,23 @@ def get_prior_installation_required_for_key( toolshed_base_url, repository, repo
                 return rd_prior_installation_required
     # Default prior_installation_required to False.
     return False
+
+def get_repository_dependencies_for_installed_tool_shed_repository( trans, repository ):
+    """
+    Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined for the received repository which is
+    installed into Galaxy.  This method is called only from Galaxy.
+    """
+    tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
+    url = suc.url_join( tool_shed_url,
+                        'repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
+                        ( str( repository.name ), str( repository.owner ), str( repository.changeset_revision ) ) )
+    raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+    if len( raw_text ) > 2:
+        encoded_text = json.from_json_string( raw_text )
+        text = encoding_util.tool_shed_decode( encoded_text )
+    else:
+        text = ''
+    return text
 
 def get_repository_dependencies_for_changeset_revision( trans, repository, repository_metadata, toolshed_base_url,
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,

@@ -344,3 +344,12 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
+
+def set_tool_dependency_attributes( trans, tool_dependency, status, error_message, remove_from_disk=False ):
+    if remove_from_disk:
+        installation_directory = tool_dependency.installation_directory( trans.app )
+        removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
+    tool_dependency.error_message = error_message
+    tool_dependency.status = status
+    trans.sa_session.add( tool_dependency )
+    trans.sa_session.flush()
