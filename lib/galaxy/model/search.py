@@ -507,7 +507,7 @@ comparison = ( '=' -> '='
     | '<=' -> '<='
     | 'like' -> 'like'
     )
-quote_word = "'" not_quote+:x "'" -> "".join(x)
+quote_word = "'" not_quote*:x "'" -> "".join(x)
 not_quote = anything:x ?(x != "'") -> x
 not_dquote = anything:x ?(x != '"') -> x
 """
