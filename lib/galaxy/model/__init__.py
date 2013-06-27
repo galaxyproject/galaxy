@@ -372,10 +372,10 @@ class Job( object, APIItem ):
         input_dict = {}
         for i in self.input_datasets:
             if i.dataset is not None:
-                input_dict[i.name] = {"hda_id" : i.dataset.id}
+                input_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
         for i in self.input_library_datasets:
             if i.dataset is not None:
-                input_dict[i.name] = {"ldda_id" : i.dataset.id}
+                input_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
         for k in input_dict:
             if k in param_dict:
                 del param_dict[k]
@@ -384,10 +384,10 @@ class Job( object, APIItem ):
         output_dict = {}
         for i in self.output_datasets:
             if i.dataset is not None:
-                output_dict[i.name] = {"hda_id" : i.dataset.id}
+                output_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
         for i in self.output_library_datasets:
             if i.dataset is not None:
-                output_dict[i.name] = {"ldda_id" : i.dataset.id}
+                output_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
         rval['outputs'] = output_dict
 
         return rval
