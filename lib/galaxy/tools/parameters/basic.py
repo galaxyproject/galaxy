@@ -703,7 +703,10 @@ class SelectToolParameter( ToolParameter ):
                     value = None
                 else:
                     if not isinstance( value, list ):
-                        value = value.split( "\n" )
+                        # Split on all whitespace. This not only provides flexibility
+                        # in interpreting values but also is needed because many browsers
+                        # use \r\n to separate lines.
+                        value = value.split()
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, context )
         if isinstance( value, list ):
