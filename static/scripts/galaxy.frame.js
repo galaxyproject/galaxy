@@ -123,8 +123,8 @@ var GalaxyFrameManager = Backbone.View.extend(
         this.event_initialize();
 
         // add
-        $(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
-        $(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
+        //$(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
+        //$(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
 
         // catch window resize event
         var self = this;
@@ -218,7 +218,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type === null)
             return;
 
-        // prevent text selection
+        // prevent
         e.preventDefault();
             
         // identify frame
@@ -340,6 +340,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
+        // prevent
+        e.preventDefault();
+
         // get frame
         var frame = this.event_get_frame(e.target);
         var self  = this;
@@ -375,7 +378,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
-        // prevent text selection
+        // prevent
         e.preventDefault();
 
         // get frame
@@ -413,7 +416,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
-        // prevent text selection
+        // prevent
         e.preventDefault();
 
         // load panel
@@ -427,7 +430,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
-        // prevent text selection
+        // prevent
         e.preventDefault();
 
         // load panel
@@ -441,7 +444,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null || !this.visible)
             return;
             
-        // prevent text selection
+        // prevent
         e.preventDefault();
 
         // get wheel delta
@@ -458,7 +461,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
   
-        // prevent text selection
+        // prevent
         e.preventDefault();
 
         // scroll up
@@ -472,7 +475,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
      
-        // prevent text selection
+        // prevent
         e.preventDefault();
         
         // scroll down
@@ -774,6 +777,10 @@ var GalaxyFrameManager = Backbone.View.extend(
             
             // untoggle
             $(".galaxy-frame-active .icon").removeClass("f-toggle");
+
+            // hide panel
+            if (this.visible)
+                this.panel_show_hide();
         } else {
             // activate
             this.active = true;
@@ -789,9 +796,6 @@ var GalaxyFrameManager = Backbone.View.extend(
     // adds and displays a new frame/window
     frame_new: function(options)
     {
-        // trigger mouse leave
-        $(document).trigger('mouseleave');
-
         // validate
         if (!this.active)
         {
