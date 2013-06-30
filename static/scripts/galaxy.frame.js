@@ -91,8 +91,8 @@ var GalaxyFrameManager = Backbone.View.extend(
         $(this.el).append(this.frame_template_menu());
         
         // load load button
-        $(this.el_header).append(this.frame_template_load());
-
+        $(this.el_header).append(this.frame_template_header());
+        
         //
         // define shadow frame
         //
@@ -121,7 +121,11 @@ var GalaxyFrameManager = Backbone.View.extend(
         
         // link events
         this.event_initialize();
-        
+
+        // add
+        $(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
+        $(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
+
         // catch window resize event
         var self = this;
         $(window).resize(function ()
@@ -162,7 +166,6 @@ var GalaxyFrameManager = Backbone.View.extend(
         {*/
             this.events = {
                 // global page events
-                'mousedown'                                 : 'event_frame_mouse_down',
                 'mousemove'                                 : 'event_frame_mouse_move',
                 'mouseup'                                   : 'event_frame_mouse_up',
                 'mouseleave'                                : 'event_frame_mouse_up',
@@ -170,13 +173,14 @@ var GalaxyFrameManager = Backbone.View.extend(
                 'DOMMouseScroll'                            : 'event_panel_scroll',
                 
                 // events fixed to elements
-                'mousedown .f-close'                        : 'event_frame_close',
-                'mousedown .f-pin'                          : 'event_frame_lock',
+                'mousedown .galaxy-frame'                   : 'event_frame_mouse_down',
                 'mousedown .galaxy-frame-active'            : 'event_panel_active',
                 'mousedown .galaxy-frame-load'              : 'event_panel_load',
                 'mousedown .galaxy-frame-background'        : 'event_panel_load',
                 'mousedown .galaxy-frame-scroll-up'         : 'event_panel_scroll_up',
-                'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down'
+                'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down',
+                'mousedown .f-close'                        : 'event_frame_close',
+                'mousedown .f-pin'                          : 'event_frame_lock'
             };
         /*} else {
             this.events = {
@@ -197,9 +201,6 @@ var GalaxyFrameManager = Backbone.View.extend(
     // drag start
     event_frame_mouse_down: function (e)
     {
-        // prevent text selection
-        e.preventDefault();
-        
         // skip if event is already active
         if (this.event.type !== null)
             return;
@@ -212,11 +213,14 @@ var GalaxyFrameManager = Backbone.View.extend(
         // check for resize event
         if ($(e.target).hasClass('f-resize'))
             this.event.type = 'resize';
-            
+        
         // skip if no event has to be handled
         if (this.event.type === null)
             return;
-        
+
+        // prevent text selection
+        e.preventDefault();
+            
         // identify frame
         this.event.target = this.event_get_frame(e.target);
        
@@ -1044,13 +1048,13 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // fill load button template
-    frame_template_load: function()
+    frame_template_header: function()
     {
         return  '<div class="galaxy-frame-load f-corner">' +
                    '<div class="number f-corner">0</div>' +
                    '<div class="icon fa-icon-2x"></div>' +
-                '</div>'+
-                '<div class="galaxy-frame-active f-corner">' +
+                '</div>' +
+                '<div class="galaxy-frame-active f-corner" style="position: absolute; top: 8px;">' +
                    '<div class="icon fa-icon-2x fa-icon-th"></div>' +
                 '</div>';
     },
