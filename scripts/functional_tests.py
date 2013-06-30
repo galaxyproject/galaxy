@@ -129,7 +129,7 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml' )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
