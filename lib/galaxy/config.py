@@ -251,6 +251,7 @@ class Configuration( object ):
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
         self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
+        self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-118bfc78' )
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
