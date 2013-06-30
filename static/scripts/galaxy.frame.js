@@ -375,6 +375,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
+        // prevent text selection
+        e.preventDefault();
+
         // get frame
         var frame = this.event_get_frame(e.target);
         
@@ -404,23 +407,29 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
 
     // show/hide panel
-    event_panel_load: function ()
+    event_panel_load: function (e)
     {
         // check
         if (this.event.type !== null)
             return;
         
+        // prevent text selection
+        e.preventDefault();
+
         // load panel
         this.panel_show_hide();
     },
     
     // activate/disable panel
-    event_panel_active: function ()
+    event_panel_active: function (e)
     {
         // check
         if (this.event.type !== null)
             return;
         
+        // prevent text selection
+        e.preventDefault();
+
         // load panel
         this.panel_active_disable();
     },
@@ -432,6 +441,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null || !this.visible)
             return;
             
+        // prevent text selection
+        e.preventDefault();
+
         // get wheel delta
         var delta = e.originalEvent.detail ? e.originalEvent.detail : e.originalEvent.wheelDelta / -3;
         
@@ -440,23 +452,29 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // scroll up
-    event_panel_scroll_up: function()
+    event_panel_scroll_up: function(e)
     {
         // check
         if (this.event.type !== null)
             return;
   
+        // prevent text selection
+        e.preventDefault();
+
         // scroll up
         this.panel_scroll(-this.options.scroll);
     },
     
     // scroll down
-    event_panel_scroll_down: function()
+    event_panel_scroll_down: function(e)
     {
         // check
         if (this.event.type !== null)
             return;
      
+        // prevent text selection
+        e.preventDefault();
+        
         // scroll down
         this.panel_scroll(this.options.scroll);
     },
@@ -771,6 +789,9 @@ var GalaxyFrameManager = Backbone.View.extend(
     // adds and displays a new frame/window
     frame_new: function(options)
     {
+        // trigger mouse leave
+        $(document).trigger('mouseleave');
+
         // validate
         if (!this.active)
         {
