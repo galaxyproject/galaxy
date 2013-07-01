@@ -82,6 +82,9 @@ tool-data/genome/*
 # Test output
 run_functional_tests.html
 test/tool_shed/tmp/*
+.coverage
+htmlcov
+run_unit_tests.html
 
 # Project files
 *.kpf
