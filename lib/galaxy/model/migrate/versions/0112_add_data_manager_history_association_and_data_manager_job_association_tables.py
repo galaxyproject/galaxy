@@ -54,7 +54,7 @@ def upgrade(migrate_engine):
         log.debug( "Creating data_manager_job_association table failed: %s" % str( e ) )
 
 
-def downgrade():
+def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
