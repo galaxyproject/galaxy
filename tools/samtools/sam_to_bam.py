@@ -42,7 +42,7 @@ def __main__():
     except:
         sys.stdout.write( 'Could not determine Samtools version\n' )
 
-    tmp_dir = tempfile.mkdtemp()
+    tmp_dir = tempfile.mkdtemp( dir='.' )
     if not options.ref_file or options.ref_file == 'None':
         # We're using locally cached reference sequences( e.g., /galaxy/data/equCab2/sam_index/equCab2.fa ).
         # The indexes for /galaxy/data/equCab2/sam_index/equCab2.fa will be contained in
