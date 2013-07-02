@@ -418,6 +418,20 @@ def job_input_hda_filter(view, left, operator, right):
         )
     )
 
+def job_input_ldda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToInputLibraryDatasetAssociation )
+    param_name = re.sub(r'^input_ldda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.dataset_id == right
+        )
+    )
+
+
+
 def job_output_hda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased( JobToOutputDatasetAssociation )
@@ -437,6 +451,7 @@ class JobView(ViewQueryBaseClass):
         'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
         'state' : ViewField('state', sqlalchemy_field=Job.state),
         'param' : ViewField('param', handler=job_param_filter),
+        'input_ldda' : ViewField('input_ldda', handler=job_input_ldda_filter, id_decode=True),
         'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
         'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
     }
