@@ -426,7 +426,7 @@ def job_input_ldda_filter(view, left, operator, right):
         and_(
             Job.id == alias.job_id,
             alias.name == param_name,
-            alias.dataset_id == right
+            alias.ldda_id == right
         )
     )
 
