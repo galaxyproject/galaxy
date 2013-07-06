@@ -23,8 +23,12 @@ def validate_publicname( trans, publicname, user=None ):
         return ''
     if user and user.username == publicname:
         return ''
-    if len( publicname ) < 4:
-        return "Public name must be at least 4 characters in length"
+    if trans.webapp.name == 'tool_shed':
+        if len( publicname ) < 3:
+            return "Public name must be at least 3 characters in length"
+    else:
+        if len( publicname ) < 4:
+            return "Public name must be at least 4 characters in length"   
     if len( publicname ) > 255:
         return "Public name cannot be more than 255 characters in length"
     if not( VALID_PUBLICNAME_RE.match( publicname ) ):
