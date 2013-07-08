@@ -80,10 +80,6 @@ def extract_tar( file_name, file_path ):
     tar.extractall( path=file_path )
     tar.close()
 
-def format_traceback():
-    ex_type, ex, tb = sys.exc_info()
-    return ''.join( traceback.format_tb( tb ) )
-
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
     if not zipfile_ok( archive_path ):
@@ -98,6 +94,10 @@ def extract_zip( archive_path, extraction_path ):
             file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
     zip_archive.close()
     return True
+
+def format_traceback():
+    ex_type, ex, tb = sys.exc_info()
+    return ''.join( traceback.format_tb( tb ) )
 
 def get_env_shell_file_path( installation_directory ):
     env_shell_file_name = 'env.sh'
@@ -166,6 +166,14 @@ def get_env_shell_file_paths( app, elem ):
             ( str( toolshed ), str( repository_name ), str( repository_owner ), str( changeset_revision ) )
         log.debug( error_message )
     return env_shell_file_paths
+
+def get_env_var_values( install_dir ):
+    env_var_dict = {}
+    env_var_dict[ 'INSTALL_DIR' ] = install_dir
+    env_var_dict[ 'system_install' ] = install_dir
+    # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
+    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
+    return env_var_dict
 
 def isbz2( file_path ):
     return checkers.is_bz2( file_path )

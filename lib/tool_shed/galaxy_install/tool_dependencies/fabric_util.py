@@ -8,8 +8,9 @@ import shutil
 import tempfile
 import shutil
 from contextlib import contextmanager
-
+from galaxy.util.template import fill_template
 from galaxy import eggs
+
 import pkg_resources
 
 pkg_resources.require('ssh' )
@@ -297,12 +298,28 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             with settings( warn_only=True ):
                                 cmd = ''
                                 for env_shell_file_path in env_shell_file_paths:
-                                    for i, env_setting in enumerate( open( env_shell_file_path ) ):
+                                    for env_setting in open( env_shell_file_path ):
                                         cmd += '%s\n' % env_setting
                                 cmd += action_dict[ 'command' ]
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+                        elif action_type == 'template_command':
+                            env_vars = dict()
+                            for env_shell_file_path in env_shell_file_paths:
+                                for env_setting in open( env_shell_file_path ):
+                                    env_string = env_setting.split( ';' )[ 0 ]
+                                    env_name, env_path = env_string.split( '=' )
+                                    env_vars[ env_name ] = env_path
+                            env_vars.update( common_util.get_env_var_values( install_dir ) )
+                            language = action_dict[ 'language' ]
+                            with settings( warn_only=True, **env_vars ):
+                                if language == 'cheetah':
+                                    # We need to import fabric.api.env so that we can access all collected environment variables.
+                                    cmd = fill_template( '#from fabric.api import env\n%s' % action_dict[ 'command' ], context=env_vars )
+                                    return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                    if return_code:
+                                        return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]

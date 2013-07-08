@@ -361,12 +361,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     sa_session = app.model.context.current
 
     def evaluate_template( text ):
-        """ Substitute variables defined in XML blocks obtained loaded from dependencies file. """
-        # # Added for compatibility with CloudBioLinux.
-        # TODO: Add tool_version substitution for compat with CloudBioLinux.
-        substitutions = { "INSTALL_DIR" : install_dir,
-                          "system_install" : install_dir }
-        return Template( text ).safe_substitute( substitutions )
+        """ Substitute variables defined in XML blocks from dependencies file."""
+        return Template( text ).safe_substitute( common_util.get_env_var_values( install_dir ) )
 
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -387,6 +383,25 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ 'command' ] = action_elem_text
             else:
                 continue
+        elif action_type == 'template_command':
+            # Default to Cheetah as it's the first template language supported.
+            language = action_elem.get( 'language', 'cheetah' ).lower()
+            if language == 'cheetah':
+                # Cheetah template syntax.
+                # <action type="template_command" language="cheetah">
+                #     #if env.PATH:
+                #         make
+                #     #end if
+                # </action>
+                action_elem_text = action_elem.text.strip()
+                if action_elem_text:
+                    action_dict[ 'language' ] = language
+                    action_dict[ 'command' ] = action_elem_text
+                else:
+                    continue
+            else:
+                log.debug( "Unsupported template language '%s'. Not proceeding." % str( language ) )
+                raise Exception( "Unsupported template language '%s' in tool dependency definition." % str( language ) )
         elif action_type == 'download_by_url':
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             if action_elem.text:
