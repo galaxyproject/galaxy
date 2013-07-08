@@ -63,7 +63,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     else:
         exception_msg = '\n\nThe entry for the main Galaxy tool shed at %s is missing from the %s file.  ' % ( tool_shed, app.config.tool_sheds_config )
         exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
-        raise Exception( exception_msg )  
+        raise Exception( exception_msg )
     return tool_shed_accessible, missing_tool_configs_dict
 
 def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):

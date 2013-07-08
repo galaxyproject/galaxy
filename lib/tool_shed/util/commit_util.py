@@ -164,6 +164,18 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
     suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
+def handle_missing_repository_attribute( elem ):
+    # <repository name="molecule_datatypes" owner="test" />
+    error_message = ''
+    name = elem.get( 'name' )
+    if not name:
+        error_message += 'The tag is missing the required name attribute.  '
+    owner = elem.get( 'owner' )
+    if not owner:
+        error_message += 'The tag is missing the required owner attribute.  '
+    log.debug( error_message )
+    return error_message
+    
 def handle_gzip( repository, uploaded_file_name ):
     fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
@@ -192,7 +204,10 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     if root.tag == 'repositories':
         for index, elem in enumerate( root ):
             # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-            populated, elem = handle_repository_dependency_elem( trans, elem )
+            populated, elem, error_message = handle_repository_dependency_elem( trans, elem )
+            if error_message:
+                exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                raise Exception( exception_message )
             if populated:
                 root[ index ] = elem
                 if not altered:
@@ -202,6 +217,12 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
 
 def handle_repository_dependency_elem( trans, elem ):
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+    error_message = ''
+    name = elem.get( 'name' )
+    owner = elem.get( 'owner' )
+    if not name or not owner:
+        error_message = handle_missing_repository_attribute( elem )
+        return False, elem, error_message
     populated = False
     toolshed = elem.get( 'toolshed' )
     if not toolshed:
@@ -209,8 +230,6 @@ def handle_repository_dependency_elem( trans, elem ):
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
         elem.attrib[ 'toolshed' ] = toolshed
         populated = True
-    name = elem.get( 'name' )
-    owner = elem.get( 'owner' )
     changeset_revision = elem.get( 'changeset_revision' )
     if not changeset_revision:
         # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
@@ -224,7 +243,9 @@ def handle_repository_dependency_elem( trans, elem ):
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                 populated = True
-    return populated, elem
+        else:
+            error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
+    return populated, elem, error_message
 
 def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
     altered = False
@@ -241,7 +262,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                 for package_index, package_elem in enumerate( root_elem ):
                     if package_elem.tag == 'repository':
                         # <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0" prior_installation_required="True" />
-                        populated, repository_elem = handle_repository_dependency_elem( trans, package_elem )
+                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, package_elem )
+                        if error_message:
+                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                            raise Exception( exception_message )
                         if populated:
                             root_elem[ package_index ] = repository_elem
                             package_altered = True
@@ -259,7 +283,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                                     #     </repository>
                                     # </action>
                                     for repo_index, repo_elem in enumerate( action_elem ):
-                                        populated, repository_elem = handle_repository_dependency_elem( trans, repo_elem )
+                                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem )
+                                        if error_message:
+                                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                                            raise Exception( exception_message )
                                         if populated:
                                             action_elem[ repo_index ] = repository_elem
                                             package_altered = True

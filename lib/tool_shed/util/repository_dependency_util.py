@@ -249,7 +249,7 @@ def generate_message_for_invalid_repository_dependencies( metadata_dict ):
     if metadata_dict:
         invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
         if invalid_repository_dependencies_dict:
-            invalid_repository_dependencies = invalid_repository_dependencies_dict[ 'invalid_repository_dependencies' ]
+            invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
             for repository_dependency_tup in invalid_repository_dependencies:
                 toolshed, name, owner, changeset_revision, prior_installation_required, error = \
                     suc.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
