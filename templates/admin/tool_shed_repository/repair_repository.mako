@@ -25,7 +25,7 @@ ${render_galaxy_repository_actions( repository )}
 <div class="toolForm">
     <div class="toolFormTitle">Repair tool shed repository '${repository.name}'</div>
         <br/><br/>
-        <form name="repair_repository" id="repair_repository" action="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ), repair_dict=repair_dict )}" method="post" >
+        <form name="repair_repository" id="repair_repository" action="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ), repair_dict=encoded_repair_dict )}" method="post" >
             <% ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] ) %>
             <table class="grid">
                 <tr><th  bgcolor="#D8D8D8">Name</th><th  bgcolor="#D8D8D8">Owner</th><th  bgcolor="#D8D8D8">Changeset revision</th></tr>

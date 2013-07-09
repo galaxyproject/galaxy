@@ -589,14 +589,6 @@ class AdminToolshed( AdminGalaxy ):
                 else:
                     kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
                     kwd[ 'status' ] = 'error'
-            elif operation == "repair":
-                # In this case, tsridslist is ordered.
-                repositories_for_repair = []
-                for tsr_id in tsridslist:
-                    repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
-                    repositories_for_repair.append( repository )
-                ordered_repo_info_dicts = kwd.get( 'ordered_repo_info_dicts', [] )
-                self.repair_tool_shed_repositories( trans, repositories_for_repair, ordered_repo_info_dicts )
         return self.repository_installation_grid( trans, **kwd )
 
     @web.expose
@@ -1159,23 +1151,29 @@ class AdminToolshed( AdminGalaxy ):
                                                               status=status ) )
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         if kwd.get( 'repair_repository_button', False ):
-            repair_dict = kwd.get( 'repair_dict', None )
+            encoded_repair_dict = kwd.get( 'repair_dict', None )
+            if encoded_repair_dict:
+                repair_dict = encoding_util.tool_shed_decode( encoded_repair_dict )
+            else:
+                repair_dict = None
             if not repair_dict:
                 repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
-                ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
-                ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
-                if ordered_tsr_ids and ordered_repo_info_dicts:
-                    return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                      action='manage_repositories',
-                                                                      operation='repair',
-                                                                      ordered_tsr_ids=ordered_tsr_ids,
-                                                                      ordered_repo_info_dicts=ordered_repo_info_dicts ) )
+            ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
+            ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
+            if ordered_tsr_ids and ordered_repo_info_dicts:
+                repositories_for_repair = []
+                for tsr_id in ordered_tsr_ids:
+                    repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                    repositories_for_repair.append( repository )
+                return self.repair_tool_shed_repositories( trans, repositories_for_repair, ordered_repo_info_dicts )
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+        encoded_repair_dict = encoding_util.tool_shed_encode( repair_dict )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
         ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
         return trans.fill_template( 'admin/tool_shed_repository/repair_repository.mako',
                                     repository=tool_shed_repository,
+                                    encoded_repair_dict=encoded_repair_dict,
                                     repair_dict=repair_dict,
                                     message=message,
                                     status=status )
