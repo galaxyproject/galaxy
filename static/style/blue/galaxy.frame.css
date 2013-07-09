@@ -13,6 +13,11 @@
     color: #BCC800;
 }
 
+.bs-tooltip
+{
+    z-index: 34010;
+}
+
 /*
     galaxy-frames
 */

@@ -123,8 +123,8 @@ var GalaxyFrameManager = Backbone.View.extend(
         this.event_initialize();
 
         // add
-        //$(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
-        //$(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
+        $(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
+        $(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
 
         // catch window resize event
         var self = this;
@@ -731,8 +731,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             this.visible = false;
             
             // hide 
-            for (var i in this.frame_list)
-                $(this.frame_list[i].id).fadeOut('fast');
+            $(".galaxy-frame").fadeOut('fast');
             
             // add class
             $(".galaxy-frame-load .icon").addClass("fa-icon-eye-close");
@@ -748,8 +747,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             this.visible = true;
             
             // show
-            for (var i in this.frame_list)
-                $(this.frame_list[i].id).fadeIn('fast');
+            $(".galaxy-frame").fadeIn('fast');
             
             // add class
             $(".galaxy-frame-load .icon").addClass("fa-icon-eye-open");
@@ -800,59 +798,68 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (!this.active)
         {
             // load frame in main window
-            if (options.center)
+            if (options.location == 'center')
             {
                 var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' );
                 galaxy_main.attr( 'src', options.content );
             } else
                 window.location = options.content;
-                
+
             // stop
             return;
         }
-        
+
+        // check for number of frames
+        if (this.frame_counter > this.options.frame_max)
+        {
+            alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");   
+            return;   
+        }
+
         // generate frame identifier
         var frame_id = '#galaxy-frame-' + (this.frame_counter_id++);
 
         // check if frame exists
-        if ($(frame_id).length === 0 && this.options.frame_max > this.frame_counter)
+        if ($(frame_id).length !== 0)
         {
-            // reset top
-            this.top = this.options.top_min;
-            
-            // set dimensions
-            options.width   = this.to_pixel_coord('width', this.options.frame.cols);
-            options.height  = this.to_pixel_coord('height', this.options.frame.rows);
-       
-            // append
-            $(this.el).append(this.frame_template(frame_id.substring(1), options.title, options.type, options.content));
-            
-            // construct a new frame
-            var frame = {
-                id              : frame_id,
-                screen_location : {},
-                grid_location   : {},
-                grid_rank       : null,
-                grid_lock       : false
-            };
+            alert("This frame already exists. This page might contain multiple frame managers.");
+            return;
+        }
+        
+        // reset top
+        this.top = this.options.top_min;
 
-            // increase frame counter
-            this.frame_counter++;
+        // append
+        $(this.el).append(this.frame_template(frame_id.substring(1), options.title, options.type, options.content));
             
-            // add to frame list
-            this.frame_list[frame_id] = frame;
-            
-            // resize
-            this.frame_resize(frame, {width: options.width, height: options.height});
+        // construct a new frame
+        var frame = {
+            id              : frame_id,
+            screen_location : {},
+            grid_location   : {},
+            grid_rank       : null,
+            grid_lock       : false
+        };
+        
+        // set dimensions
+        options.width   = this.to_pixel_coord('width', this.options.frame.cols);
+        options.height  = this.to_pixel_coord('height', this.options.frame.rows);
+        
+        // add to frame list
+        this.frame_list[frame_id] = frame;
+
+        // increase frame counter
+        this.frame_counter++;
+
+        // resize
+        this.frame_resize(frame, {width: options.width, height: options.height});
        
-            // place frame
-            this.frame_insert(frame, {top: 0, left: 0}, true);
+        // place frame
+        this.frame_insert(frame, {top: 0, left: 0}, true);
             
-            // show frames if hidden
-            if (!this.visible)
-                this.panel_show_hide();
-        } else
-            alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");
+        // show frames if hidden
+        if (!this.visible)
+            this.panel_show_hide();
     },
       
     // frame insert at given location
@@ -922,7 +929,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         // panel menu
         this.menu_refresh();
     },
-    
+
     // naive frame place
     frame_place: function(frame, animate)
     {
@@ -1052,7 +1059,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                         '<span class="f-title">' + title + '</span>' +
                         '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
                         '<span class="f-icon f-close fa-icon-trash"></span>' +            
-                '</div>' +
+                    '</div>' +
                     '<div class="f-content f-corner">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
