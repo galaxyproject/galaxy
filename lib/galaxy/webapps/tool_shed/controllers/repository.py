@@ -666,7 +666,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # Update repository files for browsing.
         suc.update_repository( repo )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
@@ -1017,7 +1017,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            action='view_repository',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans )
         return trans.fill_template( '/webapps/tool_shed/repository/create_repository.mako',
                                     name=name,
                                     description=description,
@@ -2185,7 +2185,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans )
@@ -2365,7 +2365,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako', 
                                     repository=repository,
                                     metadata=metadata,
@@ -2565,7 +2565,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2991,7 +2991,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message += malicious_error
             status = 'error'
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
-        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
+        repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
