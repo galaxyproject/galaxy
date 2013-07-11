@@ -113,21 +113,25 @@ class BaseController( object ):
         try:
             decoded_id = trans.security.decode_id( id )
         except:
-            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode" % ( class_name, str( id ) ), type='error' )
+            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode"
+                                    % ( class_name, str( id ) ), type='error' )
         try:
             item_class = self.get_class( class_name )
             assert item_class is not None
             item = trans.sa_session.query( item_class ).get( decoded_id )
             assert item is not None
-        except:
-            log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
+        except Exception, exc:
+            log.exception( "Invalid %s id ( %s ) specified: %s" % ( class_name, id, str( exc ) ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
+
         if check_ownership or check_accessible:
             self.security_check( trans, item, check_ownership, check_accessible )
         if deleted == True and not item.deleted:
-            raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+            raise ItemDeletionException( '%s "%s" is not deleted'
+                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         elif deleted == False and item.deleted:
-            raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+            raise ItemDeletionException( '%s "%s" is deleted'
+                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         return item
 
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
@@ -190,11 +194,11 @@ class BaseAPIController( BaseController ):
                 check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
         except ItemDeletionException, e:
-            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
+            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
         except MessageException, e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception, e:
-            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            log.exception( "Execption in get_object check for %s %s: %s" % ( class_name, str( id ), str( e ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):
@@ -280,8 +284,10 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
-        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        return self.security_check( trans, history, check_ownership, check_accessible )
+        history = self.get_object( trans, id, 'History',
+            check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        history = self.security_check( trans, history, check_ownership, check_accessible )
+        return history
 
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """

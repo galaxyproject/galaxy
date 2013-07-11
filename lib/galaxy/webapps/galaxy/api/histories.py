@@ -2,6 +2,10 @@
 API operations on a history.
 """
 
+import pkg_resources
+pkg_resources.require( "Paste" )
+from paste.httpexceptions import HTTPBadRequest
+
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
@@ -75,9 +79,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             history_data = self.get_history_dict( trans, history )
             history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
 
+        except HTTPBadRequest, bad_req:
+            trans.response.status = 400
+            return str( bad_req )
+
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.error( msg, exc_info=True )
+            log.exception( msg, exc_info=True )
             trans.response.status = 500
             return msg
 
@@ -117,7 +125,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
         try:
-            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
             return str( e )
 
