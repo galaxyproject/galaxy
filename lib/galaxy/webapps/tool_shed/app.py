@@ -7,6 +7,7 @@ import galaxy.webapps.tool_shed.model
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
+import tool_shed.repository_types.registry
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -20,6 +21,8 @@ class UniverseApplication( object ):
         # Set up datatypes registry
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+        # Set up the repository_types registry.
+        self.repository_types_registry = tool_shed.repository_types.registry.Registry()
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection

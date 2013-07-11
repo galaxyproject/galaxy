@@ -100,6 +100,7 @@
                 ${repository.name | h}
             %endif
         </div>
+        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
         <div class="form-row">
             <label>Synopsis:</label>
             ${repository.description | h}

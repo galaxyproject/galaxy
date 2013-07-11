@@ -35,6 +35,7 @@ from galaxy.webapps.tool_shed.util import container_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -665,10 +666,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # Update repository files for browsing.
         suc.update_repository( repo )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     commit_message=commit_message,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 
@@ -961,6 +964,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
+        repository_type = kwd.get( 'repository_type', rt_util.GENERIC )
         if kwd.get( 'create_repository_button', False ):
             error = False
             message = self.__validate_repository_name( name, trans.user )
@@ -974,6 +978,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 # Add the repository record to the db
                 repository = trans.app.model.Repository( name=name,
+                                                         type=repository_type,
                                                          description=description,
                                                          long_description=long_description,
                                                          user_id=trans.user.id )
@@ -1001,7 +1006,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if category_ids:
                     # Create category associations
                     for category_id in category_ids:
-                        category = trans.sa_session.query(model.Category).get( trans.security.decode_id( category_id ) )
+                        category = trans.sa_session.query( model.Category ).get( trans.security.decode_id( category_id ) )
                         rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
                         trans.sa_session.add( rca )
                         flush_needed = True
@@ -1012,12 +1017,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            action='view_repository',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans )
         return trans.fill_template( '/webapps/tool_shed/repository/create_repository.mako',
                                     name=name,
                                     description=description,
                                     long_description=long_description,
                                     selected_categories=selected_categories,
                                     categories=categories,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 
@@ -1985,6 +1992,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, id )
+        repository_type = kwd.get( 'repository_type', str( repository.type ) )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         repo_name = kwd.get( 'repo_name', repository.name )
@@ -2016,6 +2024,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   id=id,
                                                                   message=message,
                                                                   status='error' ) )
+            if repository_type != repository.type:
+                repository.type = repository_type
+                flush_needed = True
             if description != repository.description:
                 repository.description = description
                 flush_needed = True
@@ -2174,6 +2185,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans )
@@ -2202,6 +2214,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     skip_tool_tests_check_box=skip_tool_tests_check_box,
                                     skip_tool_test=skip_tool_test,
                                     malicious_check_box=malicious_check_box,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 
@@ -2352,6 +2365,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako', 
                                     repository=repository,
                                     metadata=metadata,
@@ -2359,6 +2373,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     rra=rra,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 
@@ -2550,10 +2565,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 
@@ -2974,6 +2991,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message += malicious_error
             status = 'error'
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        repository_type_select_field = rt_util.build_repository_type_select_fiels( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2987,6 +3005,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     changeset_revision=changeset_revision,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
+                                    repository_type_select_field=repository_type_select_field,
                                     message=message,
                                     status=status )
 

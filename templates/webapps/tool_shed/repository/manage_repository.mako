@@ -151,6 +151,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 </div>
                 <div style="clear: both"></div>
             </div>
+            ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
             <div class="form-row">
                 <label>Synopsis:</label>
                 <input name="description" type="textfield" value="${description | h}" size="80"/>

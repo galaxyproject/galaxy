@@ -5,6 +5,7 @@ from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.model.item_attrs import APIItem
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -130,18 +131,20 @@ class GalaxySession( object ):
 
 
 class Repository( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    api_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    api_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
+                                 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
 
-    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, deleted=None, email_alerts=None,
-                  times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False, deleted=None,
+                  email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
+        self.type = type
         self.description = description
         self.long_description = long_description
         self.user_id = user_id
@@ -153,6 +156,24 @@ class Repository( object, APIItem ):
 
     def as_dict( self, value_mapper=None ):
         return self.get_api_value( view='element', value_mapper=value_mapper )
+
+    def can_change_type( self, app ):
+        # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
+        # the default type.
+        if self.is_new( app ):
+            return True
+        if self.times_downloaded == 0:
+            return True
+        if self.type == rt_util.DEFAULT:
+            return True
+        return False
+
+    def can_change_type_to( self, app, new_type_label ):
+        if self.can_change_type( app ):
+            new_type = app.repository_types_registry.get_class_by_label( new_type_label )
+            if new_type.is_valid_for_type( self ):
+                return True
+        return False
 
     def get_api_value( self, view='collection', value_mapper=None ):
         if value_mapper is None:
@@ -172,6 +193,13 @@ class Repository( object, APIItem ):
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
+
+    def get_changesets_for_setting_metadata( self, app ):
+        type_class = self.get_type_class( app )
+        return type_class.get_changesets_for_setting_metadata( app, self )
+
+    def get_type_class( self, app ):
+        return app.repository_types_registry.get_class_by_label( self.type )
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )

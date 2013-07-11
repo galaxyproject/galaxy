@@ -163,6 +163,46 @@
     </script>
 </%def>
 
+<%def name="render_repository_type_select_field( repository_type_select_field, render_help=True )">
+    <div class="form-row">
+        <label>Repository type:</label>
+        <%
+            from tool_shed.repository_types import util
+            options = repository_type_select_field.options
+            repository_types = []
+            for option_tup in options:
+                repository_types.append( option_tup[ 1 ] )
+            render_as_text = len( options ) == 1
+            if render_as_text:
+                repository_type = options[ 0 ][ 0 ]
+        %>
+        %if render_as_text:
+            ${repository_type | h}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    This repository's type cannot be changed because it's contents are valid only for it's current type or it has been cloned.
+                </div>
+            %endif
+        %else:
+            ${repository_type_select_field.get_html()}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    Select the repository type based on the following criteria.
+                    <ul>
+                        %if util.GENERIC in repository_types:
+                            <li><b>Generic</b> - contents can be any set of valid Galaxy utilities
+                        %endif
+                        %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
+                            <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml
+                        %endif
+                    </ul>
+                </div>
+            %endif
+        %endif
+        <div style="clear: both"></div>
+    </div>
+</%def>         
+            
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
