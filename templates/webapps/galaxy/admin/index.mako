@@ -22,7 +22,7 @@
             overflow: auto;
         }
         .toolMenu {
-            margin-left: 10px;
+            margin: 8px 0 0 10px;
         }
     </style>
 </%def>
