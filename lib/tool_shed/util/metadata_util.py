@@ -214,7 +214,7 @@ def compare_repository_dependencies( trans, ancestor_repository_dependencies, cu
             if not found_in_current:
                 # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
                 # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.        
-                if not different_revision_defines_tip_only_repository_dependency( ancestor_tup, current_repository_dependencies ):
+                if not different_revision_defines_tip_only_repository_dependency( trans, ancestor_tup, current_repository_dependencies ):
                     return NOT_EQUAL_AND_NOT_SUBSET
                 return SUBSET
         if len( ancestor_repository_dependencies ) == len( current_repository_dependencies ):
@@ -346,7 +346,7 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                 break
     return repository_metadata
 
-def different_revision_defines_tip_only_repository_dependency( rd_tup, repository_dependencies ):
+def different_revision_defines_tip_only_repository_dependency( trans, rd_tup, repository_dependencies ):
     """
     Determine if the only difference between rd_tup and a dependency definition in the list of repository_dependencies is the changeset_revision value.
     """
@@ -1331,7 +1331,7 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
                     if saved_repository_dependency not in new_repository_dependencies:
                         # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
                         # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
-                        if not different_revision_defines_tip_only_repository_dependency( saved_repository_dependency, new_repository_dependencies ):
+                        if not different_revision_defines_tip_only_repository_dependency( trans, saved_repository_dependency, new_repository_dependencies ):
                             return True
                 return False
             else:
