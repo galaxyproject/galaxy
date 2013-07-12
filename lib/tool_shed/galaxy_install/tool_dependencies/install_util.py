@@ -177,15 +177,18 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                                                            tool_dependency_name=package_name,
                                                                            tool_dependency_version=package_version )
                         env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
-                        for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
-                            env_var_dict = env_var_dicts[ i ]
-                            action = env_var_dict.get( 'action', None )
-                            name = env_var_dict.get( 'name', None )
-                            value = env_var_dict.get( 'value', None )
-                            if action and name and value:
-                                new_value = parse_env_shell_entry( action, name, value, line )
-                                env_var_dict[ 'value' ] = new_value
-                            new_env_var_dicts.append( env_var_dict )
+                        if os.path.exists( env_sh_file_path ):
+                            for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
+                                env_var_dict = env_var_dicts[ i ]
+                                action = env_var_dict.get( 'action', None )
+                                name = env_var_dict.get( 'name', None )
+                                value = env_var_dict.get( 'value', None )
+                                if action and name and value:
+                                    new_value = parse_env_shell_entry( action, name, value, line )
+                                    env_var_dict[ 'value' ] = new_value
+                                new_env_var_dicts.append( env_var_dict )
+                        else:
+                            log.debug( 'Invalid file %s specified, ignoring set_environment_for_install action.', env_sh_file_path )
                         action_dict[ 'environment_variable' ] = new_env_var_dicts
                     else:
                         action_dict[ 'environment_variable' ] = env_var_dicts

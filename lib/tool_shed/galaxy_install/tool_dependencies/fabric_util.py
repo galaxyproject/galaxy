@@ -238,8 +238,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # in the set_environment action.
                             cmds = []
                             for env_shell_file_path in env_shell_file_paths:
-                                for i, env_setting in enumerate( open( env_shell_file_path ) ):
-                                    cmds.append( env_setting.strip( '\n' ) )
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        cmds.append( env_setting.strip( '\n' ) )
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
@@ -298,8 +301,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             with settings( warn_only=True ):
                                 cmd = ''
                                 for env_shell_file_path in env_shell_file_paths:
-                                    for env_setting in open( env_shell_file_path ):
-                                        cmd += '%s\n' % env_setting
+                                    if os.path.exists( env_shell_file_path ):
+                                        for env_setting in open( env_shell_file_path ):
+                                            cmd += '%s\n' % env_setting
+                                    else:
+                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
                                 cmd += action_dict[ 'command' ]
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
@@ -307,10 +313,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         elif action_type == 'template_command':
                             env_vars = dict()
                             for env_shell_file_path in env_shell_file_paths:
-                                for env_setting in open( env_shell_file_path ):
-                                    env_string = env_setting.split( ';' )[ 0 ]
-                                    env_name, env_path = env_string.split( '=' )
-                                    env_vars[ env_name ] = env_path
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        env_string = env_setting.split( ';' )[ 0 ]
+                                        env_name, env_path = env_string.split( '=' )
+                                        env_vars[ env_name ] = env_path
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
                             env_vars.update( common_util.get_env_var_values( install_dir ) )
                             language = action_dict[ 'language' ]
                             with settings( warn_only=True, **env_vars ):
