@@ -982,10 +982,11 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
         return old_id
 
 def get_readme_file_names( repository_name ):
+    """Creates a list of valid filenames."""
     readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = [ r for r in readme_files ]
-    for r in readme_files:
-        valid_filenames.append( '%s.txt' % r )
+    valid_filenames = map( lambda f: '%s.txt' % f, readme_files )
+    valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
+    valid_filenames.extend( readme_files )
     valid_filenames.append( '%s.txt' % repository_name )
     return valid_filenames
 
