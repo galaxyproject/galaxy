@@ -600,7 +600,7 @@
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
     <%
-        from tool_shed.util.shed_util_common import to_safe_string
+        from galaxy.util import rst_to_html
         encoded_id = trans.security.encode_id( readme.id )
     %>
     <style type="text/css">
@@ -620,7 +620,7 @@
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="readme_table">
-                <tr><td>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+                <tr><td>${ rst_to_html( readme.text ) }</td></tr>
             </table>
         </td>
     </tr>
