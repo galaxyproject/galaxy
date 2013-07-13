@@ -277,7 +277,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # POSIXLY_CORRECT forces shell commands . and source to have the same
                             # and well defined behavior in bash/zsh.
                             activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
-                            install_command = "pip install -r '%s'" % requirements_path
+                            install_command = "python '%s' install -r '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path )
                             full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
