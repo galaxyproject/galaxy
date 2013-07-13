@@ -33,8 +33,6 @@ class ToolDependencyDefinition( TipOnly ):
             ctx = repo.changectx( changeset )
             # Inspect all files in the changeset (in sorted order) to make sure there is only one and it is named tool_dependencies.xml.
             files_changed_in_changeset = ctx.files()
-            if len( files_changed_in_changeset ) > 1:
-                return False
             for file_path in files_changed_in_changeset:
                 file_name = suc.strip_path( file_path )
                 if file_name not in self.valid_file_names:

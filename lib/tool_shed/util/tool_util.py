@@ -157,7 +157,9 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                     else:
                         correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
                         correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+                        invalid_tup = ( tool_config_name, correction_msg )
+                        if invalid_tup not in invalid_files_and_errors_tups:
+                            invalid_files_and_errors_tups.append( invalid_tup )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
