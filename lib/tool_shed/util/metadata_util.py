@@ -36,8 +36,10 @@ NOT_EQUAL_AND_NOT_SUBSET = 'not equal and not subset'
 SUBSET = 'subset'
 SUBSET_VALUES = [ EQUAL, SUBSET ]
 
-REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
-NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml', REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
+NOT_TOOL_CONFIGS = [ suc.DATATYPES_CONFIG_FILENAME,
+                     suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                     suc.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                     suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
@@ -604,7 +606,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         app.config.tool_data_path = work_dir #FIXME: Thread safe?
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
-    datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
+    datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( app, repository, repository_clone_url, files_dir, datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
@@ -632,7 +634,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                 dirs.remove( '.hg' )
             for name in files:
                 # See if we have a repository dependencies defined.
-                if name == 'repository_dependencies.xml':
+                if name == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     path_to_repository_dependencies_config = os.path.join( root, name )
                     metadata_dict, error_message = generate_repository_dependency_metadata( app,  path_to_repository_dependencies_config, metadata_dict )
                     if error_message:
@@ -700,7 +702,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     metadata_dict = generate_data_manager_metadata( app,
                                                     repository,
                                                     files_dir,
-                                                    suc.get_config_from_disk( REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
+                                                    suc.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
                                                     metadata_dict,
                                                     shed_config_dict=shed_config_dict )
     

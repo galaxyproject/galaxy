@@ -436,7 +436,7 @@ class AdminToolshed( AdminGalaxy ):
         message = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', tool_shed_repository.repo_path( trans.app ) )
+        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME, tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
                                                                                     tool_shed_repository=tool_shed_repository,
                                                                                     tool_dependencies_config=tool_dependencies_config,

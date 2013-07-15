@@ -11,6 +11,7 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy import eggs
+import tool_shed.repository_types.util as rt_util
 
 eggs.require( 'mercurial' )
 from mercurial import commands
@@ -22,7 +23,7 @@ log = logging.getLogger( __name__ )
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
 UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
 
-def check_archive( archive ):
+def check_archive( repository, archive ):
     for member in archive.getmembers():
         # Allow regular files and directories only
         if not ( member.isdir() or member.isfile() or member.islnk() ):
@@ -34,6 +35,9 @@ def check_archive( archive ):
                 return False, message
         if member.name in [ 'hgrc' ]:
             message = "Uploaded archives cannot contain hgrc files."
+            return False, message
+        if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+            message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
             return False, message
     return True, ''
 

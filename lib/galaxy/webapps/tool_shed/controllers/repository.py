@@ -1656,7 +1656,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # to retrieve older versions of the tool-dependencies.xml file from the repository manafest.
         repo_dir = repository.repo_path( trans.app )
         # Get the tool_dependencies.xml file from disk.
-        tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir )
+        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME, repo_dir )
         # Return the encoded contents of the tool_dependencies.xml file.
         if tool_dependencies_config:
             tool_dependencies_config_file = open( tool_dependencies_config, 'rb' )

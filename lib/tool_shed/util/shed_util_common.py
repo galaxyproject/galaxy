@@ -35,6 +35,11 @@ MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
+DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
+REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
+TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
+
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
 Repository name:       ${repository_name}
