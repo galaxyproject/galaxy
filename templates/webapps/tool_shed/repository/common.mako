@@ -189,8 +189,8 @@
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.
                     <ul>
-                        %if util.GENERIC in repository_types:
-                            <li><b>Generic</b> - contents can be any set of valid Galaxy utilities
+                        %if util.UNRESTRICTED in repository_types:
+                            <li><b>Unrestricted</b> - contents can be any set of valid Galaxy utilities or files
                         %endif
                         %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
                             <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml

@@ -964,7 +964,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
-        repository_type = kwd.get( 'repository_type', rt_util.GENERIC )
+        repository_type = kwd.get( 'repository_type', rt_util.UNRESTRICTED )
         if kwd.get( 'create_repository_button', False ):
             error = False
             message = self.__validate_repository_name( name, trans.user )

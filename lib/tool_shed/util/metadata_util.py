@@ -1237,7 +1237,7 @@ def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict )
                 if 'datatypes' in metadata:
                     ancestor_datatypes = metadata[ 'datatypes' ]
                     # The saved metadata must be a subset of the new metadata.
-                    datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+                    datatype_comparison = compare_datatypes( trans, ancestor_datatypes, current_datatypes )
                     if datatype_comparison == NOT_EQUAL_AND_NOT_SUBSET:
                         return True
                     else:

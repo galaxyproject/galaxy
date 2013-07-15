@@ -3,10 +3,10 @@ from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger( __name__ )
 
-GENERIC = 'generic'
+UNRESTRICTED = 'unrestricted'
 TOOL_DEPENDENCY_DEFINITION = 'tool_dependency_definition'
 
-types = [ GENERIC, TOOL_DEPENDENCY_DEFINITION ]
+types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION ]
 
 def build_repository_type_select_field( trans, repository=None, name='repository_type' ):
     """Called from the Tool Shed to generate the current list of supported repository types."""

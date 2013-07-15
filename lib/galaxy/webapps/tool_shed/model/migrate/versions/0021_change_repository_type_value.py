@@ -1,4 +1,4 @@
-"""Migration script to add the type column to the repository table."""
+"""Migration script to change repository.type column value from generic to unrestricted."""
 
 from sqlalchemy import *
 from sqlalchemy.orm import *
@@ -23,24 +23,13 @@ def upgrade( migrate_engine ):
     print __doc__
     metadata.bind = migrate_engine
     metadata.reflect()
-    Repository_table = Table( "repository", metadata, autoload=True )
-    c = Column( "type", TrimmedString( 255 ), index=True )
-    try:
-        # Create
-        c.create( Repository_table, index_name="ix_repository_type" )
-        assert c is Repository_table.c.type
-    except Exception, e:
-        print "Adding type column to the repository table failed: %s" % str( e )
     # Update the type column to have the default unrestricted value.
-    cmd = "UPDATE repository SET type = 'unrestricted'"
+    cmd = "UPDATE repository SET type = 'unrestricted' WHERE type = 'generic'"
     migrate_engine.execute( cmd )
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine
     metadata.reflect()
-    # Drop type column from repository table.
-    Repository_table = Table( "repository", metadata, autoload=True )
-    try:
-        Repository_table.c.type.drop()
-    except Exception, e:
-        print "Dropping column type from the repository table failed: %s" % str( e )
+    # Update the type column to have the default generic value.
+    cmd = "UPDATE repository SET type = 'generic' WHERE type = 'unrestricted'"
+    migrate_engine.execute( cmd )
