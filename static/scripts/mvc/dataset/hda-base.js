@@ -237,7 +237,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             
         } else {
             displayBtnData.title = _l( 'View data' );
-            displayBtnData.href  = "javascript:parent.frame_manager.frame_new({title: 'Data Viewer', type: 'url', location: 'center', content: '" + this.urls.display + "'});";
+            
+            // default link for dataset
+            displayBtnData.href  = this.urls.display;
+            
+            // add frame manager option onclick event
+            var self = this;
+            displayBtnData.on_click = function() { parent.frame_manager.frame_new({title: "Data Viewer", type: "url", location: "center", content: self.urls.display }); };
         }
 
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
