@@ -225,7 +225,13 @@ class Grid( object ):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
-        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+
+        #TODO:??
+        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
+        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
+        # in mapping.py. If you change that to False, the log_action doesn't affect the query
+        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
+        #trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
 
         # Render grid.
         def url( *args, **kwargs ):
@@ -260,7 +266,7 @@ class Grid( object ):
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        return trans.fill_template( iff( async_request, self.async_template, self.template ),
+        page = trans.fill_template( iff( async_request, self.async_template, self.template ),
                                     grid=self,
                                     query=query,
                                     cur_page_num = page_num,
@@ -280,6 +286,9 @@ class Grid( object ):
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
+        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+        return page
+
     def get_ids( self, **kwargs ):
         id = []
         if 'id' in kwargs:
