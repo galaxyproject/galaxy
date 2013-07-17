@@ -4,7 +4,7 @@ API operations on a history.
 
 import pkg_resources
 pkg_resources.require( "Paste" )
-from paste.httpexceptions import HTTPBadRequest
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
@@ -126,30 +126,39 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
+            history.deleted = True
+
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+
+                # First purge all the datasets
+                for hda in history.datasets:
+                    if hda.purged:
+                        continue
+                    hda.purged = True
+                    trans.sa_session.add( hda )
+                    trans.sa_session.flush()
+
+                    if hda.dataset.user_can_purge:
+                        try:
+                            hda.dataset.full_delete()
+                            trans.sa_session.add( hda.dataset )
+                        except:
+                            pass
+                        # flush now to preserve deleted state in case of later interruption
+                        trans.sa_session.flush()
+
+                # Now mark the history as purged
+                history.purged = True
+                self.sa_session.add( history )
+
+            trans.sa_session.flush()
+
+        #TODO: better feedback than this...
         except Exception, e:
             return str( e )
 
-        history.deleted = True
-        if purge and trans.app.config.allow_user_dataset_purge:
-            # First purge all the datasets
-            for hda in history.datasets:
-                if hda.purged:
-                    continue
-                hda.purged = True
-                trans.sa_session.add( hda )
-                trans.sa_session.flush()
-                if hda.dataset.user_can_purge:
-                    try:
-                        hda.dataset.full_delete()
-                        trans.sa_session.add( hda.dataset )
-                    except:
-                        pass
-                    trans.sa_session.flush()
-            # Now mark the history as purged
-            history.purged = True
-            self.sa_session.add( history )
-
-        trans.sa_session.flush()
         return 'OK'
 
     @web.expose_api
