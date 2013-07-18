@@ -164,7 +164,7 @@ class Repository( object, APIItem ):
             return True
         if self.times_downloaded == 0:
             return True
-        if self.type == rt_util.DEFAULT:
+        if self.type == rt_util.UNRESTRICTED:
             return True
         return False
 

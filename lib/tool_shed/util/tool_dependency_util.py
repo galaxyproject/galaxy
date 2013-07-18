@@ -155,7 +155,7 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
                 message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
                 message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % tool_dependency_definition_type_class.label
             else:
-                message += "This repository contains no tools, so these tool dependencies are considered orphans within this repository.<br/>"
+                message += "This repository contains no tools, so it's defined tool dependencies are considered orphans within this repository.<br/>"
     return message
 
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
