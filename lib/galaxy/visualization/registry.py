@@ -6,6 +6,7 @@ Lower level of visualization framework which does three main things:
 """
 import os
 import shutil
+import glob
 
 from galaxy import util
 import galaxy.model
@@ -26,6 +27,7 @@ allow data_sources with no model_class but have tests (isAdmin, etc.)
 some confused vocabulary in docs, var names
 tests:
     anding, grouping, not
+    has_dataprovider
 data_sources:
     lists of
 add description element to visualization.
@@ -62,10 +64,9 @@ class VisualizationsRegistry( object ):
         return 'VisualizationsRegistry(%s)' %( listings_keys_str )
 
     def __init__( self, galaxy_root, configuration_filepath ):
-        # load the registry from the given xml file using the given parser
+        # load the registry from the xml files located in configuration_filepath using the given parser
         configuration_filepath = os.path.join( galaxy_root, configuration_filepath )
-        configuration_filepath = self.check_conf_filepath( configuration_filepath )
-        self.configuration_filepath = configuration_filepath
+        self.configuration_filepath = self.check_conf_filepath( configuration_filepath )
         self.load()
 
         # what to use to parse query strings into resources/vars for the template
@@ -73,20 +74,13 @@ class VisualizationsRegistry( object ):
 
     def check_conf_filepath( self, configuration_filepath ):
         """
-        If given file at filepath exists, return that filepath. If not,
-        see if filepath + '.sample' exists and, if so, copy that into filepath.
-
-        If neither original or sample exist, throw an IOError (currently,
-        this is a requireed file).
+        Checks for the existence of the given filepath.
+        :param configurarion_filepath: full filepath to the visualization config directory
+        :raises IOError: if the given directory doesn't exist
         """
-        if os.path.exists( configuration_filepath ):
-            return configuration_filepath
-        else:
-            sample_file = configuration_filepath + '.sample'
-            if os.path.exists( sample_file ):
-                shutil.copy2( sample_file, configuration_filepath )
-                return configuration_filepath
-        raise IOError( 'visualization configuration file (%s) not found' %( configuration_filepath ) )
+        if not os.path.exists( configuration_filepath ):
+            raise IOError( 'visualization configuration directory (%s) not found' %( configuration_filepath ) )
+        return configuration_filepath
 
     def load( self ):
         """
@@ -274,11 +268,11 @@ class VisualizationsConfigParser( object ):
     VALID_RENDER_LOCATIONS = [ 'galaxy_main', '_top', '_blank' ]
 
     @classmethod
-    def parse( cls, xml_filepath, debug=True ):
+    def parse( cls, config_dir, debug=True ):
         """
-        Static class interface
+        Static class interface.
         """
-        return cls( debug ).parse_file( xml_filepath )
+        return cls( debug ).parse_files( config_dir )
 
     def __init__( self, debug=False ):
         self.debug = debug
@@ -288,37 +282,46 @@ class VisualizationsConfigParser( object ):
         self.param_parser = ParamParser()
         self.param_modifier_parser = ParamModifierParser()
 
-    def parse_file( self, xml_filepath ):
+    def parse_files( self, config_dir ):
         """
-        Parse the given XML file for visualizations data.
+        Parse each XML file in `config_dir` for visualizations config data.
 
-        If an error occurs while parsing a visualizations entry it is skipped.
+        If an error occurs while parsing a visualizations entry, it is skipped.
+        :returns: registry data in dictionary form
         """
         returned = {}
         try:
-            xml_tree = galaxy.util.parse_xml( xml_filepath )
-            for visualization_conf in xml_tree.getroot().findall( 'visualization' ):
-                visualization = None
-                visualization_name = visualization_conf.get( 'name' )
-
+            for xml_filepath in glob.glob( os.path.join( config_dir, '*.xml' ) ):
                 try:
-                    visualization = self.parse_visualization( visualization_conf )
+                    visualization_name, visualization = self.parse_file( xml_filepath )
                 # skip vis' with parsing errors - don't shutdown the startup
                 except ParsingException, parse_exc:
-                    log.error( 'Skipped visualization configuration "%s" due to parsing errors: %s',
-                        visualization_name, str( parse_exc ), exc_info=self.debug )
+                    log.error( 'Skipped visualization config "%s" due to parsing errors: %s',
+                        xml_filepath, str( parse_exc ), exc_info=self.debug )
 
                 if visualization:
                     returned[ visualization_name ] = visualization
+                    log.debug( 'Visualization config loaded for: %s', visualization_name )
 
         except Exception, exc:
-            log.error( 'Error parsing visualization configuration file %s: %s',
-                xml_filepath, str( exc ), exc_info=( not self.debug ) )
-            #TODO: change when this is required
+            log.error( 'Error parsing visualizations configuration directory %s: %s',
+                config_dir, str( exc ), exc_info=( not self.debug ) )
+            #TODO: change when this framework is on by default
             if self.debug:
                 raise
 
         return returned
+
+    def parse_file( self, xml_filepath ):
+        """
+        Parse the given XML file for visualizations data.
+        :returns: tuple of ( `visualization_name`, `visualization` )
+        """
+        xml_tree = galaxy.util.parse_xml( xml_filepath )
+        visualization_conf = xml_tree.getroot()
+        visualization_name = visualization_conf.get( 'name' )
+        visualization = self.parse_visualization( visualization_conf )
+        return visualization_name, visualization
 
     def parse_visualization( self, xml_tree ):
         """

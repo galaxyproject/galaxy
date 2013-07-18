@@ -123,8 +123,10 @@ class UniverseApplication( object ):
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = ( VisualizationsRegistry( self.config.root, self.config.visualizations_conf_path )
-                                         if self.config.visualizations_conf_path else None )
+        self.visualizations_registry = None
+        if self.config.visualizations_config_directory:
+            self.visualizations_registry = VisualizationsRegistry( self.config.root,
+                                                                   self.config.visualizations_config_directory )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
