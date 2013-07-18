@@ -171,7 +171,7 @@ class Repository( object, APIItem ):
     def can_change_type_to( self, app, new_type_label ):
         if self.can_change_type( app ):
             new_type = app.repository_types_registry.get_class_by_label( new_type_label )
-            if new_type.is_valid_for_type( self ):
+            if new_type.is_valid_for_type( app, self ):
                 return True
         return False
 

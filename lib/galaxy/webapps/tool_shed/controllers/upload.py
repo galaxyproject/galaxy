@@ -206,15 +206,16 @@ class UploadController( BaseUIController ):
                         metadata_dict = repository.metadata_revisions[0].metadata
                     else:
                         metadata_dict = {}
-                    # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
-                    # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
-                    # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
-                    # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                    # Handle messaging for orphan tool dependencies.
-                    orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( metadata_dict )
-                    if orphan_message:
-                        message += orphan_message
-                        status = 'warning'
+                    if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                        # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
+                        # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
+                        # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
+                        # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
+                        # Handle messaging for orphan tool dependencies.
+                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
+                        if orphan_message:
+                            message += orphan_message
+                            status = 'warning'
                     # Handle messaging for invalid tool dependencies.
                     invalid_tool_dependencies_message = tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:

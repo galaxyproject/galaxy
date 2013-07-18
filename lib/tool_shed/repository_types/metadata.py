@@ -18,7 +18,7 @@ class Metadata( object ):
         repo = hg.repository( ui.ui(), repository.repo_path( app ) )
         return repo.changelog
 
-    def is_valid_for_type( self, repository, revisions_to_check=None ):
+    def is_valid_for_type( self, app, repository, revisions_to_check=None ):
         raise "Unimplemented Method"
 
 

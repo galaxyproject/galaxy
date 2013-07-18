@@ -2174,11 +2174,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                    key_rd_dicts_to_be_processed=None,
                                                                                                    all_repository_dependencies=None,
                                                                                                    handled_key_rd_dicts=None )
-                # Handle messaging for orphan tool dependencies.
-                orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( metadata )
-                if orphan_message:
-                    message += orphan_message
-                    status = 'warning'
+                if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                    # Handle messaging for orphan tool dependencies.
+                    orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
+                    if orphan_message:
+                        message += orphan_message
+                        status = 'warning'
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -2976,11 +2977,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                key_rd_dicts_to_be_processed=None,
                                                                                                all_repository_dependencies=None,
                                                                                                handled_key_rd_dicts=None )
-            # Handle messaging for orphan tool dependencies.
-            orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( metadata )
-            if orphan_message:
-                message += orphan_message
-                status = 'warning'
         else:
             metadata = None
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
