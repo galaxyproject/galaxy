@@ -67,6 +67,7 @@ class VisualizationsRegistry( object ):
         # load the registry from the xml files located in configuration_filepath using the given parser
         configuration_filepath = os.path.join( galaxy_root, configuration_filepath )
         self.configuration_filepath = self.check_conf_filepath( configuration_filepath )
+        self.move_sample_conf_files()
         self.load()
 
         # what to use to parse query strings into resources/vars for the template
@@ -81,6 +82,20 @@ class VisualizationsRegistry( object ):
         if not os.path.exists( configuration_filepath ):
             raise IOError( 'visualization configuration directory (%s) not found' %( configuration_filepath ) )
         return configuration_filepath
+
+    def move_sample_conf_files( self ):
+        """
+        Copies any `*.xml.sample` files in `configuration_filepath` to
+        `.xml` files of the same names if no file with that name already exists.
+
+        :returns: a list of the files moved
+        """
+        files_moved = []
+        for sample_file in glob.glob( os.path.join( self.configuration_filepath, '*.sample' ) ):
+            new_name = os.path.splitext( sample_file )[0]
+            if not os.path.exists( new_name ):
+                shutil.copy2( sample_file, new_name )
+                files_moved.append( new_name )
 
     def load( self ):
         """
