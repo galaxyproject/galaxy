@@ -357,16 +357,16 @@ class Tabular( data.Text ):
         """Attempts to get column settings from dataset.metadata"""
         return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
-    def map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-        return dataproviders.column.MapDataProvider( dataset_source, **settings )
+        return dataproviders.column.DictDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
-    def dataset_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
-        return dataproviders.dataset.DatasetMapDataProvider( dataset, **settings )
+        return dataproviders.dataset.DatasetDictDataProvider( dataset, **settings )
 
 
 class Taxonomy( Tabular ):
@@ -522,15 +522,15 @@ class Sam( Tabular ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
-    def map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
-        return super( Sam, self ).map_dataprovider( dataset, **settings )
+        return super( Sam, self ).dict_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
-    def dataset_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    def dataset_dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
-        return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
+        return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
     def header_dataprovider( self, dataset, **settings ):
@@ -538,12 +538,12 @@ class Sam( Tabular ):
         headers_source = dataproviders.line.RegexLineDataProvider( dataset_source, regex_list=[ '^@' ] )
         return dataproviders.line.RegexLineDataProvider( headers_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', map_dataprovider.settings )
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', dict_dataprovider.settings )
     def id_seq_qual_dataprovider( self, dataset, **settings ):
-        # provided as an example of a specified column map (w/o metadata)
+        # provided as an example of a specified column dict (w/o metadata)
         settings[ 'indeces' ] = [ 0, 9, 10 ]
         settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
-        return self.map_dataprovider( dataset, **settings )
+        return self.dict_dataprovider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
@@ -551,9 +551,9 @@ class Sam( Tabular ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, True, **settings )
 
@@ -628,9 +628,9 @@ class Pileup( Tabular ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -677,9 +677,9 @@ class Vcf( Tabular ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 1, 1, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 

@@ -203,16 +203,16 @@ class DatasetColumnarDataProvider( column.ColumnarDataProvider ):
         super( DatasetColumnarDataProvider, self ).__init__( dataset_source, **kwargs )
 
 
-class DatasetMapDataProvider( column.MapDataProvider ):
+class DatasetDictDataProvider( column.DictDataProvider ):
     """
     Data provider that uses a DatasetDataProvider as it's source and the
-    dataset's metadata to buuild settings for the MapDataProvider it's
+    dataset's metadata to buuild settings for the DictDataProvider it's
     inherited from.
     """
     def __init__( self, dataset, **kwargs ):
         """
-        All kwargs are inherited from MapDataProvider.
-        .. seealso:: column.MapDataProvider
+        All kwargs are inherited from DictDataProvider.
+        .. seealso:: column.DictDataProvider
 
         If no kwargs are given, this class will attempt to get those kwargs
         from the dataset source's metadata.
@@ -255,7 +255,7 @@ class DatasetMapDataProvider( column.MapDataProvider ):
         if not kwargs.get( 'column_types', None ):
             kwargs[ 'column_types' ] = dataset_source.get_metadata_column_types( indeces=indeces )
 
-        super( DatasetMapDataProvider, self ).__init__( dataset_source, **kwargs )
+        super( DatasetDictDataProvider, self ).__init__( dataset_source, **kwargs )
 
 
 # ----------------------------------------------------------------------------- provides a bio-relevant datum
