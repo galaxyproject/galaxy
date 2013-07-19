@@ -99,7 +99,7 @@
         
         ## rename unaligned sequence files
         #if $library.type == "paired" and $output_unaligned_reads_l and $output_unaligned_reads_r:
-            #set left  = str(str($output_unaligned_reads_l).replace( '.dat', '.1.dat' ))
+            #set left  = str($output_unaligned_reads_l).replace( '.dat', '.1.dat' )
             #set right = str($output_unaligned_reads_l).replace( '.dat', '.2.dat' )
         
             mv $left $output_unaligned_reads_l;
@@ -317,6 +317,7 @@ Align the first n-reads or read pairs from the input (after the -s/--skip reads 
 Trim n-bases from 5' (left) end of each read before alignment.
 
 *-3/--trim3 (default: 0)*
+
 Trim n-bases from 3' (right) end of each read before alignment.
 
 *--nofw/--norc (default: both strands enabled)*
