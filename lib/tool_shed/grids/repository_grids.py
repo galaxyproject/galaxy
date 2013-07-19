@@ -1270,7 +1270,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                             owner = rd_tup[ 2 ]
                             changeset_revision = rd_tup[ 3 ]
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-                            if required_repository:
+                            if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                                           required_repository_id,
