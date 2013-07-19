@@ -44,7 +44,7 @@ ${render_galaxy_repository_actions( repository )}
                 <tr>
                     <td>
                         %if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
-                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ) )}">
+                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
                                 ${tool_dependency.name}
                             </a>
                         %else:
@@ -60,7 +60,7 @@ ${render_galaxy_repository_actions( repository )}
         </table>
         %if can_install:
             <br/>
-            <form name="install_tool_dependencies" id="install_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install' )}" method="post" >
+            <form name="install_tool_dependencies" id="install_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     Check each tool dependency that you want to install and click <b>Install</b>.
                 </div>
@@ -81,7 +81,7 @@ ${render_galaxy_repository_actions( repository )}
         %endif
         %if can_uninstall:
             <br/>
-            <form name="uninstall_tool_dependencies" id="uninstall_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='uninstall' )}" method="post" >
+            <form name="uninstall_tool_dependencies" id="uninstall_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='uninstall', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     Check each tool dependency that you want to uninstall and click <b>Uninstall</b>.
                 </div>

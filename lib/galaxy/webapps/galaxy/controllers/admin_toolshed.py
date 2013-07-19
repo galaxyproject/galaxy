@@ -653,9 +653,15 @@ class AdminToolshed( AdminGalaxy ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
-        # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
-        tool_shed_repository = tool_dependency.tool_shed_repository
+        if tool_dependency_ids:
+            # We need a tool_shed_repository, so get it from one of the tool_dependencies.
+            tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
+            tool_shed_repository = tool_dependency.tool_shed_repository
+        else:
+            # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
+            # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
+            repository_id = kwd.get( 'repository_id', None )
+            tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tool_dependency_ids:
@@ -664,7 +670,7 @@ class AdminToolshed( AdminGalaxy ):
                 kwd[ 'status' ] = 'error'
                 del kwd[ 'operation' ]
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                  action='manage_installed_tool_dependencies',
+                                                                  action='manage_repository_tool_dependencies',
                                                                   **kwd ) )
             if operation == 'browse':
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -720,7 +726,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def manage_tool_dependencies( self, trans, **kwd ):
-        # This method is called when tool dependencies are being installed.  See the related manage_repository_tool-dependencies
+        # This method is called when tool dependencies are being installed.  See the related manage_repository_tool_dependencies
         # method for managing the tool dependencies for a specified installed tool shed repository.
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
