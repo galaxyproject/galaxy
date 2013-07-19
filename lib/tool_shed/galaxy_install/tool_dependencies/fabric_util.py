@@ -339,9 +339,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             extract = action_dict.get( 'extract', False )
                             common_util.url_download( current_dir, filename, url, extract=extract )
                         elif action_type == 'change_directory':
-                            target_directory = os.path.realpath( os.path.join( current_dir, action_dict[ 'directory' ] ) )
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
                             if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory within the current working directory.
                                 dir = target_directory
+                            elif target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory above the current working directory, but within the defined work_dir.
+                                dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
                             else:
                                 log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
 
