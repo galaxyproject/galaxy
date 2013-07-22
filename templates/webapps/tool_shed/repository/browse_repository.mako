@@ -46,7 +46,9 @@ ${render_tool_shed_repository_actions( repository )}
                 ${render_clone_str( repository )}
             </div>
         %endif
-        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
+        <form name="repository_type">
+            ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
+        </form>
         %if can_push:
             <form name="select_files_to_delete" id="select_files_to_delete" action="${h.url_for( controller='repository', action='select_files_to_delete', id=trans.security.encode_id( repository.id ))}" method="post" >
                 <div class="form-row" >

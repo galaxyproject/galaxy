@@ -348,7 +348,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Twill sets hidden form fields to read-only by default. We need to write to this field.
         form = tc.browser.get_form( 'select_files_to_delete' )
         form.find_control( "selected_files_to_delete" ).readonly = False
-        tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
+        tc.fv( "2", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
