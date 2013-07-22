@@ -4,7 +4,7 @@ API operations on a history.
 
 import pkg_resources
 pkg_resources.require( "Paste" )
-from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
@@ -124,6 +124,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
+        rval = { 'id' : history_id }
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
             history.deleted = True
@@ -152,14 +153,24 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 # Now mark the history as purged
                 history.purged = True
                 self.sa_session.add( history )
+                rval[ 'purged' ] = True
 
             trans.sa_session.flush()
+            rval[ 'deleted' ] = True
 
-        #TODO: better feedback than this...
-        except Exception, e:
-            return str( e )
+        except HTTPInternalServerError, http_server_err:
+            log.exception( 'Histories API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           history_id, str( kwd ), str( http_server_err ) )
+            raise
+        except HTTPException, http_exc:
+            raise
+        except Exception, exc:
+            log.exception( 'Histories API, delete: uncaught exception: %s, %s\n%s',
+                           history_id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
 
-        return 'OK'
+        return rval
 
     @web.expose_api
     def undelete( self, trans, id, **kwd ):
