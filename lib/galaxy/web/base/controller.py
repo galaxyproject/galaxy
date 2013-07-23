@@ -512,7 +512,8 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #TODO: duplicate of above? alias to above (or vis-versa)
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation',
+                               check_ownership=False, check_accessible=False )
 
         if check_accessible:
             if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):

@@ -193,7 +193,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         try:
-            history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=True )
+            history = self.get_history( trans, id, check_ownership=True, check_accessible=True )
             # validation handled here and some parsing, processing, and conversion
             payload = self._validate_and_parse_update_payload( payload )
             # additional checks here (security, etc.)
