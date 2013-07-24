@@ -578,12 +578,8 @@ class ShedTwillTestCase( TwillTestCase ):
         return None
         
     def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
-        env_sh_path = os.path.join( self.galaxy_tool_dependency_dir,
-                                    tool_dependency_name,
-                                    tool_dependency_version,
-                                    repository.owner,
-                                    repository.name,
-                                    repository.installed_changeset_revision,
+        '''Return the absolute path to an installed repository's env.sh file.'''
+        env_sh_path = os.path.join( self.get_tool_dependency_path( tool_dependency_name, tool_dependency_version, repository ),
                                     'env.sh' )
         return env_sh_path
     
@@ -604,6 +600,15 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+    
+    def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path for an installed tool dependency.'''
+        return os.path.join( self.galaxy_tool_dependency_dir,
+                             tool_dependency_name,
+                             tool_dependency_version,
+                             repository.owner,
+                             repository.name,
+                             repository.installed_changeset_revision )
         
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
