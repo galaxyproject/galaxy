@@ -990,6 +990,7 @@ def get_readme_file_names( repository_name ):
     valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
     valid_filenames.extend( readme_files )
     valid_filenames.append( '%s.txt' % repository_name )
+    valid_filenames.append( '%s.rst' % repository_name )
     return valid_filenames
 
 def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
