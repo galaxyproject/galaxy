@@ -453,15 +453,15 @@ class ShedTwillTestCase( TwillTestCase ):
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
         strings_displayed = []
         strings_not_displayed = []
-        for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
+        for input_elem_name in [ 'repo_name', 'description', 'long_description', 'repository_type' ]:
             if input_elem_name in kwd:
-                tc.fv( "1", input_elem_name, kwd[ input_elem_name ] )
+                tc.fv( "edit_repository", input_elem_name, kwd[ input_elem_name ] )
                 strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         strings_displayed = []
         for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            tc.fv( "1", input_elem_name, original_information[ input_elem_name ] )
+            tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
@@ -577,6 +577,16 @@ class ShedTwillTestCase( TwillTestCase ):
             return datatypes_count.group( 1 )
         return None
         
+    def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        env_sh_path = os.path.join( self.galaxy_tool_dependency_dir,
+                                    tool_dependency_name,
+                                    tool_dependency_version,
+                                    repository.owner,
+                                    repository.name,
+                                    repository.installed_changeset_revision,
+                                    'env.sh' )
+        return env_sh_path
+    
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
