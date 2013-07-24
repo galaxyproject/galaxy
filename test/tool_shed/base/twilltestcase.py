@@ -984,6 +984,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
         
+    def repair_installed_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
+        self.visit_galaxy_url( url )
+        self.submit_form( 'repair_repository', 'repair_repository_button' )
+    
     def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
         strings_displayed = []
         strings_not_displayed = []
