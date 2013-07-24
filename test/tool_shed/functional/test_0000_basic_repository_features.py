@@ -151,7 +151,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded filtering.txt",
                           strings_displayed=[], 
                           strings_not_displayed=[] )
-        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0' ] )
         
     def test_0055_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
@@ -219,19 +219,19 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded readme.txt",
                           strings_displayed=[], 
                           strings_not_displayed=[] )
-        self.display_manage_repository_page( repository, strings_displayed=[ 'This is a readme file.' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.' ] )
         # Verify that there is a different readme file for each metadata revision.
         metadata_revisions = self.get_repository_metadata_revisions( repository )
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'Readme file for filtering 1.1.0', 
-                                                                 'This is a readme file.' ] )
+                                             strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0', 
+                                                                 'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.' ] )
         
     def test_0075_delete_readme_txt_file( self ):
         '''Delete the readme.txt file.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.delete_files_from_repository( repository, filenames=[ 'readme.txt' ] )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
-        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0' ] )
         
     def test_0080_search_for_valid_filter_tool( self ):
         '''Search for the filtering tool by tool ID, name, and version.'''
@@ -335,7 +335,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded new readme.txt with invalid ascii characters.",
                           strings_displayed=[], 
                           strings_not_displayed=[] )
-        self.display_manage_repository_page( repository, strings_displayed=[ 'These characters should not' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'These&nbsp;characters&nbsp;should&nbsp;not' ] )
         
     def test_0130_verify_handling_of_invalid_characters( self ):
         '''Load the above changeset in the change log and confirm that there is no server error displayed.'''

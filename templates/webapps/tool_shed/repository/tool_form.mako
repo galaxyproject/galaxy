@@ -35,8 +35,11 @@
                 %elif input.type == "conditional":
                     %if tool_state.items():
                         <%
-                            group_state = tool_state[input.name][0]
-                            current_case = group_state['__current_case__']
+                            try:
+                                group_state = tool_state[ input.name ][ 0 ]
+                            except Exception, e:
+                                group_state = tool_state[ input.name ]
+                            current_case = group_state[ '__current_case__' ]
                             group_prefix = prefix + input.name + "|"
                         %>
                         %if input.value_ref_in_group:
@@ -120,7 +123,7 @@
                 <div class="toolFormBody">
                     <form id="tool_form" name="tool_form" action="" method="get">
                         <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
-                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
+                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}
                     </form>
                 </div>
             </div>

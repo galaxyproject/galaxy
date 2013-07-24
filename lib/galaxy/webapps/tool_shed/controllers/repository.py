@@ -11,6 +11,7 @@ from datetime import datetime
 from galaxy import util
 from galaxy import web
 from galaxy.util.odict import odict
+from galaxy.util.expressions import ExpressionContext
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import build_select_field
@@ -1060,7 +1061,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository, tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
-        tool_state = self.__new_state( trans )
+        tool_state = self.__new_state( trans, tool, invalid=False )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
@@ -1907,7 +1908,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         status = kwd.get( 'status', 'error' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
-        tool_state = self.__new_state( trans )
+        tool_state = self.__new_state( trans, tool, invalid=True )
         invalid_file_tups = []
         if tool:
             invalid_file_tups = tool_util.check_tool_input_params( trans.app,
@@ -2247,7 +2248,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         self.email_alerts_repository_grid.title = "Set email alerts for repository changes"
         return self.email_alerts_repository_grid( trans, **kwd )
 
-    def __new_state( self, trans, all_pages=False ):
+    def __new_state( self, trans, tool, invalid=False ):
         """
         Create a new `DefaultToolState` for this tool. It will not be initialized
         with default values for inputs. 
@@ -2257,6 +2258,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         """
         state = galaxy.tools.DefaultToolState()
         state.inputs = {}
+        if invalid:
+            # We're attempting to display a tool in the tool shed that has been determined to have errors of some kind.
+            return state
+        inputs = tool.inputs_by_page[ 0 ]
+        context = ExpressionContext( state.inputs, parent=None )
+        for input in inputs.itervalues():
+            try:
+                state.inputs[ input.name ] = input.get_initial_value( trans, context )
+            except:
+                state.inputs[ input.name ] = []
         return state
 
     @web.json
