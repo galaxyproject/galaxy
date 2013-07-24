@@ -236,15 +236,16 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     root = tree.getroot()
     if root.tag == 'repositories':
         for index, elem in enumerate( root ):
-            # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-            populated, elem, error_message = handle_repository_dependency_elem( trans, elem )
-            if error_message:
-                exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-                raise Exception( exception_message )
-            if populated:
-                root[ index ] = elem
-                if not altered:
-                    altered = True
+            if elem.tag == 'repository':
+                # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+                populated, elem, error_message = handle_repository_dependency_elem( trans, elem )
+                if error_message:
+                    exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                    raise Exception( exception_message )
+                if populated:
+                    root[ index ] = elem
+                    if not altered:
+                        altered = True
         return altered, root
     return False, None
 
