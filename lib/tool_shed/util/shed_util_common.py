@@ -804,6 +804,23 @@ def get_repository_files( trans, folder_path ):
         contents.sort()
     return contents
 
+def get_repository_from_refresh_on_change( trans, **kwd ):
+    # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
+    # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
+    # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
+    # refresh_on_change occurred and we have the necessary repository id and change set revision to pass on.
+    repository_id = None
+    v = None
+    for k, v in kwd.items():
+        changeset_revision_str = 'changeset_revision_'
+        if k.startswith( changeset_revision_str ):
+            repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
+            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            if repository.tip( trans.app ) != v:
+                return v, repository
+    # This should never be reached - raise an exception?
+    return v, None
+
 def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id."""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )

@@ -11,6 +11,7 @@ from galaxy.model.orm import and_
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import xml_util
 from galaxy.tools.actions.upload import UploadToolAction
@@ -889,6 +890,22 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
         except:
             pass
     return tool, message
+
+def new_state( trans, tool, invalid=False ):
+    """Create a new `DefaultToolState` for the received tool.  Only inputs on the first page will be initialized."""
+    state = galaxy.tools.DefaultToolState()
+    state.inputs = {}
+    if invalid:
+        # We're attempting to display a tool in the tool shed that has been determined to have errors, so is invalid.
+        return state
+    inputs = tool.inputs_by_page[ 0 ]
+    context = ExpressionContext( state.inputs, parent=None )
+    for input in inputs.itervalues():
+        try:
+            state.inputs[ input.name ] = input.get_initial_value( trans, context )
+        except:
+            state.inputs[ input.name ] = []
+    return state
 
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
