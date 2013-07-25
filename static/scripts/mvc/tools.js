@@ -33,9 +33,9 @@ var BaseModel = Backbone.RelationalModel.extend({
 });
 
 /**
- * A tool input.
+ * A tool parameter.
  */
-var ToolInput = Backbone.RelationalModel.extend({
+var ToolParameter = Backbone.RelationalModel.extend({
     defaults: {
         name: null,
         label: null,
@@ -49,7 +49,7 @@ var ToolInput = Backbone.RelationalModel.extend({
     },
 
     copy: function() {
-        return new ToolInput(this.toJSON());
+        return new ToolParameter(this.toJSON());
     },
     
     /**
@@ -88,7 +88,7 @@ var Tool = BaseModel.extend({
         {
             type: Backbone.HasMany,
             key: 'inputs',
-            relatedModel: ToolInput,
+            relatedModel: ToolParameter,
             reverseRelation: {
                 key: 'tool',
                 includeInJSON: false
