@@ -193,9 +193,9 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                     else:
                         action_dict[ 'environment_variable' ] = env_var_dicts
                     actions.append( ( 'set_environment', action_dict ) )
-                    return tool_dependency, actions
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
+            return tool_dependency, actions
     return None, actions
 
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
