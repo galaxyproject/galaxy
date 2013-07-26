@@ -1,4 +1,5 @@
 import cStringIO
+import gzip
 import logging
 import os
 import pkg_resources
