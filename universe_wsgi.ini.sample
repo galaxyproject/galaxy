@@ -228,6 +228,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Display sites
 
+# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
+# an absolute or relative URL.
+#welcome_url = /static/welcome.html
+
 # Galaxy can display data at various external browsers.  These options specify
 # which browsers should be available.  URLs and builds available at these
 # browsers are defined in the specifield files.
