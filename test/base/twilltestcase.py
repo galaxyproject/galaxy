@@ -1191,13 +1191,7 @@ class TwillTestCase( unittest.TestCase ):
                     # This loop gets the filename/label for the selected values.
                     item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
                     for value in kwd[ control.name ]:
-                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py.
-                        # This (and other places where this is done) should be refactored to use the HDA id.
-                        if len( value ) > 30 and control.is_of_kind( 'singlelist' ):
-                            field_value = '%s..%s' % ( value[:17], value[-11:] )
-                        else:
-                            field_value = value
-                        if field_value not in control.value and True not in [ field_value in item_label for item_label in item_labels ]:
+                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
                             changed = True
                             break
                     if changed:
@@ -1205,11 +1199,7 @@ class TwillTestCase( unittest.TestCase ):
                         control.clear()
                         # kwd[control.name] should be a singlelist
                         for elem in kwd[ control.name ]:
-                            if len( elem ) > 30 and control.is_of_kind( 'singlelist' ):
-                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
-                            else:
-                                elem_name = elem
-                            tc.fv( f.name, control.name, str( elem_name ) )
+                            tc.fv( f.name, control.name, str( elem ) )
                         # Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
