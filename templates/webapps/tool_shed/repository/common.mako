@@ -445,18 +445,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #failed_test_table{ table-layout:fixed;
-                                width:100%;
-                                overflow-wrap:normal;
-                                overflow:hidden;
-                                border:0px; 
-                                word-break:keep-all;
-                                word-wrap:break-word;
-                                line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="failed_test_table">
+            <table id="failed_test_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
@@ -573,18 +563,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #missing_table{ table-layout:fixed;
-                            width:100%;
-                            overflow-wrap:normal;
-                            overflow:hidden;
-                            border:0px; 
-                            word-break:keep-all;
-                            word-wrap:break-word;
-                            line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="missing_table">
+            <table id="missing_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${missing_test_component.tool_version | h}</td></tr>
                 <tr><td><b>Tool guid:</b> ${missing_test_component.tool_guid | h}</td></tr>
@@ -703,6 +683,19 @@
     %>
 </%def>
 
+<%def name="render_tool_test_results_css()">
+    <style type="text/css">
+        table.tool_test_results{ table-layout:fixed;
+                                 width:100%;
+                                 overflow-wrap:normal;
+                                 overflow:hidden;
+                                 border:0px; 
+                                 word-break:keep-all;
+                                 word-wrap:break-word;
+                                 line-break:strict; }
+    </style>
+</%def>
+
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( installation_error.id ) %>
     <tr class="datasetRow"
@@ -710,18 +703,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #td_install_error_table{ table-layout:fixed;
-                                     width:100%;
-                                     overflow-wrap:normal;
-                                     overflow:hidden;
-                                     border:0px; 
-                                     word-break:keep-all;
-                                     word-wrap:break-word;
-                                     line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table">
+            <table id="td_install_error_table" class="tool_test_results">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -748,18 +731,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #rd_install_error_table{ table-layout:fixed;
-                                     width:100%;
-                                     overflow-wrap:normal;
-                                     overflow:hidden;
-                                     border:0px; 
-                                     word-break:keep-all;
-                                     word-wrap:break-word;
-                                     line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table">
+            <table id="rd_install_error_table" class="tool_test_results">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
@@ -789,18 +762,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #not_tested_table{ table-layout:fixed;
-                               width:100%;
-                               overflow-wrap:normal;
-                               overflow:hidden;
-                               border:0px; 
-                               word-break:keep-all;
-                               word-wrap:break-word;
-                               line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="not_tested_table">
+            <table id="not_tested_table" class="tool_test_results">
                 <tr><td>${not_tested.reason | h}</td></tr>
             </table>
         </td>
@@ -818,18 +781,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #passed_tests_table{ table-layout:fixed;
-                                 width:100%;
-                                 overflow-wrap:normal;
-                                 overflow:hidden;
-                                 border:0px; 
-                                 word-break:keep-all;
-                                 word-wrap:break-word;
-                                 line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="passed_tests_table">
+            <table id="passed_tests_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
@@ -1206,6 +1159,7 @@
         </div>
     %endif
     %if tool_test_results_root_folder:
+        ${render_tool_test_results_css()}
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Automated tool test results</div>
