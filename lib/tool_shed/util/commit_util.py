@@ -1,7 +1,10 @@
+import cStringIO
+import gzip
 import logging
 import os
 import pkg_resources
 import shutil
+import struct
 import tempfile
 from galaxy import util
 from galaxy.datatypes import checkers
@@ -10,20 +13,30 @@ from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from galaxy import eggs
+import tool_shed.repository_types.util as rt_util
 
+from galaxy import eggs
 eggs.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
+from mercurial.changegroup import readbundle
+from mercurial.changegroup import readexactly
+from mercurial.changegroup import writebundle
 
 log = logging.getLogger( __name__ )
 
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
 UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
-CHUNK_SIZE = 2**20 # 1Mb
 
-def check_archive( archive ):
+def bundle_to_json( fh ):
+    """Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the command line) to a json object."""
+    # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
+    hg_unbundle10_obj = readbundle( fh, None )
+    groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
+    return json.to_json_string( groups, indent=4 )
+    
+def check_archive( repository, archive ):
     for member in archive.getmembers():
         # Allow regular files and directories only
         if not ( member.isdir() or member.isfile() or member.islnk() ):
@@ -35,6 +48,9 @@ def check_archive( archive ):
                 return False, message
         if member.name in [ 'hgrc' ]:
             message = "Uploaded archives cannot contain hgrc files."
+            return False, message
+        if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+            message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
             return False, message
     return True, ''
 
@@ -59,6 +75,23 @@ def check_file_content_for_html_and_images( file_path ):
     elif checkers.check_image( file_path ):
         message = 'The file "%s" contains image content.\n' % str( file_path )
     return message
+
+def get_change_lines_in_file_for_tag( tag, change_dict ):
+    """
+    The received change_dict is the jsonified version of the changes to a file in a changeset being pushed to the tool shed from the command line.
+    This method cleans and returns appropriate lines for inspection.
+    """
+    cleaned_lines = []
+    data_list = change_dict.get( 'data', [] )
+    for data_dict in data_list:
+        block = data_dict.get( 'block', '' )
+        lines = block.split( '\\n' )
+        for line in lines:
+            index = line.find( tag )
+            if index > -1:
+                line = line[ index: ]
+                cleaned_lines.append( line )
+    return cleaned_lines
 
 def get_upload_point( repository, **kwd ):
     upload_point = kwd.get( 'upload_point', None )
@@ -86,7 +119,7 @@ def handle_bz2( repository, uploaded_file_name ):
     bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = bzipped_file.read( CHUNK_SIZE )
+            chunk = bzipped_file.read( suc.CHUNK_SIZE )
         except IOError:
             os.close( fd )
             os.remove( uncompressed )
@@ -146,8 +179,8 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
                     except OSError, e:
                         # The directory is not empty.
                         pass
-    # See if any admin users have chosen to receive email alerts when a repository is
-    # updated.  If so, check every uploaded file to ensure content is appropriate.
+    # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
+    # content is appropriate.
     check_contents = check_file_contents_for_email_alerts( trans )
     for filename_in_archive in filenames_in_archive:
         # Check file content to ensure it is appropriate.
@@ -165,12 +198,24 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
     suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
+def handle_missing_repository_attribute( elem ):
+    # <repository name="molecule_datatypes" owner="test" />
+    error_message = ''
+    name = elem.get( 'name' )
+    if not name:
+        error_message += 'The tag is missing the required name attribute.  '
+    owner = elem.get( 'owner' )
+    if not owner:
+        error_message += 'The tag is missing the required owner attribute.  '
+    log.debug( error_message )
+    return error_message
+    
 def handle_gzip( repository, uploaded_file_name ):
     fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = gzipped_file.read( CHUNK_SIZE )
+            chunk = gzipped_file.read( suc.CHUNK_SIZE )
         except IOError, e:
             os.close( fd )
             os.remove( uncompressed )
@@ -192,17 +237,27 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     root = tree.getroot()
     if root.tag == 'repositories':
         for index, elem in enumerate( root ):
-            # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-            populated, elem = handle_repository_dependency_elem( trans, elem )
-            if populated:
-                root[ index ] = elem
-                if not altered:
-                    altered = True
+            if elem.tag == 'repository':
+                # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+                populated, elem, error_message = handle_repository_dependency_elem( trans, elem )
+                if error_message:
+                    exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                    raise Exception( exception_message )
+                if populated:
+                    root[ index ] = elem
+                    if not altered:
+                        altered = True
         return altered, root
     return False, None
 
 def handle_repository_dependency_elem( trans, elem ):
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+    error_message = ''
+    name = elem.get( 'name' )
+    owner = elem.get( 'owner' )
+    if not name or not owner:
+        error_message = handle_missing_repository_attribute( elem )
+        return False, elem, error_message
     populated = False
     toolshed = elem.get( 'toolshed' )
     if not toolshed:
@@ -210,8 +265,6 @@ def handle_repository_dependency_elem( trans, elem ):
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
         elem.attrib[ 'toolshed' ] = toolshed
         populated = True
-    name = elem.get( 'name' )
-    owner = elem.get( 'owner' )
     changeset_revision = elem.get( 'changeset_revision' )
     if not changeset_revision:
         # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
@@ -225,7 +278,9 @@ def handle_repository_dependency_elem( trans, elem ):
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                 populated = True
-    return populated, elem
+        else:
+            error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
+    return populated, elem, error_message
 
 def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
     altered = False
@@ -242,7 +297,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                 for package_index, package_elem in enumerate( root_elem ):
                     if package_elem.tag == 'repository':
                         # <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0" prior_installation_required="True" />
-                        populated, repository_elem = handle_repository_dependency_elem( trans, package_elem )
+                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, package_elem )
+                        if error_message:
+                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                            raise Exception( exception_message )
                         if populated:
                             root_elem[ package_index ] = repository_elem
                             package_altered = True
@@ -260,7 +318,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                                     #     </repository>
                                     # </action>
                                     for repo_index, repo_elem in enumerate( action_elem ):
-                                        populated, repository_elem = handle_repository_dependency_elem( trans, repo_elem )
+                                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem )
+                                        if error_message:
+                                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                                            raise Exception( exception_message )
                                         if populated:
                                             action_elem[ repo_index ] = repository_elem
                                             package_altered = True
@@ -277,6 +338,39 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
         return altered, root
     return False, None
 
+def repository_tag_is_valid( filename, line ):
+    """
+    Checks changes made to <repository> tags in a dependency definition file being pushed to the tool shed from the command line to ensure that
+    all required attributes exist.
+    """
+    required_attributes = [ 'toolshed', 'name', 'owner', 'changeset_revision' ]
+    defined_attributes = line.split()
+    for required_attribute in required_attributes:
+        defined = False
+        for defined_attribute in defined_attributes:
+            if defined_attribute.startswith( required_attribute ):
+                defined = True
+                break
+        if not defined:
+            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % ( filename, required_attribute )
+            error_msg += 'Automatically populating dependency definition attributes occurs only when using the tool shed upload utility.  '
+            return False, error_msg
+    return True, ''
+
+def repository_tags_are_valid( filename, change_list ):
+    """
+    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing changes to the tool shed on the command
+    line.
+    """
+    tag = '<repository'
+    for change_dict in change_list:
+        lines = get_change_lines_in_file_for_tag( tag, change_dict )
+        for line in lines:
+            is_valid, error_msg = repository_tag_is_valid( filename, line )
+            if not is_valid:
+                return False, error_msg
+    return True, ''
+
 def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
     if isgzip:
         handle_gzip( repository, uploaded_file_name )
@@ -284,3 +378,60 @@ def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, 
     if isbz2:
         handle_bz2( repository, uploaded_file_name )
         return uploaded_file_filename.rstrip( '.bz2' )
+
+def unpack_chunks( hg_unbundle10_obj ):
+    """
+    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which is created when a changeset that is pushed
+    to a tool shed repository using hg push from the command line is read using readbundle.
+    """
+    while True:
+        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
+        if length <= 4:
+            # We found a "null chunk", which ends the group.
+            break
+        if length < 84:
+            raise Exception( "negative data length" )
+        node, p1, p2, cs = struct.unpack( '20s20s20s20s', readexactly( hg_unbundle10_obj, 80 ) )
+        yield { 'node': node.encode( 'hex' ),
+                'p1': p1.encode( 'hex' ),
+                'p2': p2.encode( 'hex' ),
+                'cs': cs.encode( 'hex' ),
+                'data': [ patch for patch in unpack_patches( hg_unbundle10_obj, length - 84 ) ] }
+
+def unpack_groups( hg_unbundle10_obj ):
+    """
+    This method provides a generator of parsed groups from a mercurial unbundle10 object which is created when a changeset that is pushed
+    to a tool shed repository using hg push from the command line is read using readbundle.
+    """
+    # Process the changelog group.
+    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
+    # Process the manifest group.
+    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
+    while True:
+        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
+        if length <= 4:
+            # We found a "null meta chunk", which ends the changegroup.
+            break
+        filename = readexactly( hg_unbundle10_obj, length-4 ).encode( 'string_escape' )
+        # Process the file group.
+        yield ( filename, [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ] )
+
+def unpack_patches( hg_unbundle10_obj, remaining ):
+    """
+    This method provides a generator of patches from the data field in a chunk. As there is no delimiter for this data field, a length argument is
+    required.
+    """
+    while remaining >= 12:
+        start, end, blocklen = struct.unpack( '>lll', readexactly( hg_unbundle10_obj, 12 ) )
+        remaining -= 12
+        if blocklen > remaining:
+            raise Exception( "unexpected end of patch stream" )
+        block = readexactly( hg_unbundle10_obj, blocklen )
+        remaining -= blocklen
+        yield { 'start': start,
+                'end': end,
+                'blocklen': blocklen,
+                'block': block.encode( 'string_escape' ) }
+    if remaining > 0:
+        print remaining
+        raise Exception( "unexpected end of patch stream" )

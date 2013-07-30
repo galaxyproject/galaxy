@@ -72,7 +72,6 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 <!-- ---------------------------------------------------------------------- DOWNLOAD POPUP -->
 <script type="text/template" class="template-hda" id="template-hda-downloadLinks">
 {{#if urls.meta_download}}
-{{! this will be built using a popupmenu }}
 <div popupmenu="dataset-{{ id }}-popup">
     <a class="action-button" href="{{ urls.download }}">{{#local}}Download Dataset{{/local}}</a>
     <a>{{#local}}Additional Files{{/local}}</a>

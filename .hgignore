@@ -60,7 +60,7 @@ shed_tool_data_table_conf.xml
 job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
-visualizations_conf.xml
+config/visualizations/*.xml
 static/welcome.html.*
 static/welcome.html
 
@@ -82,6 +82,9 @@ tool-data/genome/*
 # Test output
 run_functional_tests.html
 test/tool_shed/tmp/*
+.coverage
+htmlcov
+run_unit_tests.html
 
 # Project files
 *.kpf

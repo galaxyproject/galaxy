@@ -137,8 +137,60 @@ def parse_xml(fname):
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:
-        return ElementTree.tostring( pretty_print_xml( elem ) )
-    return ElementTree.tostring( elem )
+        elem = pretty_print_xml( elem )
+    try:
+        return ElementTree.tostring( elem )
+    except TypeError, e:
+        #assume this is a comment
+        if hasattr( elem, 'text' ):
+            return "<!-- %s -->\n" % ( elem.text )
+        else:
+            raise e
+
+def xml_element_compare( elem1, elem2 ):
+    if not isinstance( elem1, dict ):
+        elem1 = xml_element_to_dict( elem1 )
+    if not isinstance( elem2, dict ):
+        elem2 = xml_element_to_dict( elem2 )
+    return elem1 == elem2
+
+def xml_element_list_compare( elem_list1, elem_list2 ):
+    return [ xml_element_to_dict( elem ) for elem in elem_list1  ] == [ xml_element_to_dict( elem ) for elem in elem_list2  ]
+
+def xml_element_to_dict( elem ):
+    rval = {}
+    if elem.attrib:
+        rval[ elem.tag ] = {}
+    else:
+        rval[ elem.tag ] = None
+    
+    sub_elems = list( elem )
+    if sub_elems:
+        sub_elem_dict = dict()
+        for sub_sub_elem_dict in map( xml_element_to_dict, sub_elems ):
+            for key, value in sub_sub_elem_dict.iteritems():
+                if key not in sub_elem_dict:
+                    sub_elem_dict[ key ] = []
+                sub_elem_dict[ key ].append( value )
+        for key, value in sub_elem_dict.iteritems():
+            if len( value ) == 1:
+                rval[ elem.tag ][ k ] = value[0]
+            else:
+                rval[ elem.tag ][ k ] = value
+    if elem.attrib:
+        for key, value in elem.attrib.iteritems():
+            rval[ elem.tag ][ "@%s" % key ] = value
+    
+    if elem.text:
+        text = elem.text.strip()
+        if text and sub_elems or elem.attrib:
+            rval[ elem.tag ][ '#text' ] = text
+        else:
+            rval[ elem.tag ] = text
+    
+    return rval
+
+
 
 def pretty_print_xml( elem, level=0 ):
     pad = '    '
@@ -287,7 +339,6 @@ def sanitize_param(value):
     elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
-        print value
         raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
 
 valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )

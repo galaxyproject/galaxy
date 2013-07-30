@@ -367,9 +367,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             client_locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
             for locale in client_locales:
                 try:
-                    locales.append( Locale.parse( locale.split( ';' )[0], sep='-' ).language )
-                except UnknownLocaleError:
-                    pass
+                    locales.append( Locale.parse( locale.split( ';' )[0].strip(), sep='-' ).language )
+                except Exception, e:
+                    log.debug( "Error parsing locale '%s'. %s: %s", locale, type( e ), e )
         if not locales:
             # Default to English
             locales = 'en'

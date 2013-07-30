@@ -8,8 +8,9 @@ import shutil
 import tempfile
 import shutil
 from contextlib import contextmanager
-
+from galaxy.util.template import fill_template
 from galaxy import eggs
+
 import pkg_resources
 
 pkg_resources.require('ssh' )
@@ -175,22 +176,12 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
                     if 'target_filename' in action_dict:
+                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
-                    downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, url )
-                    if common_util.istar( downloaded_file_path ):
-                        # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
-                        common_util.extract_tar( downloaded_file_path, work_dir )
-                        dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
-                    elif common_util.isjar( downloaded_file_path ):
-                        dir = os.path.curdir
-                    elif common_util.iszip( downloaded_file_path ):
-                        # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
-                        zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
-                        dir = common_util.zip_extraction_directory( work_dir, downloaded_filename )
-                    else:
-                        dir = os.path.curdir
+                    dir = common_util.url_download( work_dir, downloaded_filename, url, extract=True )
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
@@ -204,7 +195,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # Download a single file to the working directory.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
-                    if action_dict[ 'target_filename' ]:
+                    if 'target_filename' in action_dict:
+                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         filename = action_dict[ 'target_filename' ]
                     else:
                         filename = url.split( '/' )[ -1 ]
@@ -223,10 +216,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 if not os.path.exists( full_path_to_dir ):
                     os.makedirs( full_path_to_dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
-                with lcd( dir ):
-                    for action_tup in filtered_actions:
+                for action_tup in filtered_actions:
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
                         action_type, action_dict = action_tup
-                        current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                         if action_type == 'make_directory':
                             common_util.make_directory( full_path=action_dict[ 'full_path' ] )
                         elif action_type == 'move_directory_files':
@@ -245,8 +238,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # in the set_environment action.
                             cmds = []
                             for env_shell_file_path in env_shell_file_paths:
-                                for i, env_setting in enumerate( open( env_shell_file_path ) ):
-                                    cmds.append( env_setting.strip( '\n' ) )
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        cmds.append( env_setting.strip( '\n' ) )
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
@@ -281,7 +277,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # POSIXLY_CORRECT forces shell commands . and source to have the same
                             # and well defined behavior in bash/zsh.
                             activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
-                            install_command = "pip install -r '%s'" % requirements_path
+                            install_command = "python '%s' install -r '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path )
                             full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
@@ -305,20 +301,53 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             with settings( warn_only=True ):
                                 cmd = ''
                                 for env_shell_file_path in env_shell_file_paths:
-                                    for i, env_setting in enumerate( open( env_shell_file_path ) ):
-                                        cmd += '%s\n' % env_setting
+                                    if os.path.exists( env_shell_file_path ):
+                                        for env_setting in open( env_shell_file_path ):
+                                            cmd += '%s\n' % env_setting
+                                    else:
+                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
                                 cmd += action_dict[ 'command' ]
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+                        elif action_type == 'template_command':
+                            env_vars = dict()
+                            for env_shell_file_path in env_shell_file_paths:
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        env_string = env_setting.split( ';' )[ 0 ]
+                                        env_name, env_path = env_string.split( '=' )
+                                        env_vars[ env_name ] = env_path
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+                            env_vars.update( common_util.get_env_var_values( install_dir ) )
+                            language = action_dict[ 'language' ]
+                            with settings( warn_only=True, **env_vars ):
+                                if language == 'cheetah':
+                                    # We need to import fabric.api.env so that we can access all collected environment variables.
+                                    cmd = fill_template( '#from fabric.api import env\n%s' % action_dict[ 'command' ], context=env_vars )
+                                    return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                    if return_code:
+                                        return
                         elif action_type == 'download_file':
-                            # Download a single file to the current directory.
+                            # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
-                            if action_dict[ 'target_filename' ]:
+                            if 'target_filename' in action_dict:
                                 filename = action_dict[ 'target_filename' ]
                             else:
                                 filename = url.split( '/' )[ -1 ]
-                            common_util.url_download( current_dir, filename, url )
+                            extract = action_dict.get( 'extract', False )
+                            common_util.url_download( current_dir, filename, url, extract=extract )
+                        elif action_type == 'change_directory':
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
+                            if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory within the current working directory.
+                                dir = target_directory
+                            elif target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory above the current working directory, but within the defined work_dir.
+                                dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
+                            else:
+                                log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """
@@ -341,7 +370,7 @@ def log_results( command, fabric_AttributeString, file_path ):
 
 @contextmanager
 def make_tmp_dir():
-    work_dir = tempfile.mkdtemp()
+    work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-mtd" )
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )

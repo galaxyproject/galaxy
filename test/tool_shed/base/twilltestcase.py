@@ -348,7 +348,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Twill sets hidden form fields to read-only by default. We need to write to this field.
         form = tc.browser.get_form( 'select_files_to_delete' )
         form.find_control( "selected_files_to_delete" ).readonly = False
-        tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
+        tc.fv( "2", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
@@ -453,15 +453,15 @@ class ShedTwillTestCase( TwillTestCase ):
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
         strings_displayed = []
         strings_not_displayed = []
-        for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
+        for input_elem_name in [ 'repo_name', 'description', 'long_description', 'repository_type' ]:
             if input_elem_name in kwd:
-                tc.fv( "1", input_elem_name, kwd[ input_elem_name ] )
+                tc.fv( "edit_repository", input_elem_name, kwd[ input_elem_name ] )
                 strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         strings_displayed = []
         for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            tc.fv( "1", input_elem_name, original_information[ input_elem_name ] )
+            tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
@@ -577,6 +577,12 @@ class ShedTwillTestCase( TwillTestCase ):
             return datatypes_count.group( 1 )
         return None
         
+    def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path to an installed repository's env.sh file.'''
+        env_sh_path = os.path.join( self.get_tool_dependency_path( tool_dependency_name, tool_dependency_version, repository ),
+                                    'env.sh' )
+        return env_sh_path
+    
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
@@ -594,6 +600,15 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+    
+    def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path for an installed tool dependency.'''
+        return os.path.join( self.galaxy_tool_dependency_dir,
+                             tool_dependency_name,
+                             tool_dependency_version,
+                             repository.owner,
+                             repository.name,
+                             repository.installed_changeset_revision )
         
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
@@ -969,6 +984,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
         
+    def repair_installed_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
+        self.visit_galaxy_url( url )
+        self.submit_form( 'repair_repository', 'repair_repository_button' )
+    
     def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
         strings_displayed = []
         strings_not_displayed = []

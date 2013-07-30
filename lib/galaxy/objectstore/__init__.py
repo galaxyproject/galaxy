@@ -880,7 +880,8 @@ class DistributedObjectStore(ObjectStore):
 
         self.__parse_distributed_config(config)
 
-        if self.global_max_percent_full or filter(lambda x: x is not None, self.max_percent_full.values()):
+        self.sleeper = None
+        if self.global_max_percent_full or filter(lambda x: x != 0.0, self.max_percent_full.values()):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
             self.filesystem_monitor_thread.start()
@@ -931,7 +932,8 @@ class DistributedObjectStore(ObjectStore):
 
     def shutdown(self):
         super(DistributedObjectStore, self).shutdown()
-        self.sleeper.wake()
+        if self.sleeper is not None:
+            self.sleeper.wake()
 
     def exists(self, obj, **kwargs):
         return self.__call_method('exists', obj, False, False, **kwargs)

@@ -261,7 +261,7 @@ HDAAPI.prototype.index = function index( historyId, ids ){
 };
 
 HDAAPI.prototype.show = function show( historyId, id, deleted ){
-    this.api.spaceghost.info( 'hdas.show: ' + [ historyId, id, (( deleted )?( 'w deleted' ):( '' )) ] );
+    this.api.spaceghost.info( 'hdas.show: ' + [ historyId, id, (( deleted )?( 'w/deleted' ):( '' )) ] );
 
     id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;

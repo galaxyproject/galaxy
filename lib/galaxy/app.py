@@ -92,7 +92,7 @@ class UniverseApplication( object ):
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=True )
+                                                     from_shed_config=False )
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
@@ -123,8 +123,10 @@ class UniverseApplication( object ):
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = ( VisualizationsRegistry( self.config.root, self.config.visualizations_conf_path )
-                                         if self.config.visualizations_conf_path else None )
+        self.visualizations_registry = None
+        if self.config.visualizations_config_directory:
+            self.visualizations_registry = VisualizationsRegistry( self.config.root,
+                                                                   self.config.visualizations_config_directory )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )

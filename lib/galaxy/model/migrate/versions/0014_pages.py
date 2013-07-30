@@ -41,8 +41,20 @@ def upgrade(migrate_engine):
     print __doc__
     metadata.reflect()
     try:
+        if migrate_engine.name == 'mysql':
+            # Strip slug index prior to creation so we can do it manually.
+            slug_index = None
+            for ix in Page_table.indexes:
+                if ix.name == 'ix_page_slug':
+                    slug_index = ix
+            Page_table.indexes.remove(slug_index)
         Page_table.create()
-    except:
+        if migrate_engine.name == 'mysql':
+            # Create slug index manually afterward.
+            i = Index( "ix_page_slug", Page_table.c.slug, mysql_length = 200)
+            i.create()
+    except Exception, ex:
+        log.debug(ex)
         log.debug( "Could not create page table" )
     try:
         PageRevision_table.create()

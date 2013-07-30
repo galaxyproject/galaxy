@@ -49,19 +49,14 @@ class GenomesController( BaseAPIController ):
         Download and/or index a genome.
         
         Parameters::
-        
-            dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
-            ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
-            ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
-            url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
-            source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
+            liftover        None or array of liftover url partial paths
+            dbkey           DB key of the build to download
             indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
+            longname        a more descriptive name for the genome
             func            Allowed values:
                             'download'  Download and index
                             'index'     Index only
-
         Returns::
-        
             If no error:
             dict( status: 'ok', job: <job ID> )
         
@@ -69,6 +64,17 @@ class GenomesController( BaseAPIController ):
             dict( status: 'error', error: <error message> )
         
         """
+        #??: Planned?
+        #Parameters::
+        #    dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
+        #    ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
+        #    ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
+        #    url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
+        #    source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
+        #    indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
+        #    func            Allowed values:
+        #                    'download'  Download and index
+        #                    'index'     Index only
         params = util.Params( payload )
         from galaxy.web.controllers.data_admin import build_param_dict as massage
         paramdict = massage( params, trans )

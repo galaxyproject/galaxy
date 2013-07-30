@@ -235,9 +235,27 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             displayBtnData.enabled = false;
             displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
+        // disable if still uploading
+        } else if( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD ){
+            displayBtnData.enabled = false;
+            displayBtnData.title = _l( 'This dataset must finish uploading before it can be viewed' );
+
         } else {
             displayBtnData.title = _l( 'View data' );
+            
+            // default link for dataset
             displayBtnData.href  = this.urls.display;
+            
+            // add frame manager option onclick event
+            var self = this;
+            displayBtnData.on_click = function(){
+                parent.frame_manager.frame_new({
+                    title   : "Data Viewer",
+                    type    : "url",
+                    location: "center",
+                    content : self.urls.display
+                });
+            };
         }
 
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
@@ -290,7 +308,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             _.extend( this.model.toJSON(), { urls: this.urls } )
         );
         //this.log( this + '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
-        return $( downloadLinkHTML );
+        return $( downloadLinkHTML.trim() );
     },
     
     /** Render icon-button to show the input and output (stdout/err) for the job that created this hda.

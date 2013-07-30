@@ -44,6 +44,7 @@ ${render_tool_shed_repository_actions( repository, repo=None, metadata=None, cha
                 ${render_clone_str( repository )}
             </div>
         %endif
+        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Description:</label>

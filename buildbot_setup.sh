@@ -65,6 +65,7 @@ LINKS="
 "
 
 SAMPLES="
+tool_conf.xml.sample
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample

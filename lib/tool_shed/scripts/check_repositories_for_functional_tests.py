@@ -24,7 +24,7 @@ from optparse import OptionParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 import sqlalchemy as sa
-from galaxy.model.orm import and_, not_
+from galaxy.model.orm import and_, not_, select
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web import url_for
 from galaxy.tools import parameters
@@ -200,6 +200,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     }
     '''
     start = time.time()
+    skip_metadata_ids = []
     checked_repository_ids = []
     tool_count = 0
     has_tests = 0
@@ -208,13 +209,16 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     valid_revisions = 0
     invalid_revisions = 0
     records_checked = 0
+    # Do not check metadata records that have an entry in the skip_tool_tests table, since they won't be tested anyway.
+    skip_metadata_ids = select( [ app.model.SkipToolTest.table.c.repository_metadata_id ] )
     # Get the list of metadata records to check for functional tests and test data. Limit this to records that have not been flagged do_not_test,
     # since there's no need to check them again if they won't be tested anyway. Also filter out changeset revisions that are not downloadable,
     # because it's redundant to test a revision that a user can't install.
     for metadata_record in app.sa_session.query( app.model.RepositoryMetadata ) \
                                          .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
                                                         app.model.RepositoryMetadata.table.c.includes_tools == True,
-                                                        app.model.RepositoryMetadata.table.c.do_not_test == False ) ):
+                                                        app.model.RepositoryMetadata.table.c.do_not_test == False,
+                                                        not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
         # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
         repository_status = {}
@@ -248,7 +252,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = metadata_record.repository.repo_path( app )
             repo = hg.repository( get_configured_ui(), repo_dir )
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a

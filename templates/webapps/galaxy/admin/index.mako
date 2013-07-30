@@ -17,6 +17,13 @@
         #left {
             background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
         }
+
+        .unified-panel-body {
+            overflow: auto;
+        }
+        .toolMenu {
+            margin: 8px 0 0 10px;
+        }
     </style>
 </%def>
 
@@ -36,7 +43,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body" style="padding: 10px; overflow: auto;">
+    <div class="unified-panel-body">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">Security</div>

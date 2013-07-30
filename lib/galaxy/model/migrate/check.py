@@ -12,16 +12,13 @@ from sqlalchemy import *
 from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
 
+from galaxy.model.orm import dialect_to_egg
+
 log = logging.getLogger( __name__ )
 
 # path relative to galaxy
 migrate_repository_directory = os.path.dirname( __file__ ).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
-dialect_to_egg = {
-    "sqlite" : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql" : "MySQL_python"
-}
 
 def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=None ):
     """

@@ -24,12 +24,9 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "history", "autocomplete_tagging" )}
+
     <style type="text/css">
-        .historyItemContainer {
-          padding-right: 3px;
-          border-right-style: solid;
-          border-right-color: #66AA66;
-        }
+
         .page-body
         {
             padding: 10px;
@@ -46,9 +43,18 @@
             border: 2px solid #DDDDDD;
             border-top: 4px solid #DDDDDD;
         }
-    </style>
 
-    <style>
+        div.unified-panel-body {
+            position: relative;
+            top: 0px;
+            width: auto;
+        }
+
+        .historyItemContainer {
+            padding-right: 3px;
+            border-right-style: solid;
+            border-right-color: #66AA66;
+        }
         .historyItemBody {
             display: none;
         }
@@ -86,11 +92,13 @@
             href_to_user_histories = h.url_for( controller='/history', action='list_published' )##should this instead be be None or empty string?
     %>
     
+    %if context.get( 'use_panels' ):
     <div class="unified-panel-header" unselectable="on">
     </div>
+    %endif
     
     <div class="unified-panel-body">
-        <div style="overflow: auto; height: 100%;">
+        <div class="wrapping" style="overflow: auto; height: 100%;">
             ## Render view of history.
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
                 %if not history.purged:
@@ -117,11 +125,9 @@
             %endif
 
             %if not datasets:
-
                 <div class="infomessagesmall" id="emptyHistoryMessage">
 
             %else:    
-
                 ## Render requested datasets, ordered from newest to oldest
                 %for data in datasets:
                     %if data.visible:

@@ -383,6 +383,22 @@ if wf_parms:
 </div>
 %endif
 
+%if step_version_changes:
+    <div class="infomessage">
+        The following tools are beinge executed with a different version from
+        what was available when this workflow was last saved because the
+        previous version is no longer available for use on this galaxy
+        instance.
+        To upgrade your workflow and dismiss this message simply edit the
+        workflow and re-save it to update the stored tool version.
+        <ul>
+            %for vc in step_version_changes:
+                <li>${vc}</li>
+            %endfor
+        </ul>
+    </div>
+%endif
+
 %if workflow.annotation:
     <div class="workflow-annotation">${workflow.annotation}</div>
     <hr/>

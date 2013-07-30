@@ -1,19 +1,11 @@
 <%inherit file="../grid_base.mako"/>
 
+<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
+
 <%def name="grid_javascripts()">
     ${parent.grid_javascripts()}
-    <script type="text/javascript">
-        %if refresh_frames:
-            %if 'history' in refresh_frames:
-                if ( parent.frames && parent.frames.galaxy_history ) {
-                    parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
-                    if ( parent.force_right_panel ) {
-                        parent.force_right_panel( 'show' );
-                    }
-                }
-            %endif
-        %endif
-    </script>
+
+    ${handle_refresh_frames()}
 </%def>
 
 <%def name="grid_body( grid )">

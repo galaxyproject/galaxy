@@ -121,6 +121,8 @@ class Registry( object ):
                         # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.
                         self.log.debug( "Removing datatype with extension '%s' from the registry." % extension )
                         del self.datatypes_by_extension[ extension ]
+                        if extension in self.upload_file_formats:
+                            self.upload_file_formats.remove( extension )
                         can_process_datatype = False
                     else:
                         can_process_datatype = ( extension and ( dtype or type_extension ) ) and ( extension not in self.datatypes_by_extension or override )
@@ -165,7 +167,7 @@ class Registry( object ):
                         self.mimetypes_by_extension[ extension ] = mimetype
                         if datatype_class.track_type:
                             self.available_tracks.append( extension )
-                        if display_in_upload:
+                        if display_in_upload and extension not in self.upload_file_formats:
                             self.upload_file_formats.append( extension )
                         # Max file size cut off for setting optional metadata
                         self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
@@ -613,7 +615,7 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
+            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset

@@ -36,6 +36,7 @@ class Folder( object ):
         self.tool_dependencies = []
         self.failed_tests = []
         self.missing_test_components = []
+        self.not_tested = []
         self.passed_tests = []
         self.test_environments = []
         self.repository_dependencies = []
@@ -159,6 +160,14 @@ class MissingTestComponent( object ):
         self.tool_guid = tool_guid
         self.tool_id = tool_id
         self.tool_version = tool_version
+
+
+class NotTested( object ):
+    """NotTested object"""
+
+    def __init__( self, id=None, reason=None ):
+        self.id = id
+        self.reason = reason
 
 
 class PassedTest( object ):
@@ -798,12 +807,13 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                              label='Valid tools' )
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
-            if tool_test_results:
-                # Only create and populate this folder if there are actual tool test results to display, since the
-                # display of the 'Test environment' folder by itself can be misleading.
-                if len( tool_test_results ) > 1:
-                    folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
-                    containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
+            if tool_test_results and len( tool_test_results ) > 1:
+                # Only create and populate this folder if there are actual tool test results to display, since the display of the 'Test environment'
+                # folder by itself can be misleading.  We check for more than a single entry in the tool_test_results dictionary because it may have
+                # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests", "installation_errors", "missing_test_components"
+                # "skipped_tests", "not_tested" or any other entry that may be added in the future.
+                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
+                containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
             if metadata:
                 if 'workflows' in metadata:
@@ -1047,6 +1057,15 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                                                 tool_shed_mercurial_version=test_environment_dict.get( 'tool_shed_mercurial_version', '' ),
                                                 tool_shed_revision=test_environment_dict.get( 'tool_shed_revision', '' ) )
             folder.test_environments.append( test_environment )
+        not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
+        if not_tested_dict:
+            folder_id += 1
+            folder = Folder( id=folder_id, key='not_tested', label='Not tested', parent=test_results_folder )
+            test_results_folder.folders.append( folder )
+            not_tested_id = 0
+            not_tested = NotTested( id=not_tested_id,
+                                    reason=not_tested_dict.get( 'reason', '' ) )
+            folder.not_tested.append( not_tested )
         passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
         if passed_tests_dicts:
             folder_id += 1

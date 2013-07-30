@@ -32,7 +32,7 @@ class Py27CommentedTreeBuilder ( XmlET.TreeBuilder ):
 
 def create_and_write_tmp_file( elem ):
     tmp_str = xml_to_string( elem )
-    fh = tempfile.NamedTemporaryFile( 'wb' )
+    fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cawrf"  )
     tmp_filename = fh.name
     fh.close()
     fh = open( tmp_filename, 'wb' )
@@ -87,7 +87,7 @@ def parse_xml( file_name ):
     return tree, error_message
 
 def xml_to_string( elem, encoding='utf-8', use_indent=False ):
-    if elem:
+    if len( elem ):
         if use_indent:
             # We were called from suc.config_elems_to_xml_file(), so set the level to 1 since level 0 is the <toolbox> tag set.
             indent( elem, level=1 )
