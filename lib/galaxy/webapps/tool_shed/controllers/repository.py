@@ -1947,6 +1947,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # Handle the mapper behavior.
                 skip_tool_test = skip_tool_test[ 0 ]
             if skip_tool_tests_checked:
+                if repository_metadata.tool_test_results:
+                    repository_metadata.tool_test_results = None
+                    trans.sa_session.add( repository_metadata )
+                    trans.sa_session.flush()
                 if skip_tool_test:
                     comment = skip_tool_test.comment
                     if comment != skip_tool_tests_comment:
@@ -1959,12 +1963,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                comment=skip_tool_tests_comment )
                     trans.sa_session.add( skip_tool_test )
                     trans.sa_session.flush()
-                message = "Tools in this revision will be tested by the automated test framework."
+                message = "Tools in this revision will not be tested by the automated test framework."
             else:
                 if skip_tool_test:
                     trans.sa_session.delete( skip_tool_test )
                     trans.sa_session.flush()
-                message = "Tools in this revision will not be tested by the automated test framework."
+                message = "Tools in this revision will be tested by the automated test framework."
         elif kwd.get( 'manage_categories_button', False ):
             flush_needed = False
             # Delete all currently existing categories.
