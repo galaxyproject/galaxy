@@ -815,7 +815,7 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
         changeset_revision_str = 'changeset_revision_'
         if k.startswith( changeset_revision_str ):
             repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repository = get_repository_in_tool_shed( trans, repository_id )
             if repository.tip( trans.app ) != v:
                 return v, repository
     # This should never be reached - raise an exception?
