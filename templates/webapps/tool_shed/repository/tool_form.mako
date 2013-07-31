@@ -70,6 +70,8 @@
         
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
             <%
+                # Disable refresh_on_change for select lists displayed in the tool shed. 
+                param.refresh_on_change = False
                 label = param.get_label()
                 if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
                     field = SelectField( param.name )
