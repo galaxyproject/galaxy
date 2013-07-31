@@ -164,18 +164,19 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
             {
                 "Make link": function() {
                     // Get URL, name/title.
-                    var sUrl = $(wym._options.hrefSelector).val(),
-                        sName = $(".wym_title").val();
+                    var sUrl = $(wym._options.hrefSelector).val() || '',
+                        sId = $(".wym_id").val() || '',
+                        sName = $(wym._options.titleSelector).val() || '';
                     
-                    if (sUrl && sName) {
+                    if (sUrl || sId) {
                         // Create link.
                         wym._exec(WYMeditor.CREATE_LINK, sStamp);
                         
                         // Set link attributes.
                         var link = $("a[href=" + sStamp + "]", wym._doc.body);
                         link.attr(WYMeditor.HREF, sUrl)
-                            .attr(WYMeditor.TITLE, $(wym._options.titleSelector).val())
-                            .attr("id", sName);
+                            .attr(WYMeditor.TITLE, sName)
+                            .attr("id", sId);
 
                         // If link's text is default (wym-...), change it to the title.
                         if (link.text().indexOf('wym-') === 0) {
