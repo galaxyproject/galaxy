@@ -85,6 +85,7 @@ test/tool_shed/tmp/*
 .coverage
 htmlcov
 run_unit_tests.html
+test/unit/**.log
 
 # Project files
 *.kpf
