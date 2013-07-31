@@ -15,21 +15,31 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
-        GET /api/histories/{encoded_history_id}/contents
-        Displays a collection (list) of history contents (HDAs)
+        index( self, trans, history_id, ids=None, **kwd )
+        * GET /api/histories/{history_id}/contents
+            return a list of HDA data for the history with the given ``id``
 
-        :param history_id: an encoded id string of the `History` to search
-        :param ids: (optional) a comma separated list of encoded `HDA` ids
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's History
+        :type   ids:        str
+        :param  ids:        (optional) a comma separated list of encoded `HDA` ids
 
-        If Ids is not given, index returns a list of *summary* json objects for
-        every `HDA` associated with the given `history_id`.
-        See _summary_hda_dict.
+        If Ids is not given, index returns a list of *summary* objects for
+        every HDA associated with the given `history_id`.
+
+        .. seealso::
+            :func:`_summary_hda_dict`
 
         If ids is given, index returns a *more complete* json object for each
         HDA in the ids list.
 
-        Note: Anonymous users are allowed to get their current history contents
-        (generally useful for browser UI access of the api)
+        .. seealso::
+            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
+
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        :rtype:     list
+        :returns:   dictionaries containing summary or detailed HDA information
         """
         rval = []
         try:
@@ -78,13 +88,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     #TODO: move to model or Mixin
     def _summary_hda_dict( self, trans, history_id, hda ):
         """
-        Returns a dictionary based on the HDA in .. _summary form::
-        {
-            'id'    : < the encoded dataset id >,
-            'name'  : < currently only returns 'file' >,
-            'type'  : < name of the dataset >,
-            'url'   : < api url to retrieve this datasets full data >,
-        }
+        Returns a dictionary based on the HDA in summary form::
+            {
+                'id'    : < the encoded dataset id >,
+                'name'  : < currently only returns 'file' >,
+                'type'  : < name of the dataset >,
+                'url'   : < api url to retrieve this datasets full data >,
+            }
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
@@ -98,8 +108,21 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
         """
-        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
-        Displays information about a history content (dataset).
+        show( self, trans, id, history_id, **kwd )
+        * GET /api/histories/{history_id}/contents/{id}
+            return detailed information about an HDA within a history
+
+        :type   id:         str
+        :param  ids:        the encoded id of the HDA to return
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's History
+
+        .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
+
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        :rtype:     dict
+        :returns:   dictionary containing detailed HDA information
         """
         hda_dict = {}
         try:
@@ -135,8 +158,18 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
         """
-        POST /api/histories/{encoded_history_id}/contents
-        Creates a new history content item (file, aka HistoryDatasetAssociation).
+        create( self, trans, history_id, payload, **kwd )
+        * POST /api/histories/{history_id}/contents
+            create a new HDA by copying an accessible LibraryDataset
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the new HDA's History
+        :type   payload:    dict
+        :param  payload:    dictionary structure containing::
+            'from_ld_id':   the encoded id of the LibraryDataset to copy
+
+        :rtype:     dict
+        :returns:   dictionary containing detailed information for the new HDA
         """
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
@@ -173,8 +206,24 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api
     def update( self, trans, history_id, id, payload, **kwd ):
         """
-        PUT /api/histories/{encoded_history_id}/contents/{encoded_content_id}
-        Changes an existing history dataset.
+        update( self, trans, history_id, id, payload, **kwd )
+        * PUT /api/histories/{history_id}/contents/{id}
+            updates the values for the HDA with the given ``id``
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's History
+        :type   id:         str
+        :param  id:         the encoded id of the history to undelete
+        :type   payload:    dict
+        :param  payload:    a dictionary containing any or all the
+            fields in :func:`galaxy.model.HistoryDatasetAssociation.get_api_value`
+            and/or the following::
+
+            'annotation': an annotation for the history
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing
+            any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         changed = {}
@@ -251,6 +300,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key not in valid_but_uneditable_keys:
-                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+                pass
+                #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
 

@@ -1,5 +1,7 @@
 """
 API operations on a history.
+
+.. seealso:: :class:`galaxy.model.History`
 """
 
 import pkg_resources
@@ -21,17 +23,30 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
-        GET /api/histories
-        GET /api/histories/deleted
-        Displays a collection (list) of histories.
+        index( trans, deleted='False' )
+        * GET /api/histories:
+            return undeleted histories for the current user
+        * GET /api/histories/deleted:
+            return deleted histories for the current user
+
+        If the user is logged-in, a full list of all histories is shown.
+        If not logged in, only the curernt history (if any) is shown.
+
+        :type   deleted: boolean
+        :param  deleted: if True, show only deleted histories, if False, non-deleted
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
         """
         #TODO: query (by name, date, etc.)
         rval = []
         deleted = string_as_bool( deleted )
         try:
             if trans.user:
-                query = trans.sa_session.query(trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
-                    desc(trans.app.model.History.table.c.update_time)).all()
+                query = ( trans.sa_session.query( trans.app.model.History )
+                            .filter_by( user=trans.user, deleted=deleted )
+                            .order_by( desc( trans.app.model.History.table.c.update_time ) )
+                            .all() )
                 for history in query:
                     item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
@@ -52,11 +67,24 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
     @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
+        # oh, sphinx - you bastard
         """
-        GET /api/histories/{encoded_history_id}
-        GET /api/histories/deleted/{encoded_history_id}
-        GET /api/histories/most_recently_used
-        Displays information about a history.
+        show( trans, id, deleted='False' )
+        * GET /api/histories/{id}:
+            return the history with ``id``
+        * GET /api/histories/deleted/{id}:
+            return the deleted history with ``id``
+        * GET /api/histories/most_recently_used:
+            return the most recently used history
+
+        :type   id:      an encoded id string
+        :param  id:      the encoded id of the history to query or the string 'most_recently_used'
+        :type   deleted: boolean
+        :param  deleted: if True, allow information on a deleted history to be shown.
+
+        :rtype:     dictionary
+        :returns:   detailed history information from
+            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_history_dict`
         """
         #TODO: GET /api/histories/{encoded_history_id}?as_archive=True
         #TODO: GET /api/histories/s/{username}/{slug}
@@ -94,8 +122,16 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
-        POST /api/histories
-        Creates a new history.
+        create( trans, payload )
+        * POST /api/histories:
+            create a new history
+
+        :type   payload: dict
+        :param  payload: (optional) dictionary structure containing::
+            'name':     the new history's name
+            
+        :rtype:     dict
+        :returns:   element view of new history
         """
         hist_name = None
         if payload.get( 'name', None ):
@@ -115,8 +151,24 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api
     def delete( self, trans, id, **kwd ):
         """
-        DELETE /api/histories/{encoded_history_id}
-        Deletes a history
+        delete( self, trans, id, **kwd )
+        * DELETE /api/histories/{id}
+            delete the history with the given ``id``
+        .. note:: Currently does not stop any active jobs in the history.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to delete
+        :type   kwd:    dict
+        :param  kwd:    (optional) dictionary structure containing::
+            'payload':     a dictionary itself containing::
+                'purge':   if True, purge the history and all of it's HDAs
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing::
+        
+            id:         the encoded id of the history,
+            deleted:    if the history was marked as deleted,
+            purged:     if the history was purged
         """
         history_id = id
         # a request body is optional here
@@ -175,8 +227,15 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api
     def undelete( self, trans, id, **kwd ):
         """
-        POST /api/histories/deleted/{encoded_history_id}/undelete
-        Undeletes a history
+        undelete( self, trans, id, **kwd )
+        * POST /api/histories/deleted/{id}/undelete:
+            undelete history (that hasn't been purged) with the given ``id``
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to undelete
+
+        :rtype:     str
+        :returns:   'OK' if the history was undeleted
         """
         history_id = id
         history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
@@ -188,8 +247,21 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
     @web.expose_api
     def update( self, trans, id, payload, **kwd ):
         """
-        PUT /api/histories/{encoded_history_id}
-        Changes an existing history.
+        update( self, trans, id, payload, **kwd )
+        * PUT /api/histories/{id}
+            updates the values for the history with the given ``id``
+
+        :type   id:      str
+        :param  id:      the encoded id of the history to undelete
+        :type   payload: dict
+        :param  payload: a dictionary containing any or all the
+            fields in :func:`galaxy.model.History.get_api_value` and/or the following::
+            
+            'annotation': an annotation for the history
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing
+            any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         try:
@@ -255,6 +327,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
             elif key not in valid_but_uneditable_keys:
-                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+                pass
+                #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
 
