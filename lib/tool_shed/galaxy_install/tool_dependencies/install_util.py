@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import stat
 import subprocess
 import tempfile
 from string import Template
@@ -379,7 +380,22 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     for action_elem in actions_elem.findall( 'action' ):
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
-        if action_type == 'shell_command':
+        if action_type == 'download_binary':
+            platform_info_dict = tool_dependency_util.get_platform_info_dict()
+            platform_info_dict[ 'name' ] = tool_dependency.name
+            platform_info_dict[ 'version' ] = tool_dependency.version
+            url_template_elems = action_elem.findall( 'url_template' )
+            # Check if there are multiple url_template elements, each with attrib entries for a specific platform.
+            if len( url_template_elems ) > 1:
+                # <base_url os="darwin" extract="false">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</base_url>
+                # This method returns the url_elem that best matches the current platform as received from os.uname().
+                # Currently checked attributes are os and architecture.
+                # These correspond to the values sysname and processor from the Python documentation for os.uname().
+                url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
+            else:
+                url_template_elem = url_template_elems[ 0 ]
+            action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+        elif action_type == 'shell_command':
             # <action type="shell_command">make</action>
             action_elem_text = evaluate_template( action_elem.text )
             if action_elem_text:
@@ -492,6 +508,27 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # lxml==2.3.0</action>
             ## Manually specify contents of requirements.txt file to create dynamically.
             action_dict[ 'requirements' ] = evaluate_template( action_elem.text or 'requirements.txt' )
+        elif action_type == 'chmod':
+            # Change the read, write, and execute bits on a file.
+            file_elems = action_elem.findall( 'file' )
+            chmod_actions = []
+            # A unix octal mode is the sum of the following values:
+            # Owner:
+            # 400 Read    200 Write    100 Execute
+            # Group:
+            # 040 Read    020 Write    010 Execute
+            # World:
+            # 004 Read    002 Write    001 Execute
+            for file_elem in file_elems:
+                # So by the above table, owner read/write/execute and group read permission would be 740.
+                # Python's os.chmod uses base 10 modes, convert received unix-style octal modes to base 10.
+                received_mode = int( file_elem.get( 'mode', 600 ), base=8 )
+                # For added security, ensure that the setuid and setgid bits are not set.
+                mode = received_mode & ~( stat.S_ISUID | stat.S_ISGID )
+                file = evaluate_template( file_elem.text )
+                chmod_tuple = ( file, mode )
+                chmod_actions.append( chmod_tuple )
+            action_dict[ 'change_modes' ] = chmod_actions
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
