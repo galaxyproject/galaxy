@@ -15,9 +15,18 @@ class LibrariesController( BaseAPIController ):
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
         """
-        GET /api/libraries
-        GET /api/libraries/deleted
-        Displays a collection (list) of libraries.
+        index( self, trans, deleted='False', **kwd )
+        * GET /api/libraries:
+            returns a list of summary data for libraries
+        * GET /api/libraries/deleted:
+            returns a list of summary data for deleted libraries
+
+        :type   deleted: boolean
+        :param  deleted: if True, show only deleted libraries, if False, non-deleted
+
+        :rtype:     list
+        :returns:   list of dictionaries containing library information
+        .. seealso:: :attr:`galaxy.model.Library.api_collection_visible_keys`
         """
         log.debug( "LibrariesController.index: enter" )
         query = trans.sa_session.query( trans.app.model.Library )
@@ -49,9 +58,20 @@ class LibrariesController( BaseAPIController ):
     @web.expose_api
     def show( self, trans, id, deleted='False', **kwd ):
         """
-        GET /api/libraries/{encoded_library_id}
-        GET /api/libraries/deleted/{encoded_library_id}
-        Displays information about a library.
+        show( self, trans, id, deleted='False', **kwd )
+        * GET /api/libraries/{id}:
+            returns detailed information about a library
+        * GET /api/libraries/deleted/{id}:
+            returns detailed information about a deleted library
+
+        :type   id:      an encoded id string
+        :param  id:      the encoded id of the library
+        :type   deleted: boolean
+        :param  deleted: if True, allow information on a deleted library
+
+        :rtype:     dictionary
+        :returns:   detailed library information
+        .. seealso:: :attr:`galaxy.model.Library.api_element_visible_keys`
         """
         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
@@ -75,8 +95,20 @@ class LibrariesController( BaseAPIController ):
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
-        POST /api/libraries
-        Creates a new library.
+        create( self, trans, payload, **kwd )
+        * POST /api/libraries:
+            create a new library
+        .. note:: Currently, only admin users can create libraries.
+
+        :type   payload: dict
+        :param  payload: (optional) dictionary structure containing::
+            'name':         the new library's name
+            'description':  the new library's description
+            'synopsis':     the new library's synopsis
+
+        :rtype:     dict
+        :returns:   a dictionary containing the id, name, and 'show' url
+            of the new library
         """
         if not trans.user_is_admin():
             raise HTTPForbidden( detail='You are not authorized to create a new library.' )
@@ -102,6 +134,19 @@ class LibrariesController( BaseAPIController ):
 
     @web.expose_api
     def delete( self, trans, id, **kwd ):
+        """
+        delete( self, trans, id, **kwd )
+        * DELETE /api/histories/{id}
+            mark the library with the given ``id`` as deleted
+        .. note:: Currently, only admin users can delete libraries.
+
+        :type   id:     str
+        :param  id:     the encoded id of the library to delete
+
+        :rtype:     dictionary
+        :returns:   detailed library information
+        .. seealso:: :attr:`galaxy.model.Library.api_element_visible_keys`
+        """
         if not trans.user_is_admin():
             raise HTTPForbidden( detail='You are not authorized to delete libraries.' )
         try:
