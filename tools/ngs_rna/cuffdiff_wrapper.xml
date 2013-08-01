@@ -96,8 +96,13 @@
             <when value="No"></when>
         </conditional>
 
+        <param name="include_read_group_files" type="select" label="Include Read Group Datasets" help="Read group datasets provide information on replicates.">
+            <option value="No" selected="true">No</option>
+            <option value="Yes">Yes</option>
+        </param>
+
         <conditional name="additional">
-            <param name="sAdditional" type="select" label="Set Additional Parameters? (not recommended)">
+            <param name="sAdditional" type="select" label="Set Additional Parameters? (not recommended for paired-end reads)">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
             </param>
@@ -114,6 +119,21 @@
     </stdio>
 
     <outputs>
+        <!-- Optional read group datasets. -->
+        <data format="tabular" name="isoforms_read_group" label="${tool.name} on ${on_string}: isoforms read group tracking" from_work_dir="isoforms.read_group_tracking" >
+            <filter>(params['include_read_group_files'] == 'Yes'</filter>
+        </data>
+        <data format="tabular" name="genes_read_group" label="${tool.name} on ${on_string}: genes read group tracking" from_work_dir="genes.read_group_tracking" >
+            <filter>(params['include_read_group_files'] == 'Yes'</filter>
+        </data>
+        <data format="tabular" name="cds_read_group" label="${tool.name} on ${on_string}: CDs read group tracking" from_work_dir="cds.read_group_tracking" >
+            <filter>(params['include_read_group_files'] == 'Yes'</filter>
+        </data>
+        <data format="tabular" name="tss_groups_read_group" label="${tool.name} on ${on_string}: TSS groups read group tracking" from_work_dir="tss_groups.read_group_tracking" >
+            <filter>(params['include_read_group_files'] == 'Yes'</filter>
+        </data>
+
+        <!-- Standard datasets. -->
         <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing differential expression testing" from_work_dir="splicing.diff" />
         <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters differential expression testing" from_work_dir="promoters.diff" />
         <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS overloading diffential expression testing" from_work_dir="cds.diff" />
