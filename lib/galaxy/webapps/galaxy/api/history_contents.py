@@ -18,28 +18,24 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         index( self, trans, history_id, ids=None, **kwd )
         * GET /api/histories/{history_id}/contents
             return a list of HDA data for the history with the given ``id``
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        If Ids is not given, index returns a list of *summary* objects for
+        every HDA associated with the given `history_id`.
+
+        If ids is given, index returns a *more complete* json object for each
+        HDA in the ids list.
 
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
         :type   ids:        str
         :param  ids:        (optional) a comma separated list of encoded `HDA` ids
 
-        If Ids is not given, index returns a list of *summary* objects for
-        every HDA associated with the given `history_id`.
-
-        .. seealso::
-            :func:`_summary_hda_dict`
-
-        If ids is given, index returns a *more complete* json object for each
-        HDA in the ids list.
-
-        .. seealso::
-            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
-
-        .. note:: Anonymous users are allowed to get their current history contents
-
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
+        .. seealso::
+            :func:`_summary_hda_dict` and
+            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
         rval = []
         try:
@@ -111,18 +107,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         show( self, trans, id, history_id, **kwd )
         * GET /api/histories/{history_id}/contents/{id}
             return detailed information about an HDA within a history
+        .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
         :param  ids:        the encoded id of the HDA to return
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
 
-        .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
-
-        .. note:: Anonymous users are allowed to get their current history contents
-
         :rtype:     dict
         :returns:   dictionary containing detailed HDA information
+        .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
         hda_dict = {}
         try:
@@ -217,9 +211,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
             fields in :func:`galaxy.model.HistoryDatasetAssociation.get_api_value`
-            and/or the following::
+            and/or the following:
 
-            'annotation': an annotation for the history
+            * annotation: an annotation for the HDA
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing

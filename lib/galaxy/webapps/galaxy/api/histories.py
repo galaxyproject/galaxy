@@ -28,9 +28,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             return undeleted histories for the current user
         * GET /api/histories/deleted:
             return deleted histories for the current user
-
-        If the user is logged-in, a full list of all histories is shown.
-        If not logged in, only the curernt history (if any) is shown.
+        .. note:: Anonymous users are allowed to get their current history
 
         :type   deleted: boolean
         :param  deleted: if True, show only deleted histories, if False, non-deleted
@@ -76,6 +74,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             return the deleted history with ``id``
         * GET /api/histories/most_recently_used:
             return the most recently used history
+        .. note:: Anonymous users are allowed to get their current history
 
         :type   id:      an encoded id string
         :param  id:      the encoded id of the history to query or the string 'most_recently_used'
@@ -127,8 +126,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             create a new history
 
         :type   payload: dict
-        :param  payload: (optional) dictionary structure containing::
-            'name':     the new history's name
+        :param  payload: (optional) dictionary structure containing:
+            * name:     the new history's name
             
         :rtype:     dict
         :returns:   element view of new history
@@ -159,16 +158,16 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :type   id:     str
         :param  id:     the encoded id of the history to delete
         :type   kwd:    dict
-        :param  kwd:    (optional) dictionary structure containing::
-            'payload':     a dictionary itself containing::
-                'purge':   if True, purge the history and all of it's HDAs
+        :param  kwd:    (optional) dictionary structure containing:
+        
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the history and all of it's HDAs
 
         :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing::
-        
-            id:         the encoded id of the history,
-            deleted:    if the history was marked as deleted,
-            purged:     if the history was purged
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history was marked as deleted,
+            * purged:     if the history was purged
         """
         history_id = id
         # a request body is optional here
@@ -255,9 +254,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :param  id:      the encoded id of the history to undelete
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
-            fields in :func:`galaxy.model.History.get_api_value` and/or the following::
+            fields in :func:`galaxy.model.History.get_api_value` and/or the following:
             
-            'annotation': an annotation for the history
+            * annotation: an annotation for the history
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
@@ -330,4 +329,3 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
-
