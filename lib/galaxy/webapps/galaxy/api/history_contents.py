@@ -174,6 +174,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
         from_ld_id = payload.get( 'from_ld_id', None )
+        from_hda_id= payload.get( 'from_hda_id', None )
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
@@ -197,7 +198,19 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.get_api_value()
-
+        elif from_hda_id:
+            try:
+                hda = self.get_dataset(trans, from_hda_id)
+                assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
+            except AssertionError, e:
+                trans.response.status=400
+                return "HistoryDatasetAssocation does not belong to current user"
+            except Exception, e:
+                return str(e)
+            data_copy=hda.copy(copy_children = True)
+            result=history.add_dataset(data_copy)
+            trans.sa_session.flush()
+            return result.get_api_value()
         else:
             # TODO: implement other "upload" methods here.
             trans.response.status = 501
