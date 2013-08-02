@@ -165,12 +165,29 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
     env_shell_file_paths = []
+    # Default to false so that the install process will default to compiling.
+    binary_found = False
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
                 # The first action in the list of actions will be the one that defines the installation process.  There
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
+                if action_type == 'download_binary':
+                    # Eliminate the download_binary action so remaining actions can be processed correctly.
+                    filtered_actions = actions[ 1: ]
+                    url = action_dict[ 'url' ]
+                    # Attempt to download a binary from the specified URL.
+                    log.debug( 'Attempting to download from %s', url )
+                    binary_found = common_util.download_binary_from_url( url, work_dir, install_dir )
+                    if binary_found:
+                        # If the attempt succeeded, set the action_type to binary_found, in order to skip any download_by_url or shell_command actions.
+                        actions = filtered_actions
+                        action_type = 'binary_found'
+                    else:
+                        # No binary exists, or there was an error downloading the binary from the generated URL. Proceed with the remaining actions.
+                        del actions[ 0 ]
+                        action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_by_url':
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
@@ -220,6 +237,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
+                        # If a binary was found, we only need to process environment variables, file permissions, and any other binary downloads.
+                        if binary_found and action_type not in [ 'set_environment', 'chmod', 'download_binary' ]:
+                            continue
                         if action_type == 'make_directory':
                             common_util.make_directory( full_path=action_dict[ 'full_path' ] )
                         elif action_type == 'move_directory_files':
@@ -348,6 +368,18 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
                             else:
                                 log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
+                        elif action_type == 'chmod':
+                            for target_file, mode in action_dict[ 'change_modes' ]:
+                                if os.path.exists( target_file ):
+                                    os.chmod( target_file, mode )
+                        elif action_type == 'download_binary':
+                            url = action_dict[ 'url' ]
+                            binary_found = common_util.download_binary_from_url( url, work_dir, install_dir )
+                            if binary_found:
+                                log.debug( 'Successfully downloaded binary from %s', url )
+                            else:
+                                log.error( 'Unable to download binary from %s', url )
+                                
 
 def log_results( command, fabric_AttributeString, file_path ):
     """

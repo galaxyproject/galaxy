@@ -8,6 +8,7 @@ import urllib2
 import zipfile
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
+from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
@@ -70,6 +71,23 @@ def create_or_update_env_shell_file_with_command( install_dir, command ):
                                           __shellquote(env_shell_file_path))
     return cmd
 
+def download_binary_from_url( url, work_dir, install_dir ):
+    '''
+    Download a pre-compiled binary from the specified URL. If the downloaded file is an archive,
+    extract it into install_dir and delete the archive.
+    '''
+    downloaded_filename = os.path.split( url )[ -1 ]
+    try:
+        dir = url_download( work_dir, downloaded_filename, url, extract=True )
+        downloaded_filepath = os.path.join( work_dir, downloaded_filename )
+        if is_compressed( downloaded_filepath ):
+            os.remove( downloaded_filepath )
+        move_directory_files( current_dir=work_dir,
+                              source_dir=dir,
+                              destination_dir=install_dir )
+        return True
+    except HTTPError:
+        return False
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
@@ -189,6 +207,12 @@ def istar( file_path ):
 
 def iszip( file_path ):
     return checkers.check_zip( file_path )
+
+def is_compressed( file_path ):
+    if isjar( file_path ):
+        return False
+    else:
+        return iszip( file_path ) or isgzip( file_path ) or istar( file_path ) or isbz2( file_path )
 
 def make_directory( full_path ):
     if not os.path.exists( full_path ):

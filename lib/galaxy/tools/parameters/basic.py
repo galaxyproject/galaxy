@@ -1514,8 +1514,8 @@ class DataToolParameter( ToolParameter ):
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML). 
         """
-        # Can't look at history in workflow mode
-        if trans is None or trans.workflow_building_mode:
+        # Can't look at history in workflow mode. Tool shed has no histories.
+        if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
         assert trans is not None, "DataToolParameter requires a trans"
         history = trans.get_history()
