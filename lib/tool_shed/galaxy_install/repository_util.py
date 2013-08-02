@@ -4,7 +4,6 @@ import shutil
 import tempfile
 import threading
 from galaxy import tools
-from galaxy.util import asbool
 from galaxy.util import json
 from galaxy import util
 from galaxy import web
@@ -118,34 +117,6 @@ def get_installed_repositories_from_repository_dependencies( trans, repository_d
                 installed_repositories.append( installed_repository )
     return installed_repositories
 
-def get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids ):
-    """
-    The order in which the prior_install_required_dict is processed is critical in order to ensure that the ultimate repository installation order is correctly
-    defined.  This method determines the next key / value pair from the received prior_install_required_dict that should be processed.
-    """
-    # Return the first key / value pair that is not yet processed and whose value is an empty list.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        if not value:
-            return key
-    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        all_contained = True
-        for required_repository_id in value:
-            if required_repository_id not in processed_tsr_ids:
-                all_contained = False
-                break
-        if all_contained:
-            return key
-    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        return key
-
 def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     """
     Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
@@ -155,15 +126,15 @@ def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     prior_install_required_dict = {}
     for tsr_id in tsr_ids:
         prior_install_required_dict[ tsr_id ] = []
-    # inspect the repository dependencies for each repository about to be installed and populate the dictionary.
+    # Inspect the repository dependencies for each repository about to be installed and populate the dictionary.
     for repo_info_dict in repo_info_dicts:
-        repository, repository_dependencies = get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
+        repository, repository_dependencies = suc.get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
         if repository:
             encoded_repository_id = trans.security.encode_id( repository.id )
             if encoded_repository_id in tsr_ids:
                 # We've located the database table record for one of the repositories we're about to install, so find out if it has any repository
                 # dependencies that require prior installation.
-                prior_install_ids = get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_dependencies )
+                prior_install_ids = suc.get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies )
                 prior_install_required_dict[ encoded_repository_id ] = prior_install_ids
     return prior_install_required_dict
 
@@ -286,38 +257,6 @@ def get_repository_components_for_installation( encoded_tsr_id, encoded_tsr_ids,
             tool_panel_section_key = tool_panel_section_keys[ index ]
             return repo_info_dict, tool_panel_section_key
     return None, None
-
-def get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict ):
-    """Return a tool_shed_repository record defined by the information in the received repo_info_dict."""
-    repository_name = repo_info_dict.keys()[ 0 ]
-    repo_info_tuple = repo_info_dict[ repository_name ]
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-        suc.get_repo_info_tuple_contents( repo_info_tuple )
-    tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
-    repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, repository_name, repository_owner, changeset_revision )
-    return repository, repository_dependencies
-
-def get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_dependencies ):
-    """
-    Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received tsr_ids.  If so,
-    then determine whether that required repository should be installed prior to it's dependent repository.  Return a list of encoded repository
-    ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be installed prior to the dependent
-    repository associated with the received repository_dependencies.
-    """
-    prior_install_ids = []
-    if repository_dependencies:
-        for key, rd_tups in repository_dependencies.items():
-            if key in [ 'description', 'root_key' ]:
-                continue
-            for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
-                if asbool( prior_installation_required ):
-                    repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
-                    if repository:
-                        encoded_repository_id = trans.security.encode_id( repository.id )
-                        if encoded_repository_id in tsr_ids:
-                            prior_install_ids.append( encoded_repository_id )
-    return prior_install_ids
 
 def get_tool_shed_repository_ids( as_string=False, **kwd ):
     tsrid = kwd.get( 'tool_shed_repository_id', None )
@@ -722,10 +661,10 @@ def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_pan
     ordered_tool_panel_section_keys = []
     # Create a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
     # and whose associated repository must be installed prior to the repository associated with the tsr_id key.
-    prior_install_required_dict = get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts )
+    prior_install_required_dict = suc.get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
     processed_tsr_ids = []
     while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
-        tsr_id = get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
+        tsr_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
         processed_tsr_ids.append( tsr_id )
         # Create the ordered_tsr_ids, the ordered_repo_info_dicts and the ordered_tool_panel_section_keys lists.
         if tsr_id not in ordered_tsr_ids:

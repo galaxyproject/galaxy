@@ -710,8 +710,10 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
         lock.release()
     return containers_dict
 
-def build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata ):
+def build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata, exclude=None ):
     """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""
+    if exclude is None:
+        exclude = []
     containers_dict = dict( datatypes=None,
                             invalid_tools=None,
                             readme_files=None,
@@ -734,13 +736,13 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             folder_id = 0
             # Datatypes container.
             if metadata:
-                if 'datatypes' in metadata:
+                if 'datatypes' not in exclude and 'datatypes' in metadata:
                     datatypes = metadata[ 'datatypes' ]
                     folder_id, datatypes_root_folder = build_datatypes_folder( trans, folder_id, datatypes )
                     containers_dict[ 'datatypes' ] = datatypes_root_folder
             # Invalid repository dependencies container.
             if metadata:
-                if 'invalid_repository_dependencies' in metadata:
+                if 'invalid_repository_dependencies' not in exclude and 'invalid_repository_dependencies' in metadata:
                     invalid_repository_dependencies = metadata[ 'invalid_repository_dependencies' ]
                     folder_id, invalid_repository_dependencies_root_folder = \
                         build_invalid_repository_dependencies_root_folder( trans,
@@ -749,7 +751,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'invalid_repository_dependencies' ] = invalid_repository_dependencies_root_folder
             # Invalid tool dependencies container.
             if metadata:
-                if 'invalid_tool_dependencies' in metadata:
+                if 'invalid_tool_dependencies' not in exclude and 'invalid_tool_dependencies' in metadata:
                     invalid_tool_dependencies = metadata[ 'invalid_tool_dependencies' ]
                     folder_id, invalid_tool_dependencies_root_folder = \
                         build_invalid_tool_dependencies_root_folder( trans,
@@ -758,7 +760,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_root_folder
             # Invalid tools container.
             if metadata:
-                if 'invalid_tools' in metadata:
+                if 'invalid_tools' not in exclude and 'invalid_tools' in metadata:
                     invalid_tool_configs = metadata[ 'invalid_tools' ]
                     folder_id, invalid_tools_root_folder = build_invalid_tools_folder( trans,
                                                                                        folder_id,
@@ -769,21 +771,22 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
             # Readme files container.
             if metadata:
-                if 'readme_files' in metadata:
+                if 'readme_files' not in exclude and 'readme_files' in metadata:
                     readme_files_dict = readme_util.build_readme_files_dict( metadata )
                     folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
-            # Repository dependencies container.
-            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( trans=trans,
-                                                                                                   folder_id=folder_id,
-                                                                                                   repository_dependencies=repository_dependencies,
-                                                                                                   label='Repository dependencies',
-                                                                                                   installed=False )
-            if repository_dependencies_root_folder:
-                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+            if 'repository_dependencies' not in exclude:
+                # Repository dependencies container.
+                folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( trans=trans,
+                                                                                                       folder_id=folder_id,
+                                                                                                       repository_dependencies=repository_dependencies,
+                                                                                                       label='Repository dependencies',
+                                                                                                       installed=False )
+                if repository_dependencies_root_folder:
+                    containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
             # Tool dependencies container.
             if metadata:
-                if 'tool_dependencies' in metadata:
+                if 'tool_dependencies' not in exclude and 'tool_dependencies' in metadata:
                     tool_dependencies = metadata[ 'tool_dependencies' ]
                     if trans.webapp.name == 'tool_shed':
                         if 'orphan_tool_dependencies' in metadata:
@@ -797,7 +800,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
             # Valid tools container.
             if metadata:
-                if 'tools' in metadata:
+                if 'tools' not in exclude and 'tools' in metadata:
                     valid_tools = metadata[ 'tools' ]
                     folder_id, valid_tools_root_folder = build_tools_folder( trans,
                                                                              folder_id,
@@ -807,7 +810,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                              label='Valid tools' )
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
-            if tool_test_results and len( tool_test_results ) > 1:
+            if 'tool_test_results' not in exclude and tool_test_results and len( tool_test_results ) > 1:
                 # Only create and populate this folder if there are actual tool test results to display, since the display of the 'Test environment'
                 # folder by itself can be misleading.  We check for more than a single entry in the tool_test_results dictionary because it may have
                 # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests", "installation_errors", "missing_test_components"
@@ -816,7 +819,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                 containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
             if metadata:
-                if 'workflows' in metadata:
+                if 'workflows' not in exclude and 'workflows' in metadata:
                     workflows = metadata[ 'workflows' ]
                     folder_id, workflows_root_folder = build_workflows_folder( trans=trans,
                                                                                folder_id=folder_id,
@@ -827,7 +830,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'workflows' ] = workflows_root_folder
             # Valid Data Managers container
             if metadata:
-                if 'data_manager' in metadata:
+                if 'data_manager' not in exclude and 'data_manager' in metadata:
                     data_managers = metadata['data_manager'].get( 'data_managers', None )
                     folder_id, data_managers_root_folder = build_data_managers_folder( trans, folder_id, data_managers, label="Data Managers" )
                     containers_dict[ 'valid_data_managers' ] = data_managers_root_folder

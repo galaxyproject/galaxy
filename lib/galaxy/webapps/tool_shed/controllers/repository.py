@@ -18,6 +18,7 @@ from galaxy.util import json
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import encoding_util
+from tool_shed.util import export_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_dependency_util
@@ -1064,23 +1065,99 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     @web.expose
     def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
-        # Download an archive of the repository files compressed as zip, gz or bz2.
+        """Download an archive of the repository files compressed as zip, gz or bz2."""
+        # FIXME: thgis will currently only download the repository tip, no matter which installable changeset_revision is being viewed.
+        # This should be enhanced to use the export method below, which accounts for the currently viewed changeset_revision.
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         # Allow hgweb to handle the download.  This requires the tool shed
         # server account's .hgrc file to include the following setting:
         # [web]
         # allow_archive = bz2, gz, zip
-        if file_type == 'zip':
-            file_type_str = '%s.zip' % changeset_revision
-        elif file_type == 'bz2':
-            file_type_str = '%s.tar.bz2' % changeset_revision
-        elif file_type == 'gz':
-            file_type_str = '%s.tar.gz' % changeset_revision
+        file_type_str = suc.get_file_type_str( changeset_revision, file_type )
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
-        download_url = '/repos/%s/%s/archive/%s' % ( repository.user.username, repository.name, file_type_str )
+        download_url = suc.url_join( '/', 'repos', repository.user.username, repository.name, 'archive', file_type_str )
         return trans.response.send_redirect( download_url )
+
+    @web.expose
+    def export( self, trans, repository_id, changeset_revision, **kwd ):
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        export_repository_dependencies = kwd.get( 'export_repository_dependencies', '' )
+        repository = suc.get_repository_in_tool_shed( trans, repository_id )
+        if kwd.get( 'export_repository_button', False ):
+            # We'll currently support only gzip-compressed tar archives.
+            file_type = 'gz'
+            export_repository_dependencies = CheckboxField.is_checked( export_repository_dependencies )
+            tool_shed_url = web.url_for( '/', qualified=True )
+            repositories_archive, error_message = export_util.export_repository( trans,
+                                                                                 tool_shed_url,
+                                                                                 repository_id,
+                                                                                 str( repository.name ),
+                                                                                 changeset_revision,
+                                                                                 file_type,
+                                                                                 export_repository_dependencies )
+            repositories_archive_filename = os.path.basename( repositories_archive.name )
+            if error_message:
+                message = error_message
+            else:
+                trans.response.set_content_type( 'application/x-gzip' )
+                trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % ( repositories_archive_filename )
+                opened_archive = open( repositories_archive.name )
+                # Make sure the file is removed from disk after the contents have been downloaded.
+                os.unlink( repositories_archive.name )
+                return opened_archive
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+        metadata = repository_metadata.metadata
+        # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+        repository_dependencies = \
+            repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                           repository=repository,
+                                                                                           repository_metadata=repository_metadata,
+                                                                                           toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                           key_rd_dicts_to_be_processed=None,
+                                                                                           all_repository_dependencies=None,
+                                                                                           handled_key_rd_dicts=None )
+        if repository_dependencies:
+            # Only display repository dependencies if they exist.
+            exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
+                        'readme_files', 'tool_dependencies', 'tools', 'tool_test_results', 'workflows', 'data_manager' ]
+            containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+                                                                                        repository,
+                                                                                        changeset_revision,
+                                                                                        repository_dependencies,
+                                                                                        repository_metadata,
+                                                                                        exclude=exclude )
+            export_repository_dependencies_check_box = CheckboxField( 'export_repository_dependencies', checked=True )
+        else:
+            containers_dict = None
+            export_repository_dependencies_check_box = None
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        return trans.fill_template( "/webapps/tool_shed/repository/export_repository.mako",
+                                    changeset_revision=changeset_revision,
+                                    containers_dict=containers_dict,
+                                    export_repository_dependencies_check_box=export_repository_dependencies_check_box,
+                                    repository=repository,
+                                    repository_metadata=repository_metadata,
+                                    revision_label=revision_label,
+                                    metadata=metadata,
+                                    message=message,
+                                    status=status )
+
+    @web.expose
+    def export_via_api( self, trans, **kwd ):
+        """Return an exported gzip compressed repository archive file opened for reading."""
+        encoded_repositories_archive_name = kwd.get( 'encoded_repositories_archive_name', None )
+        if encoded_repositories_archive_name:
+            repositories_archive_name = encoding_util.tool_shed_decode( encoded_repositories_archive_name )
+            opened_archive = open( repositories_archive_name )
+            # Make sure the file is removed from disk after the contents have been downloaded.
+            os.unlink( repositories_archive_name )
+            return opened_archive
+        return ''
 
     @web.expose
     def find_tools( self, trans, **kwd ):

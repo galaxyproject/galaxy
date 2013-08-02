@@ -9,6 +9,7 @@ import tempfile
 from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.util import json
+from galaxy.util.odict import odict
 from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_util
@@ -228,7 +229,12 @@ def handle_gzip( repository, uploaded_file_name ):
     gzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
 
-def handle_repository_dependencies_definition( trans, repository_dependencies_config ):
+def handle_repository_dependencies_definition( trans, repository_dependencies_config, unpopulate=False ):
+    """
+    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag.  Populating will occur when a
+    dependency definition file is being uploaded to the repository, while depopulating will occur when the repository is being
+    exported.
+    """
     altered = False
     # Make sure we're looking at a valid repository_dependencies.xml file.
     tree, error_message = xml_util.parse_xml( repository_dependencies_config )
@@ -239,33 +245,45 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
         for index, elem in enumerate( root ):
             if elem.tag == 'repository':
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-                populated, elem, error_message = handle_repository_dependency_elem( trans, elem )
+                revised, elem, error_message = handle_repository_dependency_elem( trans, elem, unpopulate=unpopulate )
                 if error_message:
                     exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
                     raise Exception( exception_message )
-                if populated:
+                if revised:
                     root[ index ] = elem
                     if not altered:
                         altered = True
         return altered, root
     return False, None
 
-def handle_repository_dependency_elem( trans, elem ):
+def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
     error_message = ''
     name = elem.get( 'name' )
     owner = elem.get( 'owner' )
+    # The name and owner attributes are always required, so if either are missing, return the error message.
     if not name or not owner:
         error_message = handle_missing_repository_attribute( elem )
         return False, elem, error_message
-    populated = False
+    revised = False
     toolshed = elem.get( 'toolshed' )
+    changeset_revision = elem.get( 'changeset_revision' )
+    if unpopulate:
+        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the <repository> tag.
+        if toolshed or changeset_revision:
+            attributes = odict()
+            attributes[ 'name' ] = name
+            attributes[ 'owner' ] = owner
+            attributes[ 'prior_installation_required' ] = elem.get( 'prior_installation_required', 'False' )
+            elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=None )
+            revised = True
+        return revised, elem, error_message
+    # From here on we're populating the toolshed and changeset_revisions if necessary.
     if not toolshed:
         # Default the setting to the current tool shed.
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
         elem.attrib[ 'toolshed' ] = toolshed
-        populated = True
-    changeset_revision = elem.get( 'changeset_revision' )
+        revised = True
     if not changeset_revision:
         # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
         # We use the latest installable revision instead of the latest metadata revision to ensure that the contents of the
@@ -277,12 +295,12 @@ def handle_repository_dependency_elem( trans, elem ):
             lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
-                populated = True
+                revised = True
         else:
             error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
-    return populated, elem, error_message
+    return revised, elem, error_message
 
-def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
+def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopulate=False ):
     altered = False
     # Make sure we're looking at a valid tool_dependencies.xml file.
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
@@ -297,11 +315,11 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                 for package_index, package_elem in enumerate( root_elem ):
                     if package_elem.tag == 'repository':
                         # <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0" prior_installation_required="True" />
-                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, package_elem )
+                        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, package_elem, unpopulate=unpopulate )
                         if error_message:
                             exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
                             raise Exception( exception_message )
-                        if populated:
+                        if revised:
                             root_elem[ package_index ] = repository_elem
                             package_altered = True
                             if not altered:
@@ -318,11 +336,11 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config ):
                                     #     </repository>
                                     # </action>
                                     for repo_index, repo_elem in enumerate( action_elem ):
-                                        populated, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem )
+                                        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
                                         if error_message:
                                             exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
                                             raise Exception( exception_message )
-                                        if populated:
+                                        if revised:
                                             action_elem[ repo_index ] = repository_elem
                                             package_altered = True
                                             if not altered:

@@ -1614,7 +1614,6 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     ancestor_changeset_revision = None
     ancestor_metadata_dict = None
     invalid_file_tups = []
-    home_dir = os.getcwd()
     for changeset in repository.get_changesets_for_setting_metadata( trans.app ):
         work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ramorits" )
         current_changeset_revision = str( repo.changectx( changeset ) )
