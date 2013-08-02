@@ -1057,6 +1057,7 @@ def main():
                         repositories_passed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                         params[ 'tools_functionally_correct' ] = True
                         params[ 'do_not_test' ] = False
+                        params[ 'test_install_error' ] = False
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 
                                               repository_status, 
@@ -1108,6 +1109,7 @@ def main():
                         repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                         set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
                         params[ 'tools_functionally_correct' ] = False
+                        params[ 'test_install_error' ] = False
                         params[ 'do_not_test' ] = str( set_do_not_test )
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 
