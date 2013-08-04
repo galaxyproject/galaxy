@@ -173,6 +173,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
         'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
         'parent_library_id' : ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
+        'data_type' :  ViewField('data_type', sqlalchemy_field=LibraryDatasetDatasetAssociation.extension)
     }
 
     def search(self, trans):
