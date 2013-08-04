@@ -1,0 +1,834 @@
+<tool id="rgGSEAcolumns4" name="Gene set enrichment" version="0.05">
+  <description>for tabular DEG output using MSigDB4.0</description>
+  <requirements>
+      <requirement type="package" version="2.0.12">gsea_jar</requirement>
+      <requirement type="set_environment">GSEAJAR_PATH</requirement>
+  </requirements>
+  <command interpreter="python">rgGSEA.py --input_tab "$input1"  --adjpvalcol "$adjpvalcol" --signcol "$signcol" 
+       --idcol "$idcol" --outhtml "$html_file" --input_name "${input1.name}"
+       --setMax "$setMax" --setMin "$setMin" --nPerm "$nPerm" --plotTop "$plotTop" 
+       --gsea_jar "$GALAXY_DATA_INDEX_DIR/shared/jars/gsea2-2.0.12.jar" 
+       --output_dir "$html_file.files_path" --mode "$mode" --title "$title"
+#if $makeTab.value=='Yes'
+ --outtab_pos "$outtab_pos" --outtab_neg "$outtab_neg"
+#end if
+#if $gmtSource.refgmtSource == "indexed" or $gmtSource.refgmtSource == "both":
+--builtin_gmt "${gmtSource.builtinGMT.fields.path}"
+#end if
+#if $gmtSource.refgmtSource == "history" or $gmtSource.refgmtSource == "both":
+--history_gmt "${gmtSource.ownGMT}" --history_gmt_name "${gmtSource.ownGMT.name}"
+#end if
+#if $chipSource.refchipSource=="builtin"
+ --chip "${chipSource.builtinChip.fields.path}"
+#end if
+#if $chipSource.refchipSource=="history"
+ --chip "${chipSource.ownChip}"
+#end if
+</command>
+  <inputs>
+    <param name="input1"  type="data" format="tabular" label="Select a tab delimited file with a probe id, adjusted p value and a signed weight (eg t-test statistic) on each row"
+       help=""/>
+    <param name="adjpvalcol" label="Column containing a p value for the DEG statistical test" 
+              help = "Use RAW p-values - not FDR adjusted as these have a non GSEA friendly non-uniform distribution"
+              type="data_column"  data_ref="input1" numerical="True" 
+              multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select a p value column."/>
+    </param>
+    <param name="signcol" label="Column containing the DE sign - eg log fold change so positive/negative values = upregulated/downregulated in treatment" 
+         type="data_column"  data_ref="input1" numerical="True" 
+         multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select a sign column."/>
+    </param>
+    <param name="idcol" label="Column containing a gene id (refseq, symbol or Entrez" 
+         type="data_column"  data_ref="input1" numerical="False" 
+         multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select an id  column."/>
+    </param>
+
+    <param name="title" type="text" value="GSEA" size="80" label="Title for job outputs" help="Supply a meaningful name here to remind you what the outputs contain"/>
+    <param name="setMin" type="integer" label="Minimum gene set size to prune (default=15)" size="5" value="15"/>
+    <param name="setMax" type="integer" label="Maximum gene set size to prune (default=500)" size="5" value="500"/>
+    <param name="nPerm" type="integer" label="Number of permutations (default=1000)" size="7" value="1000"/>
+    <param name="plotTop" type="integer" label="Number of top gene sets to plot and present in detailed reports(default=20)" size="10" value="20"/>
+    <param name="mode" type="select" label="Mode for dealing with duplicated gene ids" >
+        <option value="Max_probe" selected="true">Use the most extreme value</option>
+        <option value="Median_of_probes">Use the median of all supplied values</option>
+    </param>
+    <param name="makeTab" type="select" label="Create a tabular report containing ALL gene sets for downstream analysis" >
+        <option value="Yes">Yes</option>
+        <option value="No" selected="true">No</option>
+    </param>
+    <conditional name="chipSource" >
+        <param name="refchipSource" type="select" label="Translate the rank file IDs (first column) using a GSEA 'chip' lookup table">
+        <option value="builtin">Use a builtin GSEA 'chip' file</option>
+        <option value="history">Use one of the GSEA 'chip' files in my history</option>
+        <option value="no" selected="true">IDs are already gene symbols - no translation needed  </option>
+        </param>
+        <when value="no">
+        </when>
+        <when value="builtin">
+           <param name="builtinChip" type="select" label="Select a GSEA 'chip' to map each probe id in the input file to a gene symbol">
+              <options from_data_table="gseaChip_v4.0">
+              <filter type="sort_by" column="2" />
+              <validator type="no_options" message="No chip tables are available - please see the Galaxy GSEA tool documentation for instructions on installing them" />
+              </options>
+           </param>
+        </when>
+      <when value="history">
+        <param name="ownChip" type="data" format="gseachip" label="Select an existing gseachip filefrom your history. Probe_id matching ids in your input file and a gene_symbol must be the first 2 tabular columns. Header row required."
+           help='see docs at http://www.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#CHIP:_Chip_file_format_.28.2A.chip.29'>
+            <validator type="no_options" message="Need a gseachip datatype - tabular file, probe_id gene_symbol as first 2 columns. Header row required. Convert datatypes (pencil icon) of existing history tabular files if necessary"/>
+        </param>
+      </when>
+    </conditional>
+    <conditional name="gmtSource">
+      <param name="refgmtSource" type="select" label="Use a gene set (.gmt) from your history or use a built-in (MSigDB etc) gene set">
+        <option value="indexed" selected="true">Use a built-in gene set</option>
+        <option value="history">Use a gene set from my history</option>
+        <option value="both">Add a gene set from my history to a built in gene set</option>
+      </param>
+      <when value="indexed">
+        <param name="builtinGMT" type="select" label="Select a gene set matrix (.gmt) file to use for the analysis">
+          <options from_data_table="gseaGMTsymbols_v4.0">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No MSigdb v4.0 gmt files are available - please install them"/>
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownGMT" type="data" format="gmt" label="Select a Gene Set from your history" />
+      </when>
+      <when value="both">
+        <param name="ownGMT" type="data" format="gseagmt" label="Select a Gene Set from your history" />
+        <param name="builtinGMT" type="select" label="Select a gene set matrix (.gmt) file to use for the analysis">
+          <options from_data_table="gseaGMTsymbols_v4.0">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No GMT v4.0 files are available - please install them and make sure they match [tool-data]/gseaGMT_4.0.loc, editing as needed"/>
+          </options>
+        </param>
+       </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="${title}.html"/>
+    <data format="tabular" name="outtab_pos"  label="${title}_pos_allsets.xls">
+    <filter>makeTab=="Yes"</filter>
+    </data>
+    <data format="tabular" name="outtab_neg" label="${title}_neg_allsets.xls">
+    <filter>makeTab=="Yes"</filter>
+    </data>
+  </outputs>
+  <tests>
+  <test>
+      <param name="input1" value="gsea_test_DGE.xls"/>
+      <param name="ownGMT" value="gsea_test_DGE.xls"/>
+      <param name="adjpvalcol" value="5"/>
+      <param name="signcol" value="2"/>
+      <param name="idcol" value="1"/>
+      <param name="plotTop" value="2"/>
+      <param name="makeTab" value="No"/>
+      <param name="refchipSource" value="no"/>
+      <param name="refgmtSource" value="history"/>
+      <param name="html_file" value="gseatestout.html">
+         <assert_contents>
+              <has_text text="GSEA Report for Dataset" />
+              <has_text text="enrichment results in html"/>
+         </assert_contents>
+      </param>
+      <param name="setMax" value="500"/>
+      <param name="setMin" value="15"/>
+      <param name="nPerm" value="100"/>
+      <param name="output_dir" value="gseatestout"/>
+      <param name="mode" value="Max_probe"/>
+      <param name="title" value="GSEA test"/>
+      <param name="builtin_gmt" value="gseatestdata.gmt"/>
+  </test>
+  </tests>
+<help>
+**What it does**
+
+Performs Gene set enrichment analysis using GSEA_ from the Broad as described in 2005Paper_ and v4.0 of msigdb
+
+Refer to http://www.pnas.org/cgi/content/abstract/0506580102v1 for details of the method.
+
+**Input**
+
+A tabular file with a header row and some columns containing probe ids or gene names; a p value or t-test statistic reflecting the
+strength and a signed quantity such as log fold change or a t-test statistic reflecting the direction of differential gene expression from edgeR for counts
+or some other valid analysis.
+Probe names can be translated using the chip file option (see below)
+A filter has been added to remove NA and null id rows as these can't be used. A summary will appear in stdout in the page linked from the "i" (info) button for the output
+
+**Gene sets**
+
+If you have your own gene sets as .gmt files (see GUIDE_ for details of format) upload them in your history and use them by nominating a history sourced gmt.
+
+Alternatively, use one of the built in MSigDB_ (molecular signatures database) sets. 
+There may be additional locally provided sets such as starBase
+
+Optionally, a local gmt can be merged with a built in one if you want to see how they perform competitively
+
+Select the most appropriate subset of MSigDB gene sets or use all by choosing msigdb.v3.0.symbols.
+A non-cancer subset called c2_c3_c5_all.v3.0.symbols is recommended if you are working with non-cancer biology.
+ 
+
+**Chip**
+
+If your input file contains HUGO gene symbols (TEK, SLC38A1...etc) then you do not need to specify a 'chip'.
+
+GSEA software allows you to specify a translation table from common microarray probe IDs to gene symbols - select the option to use a chip file and choose the one that matches your probe id's
+Failure to match the translation correctly will generally result in failure of the job since none of your input data will be translated properly.
+
+**Output**
+
+A report as html - see the GUIDE_ for a guide on interpretation
+
+
+**Attribution**
+
+This Galaxy tool wrapper was written by Ross Lazarus.
+It executes the GSEA_ java application available using MSigDB and Chip files obtained from the GSEA_ web site 
+
+
+**Chip ID samples**
+ 
+You may be able to look for probe ids in similar form to the ones you have in the list below to find the correct GSEA 'chip' file if you do not have HUGO gene symbols
+
+    ::
+   
+        AG.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        11986_at        ---     calcium-dependent lipid-binding protein, putative
+        11987_at        ---     zinc finger (C3HC4-type RING finger) family protein
+        11988_at        ---     WD-40 repeat family protein
+
+        Agilent_Human1A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_23_P100001    LOC400451       hypothetical gene supported by AK075564; BC060873
+        A_23_P100011    AP3S2   adaptor-related protein complex 3, sigma 2 subunit
+        A_23_P10002     CEP63   centrosome protein Cep63
+
+        Agilent_Human1Av2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_23_P100001    LOC400451       hypothetical gene supported by AK075564; BC060873
+        A_23_P100011    AP3S2   adaptor-related protein complex 3, sigma 2 subunit
+        A_23_P10002     CEP63   centrosome protein Cep63
+
+        Agilent_Human1B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_32_P10002     TUBA2   tubulin, alpha 2
+        A_32_P100076    RPL19   ribosomal protein L19
+        A_32_P100100    THOC3   THO complex 3
+
+        Agilent_Human1_cDNA.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1       RNASEH2A        ribonuclease H2, large subunit
+        10      SF3B1   splicing factor 3b, subunit 1, 155kDa
+        100     S100A16 S100 calcium binding protein A16
+
+        Agilent_HumanGenome.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_23_P100001    LOC400451       hypothetical gene supported by AK075564; BC060873
+        A_23_P100011    NULL    NULL
+        A_23_P100022    SV2B    synaptic vesicle glycoprotein 2B
+
+        Agilent_Mouse_cDNA.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1000982 SLC6A9  solute carrier family 6 (neurotransmitter transporter, glycine), member 9
+        1001007 IGF1    insulin-like growth factor 1
+        1001011 FCNA    ficolin A
+
+        Agilent_MouseDev.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_65_P00523     NULL    NULL
+        A_65_P00524     NULL    NULL
+        A_65_P00525     SFTPD   surfactant associated protein D
+
+        Agilent_MouseGenome.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_51_P100021    NULL    NULL
+        A_51_P100034    2310075G12RIK   RIKEN cDNA 2310075G12 gene
+        A_51_P100052    SLITRK2 SLIT and NTRK-like family, member 2
+
+        Agilent_MouseOligo.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_51_P100021    NULL    NULL
+        A_51_P100034    2310075G12RIK   RIKEN cDNA 2310075G12 gene
+        A_51_P100052    SLITRK2 SLIT and NTRK-like family, member 2
+
+        Agilent_RatGenome_G4131A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_42_P453055    LU      Lutheran blood group (Auberger b antigen included)
+        A_42_P453737    NULL    NULL
+        A_42_P453894    RGD1306682_PREDICTED    similar to RIKEN cDNA 1810046J19 (predicted)
+
+        Agilent_RatOligo.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_42_P453131    CNTN1   contactin 1
+        A_42_P453151    TTC8_PREDICTED  tetratricopeptide repeat domain 8 (predicted)
+        A_42_P453162    NULL    NULL
+
+        APPLERA_ABI1700.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        100002  NULL    NULL
+        100003  NULL    NULL
+        100027  ZNF192  zinc finger protein 192
+
+        ATH1_121501.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        244901_at       ---     ---
+        244902_at       ---     ---
+        244903_at       ---     ---
+
+        AtlasMouse1.2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        MA099   HTR1A   5-hydroxytryptamine (serotonin) receptor 1A
+        MA015   JARID2  jumonji, AT rich interactive domain 2
+        M443    CDKN2C  cyclin-dependent kinase inhibitor 2C (p18, inhibits CDK4)
+
+        AtlasRat1.2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        R484    TPP2    tripeptidylpeptidase II
+        RG348   MOS     v-mos moloney murine sarcoma viral oncogene homolog
+        RG119   KCNJ1   potassium inwardly-rectifying channel, subfamily J, member 1
+
+        Bovine.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-5_at  ---     ---
+        AFFX-BioB-M_at  ---     ---
+
+        Caltech16KMouse.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        6712    CCL6    chemokine (C-C motif) ligand 6
+        8563    ACTL7B  actin-like 7b
+        8434    1700049M11RIK   RIKEN cDNA 1700049M11 gene
+
+        Caltech16KOligoMouse.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        6712    GCA     grancalcin, EF-hand calcium binding protein
+        8563    MARVELD2        MARVEL (membrane-associating) domain containing 2
+        8434    BC048825        NULL
+
+        Canine_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-5_at  ---     ---
+        AFFX-BioB-M_at  ---     ---
+
+        Clontech_Atlas_13K.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A01   NULL    NULL
+        1-A02   A2M     alpha-2-macroglobulin
+        1-A03   AADAC   arylacetamide deacetylase (esterase)
+
+        Clontech_BD_Atlas.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A01a    PCP4    Purkinje cell protein 4
+        A01b    NULL    NULL
+        A01c    PMP22   peripheral myelin protein
+
+        CNMCMuscleChip.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        HSPD4570_at     MBP     myelin basic protein
+        HSPD7328_at     MAPK12  mitogen-activated protein kinase 12
+        HSPD17028_i_at  DIA1    diaphorase (NADH) (cytochrome b-5 reductase)
+
+        CodeLink_Human_Whole_Genome.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        GE469530        NULL    NULL
+        GE469548        TMEM1   transmembrane protein 1
+        GE469549        NULL    NULL
+
+        CodeLink_UniSet_Human_20K_I_Bioarray.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        000106CB1_PROBE1        NDUFA4  NADH dehydrogenase (ubiquinone) 1 alpha subcomplex, 4, 9kDa
+        000136CB1_PROBE1        MRPS33  mitochondrial ribosomal protein S33
+        000278CB1_PROBE1        FDFT1   farnesyl-diphosphate farnesyltransferase 1
+
+        CodeLink_UniSet_Human_I_Bioarray.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AA001334_PROBE1 ZHX2    zinc fingers and homeoboxes 2
+        AA002191_PROBE1 PITPNA  phosphatidylinositol transfer protein, alpha
+        AA004381_PROBE1 NULL    NULL
+
+        CodeLink_UniSet_Human_II_Bioarray.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        000106CB1_PROBE1        NDUFA4  NADH dehydrogenase (ubiquinone) 1 alpha subcomplex, 4, 9kDa
+        000136CB1_PROBE1        MRPS33  mitochondrial ribosomal protein S33
+        000278CB1_PROBE1        FDFT1   farnesyl-diphosphate farnesyltransferase 1
+
+        CodeLink_UniSet_Rat_I_Bioarray.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AA799301_PROBE1 NULL    NULL
+        AA799313_PROBE1 RGD:1303279     sialyltransferase 10 (alpha-2,3-sialyltransferase VI)
+        AA799329_PROBE1 NULL    NULL
+
+        DrosGenome1.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        141200_at       CG9418  CG9418
+        141201_at       CG17840 CG17840
+        141202_at       QKR58E-3        quaking related 58E-3
+
+        Drosophila_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1616608_a_at    GPDH    Glycerol 3 phosphate dehydrogenase
+        1622892_s_at    CG33057 /// MKG-P       CG33057 /// monkey king protein
+        1622893_at      IM3 /// RPS10B  Immune induced molecule 3 /// Ribosomal protein S10b
+
+        G4110A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_23_P7033      MAGEF1  melanoma antigen, family F, 1
+        A_23_P170713    A_23_P170713    ***description missing***
+        A_23_P107801    FLJ21742        hypothetical protein FLJ21742
+
+        G4110Av2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A_23_P7033      MAGEF1  melanoma antigen, family F, 1
+        A_23_P170713    A_23_P170713    No description available
+        A_23_P107801    FLJ21742        hypothetical protein FLJ21742
+
+        GENE_SYMBOL.chip 
+        Probe Set ID    Gene Symbol     Gene Title      Aliases 
+        A1BG    A1BG    alpha-1-B glycoprotein  GABDKFZP686F0970ABGHYST2477A1B
+        A2M     A2M     alpha-2-macroglobulin   DKFZP779B086S863-7ALPHA 2MFWP007CPAMD5
+        A2ML1   A2ML1   alpha-2-macroglobulin-like 1    FLJ39129DKFZP686O1010FLJ41598DKFZP686G1812FLJ25179CPAMD9DKFZP686D2011FLJ16045FLJ41607DKFZP686C1729FLJ41597DKFZP686L1821
+
+        GenosysCytokineV2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        M05.2   GDF11   growth differentiation factor 11
+        M22.2   AE000170        No description available
+        E06.3   IL5     interleukin 5 (colony-stimulating factor, eosinophil)
+
+        HC_G110.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1000_at MAPK3   mitogen-activated protein kinase 3
+        1001_at TIE1    tyrosine kinase with immunoglobulin-like and EGF-like domains 1
+        1002_f_at       CYP2C19 cytochrome P450, family 2, subfamily C, polypeptide 19
+
+        HG_Focus.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        HG_U133A_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        HG_U133AAofAv2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        HG_U133A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        HG_U133B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        200000_s_at     PRPF8   PRP8 pre-mRNA processing factor 8 homolog (S. cerevisiae) /// PRP8 pre-mRNA processing factor 8 homolog (S. cerevisiae)
+        200001_at       CAPNS1  calpain, small subunit 1 /// calpain, small subunit 1
+        200002_at       RPL35   ribosomal protein L35 /// ribosomal protein L35
+
+        HG_U133_Plus_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        HG_U95Av2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1000_at MAPK3   mitogen-activated protein kinase 3
+        1001_at TIE1    tyrosine kinase with immunoglobulin-like and EGF-like domains 1
+        1002_f_at       CYP2C19 cytochrome P450, family 2, subfamily C, polypeptide 19
+
+        HG_U95B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        41880_at        ---     Transcribed locus
+        41881_at        FLJ40142        FLJ40142 protein
+        41882_at        FBXO42  F-box protein 42
+
+        HG_U95C.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        48609_r_at      KIAA1333        KIAA1333
+        48610_at        C20ORF102       chromosome 20 open reading frame 102
+        48612_at        N4BP1 /// LOC653213     Nedd4 binding protein 1 /// similar to Nedd4 binding protein 1
+
+        HG_U95D.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        67020_at        ---     Transcribed locus
+        67021_at        FAM44B  Family with sequence similarity 44, member B
+        67023_at        ---     Transcribed locus
+
+        HG_U95E.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        67022_at        PIP5K2B Phosphatidylinositol-4-phosphate 5-kinase, type II, beta
+        67024_at        CASD1   CAS1 domain containing 1
+        67026_at        NFASC   neurofascin homolog (chicken)
+
+        HPCGGCompugenAnnotations.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        MGI:1913066     SH3MD2  Sh3md2, SH3 multiple domains 2
+        MGI:1913099     5430413I02RIK   5430413I02Rik, RIKEN cDNA 5430413I02 gene
+        MGI:98848       TSHB    Tshb, thyroid stimulating hormone, beta subunit
+
+        HT_HG_U133A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1007_s_at       DDR1    discoidin domain receptor family, member 1
+        1053_at RFC2    replication factor C (activator 1) 2, 40kDa
+        117_at  HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+
+        Hu35KsubA.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AA000993_at     PRDM8   PR domain containing 8
+        AA001296_s_at   PHF23   PHD finger protein 23
+        AA002245_at     ZC3H11A zinc finger CCCH-type containing 11A
+
+        Hu35KsubB.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-3_st  ---     ---
+        AFFX-BioB-5_at  ---     ---
+
+        Hu35KsubC.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-3_st  ---     ---
+        AFFX-BioB-5_at  ---     ---
+
+        Hu35KsubD.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-3_st  ---     ---
+        AFFX-BioB-5_at  ---     ---
+
+        Hu6800.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A28102_at       GABRA3  gamma-aminobutyric acid (GABA) A receptor, alpha 3
+        AB000114_at     OMD     osteomodulin
+        AB000115_at     IFI44L  interferon-induced protein 44-like
+
+        Illumina_Human.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A-1   BCAP31  B-cell receptor-associated protein 31
+        1-A-10  NSFL1C  NSFL1 (p97) cofactor (p47)
+        1-A-11  C20ORF24        chromosome 20 open reading frame 24
+
+        ilmn_HumanHT_12_V4_0_R1_15002873_B.chip 
+        Probe Set ID    Gene Symbol     Gene Title      Entrez Gene ID  
+        ILMN_1725881    LOC23117        PREDICTED: Homo sapiens KIAA0220-like protein, transcript variant 11 (LOC23117), mRNA.  23117
+        ILMN_1910180            Homo sapiens cDNA: FLJ21027 fis, clone CAE07110 -999
+        ILMN_1804174    FCGR2B  PREDICTED: Homo sapiens Fc fragment of IgG, low affinity IIb, receptor (CD32) (FCGR2B), mRNA.   2213
+
+        ilmn_MouseRef_8_V2_0_R3_11278551_A.chip 
+        Probe Set ID    Gene Symbol     Gene Title      Entrez Gene ID  
+        ILMN_2607609    YIF1B   Mus musculus Yip1 interacting factor homolog B (S. cerevisiae) (Yif1b), mRNA.   77254
+        ILMN_1238674    2700007P21RIK   Mus musculus RIKEN cDNA 2700007P21 gene (2700007P21Rik), transcript variant 2, mRNA.    212772
+        ILMN_3062534    2700007P21RIK   Mus musculus RIKEN cDNA 2700007P21 gene (2700007P21Rik), transcript variant 2, mRNA.    212772
+
+        ilmn_MouseWG_6_V2_0_R3_11278593_A.chip 
+        Probe Set ID    Gene Symbol     Gene Title      Entrez Gene ID  
+        ILMN_1243094    THRSP   NULL    -999
+        ILMN_1238674    2700007P21RIK   Mus musculus RIKEN cDNA 2700007P21 gene (2700007P21Rik), transcript variant 2, mRNA.    212772
+        ILMN_2454720    2700007P21RIK   Mus musculus RIKEN cDNA 2700007P21 gene (2700007P21Rik), transcript variant 2, mRNA.    212772
+
+        labonweb_human.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A1    GAPD    glyceraldehyde-3-phosphate dehydrogenase
+        1-A10   BMP5    bone morphogenetic protein 5
+        1-A11   C9ORF78 chromosome 9 open reading frame 78
+
+        lymphochip.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1317148 TNF     tumor necrosis factor (TNF superfamily, member 2)
+        814251  SLAMF1  signaling lymphocytic activation molecule family member 1
+        712899___1      AA282233        zt12d02.s1 NCI_CGAP_GCB1 Homo sapiens cDNA clone
+
+        MG_U74Av2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        100001_at       CD3G    CD3 antigen, gamma polypeptide
+        100002_at       ITIH3   inter-alpha trypsin inhibitor, heavy chain 3
+        100003_at       RYR1    ryanodine receptor 1, skeletal muscle
+
+        MG_U74Bv2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        104769_at       LIMA1   LIM domain and actin binding 1
+        104770_at       ---     16 days neonate heart cDNA, RIKEN full-length enriched library, clone:D830033B01 product:unclassifiable, full insert sequence
+        104771_at       RAC2    RAS-related C3 botulinum substrate 2
+
+        MG_U74Cv2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        128520_at       CCDC97  coiled-coil domain containing 97
+        128523_at       A730063M14RIK   RIKEN cDNA A730063M14 gene
+        128529_at       A930009G19RIK   RIKEN cDNA A930009G19 gene
+
+        MOE430A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1415670_at      COPG    coatomer protein complex, subunit gamma
+        1415671_at      ATP6V0D1        ATPase, H+ transporting, lysosomal V0 subunit D1
+        1415672_at      GOLGA7  golgi autoantigen, golgin subfamily a, 7
+
+        MOE430B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1415670_at      COPG    coatomer protein complex, subunit gamma
+        1415671_at      ATP6V0D1        ATPase, H+ transporting, lysosomal V0 subunit D1
+        1415672_at      GOLGA7  golgi autoantigen, golgin subfamily a, 7
+
+        Mouse430_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1415670_at      COPG    coatomer protein complex, subunit gamma
+        1415671_at      ATP6V0D1        ATPase, H+ transporting, lysosomal V0 subunit D1
+        1415672_at      GOLGA7  golgi autoantigen, golgin subfamily a, 7
+
+        Mouse430A_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1415670_at      COPG    coatomer protein complex, subunit gamma
+        1415671_at      ATP6V0D1        ATPase, H+ transporting, lysosomal V0 subunit D1
+        1415672_at      GOLGA7  golgi autoantigen, golgin subfamily a, 7
+
+        Mu11KsubA.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        aa000148_s_at   NIP7    nuclear import 7 homolog (S. cerevisiae)
+        AA000151_at     1200011I18RIK   RIKEN cDNA 1200011I18 gene
+        aa000380_s_at   TARDBP  TAR DNA binding protein
+
+        Mu11KsubB.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-18SRNAMur/X00686_3_at      ---     ---
+        AFFX-18SRNAMur/X00686_5_at      ---     ---
+        AFFX-18SRNAMur/X00686_M_at      ---     ---
+
+        Mu19KsubA.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-18SRNAMur/X00686_3_at      ---     ---
+        AFFX-18SRNAMur/X00686_5_at      ---     ---
+        AFFX-18SRNAMur/X00686_M_at      ---     ---
+
+        Mu19KsubB.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-18SRNAMur/X00686_3_at      ---     ---
+        AFFX-18SRNAMur/X00686_5_at      ---     ---
+        AFFX-18SRNAMur/X00686_M_at      ---     ---
+
+        Mu19KsubC.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-18SRNAMur/X00686_3_at      ---     ---
+        AFFX-18SRNAMur/X00686_5_at      ---     ---
+        AFFX-18SRNAMur/X00686_M_at      ---     ---
+
+        MWG_Human_30K_A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A1    IFNA8   interferon, alpha 8
+        1-A10   AGL     amylo-1, 6-glucosidase, 4-alpha-glucanotransferase (glycogen debranching enzyme, glycogen storage disease type III)
+        1-A11   NULL    NULL
+
+        MWG_Human_30K_B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A10   ADAM11  a disintegrin and metalloproteinase domain 11
+        1-A11   NULL    NULL
+        1-A12   MAST3   microtubule associated serine/threonine kinase 3
+
+        Netherland_cancer_institute_operon_human_35k.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        H200001046      ZZZ3    zinc finger, ZZ domain containing 3 [Homo sapiens]. [Source:RefSeq;Acc:NM_015534]
+        H200011098      ZZEF1   zinc finger, ZZ-type with EF hand domain 1 [Homo sapiens]. [Source:RefSeq;Acc:NM_015113]
+        H200006223      ZYX     Zyxin (Zyxin 2). [Source:Uniprot/SWISSPROT;Acc:Q15942]
+
+        Netherland_cancer_institute_operon_mouse_FOOk.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        M300012631      ZZEF1   NULL
+        M300012632      ZZEF1   NULL
+        M200002019      ZYX     Zyxin. [Source:Uniprot/SWISSPROT;Acc:Q62523]
+
+        NIA15k.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        H3051B03        BG067146        H3051B03-3 NIA Mouse 15K cDNA Clone Set Mus musculus cDNA
+        H3067H02        BG068648        H3067H02-3 NIA Mouse 15K cDNA Clone Set Mus musculus cDNA
+        H3121E03        AK029878        NULL
+
+        OPERON_HUMANv2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A01   NULL    NULL
+        1-A02   NULL    NULL
+        1-A03   NAT2    N-acetyltransferase 2 (arylamine N-acetyltransferase)
+
+        OPERON_HUMANv3.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-A03   TSPAN6  tetraspanin 6
+        1-A04   AK2     adenylate kinase 2
+        1-A05   NULL    NULL
+
+        RAE230A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1367452_at      SUMO2   SMT3 suppressor of mif two 3 homolog 2 (yeast)
+        1367453_at      CDC37   cell division cycle 37 homolog (S. cerevisiae)
+        1367454_at      COPB2   coatomer protein complex, subunit beta 2 (beta prime)
+
+        RAE230B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1367452_at      SUMO2   SMT3 suppressor of mif two 3 homolog 2 (yeast)
+        1367453_at      CDC37   cell division cycle 37 homolog (S. cerevisiae)
+        1367454_at      COPB2   coatomer protein complex, subunit beta 2 (beta prime)
+
+        Rat230_2.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1367452_at      SUMO2   SMT3 suppressor of mif two 3 homolog 2 (yeast)
+        1367453_at      CDC37   cell division cycle 37 homolog (S. cerevisiae)
+        1367454_at      COPB2   coatomer protein complex, subunit beta 2 (beta prime)
+
+        RefSeq_human.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        NM_030625       CXXC6   CXXC finger 6
+        NM_181776       SLC36A2 solute carrier family 36 (proton/amino acid symporter), member 2
+        NM_152616       TRIM42  tripartite motif-containing 42
+
+        RefSeq_NP_Human.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        NP_000005       A2M     alpha-2-macroglobulin
+        NP_000006       NAT2    N-acetyltransferase 2 (arylamine N-acetyltransferase)
+        NP_000007       ACADM   acyl-Coenzyme A dehydrogenase, C-4 to C-12 straight chain
+
+        RefSeq_NP_Mouse.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AAF62769        NULL    NULL
+        AAF62770        NULL    NULL
+        AAF62771        NULL    NULL
+
+        RefSeq_NP_Rat.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        NP_007225       NULL    NULL
+        NP_007226       NULL    NULL
+        NP_007227       NULL    NULL
+
+        Research_Genetics.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-a-1   NULL    NULL
+        1-a-10  WNT2    wingless-type MMTV integration site family member 2
+        1-a-11  VHL     von Hippel-Lindau tumor suppressor
+
+        RG_U34A.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A01157cds_s_at  LIPF    lipase, gastric
+        A03913cds_s_at  SERPINE2        serine (or cysteine) proteinase inhibitor, clade E, member 2
+        A04674cds_s_at  UCP1    uncoupling protein 1 (mitochondrial, proton carrier)
+
+        RG_U34B.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-3_st  ---     ---
+        AFFX-BioB-5_at  ---     ---
+
+        RG_U34C.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AA012646_i_at   ---     Transcribed locus
+        AA012646_r_at   ---     Transcribed locus
+        AA012654_at     ---     Transcribed locus
+
+        RN_U34.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        A03913cds_s_at  SERPINE2        serine (or cysteine) proteinase inhibitor, clade E, member 2
+        A17753cds_s_at  DRD3    dopamine receptor D3
+        AA848563_s_at   HSPA1A /// HSPA1B_MAPPED        heat shock 70kD protein 1A /// heat shock 70kD protein 1B (mapped)
+
+        Rosetta50K.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1360465 RANBP9  RAN binding protein 9
+        1176829 LOC375449       similar to microtubule associated testis specific serine/threonine protein kinase
+        1351074 NEDD4L  neural precursor cell expressed, developmentally down-regulated 4-like
+
+        Rosetta.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        NM_000504       F10     coagulation factor X
+        Contig32955_RC  ARL6IP6 ADP-ribosylation-like factor 6 interacting protein 6
+        AK000455        MGC16733        hypothetical gene MGC16733 similar to CG12113
+
+        RT_U34.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AA108277_at     HSPH1   heat shock 105kDa/110kDa protein 1
+        AA108308_i_at   MDM2_PREDICTED  Transformed mouse 3T3 cell double minute 2 homolog (mouse) (predicted)
+        AA108308_s_at   ---     ---
+
+        RZPD_Human_Ensembl1.1.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        RZPDp203A011001D        SARDH   sarcosine dehydrogenase
+        RZPDp203A011002D        ARHGAP22        Rho GTPase activating protein 22
+        RZPDp203A011003D        CNGA3   cyclic nucleotide gated channel alpha 3
+
+        RZPD_Human_ORF_Clones_Gateway.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        RZPDo834A0110D - Gateway (closed)       PTD015  PTD015 protein
+        RZPDo834A0114D - Gateway (closed)       TRIB3   tribbles homolog 3 (Drosophila)
+        RZPDo834A0116D - Gateway (closed)       ORM2    orosomucoid 2
+
+        RZPD_Human_Unigene3.1.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        HU3_p983A011001D        SARDH   sarcosine dehydrogenase
+        HU3_p983A011002D        ARHGAP22        Rho GTPase activating protein 22
+        HU3_p983A011003D        CNGA3   cyclic nucleotide gated channel alpha 3
+
+        Seq_Accession.chip 
+        Probe Set ID    Gene Symbol
+        AA017197        C21ORF36
+        AA191116        MTVR2
+        AA280701        CXYORF7
+
+        Stanford.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        IMAGE:703849    DDB2    damage-specific DNA binding protein 2, 48kDa
+        IMAGE:1301778   ZFY     zinc finger protein, Y-linked
+        IMAGE:795810    HS.99503HS.520681       Homo sapiens transcribed sequenceHomo sapiens, clone IMAGE:4823270, mRNA
+
+        Stanford_Source_Accessions.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AI848107        0610010K14RIK   RIKEN cDNA 0610010K14 gene
+        AK002491        0610010K14RIK   RIKEN cDNA 0610010K14 gene
+        AK003842        0610010K14RIK   RIKEN cDNA 0610010K14 gene
+
+        TIGR_31K_Human_Set.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1-1     NULL    NULL
+        1-10    WNT2    wingless-type MMTV integration site family member 2
+        1-11    VHL     von Hippel-Lindau tumor suppressor
+
+        TIGR_40K_Human_Set.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        10      NULL    NULL
+        100     TEX27   testis expressed sequence 27
+        1000    HOXA1   homeo box A1
+
+        U133_X3P.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1053_3p_at      RFC2    replication factor C (activator 1) 2, 40kDa
+        117_3p_at       HSPA6 /// LOC652878     heat shock 70kDa protein 6 (HSP70B') /// similar to heat shock 70kDa protein 6 (HSP70B)
+        1494_3p_f_at    CYP2A6  cytochrome P450, family 2, subfamily A, polypeptide 6
+
+        UCLA_NIH_33K.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        1020181 NULL    NULL
+        1020315 VAV2    vav 2 oncogene
+        1020478 AP1GBP1 AP1 gamma subunit binding protein 1
+
+        Zebrafish.chip 
+        Probe Set ID    Gene Symbol     Gene Title
+        AFFX-BioB-3_at  ---     ---
+        AFFX-BioB-5_at  ---     ---
+        AFFX-BioB-M_at  ---     ---
+
+
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+ .. _GSEA: http://www.broadinstitute.org/gsea
+ .. _GUIDE: http://www.broadinstitute.org/gsea/doc/GSEAUserGuideFrame.html?_Interpreting_GSEA_Results
+ .. _MSigDB: http://www.broadinstitute.org/gsea/msigdb/index.jsp
+ .. _2005Paper: http://www.pnas.org/content/102/43/15545.full
+
+</help>
+
+</tool>
+
+

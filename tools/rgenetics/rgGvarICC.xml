@@ -1,0 +1,59 @@
+<tool id="rgGvarICC1" name="GeneVar ICC:">
+    <code file="listFiles.py"/> 
+    <code file="rgClean_code.py"/> 
+  
+    <description>Test GeneVar expression for signal/noise ratio</description>
+  
+    <command interpreter="python">
+        rgGvarICC.py $name $genelist $race out_file1
+    </command>
+    
+    <inputs>    
+       <param name="name" type="text" label="Output workspace filename" value="rgGvar_test"/>
+       <param name="genelist" type="text" size="50" label="Comma separated HUGO symbols (eg TLR4,IL10)" value="" /> 
+       <param type="select" name="race" label="HapMap Panel" help="Hapmap panel to select">
+                        <option value="CEU" selected="yes">CEPH trios</option>
+                        <option value="YRI">Yoruba trios</option>
+                        <option value="JPT">Japanese</option>
+                        <option value="CHB">Chinese</option>
+       </param>
+   </inputs>
+
+   <outputs>  
+       <data format="txt" name="out_file1" />
+   </outputs>
+<help>
+
+
+**Syntax**
+
+- **Output name** is the name to use for the results output file in your current workspace
+- **Comma separated genelist** is a list of genes you want to test
+- **Hapmap panel** is the race to select expression data from
+
+-----
+
+**Summary**
+
+This tool tests all the probes in the Illumina u6 Sanger_ GeneVar data to see if
+there is more variability within the quantile normalized log2 transformed values from 4 
+replicates per subject (2 replicated arrays from each of 2 separate IVT reactions per sample), than 
+between all the subjects, using the intra-class correlation (ICC) estimated from an ANOVA. 
+
+If this test rejects the null hypothesis, the probe may well contain real signal and may be worth
+further analysis. If not, there's more technical replicate
+variability than there is variation between subjects, so it seems that there is not likely to 
+be much useful signal - if the variability between technical replicates
+within a single cell line is greater than the variability between subjects, that cannot be good! 
+It turns out that the method rejects about half of all the Illumina U6 probes used in the Sanger_ data
+and there is reasonable consistency between the 4 population panels.
+
+
+Originally designed and written for the Rgenetics_ project in June 2007 by 
+ross lazarus (ross.lazarus@gmail.com) and Weiliang Qiu. Sanger GeneVar data is from the Sanger_ website.
+
+  .. _Rgenetics: http://rgenetics.org
+  .. _Sanger: http://www.sanger.ac.uk/humgen/genevar
+
+</help>
+</tool>

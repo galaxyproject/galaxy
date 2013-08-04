@@ -1,0 +1,59 @@
+<tool id="CONVERTER_Bam_Arf_0" name="Bam to Arf" hidden="false">
+<command>
+#if $input1.ext == 'bam'
+samtools view -h -o f00.sam "$input1" ;sam_reads_collapse.pl f00.sam $output1; bwa_sam_converter.pl -i f00.sam -t read_1_to_1.txt -o $output2; rm f00.sam; rm read* 
+#else
+sam_reads_collapse.pl "$input1" $output1;  bwa_sam_converter.pl -i $input1 -t read_1_to_1.txt -o $output2; rm read*
+#end if
+</command>
+  <inputs>
+    <page>
+      <param format="bam,sam" name="input1" type="data" label="Choose BAM or SAM to convert to arf/collapsed fasta for miRDeep2"/>
+    </page>
+   </inputs>
+   <outputs>
+      <data format="collapsedfasta" name="output1" label="${on_string}.collapsedfasta" hidden="false"/>
+      <data format="arf" name="output2" label="${on_string}_arf" hidden="false"/>
+   </outputs>
+  <help>
+
+.. class:: infomark
+
+**What it does**
+
+Convert an aligned sam/bam format file containing short read data into the two files needed for miRDeep2_ tools
+NOTE that miRDeep2_ will complain and stop if you forget to filter sequences shorter than 17nt - use the fastq filter tool
+for this
+
+-----
+
+.. class:: infomark
+
+This Galaxy tool exposes third party open source software called miRDeep2_ 
+
+See http://www.mdc-berlin.de/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/index.html
+
+This is part of a set of tools and provides mapping of short read miR sequence data to their genome.
+
+Two matching files (collapsedfasta and arf formats respectively) needed as input to the companion miRDeep2_ 
+reporting program will be output after this tool has finished converting the input file.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+
+All rgenetics artefacts are available licensed under the LGPL_
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+ .. _mirdeep2: http://www.mdc-berlin.de/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/index.html
+
+
+  </help>
+</tool>

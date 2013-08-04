@@ -1,0 +1,45 @@
+<tool id="tabcolsubset" name="Subset Columns">
+  <description>from a tabular file</description>
+  <code file="rgTabColSubset_code.py"/>    
+   <command interpreter="python">rgTabColSubset.py -i "$infile" -n "$title1" -o "$outfile" -c "$cols" 
+   </command>
+   <inputs>
+   <page>
+    <param name="infile"  type="data" format="pphe,tabular" label="Subset from history tabular/phenotype file" />
+    <param name="title1" type="text" value="My subset" size="60" label="Title for output"/>
+   </page>
+   <page>
+    <param name="cols" type="select" label="Columns to include" help="Select all columns you want returned"
+         size="20" width="100" multiple="true" dynamic_options="getcols(infile)" /> 
+   </page>
+   </inputs>
+   <outputs>
+       <data format="tabular" name="outfile"  metadata_source="infile" />
+   </outputs>
+<help>
+
+.. class:: infomark
+
+This tool allows you to generate a subset phenotype file from one of the tabular files available on this Galaxy system
+
+-----
+
+.. class:: warningmark
+
+This tool is very experimental
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, May 2011
+All rgenetics artefacts are available licensed under the LGPL_
+
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+</help>
+</tool>

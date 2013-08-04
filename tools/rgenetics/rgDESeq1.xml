@@ -1,0 +1,81 @@
+<tool id="rgDESeq" name="DESeq" version="0.01">
+  <description>digital DGE original version</description>
+  <command interpreter="python">rgDESeq.py --output_html "$html_file" --input_matrix "$input1" --treatcols "$Treat_cols" 
+       --treatname "$treatment_name" --ctrlcols "$Control_cols" --ctrlname "$control_name" --output_tab "$outtab" --org "$org"
+       --output_dir "$html_file.files_path"  --fdrtype "$fdrtype" --fdrthresh "$fdrthresh" --jtitle "$jtitle" --filterQuantile ${fQ}
+  </command>
+  <inputs>
+    <param name="input1"  type="data" format="tabular" label="Select an input matrix - rows are contigs, columns are counts for each sample"
+       help="Use the DGE matrix preparation tool to create these matrices from BAM files and a BED file of contigs"/>
+    <param name="jtitle" type="text" value="DGE" size="80" label="Title for job outputs" help="Supply a meaningful name here to remind you what the outputs contain"/>
+    <param name="org" type="select" label="Contig name translation" 
+         help="Outputs can include gene names from (eg) mouse refseq ids or leave as None for no translation">
+            <option value="none" selected="true">No translation</option>
+            <option value="Hs">Human Refseq</option>
+            <option value="Mm">Mouse Refseq</option>
+    </param>
+    <param name="treatment_name" type="text" value="Treatment" size="50" label="Treatment Name"/>
+    <param name="Treat_cols" label="Select columns containing treatment." type="data_column" data_ref="input1" numerical="True" 
+         multiple="true" use_header_names="true" size="120" display="checkboxes">
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="control_name" type="text" value="Control" size="50" label="Control Name"/>
+    <param name="Control_cols" label="Select columns containing control." type="data_column" data_ref="input1" numerical="True" 
+         multiple="true" use_header_names="true" size="120" display="checkboxes">
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="fQ" type="float" value="0.3" size="5" label="Non-specific contig count quantile (remove all below) threshold"
+     help="May be a good or a bad idea. EG 0.3 = sparsest 30% contigs removed before analysis"/>
+    
+    <param name="fdrthresh" type="float" value="0.05" size="5" label="P value threshold for FDR filtering for amily wise error rate control"
+     help="Conventional default value of 0.05 recommended"/>
+    <param name="fdrtype" type="select" label="FDR (Type II error) control method" 
+         help="Use fdr or bh typically to control for the number of tests in a reliable way">
+            <option value="BH">Benjamini Hochberg</option>
+            <option value="BY">Benjamini Yukateli for correlated tests</option>
+            <option value="bonferroni">Bonferroni</option>
+            <option value="fdr"  selected="true">fdr (= Benjamini Hochberg)</option>
+            <option value="hochberg">Hochberg</option>
+            <option value="holm">Holm</option>
+            <option value="hommel">Hommel</option>
+            <option value="none">no control for multiple tests</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="outtab" label="${jtitle}_DESeq.xls"/>
+    <data format="html" name="html_file" label="${jtitle}_DESeq.html"/>
+  </outputs>
+<tests>
+<test>
+<param name='input1' value='DGEtest.xls' ftype='tabular' />
+ <param name='treatment_name' value='case' />
+ <param name='title' value='DGEtest' />
+ <param name='fdrtype' value='fdr' />
+ <param name='priorn' value="5" />
+ <param name='fdrthresh' value="0.05" />
+ <param name='control_name' value='control' />
+ <param name='Treat_cols' value='c3,c6,c9' />
+ <param name='Control_cols' value='c2,c5,c8' />
+ <output name='outtab' file='DGEtest1out.xls' ftype='tabular' compare='diff' />
+ <output name='html_file' file='DGEtest1out.html' ftype='html' compare='diff' lines_diff='20' />
+</test>
+</tests>
+<help>
+**What it does**
+
+Performes digital gene expression analysis between a treatment and control on a matrix.
+
+**Input**
+
+A matrix consisting of non-negative integers. The matrix must have a unique header row identifiying the samples, as well as a unique set of row names 
+as  the first column.
+
+**Output**
+
+A matrix which consists the original data and relative expression levels and some helpful plots
+
+</help>
+
+</tool>
+
+

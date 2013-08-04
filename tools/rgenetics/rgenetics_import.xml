@@ -1,0 +1,49 @@
+<tool id="regenetics_import1" name="Import">
+  <description>data into Rgenetics formats</description>
+   <command interpreter="python2.4">rgenetics_import.py $file_type_dir $base_name $output</command>
+    <inputs>
+      <page>
+      <param name="file_type_dir" label="Select type of File" type="select" 
+      dynamic_options="get_available_file_types()" 
+      help="Eigenstratgeno=eigensoft, lped=linkage pedigree, pbed=plink compressed, pphe=plink/fbat/pbat phenotype"/>
+      </page>
+      <page>
+       <param label="Genome" name="dbkey" type="select" dynamic_options="get_available_builds('hg18')" />
+       <param name="base_name" label="Select File to Import" type="select" dynamic_options="get_available_data(file_type_dir, build='hg18')" />
+       </page>
+    </inputs>
+  <outputs>
+    <data format="rgenetics" name="output"/>
+  </outputs>
+  <code file="rgenetics_import_code.py"/>
+  <code file="listFiles.py"/>
+  <help>
+
+**Notes on parameters**
+
+- **Type of file** Eigenstratgeno=eigensoft, lped=linkage pedigree, pbed=plink compressed, pphe=plink/fbat/pbat phenotype
+- **File to import** Choose a file from the files made available by your system administrator of the type specified 
+
+After you select the **type of file**, you will be able to select a specific one from all the available files of that type on the next page
+
+
+**Summary**
+
+
+This tool allows you to import new data sets into your current history from a library of files made available
+by your system administrator - the files must be placed in a specific place on the filesystem to appear here
+
+The different file types are each kept in a separate folder, so you must first choose the kind of file you want to
+import, then on the next screen, you will be able to choose from a list of available files
+
+-----
+
+
+**Attribution**
+Originally designed and written for the Rgenetics
+series of Galaxy tools by Dan Blankenberg and modified
+copyright Ross Lazarus 2007 (ross.lazarus@gmail.com)
+Licensed under the terms of the LGPL
+as documented http://www.gnu.org/licenses/lgpl.html
+</help>
+</tool>

@@ -1,0 +1,589 @@
+<tool id="rgspia" name="SPIA" version="0.03">
+  <description>Pathway analysis for DEG</description>
+  <command interpreter="python">
+   rgToolFactory.py --script_path "$runme" --interpreter "Rscript" --tool_name "SPIA" 
+   --output_dir "$html_file.files_path" --output_html "$html_file" --output_tab "$outtab" --make_HTML "yes"
+  </command>
+  <inputs>
+    <param name="org" type="select" label="Organism for R db Entrez lookup" help="Additional organism .Rdata files from latest build at http://bioinformaticsprb.med.wayne.edu/shares/SPIA/">
+            <option value="hsa" selected="true">Human</option>
+            <option value="mmu">Mouse</option>
+            <option value="rno">Rat</option>
+    </param>
+    <param name="input1"  type="data" format="tabular" label="Select a Differentially Expressed Gene list"
+       help="Defaults are for edgeR and DESeq xls outputs"/>
+    <param name="title" type="text" value="SPIA" size="80" label="Title for job outputs" 
+        help="Supply a meaningful name here to remind you what the outputs contain"/>
+    <param name="adjpvalcol" label="Column containing a FWER or FDR adjusted p value for DEG statistical test" 
+              type="data_column"  data_ref="input1" numerical="True" 
+              multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select a column."/>
+    </param>
+    <param name="logfccol" label="Column containing signed log fold change" type="data_column"  data_ref="input1" numerical="True" 
+         multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select a column."/>
+    </param>
+    <param name="idcol" label="Column containing a gene id (refseq, symbol or Entrez" 
+         type="data_column"  data_ref="input1" numerical="False" 
+         multiple="false" use_header_names="true" size="5">
+        <validator type="no_options" message="Please select a column."/>
+    </param>
+    <param name="thresh" type="float" value="0.1" size="5" label="SPIA Threshold (eg 0.05 or 0.1)" help="All pathways found with FWER p values below this threshold will be plotted"/>
+    <param name="geneid" type="select" label="Gene identifier in chosen gene id column">
+            <option value="symbol" selected="true">Symbol</option>
+            <option value="refseq">REFSEQ</option>
+            <option value="ENTREZ">Entrez</option>
+    </param>
+    <param name="nB" type="integer" label="Number of bootstraps for testing" value="2000"/>
+
+  </inputs>
+  <outputs>
+    <data format="tabular" name="outtab" label="${input1.name}_${title}.xls"/>
+    <data format="html" name="html_file" label="${input1.name}_${title}.html"/>
+  </outputs>
+<configfiles>
+<configfile name="runme">
+# run spia against an edgeR or DEseq style output
+# need to convert to ENSEMBL id
+# ross lazarus June 2012
+# note we hack the spia function to fix a bug with zero sd as bw in density
+
+
+library(Biobase)
+library(SPIA)
+library(annotate)
+options(width=1024)
+
+# from http://csbi.ltdk.helsinki.fi/meap/anduril/doc/components/SPIA/SPIA.r
+PATHWAY_DIAGRAM_URL_PREFIX = "http://www.genome.jp/kegg-bin/mark_pathway_www?@"
+PATHWAY_DIAGRAM_FORMAT_GENERAL = "/default%3dyellow/"
+PATHWAY_DIAGRAM_UP_FORMAT = "%09red,white/"
+PATHWAY_DIAGRAM_DOWN_FORMAT = "%09blue,white/"
+
+
+caseF = function(x) { # fix stupid case in mmu lookups
+  substring(x, 1, 1) = toupper(substring(x, 1, 1))
+  substring(x, 2) = tolower(substring(x, 2))
+  x
+}
+
+fixID = function(idvec=c(),geneid="refseq",caseFiddle=F)
+{ # get ENSEMBL ids - note may need case fiddling due to stupidity elsewhere
+  eid = idvec
+  if (caseFiddle) { eid = sapply(caseF,eid) }
+  if (geneid=='refseq') {
+    eid = mget(idvec, refseq,ifnotfound=NA)
+  } else if (geneid=='symbol') {
+    eid = mget(idvec, symseq,ifnotfound=NA)
+  }
+  return(eid)
+}
+
+# from https://hedgehog.fhcrc.org/bioconductor/trunk/madman/Rpacks/SPIA/R/getP2.R (readonly:readonly)
+getP2 = function(pG,combine="fisher") { 
+# given a pG returns two equal p-values such as   combfunc(p1,p2)=pG
+  if(combine=="fisher"){
+    ch=qchisq(pG,4,lower.tail = FALSE)
+    return(sqrt(exp(-ch/2)))
+  }
+  
+  if(combine=="norminv"){
+    return(pnorm(qnorm(pG)*sqrt(2)/2))
+  }
+}
+
+combfunc = function(p1=NULL,p2=NULL,combine="fisher")
+{
+  tm=na.omit(c(p1,p2))
+  if(!all(tm &gt;= 0 &amp; tm &lt;=1,na.rm=T)){
+    stop("values of p1 and p2 have to be &gt;=0 and &lt;=1 or NAs")
+  }
+  if(combine=="fisher"){
+    k=p1*p2
+    comb=k-k*log(k)
+    comb[is.na(p1)] = p2[is.na(p1)]
+    comb[is.na(p2)] = p1[is.na(p2)]
+    return(comb)
+  }
+  if(combine=="norminv"){
+    comb=pnorm( (qnorm(p1)+qnorm(p2))/sqrt(2))
+    comb[is.na(p1)] = p2[is.na(p1)]
+    comb[is.na(p2)] = p1[is.na(p2)]
+    return(comb)
+  }
+}
+
+rossplotP = function (x, threshold = 0.05) 
+{
+  if (class(x) != "data.frame" | dim(x)[1] &lt; 1 | !all(c("ID", "pNDE", "pPERT", "pG", "pGFdr", "pGFWER") %in% names(x))) {
+    stop("plotP can be applied only to a dataframe produced by spia function!!!")
+  }
+  if (threshold &lt; x[1, "pGFdr"]) {
+    msg = paste("The threshold value should be", x[1, "pGFdr"], 
+                "or higher!!!")
+    stop(msg)
+  }
+  pb = x[, "pPERT"]
+  ph = x[, "pNDE"]
+  combinemethod = ifelse(sum(combfunc(pb, ph, "fisher") == 
+    x\$pG) &gt; sum(combfunc(pb, ph, "norminv") == x\$pG), "fisher", 
+                         "norminv")
+  okx = (ph  &lt;1e-06)
+  oky = (pb &lt; 1e-06)
+  ph[ph &lt; 1e-06] = 1e-06
+  pb[pb &lt; 1e-06] = 1e-06
+  plot(-log(ph), -log(pb), xlim = c(0, max(c(-log(ph), -log(pb)) + 
+    1, na.rm = TRUE)), ylim = c(0, max(c(-log(ph), -log(pb) + 
+    1), na.rm = TRUE)), pch = 19, main = "SPIA two-way evidence plot", 
+       cex = 1.5, xlab = "-log(P NDE)", ylab = "-log(P PERT)")
+  tr = threshold/dim(na.omit(x))[1]
+  abline(v = -log(tr), lwd = 1, col = "red", lty = 2)
+  abline(h = -log(tr), lwd = 1, col = "red", lty = 2)
+  if (combinemethod == "fisher") {
+    points(c(0, -log(getP2(tr, "fisher")^2)), c(-log(getP2(tr,"fisher")^2), 0), col = "red", lwd = 2, cex = 0.7, type = "l")
+  }
+  else {
+    somep1 = exp(seq(from = min(log(ph)), to = max(log(ph)), 
+                     length = 200))
+    somep2 = pnorm(qnorm(tr) * sqrt(2) - qnorm(somep1))
+    points(-log(somep1), -log(somep2), col = "red", lwd = 2, 
+           cex = 0.7, type = "l")
+  }
+  oks = x[, "pGFWER"] &lt;= threshold
+  trold = tr
+  tr = max(x[, "pG"][x[, "pGFdr"] &lt;= threshold])
+  if (tr &lt;= trold) {
+    tr = trold * 1.03
+  }
+  if (combinemethod == "fisher") {
+    points(c(0, -log(getP2(tr, "fisher")^2)), c(-log(getP2(tr,"fisher")^2), 0), col = "blue", lwd = 2, cex = 0.7, type = "l")
+  }
+  else {
+    somep1 = exp(seq(from = min(log(ph)), to = max(log(ph)), 
+                     length = 200))
+    somep2 = pnorm(qnorm(tr) * sqrt(2) - qnorm(somep1))
+    points(-log(somep1), -log(somep2), col = "blue", lwd = 2, 
+           cex = 0.7, type = "l")
+  }
+  abline(v = -log(tr), lwd = 1, col = "blue", lty = 2)
+  abline(h = -log(tr), lwd = 1, col = "blue", lty = 2)
+  text(-log(ph)[oks] + 0.7, -log(pb)[oks], labels = as.vector(x\$ID)[oks], 
+       cex = 0.65)
+  oks2 = x[, "pGFdr"] &lt;= threshold
+  points(-log(ph)[oks2], -log(pb)[oks2], pch = 19, col = "blue", 
+         cex = 1.5)
+  points(-log(ph)[oks], -log(pb)[oks], pch = 19, col = "red", 
+         cex = 1.5)
+  text(-log(ph)[oks2] + 0.7, -log(pb)[oks2], labels = as.vector(x\$ID)[oks2], 
+       cex = 0.65)
+  if (sum(okx) &gt; 0) {
+    points(-log(ph)[okx] - 0.12, -log(pb)[okx], pch = "|", 
+           col = "black", cex = 1.5)
+  }
+  if (sum(oky,na.rm=T) &gt; 0) {
+    points(-log(ph)[oky], -log(pb)[oky] - 0.12, pch = "_", 
+           col = "black", cex = 1.5)
+  }
+}
+
+# fix bug in density with negative bw
+rossSPIA = function (de = NULL, all = NULL, organism = "hsa", pathids = NULL, thresh=0.05, 
+                     nB = 2000, plots = FALSE, verbose = TRUE, beta = NULL, combine = "fisher") 
+{
+  if (is.null(de) | is.null(all)) {
+    stop("de and all arguments can not be NULL!")
+  }
+  rel = c("activation", "compound", "binding/association", 
+          "expression", "inhibition", "activation_phosphorylation", 
+          "phosphorylation", "inhibition_phosphorylation", "inhibition_dephosphorylation", 
+          "dissociation", "dephosphorylation", "activation_dephosphorylation", 
+          "state change", "activation_indirect effect", "inhibition_ubiquination", 
+          "ubiquination", "expression_indirect effect", "inhibition_indirect effect", 
+          "repression", "dissociation_phosphorylation", "indirect effect_phosphorylation", 
+          "activation_binding/association", "indirect effect", 
+          "activation_compound", "activation_ubiquination")
+  if (is.null(beta)) {
+    beta = c(1, 0, 0, 1, -1, 1, 0, -1, -1, 0, 0, 1, 0, 1, 
+             -1, 0, 1, -1, -1, 0, 0, 1, 0, 1, 1)
+    names(beta) = rel
+  }
+  else {
+    if (!all(names(beta) %in% rel) | length(names(beta)) != 
+      length(rel)) {
+      stop(paste("beta must be a numeric vector of length", 
+                 length(rel), "with the following names:", "\n", 
+                 paste(rel, collapse = ",")))
+    }
+  }
+  .myDataEnv = new.env(parent = emptyenv())
+  datload = paste(organism, "SPIA", sep = "")
+  if (!paste(datload, ".RData", sep = "") %in% dir(system.file("extdata", package = "SPIA"))) {
+    cat("The KEGG pathway data for your organism is not present in the extdata folder of the SPIA package!!!")
+    cat("\n")
+    cat("Please try to download it from http://bioinformaticsprb.med.wayne.edu/SPIA!")
+  }
+  load(file = paste(system.file("extdata", package = "SPIA"), 
+       paste("/", organism, "SPIA", sep = ""), ".RData", sep = ""), 
+       envir = .myDataEnv)
+  datpT = .myDataEnv[["path.info"]]
+  if (!is.null(pathids)) {
+    if (all(pathids %in% names(datpT))) {
+      datpT = datpT[pathids]
+    }
+    else {
+      stop(paste("pathids must be a subset of these pathway ids: ", 
+                 paste(names(datpT), collapse = " "), sep = " "))
+    }
+  }
+  datp = list()
+  path.names = NULL
+  hasR = NULL
+  for (jj in 1:length(datpT)) {
+    sizem = dim(datpT[[jj]]\$activation)[1]
+    s = 0
+    con = 0
+    for (bb in 1:length(rel)) {
+      con = con + datpT[[jj]][[rel[bb]]] * abs(sign(beta[rel[bb]]))
+      s = s + datpT[[jj]][[rel[bb]]] * beta[rel[bb]]
+    }
+    z = matrix(rep(apply(con, 2, sum), dim(con)[1]), dim(con)[1], 
+               dim(con)[1], byrow = TRUE)
+    z[z == 0] = 1
+    datp[[jj]] = s/z
+    path.names = c(path.names, datpT[[jj]]\$title)
+    hasR = c(hasR, datpT[[jj]]\$NumberOfReactions &gt;= 1)
+  }
+  names(datp) = names(datpT)
+  names(path.names) = names(datpT)
+  tor = lapply(datp, function(d) {
+    sum(abs(d))
+  }) == 0 | hasR | is.na(path.names)
+  datp = datp[!tor]
+  path.names = path.names[!tor]
+  IDsNotP = names(de)[!names(de) %in% all]
+  if (length(de) == 0) { stop(" # There are no significant differentially expressed genes in the input data, so SPIA cannot run (unlike some other, more magical methods!)") }
+  if (length(IDsNotP)/length(de) &gt; 0.01) {
+    stop("More than 1% of your de genes have IDs are not present in the reference array!. Are you sure you use the right reference array?")
+  }
+  if (!length(IDsNotP) == 0) {
+    cat("The following IDs are missing from all vector...:\n")
+    cat(paste(IDsNotP, collapse = ","))
+    cat("\nThey were added to your universe...")
+    all = c(all, IDsNotP)
+  }
+  if (length(intersect(names(de), all)) != length(de)) {
+    stop("de must be a vector of log2 fold changes. The names of de should be included in the refference array!")
+  }
+  ph = pb = pcomb = nGP = pSize = smPFS = tA = tAraw = KEGGLINK = NULL
+  set.seed(1)
+  for (i in 1:length(names(datp))) {
+    path = names(datp)[i]
+    M = datp[[path]]
+    diag(M) = diag(M) - 1
+    X = de[rownames(M)]
+    noMy = sum(!is.na(X))
+    nGP[i] = noMy
+    okg = intersect(rownames(M), all)
+    ok = rownames(M) %in% all
+    pSize[i] = length(okg)
+    if ((noMy) &gt; 0 &amp; (abs(det(M)) &gt; 1e-07)) {
+      #gnns = paste(names(X)[!is.na(X)], collapse = "+")
+      #KEGGLINK[i] = paste("http://www.genome.jp/dbget-bin/show_pathway?", organism, names(datp)[i], "+", gnns, sep = "")
+
+        # Add organism code and zero padding to pathway id
+        ens = names(datp)[i]
+        nameLength   = nchar(ens)
+        pathwayID = paste(c(organism, paste(numeric(5-nameLength),collapse=""), ens), collapse="")
+
+        KEGGLINK[i] = paste(PATHWAY_DIAGRAM_URL_PREFIX, pathwayID, PATHWAY_DIAGRAM_FORMAT_GENERAL, sep="")
+
+        genesInPathway = rownames(as.data.frame(datpT[names(datpT)==ens]))
+
+        for(gene in genesInPathway) {
+            if(gene %in% names(de)) {  
+                fc = de[names(de) == gene]
+                geneName = paste(organism, ":", gene, sep="")
+                if(fc &gt; 0) {
+                    KEGGLINK[i] = paste(KEGGLINK[i], geneName, PATHWAY_DIAGRAM_UP_FORMAT, sep="")
+                } else {
+                    KEGGLINK[i] = paste(KEGGLINK[i], geneName, PATHWAY_DIAGRAM_DOWN_FORMAT, sep="")
+                }
+              }
+         }
+      X[is.na(X)] = 0
+      pfs = solve(M, -X)
+      smPFS[i] = sum(pfs - X)
+      tAraw[i] = smPFS[i]
+      ph[i] = phyper(q = noMy - 1, m = pSize[i], n = length(all) - 
+        pSize[i], k = length(de), lower.tail = FALSE)
+      pfstmp = NULL
+      for (k in 1:nB) {
+        x = rep(0, length(X))
+        names(x) = rownames(M)
+        x[ok][sample(1:sum(ok), noMy)] = as.vector(sample(de,noMy))
+        tt = solve(M, -x)
+        pfstmp = c(pfstmp, sum(tt - x))
+      }
+      mnn = median(pfstmp)
+      pfstmp = pfstmp - mnn
+      ob = smPFS[i] - mnn
+      if (is.na(ob)) ob=0
+      tA[i] = ob
+      if (ob &gt; 0) {
+        pb[i] = sum(pfstmp &gt;= ob)/length(pfstmp) * 2
+        if (pb[i] &lt;= 0) {
+          pb[i] = 1/nB/100
+        }
+        if (pb[i] &gt; 1) {
+          pb[i] = 1
+        }
+      }
+      if (ob &lt; 0) {
+        pb[i] = sum(pfstmp &lt;= ob)/length(pfstmp) * 2
+        if (pb[i] &lt;= 0) {
+          pb[i] = 1/nB/100
+        }
+        if (pb[i] &gt; 1) {
+          pb[i] = 1
+        }
+      }
+      if (ob == 0) {
+        if (all(pfstmp == 0,na.rm=T)) {
+          pb[i] = NA
+        }
+        else {
+          pb[i] = 1
+        }
+      }
+      pcomb[i] = combfunc(pb[i], ph[i], combine)
+      if ((plots) &amp; (pcomb[i]*length(names(datp)) &lt; thresh)) {
+        pdf(paste(path.names[i],'pdf',sep='.'))
+        par(mfrow = c(1, 2))
+        plot(X, pfs - X, main = paste("pathway ID=", sub=path.names[i], names(datp)[i], sep = ""), xlab = "Log2 FC", 
+             ylab = "Perturbation accumulation (Acc)", cex.main = 0.8, 
+             cex.lab = 1.2)
+        abline(h = 0, lwd = 2, col = "darkgrey")
+        abline(v = 0, lwd = 2, col = "darkgrey")
+        points(X[abs(X) &gt; 0 &amp; X == pfs], pfs[abs(X) &gt; 
+          0 &amp; X == pfs] - X[abs(X) &gt; 0 &amp; X == pfs], col = "blue", 
+               pch = 19, cex = 1.4)
+        points(X[abs(X) &gt; 0 &amp; X != pfs], pfs[abs(X) &gt; 
+          0 &amp; X != pfs] - X[abs(X) &gt; 0 &amp; X != pfs], col = "red", 
+               pch = 19, cex = 1.4)
+        points(X[abs(X) == 0 &amp; X == pfs], pfs[abs(X) == 
+          0 &amp; X == pfs] - X[abs(X) == 0 &amp; X == pfs], 
+               col = "black", pch = 19, cex = 1.4)
+        points(X[abs(X) == 0 &amp; X != pfs], pfs[abs(X) == 
+          0 &amp; X != pfs] - X[abs(X) == 0 &amp; X != pfs], 
+               col = "green", pch = 19, cex = 1.4)
+        bwt = sd(pfstmp)/4
+        if (is.na(bwt)) bwt = -1
+        if (bwt &lt;= 0) {bwt='nrd0'}
+        plot(density(pfstmp[(!is.na(pfstmp))], bw = bwt), cex.lab = 1.2, 
+             col = "black", lwd = 2, main = paste("pathway ID=", names(datp)[i], 
+             "  P PERT=", round(pb[i],5), sep = ""), xlim = c(min(c(tA[i] - 0.5, 
+             pfstmp)), max(c(tA[i] + 0.5, pfstmp))), cex.main = 0.8, 
+             xlab = "Total Perturbation Accumulation (TA)")
+        abline(v = 0, col = "grey", lwd = 2)
+        abline(v = tA[i], col = "red", lwd = 3)
+        dev.off()
+      }
+    }
+    else {
+      pb[i] = ph[i] = smPFS[i] = pcomb[i] = tAraw[i] = tA[i] = KEGGLINK[i] = NA
+    }
+    if (verbose) {
+      cat("\n")
+      cat(paste("Done pathway ", i, " : ", substr(path.names[names(datp)[i]], 1, 30), "..", sep = ""))
+    }
+  }
+  
+  pcombFDR = p.adjust(pcomb, "fdr")
+  phFdr = p.adjust(ph, "fdr")
+  pcombfwer = p.adjust(pcomb, "bonferroni")
+  Name = path.names[names(datp)]
+  Status = ifelse(tA &gt; 0, "Activated", "Inhibited")
+  res = data.frame(Name, ID = names(datp), pSize, NDE = nGP, 
+       pNDE = ph, tA, pPERT = pb, pG = pcomb, pGFdr = pcombFDR, 
+       pGFWER = pcombfwer, Status, KEGGLINK, stringsAsFactors = FALSE)
+  res = res[!is.na(res\$pNDE), ]
+  res = res[order(res\$pG), ]
+  rownames(res) = NULL
+  return(res)
+}
+
+showHTML=function(res=NA,n=20)
+{
+  nr = names(res)
+  k = length(nr) # kegg url
+  s = sprintf("&lt;table class='colored' cellspacing='%d' cellpadding='%d'&gt;&lt;tr&gt;",2,2)
+  for (i in 1:k) {s = paste(s,'&lt;th&gt;',nr[i],'&lt;/th&gt;',sep='')}
+  s = paste(s,'&lt;/th&gt;\n',sep='')
+  for (i in 1:n)
+  {
+    if (i %% 2 == 1) {s = paste(s,"&lt;tr class='odd_row'&gt;",sep='')
+    } else { s = paste(s,'&lt;tr&gt;',sep='')}
+    res[i,1] = sprintf("&lt;a href='%s'&gt;%s&lt;/a&gt;",res[i,k],res[i,1])
+    for (j in 1:k) {
+      s = paste(s,'&lt;td&gt;',res[i,j],'&lt;/td&gt;',sep='')
+    }
+    s = paste(s,'&lt;/tr&gt;\n')
+  }
+  s = paste(s,'&lt;/table&gt;\n',sep='')
+  return(s)
+}
+
+runSPIA=function(infile='',outf="",logFCcol=2,adjpvalcol=5,idcol=1,geneid="symbol",org="hsa",nB=2000,
+                 thresh=0.1,myTitle="test",ensprefix='')
+{ 
+  # spia wants a list of DEG log fold change and a list of all genes 
+  # must have ENTREZ ids
+  # from (eg) current edgeR xls
+  # adj p val column, logFC column, entrez column
+  top = read.table(infile,head=T,sep='\t',stringsAsFactors=F)
+  tn = names(top)
+  veryLarge = 1e99
+  verySmall = 1e-99
+  logFCname = tn[logFCcol]
+  idname = tn[idcol]
+  adjpvalname = tn[adjpvalcol]
+  topinf = (top[,logFCname] == Inf)
+  top[topinf,logFCname] = veryLarge
+  topminf = (top[,logFCname] == -Inf)
+  top[topminf,logFCname] = verySmall
+  ids = top[,idname]
+  li = length(ids)
+  did = ! duplicated(ids)
+  nid = ! is.na(ids)
+  top = top[(did &amp; nid),]
+  lid = length(top[,idname])
+  cat(paste(' # ',li-lid,'top results removed with duplicate or NA ids leaving',lid,'\n'))
+  all_genes = top[,idname]
+  if (geneid != "ENTREZ") {
+     all1 = fixID(all_genes,geneid=geneid)
+     all2 = fixID(caseF(all_genes),geneid=geneid)
+     all_genes = all1
+     if (sum(is.na(all1)) &gt; sum(is.na(all2))) {
+        all_genes = all2
+        cat('# WARNING - more ensemble id matches to case fiddled gene ids - eg from TLR4 to Tlr4\n') 
+        } # better if case fiddled..
+     }
+  top\$ENTREZ = all_genes
+  lall = length(top\$ENTREZ)
+  cleantop = top[!is.na(top\$ENTREZ),]
+  lent = length(cleantop\$ENTREZ)
+  cleantop = cleantop[!duplicated(cleantop\$ENTREZ),]
+  ldup = length(cleantop\$ENTREZ)
+  cat(paste(' # ',lall-lent,'results removed with no ENTREZ id',lent-ldup,'removed with duplicate ENTREZ id, leaving',ldup,'\n'))
+  adjp = cleantop[,adjpvalname]
+  topsig = cleantop[(adjp&lt;thresh),]
+  sig = topsig[,logFCname] # unlist(topsig[,logFCname],use.names=F)
+  names(sig) = topsig\$ENTREZ
+  all = cleantop\$ENTREZ
+  res = rossSPIA(de=sig, all=all ,nB=nB, organism=org, plots=T,verbose=F)
+  minfwerres = min(res[,'pGFWER'])
+  cat(showHTML(res,n=10)) 
+  write.table(res,file=outf,row.names=F,col.names=T,sep='\t',quote=F)
+  if (minfwerres &lt; thresh) { # some results to show
+    pdf('fisher_plotP.pdf')
+    rossplotP(res,threshold=thresh)
+    dev.off()
+    normInvres = res
+    normInvres\$pG=combfunc(normInvres\$pNDE,normInvres\$pPERT,combine="norminv")
+    normInvres\$pGFdr=p.adjust(normInvres\$pG,"fdr")
+    normInvres\$pGFWER=p.adjust(normInvres\$pG,"bonferroni")
+    pdf('normInv_plotP.pdf')
+    rossplotP(normInvres,threshold=thresh)
+    dev.off()
+  }
+  else { cat(paste(' # No SPIA KEGG pathways found below the FWER p value threshold',thresh,'found\n'))
+  }
+  print(sessionInfo(),quote=F)
+}
+
+logFCcol = $logfccol
+adjpvalcol = $adjpvalcol
+idcol = $idcol
+geneid = "$geneid"
+org= "$org"
+nB= $nB
+infile = "$input1"
+outf = "$outtab"
+if (org == 'hsa') { 
+  library('org.Hs.eg.db') 
+  ensprefix = 'org.Hs' 
+  }
+if (org == 'mmu') { 
+  library('org.Mm.eg.db') 
+  ensprefix = 'org.Mm' 
+  }
+if (org == 'rno') { 
+  library('org.Rn.eg.db') 
+  ensprefix = 'org.Rn' 
+  }
+refseq = get(paste(ensprefix,'egREFSEQ2EG',sep='.')) # env for mget lookups
+symseq = get(paste(ensprefix,'egSYMBOL2EG',sep='.'))
+runSPIA(infile=infile,logFCcol=logFCcol,adjpvalcol=adjpvalcol,idcol=idcol,geneid=geneid,org=org,nB=nB,outf=outf)
+</configfile>
+</configfiles>
+<tests>
+<test>
+<param name='input1' value='SPIAest.xls' ftype='tabular' />
+ <param name='logfccol' value='3' />
+ <param name='title' value='SPIAtest' />
+ <param name='adjpvalcol' value='5' />
+ <param name='idcol' value="1" />
+ <param name='geneid' value="symbol" />
+ <param name='org' value='rno' />
+ <param name='nB' value='100' />
+ <param name='thresh' value='0.1' />
+ <output name='outtab' file='SPIAtest1out.xls' ftype='tabular' compare='diff' />
+ <output name='html_file' file='SPIAtest1out.html' ftype='html' compare='diff' lines_diff='20' />
+</test>
+</tests>
+<help>
+**What it does**
+Signalling Pathway Impact Analysis - performs gene pathway impact analysis using the Bioconductor SPIA_BioC_ package for Kegg pathway analysis using the output from a
+digital gene expression analysis. Uses significant DEG and their fold changes to help find unexpected perturbation in pathways
+
+Note that due to the problem of gene symbol case (why is there a problem you ask - HUGO is in upper case, right? - well, tell the people who kindy created the mouse and rat db's with Propernoun case
+-eg Tlr4 instead of TLR4), the best match between fiddled and supplied symbol case is used. Go figure.
+
+**Input**
+
+A tabular input file - you choose:
+An organism - human, mouse and rat are currently available
+A gene symbol column
+An adjusted (FDR or FWER) p value column
+A log Fold Change column
+A couple of parameters including statistical threshold and bootstrap count for the algorithm
+and SPIA does the rest.
+
+**Output**
+
+A tabular file with all the pathway tests and some helpful plots
+
+
+**Attribution**
+For manuscripts, see SPIA_REF_ and SPIA_REF2_ 
+
+Bioinformatics. 2009 Jan 1;25(1):75-82. Epub 2008 Nov 5.
+A novel signaling pathway impact analysis.
+Tarca AL, Draghici S, Khatri P, Hassan SS, Mittal P, Kim JS, Kim CJ, Kusanovic JP, Romero R.
+Department of Computer Science, Wayne State University, 431 State Hall, Detroit, MI 48202, USA.
+
+
+This code: Copyright Ross Lazarus (ross period lazarus at gmail period com) May 2012
+
+All rights reserved.
+
+Licensed under the LGPL_
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+.. _SPIA_REF: http://bioinformatics.oxfordjournals.org/content/early/2008/11/05/bioinformatics.btn577.full.pdf+html
+.. _SPIA_BioC: http://www.bioconductor.org/packages/devel/bioc/html/SPIA.html
+.. _SPIA_REF2: http://www.ncbi.nlm.nih.gov/pubmed/18990722
+
+</help>
+
+</tool>

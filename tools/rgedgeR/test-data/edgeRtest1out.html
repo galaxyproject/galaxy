@@ -1,0 +1,813 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+        <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"> 
+        <head> <meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+        <meta name="generator" content="Galaxy rgToolFactory.py tool output - see http://g2.trac.bx.psu.edu/" /> 
+        <title></title> 
+        <link rel="stylesheet" href="/static/style/base.css" type="text/css" /> 
+        </head> 
+        <body> 
+        <div class="toolFormBody"> 
+        
+<div class="infomessage">Galaxy Tool "edgeR" run at 12/06/2013 16:42:51</div><br/>
+<div><table class="simple" cellpadding="2" cellspacing="2">
+<tr>
+<td><a href="edgeRtest_BCV_vs_abundance.pdf"><img src="edgeRtest_BCV_vs_abundance.jpg" title="Click to download a PDF of edgeRtest_BCV_vs_abundance.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_BCV_vs_abundance.pdf"/></a></td>
+
+<td><a href="edgeRtest_MDSplot.pdf"><img src="edgeRtest_MDSplot.jpg" title="Click to download a PDF of edgeRtest_MDSplot.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_MDSplot.pdf"/></a></td>
+
+<td><a href="edgeRtest_RowsumCum.pdf"><img src="edgeRtest_RowsumCum.jpg" title="Click to download a PDF of edgeRtest_RowsumCum.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_RowsumCum.pdf"/></a></td>
+</tr>
+<tr>
+<td><a href="edgeRtest_Smearplot.pdf"><img src="edgeRtest_Smearplot.jpg" title="Click to download a PDF of edgeRtest_Smearplot.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_Smearplot.pdf"/></a></td>
+
+<td><a href="edgeRtest_heatmap.pdf"><img src="edgeRtest_heatmap.jpg" title="Click to download a PDF of edgeRtest_heatmap.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_heatmap.pdf"/></a></td>
+
+<td><a href="edgeRtest_pval_qq.pdf"><img src="edgeRtest_pval_qq.jpg" title="Click to download a PDF of edgeRtest_pval_qq.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_pval_qq.pdf"/></a></td>
+</tr>
+<tr>
+<td><a href="edgeRtest_sampleBoxplot.pdf"><img src="edgeRtest_sampleBoxplot.jpg" title="Click to download a PDF of edgeRtest_sampleBoxplot.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_sampleBoxplot.pdf"/></a></td>
+
+<td><a href="edgeRtest_samplehistplot.pdf"><img src="edgeRtest_samplehistplot.jpg" title="Click to download a PDF of edgeRtest_samplehistplot.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_samplehistplot.pdf"/></a></td>
+
+<td><a href="edgeRtest_venn.pdf"><img src="edgeRtest_venn.jpg" title="Click to download a PDF of edgeRtest_venn.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_venn.pdf"/></a></td>
+</tr>
+<tr>
+<td><a href="edgeRtest_voomplot.pdf"><img src="edgeRtest_voomplot.jpg" title="Click to download a PDF of edgeRtest_voomplot.pdf" hspace="5" width="400" 
+                       alt="Image called edgeRtest_voomplot.pdf"/></a></td>
+
+<td>&nbsp;</td><td>&nbsp;</td>
+</tr></table></div>
+
+<div><table class="colored" cellpadding="3" cellspacing="3"><tr><th>Output File Name (click to view)</th><th>Size</th></tr>
+
+<tr><td><a href="edgeR.Rscript">edgeR.Rscript</a></td><td>19.7 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeR_runner.log">edgeR_runner.log</a></td><td>79.2 KB)</td></tr>
+<tr><td><a href="edgeRtest_BCV_vs_abundance.pdf">edgeRtest_BCV_vs_abundance.pdf</a></td><td>16.4 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_DESeq_TopTable.xls">edgeRtest_DESeq_TopTable.xls</a></td><td>135.1 KB)</td></tr>
+<tr><td><a href="edgeRtest_MDSplot.pdf">edgeRtest_MDSplot.pdf</a></td><td>4.9 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_RowsumCum.pdf">edgeRtest_RowsumCum.pdf</a></td><td>6.3 KB)</td></tr>
+<tr><td><a href="edgeRtest_Smearplot.pdf">edgeRtest_Smearplot.pdf</a></td><td>16.7 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_VOOM_topTable.xls">edgeRtest_VOOM_topTable.xls</a></td><td>131.4 KB)</td></tr>
+<tr><td><a href="edgeRtest_heatmap.pdf">edgeRtest_heatmap.pdf</a></td><td>11.3 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_pval_qq.pdf">edgeRtest_pval_qq.pdf</a></td><td>15.9 KB)</td></tr>
+<tr><td><a href="edgeRtest_sampleBoxplot.pdf">edgeRtest_sampleBoxplot.pdf</a></td><td>7.8 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_samplehistplot.pdf">edgeRtest_samplehistplot.pdf</a></td><td>10.9 KB)</td></tr>
+<tr><td><a href="edgeRtest_venn.pdf">edgeRtest_venn.pdf</a></td><td>9.7 KB)</td></tr>
+<tr class="odd_row"><td><a href="edgeRtest_voomplot.pdf">edgeRtest_voomplot.pdf</a></td><td>16.7 KB)</td></tr>
+</table></div><br/>
+<div class="toolFormTitle">Rscript log</div><pre>
+
+## Toolfactory generated command line = Rscript - None /data/home/rlazarus/galaxy-central/database/files/000/dataset_2.dat
+
+Loading required package: gtools
+
+Loading required package: gdata
+
+gdata: read.xls support for 'XLS' (Excel 97-2004) files ENABLED.
+
+gdata: read.xls support for 'XLSX' (Excel 2007+) files ENABLED.
+
+Attaching package: ‘gdata’
+
+The following object(s) are masked from ‘package:stats’:
+
+    nobs
+
+The following object(s) are masked from ‘package:utils’:
+
+    object.size
+
+Loading required package: caTools
+
+Loading required package: grid
+
+Loading required package: KernSmooth
+
+KernSmooth 2.23 loaded
+
+Copyright M. P. Wand 1997-2009
+
+Loading required package: MASS
+
+Attaching package: ‘gplots’
+
+The following object(s) are masked from ‘package:stats’:
+
+    lowess
+
+Loading required package: Biobase
+
+Loading required package: BiocGenerics
+
+Loading required package: methods
+
+Attaching package: ‘BiocGenerics’
+
+The following object(s) are masked from ‘package:gdata’:
+
+    combine
+
+The following object(s) are masked from ‘package:stats’:
+
+    xtabs
+
+The following object(s) are masked from ‘package:base’:
+
+    anyDuplicated, cbind, colnames, duplicated, eval, Filter, Find,
+
+    get, intersect, lapply, Map, mapply, mget, order, paste, pmax,
+
+    pmax.int, pmin, pmin.int, Position, rbind, Reduce, rep.int,
+
+    rownames, sapply, setdiff, table, tapply, union, unique
+
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+
+    'browseVignettes()'. To cite Bioconductor, see
+
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+Loading required package: locfit
+
+locfit 1.5-9.1 	 2013-03-22
+
+Loading required package: lattice
+
+Warning message:
+
+found methods to import for function ‘eapply’ but not the generic itself 
+
+Loading required package: limma
+
+Attaching package: ‘limma’
+
+The following object(s) are masked from ‘package:DESeq’:
+
+    plotMA
+
+# got TCols=2 3 4 8; CCols=1 5 6 7
+
+[1] # Quantiles for non-zero row counts:
+
+       0%       10%       20%       30%       40%       50%       60%       70%       80%       90%      100% 
+
+      1.0       1.0       2.0       3.0       4.0       8.0      13.0      24.0      86.6     753.0 2325567.0 
+
+[1] Read 3242 contigs. Removed 1494 with no reads. After filtering at count quantile =0.3, there are 1141 contigs
+
+[1] # Total low count contigs per sample =  145,111,155,120,170,67,203,86
+
+Calculating library sizes from column totals.
+
+[1] Using samples: case_X11706He_AGTTCC_L001_R1_001_trimmed.fastq_bwa.sam.bam,case_X11699He_GGCTAC_L001_R1_001_trimmed.fastq_bwa.sam.bam,case_X11698He_TAGCTT_L001_R1_001_trimmed.fastq_bwa.sam.bam,case_X11700He_CTTGTA_L001_R1_001_trimmed.fastq_bwa.sam.bam,control_X11706Liv_CAAAAG_L003_R1_001_trimmed.fastq_bwa.sam.bam,control_X11700Liv_ATTCCT_L003_R1_001_trimmed.fastq_bwa.sam.bam,control_X11698Liv_ACTGAT_L003_R1_001_trimmed.fastq_bwa.sam.bam,control_X11699Liv_ATGAGC_L003_R1_001_trimmed.fastq_bwa.sam.bam
+
+[1] Using design matrix:
+
+  (Intercept) groupcase
+
+1           1         1
+
+2           1         1
+
+3           1         1
+
+4           1         1
+
+5           1         0
+
+6           1         0
+
+7           1         0
+
+8           1         0
+
+attr(,"assign")
+
+[1] 0 1
+
+attr(,"contrasts")
+
+attr(,"contrasts")$group
+
+[1] contr.treatment
+
+[1] "No GLM fit outlier genes found\n"
+
+[1] Common Dispersion = 0.24088423096811 CV =  0.490799583300669 getPriorN =  3.33333333333333
+
+[1] "Raw sample read totals 1440960,1341813,2888924,1428365,2443751,1644652,1682104,1806045"
+
+[1] raw contig counts by sample:
+
+ case_X11706He_AGTTCC case_X11699He_GGCTAC case_X11698He_TAGCTT case_X11700He_CTTGTA control_X11706Liv_CA control_X11700Liv_AT control_X11698Liv_AC control_X11699Liv_AT
+
+ Min.   :0.0043       Min.   :0.0043       Min.   :0.0043       Min.   :0.0043       Min.   :0.0043       Min.   :0.0043       Min.   :0.0043       Min.   :0.0043      
+
+ 1st Qu.:0.0043       1st Qu.:0.0043       1st Qu.:0.0043       1st Qu.:0.0043       1st Qu.:0.3032       1st Qu.:0.0043       1st Qu.:0.3032       1st Qu.:0.0043      
+
+ Median :0.4786       Median :0.4786       Median :0.4786       Median :0.4786       Median :0.7789       Median :0.6031       Median :0.6998       Median :0.6031      
+
+ Mean   :0.9210       Mean   :0.9428       Mean   :1.0205       Mean   :0.9753       Mean   :1.0519       Mean   :1.0343       Mean   :0.9855       Mean   :0.9966      
+
+ 3rd Qu.:1.5770       3rd Qu.:1.5855       3rd Qu.:1.7161       3rd Qu.:1.6022       3rd Qu.:1.5410       3rd Qu.:1.6335       3rd Qu.:1.4473       3rd Qu.:1.5534      
+
+ Max.   :5.3609       Max.   :5.3589       Max.   :5.6967       Max.   :5.3702       Max.   :5.8209       Max.   :5.6905       Max.   :5.7999       Max.   :5.7215      
+
+ NA's   :902          NA's   :957          NA's   :821          NA's   :950          NA's   :650          NA's   :969          NA's   :664          NA's   :886         
+
+[1] normalised contig counts by sample:
+
+ case_X11706He_AGTTCC case_X11699He_GGCTAC case_X11698He_TAGCTT case_X11700He_CTTGTA control_X11706Liv_CA control_X11700Liv_AT control_X11698Liv_AC control_X11699Liv_AT
+
+ Min.   :-Inf         Min.   :-Inf         Min.   :-Inf         Min.   :-Inf         Min.   :-Inf         Min.   :-Inf         Min.   :-Inf         Min.   :-Inf        
+
+ 1st Qu.:-Inf         1st Qu.:-Inf         1st Qu.:-Inf         1st Qu.:-Inf         1st Qu.:   0         1st Qu.:-Inf         1st Qu.:   0         1st Qu.:-Inf        
+
+ Median :   0         Median :   0         Median :   0         Median :   0         Median :   0         Median :   0         Median :   0         Median :   0        
+
+ Mean   :-Inf         Mean   :-Inf         Mean   :-Inf         Mean   :-Inf         Mean   :-Inf         Mean   :-Inf         Mean   :-Inf         Mean   :-Inf        
+
+ 3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1         3rd Qu.:   1        
+
+ Max.   :   5         Max.   :   5         Max.   :   6         Max.   :   5         Max.   :   6         Max.   :   6         Max.   :   6         Max.   :   5        
+
+[1] Using ncol rawrs= 8
+
+[1] # writing output
+
+[1] # urls
+
+<a href='http://www.genecards.org/index.php?path=/Search/keyword/0610005C13Rik'></a>0610005C13Rik</a> <a href='http://www.genecards.org/index.php?path=/Search/keyword/0610007N19Rik'></a>0610007N19Rik</a> <a href='http://www.genecards.org/index.php?path=/Search/keyword/0610008F07Rik'></a>0610008F07Rik</a> <a href='http://www.genecards.org/index.php?path=/Search/keyword/0610009L18Rik'></a>0610009L18Rik</a> <a href='http://www.genecards.org/index.php?path=/Search/keyword/0610012G03Rik'></a>0610012G03Rik</a> <a href='http://www.genecards.org/index.php?path=/Search/keyword/0610031O16Rik'></a>0610031O16Rik</a># Top tags
+
+                       Name      logFC    logCPM        LR       PValue  adj.p.value Dispersion totreads case_X11706He_AGTTCC_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11699He_GGCTAC_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11698He_TAGCTT_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11700He_CTTGTA_L001_R1_001_trimmed.fastq_bwa.sam.bam control_X11706Liv_CAAAAG_L003_R1_001_trimmed.fastq_bwa.sam.bam control_X11700Liv_ATTCCT_L003_R1_001_trimmed.fastq_bwa.sam.bam
+
+Mir122a             Mir122a -10.661348 12.537949 445.91203 5.594743e-99 6.383602e-96 0.10205510    90428                                                   6.644669                                               2.864648e+00                                               2.012369e+01                                               4.756523e+00                                                   2.084166e+04                                                   1.681895e+04
+
+Mir192               Mir192  -7.109019 17.247415 366.13166 1.301558e-81 7.425390e-79 0.07765487  2325567                                                1779.663879                                               1.294412e+03                                               4.493546e+03                                               1.933526e+03                                                   4.635990e+05                                                   3.403123e+05
+
+Mir208b             Mir208b  13.423720  9.822338 355.41782 2.801296e-79 1.065426e-76 0.12444059    14756                                                1245.907022                                               5.701390e+02                                               4.930344e+03                                               8.819024e+02                                                   7.453220e-01                                                   0.000000e+00
+
+Mir208a             Mir208a  11.977586  8.388290 348.81540 7.675451e-78 2.189422e-75 0.09936798     4638                                                 433.789590                                               7.125278e+02                                               1.006599e+03                                               6.497485e+02                                                   0.000000e+00                                                   0.000000e+00
+
+Mir499               Mir499  14.488216  8.612770 291.12794 2.823507e-65 6.443244e-63 0.13481620     6527                                                 608.439028                                               5.066577e+02                                               2.521609e+03                                               2.703574e+02                                                   0.000000e+00                                                   0.000000e+00
+
+Mir149               Mir149   6.869731  8.785665 253.01986 5.702930e-57 1.084507e-54 0.09834684     6164                                                 774.657675                                               4.595714e+02                                               1.710514e+03                                               7.663947e+02                                                   1.750400e+01                                                   6.246465e+00
+
+Mir490               Mir490   8.453930  6.909596 251.05610 1.528281e-56 2.491098e-54 0.09745005     1741                                                 209.881557                                               2.177498e+02                                               5.205387e+02                                               1.957941e+02                                                   1.038505e+00                                                   5.537224e-01
+
+Mir802               Mir802 -12.499678  6.629391 237.56161 1.337812e-53 1.908055e-51 0.10939981     1514                                                   0.000000                                               0.000000e+00                                               0.000000e+00                                               0.000000e+00                                                   3.056548e+02                                                   1.641034e+02
+
+Mir204               Mir204   7.371179  7.558996 237.12302 1.667365e-53 2.113848e-51 0.10292005     2601                                                 425.578854                                               3.264164e+02                                               6.462477e+02                                               3.754819e+02                                                   3.040281e+00                                                   6.923364e-01
+
+Mir1948             Mir1948  -7.583326  7.293456 204.79641 1.875897e-46 2.140399e-44 0.11833999     2404                                                   1.216112                                               6.923364e-01                                               1.661167e+00                                               1.636942e+00                                                   6.476848e+02                                                   3.852783e+02
+
+Mir3073             Mir3073 -11.748556  5.881462 200.03350 2.053625e-45 2.130170e-43 0.11068562      904                                                   0.000000                                               0.000000e+00                                               0.000000e+00                                               0.000000e+00                                                   2.073471e+02                                                   7.546467e+01
+
+Mir194-2           Mir194-2  -5.439827  7.860048 165.57239 6.859199e-38 6.521955e-36 0.10671020     3570                                                  10.520726                                               6.138532e+00                                               1.490644e+01                                               9.513045e+00                                                   9.214105e+02                                                   6.003547e+02
+
+Mir10b               Mir10b   5.032898 13.880770 160.06580 1.094640e-36 9.607570e-35 0.10795434   197340                                               25838.822630                                               3.216361e+04                                               3.631730e+04                                               3.446522e+04                                                   1.825385e+03                                                   3.738617e+02
+
+Mir101b             Mir101b  -3.925287 11.936090 120.62427 4.618143e-28 3.763787e-26 0.09663075    59019                                                 219.816815                                               3.012250e+02                                               8.119232e+02                                               4.270695e+02                                                   1.014507e+04                                                   7.747970e+03
+
+Mir182               Mir182  -5.244384  8.942708 118.92815 1.085926e-27 8.260276e-26 0.14993443     7189                                                  16.962242                                               1.439678e+01                                               2.209871e+01                                               3.130352e+01                                                   9.840056e+02                                                   6.154406e+02
+
+Mir200b             Mir200b  -6.725348  5.765187 115.73189 5.440989e-27 3.880105e-25 0.16712490      888                                                   2.432225                                               0.000000e+00                                               1.661167e+00                                               0.000000e+00                                                   3.696797e+02                                                   9.750871e+01
+
+Mir181c             Mir181c   3.611867 10.569815 107.82011 2.943153e-25 1.975375e-23 0.09385270    23605                                                2420.852087                                               1.892879e+03                                               4.093093e+03                                               1.902590e+03                                                   2.320365e+02                                                   2.727878e+02
+
+Mir181d             Mir181d   3.489976  7.232064 102.18661 5.053019e-24 3.203053e-22 0.08738498     2139                                                 310.053946                                               2.021522e+02                                               5.398233e+02                                               2.956660e+02                                                   3.648337e+01                                                   1.453906e+01
+
+Mir21                 Mir21  -3.077771 13.881500  91.37324 1.189745e-21 7.144733e-20 0.08494272   229120                                                3207.212585                                               2.190826e+03                                               4.348911e+03                                               2.010566e+03                                                   2.715400e+04                                                   3.322794e+04
+
+Mir199b             Mir199b   5.411476  4.695869  86.70372 1.260596e-20 7.191701e-19 0.15656183      370                                                  43.403268                                               4.481024e+01                                               9.924938e+01                                               4.925255e+01                                                   1.384673e+00                                                   5.537224e-01
+
+Mir193               Mir193  -5.360157  4.775477  84.66127 3.541205e-20 1.924055e-18 0.15546497      421                                                   1.490644                                               1.189131e+00                                               2.800640e+00                                               6.940516e-01                                                   1.015454e+02                                                   3.496299e+01
+
+Mir23a               Mir23a   3.003071  9.467420  82.28684 1.177029e-19 6.104501e-18 0.08920345    10118                                                1149.889322                                               1.127958e+03                                               2.471518e+03                                               1.096325e+03                                                   1.505832e+02                                                   1.268024e+02
+
+Mir195               Mir195   3.060546  8.152797  81.39727 1.846126e-19 9.158392e-18 0.09133016     3962                                                 429.134881                                               2.831909e+02                                               9.227086e+02                                               4.708957e+02                                                   1.106253e+02                                                   7.773378e+01
+
+Ahsg                   Ahsg -10.101343  6.638589  79.82133 4.098447e-19 1.923759e-17 0.42092199     1524                                                   0.000000                                               5.537224e-01                                               0.000000e+00                                               0.000000e+00                                                   3.484153e+02                                                   1.260288e+01
+
+Mir148a             Mir148a  -2.789375 16.047169  79.76589 4.215073e-19 1.923759e-17 0.08196054  1002397                                               15925.598251                                               8.528200e+03                                               2.207082e+04                                               1.059020e+04                                                   1.927239e+05                                                   1.054456e+05
+
+Dnm3os               Dnm3os   3.189443  6.618834  79.19614 5.623979e-19 2.468062e-17 0.09496531     1401                                                 134.000827                                               8.716715e+01                                               3.652078e+02                                               1.825316e+02                                                   3.710848e+01                                                   2.498586e+01
+
+Mir27a               Mir27a   2.921772 10.581277  77.26988 1.491231e-18 6.301832e-17 0.09125059    21886                                                2383.612353                                               2.512174e+03                                               5.321988e+03                                               2.361690e+03                                                   3.285136e+02                                                   3.477377e+02
+
+Mir429               Mir429  -5.341934  4.951103  76.38758 2.331128e-18 9.499346e-17 0.18324117      499                                                   1.783696                                               7.001600e-01                                               2.082155e+00                                               1.824168e+00                                                   9.173458e+01                                                   4.540524e+01
+
+Mir214               Mir214   3.125906  6.202347  74.28213 6.771387e-18 2.664191e-16 0.09532762     1048                                                 110.058161                                               5.642542e+01                                               1.982326e+02                                               9.371492e+01                                                   3.353949e+01                                                   1.545870e+01
+
+Mir200a             Mir200a  -7.592263  4.059943  73.71426 9.028450e-18 3.433821e-16 0.22417820      264                                                   0.000000                                               0.000000e+00                                               5.945653e-01                                               0.000000e+00                                                   9.022671e+01                                                   3.222698e+01
+
+Mir194-1           Mir194-1  -3.970219  5.393899  73.22380 1.157517e-17 4.260408e-16 0.13095886      635                                                   3.567392                                               9.102080e+00                                               5.552413e+00                                               3.648337e+00                                                   7.615701e+01                                                   8.859559e+01
+
+Mir378               Mir378   2.954320  8.053368  73.09647 1.234655e-17 4.402315e-16 0.09566655     4075                                                 425.697272                                               3.921392e+02                                               1.155915e+03                                               1.883155e+02                                                   7.641369e+01                                                   3.683119e+01
+
+Mir322               Mir322   3.058569  8.948242  72.83721 1.407969e-17 4.868160e-16 0.10365695     7074                                                1012.892580                                               6.718588e+02                                               1.784708e+03                                               8.550716e+02                                                   1.587027e+02                                                   7.892635e+01
+
+Mir215               Mir215   2.908934  6.381924  70.31105 5.065317e-17 1.699861e-15 0.09002036     1182                                                 123.075020                                               1.610368e+02                                               2.727623e+02                                               1.222193e+02                                                   1.938542e+01                                                   1.716540e+01
+
+Cyp3a25             Cyp3a25  -9.778602  3.913257  70.02642 5.851533e-17 1.907600e-15 0.26445237      226                                                   0.000000                                               0.000000e+00                                               0.000000e+00                                               0.000000e+00                                                   5.664447e+01                                                   1.783696e+01
+
+Mir183               Mir183  -4.214462  5.247929  66.31101 3.851010e-16 1.220556e-14 0.15955164      563                                                   8.401920                                               1.388103e+00                                               2.432225e+00                                               2.423177e+00                                                   8.638070e+01                                                   2.905572e+01
+
+Mir181a-2         Mir181a-2   2.837713  7.573798  65.52900 5.726500e-16 1.765929e-14 0.09834030     2817                                                 288.826664                                               1.377749e+02                                               6.395494e+02                                               1.821098e+02                                                   5.813511e+01                                                   4.102501e+01
+
+Mir155               Mir155   3.734310  4.975364  65.07600 7.206449e-16 2.163831e-14 0.13295455      463                                                  33.966543                                               5.888044e+01                                               1.141565e+02                                               5.251200e+01                                                   9.716723e+00                                                   1.824168e+00
+
+Snord91a           Snord91a  -2.818342  6.592251  64.29345 1.072014e-15 3.136329e-14 0.09422446     1437                                                  13.846728                                               1.605795e+01                                               3.314807e+01                                               1.863305e+01                                                   2.158272e+02                                                   1.792410e+02
+
+Mir125b-2         Mir125b-2   2.852233  8.081093  64.20822 1.119409e-15 3.193115e-14 0.10276578     3837                                                 315.520541                                               4.404853e+02                                               7.634219e+02                                               4.852109e+02                                                   1.082721e+02                                                   9.060036e+01
+
+Serpina4-ps1   Serpina4-ps1 -10.090564  4.224051  64.02094 1.231040e-15 3.425894e-14 0.34406452      295                                                   0.000000                                               0.000000e+00                                               0.000000e+00                                               0.000000e+00                                                   1.080717e+02                                                   1.129674e+01
+
+Mir133b             Mir133b   9.293392  3.404704  63.59576 1.527577e-15 4.149919e-14 0.26404392      159                                                  17.719118                                               1.064012e+01                                               5.738979e+01                                               1.426957e+01                                                   0.000000e+00                                                   0.000000e+00
+
+Gm10069             Gm10069  -7.475459  6.400326  63.15445 1.911172e-15 5.071271e-14 0.41541432     1309                                                   1.189131                                               1.400320e+00                                               6.940516e-01                                               6.080561e-01                                                   1.914310e+02                                                   6.644669e+00
+
+Mir871               Mir871  -5.633588  4.283233  62.67513 2.437746e-15 6.321517e-14 0.21907826      290                                                   1.227706                                               7.453220e-01                                               5.945653e-01                                               0.000000e+00                                                   5.691223e+01                                                   4.925255e+01
+
+Mir184               Mir184   5.002968  4.123691  61.97642 3.475940e-15 8.813439e-14 0.19289992      247                                                  33.443087                                               1.419290e+01                                               4.983502e+01                                               2.168948e+01                                                   2.981288e+00                                                   0.000000e+00
+
+Mir132               Mir132   2.702863  5.866134  58.80773 1.738573e-14 4.312416e-13 0.09148478      857                                                  82.695634                                               4.327103e+01                                               1.821747e+02                                               6.097608e+01                                                   2.832224e+01                                                   1.308044e+01
+
+Snord104           Snord104  -2.492063 11.108871  58.55547 1.976394e-14 4.798012e-13 0.09093023    33458                                                 614.929745                                               4.378004e+02                                               8.629974e+02                                               5.144081e+02                                                   3.826761e+03                                                   4.181256e+03
+
+Mir3074-2         Mir3074-2   2.635505  7.871042  57.72938 3.007773e-14 7.149726e-13 0.09900198     3470                                                 450.903031                                               3.206519e+02                                               8.354691e+02                                               1.716994e+02                                                   8.970303e+01                                                   5.197290e+01
+
+Mir24-2             Mir24-2   2.635505  7.871042  57.68174 3.081509e-14 7.175515e-13 0.09908656     3470                                                 479.987359                                               2.746892e+02                                               9.620198e+02                                               3.442496e+02                                                   9.850509e+01                                                   4.396336e+01
+
+5430416N02Rik 5430416N02Rik  -3.267228  5.202367  56.75137 4.945455e-14 1.128553e-12 0.12456687      564                                                   6.080561                                               1.730841e+00                                               1.273562e+01                                               4.910826e+00                                                   1.453378e+02                                                   5.886197e+01
+
+              control_X11698Liv_ACTGAT_L003_R1_001_trimmed.fastq_bwa.sam.bam control_X11699Liv_ATGAGC_L003_R1_001_trimmed.fastq_bwa.sam.bam case_X11706He_AGTTCC_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11699He_GGCTAC_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11698He_TAGCTT_L001_R1_001_trimmed.fastq_bwa.sam.bam case_X11700He_CTTGTA_L001_R1_001_trimmed.fastq_bwa.sam.bam control_X11706Liv_CAAAAG_L003_R1_001_trimmed.fastq_bwa.sam.bam
+
+Mir122a                                                         7.242557e+03                                                   8.468313e+03                                                         12                                                          7                                                         27                                                          8                                                          29767
+
+Mir192                                                          3.835916e+05                                                   1.822922e+05                                                       3214                                                       3163                                                       6029                                                       3252                                                         662133
+
+Mir208b                                                         0.000000e+00                                                   0.000000e+00                                                       2049                                                       1647                                                       8904                                                       2155                                                              1
+
+Mir208a                                                         0.000000e+00                                                   5.537224e-01                                                       1060                                                        956                                                       1693                                                        928                                                              0
+
+Mir499                                                          0.000000e+00                                                   0.000000e+00                                                        869                                                        730                                                       4147                                                        781                                                              0
+
+Mir149                                                          4.864449e+00                                                   5.538691e+00                                                       1399                                                       1123                                                       2295                                                       1289                                                             25
+
+Mir490                                                          0.000000e+00                                                   7.453220e-01                                                        353                                                        311                                                        750                                                        322                                                              3
+
+Mir802                                                          1.557723e+02                                                   2.092870e+02                                                          0                                                          0                                                          0                                                          0                                                            552
+
+Mir204                                                          5.537224e-01                                                   3.683119e+00                                                        571                                                        549                                                        923                                                        541                                                              5
+
+Mir1948                                                         1.813414e+02                                                   4.282299e+02                                                          2                                                          2                                                          3                                                          4                                                            869
+
+Mir3073                                                         7.253764e+01                                                   8.757639e+01                                                          0                                                          0                                                          0                                                          0                                                            341
+
+Mir194-2                                                        2.669366e+02                                                   3.046280e+02                                                         19                                                         15                                                         20                                                         16                                                           1316
+
+Mir10b                                                          6.583760e+02                                                   7.272114e+02                                                      34668                                                      54096                                                      51870                                                      49658                                                           3002
+
+Mir101b                                                         1.128042e+04                                                   6.628420e+03                                                        635                                                        544                                                       1984                                                        573                                                          17063
+
+Mir182                                                          2.366022e+03                                                   6.536603e+02                                                         49                                                         26                                                         54                                                         42                                                           1655
+
+Mir200b                                                         4.621056e+01                                                   1.075780e+02                                                          4                                                          0                                                          3                                                          0                                                            496
+
+Mir181c                                                         2.283131e+02                                                   2.989683e+02                                                       3488                                                       3113                                                      11824                                                       3436                                                            567
+
+Mir181d                                                         2.547123e+01                                                   1.555095e+01                                                        416                                                        340                                                        771                                                        426                                                             60
+
+Mir21                                                           2.570722e+04                                                   3.537908e+04                                                       4621                                                       3603                                                      12563                                                       3631                                                          66353
+
+Mir199b                                                         0.000000e+00                                                   2.981288e+00                                                         73                                                         64                                                        143                                                         81                                                              4
+
+Mir193                                                          3.377707e+01                                                   3.396654e+01                                                          2                                                          2                                                          4                                                          1                                                            167
+
+Mir23a                                                          8.921333e+01                                                   2.437203e+02                                                       1934                                                       1611                                                       3561                                                       1803                                                            435
+
+Mir195                                                          4.560421e+01                                                   4.154019e+01                                                        775                                                        692                                                       1238                                                        792                                                            158
+
+Ahsg                                                            6.100714e+02                                                   2.432225e+01                                                          0                                                          1                                                          0                                                          0                                                            586
+
+Mir148a                                                         1.795497e+05                                                   1.342747e+05                                                      26191                                                      24636                                                      39859                                                      25878                                                         258578
+
+Dnm3os                                                          1.216112e+01                                                   1.384673e+01                                                        242                                                        213                                                        490                                                        307                                                             53
+
+Mir27a                                                          1.636942e+02                                                   5.664447e+02                                                       4009                                                       3588                                                       7668                                                       3884                                                            949
+
+Mir429                                                          1.677865e+01                                                   7.527752e+01                                                          3                                                          1                                                          3                                                          3                                                            265
+
+Mir214                                                          1.190272e+01                                                   2.012750e+01                                                        181                                                        163                                                        358                                                        229                                                             45
+
+Mir200a                                                         1.142355e+01                                                   2.602495e+01                                                          0                                                          0                                                          1                                                          0                                                            130
+
+Mir194-1                                                        3.314807e+01                                                   1.050904e+02                                                          6                                                         13                                                          8                                                          6                                                            220
+
+Mir378                                                          9.167460e+01                                                   6.302392e+01                                                        608                                                        565                                                       1901                                                        544                                                            138
+
+Mir322                                                          5.038874e+01                                                   9.166874e+01                                                       1359                                                       1130                                                       2549                                                       1232                                                            261
+
+Mir215                                                          1.145859e+01                                                   2.683159e+01                                                        207                                                        230                                                        393                                                        201                                                             56
+
+Cyp3a25                                                         6.511488e+01                                                   1.873939e+01                                                          0                                                          0                                                          0                                                          0                                                             76
+
+Mir183                                                          1.349033e+02                                                   7.729349e+01                                                         12                                                          2                                                          4                                                          7                                                            156
+
+Mir181a-2                                                       8.051840e+01                                                   5.691223e+01                                                        475                                                        398                                                       1155                                                        445                                                             78
+
+Mir155                                                          2.769346e+00                                                   4.983502e+00                                                         83                                                         79                                                        192                                                         75                                                             14
+
+Snord91a                                                        2.484705e+02                                                   1.732960e+02                                                         40                                                         29                                                         81                                                         25                                                            363
+
+Mir125b-2                                                       2.077009e+01                                                   7.364508e+01                                                        771                                                        591                                                       1284                                                        693                                                            156
+
+Serpina4-ps1                                                    8.191872e+01                                                   9.716723e+00                                                          0                                                          0                                                          0                                                          0                                                            145
+
+Mir133b                                                         0.000000e+00                                                   0.000000e+00                                                         32                                                         26                                                         77                                                         24                                                              0
+
+Gm10069                                                         2.868741e+02                                                   2.757691e+01                                                          2                                                          2                                                          1                                                          1                                                            553
+
+Mir871                                                          1.003888e+01                                                   5.149619e+01                                                          3                                                          1                                                          1                                                          0                                                             82
+
+Mir184                                                          1.400320e+00                                                   1.388103e+00                                                         55                                                         41                                                         90                                                         53                                                              4
+
+Mir132                                                          2.100480e+01                                                   1.943345e+01                                                        136                                                        125                                                        329                                                        149                                                             38
+
+Snord104                                                        4.430701e+03                                                   4.212863e+03                                                        886                                                        720                                                       2493                                                        929                                                           9351
+
+Mir3074-2                                                       4.844593e+01                                                   8.323914e+01                                                        644                                                        462                                                       1374                                                        496                                                            162
+
+Mir24-2                                                         3.599196e+01                                                   5.729296e+01                                                        644                                                        462                                                       1374                                                        496                                                            162
+
+5430416N02Rik                                                   5.531264e+01                                                   9.786128e+01                                                         10                                                          5                                                         23                                                         12                                                            195
+
+              control_X11700Liv_ATTCCT_L003_R1_001_trimmed.fastq_bwa.sam.bam control_X11698Liv_ACTGAT_L003_R1_001_trimmed.fastq_bwa.sam.bam control_X11699Liv_ATGAGC_L003_R1_001_trimmed.fastq_bwa.sam.bam ntotreads                                                                                                   URL
+
+Mir122a                                                                24233                                                          11911                                                          24463     90428             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir122a'></a>Mir122a</a>
+
+Mir192                                                                490327                                                         630849                                                         526600   2325567               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir192'></a>Mir192</a>
+
+Mir208b                                                                    0                                                              0                                                              0     14756             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir208b'></a>Mir208b</a>
+
+Mir208a                                                                    0                                                              0                                                              1      4638             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir208a'></a>Mir208a</a>
+
+Mir499                                                                     0                                                              0                                                              0      6527               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir499'></a>Mir499</a>
+
+Mir149                                                                     9                                                              8                                                             16      6164               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir149'></a>Mir149</a>
+
+Mir490                                                                     1                                                              0                                                              1      1741               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir490'></a>Mir490</a>
+
+Mir802                                                                   401                                                            209                                                            352      1514               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir802'></a>Mir802</a>
+
+Mir204                                                                     2                                                              1                                                              9      2601               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir204'></a>Mir204</a>
+
+Mir1948                                                                  648                                                            259                                                            617      2404             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir1948'></a>Mir1948</a>
+
+Mir3073                                                                  218                                                            131                                                            214       904             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir3073'></a>Mir3073</a>
+
+Mir194-2                                                                 865                                                            439                                                            880      3570           <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir194-2'></a>Mir194-2</a>
+
+Mir10b                                                                  1080                                                           1189                                                           1777    197340               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir10b'></a>Mir10b</a>
+
+Mir101b                                                                11066                                                          16253                                                          10901     59019             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir101b'></a>Mir101b</a>
+
+Mir182                                                                   879                                                           3409                                                           1075      7189               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir182'></a>Mir182</a>
+
+Mir200b                                                                  164                                                             66                                                            155       888             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir200b'></a>Mir200b</a>
+
+Mir181c                                                                  366                                                            384                                                            427     23605             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir181c'></a>Mir181c</a>
+
+Mir181d                                                                   42                                                             46                                                             38      2139             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir181d'></a>Mir181d</a>
+
+Mir21                                                                  44582                                                          43237                                                          50530    229120                 <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir21'></a>Mir21</a>
+
+Mir199b                                                                    1                                                              0                                                              4       370             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir199b'></a>Mir199b</a>
+
+Mir193                                                                   101                                                             61                                                             83       421               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir193'></a>Mir193</a>
+
+Mir23a                                                                   229                                                            218                                                            327     10118               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir23a'></a>Mir23a</a>
+
+Mir195                                                                   112                                                             75                                                            120      3962               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir195'></a>Mir195</a>
+
+Ahsg                                                                      18                                                            879                                                             40      1524                   <a href='http://www.genecards.org/index.php?path=/Search/keyword/Ahsg'></a>Ahsg</a>
+
+Mir148a                                                               177349                                                         256441                                                         193465   1002397             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir148a'></a>Mir148a</a>
+
+Dnm3os                                                                    36                                                             20                                                             40      1401               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Dnm3os'></a>Dnm3os</a>
+
+Mir27a                                                                   628                                                            400                                                            760     21886               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir27a'></a>Mir27a</a>
+
+Mir429                                                                    82                                                             41                                                            101       499               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir429'></a>Mir429</a>
+
+Mir214                                                                    26                                                             17                                                             29      1048               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir214'></a>Mir214</a>
+
+Mir200a                                                                   53                                                             33                                                             47       264             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir200a'></a>Mir200a</a>
+
+Mir194-1                                                                 160                                                             81                                                            141       635           <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir194-1'></a>Mir194-1</a>
+
+Mir378                                                                    90                                                            123                                                            106      4075               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir378'></a>Mir378</a>
+
+Mir322                                                                   228                                                             91                                                            224      7074               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir322'></a>Mir322</a>
+
+Mir215                                                                    31                                                             28                                                             36      1182               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir215'></a>Mir215</a>
+
+Cyp3a25                                                                   30                                                             93                                                             27       226             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Cyp3a25'></a>Cyp3a25</a>
+
+Mir183                                                                    71                                                            181                                                            130       563               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir183'></a>Mir183</a>
+
+Mir181a-2                                                                 69                                                            115                                                             82      2817         <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir181a-2'></a>Mir181a-2</a>
+
+Mir155                                                                     3                                                              8                                                              9       463               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir155'></a>Mir155</a>
+
+Snord91a                                                                 256                                                            358                                                            285      1437           <a href='http://www.genecards.org/index.php?path=/Search/keyword/Snord91a'></a>Snord91a</a>
+
+Mir125b-2                                                                149                                                             60                                                            133      3837         <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir125b-2'></a>Mir125b-2</a>
+
+Serpina4-ps1                                                              19                                                            117                                                             14       295   <a href='http://www.genecards.org/index.php?path=/Search/keyword/Serpina4-ps1'></a>Serpina4-ps1</a>
+
+Mir133b                                                                    0                                                              0                                                              0       159             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir133b'></a>Mir133b</a>
+
+Gm10069                                                                   12                                                            701                                                             37      1309             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Gm10069'></a>Gm10069</a>
+
+Mir871                                                                    81                                                             29                                                             93       290               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir871'></a>Mir871</a>
+
+Mir184                                                                     0                                                              2                                                              2       247               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir184'></a>Mir184</a>
+
+Mir132                                                                    22                                                             30                                                             28       857               <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir132'></a>Mir132</a>
+
+Snord104                                                                5610                                                           7452                                                           6017     33458           <a href='http://www.genecards.org/index.php?path=/Search/keyword/Snord104'></a>Snord104</a>
+
+Mir3074-2                                                                127                                                             65                                                            140      3470         <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir3074-2'></a>Mir3074-2</a>
+
+Mir24-2                                                                  127                                                             65                                                            140      3470             <a href='http://www.genecards.org/index.php?path=/Search/keyword/Mir24-2'></a>Mir24-2</a>
+
+5430416N02Rik                                                             99                                                             79                                                            141       564 <a href='http://www.genecards.org/index.php?path=/Search/keyword/5430416N02Rik'></a>5430416N02Rik</a>
+
+[1] # 445 tags significant at adj p= 0.05
+
+[1] # deTags
+
+[1] "0610005C13Rik" "0610007N19Rik" "0610008F07Rik" "0610012G03Rik" "0610031O16Rik" "1110038B12Rik"
+
+# DESeq top 50
+
+               id     baseMean    baseMeanA    baseMeanB   foldChange log2FoldChange         pval         padj
+
+536       Mir122a  10112.31117 2.021162e+04 1.300527e+01 6.434550e-04     -10.601873 5.488369e-57 6.262229e-54
+
+645       Mir208a    616.76981 2.430915e-01 1.233297e+03 5.073385e+03      12.308733 6.046036e-53 3.449263e-50
+
+600        Mir192 271352.97636 5.385927e+05 4.113233e+03 7.637001e-03      -7.032778 1.311798e-38 4.989204e-36
+
+568        Mir149    810.35429 1.224267e+01 1.608466e+03 1.313819e+02       7.037623 7.073079e-37 2.017596e-34
+
+791        Mir490    220.99790 9.450198e-01 4.410508e+02 4.667107e+02       8.866385 1.354865e-36 3.091803e-34
+
+642        Mir204    347.57397 3.737736e+00 6.914102e+02 1.849810e+02       7.531234 8.058436e-36 1.532446e-33
+
+844        Mir802    166.83414 3.336683e+02 0.000000e+00 0.000000e+00           -Inf 3.255469e-35 5.306414e-33
+
+698       Mir3073     98.93199 1.978640e+02 0.000000e+00 0.000000e+00           -Inf 1.111351e-28 1.585065e-26
+
+646       Mir208b   1649.77924 1.445675e-01 3.299414e+03 2.282265e+04      14.478178 7.505934e-28 9.515857e-26
+
+614       Mir1948    263.89527 5.246983e+02 3.092210e+00 5.893310e-03      -7.406706 1.534188e-26 1.750509e-24
+
+608      Mir194-2    391.65678 7.637703e+02 1.954329e+01 2.558791e-02      -5.288394 1.622682e-24 1.683163e-22
+
+796        Mir499    712.45950 0.000000e+00 1.424919e+03          Inf            Inf 2.577318e-19 2.450600e-17
+
+585       Mir181c   2765.96510 3.955399e+02 5.136390e+03 1.298577e+01       3.698860 1.942959e-17 1.705320e-15
+
+631       Mir199b     47.84725 1.818862e+00 9.387565e+01 5.161231e+01       5.689643 4.012622e-15 3.270287e-13
+
+530        Mir10b  27820.40551 1.501200e+03 5.413961e+04 3.606421e+01       5.172496 3.069912e-14 2.335180e-12
+
+586       Mir181d    275.22797 4.254569e+01 5.079103e+02 1.193800e+01       3.577489 5.204519e-14 3.711473e-12
+
+602        Mir193     45.70861 8.913819e+01 2.279021e+00 2.556728e-02      -5.289558 1.657854e-13 1.112713e-11
+
+637       Mir200a     27.09009 5.402561e+01 1.545578e-01 2.860824e-03      -8.449354 2.466964e-13 1.563781e-11
+
+722        Mir322    899.53469 1.797868e+02 1.619283e+03 9.006682e+00       3.170996 1.359804e-12 8.165978e-11
+
+756        Mir378    483.21548 1.056050e+02 8.608260e+02 8.151374e+00       3.027043 2.046396e-12 1.160965e-10
+
+523       Mir101b   6846.19683 1.280838e+04 8.840090e+02 6.901800e-02      -3.856884 2.136745e-12 1.160965e-10
+
+552       Mir133b     19.46050 0.000000e+00 3.892101e+01          Inf            Inf 2.388227e-12 1.238621e-10
+
+663        Mir23a   1289.18043 2.671574e+02 2.311203e+03 8.651093e+00       3.112882 3.093049e-12 1.534421e-10
+
+671        Mir27a   2788.72629 6.066392e+02 4.970813e+03 8.194019e+00       3.034571 5.970859e-12 2.838646e-10
+
+616        Mir195    519.86200 1.038507e+02 9.358733e+02 9.011721e+00       3.171803 6.245320e-12 2.850364e-10
+
+607      Mir194-1     71.10636 1.325374e+02 9.675354e+00 7.300095e-02      -3.775941 1.405195e-11 6.166645e-10
+
+344        Dnm3os    179.61643 3.285433e+01 3.263785e+02 9.934110e+00       3.312391 1.503324e-11 6.352936e-10
+
+590        Mir184     32.23796 1.645700e+00 6.283021e+01 3.817841e+01       5.254685 1.644760e-11 6.702396e-10
+
+582     Mir181a-2    347.82506 8.313904e+01 6.125111e+02 7.367310e+00       2.881138 2.735424e-11 1.076248e-09
+
+541     Mir125b-2    493.08516 1.122867e+02 8.738836e+02 7.782608e+00       2.960254 5.662328e-11 2.153572e-09
+
+573        Mir155     57.66182 7.341434e+00 1.079822e+02 1.470860e+01       3.878588 6.173765e-11 2.272344e-09
+
+464        Gm5441     20.24317 2.430915e-01 4.024325e+01 1.655478e+02       7.371104 6.503611e-11 2.318944e-09
+
+571        Mir153     19.90411 2.430915e-01 3.956513e+01 1.627582e+02       7.346586 8.675688e-11 2.999685e-09
+
+649         Mir21  26121.31011 4.639963e+04 5.842995e+03 1.259276e-01      -2.989333 1.048681e-10 3.519252e-09
+
+654        Mir214    134.69038 2.546966e+01 2.439111e+02 9.576536e+00       3.259504 1.338023e-10 4.361954e-09
+
+638       Mir200b     87.13638 1.725548e+02 1.717931e+00 9.955853e-03      -6.650239 2.397950e-10 7.600169e-09
+
+666       Mir24-2    424.48288 1.104079e+02 7.385578e+02 6.689355e+00       2.741867 4.542021e-10 1.363802e-08
+
+700     Mir3074-2    424.48288 1.104079e+02 7.385578e+02 6.689355e+00       2.741867 4.542021e-10 1.363802e-08
+
+845        Mir871     33.03360 6.461640e+01 1.450790e+00 2.245235e-02      -5.476990 5.839129e-10 1.708320e-08
+
+767        Mir429     49.75018 9.677270e+01 2.727653e+00 2.818618e-02      -5.148868 6.903556e-10 1.969239e-08
+
+655        Mir215    152.78082 3.329953e+01 2.722621e+02 8.176156e+00       3.031423 8.994273e-10 2.503040e-08
+
+566       Mir148a 118994.46955 2.065090e+05 3.147993e+04 1.524386e-01      -2.713700 1.022762e-09 2.772155e-08
+
+569        Mir150    553.20599 1.318948e+02 9.745171e+02 7.388592e+00       2.885299 1.044721e-09 2.772155e-08
+
+628       Mir1983     14.04997 0.000000e+00 2.809994e+01          Inf            Inf 2.859722e-09 7.415778e-08
+
+581     Mir181a-1     59.53826 1.179305e+01 1.072835e+02 9.097179e+00       3.185419 3.537731e-09 8.970115e-08
+
+784        Mir470     18.37716 3.608521e+01 6.691037e-01 1.854232e-02      -5.753034 7.467127e-09 1.852172e-07
+
+630     Mir199a-2     44.84878 7.384673e+00 8.231288e+01 1.114645e+01       3.478512 8.433815e-09 2.047443e-07
+
+550        Mir132    106.46062 2.691980e+01 1.860014e+02 6.909467e+00       2.788574 1.329950e-08 3.161402e-07
+
+76  2610203C20Rik     79.17666 1.649993e+01 1.418534e+02 8.597210e+00       3.103869 1.594438e-08 3.712764e-07
+
+540     Mir125b-1     79.01988 1.649993e+01 1.415398e+02 8.578206e+00       3.100676 1.650666e-08 3.766821e-07
+
+# VOOM top 50
+
+                ID      logFC    AveExpr          t      P.Value    adj.P.Val         B
+
+600         Mir192  -6.948883 14.6763803 -42.722954 2.301199e-16 2.625668e-13 27.266471
+
+536        Mir122a -10.426125  8.1698641 -21.722912 2.859682e-12 1.087633e-09 17.760171
+
+568         Mir149   7.030463  6.3160807  20.883835 4.915491e-12 1.402144e-09 17.277609
+
+645        Mir208a  11.015018  3.9395538  23.252407 1.118938e-12 6.383542e-10 17.208662
+
+530         Mir10b   5.130915 12.2628672  18.242023 3.124991e-11 4.963978e-09 16.221503
+
+561       Mir143hg   2.249221 16.2444825  18.082481 3.521739e-11 4.963978e-09 16.026695
+
+560         Mir143   2.251067 16.2358599  18.081481 3.524391e-11 4.963978e-09 16.026084
+
+646        Mir208b  12.433228  4.6076218  19.592458 1.179199e-11 2.690931e-09 15.683666
+
+523        Mir101b  -3.765722 10.8508440 -16.538566 1.180419e-10 1.036045e-08 14.900027
+
+796         Mir499  11.567529  3.7874598  17.942086 3.915496e-11 4.963978e-09 14.821741
+
+566        Mir148a  -2.638213 15.4435820 -16.548188 1.171186e-10 1.036045e-08 14.814792
+
+844         Mir802  -9.158434  2.9157675 -17.316522 6.338616e-11 7.232360e-09 14.381577
+
+698        Mir3073  -8.420542  2.5457189 -16.702657 1.033066e-10 1.036045e-08 13.985845
+
+649          Mir21  -2.938537 13.1642917 -15.375404 3.148335e-10 2.394833e-08 13.867698
+
+585        Mir181c   3.742560  9.6295577  15.242361 3.537063e-10 2.522368e-08 13.810405
+
+791         Mir490   8.474378  3.7506957  16.259650 1.484816e-10 1.210125e-08 13.424617
+
+663         Mir23a   3.165768  8.7896592  14.631179 6.110682e-10 3.873493e-08 13.269174
+
+586        Mir181d   3.636211  6.3713218  14.317073 8.157508e-10 4.898798e-08 12.956333
+
+642         Mir204   7.684425  4.7751735  15.033484 4.254268e-10 2.855364e-08 12.822427
+
+671         Mir27a   3.106935  9.9255796  13.838251 1.281011e-09 6.960160e-08 12.513086
+
+552        Mir133b   6.493549  1.2544862  13.969968 1.129934e-09 6.446275e-08 11.982684
+
+608       Mir194-2  -5.264136  6.0897615 -13.044012 2.792884e-09 1.448491e-07 11.715753
+
+616         Mir195   3.216595  7.4509350  12.869478 3.332788e-09 1.653353e-07 11.587523
+
+756         Mir378   3.097393  7.3832049  11.684163 1.171371e-08 5.346138e-07 10.329692
+
+672         Mir27b   1.976376 15.0957731  11.756036 1.082197e-08 5.144946e-07 10.127719
+
+1017      Snord104  -2.337374 10.6109024 -11.495675 1.444482e-08 6.339052e-07 10.023395
+
+722         Mir322   3.296618  8.2153415  11.415362 1.580762e-08 6.441605e-07 10.008472
+
+655         Mir215   3.045873  5.7544234  11.148134 2.141822e-08 8.082459e-07  9.753268
+
+628        Mir1983   5.895500  0.9931851  11.445812 1.527548e-08 6.441605e-07  9.749260
+
+344         Dnm3os   3.363344  5.8607432  11.092261 2.283960e-08 8.082459e-07  9.689496
+
+637        Mir200a  -6.191561  1.7981309 -11.322172 1.756229e-08 6.909853e-07  9.662295
+
+587         Mir182  -4.903995  7.1511683 -11.074468 2.331304e-08 8.082459e-07  9.658842
+
+582      Mir181a-2   3.048298  6.9414651  11.072128 2.337609e-08 8.082459e-07  9.644017
+
+614        Mir1948  -7.195525  4.5513493 -11.005492 2.524936e-08 8.473388e-07  9.341794
+
+654         Mir214   3.280874  5.4784451  10.768257 3.332555e-08 1.086413e-06  9.318504
+
+571         Mir153   5.963803  1.4386315  10.727082 3.498742e-08 1.093990e-06  9.035569
+
+318        Cyp3a25  -6.318200  1.4888933 -10.698226 3.620443e-08 1.093990e-06  9.024973
+
+464         Gm5441   5.982176  1.4484953  10.692891 3.643436e-08 1.093990e-06  9.000362
+
+541      Mir125b-2   3.077678  7.4316058  10.446668 4.893073e-08 1.431538e-06  8.884250
+
+551      Mir133a-1   5.144671  0.5903264  10.358205 5.447229e-08 1.553822e-06  8.575535
+
+550         Mir132   2.847559  5.3211839  10.110952 7.380297e-08 2.004981e-06  8.531491
+
+13   1110038B12Rik  -2.226702 10.8487089 -10.194609 6.655312e-08 1.852125e-06  8.439308
+
+922        Rabggtb  -1.935779  9.9874171  -9.928995 9.262821e-08 2.457879e-06  8.133384
+
+569         Mir150   2.938531  7.6297870   9.842102 1.033602e-07 2.620755e-06  8.116464
+
+800         Mir504   5.256127  0.6221088   9.892894 9.693595e-08 2.513725e-06  8.068853
+
+573         Mir155   3.906600  3.9899000   9.732173 1.188627e-07 2.712448e-06  8.046518
+
+666        Mir24-2   2.833979  7.3083691   9.767192 1.136724e-07 2.646944e-06  8.030550
+
+700      Mir3074-2   2.833979  7.3083691   9.767192 1.136724e-07 2.646944e-06  8.030550
+
+664         Mir23b   2.124129  9.8141190   9.806316 1.081569e-07 2.625681e-06  7.979464
+
+631        Mir199b   5.752816  2.8805143   9.823920 1.057683e-07 2.623514e-06  7.979387
+
+Warning messages:
+
+1: In bplt(at[i], wid = width[i], stats = z$stats[, i], out = z$out[z$group ==  :
+
+  Outlier (-Inf) in boxplot 5 is not drawn
+
+2: In bplt(at[i], wid = width[i], stats = z$stats[, i], out = z$out[z$group ==  :
+
+  Outlier (-Inf) in boxplot 7 is not drawn
+
+3: In bxp(list(stats = c(-Inf, -Inf, -0.158608221176912, 0.826586442285183,  :
+
+  some notches went outside hinges ('box'): maybe set notch=FALSE
+
+4: In par(defpar) : calling par(new=TRUE) with no plot
+
+R version 2.15.1 (2012-06-22)
+
+Platform: x86_64-unknown-linux-gnu (64-bit)
+
+locale:
+
+ [1] LC_CTYPE=en_AU.UTF-8       LC_NUMERIC=C               LC_TIME=en_AU.UTF-8        LC_COLLATE=en_AU.UTF-8     LC_MONETARY=en_AU.UTF-8    LC_MESSAGES=en_AU.UTF-8    LC_PAPER=C                 LC_NAME=C                  LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=en_AU.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+
+[1] methods   grid      stats     graphics  grDevices utils     datasets  base     
+
+other attached packages:
+
+ [1] edgeR_3.0.8        limma_3.14.4       DESeq_1.10.1       lattice_0.20-15    locfit_1.5-9.1     Biobase_2.18.0     BiocGenerics_0.4.0 gplots_2.11.0      MASS_7.3-23        KernSmooth_2.23-10 caTools_1.14       gdata_2.12.0.2     gtools_2.7.1       stringr_0.6.2     
+
+loaded via a namespace (and not attached):
+
+ [1] annotate_1.36.0      AnnotationDbi_1.20.7 bitops_1.0-5         DBI_0.2-7            genefilter_1.40.0    geneplotter_1.36.0   IRanges_1.16.6       parallel_2.15.1      RColorBrewer_1.0-5   RSQLite_0.11.3       splines_2.15.1       stats4_2.15.1        survival_2.37-4      XML_3.96-1.1         xtable_1.7-1        
+
+</pre>
+
+<hr/><div class="infomessage">This tool (edgeR) was generated by the <a href="https://bitbucket.org/fubar/galaxytoolfactory/overview">Galaxy Tool Factory</a></div><br/>
+</div></body></html>
+

@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<tool id="getLPed" name="Import ped/map new">
+	<description>
+		from your computer  
+	</description>
+       <action module="galaxy.tools.actions.lpedupload" class="UploadLpedToolAction" />
+ 	<inputs>
+ 	  <param name="title" type="text" size="80" value="My lped upload" />
+          <param name="ped_file_data" type="file" label="Ped (alternative to URL) Local file"
+            help="Navigate to a Linkage format pedigree file on your local PC" />
+          <param name="ped_url_paste" type="text" label="(alternative to local file) URL/Text" help="URL for ped data to download" />
+          <param name="map_file_data" type="file" label="Matching map (alternative to URL) Local file"
+            help="Navigate to a Linkage format map corresponding to the above ped file on your local PC" />
+          <param name="map_url_paste" type="text" label="(alternative to local file) URL/Text" 
+            help="URL for corresponding map data to download" />
+           <param label="Genome" name="dbkey" type="genomebuild" dynamic_options="get_available_builds('hg18')" />
+	</inputs>
+
+	<outputs>  
+          <data format="rgenetics" name="outfile" />
+	</outputs>
+<help>
+
+
+**Syntax**
+
+- **Note - Exactly one Ped and the corresponding Map are needed** Either can be a file from your local machine or a web address
+- **Ped file data** is the input pedigree format genotype file chosen from your local files
+- **Map file data** is the associated annotation (map) file for the markers in the Ped file
+- **Ped URL** is the web address for the pedigree format genotype file 
+- **Map URL** is the associated annotation (map) web address for the markers in the Ped file 
+
+
+Ped - space delimited. First 6 cols are famId,individualId, fatherId, motherId, gender, affection status.
+Genotypes as a1 a2 follow - letters ACGTN or 12340 typically
+
+Map (marker annotation) tab delimited,
+four columns - Chromosome, rs, genetic offset, physical offset"
+
+-----
+
+**Summary**
+
+This tool imports genotype data from a high throughput snp platform into the Rgenetics tools
+for Galaxy. Data in linkage (ped and map files) format are currently importable. The data will 
+be converted to a slew of other formats and imported into the current history.
+
+A bunch of conversions are done and the results are visible in the data set selection
+drop down list for each relevant tool. For example, all the Plink based tools will 
+show your new data from now on and same for Marchini's tools and eigenstrat.
+
+Always check the log file (click the "view" (eye) icon) after this tool runs as 
+you may need to adjust the missing value if you see a message like:
+<pre>
+ERROR: Locus rs1063302 has >2 alleles:
+       individual 1334 10 has genotype [ N N ]
+       but we've already seen [ G ] and [ A ]
+</pre>
+
+Originally designed and written for family based data from the CAMP Illumina run of 2007 by 
+ross lazarus (ross.lazarus@gmail.com)
+
+Once a file has been imported, it will be available for selection as the input data for tools in the Rgenetics menu that 
+operate on the various output files
+
+</help>
+</tool>

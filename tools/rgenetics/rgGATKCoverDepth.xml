@@ -1,0 +1,150 @@
+
+<tool name="Depth of Coverage:" id="rgGATKCoverDepth" version="0.01">
+  <description>(GATK)</description>
+  <command interpreter="python">
+   rgGATKCoverDepth.py -i "$input_file" -n "$out_prefix" --tmp_dir "${__new_file_path__}" 
+   -d "$html_file.files_path" -t "$html_file" --flags "$flags"
+   --gatkjar "${GALAXY_DATA_INDEX_DIR}/shared/jars/GenomeAnalysisTK.jar" 
+#if $gSrc.refGenomeSource=="indexed":
+   --refseqfasta "${ filter( lambda x: str( x[0] ) == str( $gSrc.index ), $__app__.tool_data_tables[ 'all_fasta' ].get_fields() )[0][-1] }"
+#else
+   --refseqfasta "$gSrc.ownFile"
+#end if
+#if $minMappingQuality > "":
+   --minMappingQuality "$minMappingQuality"
+#end if
+#if $minBaseQuality > '':
+   --minBaseQuality "$minBaseQuality"
+#end if
+
+  </command>
+  <inputs>
+    <param format="bam" name="input_file" type="data" label="Input: bam format short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param name="out_prefix" value="Coverage Depth" type="text"
+      label="Title for the output file - use this remind you what the job was for" size="80" />    
+    <conditional name="gSrc">
+      <param name="refGenomeSource" type="select" help="If in doubt, choose built-in and read Picard/Samtools documentation"
+         label="Reference genome - none, built-in or from current history?">
+        <option value="noref" >No reference - NM tags will NOT be validated (see Picard documentation)</option>
+        <option value="indexed" selected="true">Use a built-in genome</option>
+        <option value="history">Use a genome (fasta format) from my history</option>
+      </param>
+      <when value="indexed">
+        <param name="index" type="select" label="Select a reference genome">
+          <options from_data_table="all_fasta"> 
+          <filter type="data_meta" ref="input_file" key="dbkey" column="dbkey" multiple="True" separator=","/>
+          <validator type="no_options" message="No reference sequences are available for the build associated with the selected input data"/>
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome from history" />
+      </when>
+      <when value="noref">
+      </when>
+    </conditional>
+    
+    <param name="minMappingQuality" value="" type="text" 
+      label="The minimum mapping quality to include. (Blank for ALL)" size="5" />
+    <param name="minBaseQuality" value="" type="text"
+      label="The minimum base quality to include. (Blank for ALL)" size="5"  />
+    <param name="flags" type="select" multiple='true' help="If in doubt, leave these all alone and read the GATK documentation"
+         label="Special Coverage Flags - see GATK documentation before fooling with these please">
+        <option value="printBaseCounts">Switch CoverageStatistics to base count mode (rather than coverage) for per-every-locus output</option>
+        <option value="omitLocusTable">Do not print out the table of locus counts for X samples covered to at least Y depth</option>
+        <option value="omitIntervals">Do not output any of the per-interval statistics; only the aggregate</option>
+        <option value="omitDepthOutputAtEachBase">Do not output depth of coverage at every base; results in big speedup</option>
+        <option value="omitSampleSummary">Do not output the sample summary table</option>
+        <option value="includeDeletions">Indels will be included in coverage and base counts</option>
+        <option value="ignoreDeletionSites">Sites consisting only of deletions will be entirely ignored (no coverage)</option>
+    </param>   
+            
+    <param name="outputFormat" type="select" help="If in doubt, choose r-table and read the GATK documentation"
+         label="Output file format?">
+        <option value="r-table" selected="true">Human readable table</option>
+        <option value="table">table</option>
+        <option value="csv">CSV</option>
+    </param>
+   
+    <param name="partitionType" type="select" multi='true' help="If in doubt, choose none and read the GATK documentation"
+         label="Partition type to calculate coverages (can be multiple levels)?">
+        <option value="None" selected="true">none</option>
+        <option value="sample">Sample</option>
+        <option value="readgroup">Readgroup</option>
+        <option value="library">Library</option>
+    </param>
+    <param name="summaryCoverageThreshold" type="select" multi='true' help="If in doubt, choose none and read the GATK documentation"
+         label="Summary files will include a %_bases_covered_to_[VALUE] column?">
+        <option value="None" selected="true">None</option>
+        <option value="10">Sample</option>
+        <option value="20">Readgroup</option>
+        <option value="30">Library</option>
+        <option value="40">Sample</option>
+        <option value="50">Readgroup</option>
+        <option value="100">Library</option>
+        <option value="500">Library</option>
+    </param>
+   
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="CoverageDepth_${out_prefix}.html"/>
+  </outputs>
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Estimate Coverage Depth
+
+    Please refer to the GATK documentation at http://www.broadinstitute.org/gsa/wiki/index.php/Base_quality_score_recalibration  
+    since that was used as the specification for this Galaxy wrapper. Please let the Galaxy developers know if there are any
+    errors or corrections - we need all the help you can give.
+
+**Why you might want to use this tool**
+
+    This tool provides a Galaxy interface to a procedure recommended at for adjusting short read quality scores
+    All your work is securely, sharably and reproducibly persisted in a web app instead of spread all over 
+    your laptop/desktop and cellphone. 
+
+-----
+
+.. class:: infomark
+
+**Attributions**
+
+For questions about what the GATK tools are doing, please explore http://getsatisfaction.com/gsa for help
+
+For questions about this tool wrapper, please use the galaxy-user mailing list.
+If you have managed to find a bug, please try to send us an easy way to reproduce it through the galaxy-bugs mailing list
+or by providing as much information as you can through the report form that will appear automatically
+if a tool fails unexpectedly when you run it in Galaxy.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+Code cleaned up and the ugliest hacks repaired by Raphael Lullis
+
+All rgenetics artifacts are available licensed under the LGPL
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,56 @@
+<tool id="contigStats" name="Contig stats" version="0.1">
+   <description>:from fasta files</description>
+   <command interpreter="python"> 
+    rgcontigStats.py -o "$outfile" -f "$firstf"
+#for $b in $fastafiles
+-f "${b.fasta}"
+#end for
+    </command>
+  <inputs>
+       <param name='firstf' type="data" label="fasta file from your history to estimate contig statistics" format="fasta"/>
+       <repeat name="fastafiles" title="Additional fasta files from your history to include in the report oof contig stats">
+        <param name="fasta" type="data" label="fasta file from your history" format="fasta" />
+       </repeat>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="outfile" label="${on_string}_contigStats.xls" />
+  </outputs>
+  <help>
+
+**Note**
+
+contigStats is an experimental tool currently under test that just reports some simple contig stats for fasta files
+containing contigs from assemblies
+
+----
+
+**What this tool does**
+
+This tool takes any number of fasta files and returns a report showing some basic assembly contig stats for all sequences
+
+eg, it might report something like:
+#Measure Value
+N25 537
+N50 335
+N75 252
+mean_contig_len 347.0
+median_contig_len 276.0
+max_contig_len 6923
+contig_count 1393
+mean_contig_gc_pct 43.88
+----
+
+**Attribution**
+
+This Galaxy tool was thrown together by Ross Lazarus and is licensed under the LGPL_ like other rgenetics artefacts
+
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+  </help>
+
+</tool>
+
+
+
+
+

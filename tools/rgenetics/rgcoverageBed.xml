@@ -1,0 +1,140 @@
+<tool name="Feature Coverage:" id="rgcoverageBed" version="0.01">
+  <description>using BAMTOOLS</description>
+  <command>
+coverageBed
+#if $strand=='true':
+-s
+#end if
+#if $hist=='true':
+-hist
+#end if
+#if $depth=='true':
+-d
+#end if
+#if $split=='true':
+-split
+#end if
+-a $input_filea -b $input_fileb > $out_file 
+  </command>
+  <inputs>
+    <param format="bed" name="input_filea" type="data" label="Input A: UCSC BED formatted data in your current history"
+      help="If the select list is empty, you need to upload or import some UCSC BED format data for this tool"/>
+    <param format="bed,gff,vcf" name="input_fileb" type="data" label="Input B: bed/gff/vcc formatted data in your current history"
+      help="If the select list is empty, you need to upload or import some data for this tool - bed,gff or vcf format will work"/>
+    <param name="title" size="200" type="text" value="rgcoverageBed output" label="Output file name - to remind you what you did " 
+      help="Brief name reminding you what this was for?" />
+    <param name="strand" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Force strandedness" 
+        help="Features in B only count if same strandedness as each feature in A" />
+    <param name="hist" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Report histogram of coverage" 
+        help="For each feature in B in addition to summary for ALL features in B - adds fields to each record" />
+    <param name="depth" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Report depth of coverage" 
+        help="For each feature in B - will be VERY long for large numbers of features" />
+    <param name="split" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Respect 'split' features in BAM or BED12" 
+        help="Coverage will be reported for each 'split' feature rather than for the whole feature if splits are present" />
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file" label="${title}.xls"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_filea" value="test1.bed" />
+      <param name="input_fileb" value="test2.bed" />
+      <param name="strand" value="false" />
+      <param name="hist" value="false" />
+      <param name="depth" value="false" />
+      <param name="split" value="false" />
+      <param name="title" value="coverageBedtest" />      
+      <output name="out_file" file="coverageBedtest.xls" ftype="interval" />
+    </test>
+  </tests> 
+  <help>
+
+
+.. class:: infomark
+
+**Purpose**
+
+coverageBed (BAM) Summarizes the depth and breadth of coverage of features in **A** versus features (e.g, "windows", exons, etc.) defined in **B** which is another BED/GFF/VCF file.
+
+From the docs:
+
+*coverageBed*
+
+  Compute the coverage of aligned sequences on 10 kilobase “windows” spanning the genome.
+
+    $ coverageBed -a reads.bed -b windows10kb.bed | head
+
+  Compute the coverage of aligned sequences on 10 kilobase “windows” spanning the genome and created a BEDGRAPH of the number of aligned reads in each window for display on the UCSC browser.
+
+    $ coverageBed -a reads.bed -b windows10kb.bed | cut –f 1-4 > windows10kb.cov.bedg
+
+  Compute the coverage of aligned sequences on 10 kilobase “windows” spanning the genome and created a BEDGRAPH of the fraction of each window covered by at least one aligned read for display on the UCSC browser.
+
+    $ coverageBed -a reads.bed -b windows10kb.bed | awk ‘{OFS=”\t”; print $1,$2,$3,$6}’ > windows10kb.pctcov.bedg
+
+**Output**
+
+coverageBed creates a tabular output file based on input file **B** with fields added at the end of each feature row 
+(use of the depth option will change this to report every feature in **A** !)
+
+According to 5.9.2 Default behavior from the most recent pdf docs (see http://code.google.com/p/bedtools/)
+After each interval in B, coverageBed will report:
+
+1) number of features in A that overlapped (by at least one base pair) the B interval.
+2) number of bases in B that had non-zero coverage from features in A.
+3) length of the entry in B.
+4) fraction of bases in B that had non-zero coverage from features in A.
+
+Examples from the docs for the terminally lazy:
+
+$ cat A.bed
+
+ chr1 10	20
+
+ chr1 20	30
+
+ chr1 30	40
+
+ chr1 100	200
+
+$ cat B.bed
+
+ chr1 0	100
+
+ chr1 100	200
+
+ chr2 0	100
+
+$ coverageBed –a A.bed –b B.bed
+
+ chr1 0	100	3	30	100	0.300000	
+
+ chr1 100	200	1	100	1.000000
+
+ chr2 0	100	0	0	100	0.000000
+
+**Attributions**
+
+This tool relies on aaron quinlan's code from http://code.google.com/p/bedtools/
+
+Please see his site for all documentation and code - this Galaxy tool runs his code with your settings
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, November 2010
+
+This and all other rgenetics artifacts are licensed under the LGPL.
+
+All other dependencies are licensed at their author's discretion - please see each individual package for details
+
+  </help>
+</tool>
+
+
+

@@ -1,0 +1,71 @@
+<tool id="rgOverRep" name="OverRep" version="0.01">
+  <description>of feature overlap compared to background</description>
+  <command>
+     /bin/bash "$runme" "$outtab" "$input" "$input.name" "$background" "$background.name" 
+#for $fname in $inputs:
+  "${fname.inputf} ${fname.inputf.name}"
+#end for
+  </command>
+  <inputs>
+    <param name="input" type="data" format="bed" label="Select the Foreground interval (bed) list to compare overlap against"/>
+    <param name="background"  type="data" format="bed" label="Select the Background interval (bed) list to represent random overlap for testing"/>
+    <repeat name="inputs" title="Select the interval (bed) files to compare against the foreground/background overlap" 
+         optional="false"
+         help="Overlap of these interval files with the foreground will be compared against the foreground/background overlap rate">
+        <param name="inputf" type="data" format="bed" label="Input interval (bed) file from your history" size="100" optional = "false"/>
+    </repeat>
+    <param name="title" type="text" value="Overlap" size="80" label="Title for job outputs" help="Supply a meaningful name here to remind you what the outputs contain"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="outtab" label="${title}_overlap.xls"/>
+  </outputs>
+<configfiles>
+<configfile name="runme">
+#!/bin/bash
+if [ \$# -lt 4 ]
+then
+  echo "Usage: overrep.sh OutputFile ForgroundBedFile BackGroundBedFile FeatureFile1...FeaturefileN"
+  exit 65
+fi
+OUTF=\$1
+REF=\$2
+REFNAME=\$3
+BG=\$4
+BGNAME=\$5
+REFNPEAKS=`cat \$REF | wc -l`
+BGNPEAKS=`cat \$BG | wc -l`
+shift 5
+echo 'PeakFile	BGfile	FeatureFile	Observed_Hits/TotalPeaks	Background_Hits/TotalPeaks	Observed/Expected	OE-lower95-CI	OE-upper95CI' &gt; \$OUTF
+MORE=(\$@)
+NPAR=\${#MORE[@]}
+INDX=0
+while [ \$INDX -lt \$NPAR ] 
+do
+        FPATH=\${MORE[\$INDX]}
+        let INDX=INDX+1
+        FNAME=\${MORE[\$INDX]}
+        let INDX=INDX+1
+	REFHITS=`closestBed -d -t first -a \$REF -b \$FPATH | awk '{if(\$NF ==0) print }' | wc -l`
+	BGHITS=`closestBed -d -t first -a \$BG -b \$FPATH | awk '{if(\$NF ==0) print }' | wc -l`
+	T=`echo "res=fisher.test(matrix(c(\$REFHITS, \$REFNPEAKS-\$REFHITS, \$BGHITS, \$BGNPEAKS -\$BGHITS),nrow = 2));c(as.vector(res!estimate),res!conf.int[1:2])" | tr '!' '\$' | R --no-save | grep "^\[1\]"| cut -c5- | tr ' ' '\t'`
+	echo "\$REFNAME \$BGNAME \$FNAME \$REFHITS \$REFNPEAKS \$BGHITS \$BGNPEAKS \$T" | awk '{print \$1"\t"\$2"\t"\$3"\t"\$4"/"\$5"\t"\$6"/"\$7"\t"\$8"\t"\$9"\t"\$10 }' &gt;&gt; \$OUTF
+done 
+</configfile>
+</configfiles>
+<help>
+
+**What it does**
+
+Tests for unexpectedly high overlap of features in a bed file against a background (eg random) set of intervals
+
+**Input**
+
+
+**Output**
+
+
+</help>
+
+</tool>
+
+

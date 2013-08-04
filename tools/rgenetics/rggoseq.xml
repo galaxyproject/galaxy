@@ -1,0 +1,94 @@
+<tool id="rggoseq" name="rggoseq" version="0.01">
+  <description>wrapper for goseq</description>
+  <parallelism method="basic"></parallelism>
+  <command interpreter="python">
+    rggoseq.py
+       --input "$input"
+       --idColN "$idColN"
+       --idType "$idType"
+       --pColN "$pColN"
+       --dbKey "${input.metadata.dbkey}"
+       --out_tab "$out_tab"
+       --out_html "$out_html"
+       --out_dir "$out_html.files_path"
+  </command>
+  <requirements>
+    <requirement type="package">rggoseq.py</requirement>
+  </requirements>
+  <inputs>
+    <param name="input" type="data" label="Tabular input in your history with a gene identifier and a p value column" 
+    help="You will specify which columns contain the ID and the p value" format="tabular" />
+    <param name="pColN" type="data_column" data_ref="input" numerical="True" multiple="False"
+         label="Column with raw p values from (eg) edgeR DGE analysis"
+         help="These will be adjusted for Type 1 error control with the BH method" use_header_names="true" size="120">
+    </param>    
+    <param name="idColN" label="Column containing gene id" help=""
+       type="data_column" data_ref="input" numerical="False"
+         multiple="false" use_header_names="true" size="120" >
+    </param>
+    
+    <param name="idType" type="select" label="Gene ID type" help="goseq identifier type (please see goseq documentation) found in the gene ID column" >
+    <option value="acembly">AceView Gene IDs</option>
+    <option value="acescan">ACEScan Gene IDs</option>
+    <option value="augustusHints">Augustus Hints Gene IDs</option>
+    <option value="augustusXRA">Augustus De Novo Gene IDs</option>
+    <option value="augustusAbinitio">Augustus Ab Initio Gene IDs</option>
+    <option value="ccdsGene">CCDS Gene IDs</option>
+    <option value="ensGene" selected="true">Ensembl Gene IDs</option>
+    <option value="exoniphy">Exoniphy Gene IDs</option>
+    <option value="wgEncodeGencodeManualV3">Gencode Genes Manual v3</option>
+    <option value="geneid">Geneid  Gene IDs</option>
+    <option value="genscan">Genscan  Gene IDs</option>
+    <option value="nscanGene">N-SCAN Gene IDs</option>
+    <option value="knownGeneOld3">Old UCSC  Gene IDs</option>    
+    <option value="geneSymbol">RefGene Gene IDs</option>    
+    <option value="refGene">Refseq Gene ID</option>    
+    <option value="sgdGene">SGD Gene IDs</option>
+    <option value="sgpGene">SGP Gene IDs</option>
+    <option value="sibGene"> Gene IDsoption>
+    <option value="knownGene">UCSC  Gene IDs</option>
+    <option value="vegaGene">Vega Gene IDs</option>
+    </param>
+   </inputs>
+  <outputs>
+    <data format="tabular" name="out_tab" label="${on_string}_goseq.xls"/>
+    <data format="html" name="out_html" label="${on_string}_goseq.html"/>
+   </outputs>
+  <help>
+**What this tool does**
+
+Extract gene identifiers and significant statistical status from a tabular file using the goseq package from BioConductor
+to adjust for transcript length bias. Uses the Wallenius approximation.
+
+Returns enriched GO categories and inference.
+
+.. class:: warnmark
+
+**What this tool does not do**
+No automatic matching of gene IDs in your data is attempted, so this tool is completely dependent on correctly chosen options to match your data.
+
+The Gene IDs can be from a wide range of standards and of course, they are all incompatible with each other - eg if you have Ensembl
+gene identifiers but choose Genscan for analysis, none will match and you will see that the script fails.
+
+In fact, this tool is guaranteed to fail unless the Gene ID type really matches the ids in your data and the column selectors are correct!
+
+------
+
+.. class:: infomark
+
+**Attribution**
+This tool relies on the goseq_ Bioconductor package. All calculations and plots are controlled by that code. 
+see: Gene ontology analysis for RNA-seq: accounting for selection bias
+Matthew D. Young, Matthew J. Wakefield, Gordon K. Smyth, Alicia Oshlack
+Genome Biology 2010, 11:R14 (4 February 2010)
+
+This wrapper for Galaxy by Ross Lazarus for the Rgenetics project
+
+See goseqref_ for the original publication and goseq_ for all documentation and appropriate attribution.
+
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+ .. _goseq: www.bioconductor.org/packages/release/bioc/html/goseq.html
+ .. _goseqref: http://genomebiology.com/2010/11/2/R14/abstract
+
+  </help>
+</tool>

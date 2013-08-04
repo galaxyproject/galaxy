@@ -1,0 +1,162 @@
+<tool id="rgMach" name="MACH imputation:" version="0.9.0">
+    <description>for region or WGA</description>
+    <command interpreter="python">
+rgMach.py -b '$i.extra_files_path/$i.metadata.base_name' -o "$name" -t '$out_html' -p '$out_html.files_path' 
+-c '$chrom' -s '$offset' -l '$length' -n "$nstage1" -q "$rsq" -r 
+'$rounds' -1 '$stage1' -2 '$stage2' -a '$hapspath.value' $greedy $compact
+#if $mask:
+  --mask '$mask'
+#end if
+    </command>
+
+    <inputs>
+
+       <param name="i"  type="data" label="Genotype input for imputation? (From your current history)"
+         format="lped" />
+       <param name="hapspath" type="select" label="Reference haplotypes to impute from? (system available)"
+          help="These are the currently installed MACH compatible haplotype source files for imputation">
+         <options from_file="mach_haps.loc">
+                <column name="value" index="1" />
+                <column name="name" index="0" />
+                <column name="build" index="2" />
+          </options>
+       </param>     
+       <param name='name' type='text' size="132" value='MACH imputation' label="Title for outputs"/>
+       <param name="rounds" type='integer' value='5'
+        label = 'MACH stage 1 rounds. More is often better and always slower - 50 is generally recommended'  
+        help="Rounds are mcmc restarts - only really useful if you allow random reseeding" />
+       <param name="chrom" type='text' label = 'Chromosome (default is all)' value=""
+        help='Provide a chromosome to restrict to a regional MACH imputation run' />
+       <param name="offset" type='text' label = 'Start (offset in chromosome) for regional imputation' value=""
+        help='Offset to start of region to be imputed'/>
+       <param name="length" type='text' label = 'Length of regional imputation' value=""
+        help='Length of region to be imputed'/>
+       <param name="mask" type='float' value='0.0'
+        label = 'Mask for testing imputation accuracy - use a small fraction - zero for production runs, 0.01 or so for testing'  
+        help="Mask will give an estimate of imputation accuracy by masking this fraction of input genotypes - see MACH docs please" />
+       <param name="stage1" type="select" help="Subsample to use for generating crossover and erate files - 300 max will be used">
+       <option value='fo' selected='true'>Founders only for stage 1 error/crossover estimation</option>
+       <option value='oo'>Offspring only for stage 1 error/crossover estimation</option>
+       <option value='all'>All for stage 1 error/crossover estimation (beware, MACH freaks out with irregular family data)</option>
+       </param>
+       <param name="nstage1" type='integer' label = 'Number of individuals to use for MACH stage' value="300"
+        help='300 is typically recommended as enough for this stage - it takes much longer with more...'/>
+       <param name="stage2" type="select" help="Subsample (or all) in input genotype sample to impute">
+       <option value='fo' selected='true'>Founders only for imputed output file</option>
+       <option value='oo'>Offspring only for imputed output file</option>
+       <option value='all'>All subjects for imputed output file (messy trios will freak MACH out)</option>
+       <option value='trios'>Nuclear affected trios (affected offspring preferred, no siblings)</option>
+       </param>
+       <param name="rsq" type='float' value='0.3'
+        label = 'Imputed markers with lower RSQ than this cutoff will be filtered from the final output map'  
+        help="An RSQ > 0.3 is recommended to filter out poor imputation - see MACH docs please" />
+       <param name="greedy" type="boolean" checked="true" truevalue="--greedy" falsevalue="" 
+        label="Add --greedy flag for MACH" /> 
+      <param name="compact" type="boolean" checked="false" truevalue="--compact" falsevalue="" 
+        label="Add --compact flag for MACH - not recommended at present" /> 
+       <param name="seed" type='integer' label = 'Pseudorandom number stream seed (0=random integer)' value="0"
+        help="Set this >0 ONLY if you know what you're doing and why - it can be useful but might (eg) violate inference assumptions"/>
+
+    </inputs>
+    
+   <outputs>
+       <data format="html" name="out_html"  label="${name}.html"/>
+   </outputs>
+
+<tests>
+ <test>
+python sgemach.py -b tinywga -c 22 -s 21784722 -l 123000 -r 1 -o temp -p ./test -1 fo -2 fo -a /share/shared/data/1000g/2010_06 --greedy 
+
+ <param name='i' value='tinywga' ftype='lped' >
+ </param>
+ <param name='name' value='rgmachest1' />
+ <param name='rounds' value='1' />
+ <param name='chrom' value='22' />
+ <param name='offset' value='21784722' />
+ <param name='length' value='123000' />
+ <param name="greedy" value="--greedy" />
+ <param name="hapspath" value="/share/shared/data/1000g/2010_06" />
+ <param name="stage1" value="fo" />
+ <param name="stage2" value="fo" />
+ <param name="greedy" value="--greedy" />
+ <param name="compact" value="" />
+ <output name='out_html' file='rgtestouts/rgmach/rgmachtest1.html' ftype='html' lines_diff='17'>
+   <!--extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size"   
+     delta = "100" />
+   <extra_files type="file" name='Allelep_qqplot.png' value='rgtestouts/rgManQQ/Allelep_qqplot.png' compare="sim_size"   
+     delta = "4000" />
+   <extra_files type="file" name='Armitagep_manhattan.png' value='rgtestouts/rgManQQ/Armitagep_manhattan.png' compare="sim_size" 
+     delta = "4000"/>
+   <extra_files type="file" name='Armitagep_qqplot.png' value='rgtestouts/rgManQQ/Armitagep_qqplot.png' compare="sim_size"
+     delta = "4000" />
+   <extra_files type="file" name='rgManQQtest1.R' value='rgtestouts/rgManQQ/rgManQQtest1.R' compare="diff" lines_diff="160"/-->
+ </output>
+ </test>
+</tests>
+<help>
+
+.. class:: warningmark
+
+**If there are no genotype files in your history, you will not be able to select an input file for this tool**
+
+.. class:: warningmark
+
+**NOTE**
+
+This is a tool that will run MACH on a genotype data set to impute genotypes from a set of reference haplotypes
+
+.. class:: infomark
+
+**Syntax**
+
+- **Name** is the title to use for all output files in this run
+- **Input Data** is a genotype file (linkage format pedigree data) from your current history
+- **Chromosome** is the chromosome for a restricted (regional) imputation if desired - blank means impute entire input data region (eg WGA)
+- **Offset** is the offset within the chromosome to the first base of the desired region of a restricted imputation
+- **Length** is the length in bases of the desired region of a restricted imputation
+- **Reference Haplotypes** is your choice of reference haplotypes to impute from the system installed possibilities (set in tool-data/mach_haps.loc)
+- **stage1** allows restriction of MACH stage 1 to founders only (fo) or offspring only
+- **stage2** allows restriction of MACH stage 2 and thus the output to founders only (fo) or offspring only (oo) or nuclear trios
+- **Rounds** is the MACH rounds parameter - 50 may be suitable but please see the MACH documentation
+- **Greedy** controls use of the --greedy MACH parameter - please see the MACH documentation
+- **Compact** controls use of the --compact MACH parameter - please see the MACH documentation - NOT recommended for routine use
+
+NOTE - plotting millions of p values may take tens of minutes depending on 
+how busy the server is - be patient please. 
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+This genotype imputation tool relies on MACH software - please see http://genome.sph.umich.edu/wiki/Mach for details and documentation
+ 
+-----
+
+.. class:: infomark
+
+**Explanation**
+
+Imputation of non-genotyped markers using haplotype information from a reference sample is a popular method of gaining some power from 
+commodity whole genome products. Power gains of 3% to 10% have variously been reported. Good luck.
+
+-----
+
+.. class:: infomark
+
+**Attribution**
+
+This is a Galaxy tool written by Ross Lazarus. It relies on 
+MACH, a package from Goncalo Abecasis at http://genome.sph.umich.edu/wiki/Mach
+
+copyright Ross Lazarus 2010
+Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
+but is about as useful as a chocolate teapot without R and Galaxy which all have a
+twisty maze of little licenses, all different.
+
+I'm no lawyer, but it looks like at least LGPL if you create derived works from this code. 
+Good luck.
+
+</help>
+</tool>
