@@ -1054,18 +1054,19 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                                   no_changes_checked=no_changes_checked,
                                                                                                                   tool_panel_section=tool_panel_section,
                                                                                                                   new_tool_panel_section=new_tool_panel_section )
-        # The repository's status must be updated from 'Uninstall' to 'New' when initiating reinstall so the repository_installation_updater will function.
-        tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
-                                                                          tool_shed_repository.name,
-                                                                          tool_shed_repository.description,
-                                                                          tool_shed_repository.installed_changeset_revision,
-                                                                          tool_shed_repository.ctx_rev,
-                                                                          repository_clone_url,
-                                                                          metadata,
-                                                                          trans.model.ToolShedRepository.installation_status.NEW,
-                                                                          tool_shed_repository.installed_changeset_revision,
-                                                                          tool_shed_repository.owner,
-                                                                          tool_shed_repository.dist_to_shed )
+        if tool_shed_repository.status == trans.model.ToolShedRepository.installation_status.UNINSTALLED:
+            # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall so the repository_installation_updater will function.
+            tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
+                                                                              tool_shed_repository.name,
+                                                                              tool_shed_repository.description,
+                                                                              tool_shed_repository.installed_changeset_revision,
+                                                                              tool_shed_repository.ctx_rev,
+                                                                              repository_clone_url,
+                                                                              metadata,
+                                                                              trans.model.ToolShedRepository.installation_status.NEW,
+                                                                              tool_shed_repository.installed_changeset_revision,
+                                                                              tool_shed_repository.owner,
+                                                                              tool_shed_repository.dist_to_shed )
         ctx_rev = suc.get_ctx_rev( trans.app,
                                    tool_shed_url,
                                    tool_shed_repository.name,
@@ -1096,7 +1097,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                     repository_metadata=None,
                                                                     tool_dependencies=tool_dependencies,
                                                                     repository_dependencies=repository_dependencies )
-        repo_info_dicts.append( repo_info_dict )
+        if repo_info_dict not in repo_info_dicts:
+            repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_dependency_util.create_repository_dependency_objects( trans=trans,
@@ -1107,7 +1109,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                              install_repository_dependencies=install_repository_dependencies,
                                                                              no_changes_checked=no_changes_checked,
                                                                              tool_panel_section=tool_panel_section,
-                                                                             new_tool_panel_section=new_tool_panel_section )    
+                                                                             new_tool_panel_section=new_tool_panel_section )
         # Default the selected tool panel location for loading tools included in each newly installed required tool shed repository to the location
         # selected for the repository selected for reinstallation.
         for index, tps_key in enumerate( tool_panel_section_keys ):
