@@ -309,7 +309,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # If deleting the current history, make a new current.
                 if history == trans.get_history():
                     deleted_current = True
-                    trans.new_history()
+                    trans.get_or_create_default_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
@@ -571,8 +571,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )
-        # Regardless of whether it was previously deleted, we make a new history active
-        trans.new_history()
+        # Regardless of whether it was previously deleted, get or create default history.
+        trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
     @web.expose

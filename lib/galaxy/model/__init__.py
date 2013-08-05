@@ -666,10 +666,11 @@ class History( object, UsesAnnotations ):
 
     api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
-        self.name = name or "Unnamed history"
+        self.name = name or History.default_name
         self.deleted = False
         self.purged = False
         self.importing = False
