@@ -745,47 +745,58 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     @web.require_login()
-    def trackster(self, trans, id=None, **kwargs):
+    def trackster(self, trans, **kwargs):
         """
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
 
-        # Get dataset to add.
+        # define app configuration
+        app = { 'jscript' : "viz/trackster" }
+    
+        # get dataset to add
+        id = kwargs.get( "id", None )
+
+        # get dataset to add
         new_dataset_id = kwargs.get( "dataset_id", None )
 
-        # Check for gene region
-        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
-    
-        # Set up new browser if no id provided.
+        # set up new browser if no id provided
         if not id:
-            # Use dbkey from dataset to be added or from incoming parameter.
+            # use dbkey from dataset to be added or from incoming parameter
             dbkey = None
             if new_dataset_id:
                 dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
-        
-            # fill template
-            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region.__dict__, add_dataset=new_dataset_id, default_dbkey=dbkey )
+    
+            # save database key
+            app['default_dbkey'] = dbkey
+    
+            # add url
+            app['new_browser'] = web.url_for( controller='visualization', action='new_browser', default_dbkey=dbkey )
+        else:
+            # load saved visualization
+            vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+            app['viz_config'] = self.get_visualization_config( trans, vis )
+            
+        # backup id
+        app['id'] = id;
 
-        # Display saved visualization.
-        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
-        viz_config = self.get_visualization_config( trans, vis )
-        
-        # Update gene region of saved visualization if user parses a new gene region in the url
+        # add dataset id
+        app['add_dataset'] = new_dataset_id
+            
+        # check for gene region
+        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
+
+        # update gene region of saved visualization if user parses a new gene region in the url
         if gene_region.chrom is not None:
-            viz_config['viewport']['chrom'] = gene_region.chrom
-            viz_config['viewport']['start'] = gene_region.start
-            viz_config['viewport']['end']   = gene_region.end
-        
-        '''
-        FIXME:
-        if new_dataset is not None:
-            if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
-                new_dataset = None # Already in browser, so don't add
-        '''
+            app['gene_region'] = {
+                'chrom' : gene_region.chrom,
+                'start' : gene_region.start,
+                'end'   : gene_region.end
+            }
+    
         # fill template
-        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset_id )
+        return trans.fill_template('galaxy.panels.mako', config = {'right_panel' : True, 'app' : app})
 
     @web.expose
     def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):
@@ -839,7 +850,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if not isinstance( genome_data, str ):
                 track[ 'preloaded_data' ] = genome_data
         
-        return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
+        # define app configuration for generic mako template
+        app = {
+            'jscript'       : "viz/circster",
+            'viz_config'    : viz_config,
+            'genome'        : genome
+        }
+        
+        # fill template
+        return trans.fill_template('galaxy.panels.mako', config = {'app' : app})
 
     @web.expose
     def sweepster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):

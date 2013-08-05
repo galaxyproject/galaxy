@@ -73,6 +73,12 @@
             var ui = new (trackster_ui.TracksterUI)( "${h.url_for('/')}" )
                 container_element = $("#${trans.security.encode_id( visualization.id )}");
             
+            // global config
+            config =
+            {
+                'root' : '${h.url_for("/")}'
+            };
+
             $(function() {
                 var is_embedded = (container_element.parents(".item-content").length > 0);
                 
@@ -82,7 +88,7 @@
                 } else { // Viewing just one shared viz
                     $("#right-border").click(function() { view.resize_window(); });
                 }
-                
+
                 // Create visualization.
                 var callback;
                 %if 'viewport' in config:

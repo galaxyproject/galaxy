@@ -4,7 +4,6 @@
 
 // dependencies
 define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
-       
 
 // frame manager
 var GalaxyFrameManager = Backbone.View.extend(

@@ -236,7 +236,7 @@ var CircsterView = Backbone.View.extend({
                 
         // -- Render circular tracks. --
 
-        // Create a view for each track in the visualiation and render.
+        // Create a view for each track in the visualization and render.
         this.circular_views = circular_tracks.map(function(track, index) {
             var view = new CircsterBigWigTrackView({
                     el: svg.append('g')[0],
@@ -250,7 +250,7 @@ var CircsterView = Backbone.View.extend({
             
             return view;
         });
-
+        
         // -- Render chords tracks. --
 
         this.chords_views = chords_tracks.map(function(track) {
@@ -950,9 +950,93 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
 
 });
 
+// circster app loader
+var Circster = Backbone.View.extend(
+{
+    initialize: function ()
+    {
+        // configure visualization
+        var genome = new visualization.Genome(config.app.genome),
+        vis = new visualization.GenomeVisualization(config.app.viz_config),
+        viz_view = new CircsterView(
+        {
+            // view pane
+            el                  : $('#center .unified-panel-body'),
+            
+            // gaps are difficult to set because it very dependent on chromosome size and organization.
+            total_gap           : 2 * Math.PI * 0.1,
+            genome              : genome,
+            model               : vis,
+            dataset_arc_height  : 25
+        });
+        
+        // render vizualization
+        viz_view.render();
+        
+        // setup title
+        $('#center .unified-panel-header-inner').append(config.app.viz_config.title + " " + config.app.viz_config.dbkey);
+    
+        // setup menu
+        var menu = create_icon_buttons_menu([
+        {   icon_class: 'plus-button', title: 'Add tracks', on_click: function()
+            {
+                visualization.select_datasets(config.root + "visualization/list_current_history_datasets", config.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                {
+                    vis.add_tracks(tracks);
+                });
+            }
+        },{
+            icon_class: 'disk--arrow', title: 'Save', on_click: function()
+            {
+                // show saving dialog box
+                show_modal("Saving...", "progress");
+     
+                // link configuration
+                var view = config.app.viz_config;
+                
+                // send to server
+                $.ajax({
+                    url: config.root + "visualization/save",
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        'id'        : view.vis_id,
+                        'title'     : view.title,
+                        'dbkey'     : view.dbkey,
+                        'type'      : 'trackster',
+                        'vis_json'  : JSON.stringify(view)
+                    }
+                }).success(function(vis_info) {
+                    hide_modal();
+                    view.vis_id = vis_info.vis_id;
+                    view.has_changes = false;
+            
+                    // needed to set URL when first saving a visualization
+                    window.history.pushState({}, "", vis_info.url + window.location.hash);
+                })
+                .error(function() {
+                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", { "Close" : hide_modal } );
+                });
+            }
+        },{
+            icon_class: 'cross-circle', title: 'Close', on_click: function()
+            {
+                window.location = config.root + "visualization/list";
+            }
+        }], { tooltip_config: { placement: 'bottom' } });
+            
+        // add menu
+        menu.$el.attr("style", "float: right");
+        $("#center .unified-panel-header-inner").append(menu.$el);
+            
+        // manual tooltip config because default gravity is S and cannot be changed
+        $(".menu-button").tooltip( { placement: 'bottom' } );
+    }
+});
+
 // Module exports.
 return {
-    CircsterView: CircsterView
+    GalaxyApp: Circster
 };
 
 });

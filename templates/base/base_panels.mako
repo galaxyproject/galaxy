@@ -79,28 +79,10 @@
             }
         };
 
-        ## check if its in a galaxy iframe
-        function is_in_galaxy_frame()
-        {
-            var iframes = parent.document.getElementsByTagName("iframe");
-            for (var i=0, len=iframes.length; i < len; ++i)
-                if (document == iframes[i].contentDocument || self == iframes[i].contentWindow)
-                    return $(iframes[i]).hasClass('f-iframe');
-            return false;
-        };
-
-        ## load css
-        function load_css (url)
-        {
-            ## check if css is already available
-            if (!$('link[href="' + url + '"]').length)
-                $('<link href="' + url + '" rel="stylesheet">').appendTo('head');
-        };
-
         ## load additional style sheet
-        if (is_in_galaxy_frame())
-            load_css(galaxy_config.url.styles + '/galaxy.frame.masthead.css');
-        
+        if (window != window.top)
+            $('<link href="' + galaxy_config.url.styles + '/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+
         // console protection
         window.console = window.console || {
             log     : function(){},
