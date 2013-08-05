@@ -588,8 +588,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a job from the PBS queue"""
-        job_tag = ( "(%s/%s)" 
-                  % ( job.get_id_tag(), job.get_job_runner_external_id() ) )
+        job_id = job.get_job_runner_external_id().encode('utf-8')
+        job_tag = "(%s/%s)" % ( job.get_id_tag(), job_id )
         log.debug( "%s Stopping PBS job" % job_tag )
 
         # Declare the connection handle c so that it can be cleaned up:
@@ -606,7 +606,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
                 log.debug("(%s) Connection to PBS server for job delete failed"
                          % job_tag ) 
                 return
-            pbs.pbs_deljob( c, job.get_job_runner_external_id(), '' )
+            pbs.pbs_deljob( c, job_id, '' )
             log.debug( "%s Removed from PBS queue before job completion" 
                      % job_tag )
         except:
