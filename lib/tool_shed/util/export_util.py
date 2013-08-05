@@ -24,6 +24,8 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
+CAPSULE_FILENAME = 'capsule'
+CAPSULE_WITH_DEPENDENCIES_FILENAME = 'capsule_with_dependencies'
 
 class ExportedRepositoryRegistry( object ):
 
@@ -45,11 +47,22 @@ def archive_repository_revision( trans, ui, repository, archive_dir, changeset_r
         log.exception( error_message )
     return return_code, error_message
 
+def clean_tool_shed_url( base_url ):
+    protocol, base = base_url.split( '://' )
+    base = base.replace( ':', '_colon_' )
+    base = base.rstrip( '/' )
+    return base
+
 def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type, export_repository_dependencies, api=False ):
-    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
-    tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
+    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repositories_archive_filename = generate_repository_archive_filename( tool_shed_url,
+                                                                          str( repository.name ),
+                                                                          str( repository.user.username ),
+                                                                          changeset_revision,
+                                                                          file_type,
+                                                                          export_repository_dependencies=export_repository_dependencies,
+                                                                          use_tmp_archive_dir=True )
     if export_repository_dependencies:
-        repositories_archive_filename = os.path.join( tmp_archive_dir, 'exported-with-dependencies-%s-%s' % ( repository_name, file_type_str ) )
         repo_info_dicts = get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision )
         repository_ids = get_repository_ids( trans, repo_info_dicts )
         ordered_repository_ids, ordered_repositories, ordered_changeset_revisions = order_components_for_import( trans, repository_ids, repo_info_dicts )
@@ -57,8 +70,6 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
         ordered_repository_ids = []
         ordered_repositories = []
         ordered_changeset_revisions = []
-        repositories_archive_filename = os.path.join( tmp_archive_dir, 'exported-%s-%s' % ( repository_name, file_type_str ) )
-        repository = suc.get_repository_in_tool_shed( trans, repository_id )
         if repository:
             repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
             if repository_metadata:
@@ -137,6 +148,18 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 repository_archive.add( full_path, arcname=relative_path )
     repository_archive.close()
     return repository_archive, error_message
+
+def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type, export_repository_dependencies=False, use_tmp_archive_dir=False ):
+    tool_shed = clean_tool_shed_url( tool_shed_url )
+    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
+    if export_repository_dependencies:
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME, tool_shed, name, owner, file_type_str )
+    else:
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_FILENAME, tool_shed, name, owner, file_type_str )
+    if use_tmp_archive_dir:
+        tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
+        repositories_archive_filename = os.path.join( tmp_archive_dir, repositories_archive_filename )
+    return repositories_archive_filename
 
 def get_components_from_repo_info_dict( trans, repo_info_dict ):
     """

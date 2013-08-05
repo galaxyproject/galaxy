@@ -54,7 +54,6 @@ class RepositoryRevisionsController( BaseAPIController ):
         try:
             # We'll currently support only gzip-compressed tar archives.
             file_type = 'gz'
-            file_type_str = suc.get_file_type_str( changeset_revision, file_type )
             export_repository_dependencies = util.string_as_bool( export_repository_dependencies )
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
