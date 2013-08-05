@@ -4,6 +4,8 @@ import shutil
 import tarfile
 import tempfile
 import threading
+from time import gmtime
+from time import strftime
 import tool_shed.util.shed_util_common as suc
 from galaxy import eggs
 from galaxy import web
@@ -97,9 +99,14 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
                 elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                 exported_repository_registry.exported_repository_elems.append( elem )
             shutil.rmtree( work_dir )
+        # Keep information about the export in a file name export_info.xml in the archive.
+        sub_elements = generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api )
+        export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
+        tmp_export_info = xml_util.create_and_write_tmp_file( export_elem, use_indent=True )
+        repositories_archive.add( tmp_export_info, arcname='export_info.xml' )
         # Write the manifest, which must preserve the order in which the repositories should be imported.
-        tmp_xml_file = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
-        repositories_archive.add( tmp_xml_file, arcname='manifest.xml' )
+        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
+        repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
     except Exception, e:
         log.exception( str( e ) )
     finally:
@@ -160,6 +167,17 @@ def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_
         tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
         repositories_archive_filename = os.path.join( tmp_archive_dir, repositories_archive_filename )
     return repositories_archive_filename
+
+def generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api ):
+    sub_elements = odict()
+    sub_elements[ 'export_time' ] = strftime( '%a, %d %b %Y %H:%M:%S +0000', gmtime() )
+    sub_elements[ 'tool_shed' ] = str( tool_shed_url.rstrip( '/' ) )
+    sub_elements[ 'repository_name' ] = str( repository.name )
+    sub_elements[ 'repository_owner' ] = str( repository.user.username )
+    sub_elements[ 'changeset_revision' ] = str( changeset_revision )
+    sub_elements[ 'export_repository_dependencies' ] = str( export_repository_dependencies )
+    sub_elements[ 'exported_via_api' ] = str( api )
+    return sub_elements
 
 def get_components_from_repo_info_dict( trans, repo_info_dict ):
     """
