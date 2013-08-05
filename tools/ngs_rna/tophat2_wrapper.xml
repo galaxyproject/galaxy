@@ -126,6 +126,14 @@
     </command>
     
     <inputs>
+        <param name="jobname" type="text" value="Tophat2" size="80" label="Job title for outputs" 
+                  help="Output name to remind you what this was for">
+           <sanitizer invalid_char="">
+               <valid initial="string.letters,string.digits">
+                  <add value="_" /> 
+               </valid>
+           </sanitizer>
+        </param>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Is this library mate-paired?">
               <option value="single">Single-end</option>
@@ -273,19 +281,19 @@
     </stdio>
 
     <outputs>
-        <data format="tabular" name="fusions" label="${on_string}_tophat2fus.xls" from_work_dir="tophat_out/fusions.out">
+        <data format="tabular" name="fusions" label="${on_string}_${jobname}_fusions.xls" from_work_dir="tophat_out/fusions.out">
             <filter>(params['settingsType'] == 'full' and params['fusion_search']['do_search'] == 'Yes')</filter>
         </data>
-        <data format="bed" name="insertions" label="${on_string}_tophat2ins.bed" from_work_dir="tophat_out/insertions.bed">
+        <data format="bed" name="insertions" label="${on_string}_${jobname}_ins.bed" from_work_dir="tophat_out/insertions.bed">
             <expand macro="dbKeyActions" />
         </data>
-        <data format="bed" name="deletions" label="${on_string}_tophhat2del.bed" from_work_dir="tophat_out/deletions.bed">
+        <data format="bed" name="deletions" label="${on_string}_${jobname}_del.bed" from_work_dir="tophat_out/deletions.bed">
           <expand macro="dbKeyActions" />
         </data>
-        <data format="bed" name="junctions" label="${on_string}tophat2sj.bed" from_work_dir="tophat_out/junctions.bed">
+        <data format="bed" name="junctions" label="${on_string}_${jobname}_splicejunc.bed" from_work_dir="tophat_out/junctions.bed">
           <expand macro="dbKeyActions" />
         </data>
-        <data format="bam" name="accepted_hits" label="${on_string}tophat2hits.bam" from_work_dir="tophat_out/accepted_hits.bam">
+        <data format="bam" name="accepted_hits" label="${on_string}_${jobname}_hits.bam" from_work_dir="tophat_out/accepted_hits.bam">
           <expand macro="dbKeyActions" />
         </data>
     </outputs>
