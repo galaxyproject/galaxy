@@ -864,7 +864,7 @@ class DistributedObjectStore(ObjectStore):
     store selected randomly, but with weighting.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, fsmon=False):
         super(DistributedObjectStore, self).__init__()
         self.distributed_config = config.distributed_object_store_config_file
         assert self.distributed_config is not None, "distributed object store ('object_store = distributed') " \
@@ -881,9 +881,10 @@ class DistributedObjectStore(ObjectStore):
         self.__parse_distributed_config(config)
 
         self.sleeper = None
-        if self.global_max_percent_full or filter(lambda x: x != 0.0, self.max_percent_full.values()):
+        if fsmon and ( self.global_max_percent_full or filter( lambda x: x != 0.0, self.max_percent_full.values() ) ):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
+            self.filesystem_monitor_thread.setDaemon( True )
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
@@ -1020,7 +1021,7 @@ class HierarchicalObjectStore(ObjectStore):
     def __init__(self, backends=[]):
         super(HierarchicalObjectStore, self).__init__()
 
-def build_object_store_from_config(config):
+def build_object_store_from_config(config, fsmon=False):
     """ Depending on the configuration setting, invoke the appropriate object store
     """
     store = config.object_store
@@ -1029,7 +1030,7 @@ def build_object_store_from_config(config):
     elif store == 's3' or store == 'swift':
         return S3ObjectStore(config=config)
     elif store == 'distributed':
-        return DistributedObjectStore(config=config)
+        return DistributedObjectStore(config=config, fsmon=fsmon)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
     else:

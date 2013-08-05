@@ -54,7 +54,7 @@ class UniverseApplication( object ):
         from tool_shed.galaxy_install.migrate.check import verify_tools
         verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
-        self.object_store = build_object_store_from_config(self.config)
+        self.object_store = build_object_store_from_config(self.config, fsmon=True)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
