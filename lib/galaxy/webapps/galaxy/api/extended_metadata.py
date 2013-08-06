@@ -1,17 +1,9 @@
 """
 API operations on annotations.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin
-from galaxy.util.sanitize_html import sanitize_html
-import galaxy.datatypes
-from galaxy.util.bunch import Bunch
-
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
+import logging
+from galaxy import web
+from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
 
 log = logging.getLogger( __name__ )
 
