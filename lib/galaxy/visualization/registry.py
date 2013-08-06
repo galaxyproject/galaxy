@@ -449,6 +449,7 @@ class DataSourceParser( object ):
             returned[ 'tests' ] = tests
 
         # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
+        returned[ 'to_params' ] = {}
         to_params = self.parse_to_params( xml_tree.findall( 'to_param' ) )
         if to_params:
             returned[ 'to_params' ] = to_params
@@ -514,6 +515,7 @@ class DataSourceParser( object ):
 
             # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
             #TODO: too dangerous - constrain these to some allowed list
+            #TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get( 'test_attr' )
             test_attr = test_attr.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( test_attr, str ) else []
             # build a lambda function that gets the desired attribute to test
@@ -523,14 +525,16 @@ class DataSourceParser( object ):
             test_result_type = test_elem.get( 'result_type' ) or 'string'
 
             # test functions should be sent an object to test, and the parsed result expected from the test
-            #TODO: currently, isinstance and string equivalance are the only test types supported
+            # is test_attr attribute an instance of result
             if   test_type == 'isinstance':
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
 
+            #TODO: needs cleanup - robustiosity-nessness
+            # does the object itself have a datatype attr and does that datatype have the given dataprovider
             elif test_type == 'has_dataprovider':
                 test_fn = lambda o, result: (     hasattr( o, 'datatype' )
-                                              and o.datatype.has_dataprovier( result ) )
+                                              and o.datatype.has_dataprovider( result ) )
 
             # default to simple (string) equilavance (coercing the test_attr to a string)
             else:
