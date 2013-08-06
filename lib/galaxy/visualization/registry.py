@@ -524,9 +524,13 @@ class DataSourceParser( object ):
 
             # test functions should be sent an object to test, and the parsed result expected from the test
             #TODO: currently, isinstance and string equivalance are the only test types supported
-            if test_type == 'isinstance':
+            if   test_type == 'isinstance':
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
+
+            elif test_type == 'has_dataprovider':
+                test_fn = lambda o, result: (     hasattr( o, 'datatype' )
+                                              and o.datatype.has_dataprovier( result ) )
 
             # default to simple (string) equilavance (coercing the test_attr to a string)
             else:
