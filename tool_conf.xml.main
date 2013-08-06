@@ -260,6 +260,7 @@
   </section>
   <section name="NGS: Mapping" id="ngs_mapping">
     <label text="Illumina" id="illumina"/>
+    <tool file="sr_mapping/bowtie2_wrapper.xml" />
     <label text="Roche-454" id="roche_454"/>
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
