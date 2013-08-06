@@ -25,8 +25,7 @@ class FilterFactory( object ):
         """
         filters = self.default_filters.copy()
 
-        if not trans.user:
-            filters[ "tool" ].append( _requires_login )
+        filters[ "tool" ].append( _handle_requires_login )
 
         if kwds.get( "trackster", False ):
             filters[ "tool" ].append( _has_trackster_conf )
@@ -59,8 +58,8 @@ def _not_hidden( context, tool ):
     return not tool.hidden
 
 
-def _requires_login( context, tool ):
-    return not tool.require_login
+def _handle_requires_login( context, tool ):
+    return not tool.require_login or context.trans.user
 
 
 def _has_trackster_conf( context, tool ):
