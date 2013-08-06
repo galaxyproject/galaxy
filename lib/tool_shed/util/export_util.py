@@ -246,6 +246,12 @@ def get_repository_attributes_and_sub_elements( repository, archive_name ):
     sub_elements[ 'description' ] = str( repository.description )
     sub_elements[ 'long_description' ] = str( repository.long_description )
     sub_elements[ 'archive' ] = archive_name
+    # Keep track of Category associations.
+    categories = []
+    for rca in repository.categories:
+        category = rca.category
+        categories.append( ( 'category', str( category.name ) ) )
+    sub_elements[ 'categories' ] = categories
     return attributes, sub_elements
 
 def get_repository_ids( trans, repo_info_dicts ):

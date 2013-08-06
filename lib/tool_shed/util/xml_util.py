@@ -62,7 +62,18 @@ def create_element( tag, attributes=None, sub_elements=None ):
                 # Don't include fields that are blank.
                 if v:
                     sub_elem = XmlET.SubElement( elem, k )
-                    sub_elem.text = v
+                    if isinstance( v, list ):
+                        # If the sub_elem is a list, then it must be a list of tuples where the first item is the tag and the second item is the text value.
+                        for v_tuple in v:
+                            if len( v_tuple ) == 2:
+                                v_tag = v_tuple[ 0 ]
+                                v_text = v_tuple[ 1 ]
+                                # Don't include fields that are blank.
+                                if v_text:
+                                    v_elem = XmlET.SubElement( sub_elem, v_tag )
+                                    v_elem.text = v_text
+                    else:
+                        sub_elem.text = v
         return elem
     return None
 
