@@ -14,6 +14,8 @@ pkg_resources.require( 'MarkupSafe' )
 pkg_resources.require( 'Mako' )
 import mako
 
+import logging
+log = logging.getLogger( __name__ )
 
 # ============================================================================= exceptions
 class PluginFrameworkException( Exception ):
@@ -74,7 +76,13 @@ class PluginFramework( object ):
         if not config_plugin_directory:
             return None
         try:
+            # create the plugin path and if plugin dir begins with '/' assume absolute path
             full_plugin_filepath = os.path.join( config.root, config_plugin_directory )
+            if config_plugin_directory.startswith( os.path.sep ):
+                full_plugin_filepath = config_plugin_directory
+            if not os.path.exists( full_plugin_filepath ):
+                raise PluginFrameworkException( 'Plugin path not found: %s' %( full_plugin_filepath ) )
+
             template_cache = config.template_cache if cls.serves_static else None
             plugin = cls( full_plugin_filepath, template_cache )
 
@@ -88,13 +96,22 @@ class PluginFramework( object ):
     def __str__( self ):
         return '%s(%s)' %( self.__class__.__name__, self.plugin_directory )
 
-    def __init__( self, plugin_directory, template_cache_dir=None, debug=False ):
+    def __init__( self, plugin_directory, name=None, template_cache_dir=None, debug=False ):
+        """
+        :type   plugin_directory:   string
+        :param  plugin_directory:   the base directory where plugin code is kept
+        :type   name:               (optional) string (default: None)
+        :param  name:               the name of this plugin
+            (that will appear in url pathing, etc.)
+        :type   template_cache_dir: (optional) string (default: None)
+        :param  template_cache_dir: the cache directory to store compiled mako
+        """
         if not os.path.isdir( plugin_directory ):
             raise PluginFrameworkException( 'Framework plugin directory not found: %s, %s'
                                             %( self.__class__.__name__, plugin_directory ) )
-        # absolute (?) path
         self.plugin_directory = plugin_directory
-        self.name = os.path.basename( self.plugin_directory )
+        #TODO: or pass in from config
+        self.name = name or os.path.basename( self.plugin_directory )
 
         if self.has_config:
             self.load_configuration()

@@ -48,6 +48,7 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
+    #: name of this plugin
     #: any built in visualizations that have their own render method in ctrls/visualization
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     #TODO: change/remove if/when they can be updated to use this system
@@ -57,9 +58,6 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
         'sweepster',
         'phyloviz'
     ]
-    #: where to search for visualiztion templates (relative to templates/webapps/galaxy)
-    # this can be overridden individually in the config entries
-    TEMPLATE_ROOT = 'visualization'
     #: directories under plugin_directory that aren't plugins
     non_plugin_directories = []
 
@@ -67,7 +65,7 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
         return 'VisualizationsRegistry(%s)' %( self.plugin_directory )
 
     def __init__( self, registry_filepath, template_cache_dir ):
-        super( VisualizationsRegistry, self ).__init__( registry_filepath, template_cache_dir )
+        super( VisualizationsRegistry, self ).__init__( registry_filepath, 'visualizations', template_cache_dir )
 
         # what to use to parse query strings into resources/vars for the template
         self.resource_parser = ResourceParser()
