@@ -12,7 +12,7 @@ class FilterFactory( object ):
         # Prepopulate dict containing filters that are always checked,
         # other filters that get checked depending on context (e.g. coming from
         # trackster or no user found are added in build filters).
-        self.default_filters = dict( tool=[ _not_hidden ], section=[], label=[] )
+        self.default_filters = dict( tool=[ _not_hidden, _handle_requires_login ], section=[], label=[] )
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
         self.__init_filters( "tool", config.tool_filters )
@@ -24,8 +24,6 @@ class FilterFactory( object ):
         Build list of filters to check tools against given current context.
         """
         filters = self.default_filters.copy()
-
-        filters[ "tool" ].append( _handle_requires_login )
 
         if kwds.get( "trackster", False ):
             filters[ "tool" ].append( _has_trackster_conf )
