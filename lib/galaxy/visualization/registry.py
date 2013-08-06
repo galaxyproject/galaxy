@@ -61,7 +61,7 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
     # this can be overridden individually in the config entries
     TEMPLATE_ROOT = 'visualization'
     #: directories under plugin_directory that aren't plugins
-    non_plugin_directories = [ 'bler' ]
+    non_plugin_directories = []
 
     def __str__( self ):
         return 'VisualizationsRegistry(%s)' %( self.plugin_directory )
