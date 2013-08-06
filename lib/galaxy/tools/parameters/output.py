@@ -215,9 +215,13 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
             self.offset = elem.get( 'offset', -1 )
             self.offset = int( self.offset )
         else:
+            self.options = []
             self.missing_tool_data_table_name = self.name
     def get_value( self, other_values ):
-        options = self.options
+        if self.options:
+            options = self.options
+        else:
+            options = []
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
         try:

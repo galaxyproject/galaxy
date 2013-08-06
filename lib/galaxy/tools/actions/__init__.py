@@ -1,5 +1,6 @@
 import os
 import galaxy.tools
+import re
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
