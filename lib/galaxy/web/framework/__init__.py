@@ -832,6 +832,39 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
 
     history = property( get_history, set_history )
 
+    def get_or_create_default_history( self ):
+        """
+        Gets or creates a default history and associates it with the current
+        session.
+        """
+
+        # There must be a user to fetch a default history.
+        if not self.galaxy_session.user:
+            return self.new_history()
+
+        # Look for default history that (a) has default name + is not deleted and 
+        # (b) has no datasets. If suitable history found, use it; otherwise, create 
+        # new history.
+        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by( 
+                                user=self.galaxy_session.user,
+                                name=self.app.model.History.default_name,
+                                deleted=False )
+        default_history = None
+        for history in unnamed_histories:
+            if len( history.datasets ) == 0:
+                # Found suitable default history.
+                default_history = history
+                break
+            
+        # Set or create hsitory.
+        if default_history:
+            history = default_history
+            self.set_history( history )
+        else:
+            history = self.new_history()
+
+        return history
+
     def new_history( self, name=None ):
         """
         Create a new history and associate it with the current session and
@@ -960,10 +993,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
 
-    def fill_template_mako( self, filename, **kwargs ):
-        template = self.webapp.mako_template_lookup.get_template( filename )
+    def fill_template_mako( self, filename, template_lookup=None, **kwargs ):
+        template_lookup = template_lookup or self.webapp.mako_template_lookup
+        template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
-        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
+
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util,
+                     request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )

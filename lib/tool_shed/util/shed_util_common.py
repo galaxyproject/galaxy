@@ -242,7 +242,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
-    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
+    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
     if current_changeset_revision is None:
         # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
         # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior

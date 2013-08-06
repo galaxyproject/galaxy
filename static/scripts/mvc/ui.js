@@ -1,101 +1,172 @@
 /**
- * -- Functions for creating large UI elements. --
+ * necessary galaxy paths
  */
-// =============================================================================
-/**
- * -- Utility models and views for Galaxy objects. --
- */
- 
-/**
- * Clickable button represented as an icon.
- */
-var IconButton = Backbone.Model.extend({
-    defaults: {
-        title: "",
-        icon_class: "",
-        on_click: null,
-        menu_options: null,
-        tooltip_config: {},
-        
-        isMenuButton : true,
-        id          : null,
-        href        : null,
-        target      : null,
-        enabled     : true,
-        visible     : true
+var GalaxyPaths = Backbone.Model.extend(
+{
+    defaults:
+    {
+        root_path: "",
+        image_path: ""
     }
-    
-    //validate : function( attributes ){
-        //TODO: validate href or on_click
-        //TODO: validate icon_class
-    //}
 });
 
+/**
+ * functions for creating large ui elements
+ */
 
 /**
- *  
+ * backbone model for icon buttons
  */
-var IconButtonView = Backbone.View.extend({
-    
-    initialize  : function(){
-        // better rendering this way (for me anyway)
+var IconButton = Backbone.Model.extend(
+{
+    defaults:
+    {
+        title           : "",
+        icon_class      : "",
+        on_click        : null,
+        menu_options    : null,
+        is_menu_button  : true,
+        id              : null,
+        href            : null,
+        target          : null,
+        enabled         : true,
+        visible         : true,
+        tooltip_config  : {}
+    }
+});
+
+/**
+ *  backbone view for icon buttons
+ */
+var IconButtonView = Backbone.View.extend(
+{    
+    // initialize
+    initialize: function()
+    {
+        // better rendering this way
         this.model.attributes.tooltip_config = { placement : 'bottom' };
-        this.model.bind( 'change', this.render, this );
+        this.model.bind('change', this.render, this);
     },
     
-    render : function(){
-        //NOTE: not doing this hide will lead to disappearing buttons when they're both being hovered over & rendered
-        this.$el.tooltip( 'hide' );
+    // render
+    render: function()
+    {
+        // hide tooltip
+        this.$el.tooltip('hide');
         
-        // template in common-templates.html 
-        var newElem = $( Handlebars.partials.iconButton( this.model.toJSON() ) );
-        newElem.tooltip( this.model.get( 'tooltip_config' ) );
+        // create element
+        var new_elem = this.template(this.model.attributes);
         
-        this.$el.replaceWith( newElem );
-        this.setElement( newElem );
+        // configure tooltip
+        new_elem.tooltip(this.model.get('tooltip_config'));
+        
+        // replace
+        this.$el.replaceWith(new_elem);
+        this.setElement(new_elem);
 
+        // return
         return this;
     },
     
-    events      : {
+    // events
+    events:
+    {
         'click' : 'click'
     },
     
-    click : function( event ){
+    // click
+    click: function( event )
+    {
         // if on_click pass to that function
-        if( this.model.attributes.on_click ){
-            this.model.attributes.on_click( event );
+        if(this.model.attributes.on_click)
+        {
+            this.model.attributes.on_click(event);
             return false;
         }
+        
         // otherwise, bubble up (to href or whatever)
         return true;
+    },
+    
+    // generate html element
+    template: function(options)
+    {
+        // initialize
+        var buffer = 'title="' + options.title + '" class="icon-button';
+    
+        // is menu button
+        if(options.is_menu_button)
+            buffer += ' menu-button';
+        
+        // define tooltip
+        if(options.title)
+            buffer += ' tooltip';
+        
+        // add icon class
+        buffer += ' ' + options.icon_class;
+    
+        // add enabled/disabled class
+        if(!options.enabled)
+            buffer += '_disabled';
+        
+        // close class tag
+        buffer += '"';
+    
+        // add id
+        if(options.id)
+            buffer += ' id="' + options.id + '"';
+        
+        // add href
+        buffer += ' href="' + options.href + '"';
+        
+        // add target for href
+        if(options.target)
+            buffer += ' target="' + options.target + '"';
+    
+        // set visibility
+        if(!options.visible)
+            buffer += ' style="display: none;"';
+    
+        // enabled/disabled
+        if (options.enabled)
+            buffer = '<a ' + buffer + '/>';
+        else
+            buffer = '<span ' + buffer + '/>';
+            
+        // return element
+        return $(buffer);
     }
 });
-//TODO: bc h.templates is gen. loaded AFTER ui, Handlebars.partials.iconButton === undefined
-IconButtonView.templates = {
-    iconButton : Handlebars.partials.iconButton
-};
 
-var IconButtonCollection = Backbone.Collection.extend({
+// define collection
+var IconButtonCollection = Backbone.Collection.extend(
+{
     model: IconButton
 });
 
-
-//------------------------------------------------------------------------------
 /**
- * Menu with multiple icon buttons. Views are not needed nor used for individual buttons.
+ * menu with multiple icon buttons
+ * views are not needed nor used for individual buttons
  */
-var IconButtonMenuView = Backbone.View.extend({
+var IconButtonMenuView = Backbone.View.extend(
+{
+    // tag
     tagName: 'div',
 
-    initialize: function() {
+    // initialize
+    initialize: function()
+    {
         this.render();
     },
     
-    render: function() {
+    // render
+    render: function()
+    {
+        // initialize icon buttons
         var self = this;
-        this.collection.each(function(button) {
-            // Create and add icon button to menu.
+        this.collection.each(function(button)
+        {
+            // create and add icon button to menu
             var elt = 
             $('<a/>').attr('href', 'javascript:void(0)')
                      .attr('title', button.attributes.title)
@@ -104,17 +175,17 @@ var IconButtonMenuView = Backbone.View.extend({
                      .appendTo(self.$el)
                      .click(button.attributes.on_click);
 
-            if (button.attributes.tooltip_config) {
+            // configure tooltip
+            if (button.attributes.tooltip_config)
                 elt.tooltip(button.attributes.tooltip_config);
-            }
 
-            // If there are options, add popup menu to icon.
+            // add popup menu to icon
             var menu_options = button.get('options');
-            if (menu_options) {
+            if (menu_options)
                 make_popupmenu(elt, menu_options);
-            }
-        
         });
+        
+        // return
         return this;
     }
 });
@@ -125,19 +196,22 @@ var IconButtonMenuView = Backbone.View.extend({
  * defines an icon button. Each dictionary must have the following
  * elements: icon_class, title, and on_click.
  */
-var create_icon_buttons_menu = function(config, global_config) {
-    if (!global_config) { global_config = {}; }
+var create_icon_buttons_menu = function(config, global_config)
+{
+    // initialize global configuration
+    if (!global_config) global_config = {};
 
-    // Create and initialize menu.
+    // create and initialize menu
     var buttons = new IconButtonCollection( 
-            _.map(config, function(button_config) { 
-                return new IconButton(_.extend(button_config, global_config)); 
-            })
-        );
+        _.map(config, function(button_config)
+        {
+            return new IconButton(_.extend(button_config, global_config));
+        })
+    );
     
+    // return menu
     return new IconButtonMenuView( {collection: buttons} );
 };
-
 
 // =============================================================================
 /**
@@ -155,196 +229,232 @@ var GridView = Backbone.View.extend({
 });
 
 // =============================================================================
-/**
- * Necessary Galaxy paths.
- */
-var GalaxyPaths = Backbone.Model.extend({
-    defaults: {
-        root_path: "",
-        image_path: ""
-    }
-});
-
-
-// =============================================================================
-/** @class View for a popup menu
- *  @name PopupMenu
- *
- *  @constructs
+/** 
+ * view for a popup menu
  */
 var PopupMenu = Backbone.View.extend(
-/** @lends PopupMenu.prototype */{
-
+{
     /* TODO:
         add submenus
         add hrefs
         test various html keys
         add make_popupmenus style
-        get template inside this file somehow
     */
     /** Cache the desired button element and options, set up the button click handler
      *  NOTE: attaches this view as HTML/jQ data on the button for later use.
      */
     //TODO: include docs on special option keys (divider, checked, etc.)
-    initialize : function( $button, options ){
+    initialize: function($button, options)
+    {
         // default settings
-        this.$button = $button || $( '<div/>' );
+        this.$button = $button || $('<div/>');
         this.options = options || [];
 
         // set up button click -> open menu behavior
         var menu = this;
-        this.$button.click( function( event ){
-            menu._renderAndShow( event );
-            //event.stopPropagation();
+        this.$button.click(function(event)
+        {
+            menu._renderAndShow(event);
             return false;
         });
 
         // attach this view as a data object on the button - for later access
         //TODO:?? memleak?
-        this.$button.data( 'PopupMenu', this );
-
-        // template loading is problematic - ui is loaded in base.mako
-        //  and the template (prev.) needed to be loaded before ui
+        this.$button.data('PopupMenu', this);
     },
 
-    /** Render the menu. NOTE: doesn't attach itself to the DOM.
-     *  @see PopupMenu#_renderAndShow
-     */
-    render : function(){
+    // render the menu
+    // this menu doesn't attach itself to the DOM (see _renderAndShow)
+    render: function()
+    {
+        // link this popup
         var menu = this;
 
         // render the menu body
-        this.$el.addClass( 'popmenu-wrapper' )
-            .css({
-                position:   'absolute',
-                display:    'none'
+        this.$el.addClass('popmenu-wrapper')
+            .css(
+            {
+                position    : 'absolute',
+                display     : 'none'
             });
 
-        //BUG: anchors within a.popupmenu-option render OUTSIDE the a.popupmenu-option!?
-        this.$el.html( PopupMenu.templates.menu({
-            options     : this.options,
-            // sets menu div id to '{{ id }}-menu'
-            id          : this.$button.attr( 'id' )
-        }));
+        // use template
+        this.$el.html(this.template(this.$button.attr('id'), this.options));
 
         // set up behavior on each link/anchor elem
-        if( this.options.length ){
-            this.$el.find( 'li' ).each( function( i, li ){
-                var $li = $( li ),
+        if(this.options.length)
+        {
+            this.$el.find('li').each(function(i, li)
+            {
+                var $li = $(li),
                     $anchor = $li.children( 'a.popupmenu-option' ),
-                    menuFunc = menu.options[ i ].func;
+                    menuFunc = menu.options[i].func;
 
-                if( $anchor.length && menuFunc ){
-                    $anchor.click( function( event ){
-                        menuFunc( event, menu.options[ i ] );
+                // click event
+                if($anchor.length && menuFunc)
+                {
+                    $anchor.click(function(event)
+                    {
+                        menuFunc(event, menu.options[i]);
                     });
                 }
 
                 // cache the anchor as a jq obj within the options obj
-                menu.options[ i ].$li = $li;
+                menu.options[i].$li = $li;
             });
         }
         return this;
     },
 
-    /** Get the absolute position/offset for the menu
-     */
-    _getShownPosition : function( clickEvent ){
-        var menuWidth = this.$el.width(),
-            // display menu horiz. centered on click...
-            x = clickEvent.pageX - menuWidth / 2 ;
+    // get the absolute position/offset for the menu
+    _getShownPosition : function( clickEvent )
+    {
+        // get element width
+        var menuWidth = this.$el.width();
+        
+        // display menu horiz. centered on click...
+        var x = clickEvent.pageX - menuWidth / 2 ;
 
-        // ...but adjust that to handle horiz. scroll and window dimensions (draw entirely on visible screen area)
+        // adjust to handle horiz. scroll and window dimensions (draw entirely on visible screen area)
         x = Math.min( x, $( document ).scrollLeft() + $( window ).width() - menuWidth - 5 );
         x = Math.max( x, $( document ).scrollLeft() + 5 );
 
+        // return
         return {
             top: clickEvent.pageY,
             left: x
         };
     },
 
-    /** Render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
-     */
-    _renderAndShow : function( clickEvent ){
+    // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
+    _renderAndShow: function(clickEvent)
+    {
         this.render();
-        this.$el.appendTo( 'body' );
-        this.$el.css( this._getShownPosition( clickEvent ) );
+        this.$el.appendTo('body');
+        this.$el.css( this._getShownPosition(clickEvent));
         this._setUpCloseBehavior();
         this.$el.show();
     },
 
-    /** Bind an event handler to all available frames so that when anything is clicked
-     *      * the menu is removed from the DOM
-     *      * The event handler unbinds itself
-     */
-    _setUpCloseBehavior : function(){
-        var menu = this,
-            // function to close popup and unbind itself
-            closePopupWhenClicked = function( $elClicked ){
-                $elClicked.bind( "click.close_popup", function(){
-                    menu.remove();
-                    $elClicked.unbind( "click.close_popup" );
-                });
-            };
+    // bind an event handler to all available frames so that when anything is clicked
+    // the menu is removed from the DOM and the event handler unbinds itself
+    _setUpCloseBehavior: function()
+    {
+        // function to close popup and unbind itself
+        var menu = this;
+        var closePopupWhenClicked = function($elClicked)
+        {
+            $elClicked.bind("click.close_popup", function()
+            {
+                menu.remove();
+                $elClicked.unbind("click.close_popup");
+            });
+        };
 
         // bind to current, parent, and sibling frames
-        //TODO: (Assuming for now that this is the best way to do this...)
-        closePopupWhenClicked( $( window.document ) );
-        closePopupWhenClicked( $( window.top.document ) );
-        _.each( window.top.frames, function( siblingFrame ){
-            closePopupWhenClicked( $( siblingFrame.document ) );
+        closePopupWhenClicked($(window.document));
+        closePopupWhenClicked($(window.top.document));
+        _.each(window.top.frames, function(siblingFrame)
+        {
+            closePopupWhenClicked($(siblingFrame.document));
         });
     },
 
-    /** Add a menu option/item at the given index
-     */
-    addItem : function( item, index ){
+    // add a menu option/item at the given index
+    addItem: function(item, index)
+    {
         // append to end if no index
-        index = ( index >= 0 )?( index ):( this.options.length );
-        this.options.splice( index, 0, item );
+        index = (index >= 0) ? index : this.options.length;
+        this.options.splice(index, 0, item);
         return this;
     },
 
-    /** Remove a menu option/item at the given index
-     */
-    removeItem : function( index ){
-        if( index >=0 ){
-            this.options.splice( index, 1 );
-        }
+    // remove a menu option/item at the given index
+    removeItem: function(index)
+    {
+        if(index >=0)
+            this.options.splice(index, 1);
         return this;
     },
 
-    /** Search for a menu option by it's html
-     */
-    findIndexByHtml : function( html ){
-        for( var i=0; i<this.options.length; i++ ){
-            if( ( _.has( this.options[i], 'html' ) )
-            &&  ( this.options[i].html === html ) ){
+    // search for a menu option by it's html
+    findIndexByHtml: function(html)
+    {
+        for(var i = 0; i < this.options.length; i++)
+            if(_.has(this.options[i], 'html') && (this.options[i].html === html))
                 return i;
-            }
-        }
         return null;
     },
 
-    /** Search for a menu option by it's html
-     */
-    findItemByHtml : function( html ){
-        return this.options[( this.findIndexByHtml( html ) )];
+    // search for a menu option by it's html
+    findItemByHtml: function(html)
+    {
+        return this.options[(this.findIndexByHtml(html))];
     },
 
-    /** String representation. */
-    toString : function(){
+    // string representation
+    toString: function()
+    {
         return 'PopupMenu';
+    },
+    
+    // template
+    template: function(id, options)
+    {
+        // initialize template
+        var tmpl = '<ul id="' + id + '-menu" class="dropdown-menu">';
+        
+        // check item number
+        if (options.length > 0)
+        {
+            // add option
+            for (var i in options)
+            {
+                // get item
+                var item = options[i];
+            
+                // check for divider
+                if (item.divider)
+                {
+                    // add divider
+                    tmpl += '<li class="divider"></li>';
+                } else {
+                    // identify header
+                    if(item.header)
+                    {
+                        tmpl += '<li class="head"><a href="javascript:void(0);">' + item.html + '</a></li>';
+                    } else {
+                        // add href
+                        if (item.href)
+                        {
+                            tmpl += '<li><a href="' + item.href + '"';
+                            tmpl += 'target="' + item.target + '"';
+                        } else
+                            tmpl += '<li><a href="javascript:void(0);"';
+                        
+                        // add class
+                        tmpl += 'class="popupmenu-option">'
+                        
+                        // add target
+                        if (item.checked)
+                            tmpl += '<span class="fa-icon-ok"></span>';
+                        
+                        // add html
+                        tmpl += item.html;
+                    }
+                }
+            }
+        } else
+            tmpl += '<li>No Options.</li>';
+        
+        // return
+        return tmpl + '</ul>';
     }
 });
-PopupMenu.templates = {
-    menu    : Handlebars.templates[ 'template-popupmenu-menu' ]
-};
 
 // -----------------------------------------------------------------------------
 // the following class functions are bridges from the original make_popupmenu and make_popup_menus
-//  to the newer backbone.js PopupMenu
+// to the newer backbone.js PopupMenu
 
 /** Create a PopupMenu from simple map initial_options activated by clicking button_element.
  *      Converts initial_options to object array used by PopupMenu.
@@ -379,29 +489,33 @@ PopupMenu.make_popupmenu = function( button_element, initial_options ){
  *  @returns {Object[]} the options array to initialize a PopupMenu
  */
 //TODO: lose parent and selector, pass in array of links, use map to return options
-PopupMenu.convertLinksToOptions = function( $parent, selector ){
-    $parent = $( $parent );
+PopupMenu.convertLinksToOptions = function( $parent, selector )
+{
+    $parent = $($parent);
     selector = selector || 'a';
     var options = [];
-    $parent.find( selector ).each( function( elem, i ){
-        var option = {},
-            $link = $( elem );
+    $parent.find( selector ).each( function( elem, i )
+    {
+        var option = {}, $link = $( elem );
 
         // convert link text to the option text (html) and the href into the option func
         option.html = $link.text();
-        if( linkHref ){
+        if( linkHref )
+        {
             var linkHref    = $link.attr( 'href' ),
                 linkTarget  = $link.attr( 'target' ),
                 confirmText = $link.attr( 'confirm' );
 
-            option.func = function(){
+            option.func = function()
+            {
                 // if there's a "confirm" attribute, throw up a confirmation dialog, and
                 //  if the user cancels - do nothing
                 if( ( confirmText ) && ( !confirm( confirmText ) ) ){ return; }
 
                 // if there's no confirm attribute, or the user accepted the confirm dialog:
                 var f;
-                switch( linkTarget ){
+                switch( linkTarget )
+                {
                     // relocate the center panel
                     case '_parent':
                         window.parent.location = linkHref;

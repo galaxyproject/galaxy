@@ -1,5 +1,3 @@
-<!-- runnable on NIX with xmllint -->
-
 <!-- each visualization must have a template (all other elements are optional) -->
 <!ELEMENT visualization (data_sources*,params*,template_root*,template,link_text*,render_location*)>
 <!-- visualization name (e.g. 'trackster', 'scatterplot', etc.) is required -->

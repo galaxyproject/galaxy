@@ -76,21 +76,24 @@ class Configuration( object ):
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         try:
-            hbc_test = int( self.hours_between_check )
-            self.hours_between_check = hbc_test
-            if self.hours_between_check < 1 or self.hours_between_check > 24:
+            if isinstance( self.hours_between_check, int ):
+                if self.hours_between_check < 1 or self.hours_between_check > 24:
+                    self.hours_between_check = 12
+            elif isinstance( self.hours_between_check, float ):
+                # If we're running functional tests, the minimum hours between check should be reduced to 0.001, or 3.6 seconds.
+                if self.running_functional_tests:
+                    if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+                else:
+                    if self.hours_between_check < 1.0 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+            else:
                 self.hours_between_check = 12
         except:
-            try:
-                # Float values are supported for functional tests.
-                hbc_test = float( self.hours_between_check )
-                self.hours_between_check = hbc_test
-                if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
-                    self.hours_between_check = 12.0
-            except:
-                self.hours_between_check = 12
+            self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
         self.data_manager_config_file = resolve_path( kwargs.get('data_manager_config_file', 'data_manager_conf.xml' ), self.root )
@@ -277,7 +280,6 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
-        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         # Experimental: This will not be enabled by default and will hide 
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
@@ -290,8 +292,10 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # visualization registries config directory
-        self.visualizations_config_directory = kwargs.get( 'visualizations_config_directory', None )
+        # PLUGINS:
+        self.plugin_frameworks = []
+        # visualization framework
+        self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):

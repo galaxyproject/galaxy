@@ -616,7 +616,7 @@ function create_scatterplot_action_fn( url, params ){
             title      : "Scatterplot",
             type       : "url",
             content    : url + '/scatterplot?' + $.param(params),
-            center     : true
+            location   : 'center'
         });
 
         //TODO: this needs to go away

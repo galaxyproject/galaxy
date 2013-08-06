@@ -231,14 +231,16 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                   current_changeset_revision=changeset_revision,
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False )
-                # Add the processed tool shed repository to the list of all processed repositories maintained within this method.
-                all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                if tool_shed_repository not in all_created_or_updated_tool_shed_repositories:
+                    # Add the processed tool shed repository to the list of all processed repositories maintained within this method.
+                    all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                 # Only append the tool shed repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
                 if install_repository_dependencies or is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
-                    # Keep the one-to-one mapping between items in 3 lists.
-                    created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                    tool_panel_section_keys.append( tool_panel_section_key )
-                    filtered_repo_info_dicts.append( repo_info_dict )
+                    if tool_shed_repository not in created_or_updated_tool_shed_repositories:
+                        # Keep the one-to-one mapping between items in 3 lists.
+                        created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                        tool_panel_section_keys.append( tool_panel_section_key )
+                        filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts

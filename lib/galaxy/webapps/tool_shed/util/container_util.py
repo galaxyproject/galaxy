@@ -257,13 +257,12 @@ class Tool( object ):
 class ToolDependency( object ):
     """Tool dependency object"""
 
-    def __init__( self, id=None, name=None, version=None, type=None, install_dir=None, readme=None, installation_status=None, repository_id=None,
+    def __init__( self, id=None, name=None, version=None, type=None, readme=None, installation_status=None, repository_id=None,
                   tool_dependency_id=None, is_orphan=None ):
         self.id = id
         self.name = name
         self.version = version
         self.type = type
-        self.install_dir = install_dir
         self.readme = readme
         self.installation_status = installation_status
         self.repository_id = repository_id
@@ -948,12 +947,10 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         # Insert a header row.
         tool_dependency_id += 1
         if trans.webapp.name == 'galaxy':
-            # Include the installation directory.
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
                                               type='Type',
-                                              install_dir='Install directory',
                                               readme=None,
                                               installation_status='Installation status',
                                               repository_id=None,
@@ -964,7 +961,6 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               name='Name',
                                               version='Version',
                                               type='Type',
-                                              install_dir=None,
                                               readme=None,
                                               installation_status=None,
                                               repository_id=None,
@@ -995,7 +991,6 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                                       name=name,
                                                       version=None,
                                                       type=type,
-                                                      install_dir=None,
                                                       readme=None,
                                                       installation_status=installation_status,
                                                       repository_id=repository_id,
@@ -1013,7 +1008,6 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
                 type = requirements_dict[ 'type' ]
-                install_dir = requirements_dict.get( 'install_dir', None )
                 repository_id = requirements_dict.get( 'repository_id', None )
                 td_id = requirements_dict.get( 'tool_dependency_id', None )
                 if trans.webapp.name == 'galaxy':
@@ -1024,7 +1018,6 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                                   name=name,
                                                   version=version,
                                                   type=type,
-                                                  install_dir=install_dir,
                                                   readme=None,
                                                   installation_status=installation_status,
                                                   repository_id=repository_id,

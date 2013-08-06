@@ -254,7 +254,7 @@ var Drawable = function(view, container, obj_dict) {
         this.container_div.hover(
             function() { drawable.icons_div.show(); }, function() { drawable.icons_div.hide(); }
         );
-        
+       
         // Needed for floating elts in header.
         $("<div style='clear: both'/>").appendTo(this.container_div);
     }
@@ -951,7 +951,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(select_datasets_url, add_track_async_url, { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets(config.root + "/visualization/list_current_history_datasets", config.root + "/api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
@@ -1215,11 +1215,11 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     load_chroms: function(url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
 
-        var 
+        var
             view = this,
             chrom_data = $.Deferred();
         $.ajax({
-            url: chrom_url + "/" + this.dbkey, 
+            url: config.root + "api/genomes/" + this.dbkey,
             data: url_parms,
             dataType: "json",
             success: function (result) {
@@ -1253,7 +1253,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 alert("Could not load chroms for this dbkey:", view.dbkey);
             }
         });
-        
         return chrom_data;
     },
     
@@ -1857,7 +1856,7 @@ extend(Tool.prototype, {
         url_params.inputs = this.get_param_values_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: galaxy_paths.get('tool_url'),
+                url: config.root + "/api/tools",
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: 'application/json',
@@ -2237,10 +2236,12 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.html_elt).hover( function() { 
+    $(this.html_elt).hover(
+    function() {
         this.hovered = true; 
         $(this).mousemove();
-    }, function() { 
+    },
+    function() {
         this.hovered = false; 
         // Clear popup if it is still hanging around (this is probably not needed) 
         $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
@@ -2284,7 +2285,6 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                 }
                 
                 // Build popup.
-                
                 var popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup"),
                     table = $("<table/>"),
                     key, value, row;
@@ -2490,7 +2490,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                         // Go to visualization.
                         window.location.href = 
-                            galaxy_paths.get('sweepster_url') + "?" + 
+                            config.root + "visualization/sweepster" + "?" +
                             $.param({
                                 dataset_id: track.dataset.id,
                                 hda_ldda: track.dataset.get('hda_ldda'),
@@ -3757,7 +3757,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
-    this.data_url = reference_url + "/" + this.view.dbkey;
+    this.data_url = config.root + "api/genomes/" + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,

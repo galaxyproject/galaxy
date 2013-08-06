@@ -4,6 +4,8 @@ import shutil
 import tarfile
 import tempfile
 import threading
+from time import gmtime
+from time import strftime
 import tool_shed.util.shed_util_common as suc
 from galaxy import eggs
 from galaxy import web
@@ -24,6 +26,8 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
+CAPSULE_FILENAME = 'capsule'
+CAPSULE_WITH_DEPENDENCIES_FILENAME = 'capsule_with_dependencies'
 
 class ExportedRepositoryRegistry( object ):
 
@@ -45,11 +49,22 @@ def archive_repository_revision( trans, ui, repository, archive_dir, changeset_r
         log.exception( error_message )
     return return_code, error_message
 
+def clean_tool_shed_url( base_url ):
+    protocol, base = base_url.split( '://' )
+    base = base.replace( ':', '_colon_' )
+    base = base.rstrip( '/' )
+    return base
+
 def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type, export_repository_dependencies, api=False ):
-    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
-    tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
+    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repositories_archive_filename = generate_repository_archive_filename( tool_shed_url,
+                                                                          str( repository.name ),
+                                                                          str( repository.user.username ),
+                                                                          changeset_revision,
+                                                                          file_type,
+                                                                          export_repository_dependencies=export_repository_dependencies,
+                                                                          use_tmp_archive_dir=True )
     if export_repository_dependencies:
-        repositories_archive_filename = os.path.join( tmp_archive_dir, 'exported-with-dependencies-%s-%s' % ( repository_name, file_type_str ) )
         repo_info_dicts = get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision )
         repository_ids = get_repository_ids( trans, repo_info_dicts )
         ordered_repository_ids, ordered_repositories, ordered_changeset_revisions = order_components_for_import( trans, repository_ids, repo_info_dicts )
@@ -57,8 +72,6 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
         ordered_repository_ids = []
         ordered_repositories = []
         ordered_changeset_revisions = []
-        repositories_archive_filename = os.path.join( tmp_archive_dir, 'exported-%s-%s' % ( repository_name, file_type_str ) )
-        repository = suc.get_repository_in_tool_shed( trans, repository_id )
         if repository:
             repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
             if repository_metadata:
@@ -86,9 +99,14 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
                 elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                 exported_repository_registry.exported_repository_elems.append( elem )
             shutil.rmtree( work_dir )
+        # Keep information about the export in a file name export_info.xml in the archive.
+        sub_elements = generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api )
+        export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
+        tmp_export_info = xml_util.create_and_write_tmp_file( export_elem, use_indent=True )
+        repositories_archive.add( tmp_export_info, arcname='export_info.xml' )
         # Write the manifest, which must preserve the order in which the repositories should be imported.
-        tmp_xml_file = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
-        repositories_archive.add( tmp_xml_file, arcname='manifest.xml' )
+        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
+        repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
     except Exception, e:
         log.exception( str( e ) )
     finally:
@@ -137,6 +155,29 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 repository_archive.add( full_path, arcname=relative_path )
     repository_archive.close()
     return repository_archive, error_message
+
+def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type, export_repository_dependencies=False, use_tmp_archive_dir=False ):
+    tool_shed = clean_tool_shed_url( tool_shed_url )
+    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
+    if export_repository_dependencies:
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME, tool_shed, name, owner, file_type_str )
+    else:
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_FILENAME, tool_shed, name, owner, file_type_str )
+    if use_tmp_archive_dir:
+        tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
+        repositories_archive_filename = os.path.join( tmp_archive_dir, repositories_archive_filename )
+    return repositories_archive_filename
+
+def generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api ):
+    sub_elements = odict()
+    sub_elements[ 'export_time' ] = strftime( '%a, %d %b %Y %H:%M:%S +0000', gmtime() )
+    sub_elements[ 'tool_shed' ] = str( tool_shed_url.rstrip( '/' ) )
+    sub_elements[ 'repository_name' ] = str( repository.name )
+    sub_elements[ 'repository_owner' ] = str( repository.user.username )
+    sub_elements[ 'changeset_revision' ] = str( changeset_revision )
+    sub_elements[ 'export_repository_dependencies' ] = str( export_repository_dependencies )
+    sub_elements[ 'exported_via_api' ] = str( api )
+    return sub_elements
 
 def get_components_from_repo_info_dict( trans, repo_info_dict ):
     """
@@ -205,6 +246,12 @@ def get_repository_attributes_and_sub_elements( repository, archive_name ):
     sub_elements[ 'description' ] = str( repository.description )
     sub_elements[ 'long_description' ] = str( repository.long_description )
     sub_elements[ 'archive' ] = archive_name
+    # Keep track of Category associations.
+    categories = []
+    for rca in repository.categories:
+        category = rca.category
+        categories.append( ( 'category', str( category.name ) ) )
+    sub_elements[ 'categories' ] = categories
     return attributes, sub_elements
 
 def get_repository_ids( trans, repo_info_dicts ):

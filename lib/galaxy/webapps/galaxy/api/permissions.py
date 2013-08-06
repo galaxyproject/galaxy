@@ -3,7 +3,8 @@ API operations on the permissions of a library.
 """
 import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
+import galaxy.util
+from galaxy import util, datatypes, jobs, web
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
@@ -23,7 +24,7 @@ class PermissionsController( BaseAPIController ):
             trans.response.status = 403
             return "You are not authorized to update library permissions."
 
-        params = util.Params( payload )
+        params = galaxy.util.Params( payload )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
         except TypeError:
@@ -38,7 +39,7 @@ class PermissionsController( BaseAPIController ):
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
             role_params = params.get( k + '_in', [] )
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( role_params ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in galaxy.util.listify( role_params ) ]
             permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
         trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
         trans.sa_session.refresh( library )

@@ -13,6 +13,7 @@ import urllib2
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import display
 from common import submit
+from tool_shed.util import export_util
 
 CHUNK_SIZE = 2**20 # 1Mb
 
@@ -54,17 +55,20 @@ def main( options ):
     if repository_id:
         # We'll currently support only gzip-compressed tar archives.
         file_type = 'gz'
-        file_type_str = get_file_type_str( options.changeset_revision, file_type )
         url = '%s%s' % ( base_tool_shed_url, '/api/repository_revisions/%s/export' % str( repository_id ) )
         export_dict = submit( url, data, return_formatted=False )
         error_messages = export_dict[ 'error_messages' ]
         if error_messages:
             print "Error attempting to export revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner, ":\n", error_messages
         else:
-            if string_as_bool( options.export_repository_dependencies ):
-                repositories_archive_filename = 'exported-with-dependencies-%s-%s' % ( name, file_type_str )
-            else:
-                repositories_archive_filename = 'exported-%s-%s' % ( name, file_type_str )
+            repositories_archive_filename = \
+                export_util.generate_repository_archive_filename( base_tool_shed_url,
+                                                                  options.name,
+                                                                  options.owner,
+                                                                  options.changeset_revision,
+                                                                  file_type,
+                                                                  export_repository_dependencies=string_as_bool( options.export_repository_dependencies ),
+                                                                  use_tmp_archive_dir=False )
             download_url = export_dict[ 'download_url' ]
             download_dir = os.path.abspath( options.download_dir )
             file_path = os.path.join( download_dir, repositories_archive_filename )
