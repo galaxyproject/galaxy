@@ -3,6 +3,8 @@
     <description>Find splice junctions using RNA-seq data</description>
     <version_command>tophat --version</version_command>
     <requirements>
+        <requirement type="package">samtools</requirement>
+        <requirement type="package">bowtie</requirement>
         <requirement type="package">tophat</requirement>
     </requirements>
     <command interpreter="python">
