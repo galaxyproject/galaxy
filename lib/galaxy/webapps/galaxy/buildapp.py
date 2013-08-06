@@ -2,22 +2,26 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import logging, atexit
-import os, os.path
-import sys, warnings
-
-from galaxy.util import asbool
+import sys
+import os
+import os.path
+import atexit
+import warnings
+import glob
 
 from paste import httpexceptions
 import pkg_resources
 
-log = logging.getLogger( __name__ )
-
-from galaxy import util
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
+from galaxy import util
+from galaxy.util import asbool
+
+import logging
+log = logging.getLogger( __name__ )
+
 
 class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
     pass
@@ -181,7 +185,7 @@ def app_factory( global_conf, **kwargs ):
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, **kwargs )
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=app.config.plugin_frameworks, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
         pack_scripts()
     # Close any pooled database connections before forking
@@ -323,7 +327,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     log.debug( "Enabling 'Request ID' middleware" )
     return app
     
-def wrap_in_static( app, global_conf, **local_conf ):
+def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap = URLMap()
@@ -343,6 +347,16 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
     urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
+
+    # wrap any static dirs for plugins
+    plugin_frameworks = plugin_frameworks or []
+    for static_serving_framework in ( framework for framework in plugin_frameworks if framework.serves_static ):
+        # invert control to each plugin for finding their own static dirs
+        for plugin_url, plugin_static_path in static_serving_framework.get_static_urls_and_paths():
+            plugin_url = '/plugins/' + plugin_url
+            urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
+            log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
+
     # URL mapper becomes the root webapp
     return urlmap
     

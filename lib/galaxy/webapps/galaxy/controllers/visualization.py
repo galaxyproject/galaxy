@@ -708,7 +708,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # validate name vs. registry
         registry = trans.app.visualizations_registry
         if not registry:
-            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)')
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)' )
         if visualization_name not in registry.listings:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
             # or redirect to list?
@@ -722,16 +722,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
 
             # look up template and render
-            template_root = registry_listing.get( 'template_root', registry.TEMPLATE_ROOT )
-            template = registry_listing[ 'template' ]
-            template_path = os.path.join( template_root, template )
+            template_path = registry_listing[ 'template' ]
+            returned = registry.fill_template( trans, template_path,
+                visualization_name=visualization_name, query_args=kwargs,
+                embedded=embedded, shared_vars={}, **resources )
             #NOTE: passing *unparsed* kwargs as query_args
             #NOTE: shared_vars is a dictionary for shared data in the template
             #   this feels hacky to me but it's what mako recommends:
             #   http://docs.makotemplates.org/en/latest/runtime.html
             #TODO: embedded
-            returned = trans.fill_template( template_path, visualization_name=visualization_name,
-                embedded=embedded, query_args=kwargs, shared_vars={}, **resources )
 
         except Exception, exception:
             log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )

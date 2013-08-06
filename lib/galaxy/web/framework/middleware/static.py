@@ -12,9 +12,11 @@ from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 class CacheableStaticURLParser( StaticURLParser ):
+
     def __init__( self, directory, cache_seconds=None ):
         StaticURLParser.__init__( self, directory )
         self.cache_seconds = cache_seconds
+
     def __call__( self, environ, start_response ):
         path_info = environ.get('PATH_INFO', '')
         if not path_info:
