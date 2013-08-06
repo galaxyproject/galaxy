@@ -122,6 +122,28 @@
             %endif
         </div>
     </div>
+     <div class="toolForm">
+        <div class="toolFormTitle">Change Extended Metadata</div>
+        <div class="toolFormBody">
+                <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
+                <div class="form-row">
+                <label>Extended Metadata:</label>
+                </div>
+                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
+                <div class="form-row">
+                %if ldda.extended_metadata:
+                    <textarea name="extended_metadata" rows="15" cols="35">${util.pretty_print_json(ldda.extended_metadata.data)}</textarea>
+                %else:
+                    <textarea name="extended_metadata" rows="15" cols="35"></textarea>
+                %endif
+                </div>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <input type="submit" name="change_extended_metadata" value="Save"/>
+                </div>
+            </form>
+        </div>
+    </div>
     <p/>
 %else:
     <div class="toolForm">

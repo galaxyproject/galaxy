@@ -122,6 +122,10 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
+    _add_item_extended_metadata_controller( webapp, 
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
     _add_item_annotation_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -237,6 +241,10 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
         conditions=dict(method=["GET"]))
 
 
+def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sextended_metadata" % name_prefix
+    name = "%sextended_metadata" % name_prefix
+    webapp.mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
 def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix

@@ -36,6 +36,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
 from galaxy.visualization.genome.visual_analytics import get_tool_def
 
 from galaxy.datatypes.display_applications import util as da_util
@@ -2280,6 +2281,80 @@ class UsesTagsMixin( object ):
         tagged_item = self._get_tagged_item( trans, item_class_name, id )
         log.debug( "In get_item_tag_assoc with tagged_item %s" % tagged_item )
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
+
+
+
+class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
+    """ Mixin for getting and setting item extended metadata. """
+            
+    def get_item_extended_metadata_obj( self, trans, item ):
+        """
+        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object 
+        of the associated extended metadata
+        """
+        if item.extended_metadata:
+            return item.extended_metadata
+        return None
+ 
+    def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
+        print "setting", extmeta_obj.data
+        if item.__class__ == LibraryDatasetDatasetAssociation:
+            if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = extmeta_obj
+                trans.sa_session.flush()
+
+    def unset_item_extended_metadata_obj( self, trans, item, check_writable=False):
+        if item.__class__ == LibraryDatasetDatasetAssociation:
+            if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = None
+                trans.sa_session.flush()
+
+    def create_extended_metadata(self, trans, extmeta):
+        """
+        Create/index an extended metadata object. The returned object is
+        not associated with any items
+        """
+        ex_meta = ExtendedMetadata(extmeta)
+        trans.sa_session.add( ex_meta )
+        trans.sa_session.flush()
+        for path, value in self._scan_json_block(extmeta):
+            meta_i = ExtendedMetadataIndex(ex_meta, path, value)
+            trans.sa_session.add(meta_i)
+        trans.sa_session.flush()
+        return ex_meta
+
+    def delete_extended_metadata( self, trans, item):
+        if item.__class__ == ExtendedMetadata:
+            trans.sa_session.delete( item )
+            trans.sa_session.flush()
+
+    def _scan_json_block(self, meta, prefix=""):
+        """
+        Scan a json style data structure, and emit all fields and their values.
+        Example paths
+
+        Data
+        { "data" : [ 1, 2, 3 ] }
+
+        Path:
+        /data == [1,2,3]
+
+        /data/[0] == 1
+
+        """
+        if isinstance(meta, dict):
+            for a in meta:
+                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
+                    yield path, value
+        elif isinstance(meta, list):
+            for i, a in enumerate(meta):
+                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
+                    yield path, value
+        else:
+            #BUG: Everything is cast to string, which can lead to false positives
+            #for cross type comparisions, ie "True" == True
+            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+
 
 """
 Deprecated: `BaseController` used to be available under the name `Root`
