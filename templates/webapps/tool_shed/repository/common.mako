@@ -888,11 +888,7 @@
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
         <${cell_type}>
             %if trans.webapp.name == 'galaxy':
-                %if is_missing:
-                    ${tool_dependency.installation_status | h}
-                %elif tool_dependency.install_dir:
-                    ${tool_dependency.install_dir | h}
-                %endif
+                ${tool_dependency.installation_status | h}
             %else:
                 %if row_is_header:
                     ${tool_dependency.is_orphan | h}

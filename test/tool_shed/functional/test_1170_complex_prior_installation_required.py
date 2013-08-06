@@ -63,7 +63,7 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded matplotlib tool dependency tarball.',
-                              strings_displayed=['orphan'], 
+                              strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
     
     def test_0010_create_numpy_repository( self ):
@@ -89,7 +89,7 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded numpy tool dependency tarball.',
-                              strings_displayed=['orphan'], 
+                              strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
         
     def test_0015_create_complex_repository_dependency( self ):
