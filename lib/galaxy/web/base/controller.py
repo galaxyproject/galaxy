@@ -537,7 +537,9 @@ class UsesHistoryDatasetAssociationMixin:
             hda = None
             try:
                 hda = self.get_dataset( trans, id,
-                    check_ownership=check_ownership, check_accesible=check_accesible, check_state=check_state )
+                    check_ownership=check_ownership,
+                    check_accessible=check_accessible,
+                    check_state=check_state )
             except Exception, exception:
                 pass
             hdas.append( hda )
