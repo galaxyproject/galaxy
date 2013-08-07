@@ -1,158 +1,105 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
 templates['template-hda-downloadLinks'] = template(function (Handlebars,depth0,helpers,partials,data) {
-  helpers = helpers || Handlebars.helpers;
-  var stack1, stack2, foundHelper, tmp1, self=this, functionType="function", helperMissing=helpers.helperMissing, undef=void 0, escapeExpression=this.escapeExpression, blockHelperMissing=helpers.blockHelperMissing;
+  this.compilerInfo = [4,'>= 1.0.0'];
+helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
+  var stack1, stack2, functionType="function", escapeExpression=this.escapeExpression, self=this, blockHelperMissing=helpers.blockHelperMissing;
 
 function program1(depth0,data) {
   
-  var buffer = "", stack1, stack2;
+  var buffer = "", stack1, stack2, options;
   buffer += "\n<div popupmenu=\"dataset-";
-  foundHelper = helpers.id;
-  stack1 = foundHelper || depth0.id;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "-popup\">\n    <a class=\"action-button\" href=\"";
-  foundHelper = helpers.urls;
-  stack1 = foundHelper || depth0.urls;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.download);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "urls.download", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">";
-  foundHelper = helpers.local;
-  stack1 = foundHelper || depth0.local;
-  tmp1 = self.program(2, program2, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
+  if (stack1 = helpers.id) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.id; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "-popup\">\n    <a class=\"action-button\" href=\""
+    + escapeExpression(((stack1 = ((stack1 = depth0.urls),stack1 == null || stack1 === false ? stack1 : stack1.download)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "\">";
+  options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data};
+  if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
+  else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
+  if(stack2 || stack2 === 0) { buffer += stack2; }
   buffer += "</a>\n    <a>";
-  foundHelper = helpers.local;
-  stack1 = foundHelper || depth0.local;
-  tmp1 = self.program(4, program4, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
+  options = {hash:{},inverse:self.noop,fn:self.program(4, program4, data),data:data};
+  if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
+  else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
+  if(stack2 || stack2 === 0) { buffer += stack2; }
   buffer += "</a>\n    ";
-  foundHelper = helpers.urls;
-  stack1 = foundHelper || depth0.urls;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.meta_download);
-  stack2 = helpers.each;
-  tmp1 = self.program(6, program6, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  stack1 = stack2.call(depth0, stack1, tmp1);
-  if(stack1 || stack1 === 0) { buffer += stack1; }
+  stack2 = helpers.each.call(depth0, ((stack1 = depth0.urls),stack1 == null || stack1 === false ? stack1 : stack1.meta_download), {hash:{},inverse:self.noop,fn:self.program(6, program6, data),data:data});
+  if(stack2 || stack2 === 0) { buffer += stack2; }
   buffer += "\n</div>\n<div style=\"float:left;\" class=\"menubutton split popup\" id=\"dataset-";
-  foundHelper = helpers.id;
-  stack1 = foundHelper || depth0.id;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "id", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "-popup\">\n    <a href=\"";
-  foundHelper = helpers.urls;
-  stack1 = foundHelper || depth0.urls;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.download);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "urls.download", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\" title=\"";
-  foundHelper = helpers.local;
-  stack1 = foundHelper || depth0.local;
-  tmp1 = self.program(9, program9, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
+  if (stack2 = helpers.id) { stack2 = stack2.call(depth0, {hash:{},data:data}); }
+  else { stack2 = depth0.id; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  buffer += escapeExpression(stack2)
+    + "-popup\">\n    <a href=\""
+    + escapeExpression(((stack1 = ((stack1 = depth0.urls),stack1 == null || stack1 === false ? stack1 : stack1.download)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "\" title=\"";
+  options = {hash:{},inverse:self.noop,fn:self.program(7, program7, data),data:data};
+  if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
+  else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
+  if(stack2 || stack2 === 0) { buffer += stack2; }
   buffer += "\" class=\"icon-button disk tooltip\"></a>\n</div>\n";
-  return buffer;}
+  return buffer;
+  }
 function program2(depth0,data) {
   
   
-  return "Download Dataset";}
+  return "Download Dataset";
+  }
 
 function program4(depth0,data) {
   
   
-  return "Additional Files";}
+  return "Additional Files";
+  }
 
 function program6(depth0,data) {
   
-  var buffer = "", stack1;
+  var buffer = "", stack1, options;
   buffer += "\n    <a class=\"action-button\" href=\"";
-  foundHelper = helpers.url;
-  stack1 = foundHelper || depth0.url;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "url", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\">";
-  foundHelper = helpers.local;
-  stack1 = foundHelper || depth0.local;
-  tmp1 = self.program(7, program7, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
+  if (stack1 = helpers.url) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.url; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "\">";
+  options = {hash:{},inverse:self.noop,fn:self.program(7, program7, data),data:data};
+  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += " ";
-  foundHelper = helpers.file_type;
-  stack1 = foundHelper || depth0.file_type;
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "file_type", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "</a>\n    ";
-  return buffer;}
+  if (stack1 = helpers.file_type) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
+  else { stack1 = depth0.file_type; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  buffer += escapeExpression(stack1)
+    + "</a>\n    ";
+  return buffer;
+  }
 function program7(depth0,data) {
   
   
-  return "Download";}
+  return "Download";
+  }
 
 function program9(depth0,data) {
   
-  
-  return "Download";}
-
-function program11(depth0,data) {
-  
-  var buffer = "", stack1;
-  buffer += "\n";
-  buffer += "\n<a href=\"";
-  foundHelper = helpers.urls;
-  stack1 = foundHelper || depth0.urls;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.download);
-  if(typeof stack1 === functionType) { stack1 = stack1.call(depth0, { hash: {} }); }
-  else if(stack1=== undef) { stack1 = helperMissing.call(depth0, "urls.download", { hash: {} }); }
-  buffer += escapeExpression(stack1) + "\" title=\"";
-  foundHelper = helpers.local;
-  stack1 = foundHelper || depth0.local;
-  tmp1 = self.program(12, program12, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.noop;
-  if(foundHelper && typeof stack1 === functionType) { stack1 = stack1.call(depth0, tmp1); }
-  else { stack1 = blockHelperMissing.call(depth0, stack1, tmp1); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
+  var buffer = "", stack1, stack2, options;
+  buffer += "\n"
+    + "\n<a href=\""
+    + escapeExpression(((stack1 = ((stack1 = depth0.urls),stack1 == null || stack1 === false ? stack1 : stack1.download)),typeof stack1 === functionType ? stack1.apply(depth0) : stack1))
+    + "\" title=\"";
+  options = {hash:{},inverse:self.noop,fn:self.program(7, program7, data),data:data};
+  if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
+  else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
+  if(stack2 || stack2 === 0) { buffer += stack2; }
   buffer += "\" class=\"icon-button disk tooltip\"></a>\n";
-  return buffer;}
-function program12(depth0,data) {
-  
-  
-  return "Download";}
+  return buffer;
+  }
 
-  foundHelper = helpers.urls;
-  stack1 = foundHelper || depth0.urls;
-  stack1 = (stack1 === null || stack1 === undefined || stack1 === false ? stack1 : stack1.meta_download);
-  stack2 = helpers['if'];
-  tmp1 = self.program(1, program1, data);
-  tmp1.hash = {};
-  tmp1.fn = tmp1;
-  tmp1.inverse = self.program(11, program11, data);
-  stack1 = stack2.call(depth0, stack1, tmp1);
-  if(stack1 || stack1 === 0) { return stack1; }
-  else { return ''; }});
+  stack2 = helpers['if'].call(depth0, ((stack1 = depth0.urls),stack1 == null || stack1 === false ? stack1 : stack1.meta_download), {hash:{},inverse:self.program(9, program9, data),fn:self.program(1, program1, data),data:data});
+  if(stack2 || stack2 === 0) { return stack2; }
+  else { return ''; }
+  });
 })();
