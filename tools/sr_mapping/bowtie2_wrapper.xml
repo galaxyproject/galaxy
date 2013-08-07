@@ -87,10 +87,10 @@
         ## read group information
         #if str($read_group.selection) == "yes":
             #if $read_group.rgid and $read_group.rglb and $read_group.rgpl and $read_group.rgsm:
-                --rg-id $read_group.rgid
-                --rg LB:$read_group.rglb
-                --rg PL:$read_group.rgpl
-                --rg SM:$read_group.rgsm
+                --rg-id "$read_group.rgid"
+                --rg "LB:$read_group.rglb"
+                --rg "PL:$read_group.rgpl"
+                --rg "SM:$read_group.rgsm"
             #end if
         #end if
         
@@ -254,6 +254,17 @@
     </outputs>
 
     <tests>
+        <test>
+            <!-- basic test on single paired default run -->
+            <param name="type" value="single"/>
+            <param name="selection" value="no"/>
+            <param name="full" value="no"/>
+            <param name="unaligned_file" value="false"/>
+            <param name="source" value="history" />
+            <param name="input_1" value="bowtie2/phix_reads.fastq" ftype="fastqsanger"/>
+            <param name="own_file" value="bowtie2/phix_genome.fasta" />
+            <output name="output" file="bowtie2/phix_mapped.bam" />
+        </test>
     </tests>
 
     <help>
