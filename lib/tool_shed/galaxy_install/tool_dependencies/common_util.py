@@ -71,23 +71,13 @@ def create_or_update_env_shell_file_with_command( install_dir, command ):
                                           __shellquote(env_shell_file_path))
     return cmd
 
-def download_binary_from_url( url, work_dir, install_dir ):
+def download_binary( url, work_dir ):
     '''
-    Download a pre-compiled binary from the specified URL. If the downloaded file is an archive,
-    extract it into install_dir and delete the archive.
+    Download a pre-compiled binary from the specified URL.
     '''
     downloaded_filename = os.path.split( url )[ -1 ]
-    try:
-        dir = url_download( work_dir, downloaded_filename, url, extract=True )
-        downloaded_filepath = os.path.join( work_dir, downloaded_filename )
-        if is_compressed( downloaded_filepath ):
-            os.remove( downloaded_filepath )
-        move_directory_files( current_dir=work_dir,
-                              source_dir=dir,
-                              destination_dir=install_dir )
-        return True
-    except HTTPError:
-        return False
+    dir = url_download( work_dir, downloaded_filename, url, extract=False )
+    return downloaded_filename
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
