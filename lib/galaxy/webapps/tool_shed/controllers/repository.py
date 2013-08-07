@@ -17,6 +17,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import export_util
 from tool_shed.util import metadata_util
@@ -30,7 +31,6 @@ from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import repository_util
 from galaxy.webapps.tool_shed.util import common_util
-from galaxy.webapps.tool_shed.util import container_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util

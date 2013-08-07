@@ -8,10 +8,10 @@ from galaxy.util import json
 from galaxy import util
 from galaxy import web
 from galaxy.model.orm import or_
-from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
+from tool_shed.util import container_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
