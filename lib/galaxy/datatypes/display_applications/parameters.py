@@ -28,6 +28,7 @@ class DisplayApplicationParameter( object ):
         self.viewable = string_as_bool( elem.get( 'viewable', 'False' ) ) #only allow these to be viewed via direct url when explicitly set to viewable
         self.strip = string_as_bool( elem.get( 'strip', 'False' ) )
         self.strip_https = string_as_bool( elem.get( 'strip_https', 'False' ) )
+        self.allow_override = string_as_bool( elem.get( 'allow_override', 'False' ) ) # Passing query param app_<name>=<value> to dataset controller allows override if this is true.
     def get_value( self, other_values, dataset_hash, user_hash, trans ):
         raise Exception, 'Unimplemented'
     def prepare( self, other_values, dataset_hash, user_hash, trans ):
@@ -126,7 +127,7 @@ class DisplayApplicationTemplateParameter( DisplayApplicationParameter ):
     
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
-        self.text = elem.text
+        self.text = elem.text or ''
     def get_value( self, other_values, dataset_hash, user_hash, trans ):
         value = fill_template( self.text, context = other_values )
         if self.strip:
