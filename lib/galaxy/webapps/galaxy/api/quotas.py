@@ -11,7 +11,7 @@ from galaxy.web.params import QuotaParamParser
 from galaxy.actions.admin import AdminActions
 
 from paste.httpexceptions import HTTPBadRequest
-from galaxy.exceptions import *
+from galaxy.exceptions import ActionInputError
 
 log = logging.getLogger( __name__ )
 
