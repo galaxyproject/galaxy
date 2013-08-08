@@ -110,17 +110,23 @@ var TracksterView = Backbone.View.extend(
         // ajax
         $.ajax(
         {
-            url: config.app.new_browser,
+            url: config.root + "api/genomes?chrom_info=True",
             data: {},
             error: function() { alert( "Couldn't create new browser." ); },
-            success: function(form_html)
+            success: function(response)
             {
-                show_modal("New Visualization", form_html,
+                // show dialog
+                show_modal("New Visualization", self.template_view_new(response),
                 {
                     "Cancel": function() { window.location = config.root + "visualization/list"; },
                     "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); }
                 });
 
+                // select default
+                if (config.app.default_dbkey)
+                    $("#new-dbkey option[value='" + config.default_dbkey +"']").attr("selected", true);
+
+                // change focus
                 $("#new-title").focus();
                 $("select[name='dbkey']").combobox(
                 {
@@ -132,6 +138,42 @@ var TracksterView = Backbone.View.extend(
                 $("#overlay").css("overflow", "auto");
             }
         });
+    },
+    
+    // new browser form
+    template_view_new: function(response)
+    {
+        // start template
+        var html =  '<form id="new-browser-form" action="javascript:void(0);" method="post" onsubmit="return false;">' +
+                        '<div class="form-row">' +
+                            '<label for="new-title">Browser name:</label>' +
+                            '<div class="form-row-input">' +
+                                '<input type="text" name="title" id="new-title" value="Unnamed"></input>' +
+                            '</div>' +
+                            '<div style="clear: both;"></div>' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            '<label for="new-dbkey">Reference genome build (dbkey): </label>' +
+                            '<div class="form-row-input">' +
+                                '<select name="dbkey" id="new-dbkey">';
+
+        // add dbkeys
+        for (var key in response)
+            html += '<option value="' + response[key][1] + '">' + response[key][0] + '</option>';
+        
+        // close selection/finalize template
+        html +=                 '</select>' +
+                            '</div>' +
+                            '<div style="clear: both;"></div>' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            'Is the build not listed here? ' +
+                            '<a href="' + config.root + 'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
+                        '</div>' +
+                    '</form>';
+        
+        // return
+        return html;
     },
     
     // create
