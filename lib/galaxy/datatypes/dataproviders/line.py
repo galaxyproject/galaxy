@@ -132,7 +132,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
     e.g. Fasta, GenBank, MAF, hg log
     Note: mem intensive (gathers list of lines before output)
     """
-    def __init__( self, source, new_block_delim_fn, block_filter_fn=None, **kwargs ):
+    def __init__( self, source, new_block_delim_fn=None, block_filter_fn=None, **kwargs ):
         """
         :param new_block_delim_fn: T/F function to determine whether a given line
             is the start of a new block.
@@ -214,7 +214,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         """
         if self.new_block_delim_fn:
             return self.new_block_delim_fn( line )
-        return False
+        return True
 
     # NOTE:
     #   some formats have one block attr per line
@@ -251,17 +251,3 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         if self.block_filter_fn:
             return self.block_filter_fn( block )
         return block
-
-
-# ----------------------------------------------------------------------------- hierarchal/tree data providers
-class HierarchalDataProvider( BlockDataProvider ):
-    """
-    Class that uses formats where a datum may have a parent or children
-    data.
-
-    e.g. XML, HTML, GFF3, Phylogenetic
-    """
-    def __init__( self, source, **kwargs ):
-        #TODO: (and defer to better (than I can write) parsers for each subtype)
-        raise NotImplementedError( 'Abstract class' )
-        super( HierarchalDataProvider, self ).__init__( source, **kwargs )

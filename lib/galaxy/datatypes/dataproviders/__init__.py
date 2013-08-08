@@ -23,6 +23,7 @@ import exceptions
 import base
 import chunk
 import line
+import hierarchy
 import column
 import external
 import dataset

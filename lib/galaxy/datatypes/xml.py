@@ -4,9 +4,11 @@ XML format classes
 import data
 import logging
 from galaxy.datatypes.sniff import *
+import dataproviders
 
 log = logging.getLogger(__name__)
 
+@dataproviders.decorators.has_dataproviders
 class GenericXml( data.Text ):
     """Base format class for any XML file."""
     file_ext = "xml"
@@ -47,6 +49,12 @@ class GenericXml( data.Text ):
         data.Text.merge(split_files, output_file)
     merge = staticmethod(merge)
 
+    @dataproviders.decorators.dataprovider_factory( 'xml', dataproviders.hierarchy.XMLDataProvider.settings )
+    def xml_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.hierarchy.XMLDataProvider( dataset_source, **settings )
+
+
 class MEMEXml( GenericXml ):
     """MEME XML Output data"""
     file_ext = "memexml"
@@ -62,6 +70,7 @@ class MEMEXml( GenericXml ):
     def sniff( self, filename ):
         return False
 
+
 class CisML( GenericXml ):
     """CisML XML data""" #see: http://www.ncbi.nlm.nih.gov/pubmed/15001475
     file_ext = "cisml"
@@ -76,6 +85,7 @@ class CisML( GenericXml ):
             dataset.blurb = 'file purged from disk'
     def sniff( self, filename ):
         return False
+
 
 class Phyloxml( GenericXml ):
     """Format for defining phyloxml data http://www.phyloxml.org/"""
