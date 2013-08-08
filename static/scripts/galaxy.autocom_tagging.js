@@ -100,12 +100,6 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
             var new_value = this.value;
 
-            // Do nothing if return key was used to autocomplete.
-            if (return_key_pressed_for_autocomplete === true) {
-                return_key_pressed_for_autocomplete = false;
-                return false;
-            }
-
             // Suppress space after a ":"
             if ( new_value.indexOf(": ", new_value.length - 2) !== -1) {
                 this.value = new_value.substring(0, new_value.length-1);
@@ -166,7 +160,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     // Flush autocomplete cache because it's not out of date.
                     // TODO: in the future, we could remove the particular item
                     // that was chosen from the cache rather than flush it.
-                    zz.flushCache();
+                    zz.data('autocompleter').cacheFlush();
                 }
             });
 
