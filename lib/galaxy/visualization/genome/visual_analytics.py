@@ -38,6 +38,8 @@ def get_dataset_job( hda ):
 
 def get_tool_def( trans, hda ):
     """ Returns definition of an interactive tool for an HDA. """
+
+    #FIXME: use tools.to_dict rather than custom code here.
     
     job = get_dataset_job( hda )
     # TODO: could use this assertion to provide more information.
@@ -71,10 +73,10 @@ def get_tool_def( trans, hda ):
             tool_params.append( param_dict )
         elif type( input ) == SelectToolParameter and type( input.options ) != DynamicOptions:
             tool_params.append( { 'name' : name, 'label' : input.label, 'type' : 'select', \
-                                  'value' : tool_param_values.get( name, None ), \
+                                  'value' : tool_param_values.get( name, '' ), \
                                   'html' : urllib.quote( input.get_html() ) } )
         
     # If tool has parameters that can be interactively modified, return tool.
     if len( tool_params ) != 0:
-        return { 'id': tool.id, 'name' : tool.name, 'params' : tool_params } 
+        return { 'id': tool.id, 'name' : tool.name, 'inputs' : tool_params } 
     return None

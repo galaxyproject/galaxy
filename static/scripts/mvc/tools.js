@@ -41,6 +41,7 @@ var ToolParameter = Backbone.RelationalModel.extend({
         label: null,
         type: null,
         value: null,
+        html: null,
         num_samples: 5
     },
     
@@ -70,7 +71,51 @@ var ToolParameter = Backbone.RelationalModel.extend({
         }
         
         return samples;
-    }   
+    },
+
+    set_value: function(value) {
+        this.set('value', value || '');
+    }
+},
+{
+    /**
+     * Dictionary mapping parameter type strings to parameter classes.
+     */
+    TYPE_DICT: {
+        'number': IntegerToolParameter
+    },
+
+    /**
+     * Create new parameter from a dictionary.
+     */
+    create: function(options) {
+        var param_class = ToolParameter.TYPE_DICT[options.type] || ToolParameter;
+        return new param_class(options);
+    }
+});
+
+/**
+ * A number tool parameter.
+ */
+var IntegerToolParameter = ToolParameter.extend({
+    defaults: _.extend({}, ToolParameter.prototype.defaults, {
+        min: null,
+        max: null
+    }),
+
+    initialize: function() {
+        ToolParameter.prototype.initialize.call(this);
+        if (this.attributes.min) {
+            this.attributes.min = parseInt(this.attributes.min, 10);    
+        }
+        if (this.attributes.max) {
+            this.attributes.max = parseInt(this.attributes.max, 10);
+        }
+    },
+
+    set_value: function(value) {
+        this.set('value', parseInt(value, 10))
+    }
 });
 
 /**
@@ -79,22 +124,22 @@ var ToolParameter = Backbone.RelationalModel.extend({
 var Tool = BaseModel.extend({
     // Default attributes.
     defaults: {
+        id: null,
+        name: null,
         description: null,
         target: null,
         inputs: []
     },
-    
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'inputs',
-            relatedModel: ToolParameter,
-            reverseRelation: {
-                key: 'tool',
-                includeInJSON: false
-            }
-        }
-    ],
+
+    initialize: function(options) {
+        // Unpack parameters manually so that different parameter types can be created.
+        this.attributes.inputs = new Backbone.Collection( _.map(options.inputs, function(param_dict) {
+            // FIXME: it is still useful to be able to save/restore tool state?
+            // Update parameter value from tool state dict.
+            //param_dict.value = tool_state_dict[ param_dict[name] ] || param_dict.value;
+            return ToolParameter.create(param_dict);
+        }));
+    },
     
     urlRoot: galaxy_paths.get('tool_url'),
 
@@ -206,6 +251,13 @@ var Tool = BaseModel.extend({
         });
         return run_deferred;
     }
+});
+
+/**
+ * Tool view.
+ */
+var ToolView = Backbone.View.extend({
+
 });
 
 /**
@@ -697,6 +749,8 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
 
 // Exports
 return {
+    ToolParameter: ToolParameter,
+    IntegerToolParameter: IntegerToolParameter,
     Tool: Tool,
     ToolSearch: ToolSearch,
     ToolPanel: ToolPanel,
