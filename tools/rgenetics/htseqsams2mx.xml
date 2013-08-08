@@ -1,24 +1,25 @@
-<tool id="htseqsams2mxlocal" name="SAM/BAM to count matrix" version="0.4">
- <description>local using HTSeq code</description>
+<tool id="htseqsams2mx" name="SAM/BAM to count matrix" version="0.4">
+ <description>using HTSeq code</description>
   <stdio>
      <exit_code range="666"   level="warning"   
        description="Exit code 666 encountered" />
   </stdio>
   <requirements>
       <requirement type="package" version="1.7.1">numpy</requirement>
+      <requirement type="package" version="0.7.5">pysam</requirement>
       <requirement type="package" version="2.4.11">freetype</requirement>
       <requirement type="package" version="1.2.1">matplotliblite</requirement> 
       <requirement type="package" version="0.5.4p3">htseq</requirement>
   </requirements>
   <command interpreter="python">
     htseqsams2mx.py -g "$gfffile" -o "$outfile" -m "$model" --id_attribute "$id_attr" --feature_type "$feature_type"
-    --mapqMin $mapqMin  --samf "'${firstsamf}','${firstsamf.name}','${firstsamf.ext}'"
+    --mapqMin $mapqMin  --samf "'${firstsamf}','${firstsamf.name}','${firstsamf.ext}','${firstsamf.metadata.bam_index}'"
     #if $secondsamf.ext != 'data':
-      --samf "'${secondsamf}','${secondsamf.name}','${secondsamf.ext}'"
+      --samf "'${secondsamf}','${secondsamf.name}','${secondsamf.ext}','${secondsamf.metadata.bam_index}'"
     #end if
     #for $s in $samfiles:
       #if $s.samf.ext != 'data':
-        --samf "'${s.samf}','${s.samf.name}','${s.samf.ext}'" 
+        --samf "'${s.samf}','${s.samf.name}','${s.samf.ext}','${s.samf.metadata.bam_index}'" 
       #end if
     #end for
     #if $filter_extras:

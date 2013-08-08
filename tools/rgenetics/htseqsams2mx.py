@@ -60,7 +60,7 @@ class Xcpt(Exception):
         self.msg = msg
 
 
-def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
+def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,sam_bais,opts):
     """
     Code taken from count.py in Simon Anders HTSeq distribution
     Wrapped in a loop to accept multiple bam/sam files and their names from galaxy to
@@ -90,6 +90,7 @@ def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
        features = HTSeq.GenomicArrayOfSets( "auto", opts.stranded != "no" )
        mapqMin = int(opts.mapqMin)       
        counts = {}
+       nreads = 0
        empty = 0
        ambiguous = 0
        notaligned = 0
@@ -123,9 +124,19 @@ def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
        for sami,sam_filename in enumerate(sam_filenames):
            colname = colnames[sami]
            isbam = sam_exts[sami] == 'bam'
+           hasbai = sam_bais[sami] > ''
+           if hasbai:
+               tempname = os.path.splitext(os.path.basename(sam_filename))[0]
+               tempbam = '%s.bam' % tempname
+               tempbai = '%s.bai' % tempname
+               os.link(sam_filename,tempbam)
+               os.link(sam_bais[sami],tempbai)
            try:
               if isbam:
-                  read_seq = HTSeq.BAM_Reader( sam_filename )
+                  if hasbai:
+                      read_seq = HTSeq.BAM_Reader ( tempbam )
+                  else:
+                      read_seq = HTSeq.BAM_Reader( sam_filename )
               else:
                   read_seq = HTSeq.SAM_Reader( sam_filename )
               first_read = iter(read_seq).next()
@@ -142,6 +153,7 @@ def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
                  read_seq_pe_file = read_seq
                  read_seq = HTSeq.pair_SAM_alignments( read_seq )
               for seqi,r in enumerate(read_seq):
+                 nreads += 1
                  if not pe_mode:
                     if not r.aligned:
                        notaligned += 1
@@ -240,13 +252,13 @@ def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
               raise
 
            if not opts.quiet:
-              sys.stdout.write( "%d sam %s processed.\n" % ( seqi, "lines " if not pe_mode else "line pairs" ) )
-       return counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered
+              sys.stdout.write( "%d sam %s processed for %s.\n" % ( seqi, "lines " if not pe_mode else "line pairs", colname ) )
+       return counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered,nreads
 
     warnings.showwarning = my_showwarning
     assert os.path.isfile(gff_filename),'## unable to open supplied gff file %s' % gff_filename
     try:
-        counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered = count_reads_in_features( sam_filenames, colnames, gff_filename,opts)
+        counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered,nreads = count_reads_in_features( sam_filenames, colnames, gff_filename,opts)
     except:
         sys.stderr.write( "Error: %s\n" % str( sys.exc_info()[1] ) )
         sys.stderr.write( "[Exception type: %s, raised in %s:%d]\n" % 
@@ -254,7 +266,7 @@ def htseqMX(gff_filename,sam_filenames,colnames,sam_exts,opts):
            os.path.basename(traceback.extract_tb( sys.exc_info()[2] )[-1][0]), 
            traceback.extract_tb( sys.exc_info()[2] )[-1][1] ) )
         sys.exit( 1 )
-    return counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered
+    return counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered,nreads
 
 
 def usage():
@@ -330,6 +342,7 @@ if __name__ == "__main__":
     assert len(samfnames) == len(scolnames), '##ERROR sams2mx: Count of sam/cname not consistent - %d/%d' % (len(samfnames),len(scolnames))
     sam_exts = [x[2] for x in samsets]
     assert len(samfnames) == len(sam_exts), '##ERROR sams2mx: Count of extensions not consistent - %d/%d' % (len(samfnames),len(sam_exts))
+    sam_bais = [x[3] for x in samsets] # these only exist for bams and need to be finessed with a symlink so pysam will just work
     for i,b in enumerate(samfnames):
         assert os.path.isfile(b),'## Supplied input sam file "%s" not found' % b
         sam_filenames.append(b)
@@ -339,7 +352,7 @@ if __name__ == "__main__":
         sampName = sampName.replace(')','') # for R
         sampName = sampName.replace(' ','_') # for R
         colnames.append(sampName)
-    counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered = htseqMX(gff_file, sam_filenames,colnames,sam_exts,opts)
+    counts,empty,ambiguous,lowqual,notaligned,nonunique,filtered,nreads = htseqMX(gff_file, sam_filenames,colnames,sam_exts,sam_bais,opts)
     heads = '\t'.join(['Contig',] + colnames)
     res = [heads,]
     contigs = counts.keys()
@@ -359,9 +372,10 @@ if __name__ == "__main__":
     outf.write('\n')
     outf.close()
     walltime = int(time.time() - starttime)
-    accumulatornames = ('walltimeseconds','totreadscounted','ncontigs','emptyreads','ambiguousreads','lowqualreads',
-           'notalignedreads','nonuniquereads','extra_filtered_reads','emptycontigs')
-    accums = (walltime,totalc,len(contigs),empty,ambiguous,lowqual,notaligned,nonunique,filtered,emptycontigs)
-    notes = ['%s=%d' % (accumulatornames[i],x) for i,x in enumerate(accums)]
-    print >> sys.stdout, ','.join(notes)
+    accumulatornames = ('walltime (seconds)','total reads read','total reads counted','number of contigs','total empty reads','total ambiguous reads','total low quality reads',
+           'total not aligned reads','total not unique mapping reads','extra filtered reads','empty contigs')
+    accums = (walltime,nreads,totalc,len(contigs),empty,ambiguous,lowqual,notaligned,nonunique,filtered,emptycontigs)
+    fracs = (1.0,1.0,float(totalc)/nreads,1.0,float(empty)/nreads,float(ambiguous)/nreads,float(lowqual)/nreads,float(notaligned)/nreads,float(nonunique)/nreads,float(filtered)/nreads,float(emptycontigs)/len(contigs))
+    notes = ['%s = %d (%2.3f)' % (accumulatornames[i],x,100.0*fracs[i]) for i,x in enumerate(accums)]
+    print >> sys.stdout, '\n'.join(notes)
     sys.exit(0)
