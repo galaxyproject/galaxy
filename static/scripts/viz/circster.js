@@ -85,10 +85,14 @@ var UsesTicks = {
      */
     formatNum: function(num, sigDigits) {
         // Use default of 2 sig. digits.
-        if (sigDigits === undefined) {
+        if (sigDigits === undefined)
             sigDigits = 2;
-        }
-
+       
+        // Verify input number
+        if (num === null)
+            return null;
+       
+        // Calculate return value
         var rval = null;
         if (num < 1) {
             rval = num.toPrecision(sigDigits);
