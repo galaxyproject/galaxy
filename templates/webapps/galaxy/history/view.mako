@@ -27,6 +27,7 @@
 
     <style type="text/css">
 
+        /* these don't appear to be used? */
         .page-body
         {
             padding: 10px;
@@ -44,20 +45,38 @@
             border-top: 4px solid #DDDDDD;
         }
 
+
+        body {
+            padding: 0px;
+            margin: 0px;
+        }
+
         div.unified-panel-body {
-            position: relative;
+            position: absolute;
             top: 0px;
-            width: auto;
+            width: 100%;
+        }
+
+        #history-name-area {
+            margin: 12px 0px 0px 16px;
+            font-size: 120%;
+        }
+        #top-links {
+            margin: 4px 0px 8px 16px;
         }
 
         .historyItemContainer {
-            padding-right: 3px;
-            border-right-style: solid;
-            border-right-color: #66AA66;
+            /*padding-right: 3px;*/
         }
         .historyItemBody {
             display: none;
         }
+        div.historyItemWrapper {
+            margin: 0px 4px 0px 4px ;
+            border-left: 1px solid #999999;
+            border-right: 1px solid #999999;
+        }
+        /* TODO: unify with other history css and into .less */
     </style>
 
     <noscript>
@@ -92,14 +111,13 @@
             href_to_user_histories = h.url_for( controller='/history', action='list_published' )##should this instead be be None or empty string?
     %>
     
-    %if context.get( 'use_panels' ):
-    <div class="unified-panel-header" unselectable="on">
-    </div>
-    %endif
-    
     <div class="unified-panel-body">
-        <div class="wrapping" style="overflow: auto; height: 100%;">
+        <div style="overflow: auto; height: 100%;">
             ## Render view of history.
+            <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
+                <div id="history-name">${history.get_display_name()}</div>
+            </div>
+
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
                 %if not history.purged:
                     <a href="${h.url_for(controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
@@ -111,10 +129,6 @@
                     <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=True, use_panels=use_panels )}">${_('show deleted')}</a> |
                 %endif
                 <a href="#" class="toggle">collapse all</a>
-            </div>
-
-            <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-                <div id="history-name">${history.get_display_name()}</div>
             </div>
 
             %if history.deleted:
