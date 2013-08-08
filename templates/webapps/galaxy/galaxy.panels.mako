@@ -30,6 +30,7 @@
     ## load jscript libraries
     ${h.js(
         'libs/jquery/jquery',
+        'libs/jquery/jquery-ui',
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
