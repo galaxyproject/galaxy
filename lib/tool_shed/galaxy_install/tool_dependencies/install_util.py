@@ -395,6 +395,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             else:
                 url_template_elem = url_template_elems[ 0 ]
             action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+            action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
         elif action_type == 'shell_command':
             # <action type="shell_command">make</action>
             action_elem_text = evaluate_template( action_elem.text )

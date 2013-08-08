@@ -57,14 +57,17 @@ class DisplayApplicationLink( object ):
             rval[ key ] = value
         rval[ DEFAULT_DATASET_NAME ] = data #always have the display dataset name available
         return rval
-    def build_parameter_dict( self, data, dataset_hash, user_hash, trans ):
+    def build_parameter_dict( self, data, dataset_hash, user_hash, trans, app_kwds ):
         other_values = self.get_inital_values( data, trans )
         other_values[ 'DATASET_HASH' ] = dataset_hash
         other_values[ 'USER_HASH' ] = user_hash
         for name, param in self.parameters.iteritems():
             assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
             if param.ready( other_values ):
-                other_values[ name ] = param.get_value( other_values, dataset_hash, user_hash, trans )#subsequent params can rely on this value
+                if name in app_kwds and param.allow_override:
+                    other_values[ name ] = app_kwds[ name ]
+                else:
+                    other_values[ name ] = param.get_value( other_values, dataset_hash, user_hash, trans )#subsequent params can rely on this value
             else:
                 other_values[ name ] = None
                 return False, other_values #need to stop here, next params may need this value
@@ -120,13 +123,13 @@ class DynamicDisplayApplicationBuilder( object ):
         return iter( self.links )
 
 class PopulatedDisplayApplicationLink( object ):
-    def __init__( self, display_application_link, data, dataset_hash, user_hash, trans ):
+    def __init__( self, display_application_link, data, dataset_hash, user_hash, trans, app_kwds ):
         self.link = display_application_link
         self.data = data
         self.dataset_hash = dataset_hash
         self.user_hash = user_hash
         self.trans = trans 
-        self.ready, self.parameters = self.link.build_parameter_dict( self.data, self.dataset_hash, self.user_hash, trans )
+        self.ready, self.parameters = self.link.build_parameter_dict( self.data, self.dataset_hash, self.user_hash, trans, app_kwds )
     def display_ready( self ):
         return self.ready
     def get_param_value( self, name ):
@@ -184,9 +187,9 @@ class DisplayApplication( object ):
             version = "1.0.0"
         self.version = version
         self.links = odict()
-    def get_link( self, link_name, data, dataset_hash, user_hash, trans ):
+    def get_link( self, link_name, data, dataset_hash, user_hash, trans, app_kwds ):
         #returns a link object with data knowledge to generate links
-        return PopulatedDisplayApplicationLink( self.links[ link_name ], data, dataset_hash, user_hash, trans )
+        return PopulatedDisplayApplicationLink( self.links[ link_name ], data, dataset_hash, user_hash, trans, app_kwds )
     def filter_by_dataset( self, data, trans ):
         filtered = DisplayApplication( self.id, self.name, self.datatypes_registry, version = self.version )
         for link_name, link_value in self.links.iteritems():

@@ -530,11 +530,10 @@ class DataSourceParser( object ):
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
 
-            #TODO: needs cleanup - robustiosity-nessness
             # does the object itself have a datatype attr and does that datatype have the given dataprovider
             elif test_type == 'has_dataprovider':
-                test_fn = lambda o, result: (     hasattr( o, 'datatype' )
-                                              and o.datatype.has_dataprovider( result ) )
+                test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
+                                              and getter( o ).has_dataprovider( result ) )
 
             # default to simple (string) equilavance (coercing the test_attr to a string)
             else:

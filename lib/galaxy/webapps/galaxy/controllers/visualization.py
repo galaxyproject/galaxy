@@ -684,16 +684,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     #
     # Visualizations.
     #
-
-    @web.expose
-    @web.require_login()
-    def new_browser( self, trans, **kwargs ):
-        """
-        Provide info necessary for creating a new trackster browser.
-        """
-        return trans.fill_template( "tracks/new_browser.mako", 
-                                    dbkeys=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), 
-                                    default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
@@ -769,9 +759,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     
             # save database key
             app['default_dbkey'] = dbkey
-    
-            # add url
-            app['new_browser'] = web.url_for( controller='visualization', action='new_browser', default_dbkey=dbkey )
         else:
             # load saved visualization
             vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )

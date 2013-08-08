@@ -40,7 +40,6 @@
         "libs/jquery/jquery",
         "libs/jquery/jquery.migrate",
         "libs/jquery/select2",
-        "libs/json2",
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",

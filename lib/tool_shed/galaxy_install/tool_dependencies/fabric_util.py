@@ -31,6 +31,15 @@ def check_fabric_version():
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
+def filter_actions_after_binary_installation( actions ):
+    '''Filter out actions that should not be processed if a binary download succeeded.'''
+    filtered_actions = []
+    for action in actions:
+        action_type, action_dict = action
+        if action_type in [ 'set_environment', 'chmod', 'download_binary' ]:
+            filtered_actions.append( action )
+    return filtered_actions
+
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
     sa_session = app.model.context.current
     with settings( warn_only=True ):
@@ -165,8 +174,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
     env_shell_file_paths = []
-    # Default to false so that the install process will default to compiling.
-    binary_found = False
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
@@ -174,20 +181,38 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_binary':
-                    # Eliminate the download_binary action so remaining actions can be processed correctly.
-                    filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
+                    # Get the target directory for this download, if the user has specified one. Default to the root of $INSTALL_DIR.
+                    target_directory = action_dict.get( 'target_directory', None )
                     # Attempt to download a binary from the specified URL.
-                    log.debug( 'Attempting to download from %s', url )
-                    binary_found = common_util.download_binary_from_url( url, work_dir, install_dir )
-                    if binary_found:
-                        # If the attempt succeeded, set the action_type to binary_found, in order to skip any download_by_url or shell_command actions.
+                    log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
+                    downloaded_filename = None
+                    try:
+                        downloaded_filename = common_util.download_binary( url, work_dir )
+                        # Filter out any actions that are not download_binary, chmod, or set_environment.
+                        filtered_actions = filter_actions_after_binary_installation( actions[ 1: ] )
+                        # Set actions to the same, so that the current download_binary doesn't get re-run in the filtered actions below.
                         actions = filtered_actions
-                        action_type = 'binary_found'
-                    else:
+                    except Exception, e:
+                        log.exception( str( e ) )
                         # No binary exists, or there was an error downloading the binary from the generated URL. Proceed with the remaining actions.
-                        del actions[ 0 ]
-                        action_type, action_dict = actions[ 0 ]
+                        filtered_actions = actions[ 1: ]
+                        action_type, action_dict = filtered_actions[ 0 ]
+                    # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                    # any errors in the move step are correctly sent to the tool dependency error handler.
+                    if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                        if target_directory:
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                            # Make sure the target directory is not outside of $INSTALL_DIR.
+                            if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                            else:
+                                full_path_to_dir = os.path.abspath( install_dir )
+                        else:
+                            full_path_to_dir = os.path.abspath( install_dir )
+                        common_util.move_file( current_dir=work_dir,
+                                               source=downloaded_filename,
+                                               destination_dir=full_path_to_dir )
                 if action_type == 'download_by_url':
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
@@ -237,9 +262,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
-                        # If a binary was found, we only need to process environment variables, file permissions, and any other binary downloads.
-                        if binary_found and action_type not in [ 'set_environment', 'chmod', 'download_binary' ]:
-                            continue
                         if action_type == 'make_directory':
                             common_util.make_directory( full_path=action_dict[ 'full_path' ] )
                         elif action_type == 'move_directory_files':
@@ -374,12 +396,26 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     os.chmod( target_file, mode )
                         elif action_type == 'download_binary':
                             url = action_dict[ 'url' ]
-                            binary_found = common_util.download_binary_from_url( url, work_dir, install_dir )
-                            if binary_found:
-                                log.debug( 'Successfully downloaded binary from %s', url )
-                            else:
-                                log.error( 'Unable to download binary from %s', url )
-                                
+                            target_directory = action_dict.get( 'target_directory', None )
+                            try:
+                                downloaded_filename = common_util.download_binary( url, work_dir )
+                            except Exception, e:
+                                log.exception( str( e ) )
+                            # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                            # any errors in the move step are correctly sent to the tool dependency error handler.
+                            if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                                if target_directory:
+                                    target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                                    # Make sure the target directory is not outside of $INSTALL_DIR.
+                                    if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                        full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                                    else:
+                                        full_path_to_dir = os.path.abspath( install_dir )
+                                else:
+                                    full_path_to_dir = os.path.abspath( install_dir )
+                                common_util.move_file( current_dir=work_dir,
+                                                       source=downloaded_filename,
+                                                       destination_dir=full_path_to_dir )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """

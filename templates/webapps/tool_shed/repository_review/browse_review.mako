@@ -5,7 +5,7 @@
 
 <%
     from galaxy.web.form_builder import CheckboxField
-    from galaxy.webapps.tool_shed.util.container_util import STRSEP
+    from tool_shed.util.container_util import STRSEP
     from tool_shed.util.shed_util_common import to_safe_string
 %>
 

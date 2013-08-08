@@ -5,7 +5,7 @@ from galaxy.web.form_builder import SelectField, CheckboxField
 from sqlalchemy.sql.expression import func
 from galaxy.model.orm import and_
 from galaxy.webapps.tool_shed.util import common_util
-from galaxy.webapps.tool_shed.util.container_util import STRSEP
+from tool_shed.util.container_util import STRSEP
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import review_util
 from galaxy.util.odict import odict
