@@ -233,7 +233,7 @@
                 </action>
             </actions>
         </data>
-        <data format="bam" name="output" label="${tool.name} on ${on_string}_${jobtitle}_aligned.bam">
+        <data format="bam" name="output" label="${on_string}_${jobtitle}_aligned.bam">
           <actions>
             <conditional name="reference_genome.source">
               <when value="indexed">

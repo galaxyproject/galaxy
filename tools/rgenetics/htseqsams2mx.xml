@@ -1,5 +1,5 @@
-<tool id="htseqsams2mx" name="SAM/BAM to count matrix" version="0.4">
- <description>using HTSeq code</description>
+<tool id="htseqsams2mxlocal" name="SAM/BAM to count matrix" version="0.4">
+ <description>using HTSeq code locally</description>
   <stdio>
      <exit_code range="666"   level="warning"   
        description="Exit code 666 encountered" />
