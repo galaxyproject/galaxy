@@ -1,0 +1,409 @@
+<tool id="rgDESeq2" name="DESeq2" version="0.11">
+  <description>Reversed direction digital DGE</description>
+  <command interpreter="python">rgToolFactory.py --script_path "$runme" --interpreter "Rscript" --tool_name="DESeq"  
+   --output_dir "$html_file.files_path" --output_html "$html_file" --output_tab "$outtab" --make_HTML "yes"
+  </command>
+<inputs>
+    <param name="input1"  type="data" format="tabular" label="Select an input matrix - rows are contigs, columns are counts for each sample"
+       help="Use the DGE matrix preparation tool to create these matrices from BAM files and a BED file of contigs"/>
+    <param name="jtitle" type="text" value="DESeq" size="80" label="Title for job outputs" help="Supply a meaningful name here to remind you what the outputs contain"/>
+    <param name="org" type="select" label="Contig name translation" 
+         help="Outputs can include gene names from (eg) mouse refseq count file refseq contig IDs. Leave as None for no translation">
+            <option value="none" selected="true">No translation</option>
+            <option value="Hs">Human Refseq</option>
+            <option value="Mm">Mouse Refseq</option>
+    </param>
+    <param name="treatment_name" type="text" value="Treatment" size="50" label="Treatment Name"/>
+    <param name="Treat_cols" label="Select columns containing treatment." type="data_column" data_ref="input1" numerical="True"
+         multiple="true" use_header_names="true" size="120" display="checkboxes">
+        <validator type="no_options" message="Please select at least one column for analysis."/>
+    </param>
+    <param name="control_name" type="text" value="Control" size="50" label="Control Name"/>
+    <param name="Control_cols" label="Select columns containing control." type="data_column" data_ref="input1" numerical="True" 
+         multiple="true" use_header_names="true" size="120" display="checkboxes" optional="true">
+    </param>
+    <param name="fQ" type="float" value="0.3" size="5" label="Non-differential contig count quantile (remove all below) threshold - zero to analyze all non-zero read count contigs"
+     help="May be a good or a bad idea depending on the biology and the question. EG 0.3 = sparsest 30% of contigs with at least one read are removed before analysis"/>
+    <param name="fdrthresh" type="float" value="0.05" size="5" label="P value threshold for FDR filtering for family wise error rate control"
+     help="Conventional default value of 0.05 recommended"/>
+    <param name="fdrtype" type="select" label="FDR (Type II error) control method" 
+         help="Use fdr or bh typically to control for the number of tests in a reliable way">
+            <option value="BH">Benjamini Hochberg</option>
+            <option value="BY">Benjamini Yukateli for correlated tests</option>
+            <option value="bonferroni">Bonferroni</option>
+            <option value="fdr"  selected="true">fdr (= Benjamini Hochberg)</option>
+            <option value="hochberg">Hochberg</option>
+            <option value="holm">Holm</option>
+            <option value="hommel">Hommel</option>
+            <option value="none">no control for multiple tests</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="outtab" label="${jtitle}_DESeq.xls"/>
+    <data format="html" name="html_file" label="${jtitle}_DESeq.html"/>
+  </outputs>
+<configfiles>
+ <configfile name="runme">
+ <!-- your script goes here - note that you MUST use the cheetah \ escape mechanism to allow # and $ characters in your (eg R) code!! -->
+library('DESeq')
+library('biomaRt')
+# some code developed for Tom Karagianis
+# feb 2012
+# copyright ross lazarus
+# licensed under the LGPL
+# enjoy
+# TODO: translate transcripts into gene names. Could use synergizer
+
+doPPlot = T
+
+getGnames = function(keys=c("NM_006945", "NM_152486", "NM_198317"),attribs=c('REFSEQ','SYMBOL','GENENAME'),keytype="REFSEQ",organism='Hs')
+{
+# quick way to lookup keys (eg nm_ numbers) - make sure right db file is in play
+if (! organism %in% c('Mm','Hs'))
+   stop(paste('ERROR: unknown organism',organism,'passed to getGnames - halting'))
+
+if (organism == 'Mm')
+    if (! require(org.Mm.eg.db)) stop('Cannot load org.Mm.eg.db - please install it')
+       else gn = select(org.Mm.eg.db,keys,cols=attribs,keytype=keytype)
+  
+if (organism == 'Hs') {
+    if (! require(org.Hs.eg.db)) stop('Cannot load org.Hs.eg.db - please install it')
+       else gn = select(org.Hs.eg.db,keys,cols=attribs,keytype=keytype)
+    }
+rownames(gn) = gn[,attribs[1]]
+return(gn)
+}
+
+mdsPlot = function(cmat,myTitle,groups,treatname)
+{
+# Classical MDS
+# N rows (objects) x p columns (variables)
+# each row identified by a unique row name
+    outpdfname = paste(gsub(" ","", myTitle , fixed=TRUE),'MDS_Plot.pdf',sep='_')
+    gf = unique(group)
+    colours = rainbow(length(gf),start=0.3,end=0.6)
+    pcols = colours[match(group,gf)]
+    mydata = t(cmat) # transpose
+    #mydata = log2(mydata)
+    d = dist(mydata) # euclidean distances between the rows
+    fit = cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+    # plot solution
+    x = fit\$points[,1]
+    y = fit\$points[,2]
+    pdf(outpdfname)
+    plot(x, y, xlab="Dimension 1", ylab="Dimension 2", 
+       main=paste(myTitle,"MDS"),type="n", col=pcols)
+    text(x, y, labels = row.names(mydata), cex=0.7, col=pcols)
+    legend(x="topleft",legend=unique(groups),fill=unique(pcols))
+    dev.off()
+}
+
+hmapPlot = function(cmat,myTitle,groups,treatname,nsamp=250)
+{ 
+    nrows = nrow(cmat) 
+    gf = unique(group)
+    colours = rainbow(length(gf),start=0.3,end=0.6)
+    pcols = colours[match(group,gf)]
+    mtitle = paste('Heatmap:',nrows,'Contigs')
+    if (nrows &gt; nsamp) {
+      cmat = cmat[1:nsamp,]
+      mtitle = paste('Heatmap of top ',nsamp,' normalised differential counts from ',nrows,' contigs)',sep='')
+    }
+    colnames(cmat) = groups
+    outpdfname = paste(gsub(" ","", myTitle , fixed=TRUE),'heatMap.pdf',sep='_')
+    pdf(outpdfname)
+    heatmap(cmat,main=mtitle,cexRow=0.3,cexCol=0.5,ColSideColors=pcols)
+    dev.off()
+}
+
+cumPlot = function(rawrs,cleanrs,maint,myTitle)
+{   # updated to use ecdf
+        pdfname = paste(gsub(" ","", myTitle , fixed=TRUE),"RowsumCum.pdf",sep='_')
+        pdf(pdfname)
+        defpar = par(no.readonly=T)
+        par(mfrow=c(2,1))
+        lastx = max(rawrs)
+        rawe = knots(ecdf(rawrs))
+        cleane = knots(ecdf(cleanrs))
+        cy = 1:length(cleane)/length(cleane)
+        ry = 1:length(rawe)/length(rawe)
+        plot(rawe,ry,type='l',main=paste('Before',maint),xlab="Log Contig Total Reads",
+             ylab="Cumulative proportion",col="maroon",log='x',xlim=c(1,lastx),sub=myTitle)
+        grid(col="blue")
+        plot(cleane,cy,type='l',main=paste('After',maint),xlab="Log Contig Total Reads",
+             ylab="Cumulative proportion",col="maroon",log='x',xlim=c(1,lastx),sub=myTitle)
+        grid(col="blue")
+        dev.off()
+        par(defpar)
+}
+
+
+qqPlot = function(descr='Title',pvector, ...)
+# stolen from https://gist.github.com/703512
+{
+    o = -log10(sort(pvector,decreasing=F))
+    e = -log10( 1:length(o)/length(o) )
+    pdfname = paste(gsub(" ","", descr , fixed=TRUE),'pval_qq.pdf',sep='_')
+    maint = paste(descr,'QQ Plot')
+    pdf(pdfname)
+    plot(e,o,pch=19,cex=1, main=maint, ...,
+        xlab=expression(Expected~~-log[10](italic(p))),
+        ylab=expression(Observed~~-log[10](italic(p))),
+        xlim=c(0,max(e)), ylim=c(0,max(o)))
+    lines(e,e,col="red")
+    grid(col = "lightgray", lty = "dotted")
+    dev.off()
+}
+
+maPlot = function(bint,tannotation,myTitle,thresh=fdrthresh)
+# maplot with red significant genes
+{ 
+    attach(bint)
+    nsig = nrow(subset(bint,bint\$padj &lt; thresh))
+    pdfname = paste(gsub(" ","", tannotation , fixed=TRUE),'MAplot.pdf',sep='_')
+    pdf(pdfname)
+    plot(baseMean,log2FoldChange,log="x",
+         main=paste(myTitle,' MA Plot ',nsig,' (Red) significant at FDR=',thresh,sep=''),sub=tannotation,xlab="Normalised Mean Expression",ylab="log2 Fold Change",
+         pch=20,cex=ifelse(padj &lt; thresh,0.3,0.1),col=ifelse(padj &lt; thresh,"red","black"))
+    abline(h=0,v=0,col="darkblue")
+    grid( col = "lightgray", lty = "dotted")
+    dev.off()
+    detach(bint)
+}
+
+diagPlot = function(countd,myTitle) 
+{
+    xg = 10^seq(-0.5,5,length.out=300)
+    fi = fitInfo(countd)
+    yg = fitInfo(countd)\$dispFunc(xg)
+    perGene = fi\$perGeneDispEsts
+    pdfname = paste(gsub(" ","", myTitle , fixed=TRUE),'dispEsts.pdf',sep='_')
+    pdf(pdfname) 
+    plot(rowMeans(counts(countd,normalized=T)),perGene, main=paste(myTitle,'Gene Dispersion Estimate Plot'),
+      xlab="Mean Expresson",ylab="Dispersion", pch='.',log='xy',sub="(Red line = DESeq estimated dispersion model)")
+    lines(xg,yg,col="red")
+    grid( col = "lightgray", lty = "dotted")
+    dev.off()
+}
+
+writeRnk = function(descr,annores)
+{ 
+    attach(annores)
+    realFc = abs(log2FoldChange)
+    realBig = max(realFc[realFc != Inf])
+    values = ifelse(abs(log2FoldChange) == Inf,ifelse(baseMeanA==0,-baseMeanB-realBig,baseMeanA+realBig),log2FoldChange)
+    # fiddle Inf and -Inf values to keep them at the top/bottom for gsea
+    # horrible hack necessitated by TomK's single sample analyses where zero counts are found in some samples but large counts in others..
+    dtt = data.frame(Contig=REFSEQ,Rankval=values,row.names=NULL)
+    detach(annores)
+    attach(dtt)
+    dtt = dtt[! (is.na(Contig) | is.na(Rankval)),] # GSEA does not like na's
+    dtt = dtt[order(Rankval,decreasing=T),]
+    outf = paste(gsub(" ","",descr,fixed=T),'_GSEA.rnk',sep='')
+    write.table(dtt,file=outf,col.names=T,row.names=FALSE,sep='\t',quote=FALSE) 
+    detach(dtt)
+}
+
+doOne = function(cleand,f1,f2,myTitle,fdrthresh,useAnno,doRnk,nToShow,topTable,groups,gcards) {
+    descr = paste(myTitle,f1,'vs',f2,sep='_')
+    tres = nbinomTest(cleand,f1,f2)
+    annores = cbind(useAnno,subset(tres,select = -id),gcards)
+    attach(annores)
+    annores = annores[order(pval),]
+    fn = topTable
+    write.table(annores,file=fn,row.names=F,sep='\t',quote=F)
+    rownames(annores) = 1:nrow(annores)
+    print(paste('Top',nToShow,'For',descr),quote=F)
+    print(head(annores,n=nToShow),quote=F)
+    if (doRnk==T) writeRnk(descr,annores)
+    cmat = counts(cleand)
+    detach(annores)
+    attach(tres)
+    cmat = cmat[order(padj,decreasing=F),]
+    detach(tres)
+    nsamp = length(colnames(cleand))
+    if (nsamp > 2) mdsPlot(cmat=cmat,myTitle=myTitle,groups=groups,treatname=f1)
+    maPlot(bint=tres,tannotation=descr,myTitle=myTitle,thresh=fdrthresh)
+    sFactors = sizeFactors(cleand)
+    for (col in 1:length(sFactors)) cmat[,col] = cmat[,col]/sFactors[col]
+    hmapPlot(cmat=cmat,myTitle=myTitle,groups=groups,treatname=f1,nsamp=200)
+    qqPlot(descr=descr,pvec=tres[,'pval'])  
+}
+        
+doDESeq = function(rawd,myTitle='DESeq',conditions=c(),myOrg='none',topTable='topTable.xls',
+                    keytype="REFSEQ",fdrthresh=0.05,filterquantile=0.3,nToShow=20,doRnk=T)
+{
+        # do allpairs if no conditions passed in
+        options(width=512)
+        doAllpairs = F
+        cn = colnames(rawd)
+        nsamp = length(cn)
+        minNsamples = length(unique(conditions)) # if this is one, test all pairs blind - no reps
+        if (length(conditions) == nsamp &amp;&amp; minNsamples &gt; 1) {
+               conds = conditions
+               print(paste('Note: doDESeq using conditions = ',paste(conds,collapse=',')))
+               }              
+        else { conds = cn # if no conds passed in assume is all pairs
+               print(paste('Warning: doDESeq got conditions = ',paste(conditions,collapse=','),'but colnames = ',
+                   paste(cn,collapse=','),' so using colnames and comparing all possible pairs of individual samples')) 
+               doAllpairs = T
+               allPairs = combn(unique(cn),2)
+               }
+        #conds = factor(conds) # may sort wrong - thanks Raj.
+        classes = unique(conds)
+        rawd = newCountDataSet(rawd,conds)
+        rawrs = rowSums(counts(rawd))
+        allN = length(rawrs)
+        nonzerod = rawd[(rawrs &gt; 0),] # remove all zero count genes
+        rs = rowSums(counts(nonzerod)) # after removing no shows
+        nzN = length(rs)
+        zN = allN - nzN
+        useme = (rs &gt; quantile(rs,filterquantile))
+        cleand = nonzerod[useme,]
+        cleanrs = rowSums(counts(cleand))
+        cleanN = length(cleanrs)
+        print(paste('Read',allN,'probes. Removed',zN,'probes with no reads. After filtering at count quantile =',filterquantile,'there are',
+           cleanN,'probes to analyse'),quote=F)
+        maint = paste(myTitle,'(NS filter at',filterquantile,'quantile)')
+        cumPlot(rawrs,cleanrs,maint,myTitle)
+        cid = rownames(counts(cleand))
+        if (myOrg == 'none') { gnames = data.frame(REFSEQ=cid,rownames=cid)
+                               g = cid
+             } 
+        else { gnames = getGnames(keys=gs,keytype=keytype,attribs=c('REFSEQ','SYMBOL','GENENAME'),organism=myOrg)
+               g = gnames[,'SYMBOL']
+            }
+        useAnno = gnames # annotation
+        gcl="&lt;a href='http://www.genecards.org/index.php?path=/Search/keyword/"
+        gcards = paste(gcl,g,"'&gt;",g,'&lt;/a&gt;',sep="")
+        cleand = estimateSizeFactors(cleand)
+        sFactors = sizeFactors(cleand)
+        print('DESeq estimated size factors for each sample:',quote=F)
+        print(sFactors,quote=F)
+        if (doAllpairs == T) 
+          { # blind - no variances
+                cleand = estimateDispersions(cleand,method="blind",sharingMode="fit-only")
+                for (coln in 1:ncol(allPairs)) {
+                        f1 = allPairs[1,coln]
+                        f2 = allPairs[2,coln]
+                        doOne(cleand=cleand,f1=f1,f2=f2,myTitle=myTitle,fdrthresh=fdrthresh,
+                            useAnno=useAnno,doRnk=doRnk,nToShow=nToShow,topTable=topTable,groups=conds,gcards=gcards)
+                }
+         } else  {
+                if (length(classes) &gt; 2)
+                   stop(paste('This version of DESeq unable to deal with more than 2 classes - got',classes))
+                if (nsamp == 2) {
+                    # only 2 samples
+                    cleand = estimateDispersions(cleand,method="blind",sharingMode="fit-only")
+                } else {
+                cleand = estimateDispersions(cleand) }
+                doOne(cleand=cleand,f1=classes[2],f2=classes[1],myTitle=myTitle,fdrthresh=fdrthresh,
+                useAnno=useAnno,doRnk=doRnk,nToShow=nToShow,topTable=topTable,groups=conds,gcards=gcards)                
+          }
+        diagPlot(cleand,myTitle)
+        print(sessionInfo())
+        print(paste(date(),'Completed',myTitle),quote=F)
+}
+# Galaxy will 
+# substitute user supplied globals 
+Out_Dir         = "$html_file.files_path"
+Input           =  "${input1}"
+TreatmentName   = "${treatment_name}"
+TreatmentCols   = "${Treat_cols}" 
+ControlName     = "${control_name}"
+ControlCols     = "${Control_cols}"
+outputfilename  = "${outtab}"
+fdrtype  = "${fdrtype}"
+fdrthresh = ${fdrthresh}
+myTitle = "${jtitle}"
+myOrg = "${org}"
+filterquantile = ${fQ}
+
+#Set our columns 
+TCols           = as.numeric(strsplit(TreatmentCols,",")[[1]])-1  
+CCols           = as.numeric(strsplit(ControlCols,",")[[1]])-1  
+cat('got TCols=')
+cat(TCols)
+cat('; CCols=')
+cat(CCols)
+cat('\n')
+
+group = strsplit(TreatmentCols,",")[[1]]
+
+# Create output dir if non existent
+if (file.exists(Out_Dir) == F) dir.create(Out_Dir)
+
+Count_Matrix = read.table(Input,header=T,row.names=1,sep='\t')                   #Load tab file assume header
+colorder = TCols # wrapper requires at least one treatment col
+if (! is.na(CCols)) colorder = c(colorder,CCols)
+Count_Matrix = Count_Matrix[,colorder]
+rn = rownames(Count_Matrix)
+islib = rn %in% c('librarySize','NotInBedRegions')
+LibSizes = Count_Matrix[subset(rn,islib),][1] # take first
+Count_Matrix = Count_Matrix[subset(rn,! islib),]
+group = c(rep(TreatmentName,length(TCols)))
+if (! is.na(CCols)) group = c(group,rep(ControlName,length(CCols)))              #Build a group descriptor
+colnames(Count_Matrix) = paste(group,colnames(Count_Matrix),sep="_")                   #Reliable column names
+
+results = doDESeq (rawd=Count_Matrix,myTitle=myTitle,conditions=group,myOrg=myOrg,topTable=outputfilename,
+        keytype="REFSEQ",fdrthresh=fdrthresh,filterquantile=filterquantile,nToShow=20,doRnk=T) #Run the main function
+# for the log
+sessionInfo()
+# end of script
+</configfile>
+</configfiles>
+<tests>
+<test>
+<param name='input1' value='DGEtest.xls' ftype='tabular' />
+ <param name='treatment_name' value='case' />
+ <param name='fdrtype' value='fdr' />
+ <param name='priorn' value="5" />
+ <param name='fdrthresh' value="0.05" />
+ <param name='control_name' value='control' />
+ <param name='Treat_cols' value='c3,c6,c9' />
+ <param name='Control_cols' value='c2,c5,c8' />
+ <output name='outtab' file='DGEtest1out.xls' ftype='tabular' compare='diff' />
+ <output name='html_file' file='DGEtest1out.html' ftype='html' compare='diff' lines_diff='20' />
+</test>
+</tests>
+<help>
+**What this tool does**
+
+Performs differential gene expression analysis on read count data comparing replicates of a treatment and control using DESeq from Bioconductor
+See http://bioconductor.org/packages/release/bioc/html/DESeq.html for detailed method documentation
+Published method at http://genomebiology.com/2010/11/10/R106/
+This tool wraps DESeq in Galaxy.
+
+**Comparable tools**
+
+edgeR is also a count-specific differential expression tool. Tophat/cufflinks/cuffdiff use a very different approach and are more suited to paired reads where differential expression of isoforms is the question of interest.
+
+**Input**
+
+1) A count matrix consisting of non-negative integer read counts.
+
+The input matrix must have a header row identifying the samples, and a unique set of contig (row) names as the first column.
+The companion bams2mx Galaxy tool will create suitable matrices from an arbitrary number of aligned bam files and a bed file of intervals (contigs) to use for counting
+reads.
+
+The method (see the DESeq documentation for details) assumes that these are counts and estimates dispersions from them so any preprocessing or attempts at normalizing them will
+cause bias.
+
+**The importance of biological replicates**
+
+Note that if there is only ONE group input, the code will run all possible pairwise sample comparisons assuming there are no replicates.
+Technically DESeq can do this but it is NOT recommended because in the absence of replicates, estimates of dispersion lack information about technical and biological
+variation between replicates and the analysis will lack power so don't be surprised if you get no differential expression.
+
+**Output**
+
+1) An Html report of the analysis with heatmap, dispersion plot, MDS plot, MA plot, a file of ranked statistics and contignames for GSEA (use the Rank input option)
+and a copy of the R script used to run DESeq and generate all the results for posterity.
+
+2) A tabular file containing the ordered results of the analysis including adjusted p values for differential expression
+
+</help>
+
+</tool>
+
+

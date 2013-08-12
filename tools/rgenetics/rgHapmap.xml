@@ -1,0 +1,52 @@
+<tool id="rgHMap1" name="HapMap:">
+    <code file="listFiles.py"/> 
+    <code file="rgHapmap_code.py"/> 
+  
+    <description>Download SNP genotype data</description>
+  
+    <command interpreter="python">
+        rgHapmap.py $start $stop $chrom $race $build $outf
+    </command>
+    
+    <inputs>    
+       <param name="name" type="text" label="Output name" help="New workspace Hapmap format genotype dump name" value="HMGeno"/>
+       <param type="select" name="race" label="HapMap Panel" help="Hapmap panel to select">
+                        <option value="CEU" selected="yes">CEPH trios</option>
+                        <option value="YRI">Yoruba trios</option>
+                        <option value="JPT">Japanese</option>
+                        <option value="CHB">Chinese</option>
+                        <option value="JPT+CHB">Japanese and Chinese</option>
+       </param>
+       <param name="chrom" type="select" label="Chromosome" dynamic_options="getChropt()"/> 
+       <param name="start" type="integer" value="20000000" label="Start of region"/>
+       <param name="stop" type="integer" value="25000000" label="End of region"/>
+       <param name="build"  type="text" label="Hapmap build to use" value="35"/> 
+   </inputs>
+
+   <outputs>  
+       <data format="interval" name="outf" />
+   </outputs>
+<help>
+
+
+**Syntax**
+
+- **Output name** is the name to use for the genotype output file
+- **HapMap panel** is the population from which genotypes should be extracted
+- **Chromosome** is the chromosome to use
+- **Start of region** marks the offset to start the extract
+- **End of region** marks the offset to end the extract
+- **Build** is the HapMap build to select 
+
+-----
+
+**Summary**
+
+This tool imports genotype data from the International Hapmap project data by
+chromosomal region into Galaxy.
+
+Originally designed and written for the Rgenetics project by 
+ross lazarus (ross.lazarus@gmail.com)
+
+</help>
+</tool>

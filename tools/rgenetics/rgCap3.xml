@@ -1,0 +1,393 @@
+<tool name="CAP3:" id="cap3" version="0.001">
+  <description>Assembler</description>
+  <command interpreter="python">
+    rgCap3.py --fastqin "$input_file" --outputdir "$html_file.files_path" --outhtml "$html_file"
+    -a "${bandexp}" -b "${basecut}" -c "${baseclip}" -d "${maxqsum}" -e "${extradiff}" -f "${maxgap}"
+    -g "${gapfact}" --maxoverhang "${maxoverhang}" -i "${segscore}" -j "${chainscore}" -k "${endclip}"
+    -m "${matchscore}" -n "${mismatchscore}" -o "${overlapcut}" -p "${overlapidentity}"
+    -r "${reverseorient}" -s "${overlapsim}" -t "${maxword}" -u "${mincorrect}" -v "${minlink}" 
+    -x "${out_prefix}" -y "${cliprange}" -z "${mingood}" --cap3exe "cap3"
+  </command>
+  <requirements><requirement type="package">cap3</requirement></requirements>
+  <inputs>
+    <param format="fastq" name="input_file" type="data" label="Input: fastq short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param name="out_prefix" value="CAP3" type="text"
+      label="Prefix for the output files - use this remind you what the job was for" size="80" />
+    <param name="bandexp" type="integer" value="20" label="Specify band expansion size N &gt; 10 (default 20)" />
+    <param name="basecut" type="integer" value="20" label="Specify base quality cutoff for differences N &gt; 15 (default 20)" />
+    <param name="baseclip" type="integer" value="12" label="Specify base quality cutoff for clipping N &gt; 5 (default 12)" />
+    <param name="maxqsum" type="integer" value="200" label="Specify max qscore sum at differences N &gt; 100  (default 200)" />
+    <param name="extradiff" type="integer" value="30" label="Specify extra number of differences N &gt; 10 (default 30)" />
+    <param name="maxgap" type="integer" value="20" label="Specify max gap length in any overlap N &gt; 10 (default 20)" />
+    <param name="gapfact" type="integer" value="6" label="Specify gap penalty factor N &gt; 0 (default 6)" />
+    <param name="maxoverhang" type="integer" value="20" label="Specify max overhang percent length N &gt; 5 (default 20)" />
+    <param name="segscore" type="integer" value="40" label="Specify segment pair score cutoff N &gt; 20 (default 40)" />
+    <param name="chainscore" type="integer" value="80" label="Specify match score factor N &gt; 30 (default 80)" />
+    <param name="endclip" type="integer" value="1" label="Specify end clipping flag N &gt;= 0 (default 1)" />
+    <param name="matchscore" type="integer" value="2" label="Specify match score factor N &gt;= 0 (default 2)" />
+    <param name="mismatchscore" type="integer" value="-5" label="Specify mismatch score factor N &lt;= 0 (default -5)" />
+    <param name="overlapcut" type="integer" value="40" label="Specify overlap length cutoff &gt; 20 (default 40)" />
+    <param name="overlapidentity" type="integer" value="90" label="Specify overlap percent identity cutoff N &gt; 65 (default 90)" />
+    <param name="reverseorient" type="integer" value="1" label="Specify reverse orientation value N &gt;= 0(default 1)" />
+    <param name="overlapsim" type="integer" value="900" label="Specify overlap similarity score cutoff N &gt; 100 (default 900)" />
+    <param name="maxword" type="integer" value="300" label="Specify max number of word occurrences N &gt; 30  (default 300)" />
+    <param name="mincorrect" type="integer" value="3" label="Specify min number of constraints for correction N &gt; 0 (default 3)" />
+    <param name="minlink" type="integer" value="2" label="Specify min number of constraints for linking N &gt; 0 (default 2)" />
+    <param name="cliprange" type="integer" value="100" label="Specify clipping range N &gt; 5 (default 100)" />
+    <param name="mingood" type="integer" value="3" label="Specify min number of good reads at clip position N &gt; 0 (default 3)" />
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file"  label="${on_string}_CAP3.html" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="out_prefix" value="AsMetrics" />
+      <param name="bisulphite" value="false" />
+      <param name="sorted" value="true" />
+      <param name="adaptors" value="" />
+      <param name="maxinsert" value="100000" />
+      <param name="refGenomeSource" value="history" />
+      <param name="ownFile" value="picard_input_hg18.trimmed.fasta" />
+      <param name="input_file" value="picard_input_tiny.sam" dbkey="hg18" />
+      <output name="html_file" file="picard_output_alignment_summary_metrics.html" ftype="html" lines_diff="55"/>
+    </test>
+    <test>
+      <param name="out_prefix" value="AsMetricsIndexed" />
+      <param name="bisulphite" value="false" />
+      <param name="sorted" value="true" />
+      <param name="adaptors" value="" />
+      <param name="maxinsert" value="100000" />
+      <param name="refGenomeSource" value="indexed" />
+      <param name="index" value="hg19" />
+      <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg19" />
+      <output name="html_file" file="picard_output_AsMetrics_indexed_hg18_sorted_pair.html" ftype="html" lines_diff="50"/>
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Warning**
+
+This is old-skool software for which source code is not released. Worse, it has hard coded read length string limits incompatible with current Illumina sequencing software naming so the wrapper will
+SHORTEN your read names to work around this limit - '_', ':' and the string '' are all removed from read names so they remain unique but some filler
+is lost. Sorry about that.
+
+.. class:: infomark
+
+**Readme**
+
+See the cap3__ software distribution site for the most up to date documentation and attribution
+
+CAP3 Sequence Assembly Program
+
+Citation of the paper would be appreciated:
+Huang, X. and Madan, A.  (1999)
+CAP3: A DNA Sequence Assembly Program,
+Genome Research, 9: 868-877.
+
+Introduction
+
+We have made the following improvements to the CAP sequence assembly program.
+
+1. Use of forward-reverse constraints to correct assembly errors and link contigs.
+
+2. Use of base quality values in alignment of sequence reads.
+
+3. Automatic clipping of 5' and 3' poor regions of reads.
+
+4. Generation of assembly results in ace file format for Consed.
+
+5. CAP3 can be used in GAP4 of the Staden package.
+
+The improved program is named CAP3.
+These improvements allow CAP3 to take longer sequences
+of higher errors and produce more accurate consensus sequences.
+
+Use of constraints in layout generation
+
+A forward-reverse constraint is often produced by
+sequencing both ends of a subclone.
+A forward-reverse constraint specifies that
+the two reads should be on the opposite strands of the DNA molecule within
+a specified range of distance.
+
+CAP3 makes use of a large number of forward-reverse constraints
+to locate and correct errors in layout of sequence reads.
+This capability allows CAP3 to address assembly errors due
+to repeats.
+
+CAP3 also uses constraints to link contigs separated by a gap.
+This feature provides useful information to sequence finishers.
+
+The algorithm used in CAP3 is designed to tolerate wrong constraints,
+which are due to errors in naming and lane tracking.
+
+Use of quality values in alignment
+
+CAP3 makes use of base quality values in constructing
+an alignment of sequence reads and generating a consensus sequence
+for each contig.
+
+This allows the program to use both base quality values and the depth of coverage
+at a position to improve the accuracy in generating a consensus
+base at the position.
+
+The alignment method in CAP3 is very tolerable of reads
+of high sequencing errors.
+
+Automatic clipping of 5' and 3' poor regions
+
+CAP3 clips 5' and 3' poor regions of reads and uses
+only good regions of reads in assembly. Thus there is no need
+to perform clipping in advance. Note that
+vector sequences in reads must be masked before using CAP3.
+
+Input to CAP3
+
+CAP3 takes as input a file of sequence reads in FASTA format.
+If the names of reads contain a dot ('.'), CAP3 requres that
+the names of reads sequenced from the same subclone contain
+the same substring up to the first dot.
+CAP3 takes two optional files: a file of quality values
+in FASTA format and a file of forward-reverse constraints.
+
+The file of quality values must be named "xyz.qual", and
+the file of forward-reverse constraints must be named "xyz.con",
+where "xyz" is the name of the sequence file.
+CAP3 uses the same format of a quality file as Phrap.
+
+Each line of the constraint file specifies one forward-reverse constraint
+of the form:
+
+ReadA   ReadB    MinDistance    MaxDistance
+
+where ReadA and ReadB are names of two reads, and
+MinDistance and MaxDistance are distances (integers) in base pairs.
+The constraint is satisfied if ReadA in forward orientation occurs
+in a contig before ReadB in reverse orientation, or
+ReadB in forward orientation occurs in a contig before ReadA
+in reverse orientation, and their distance is between MinDistance
+and MaxDistance.
+CAP3 works better if a lot more constraints are used.
+
+We have a separate program named "formcon" to generate
+a constraint file from the sequence file.
+The program takes an input file of fragments in FASTA format
+and two integers (minimum distance and maximum distance in bp).
+The minimum distance and maximum distances specify a lower and
+a upper limit on the subclone length, respectively.
+It produces a file of forward-reverse constraints for CAP3.
+It is assumed that a pair of forward and reverse reads must
+contain a dot in their names and a pair of forward and reverse reads
+have a common name up to the first dot.
+Because CAP3 uses reads whose ends are clipped, instead of raw reads,
+to measure their distance, the distance seen by CAP3 could be different
+from the insert size by 1000 to 1500 bp. For example,
+if the insert size is 2000 to 3000 bp,  we recommend that you use
+500 for the minimum distance and 4000 for the maximum distance.
+The results are in the file with name ending in ".con".
+
+Output from CAP3
+
+Assembly results in CAP format go to the standard output and
+need to be directed to a file. Note that
+clipped 5' and 3' sequences of reads are not shown in CAP3 format output.
+
+CAP3 also produces assembly results in ace file format (".ace").
+This allows CAP3 output to be viewed in Consed.
+Note that clipped 5' and 3' sequences of reads are shown in
+ace format output.
+
+CAP3 saves consensus sequences in file ".contigs" and
+their quality values in file ".contigs.qual".
+Reads that are not used in assembly are put in file ".singlets".
+Additional information about assembly is given in file ".info".
+
+The CAP3 program reports whether each constraint
+is satisfied or not. The report is in file ".results".
+A sample report file is given here:
+
+CPBKY55.F   CPBKY55.R    500   6000    3210  satisfied
+CPBKY92.F   CPBKY92.R    500   6000    497   unsatisfied in distance
+CPBKY28.F   CPBKY28.R    500   6000     unsatisfied
+CPBKY56.F   CPBKY56.R    500   6000     10th link between CPBKI23.F+ and CPBKT37.R-
+CPBKY70.F   CPBKY70.R    500   6000     4th overlap between CPBKM47.F+ and CPBKN28.R-
+
+The first four columns are simply taken from the constraint file.
+Line 1 indicates that the constraint is satisfied,
+where the actual distance between the two reads is given on
+the fifth column.
+Line 2 indicates that the constraint is not satisfied in distance, that is,
+the two reads in opposite orientation occur in the same contig, but their
+distance (given on the fifth column) is out of the given range.
+Line 3 indicates that the constraint is not satisfied.
+Line 4 indicates that this constraint is a 10th one that
+links two contigs, where the 3' read of one contig is "CPBKI23.F"
+in plus orientation and the 5' read of the other is "CPBKT37.R" in
+minus orientation. The information suggests that the two contigs
+should go together in the gap closure phase.
+Line 5 indicates that the constraint is a 4th constraint
+supporting an overlap between CPBKM47.F and CPBKN28.R.
+The overlap is not implemented in the current the assembly.
+
+CAP3 takes 20 to 60 minutes to assemble a cosmid or BAC data set
+on a Sun Ultra1 workstation.
+
+Availability
+
+The CAP3 program is available upon request from Xiaoqiu Huang at xqhuang@cs.iastate.edu
+
+Documentation on CAP3 is available at
+
+http://genome.cs.mtu.edu/sas.html
+
+A detailed documentation on CAP3 usage.
+
+Usage: cap3 File_of_reads [options]
+
+File_of_reads is a file of DNA reads in FASTA format
+
+If the file of reads is named 'xyz', then
+the file of quality values must be named 'xyz.qual',
+and the file of constraints named 'xyz.con'.
+
+Options (default values):
+
+  -a  N  specify band expansion size N &gt; 10 (20)
+  -b  N  specify base quality cutoff for differences N &gt; 15 (20)
+  -c  N  specify base quality cutoff for clipping N &gt; 5 (12)
+  -d  N  specify max qscore sum at differences N &gt; 100 (250)
+  -e  N  specify extra number of differences N &gt; 10 (20)
+  -f  N  specify max gap length in any overlap N &gt; 10 (300)
+  -g  N  specify gap penalty factor N &gt; 0 (6)
+  -h  N  specify max overhang percent length N &gt; 5 (20)
+  -m  N  specify match score factor N &gt; 0 (2)
+  -n  N  specify mismatch score factor N &gt; 0 (-5)
+  -o  N  number of sequencing errors for the region of
+f involved in the overlap and let r2 be that for
+the region of g involved in the overlap.
+If the observed number of differences in the overlap is greater than
+r1 + r2 + e, then the overlap is removed.
+The value for the parameter e can be changed using the "-e" option.
+The expected number of differences in the overlap is about r1 + r2.
+Giving a smaller value to e causes more overlaps to be removed.
+
+Similarity score of an overlap
+
+The third measure is based on overlap similarity score.
+The similarity score of an overlapping alignment is defined using
+base quality values. Let m be the match score factor, let n be
+the mismatch score factor, and let g be the gap penalty factor.
+Values for these parameters can be set with the "-m", "-n", and "-g" options.
+A match at bases of quality values q1 and q2 is given a score of m * min(q1,q2).
+A mismatch at bases of quality values q1 and q2 is given a score of n * min(q1,q2).
+A base of quality value q1 in a gap is given a score of -g * min(q1,q2),
+where q2 is the quality value of the base in the other sequence right before
+the gap. The score of a gap is the sum of scores of each base in the gap
+minus a gap open penalty. The similarity score of an overlapping alignment
+is the sum of scores of each match, each mismatch, and each gap. 
+With m = 2, an overlap that consists of 25 matches at bases of quality value
+10 has a score of 500. If the similarity score of an overlap is less
+than the overlap similarity score cutoff s, then the overlap is removed.
+
+Length and percent identity of an overlap
+
+The fourth requirement for an overlap is that the length in bp of the overlap
+is no less than the value of the minimum overlap length cutoff parameter.
+The value for this parameter can be changed with the "-o" option.
+The fifth requirement for an overlap is that the percent identity of
+the overlap is no less than the minimum percent identity cutoff.
+The value for this parameter can be changed with the "-p" option.
+A value of 75 for p means 0.75 or 75%.
+
+Maximum length of gaps in an overlap
+
+The program provides a parameter (-f option) for the user to 
+reject overlaps with a long gap. Let an integer f be the maximum
+length of gaps allowed in any overlap. Then any overlap with
+a gap longer than f is rejected by the program. The value
+for this parameter can be changed using the "-f" option.
+Note that a small value for this parameter may cause the program to
+remove true overlaps and to produce incorrect results.
+The "-f" option may be used by the user to split reads from
+alternative splicing forms into separate contigs.
+Geo Pertea at TIGR suggested that this option be added to the program.
+
+Overhang percent length of an overlap
+
+The total length of the different overhang regions in an overlap 
+is controlled with the -h option. An overhang region in an overlap
+is a different terminal region before or after the overlap.
+The overhang percent length of an overlap
+is 100 times the total length of the different overhang regions in the overlap
+divided by the length of the overlap. Overlaps with an overhang percent length
+greater than the maximum cutoff are rejected.
+
+Assembly of reads in forward orientation only
+
+The "-r" option is used to let CAP3 know whether to consider reads
+in reverse orientation for assembly.
+The default value for the option is 1, meaning that reads in
+reverse orientation are also considered for assembly.
+Specifying zero as "-r  0" instructs CAP3 to
+perform assembly of reads in forward orientation only.
+This option was suggested by Patrick Schnable's lab.
+
+Max number of word matches
+
+This parameter (option -t) allows the user to trade off the efficiency of the
+program for its accuracy. For a read f, the program computes overlaps between
+read f and other reads by considering short word matches between
+read f and other reads. A word match is examined to see if it can be
+extended into a long overlap. If read f has overlaps with many other reads,
+then read f has many short word matches with many other reads.
+This parameter gives an upper limit, 1 and that g is in contig C2.
+If the number of unsatisfied constraints that support the overlap
+between f and g is greater than the value of the u parameter plus
+the number of satisfied constraints that support the current joins involving f and g,
+then the current joins involving f and g are disconnected and
+the overlap between f and g is implemented.
+The value for this parameter can be changed with the "-u" option.
+
+Contigs that are linked by forward-reverse constraints are reported.
+The minimum number of constraints for reporting a link between two contigs
+is specified with the "-v" option.
+
+Output file names
+
+The names of all output files contain a substring "cap".
+A different substring can be specified with the "-x" option.
+This feature was suggested by Harley Gorrell.
+
+Acknowledgments
+
+I thank John Quackenbush, Geo Pertea, and Feng Liang for many suggestions to improve CAP3,
+Jun Qian for producing output in ace format and other help,
+Kathryn Beal for incorporating CAP3 in GAP4,
+Tim Hunkapiller and Granger Sutton for discussion,
+Bruce Roe and Granger Sutton for providing sequence data sets,
+This project was supported by NIH Grant R01HG01502-02 from NHGRI.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+
+All rgenetics artefacts are available licensed under the LGPL_
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+ .. _cap3: http://seq.cs.iastate.edu/
+
+  </help>
+</tool>
+
+

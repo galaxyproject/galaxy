@@ -1,0 +1,165 @@
+
+<tool name="Unified Genotyper:" id="rgGATKunigeno" version="0.01">
+  <description>(GATK)</description>
+  <command interpreter="python">
+   rgGATKunigeno.py --bams "$input_file" -n "$out_prefix" --tmp_dir "${__new_file_path__}" 
+   -d "$html_file.files_path" -t "$html_file"  -dcov "$dcov" -stand_call_conf "$stand_call_conf"  -stand_emit_conf "$stand_emit_conf"
+   --gatkjar "${GALAXY_DATA_INDEX_DIR}/shared/jars/GenomeAnalysisTK.jar" 
+#if $gSrc.refGenomeSource=="indexed":
+   --refseqfasta "$gSrc.indices.value"
+#else
+   --refseqfasta "$gSrc.ownFile"
+#end if
+#if $dSrc.refdbsnpSource=="indexed":
+   --dbsnp_rod "$dSrc.indices.value"
+#elif $dSrc.refdbsnpSource=="ownFile":
+   --dbsnp_rod "$dSrc.ownFile"
+#end if
+#if $all_bases:
+  -all_bases
+#end if
+  </command>
+  <inputs>
+    <param format="bam" name="input_file" type="data" label="Input: bam format short read data in your current history"
+      multiple="true" help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param name="out_prefix" value="Unified Genotyper" type="text"
+      label="Title for the output file - use this remind you what the job was for" size="80" />    
+    <conditional name="gSrc">
+      <param name="refGenomeSource" type="select" help="If in doubt, choose built-in and read GATK documentation"
+         label="Reference genome - none, built-in or from current history?">
+        <option value="noref" >No reference - NM tags will NOT be validated (see Picard documentation)</option>
+        <option value="indexed" selected="true">Use a built-in genome</option>
+        <option value="history">Use a genome (fasta format) from my history</option>
+      </param>
+      <when value="indexed">
+        <param name="indices" type="select" label="Select a reference genome">
+          <options from_file="ref_genome_fasta.loc">
+            <column name="value" index="1" />
+            <column name="name" index="0" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome from history" />
+      </when>
+      <when value="noref">
+      </when>
+    </conditional>
+   <conditional name="dSrc">
+      <param name="refdbsnpSource" type="select" help="If in doubt, choose built-in and read GATK documentation please"
+         label="Known variant resource - none, built-in or from current history?">
+        <option value="nodbsnp" >No dbSNP information</option>
+        <option value="indexed" selected="true">use local Galaxy dbsnp</option>
+        <option value="history">Use reference snp data from my history</option>
+      </param>
+      <when value="indexed">
+        <param name="indices" type="select" label="Select a reference dbsnp table">
+          <options from_file="ref_dbsnp_rod.loc">
+            <column name="value" index="1" />
+            <column name="name" index="0" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="gatkrod" metadata_name="dbkey" label="Select a dbsnp rod file from your history" />
+      </when>
+      <when value="nodbsnp">
+      </when>
+    </conditional>   
+     
+   <conditional name="iSrc">
+      <param name="intervalSource" type="select" help="If in doubt, choose none and read GATK documentation please"
+         label="Limit calls to interval list - none, built-in or from current history?">
+        <option value="noint" selected="true">No interval restriction</option>
+        <option value="indexed">use local Regions.loc</option>
+        <option value="history">Select interval file from my history</option>
+      </param>
+      <when value="indexed">
+        <param name="indices" type="select" label="Select a reference interval table">
+          <options from_file="regions.loc">
+            <column name="value" index="3" />
+            <column name="name" index="2" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="bed" metadata_name="dbkey" label="Select an interval file from your history" />
+      </when>
+      <when value="noint">
+      </when>
+    </conditional>       
+    
+    <param name="stand_call_conf" type="text" value="100.0"
+      label="The minimum mapping quality to include" size="5" 
+      help="See GATK documentation for explanation" />
+    <param name="stand_emit_conf" type="text" value="10.0"
+      label="The minimum base quality to include" size="5" 
+      help="See GATK documentation for explanation" />
+    <param name="dcov" value="50.0" type="text"  label="Downsample coverage - please read the GATK unified genotyper docs to get this right"      
+      help="A safe value here is 10x the average coverage, so for a 100x data set, use 1000x, but for a 4x data set 50x is fine." />
+    <param name="all_bases" value="false" type="boolean"  label="Call ALL bases using confusion matrix - please read GATK unified genotyper documentation first"
+    checked="no" truevalue="true" falsevalue="false"/>
+        
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="RgGATKUnifiedGenotyper_${out_prefix}.html"/>
+
+  </outputs>
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Unified Genotyper
+
+    Please refer to the GATK documentation at http://www.broadinstitute.org/gsa/wiki/index.php/Unified_genotyper  
+    since that was used as the specification for this Galaxy wrapper. Please let the Galaxy developers know if there are any
+    errors or corrections in the wrapper - we need all the help you can give.
+
+**Why you might want to use this tool**
+
+    This tool provides a Galaxy interface to a procedure recommended at for calling SNPs from properly prepared BAM files.
+    All your work is securely, sharably and reproducibly persisted in a web app instead of spread all over 
+    your laptop/desktop and cellphone. 
+
+-----
+
+.. class:: infomark
+
+**Attributions**
+
+For questions about what the GATK tools are doing, please explore http://getsatisfaction.com/gsa for help
+
+For questions about this tool wrapper, please use the galaxy-user mailing list.
+If you have managed to find a bug, please try to send us an easy way to reproduce it through the galaxy-bugs mailing list
+or by providing as much information as you can through the report form that will appear automatically
+if a tool fails unexpectedly when you run it in Galaxy.
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+Code cleaned up and the ugliest hacks repaired by Raphael Lullis
+
+All rgenetics artifacts are available licensed under the LGPL
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+

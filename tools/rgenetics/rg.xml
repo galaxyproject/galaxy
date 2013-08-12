@@ -1,0 +1,55 @@
+<tool id="rgClean1" name="Clean:">
+    <code file="listFiles.py"/> 
+    <code file="rgClean_code.py"/> 
+  
+    <description>SNP data for QC</description>
+  
+    <command interpreter="python">
+        rgClean.py $i /usr/local/galaxy/data/rg/plinkbed/$name $mind $geno $hwe $maf $mef $mei $out_file1
+    </command>
+    
+    <inputs>    
+       <param name="i"  type="select" label="Genotype file" dynamic_options="get_lib_bedfiles()" /> 
+       <param name="name" type="text" label="Cleaned file name" value="myClean"/>
+       <param name="geno"  type="text" label="Max.Missfrac: subjects" value="0.05" /> 
+       <param name="mind" type="text" value="0.1" label="Max.Missfrac: markers"/>
+       <param name="mei"  type="text" label="Max.Mendelfrac: Individuals" value="0.05"/> 
+       <param name="mef"  type="text" label="Max.Mendelfrac: Families" value="0.05"/> 
+       <param name="hwe" type="text" value="-1" label="Smallest HWE p value"/>
+       <param name="maf" type="text" value="0.01" label="SmallestMAF"/>
+   </inputs>
+
+   <outputs>  
+       <data format="txt" name="out_file1" />
+   </outputs>
+<help>
+
+
+**Syntax**
+
+- **Genotype data** is the input pedfile chosen from available library files
+- **New name** is the name to use for the filtered output file
+- **Missfrac threshold: subjects** is the threshold for missingness by subject. Subjects with more than this fraction missing will be excluded from the import
+- **Missfrac threshold: markers** is the threshold for missingness by marker. Markers with more than this fraction missing will be excluded from the import
+- **MaxMendel Individuals** Mendel error fraction above which to exclude subjects with more than the specified fraction of mendelian errors in transmission (for family data only) 
+- **MaxMendel Families** Mendel error fraction above which to exclude families with more than the specified fraction of mendelian errors in transmission (for family data only) 
+- **HWE** is the threshold for HWE test p values below which the marker will not be imported. Set this to -1 and all markers will be imported regardless of HWE p value 
+- **MAF** is the threshold for minor allele frequency - SNPs with lower MAF will be excluded
+
+-----
+
+**Summary**
+
+This tool imports genotype data from a high throughput snp platform into Galaxy.
+Data in linkage (ped and map files) format are currently importable. Others will
+be added. Filters are available to remove markers below a specific minor allele
+frequency, or above a specific level of missingness, and to remove subjects using
+similar criteria. Subjects and markers for family data can be filtered by proportions
+of Mendelian errors in observed transmission. Use the QC reporting tool to
+generate a comprehensive series of reports for quality control. 
+
+Originally designed and written for family based data from the CAMP Illumina run of 2007 by 
+ross lazarus (ross.lazarus@gmail.com)
+
+</help>
+</tool>

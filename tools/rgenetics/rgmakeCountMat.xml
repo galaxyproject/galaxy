@@ -1,0 +1,42 @@
+<tool id="rgMakeCM" name="Create a CountMatrix" version="0.01">
+  <description>Counts and phenotype</description>
+  <command interpreter="python">rgmakeCountMat.py --output_html "$html_file" --input_matrix "$inputCounts" --input_pheno "$inputPheno"  --output_dir "$html_file.files_path" --title "$jtitle"
+  </command>
+  <inputs>
+    <param name="input_matrix"  type="data" format="tabular" label="Select an input matrix - rows are contigs, columns are counts for each sample"
+       help="Use the DGE matrix preparation tool to create these matrices from BAM files and a BED file of contigs"/>
+    <param name="jtitle" type="text" value="DGE" size="80" label="Title for job outputs" help="Supply a meaningful name here to remind you what the outputs contain"/>
+    
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="${jtitle}.countMatrix"/>
+  </outputs>
+<tests>
+<test>
+<param name='input_matrix' value='rgmakeCountMat_count.xls' ftype='tabular' />
+ <param name='input_pheno' value='rgmakeCountMat_pheno.xls' ftype='tabular'/>
+ <param name='jtitle' value='rgmakeCountMat_test' />
+ <output name='html_file' file='rgmakeCountMat.countMatrix' ftype='html' compare='diff' lines_diff='20' />
+</test>
+</tests>
+<help>
+**What it does**
+
+Combines a phenotype tabular file with a count matrix tabular file into a single Galaxy datatype suitable for differential count analysis with edgeR or DESeq.
+
+**Input Formats**
+
+The phenotype file must be tab delimited text, with a header row giving column names; samples as rows, first column is sample ID and subsequent columns are phenotype values
+
+The count matrix must also be tab-delimited text with a matrix of non-negative integers and a header row identifying the samples (which must correspond to the row IDs in the phenotype file)
+as well as a unique set of row names such as contig names or gene names as the first column.
+
+**Output**
+
+A countMatrix object in your history ready for downstream analysis
+
+</help>
+
+</tool>
+
+

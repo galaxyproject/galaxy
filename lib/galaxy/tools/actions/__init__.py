@@ -1,5 +1,6 @@
 import os
 import galaxy.tools
+import re
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
@@ -191,14 +192,20 @@ class DefaultToolAction( object ):
                 data = data.to_history_dataset_association( None )
                 inp_data[name] = data
             
-            else: # HDA
-                if data.hid:
-                    input_names.append( 'data %s' % data.hid )
+#            else: # HDA
+#                if data.hid:
+#                    input_names.append( 'data %s' % data.hid )
             input_ext = data.ext
             
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
-
+            data_name_sane = re.sub('[^a-zA-Z0-9_]+', '', data.name)
+            if trans.app.config.use_data_id_on_string:
+                # we want names in our on_strings not numbers
+                input_names.append(data_name_sane)
+            else:
+                if data.hid:
+                    input_names.append('data %s' % data.hid)
         # Collect chromInfo dataset and add as parameters to incoming
         db_datasets = {}
         db_dataset = trans.db_dataset_for( input_dbkey )
@@ -232,11 +239,14 @@ class DefaultToolAction( object ):
         if len( input_names ) == 1:
             on_text = input_names[0]
         elif len( input_names ) == 2:
-            on_text = '%s and %s' % tuple(input_names[0:2])
+            #on_text = '%s and %s' % tuple(input_names[0:2])
+            on_text = '%s_%s' % tuple(input_names[0:2])
         elif len( input_names ) == 3:
-            on_text = '%s, %s, and %s' % tuple(input_names[0:3])
+            #on_text = '%s, %s, and %s' % tuple(input_names[0:3])
+            on_text = '%s_%s_%s' % tuple(input_names[0:3])
         elif len( input_names ) > 3:
-            on_text = '%s, %s, and others' % tuple(input_names[0:2])
+            #on_text = '%s, %s, and others' % tuple(input_names[0:2])
+            on_text = '%s_%s_and_others' % tuple(input_names[0:2])
         else:
             on_text = ""
         # Add the dbkey to the incoming parameters

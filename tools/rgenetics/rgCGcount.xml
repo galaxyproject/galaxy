@@ -1,0 +1,61 @@
+<tool id="rgCGcount" name="CG Counter">
+    <description>Count CG in an interval file with a sequence in the 4th column</description>
+  
+   <command interpreter="python">
+     rgCGcount.py $infile  $outfile
+#if $appen
+true
+#end if
+  </command>
+ 
+    <inputs>    
+       <param name="infile"  type="data" format="bed,interval" label="Input interval file, with c4=sequence for GC count" /> 
+       <param name="outName"  type="text" value="CG count" label="Outfile history name - best if informative" /> 
+       <param name="appen" type="boolean" label="Append CG count to end of each row" checked="false"
+         falsevalue="" truevalue="true"
+         help="Default is to replace 4th column (sequence) with CG count - use append instead if you prefer"  />
+   </inputs>
+
+   <outputs>  
+       <data name = "outfile" format="interval" metadata_source="infile" label="${outName}.xls"/>
+   </outputs>
+
+<tests>
+ <test>
+  <param name='outName' value='rgCG_Count_test.out' />
+  <param name='infile' value='rgCG_Count_test.txt' />
+  <output name='outfile' file='rgCG_Count_test.out.xls'/>
+ </test>
+</tests>
+
+<help>
+
+**Syntax**
+
+- **Input file** should have columns chr start end sequence
+- **Outfile History name** will be a new interval file in your history with the CG count appended to each sequence input 
+
+**Internals**
+
+This is a simple tool that appends the count of CG dinucleotides in each sequence to an interval
+file containing sequences as the fourth column
+
+-----
+
+**Attribution**
+
+Antony Kaspi wanted a GC counter in Galaxy, so he wrote a perl on liner and proposed the tool.
+
+Ross Lazarus tried really hard to like perl but finally ran screaming
+back to the re module for the first working version as a short python script.
+
+All rights reserved. Copyright March 2011 Ross Lazarus
+This artifact is licensed under the LGPL
+As are all the Rgenetics series of Galaxy tools (ross period lazarus at gmaildotcom)
+Depending on how far you want this attribution to go, don't forget
+a boatload of other people's work like linux, python perl, and such without which 
+none of this stuff would work.
+
+</help>
+</tool>
+

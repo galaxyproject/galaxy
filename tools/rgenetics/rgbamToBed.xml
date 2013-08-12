@@ -1,0 +1,59 @@
+<tool name="Bam to Bed:" id="rgbamToBedwrapper" version="0.01">
+  <description>using BAMTOOLS</description>
+  <command>
+#if $input_file.ext=="sam":
+ samtools view -h -S -b $input_file > tempsam.bam 2>/dev/null; bamToBed -i tempsam.bam > "$out_file" 2>/dev/null; rm -rf tempsam.bam 
+#else
+ bamToBed -i $input_file > $out_file 
+#end if
+  </command>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="Input: sam or bam format short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+  </inputs>
+  <outputs>
+    <data format="bed" name="out_file" metadata_source="input_file"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="3unsorted.bam" />
+      <output name="out_file" file="bamtobedtest.bed" ftype="bed" />
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Purpose**
+
+Convert a bam (binary compressed sam) to a ucsc bed (6 column) format for (eg FSeq) downstream analysis
+
+
+**Attributions**
+
+This converter relies on aaron quinlan's code from http://code.google.com/p/bedtools/
+
+Please see his site for documentation and code - we're just wrapping it here.
+Samtools is used to convert an input sam format file into a temporary bam file for bamToBed
+
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, November 2010
+
+This and all other rgenetics artifacts are licensed under the LGPL.
+
+All other dependencies are licensed at their author's discretion - please see each individual package for details
+
+  </help>
+</tool>
+
+
+

@@ -1,0 +1,29 @@
+<tool name="ShortRead: Fastq QC" id="shortread_qc" version="0.1">
+  <description>with the BioC ShortRead package</description>
+  <command interpreter="python">
+    shortread_qc.py -i $input_file -d $html_file.files_path -o $html_file -t $input_file.ext -n "$out_prefix"
+  </command>
+  <inputs>
+    <param format="fastqsanger,fastq" name="input_file" type="data" label="Short read sequence data from your current history" />
+    <param name="out_prefix" value="Short Read QC" type="text" label="Title for the output file - to remind you what the job was for" size="80" />
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file"  label="${out_prefix}.html" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="bioconductor_shortread_in.fastq" />
+      <param name="out_prefix" value="bioconductor_shortread_out" />
+      <output name="html_file" file="bioconductor_shortread_out.html" ftype="html" lines_diff="100"/>
+    </test>
+  </tests>
+  <help>
+This tool uses the Bioconductor ShortRead package to report some QC metrics on fastq, groomed fastq (fastqsanger) and bowtie output files.
+For package documentation see http://www.bioconductor.org/packages/release/bioc/vignettes/ShortRead/inst/doc/Overview.pdf
+
+This is part of the rgenetics toolkit.
+Written by Raphael Lullis 2010
+Licensed under the LGPL
+
+  </help>
+</tool>

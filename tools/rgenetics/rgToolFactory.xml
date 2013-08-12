@@ -1,0 +1,275 @@
+<tool id="rgTF" name="Tool Factory" version="0.10">
+  <description>Makes scripts into tools</description>
+  <command interpreter="python">
+#if ( $__user_email__ not in $__admin_users__ ):
+     rgToolFactory.py --bad_user $__user_email__
+  #else:
+    rgToolFactory.py --script_path "$runme" --interpreter "$interpreter" 
+     --tool_name "$tool_name"  --user_email "$__user_email__"
+    #if $make_TAB.value=="yes":
+       --output_tab "$tab_file"
+    #end if
+    #if $makeMode.make_Tool=="yes":
+      --make_Tool "$makeMode.make_Tool"
+      --tool_desc "$makeMode.tool_desc"
+      --tool_version "$makeMode.tool_version"
+      --new_tool "$new_tool"
+      --help_text "$helpme"
+    #end if
+    #if $make_HTML.value=="yes":
+      --output_dir "$html_file.files_path" --output_html "$html_file" --make_HTML "yes"
+    #end if
+    #if $input1 != 'None':
+       --input_tab "$input1"
+    #end if
+#end if 
+  </command>
+  <inputs>
+    <param name="input1"  type="data"  label="Select an input file from your history" optional="true" size="120"
+       help="Most scripts will need an input - your script MUST be ready for whatever format you choose"/>
+    <param name="tool_name" type="text" value="My dynamic script"   label="New tool ID and title for outputs" size="60"
+         help="This will become the toolshed repository name so please choose thoughtfully to avoid namespace clashes with other tool writers">
+        <sanitizer invalid_char="">
+            <valid initial="string.letters,string.digits"/>
+        </sanitizer>
+    </param>
+    <conditional name="makeMode">
+        <param name="make_Tool" type="select" label="Create a tar.gz file ready for local toolshed entry" help="Ready to deploy securely!" size="60">
+        <option value="yes">Generate a Galaxy ToolShed compatible toolshed.gz</option>
+        <option value="" selected="true">No. Just run the script please</option>
+        </param>
+        <when value = "yes">
+            <param name="tool_version" label="Tool Version - bump this to warn users trying to redo old analyses" type="text" value="0.01"
+            help="If you change your script and regenerate the 'same' tool, you should inform Galaxy (and users) by changing (bumping is traditional) this number"/>
+            <param name="tool_desc" label="Tool Description" type="text" value="" size="40" 
+             help="Supply a brief tool description for the Galaxy tool menu entry (optional - appears after the tool name)" />
+            <param name="help_text" label="Tool form documentation and help text for users" type="text" area="true" 
+             size="8x120" value="**What it Does**" 
+             help="Supply the brief user documentation to appear on the new tool form as reStructured text - http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html" >           
+                <sanitizer>
+                    <valid initial="string.printable">
+                    </valid>
+                    <mapping initial="none"/>
+                </sanitizer>
+            </param>
+        </when>
+        <when value = "">
+        </when>
+    </conditional> 
+    <param name="make_HTML" type="select" label="Create an HTML report with links to all output files and thumbnail links to PDF images" size="60"
+         help="Recommended for presenting complex outputs in an accessible manner. Turn off for simple tools so they just create one output">
+        <option value="yes">Yes, arrange all outputs in an HTML output</option>
+        <option value="" selected="true">No, no HTML output file thanks</option>
+    </param>
+
+
+    <param name="make_TAB" type="select" label="Create a new (default tabular) history output" 
+         help="This is useful if your script creates a single new tabular file you want to appear in the history after the tool executes">
+        <option value="yes" selected="true">My script writes to a new history output</option>
+        <option value="">I only want an HTML output file</option>
+    </param>
+    <param name="out_format" type="select" label="Galaxy datatype for your tool's output file" help="You may need to edit the xml to extend this list">
+    <option value="tabular" selected="true">Tabular</option>
+    <option value="interval">Interval</option>
+    <option value="gz">gz</option>
+    <option value="text">text</option>
+    </param>
+    <param name="interpreter" type="select" label="Select the interpreter for your code. This must be available on the path of the execution host">
+        <option value="Rscript" selected="true">Rscript</option>
+        <option value="python">python</option>
+        <option value="perl">perl</option>
+        <option value="sh">sh</option>
+    </param>   
+    <param name="dynScript" label="Cut and paste the script to be executed here" type="text" value="" area="True" size="8x120"  
+      help="Script must deal with two command line parameters: Path to input tabular file path (or 'None' if none selected) and path to output tabular history file (or 'None').">
+      <sanitizer>
+         <valid initial="string.printable">
+         </valid>
+         <mapping initial="none"/>
+      </sanitizer>
+     </param>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="tab_file" label="${tool_name}.${out_format}">
+        <filter>make_TAB=="yes"</filter>
+        <change_format>
+            <when input="out_format" value="interval"  format="interval" />
+            <when input="out_format" value="gz" format="gz" />
+            <when input="out_format" value="text"  format="text"  />
+         </change_format>
+    </data>
+    <data format="html" name="html_file" label="${tool_name}.html">
+        <filter>make_HTML == "yes"</filter>
+    </data>
+    <data format="toolshed.gz" name="new_tool" label="${tool_name}.toolshed.gz">
+        <filter>makeMode['make_Tool'] == "yes"</filter>
+    </data>
+  </outputs>
+<configfiles>
+<configfile name="runme">$dynScript</configfile>
+<configfile name="helpme">
+#if $makeMode.make_Tool == "yes":
+${makeMode.help_text}
+#end if
+</configfile>
+</configfiles>
+<help>
+    
+.. class:: warningmark
+
+**Details and attribution** GTF_
+
+**Local Admins ONLY** Only users whose IDs found in the local admin_user configuration setting in universe_wsgi.ini can run this tool.
+
+**If you find a bug** please raise an issue at the bitbucket repository GTFI_
+
+**What it does** This tool enables a user to paste and submit an arbitrary R/python/perl script to Galaxy.
+
+**Input options** This version is limited to simple transformation or reporting requiring only a single input file selected from the history.
+
+**Output options** Optional script outputs include one single new history tabular file, or for scripts that create multiple outputs,
+a new HTML report linking all the files and images created by the script can be automatically generated.
+
+**Tool Generation option** Once the script is working with test data, this tool will optionally generate a new Galaxy tool in a gzip file
+ready to upload to your local toolshed for sharing and installation. Provide a small sample input when you run generate the tool because
+it will become the input for the generated functional test.
+
+.. class:: warningmark
+
+**Note to system administrators** This tool offers *NO* built in protection against malicious scripts. It should only be installed on private/personnal Galaxy instances.
+Admin_users will have the power to do anything they want as the Galaxy user if you install this tool.
+
+.. class:: warningmark
+
+**Use on public servers**  is STRONGLY discouraged for obvious reasons
+
+The tools generated by this tool will run just as securely as any other normal installed Galaxy tool but like any other new tools, should always be checked carefully before installation.
+We recommend that you follow the good code hygiene practices associated with safe toolshed.
+
+**Scripting conventions** The pasted script will be executed with the path to the (optional) input tabular data file path or NONE if you do not select one, and the path to the optional
+output file or None if none is wanted, as the first and second command line parameters. The script must deal appropriately with these - see Rscript examples below.
+Note that if an optional HTML output is selected, all the output files created by the script will be nicely presented as links, with pdf images linked as thumbnails in that output.
+This can be handy for complex scripts creating lots of output.
+
+**Examples**
+
+Each of these following trivial examples can be cut and pasted into the script box for testing.
+Please make sure you choose the appropriate interpreter and upload and select a suitable small matching test data input
+
+A simple Rscript "filter" showing how the command line parameters can be handled, takes an input file, does something (transpose in this case) and 
+writes the results to a new tabular file. Note the use of colClasses to ensure that no fiddling takes place with numeric values by treating everything
+as a string::
+
+ # transpose a tabular input file and write as a tabular output file
+ ourargs = commandArgs(TRUE)
+ inf = ourargs[1]
+ outf = ourargs[2]
+ inp = read.table(inf,head=F,row.names=NULL,sep='\t',colClasses="character")
+ outp = t(inp)
+ write.table(outp,outf, quote=FALSE, sep="\t",row.names=F,col.names=F)
+
+Calculate a multiple test adjusted p value from a column of p values - for this script to be useful, it needs the right column for the input to be specified in the code for the
+given input file type(s) specified when the tool is generated ::
+
+ # use p.adjust - assumes a HEADER row and column 1 - please fix for any real use
+ column = 1 # adjust if necessary for some other kind of input
+ ourargs = commandArgs(TRUE)
+ inf = ourargs[1]
+ outf = ourargs[2]
+ inp = read.table(inf,head=T,row.names=NULL,sep='\t')
+ p = inp[,column]
+ q = p.adjust(p,method='BH')
+ outp = cbind(inp,'BH Adjusted p-value'=q)
+ write.table(outp,outf, quote=FALSE, sep="\t",row.names=F,col.names=T) 
+
+
+A demonstration Rscript example takes no input file but generates some random data based pdf images
+You must make sure the option to create an HTML output file is
+turned on for this to work. Images (pdf) are linked via thumbnails and
+all files have a link on the resulting HTML page::
+
+ # note this script takes NO input or output because it generates random data
+ foo = data.frame(a=runif(100),b=runif(100),c=runif(100),d=runif(100),e=runif(100),f=runif(100))
+ bar = as.matrix(foo)
+ pdf( "heattest.pdf" )
+ heatmap(bar,main='Random Heatmap')
+ dev.off()
+ for (i in 1:49) {
+     foo = runif(100)
+     bar = rnorm(100)
+     pdf(paste('yet',i,"anotherplot.pdf",sep='_'))
+     plot(foo,bar,main=paste("Foo by Bar plot #",i),col="maroon", pch=3,cex=0.6)
+     dev.off()
+ }
+
+A Python example that reverses each row of a tabular file (you'll need to remove the leading spaces 
+for this to work if cut and pasted into the script box)::
+
+ # reverse order of columns in a tabular file
+ import sys
+ inp = sys.argv[1]
+ outp = sys.argv[2]
+ i = open(inp,'r')
+ o = open(outp,'w')
+ for row in i:
+     rs = row.rstrip().split('\t')
+     rs.reverse()
+     o.write('\t'.join(rs))
+     o.write('\n')
+ i.close()
+ o.close()
+ 
+A trivial shell script example to show that it works::
+
+ #!/bin/bash
+ INF=$1
+ OUTF=$2
+ cut -c2,4,6,8,10,12 $INF >$OUTF 
+
+A trivial perl script example to show that even perl works::
+
+ #
+ # change all occurances of a string in a file to another string
+ #
+ $oldfile = $ARGV[0];
+ $newfile = $ARGV[1];
+ $old = "gene";
+ $new = "foo";
+ open(OF, $oldfile);
+ open(NF, "&gt;$newfile");
+ # read in each line of the file
+ while ($line = &lt;OF&gt;) {
+    $line =~ s/$old/$new/;
+    print NF $line;
+ }
+ close(OF);
+ close(NF);
+
+
+
+**Citation**
+Paper_ :
+Creating re-usable tools from scripts: The Galaxy Tool Factory
+Ross Lazarus; Antony Kaspi; Mark Ziemann; The Galaxy Team
+Bioinformatics 2012; doi: 10.1093/bioinformatics/bts573
+
+
+**Licensing** 
+Copyright Ross Lazarus (ross period lazarus at gmail period com) May 2012
+All rights reserved.
+Licensed under the LGPL_
+
+--
+
+<![CDATA[
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+.. _GTF:  https://bitbucket.org/fubar/galaxytoolfactory
+.. _GTFI:  https://bitbucket.org/fubar/galaxytoolfactory/issues
+.. _Paper: http://bioinformatics.oxfordjournals.org/cgi/reprint/bts573?ijkey=lczQh1sWrMwdYWJ&keytype=ref
+]]>
+
+</help>
+
+</tool>
+
+

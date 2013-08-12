@@ -1,0 +1,207 @@
+<tool name="miRmapper" id="mirdeep2mapper" version="0.001">
+  <description>miR assembler</description>
+  <command interpreter="python">
+    rgmiRmapper.py --formIn $input_file.ext --input "$input_file" --output_dir "$html_file.files_path" --outhtml "$html_file"  
+    --prefix "$prefix" -e $GALAXY_DATA_INDEX_DIR/shared/mirdeep2
+#if $domap.mapme=="yes"
+-p "${ filter( lambda x: str( x[0] ) == str( $domap.index ), $__app__.tool_data_tables[ 'bowtie_indexes' ].get_fields() )[0][-1] }" 
+#end if
+#if $toFasta.value=="true"
+-s "$output_fasta"
+#end if
+#if $printReadMappings.value=="true"
+-t "$output_arf"
+#end if
+#if int($lengthMin)
+-l "$lengthMin"
+#end if
+#if len($clip3primeSequence.value) > 0
+-k "$clip3primeSequence"
+#end if
+$clean $rna2dna $collapse $misMatch
+  </command>
+  <requirements><requirement type="package">mirdeep2</requirement></requirements>
+  <inputs>
+    <param format="fastq,fasta" name="input_file" type="data" label="Input: fastq or fasta short read data in your current history"
+      help="If the select list is empty, you need to upload or import some aligned short read data from a shared library"/>
+    <param name="prefix" value="seq" type="text"
+      label="3 letter prefix for the output files - use this remind you what the job was for" size="80" />
+    <conditional name="domap" >
+        <param name="mapme" type="select" label="Map to a reference genome (optional)">
+        <option value="yes" selected="true">Map against a reference genome</option>
+        <option value="no">Do not map in this run - convert or collapse only</option>
+        </param>
+        <when value="no">
+        </when>
+        <when value="yes">
+            <param name="index" type="select" label="Select a reference genome to map to (only if mapping required)" 
+              help="if your genome of interest is not listed - contact the support team">
+              <options from_data_table="bowtie_indexes">
+                <filter type="sort_by" column="2" />
+              </options>
+            </param>
+        </when>
+    </conditional>
+    <param name="toFasta" type="select" label="Output as collapsed fasta in addition to arf">
+        <option value="true" selected="true">Create a collapsed fasta output file</option>
+        <option value="false">Do not write a fasta file output</option>
+    </param>
+    <param name="printReadMappings" type="select" label="Create a mirDEEP2 arf format output">
+        <option value="true" selected="true">Create an arf output file</option>
+        <option value="false">Do not write an arf file output</option>
+    </param>
+
+    <param name="clip3primeSequence" type="text" label="Clip this adapter (blank = no clipping)" value="" />
+    <param name="clean" type="boolean" label="Clean out all nonstandard letters" checked="true"
+      falsevalue="" truevalue="-j" />
+    <param name="rna2dna" type="boolean" label="Input contains RNA - convert to DNA" checked="false"
+      falsevalue="" truevalue="-r" />
+    <param name="collapse" type="boolean" label="Collapse" checked="true" 
+      help="Collapse reads - leave set or the output fasta CANNOT be used by mirDeep2 for processing!"
+      falsevalue="" truevalue="-m" />
+    <param name="misMatch" type="boolean" label="Allow 1 mismatch in seed - takes MUCH longer to run" checked="false"
+      falsevalue="" truevalue="-q" />
+    <param name="lengthMin" type="integer" value="18" label="Specify minimum sequence length (default 18 for miR, use zero for no minimum)" />
+  </inputs>
+  <outputs>    
+    <data format="html" name="html_file" label="${on_string}_mirdeep2_mapper.html"/>
+    <data format="collapsedfasta" name="output_fasta"  label="${on_string}_mirdeep2mapper.collapsedfasta" metadata_source="input_file" >
+    <filter>toFasta=="true"</filter>
+    <change_format>
+        <when input="collapse" value="" format="fasta" />
+    </change_format>
+    </data>
+    <data format="arf" name="output_arf"  label="${on_string}_mirdeep2mapper.arf" metadata_source="input_file">
+    <filter>printReadMappings=="true"</filter>
+    </data>
+  </outputs>
+  <help>
+
+
+
+.. class:: infomark
+
+This Galaxy tool wraps mirdeep2_ from http://www.mdc-berlin.de/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/index.html
+
+Documentation from that site follows below:
+
+**Readme**
+
+name: mapper.pl
+
+description:  Processes reads and/or maps them to the reference genome.
+
+input:  Default input is a file in fasta, seq.txt or qseq.txt format. More input can be given depending on the options used.
+
+output:  The output depends on the options used (see below). Either a fasta file with processed reads or an arf file with with mapped reads, or both, are output.
+
+options:
+
+Read input file:
+
+-a              input file is seq.txt format
+-b              input file is qseq.txt format
+-c              input file is fasta format
+-e              input file is fastq format
+-d              input file is a config file (see miRDeep2 documentation).
+                options -a, -b or -c must be given with option -d.
+
+Preprocessing/mapping:
+
+-g              three-letter prefix for reads (by default 'seq')
+-h              parse to fasta format
+-i              convert rna to dna alphabet (to map against genome)
+-j              remove all entries that have a sequence that contains letters
+                other than a,c,g,t,u,n,A,C,G,T,U,N
+-k seq          clip 3' adapter sequence
+-l int          discard reads shorter than int nts
+-m              collapse reads
+
+-p genome       map to genome (must be indexed by bowtie-build). The 'genome'
+                string must be the prefix of the bowtie index. For instance, if
+                the first indexed file is called 'h_sapiens_37_asm.1.ebwt' then
+                the prefix is 'h_sapiens_37_asm'.
+-q              map with one mismatch in the seed (mapping takes longer)
+
+-r int          a read is allowed to map up to this number of positions in the genome
+                default is 5 
+
+Output files:
+
+-s file         print processed reads to this file
+-t file         print read mappings to this file 
+
+Other:
+-u              do not remove directory with temporary files
+-v              outputs progress report
+
+-n              overwrite existing files
+
+Examples:
+
+The mapper module is designed as a tool to process deep sequencing reads and/or map them to the reference genome. The module works in sequence space, and can process or map data that 
+is in sequence fasta format. A number of the functions of the mapper module are implemented specifically with Solexa/Illumina data in mind. For example on how to post-process mappings in color space, 
+see example use 5:
+
+Example use 1:
+
+The user wishes to parse a file in qseq.txt format to fasta format, convert from RNA to DNA alphabet, remove entries with non-canonical letters (letters other than a,c,g,t,u,n,A,C,G,T,U,N), 
+clip adapters, discard reads shorter than 18 nts and collapse the reads:
+mapper.pl reads_qseq.txt -b -h -i -j -k TCGTATGCCGTCTTCTGCTTGT -l 18 -m -s reads_collapsed.fa
+
+Example use 2:
+
+The user wishes to map a fasta file against the reference genome. The genome has already been indexed by bowtie-build. The first of the indexed files is named genome.1.ebwt:
+mapper.pl reads_collapsed.fa -c -p genome -t reads_collapsed_vs_genome.arf
+
+Example use 3:
+
+The user wishes to process the reads as in example use 1 and map the reads as in example use 2 in a single step, while observing the progress:
+mapper.pl reads_qseq.txt -b -h -i -j -k TCGTATGCCGTCTTCTGCTTGT -l 18 -m -p genome -s reads_collapsed.fa -t reads_collapsed_vs_genome.arf -v
+
+Example use 4:
+
+The user wishes to parse a GEO file to fasta format and process it as in example use 1. The GEO file is in tabular format, with the first column showing the sequence and the second column showing the read counts:
+geo2fasta.pl GSM.txt > reads.fa
+mapper.pl reads.fa -c -h -i -j -k TCGTATGCCGTCTTCTGCTTGT -l 18 -m -s reads_collapsed.fa 
+
+Example use 5:
+
+The user has already removed 3' adapters in color space and has mapped the reads against the genome using the BWA tool. The BWA output file is named reads_vs_genome.sam. 
+Notice that the BWA output contains extra fields that are not required for SAM format. Our converter requires these fields and thus may not work with all types of SAM files. The user wishes to generate 'reads_collapsed.fa' and 'reads_vs_genome.arf' to input to miRDeep2:
+bwa_sam_converter.pl reads_vs_genome.sam reads.fa reads_vs_genome.arf
+
+mapper.pl reads.fa -c -i -j -l 18 -m -s reads_collapsed.fa
+
+Example use 6:
+
+The user has sequencing data from different samples e.g. different cell-types. A config.txt file has to be created in which each line designates file locations and a unique 3 letter code. For instance:
+sequencing_data_sample1.fa	sd1
+sequencing_data_sample2.fa	sd2
+sequencing_data_sample3.fa	sd3
+The user wishes then to pool these files and use the generated files reads.fa and reads_vs_genome.fa for the miRDeep2 analysis.
+mapper.pl config.txt -d -c -i -j -l 18 -m -p genome_index -s reads.fa -t reads_vs_genome.arf 
+Since the reads_vs_genome.arf still contains the 3 letter code for each read mapped to genome the user can then later on dilute the contribution of the different samples to a predicted or known miRNA. 
+It can also be used for example to define 'high confident' predictions if the results are filtered for miRNAs that have sequencing evidence from at least two samples.
+
+
+-----
+
+.. class:: infomark
+
+**Copyright**
+
+This Galaxy tool is a component of the rgenetics toolkit.
+
+Written by and copyright Ross Lazarus, ross.lazarus at gmail etc, September 2010
+
+All rgenetics artefacts are available licensed under the LGPL_
+Other dependencies are licensed at the author's discretion - please see each individual package for details
+ 
+ .. _LGPL: http://www.gnu.org/copyleft/lesser.html
+ .. _mirdeep2: http://www.mdc-berlin.de/en/research/research_teams/systems_biology_of_gene_regulatory_elements/projects/miRDeep/index.html
+
+  </help>
+</tool>
+
+
