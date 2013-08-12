@@ -2,6 +2,10 @@
 API operations on a history.
 """
 
+import pkg_resources
+pkg_resources.require( "Paste" )
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
+
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
@@ -75,9 +79,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             history_data = self.get_history_dict( trans, history )
             history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
 
+        except HTTPBadRequest, bad_req:
+            trans.response.status = 400
+            return str( bad_req )
+
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.error( msg, exc_info=True )
+            log.exception( msg, exc_info=True )
             trans.response.status = 500
             return msg
 
@@ -116,33 +124,53 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
+        rval = { 'id' : history_id }
         try:
-            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )
-        except Exception, e:
-            return str( e )
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
+            history.deleted = True
 
-        history.deleted = True
-        if purge and trans.app.config.allow_user_dataset_purge:
-            # First purge all the datasets
-            for hda in history.datasets:
-                if hda.purged:
-                    continue
-                hda.purged = True
-                trans.sa_session.add( hda )
-                trans.sa_session.flush()
-                if hda.dataset.user_can_purge:
-                    try:
-                        hda.dataset.full_delete()
-                        trans.sa_session.add( hda.dataset )
-                    except:
-                        pass
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+
+                # First purge all the datasets
+                for hda in history.datasets:
+                    if hda.purged:
+                        continue
+                    hda.purged = True
+                    trans.sa_session.add( hda )
                     trans.sa_session.flush()
-            # Now mark the history as purged
-            history.purged = True
-            self.sa_session.add( history )
 
-        trans.sa_session.flush()
-        return 'OK'
+                    if hda.dataset.user_can_purge:
+                        try:
+                            hda.dataset.full_delete()
+                            trans.sa_session.add( hda.dataset )
+                        except:
+                            pass
+                        # flush now to preserve deleted state in case of later interruption
+                        trans.sa_session.flush()
+
+                # Now mark the history as purged
+                history.purged = True
+                self.sa_session.add( history )
+                rval[ 'purged' ] = True
+
+            trans.sa_session.flush()
+            rval[ 'deleted' ] = True
+
+        except HTTPInternalServerError, http_server_err:
+            log.exception( 'Histories API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           history_id, str( kwd ), str( http_server_err ) )
+            raise
+        except HTTPException, http_exc:
+            raise
+        except Exception, exc:
+            log.exception( 'Histories API, delete: uncaught exception: %s, %s\n%s',
+                           history_id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
+
+        return rval
 
     @web.expose_api
     def undelete( self, trans, id, **kwd ):
@@ -165,7 +193,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         try:
-            history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=True )
+            history = self.get_history( trans, id, check_ownership=True, check_accessible=True )
             # validation handled here and some parsing, processing, and conversion
             payload = self._validate_and_parse_update_payload( payload )
             # additional checks here (security, etc.)

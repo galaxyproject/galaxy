@@ -12,6 +12,7 @@ from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
+from galaxy.model.orm import dialect_to_egg
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
@@ -21,12 +22,6 @@ context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=Tr
 
 # For backward compatibility with "context.current"
 context.current = Session
-
-dialect_to_egg = { 
-    "sqlite"   : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql"    : "MySQL_python"
-}
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the 
@@ -111,6 +106,7 @@ Repository.table = Table( "repository", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
+    Column( "type", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
     Column( "long_description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),

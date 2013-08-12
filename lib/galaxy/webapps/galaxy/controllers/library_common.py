@@ -949,7 +949,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         
         # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
+
         dbkeys = trans.app.genomes.get_dbkeys( trans )
+        dbkeys.sort( key=lambda dbkey: dbkey[0].lower() )
+
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         if history is not None:

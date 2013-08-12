@@ -6,6 +6,7 @@ import threading
 from galaxy import tools
 from galaxy.util import asbool
 from galaxy.util import json
+from galaxy import util
 from galaxy import web
 from galaxy.model.orm import or_
 from galaxy.webapps.tool_shed.util import container_util
@@ -93,6 +94,30 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                  tool_dependencies )
     return repo_info_dict
 
+def get_installed_repositories_from_repository_dependencies( trans, repository_dependencies_dict ):
+    installed_repositories = []
+    for rd_key, rd_vals in repository_dependencies_dict.items():
+        if rd_key in [ 'root_key', 'description' ]:
+            continue
+        # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
+        # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
+        try:
+            tool_shed, name, owner, changeset_revision, prior_installation_required = container_util.get_components_from_key( rd_key )
+        except:
+            tool_shed, name, owner, changeset_revision = container_util.get_components_from_key( rd_val )
+        installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
+        if installed_repository not in installed_repositories:
+            installed_repositories.append( installed_repository )
+        for rd_val in rd_vals:
+            try:
+                tool_shed, name, owner, changeset_revision, prior_installation_required = rd_val
+            except:
+                tool_shed, name, owner, changeset_revision = rd_val
+            installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
+            if installed_repository not in installed_repositories:
+                installed_repositories.append( installed_repository )
+    return installed_repositories
+
 def get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids ):
     """
     The order in which the prior_install_required_dict is processed is critical in order to ensure that the ultimate repository installation order is correctly
@@ -141,6 +166,80 @@ def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
                 prior_install_ids = get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_dependencies )
                 prior_install_required_dict[ encoded_repository_id ] = prior_install_ids
     return prior_install_required_dict
+
+def get_repair_dict( trans, repository ):
+    """
+    Inspect the installed repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
+    each repository's tool dependencies.  This method is called only from Galaxy when attempting to correct issues with an installed repository that has
+    installation problems somewhere in it's dependency hierarchy.
+    """
+    repair_dict = {}
+    # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+    repository_dependencies_dict = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, repository )
+    # Generate the list of installed repositories from the information contained in the repository_dependencies dictionary.
+    installed_repositories = get_installed_repositories_from_repository_dependencies( trans, repository_dependencies_dict )
+    # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll order the list of
+    # tsr_ids to ensure all repositories are repaired in the required order.
+    tsr_ids = []
+    repo_info_dicts = []
+    tool_panel_section_keys = []
+    for installed_repository in installed_repositories:
+        tsr_ids.append( trans.security.encode_id( installed_repository.id ) )
+        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, installed_repository )
+        repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, installed_repository )
+        metadata = installed_repository.metadata
+        if metadata:
+            tool_dependencies = metadata.get( 'tool_dependencies', None )
+            tool_panel_section_dict = metadata.get( 'tool_panel_section', None )
+            if tool_panel_section_dict:
+                # The installed_repository must be in the uninstalled state.  The structure of tool_panel_section_dict is:
+                # {<tool guid> : [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
+                # Here is an example:
+                # {"localhost:9009/repos/test/filter/Filter1/1.1.0": 
+                #    [{"id": "filter_and_sort", "name": "Filter and Sort", "tool_config": "filtering.xml", "version": ""}]}
+                # Currently all tools contained within an installed tool shed repository must be loaded into the same section in the tool panel, so we can
+                # get the section id of the first guid in the tool_panel_section_dict.  In the future, we'll have to handle different sections per guid.
+                guid = tool_panel_section_dict.keys()[ 0 ]
+                section_dicts = tool_panel_section_dict[ guid ]
+                section_dict = section_dicts[ 0 ]
+                tool_panel_section_id = section_dict[ 'id' ]
+                tool_panel_section_name = section_dict[ 'name' ]
+                if tool_panel_section_id:
+                    tool_panel_section_key, tool_panel_section = tool_util.get_or_create_tool_section( trans,
+                                                                                                       tool_panel_section_id=tool_panel_section_id,
+                                                                                                       new_tool_panel_section=tool_panel_section_name )
+                    tool_panel_section_keys.append( tool_panel_section_key )
+                else:
+                    # The tools will be loaded outside of any sections in the tool panel.
+                    tool_panel_section_keys.append( None )
+            else:
+                # The installed_repository must be in the installed state, so we can skip determining if it has tools that are displayed in a tool panel section
+                # since no changes will be made to it.
+                tool_panel_section_keys.append( None ) 
+        else:
+            tool_dependencies = None
+            # The tools will be loaded outside of any sections in the tool panel.
+            tool_panel_section_keys.append( None )
+        repo_info_dict = create_repo_info_dict( trans=trans,
+                                                repository_clone_url=repository_clone_url,
+                                                changeset_revision=installed_repository.changeset_revision,
+                                                ctx_rev=installed_repository.ctx_rev,
+                                                repository_owner=installed_repository.owner,
+                                                repository_name=installed_repository.name,
+                                                repository=None,
+                                                repository_metadata=None,
+                                                tool_dependencies=tool_dependencies,
+                                                repository_dependencies=repository_dependencies )
+        repo_info_dicts.append( repo_info_dict )
+    ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
+        order_components_for_installation( trans,
+                                           tsr_ids,
+                                           repo_info_dicts,
+                                           tool_panel_section_keys=tool_panel_section_keys )
+    repair_dict[ 'ordered_tsr_ids' ] = ordered_tsr_ids
+    repair_dict[ 'ordered_repo_info_dicts' ] = ordered_repo_info_dicts
+    repair_dict[ 'ordered_tool_panel_section_keys' ] = ordered_tool_panel_section_keys
+    return repair_dict
 
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
@@ -220,6 +319,26 @@ def get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_depen
                             prior_install_ids.append( encoded_repository_id )
     return prior_install_ids
 
+def get_tool_shed_repository_ids( as_string=False, **kwd ):
+    tsrid = kwd.get( 'tool_shed_repository_id', None )
+    tsridslist = util.listify( kwd.get( 'tool_shed_repository_ids', None ) )
+    if not tsridslist:
+        tsridslist = util.listify( kwd.get( 'id', None ) )
+    if tsridslist:
+        if tsrid and tsrid not in tsridslist:
+            tsridslist.append( tsrid )
+        if as_string:
+            return ','.join( tsridslist )
+        return tsridslist
+    else:
+        tsridslist = util.listify( kwd.get( 'ordered_tsr_ids', None ) )
+        if as_string:
+            return ','.join( tsridslist )
+        return tsridslist
+    if as_string:
+        ''
+    return []
+            
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     changeset_revision_dict = {}
@@ -283,6 +402,12 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
     trans.sa_session.flush()
     if 'tool_dependencies' in metadata_dict and not reinstalling:
         tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
+    if 'sample_files' in metadata_dict:
+        sample_files = metadata_dict.get( 'sample_files', [] )
+        tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+        tool_data_table_conf_filename, tool_data_table_elems = tool_util.install_tool_data_tables( trans.app, tool_shed_repository, tool_index_sample_files )
+        if tool_data_table_elems:
+            trans.app.tool_data_tables.add_new_entries_from_config_file( tool_data_table_conf_filename, None, trans.app.config.shed_tool_data_table_config, persist=True )
     if 'tools' in metadata_dict:
         tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
         sample_files = metadata_dict.get( 'sample_files', [] )
@@ -323,7 +448,7 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
         files_dir = relative_install_dir
         if shed_config_dict.get( 'tool_path' ):
             files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
-        datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
+        datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
         # Load data types required by tools.
         converter_path, display_path = datatype_util.alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, files_dir, override=False )
         if converter_path or display_path:
@@ -352,7 +477,7 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
     tool_panel_section = installation_dict[ 'tool_panel_section' ]
     tool_path = installation_dict[ 'tool_path' ]
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
-    created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+    created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
         repository_dependency_util.create_repository_dependency_objects( trans=trans,
                                                                          tool_path=tool_path,
                                                                          tool_shed_url=tool_shed_url,
@@ -362,11 +487,7 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
                                                                          no_changes_checked=no_changes_checked,
                                                                          tool_panel_section=tool_panel_section,
                                                                          new_tool_panel_section=new_tool_panel_section )
-    if message and len( repo_info_dicts ) == 1 and not using_api:
-        installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
-        message += 'Click <a href="%s">here</a> to manage the repository.  ' % \
-            ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
-    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message
+    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts
 
 def initiate_repository_installation( trans, installation_dict ):
     # The following installation_dict entries are all required.
@@ -445,7 +566,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
     cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
     if cloned_ok:
         if reinstalling:
-            # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
+            # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated.
             changeset_revision_dict = get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
             current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
             current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
@@ -483,7 +604,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                 message += "from the installed repository's <b>Repository Actions</b> menu.  "
                 status = 'error'
         if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
-            work_dir = tempfile.mkdtemp()
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
             # Install tool dependencies.
             suc.update_tool_shed_repository_status( trans.app,
                                                     tool_shed_repository,
@@ -501,13 +622,13 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
         suc.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.INSTALLED )
     else:
         # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
-        suc.set_repository_attributes( trans,
-                                       tool_shed_repository,
-                                       status=trans.model.ToolShedRepository.installation_status.ERROR,
-                                       error_message=error_message,
-                                       deleted=False,
-                                       uninstalled=False,
-                                       remove_from_disk=True )
+        set_repository_attributes( trans,
+                                   tool_shed_repository,
+                                   status=trans.model.ToolShedRepository.installation_status.ERROR,
+                                   error_message=error_message,
+                                   deleted=False,
+                                   uninstalled=False,
+                                   remove_from_disk=True )
 
 def merge_containers_dicts_for_new_install( containers_dicts ):
     """
@@ -615,11 +736,14 @@ def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_pan
                     prior_repo_info_dict, prior_tool_panel_section_key = get_repository_components_for_installation( prior_install_required_id,
                                                                                                                      tsr_ids,
                                                                                                                      repo_info_dicts,
-                                                                                                                     tool_panel_section_keys )
+                                                                                                                     tool_panel_section_keys=tool_panel_section_keys )
                     ordered_tsr_ids.append( prior_install_required_id )
                     ordered_repo_info_dicts.append( prior_repo_info_dict )
                     ordered_tool_panel_section_keys.append( prior_tool_panel_section_key )
-            repo_info_dict, tool_panel_section_key = get_repository_components_for_installation( tsr_id, tsr_ids, repo_info_dicts, tool_panel_section_keys )
+            repo_info_dict, tool_panel_section_key = get_repository_components_for_installation( tsr_id,
+                                                                                                 tsr_ids,
+                                                                                                 repo_info_dicts,
+                                                                                                 tool_panel_section_keys=tool_panel_section_keys )
             ordered_tsr_ids.append( tsr_id )
             ordered_repo_info_dicts.append( repo_info_dict )
             ordered_tool_panel_section_keys.append( tool_panel_section_key )
@@ -661,3 +785,101 @@ def populate_containers_dict_for_new_install( trans, tool_shed_url, tool_path, r
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
+
+def repair_tool_shed_repository( trans, repository, repo_info_dict ):
+
+    def add_repair_dict_entry( repository_name, error_message ):
+        if repository_name in repair_dict:
+            repair_dict[ repository_name ].append( error_message )
+        else:
+            repair_dict[ repository_name ] = [ error_message ]
+        return repair_dict
+
+    metadata = repository.metadata
+    repair_dict = {}
+    if repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+        try:
+            common_install_util.activate_repository( trans, repository )
+        except Exception, e:
+            error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
+            log.debug( error_message )
+            repair_dict [ repository.name ] = error_message
+    elif repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+        # TODO: this may cause problems if the repository is currently being installed.
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+        # Reset the repository attributes to the New state for installation.
+        if metadata:
+            tool_section, new_tool_panel_section, tool_panel_section_key = tool_util.handle_tool_panel_selection( trans,
+                                                                                                                  metadata,
+                                                                                                                  no_changes_checked=True,
+                                                                                                                  tool_panel_section=None,
+                                                                                                                  new_tool_panel_section=None )
+        else:
+            # The tools will be loaded outside of any sections in the tool panel.
+            tool_panel_section_key = None
+        set_repository_attributes( trans,
+                                   repository,
+                                   status=trans.model.ToolShedRepository.installation_status.NEW,
+                                   error_message=None,
+                                   deleted=False,
+                                   uninstalled=False,
+                                   remove_from_disk=True )
+        install_tool_shed_repository( trans,
+                                      repository,
+                                      repo_info_dict,
+                                      tool_panel_section_key,
+                                      shed_tool_conf,
+                                      tool_path,
+                                      install_tool_dependencies=True,
+                                      reinstalling=True )
+        if repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
+            repair_dict = add_repair_dict_entry( repository.name, repository.error_message )
+    else:
+        # We have an installed tool shed repository, so handle tool dependencies if necessary.
+        if repository.missing_tool_dependencies and metadata and 'tool_dependencies' in metadata:
+            work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )
+            # Reset missing tool dependencies.
+            for tool_dependency in repository.missing_tool_dependencies:
+                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
+                    tool_dependency_util.set_tool_dependency_attributes( trans,
+                                                                         tool_dependency,
+                                                                         trans.model.ToolDependency.installation_status.UNINSTALLED,
+                                                                         None,
+                                                                         remove_from_disk=True )
+                    trans.sa_session.refresh( tool_dependency )
+            # Install tool dependencies.
+            suc.update_tool_shed_repository_status( trans.app,
+                                                    repository,
+                                                    trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+            # Get the tool_dependencies.xml file from the repository.
+            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( trans.app ) )
+            installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
+                                                                                        tool_shed_repository=repository,
+                                                                                        tool_dependencies_config=tool_dependencies_config,
+                                                                                        tool_dependencies=repository.tool_dependencies )
+            for installed_tool_dependency in installed_tool_dependencies:
+                if installed_tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
+                    repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
+            try:
+                shutil.rmtree( work_dir )
+            except:
+                pass
+        suc.update_tool_shed_repository_status( trans.app, repository, trans.model.ToolShedRepository.installation_status.INSTALLED )
+    return repair_dict
+
+def set_repository_attributes( trans, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
+    if remove_from_disk:
+        relative_install_dir = repository.repo_path( trans.app )
+        if relative_install_dir:
+            clone_dir = os.path.abspath( relative_install_dir )
+            try:
+                shutil.rmtree( clone_dir )
+                log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
+            except Exception, e:
+                log.debug( "Error removing repository installation directory %s: %s" % ( str( clone_dir ), str( e ) ) )
+    repository.error_message = error_message
+    repository.status = status
+    repository.deleted = deleted
+    repository.uninstalled = uninstalled
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()

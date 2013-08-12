@@ -13,6 +13,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
+from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
@@ -27,7 +28,7 @@ def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, 
     text = cu.tool_shed_get( app, tool_shed_url, url )
     if text:
         # Write the contents to a temporary file on disk so it can be reloaded and parsed.
-        fh = tempfile.NamedTemporaryFile( 'wb' )
+        fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )
         tmp_filename = fh.name
         fh.close()
         fh = open( tmp_filename, 'wb' )
@@ -176,22 +177,25 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                                                            tool_dependency_name=package_name,
                                                                            tool_dependency_version=package_version )
                         env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
-                        for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
-                            env_var_dict = env_var_dicts[ i ]
-                            action = env_var_dict.get( 'action', None )
-                            name = env_var_dict.get( 'name', None )
-                            value = env_var_dict.get( 'value', None )
-                            if action and name and value:
-                                new_value = parse_env_shell_entry( action, name, value, line )
-                                env_var_dict[ 'value' ] = new_value
-                            new_env_var_dicts.append( env_var_dict )
+                        if os.path.exists( env_sh_file_path ):
+                            for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
+                                env_var_dict = env_var_dicts[ i ]
+                                action = env_var_dict.get( 'action', None )
+                                name = env_var_dict.get( 'name', None )
+                                value = env_var_dict.get( 'value', None )
+                                if action and name and value:
+                                    new_value = parse_env_shell_entry( action, name, value, line )
+                                    env_var_dict[ 'value' ] = new_value
+                                new_env_var_dicts.append( env_var_dict )
+                        else:
+                            log.debug( 'Invalid file %s specified, ignoring set_environment_for_install action.', env_sh_file_path )
                         action_dict[ 'environment_variable' ] = new_env_var_dicts
                     else:
                         action_dict[ 'environment_variable' ] = env_var_dicts
                     actions.append( ( 'set_environment', action_dict ) )
-                    return tool_dependency, actions
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
+            return tool_dependency, actions
     return None, actions
 
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
@@ -360,12 +364,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     sa_session = app.model.context.current
 
     def evaluate_template( text ):
-        """ Substitute variables defined in XML blocks obtained loaded from dependencies file. """
-        # # Added for compatibility with CloudBioLinux.
-        # TODO: Add tool_version substitution for compat with CloudBioLinux.
-        substitutions = { "INSTALL_DIR" : install_dir,
-                          "system_install" : install_dir }
-        return Template( text ).safe_substitute( substitutions )
+        """ Substitute variables defined in XML blocks from dependencies file."""
+        return Template( text ).safe_substitute( common_util.get_env_var_values( install_dir ) )
 
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -386,25 +386,54 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ 'command' ] = action_elem_text
             else:
                 continue
+        elif action_type == 'template_command':
+            # Default to Cheetah as it's the first template language supported.
+            language = action_elem.get( 'language', 'cheetah' ).lower()
+            if language == 'cheetah':
+                # Cheetah template syntax.
+                # <action type="template_command" language="cheetah">
+                #     #if env.PATH:
+                #         make
+                #     #end if
+                # </action>
+                action_elem_text = action_elem.text.strip()
+                if action_elem_text:
+                    action_dict[ 'language' ] = language
+                    action_dict[ 'command' ] = action_elem_text
+                else:
+                    continue
+            else:
+                log.debug( "Unsupported template language '%s'. Not proceeding." % str( language ) )
+                raise Exception( "Unsupported template language '%s' in tool dependency definition." % str( language ) )
         elif action_type == 'download_by_url':
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
-                if 'target_filename' in action_elem.attrib:
-                    action_dict[ 'target_filename' ] = action_elem.attrib[ 'target_filename' ]
+                target_filename = action_elem.get( 'target_filename', None )
+                if target_filename:
+                    action_dict[ 'target_filename' ] = target_filename
             else:
                 continue
         elif action_type == 'download_file':
             # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
-                action_dict[ 'target_filename' ] = action_elem.attrib.get( 'target_filename', None )
+                target_filename = action_elem.get( 'target_filename', None )
+                if target_filename:
+                    action_dict[ 'target_filename' ] = target_filename
+                action_dict[ 'extract' ] = asbool( action_elem.get( 'extract', False ) )
             else:
                 continue
         elif action_type == 'make_directory':
             # <action type="make_directory">$INSTALL_DIR/lib/python</action>
             if action_elem.text:
                 action_dict[ 'full_path' ] = evaluate_template( action_elem.text )
+            else:
+                continue
+        elif action_type == 'change_directory':
+            # <action type="change_directory">PHYLIP-3.6b</action>
+            if action_elem.text:
+                action_dict[ 'directory' ] = action_elem.text
             else:
                 continue
         elif action_type in [ 'move_directory_files', 'move_file' ]:
@@ -596,7 +625,7 @@ def run_subprocess( app, cmd ):
     else:
         env[ 'PYTHONPATH' ] = os.path.abspath( os.path.join( app.config.root, 'lib' ) )
     message = ''
-    tmp_name = tempfile.NamedTemporaryFile().name
+    tmp_name = tempfile.NamedTemporaryFile( prefix="tmp-toolshed-rs" ).name
     tmp_stderr = open( tmp_name, 'wb' )
     proc = subprocess.Popen( cmd, shell=True, env=env, stderr=tmp_stderr.fileno() )
     returncode = proc.wait()

@@ -11,6 +11,7 @@ from galaxy.model.orm import and_
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import xml_util
 from galaxy.tools.actions.upload import UploadToolAction
@@ -157,7 +158,9 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                     else:
                         correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
                         correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+                        invalid_tup = ( tool_config_name, correction_msg )
+                        if invalid_tup not in invalid_files_and_errors_tups:
+                            invalid_files_and_errors_tups.append( invalid_tup )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
@@ -417,7 +420,7 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
                     # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
                     # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
                     continue
-                fh = tempfile.NamedTemporaryFile( 'wb' )
+                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-gltcrfrm" )
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )
@@ -539,8 +542,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
         sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
         if sample_tool_data_table_conf:
-            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
-            # data_table_elem_names.
+            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
             error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
             if error:
                 # TODO: Do more here than logging an exception.
@@ -640,8 +642,7 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
-            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something
-            # into the field.
+            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something into the field.
             new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -650,7 +651,7 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
             else:
                 tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
             if tool_panel_dict:
-                #tool_panel_dict is empty when tools exist but are not installed into a tool panel
+                # The tool_panel_dict is empty when tools exist but are not installed into a tool panel section.
                 tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
                 tool_section_dict = tool_section_dicts[ 0 ]
                 original_section_id = tool_section_dict[ 'id' ]
@@ -706,6 +707,60 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+
+def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
+    """Only ever called from Galaxy end when installing"""
+    TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
+    TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % ( TOOL_DATA_TABLE_FILE_NAME )
+    SAMPLE_SUFFIX = '.sample'
+    SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
+    tool_path, relative_target_dir = tool_shed_repository.get_tool_relative_path( app )
+    target_dir = os.path.join( app.config.shed_tool_data_path, relative_target_dir ) #this is where index files will reside on a per repo/installed version
+    if not os.path.exists( target_dir ):
+        os.makedirs( target_dir )
+    for sample_file in tool_index_sample_files:
+        path, filename = os.path.split ( sample_file )
+        target_filename = filename
+        if target_filename.endswith( SAMPLE_SUFFIX ):
+            target_filename = target_filename[ : SAMPLE_SUFFIX_OFFSET ]
+        source_file = os.path.join( tool_path, sample_file )
+        #we're not currently uninstalling index files, do not overwrite existing files
+        target_path_filename = os.path.join( target_dir, target_filename )
+        if not os.path.exists( target_path_filename ) or target_filename == TOOL_DATA_TABLE_FILE_NAME:
+            shutil.copy2( source_file, target_path_filename )
+        else:
+            log.debug( "Did not copy sample file '%s' to install directory '%s' because file already exists.", filename, target_dir )
+        #for provenance and to simplify introspection, lets keep the original data table sample file around
+        if filename == TOOL_DATA_TABLE_FILE_SAMPLE_NAME:
+            shutil.copy2( source_file, os.path.join( target_dir, filename ) )
+    tool_data_table_conf_filename = os.path.join( target_dir, TOOL_DATA_TABLE_FILE_NAME )
+    elems = []
+    if os.path.exists( tool_data_table_conf_filename ):
+        tree, error_message = xml_util.parse_xml( tool_data_table_conf_filename )
+        if tree:
+            for elem in tree.getroot():
+                #append individual table elems or other elemes, but not tables elems
+                if elem.tag == 'tables':
+                    for table_elem in elems:
+                        elems.append( elem )
+                else:
+                    elems.append( elem )
+    else:
+        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.", tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
+    for elem in elems:
+        if elem.tag == 'table':
+            for file_elem in elem.findall( 'file' ):
+                path = file_elem.get( 'path', None )
+                if path:
+                    file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
+            #store repository info in the table tagset for traceability
+            repo_elem = suc.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
+    if elems:
+        os.unlink( tool_data_table_conf_filename ) #remove old data_table
+        app.tool_data_tables.to_xml_file( tool_data_table_conf_filename, elems ) #persist new data_table content
+    
+    return tool_data_table_conf_filename, elems
+    
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """See if the file is column based with respect to a separator."""
@@ -764,7 +819,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     tool = None
     can_use_disk_file = False
     tool_config_filepath = suc.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
-    work_dir = tempfile.mkdtemp()
+    work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ltfcr" )
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
@@ -835,6 +890,22 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
         except:
             pass
     return tool, message
+
+def new_state( trans, tool, invalid=False ):
+    """Create a new `DefaultToolState` for the received tool.  Only inputs on the first page will be initialized."""
+    state = galaxy.tools.DefaultToolState()
+    state.inputs = {}
+    if invalid:
+        # We're attempting to display a tool in the tool shed that has been determined to have errors, so is invalid.
+        return state
+    inputs = tool.inputs_by_page[ 0 ]
+    context = ExpressionContext( state.inputs, parent=None )
+    for input in inputs.itervalues():
+        try:
+            state.inputs[ input.name ] = input.get_initial_value( trans, context )
+        except:
+            state.inputs[ input.name ] = []
+    return state
 
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.

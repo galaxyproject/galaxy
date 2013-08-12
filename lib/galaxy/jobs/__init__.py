@@ -692,7 +692,10 @@ class JobWrapper( object ):
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
@@ -919,8 +922,6 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-        #DBTODO unused
-        #job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur

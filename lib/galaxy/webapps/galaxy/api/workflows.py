@@ -290,13 +290,14 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception,e:
+        except Exception, e:
+            trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 400
+                trans.response.status = 403
                 return("Workflow is not owned by or shared with current user")
 
         #Mark a workflow as deleted

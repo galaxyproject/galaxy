@@ -4,6 +4,7 @@ import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
 from galaxy import eggs
 from galaxy.util import json
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
@@ -12,9 +13,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
-import pkg_resources
-
-pkg_resources.require( "SVGFig" )
+eggs.require( "SVGFig" )
 import svgfig
 
 log = logging.getLogger( __name__ )
@@ -386,6 +385,19 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             workflow.has_errors = True
         # Stick this in the step temporarily.
         step.temp_input_connections = step_dict[ 'input_connections' ]
+        annotation = step_dict.get( 'annotation', '')
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
+            new_step_annotation.annotation = annotation
+            new_step_annotation.user = trans.user
+            step.annotations.append(new_step_annotation)
+        # Unpack and add post-job actions.
+        post_job_actions = step_dict.get( 'post_job_actions', {} )
+        for name, pja_dict in post_job_actions.items():
+            trans.model.PostJobAction( pja_dict[ 'action_type' ],
+                                 step, pja_dict[ 'output_name' ],
+                                 pja_dict[ 'action_arguments' ] )
         steps.append( step )
         steps_by_external_id[ step_dict[ 'id' ] ] = step
     # Second pass to deal with connections between steps.
@@ -416,13 +428,19 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 break
     return module_name
 
-def save_workflow( trans, workflow ):
+def save_workflow( trans, workflow, workflow_dict = None):
     """Use the received in-memory Workflow object for saving to the Galaxy database."""
     stored = trans.model.StoredWorkflow()
     stored.name = workflow.name
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     stored.user = trans.user
+    if workflow_dict and workflow_dict.get('annotation',''):
+        annotation = sanitize_html( workflow_dict['annotation'], 'utf-8', 'text/html' )
+        new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
+        new_annotation.annotation = annotation
+        new_annotation.user = trans.user
+        stored.annotations.append(new_annotation)
     trans.sa_session.add( stored )
     trans.sa_session.flush()
     # Add a new entry to the Workflows menu.

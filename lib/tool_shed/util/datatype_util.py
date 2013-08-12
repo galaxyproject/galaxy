@@ -72,7 +72,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
     # Temporarily persist the proprietary datatypes configuration file so it can be loaded into the datatypes registry.
-    fd, proprietary_datatypes_config = tempfile.mkstemp()
+    fd, proprietary_datatypes_config = tempfile.mkstemp( prefix="tmp-toolshed-acalpd" )
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<datatypes>\n' )
     os.write( fd, '%s' % xml_util.xml_to_string( registration ) )
@@ -166,7 +166,7 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
     repository_dict = None
-    datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
+    datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:

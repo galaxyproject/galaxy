@@ -1,5 +1,5 @@
 <tool id="cuffdiff" name="Cuffdiff" version="0.0.5">
-    <!-- Wrapper supports Cuffdiff versions v1.3.0-v2.0 -->
+    <!-- Wrapper supports Cuffdiff versions 2.1.0-2.1.1 -->
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -61,7 +61,9 @@
                 ## Replicates.
                 --labels
                 #for $group in $group_analysis.groups
-                    "${group.group}"
+                    ## Cuffdiff uses commas as delimiters, so replace them with underscores to avoid
+                    ## parsing problems.
+                    "${group.group.replace(',', '_')}"
                 #end for
                 --files
                 #for $group in $group_analysis.groups
@@ -82,7 +84,7 @@
             </param>
             <when value="Yes">
                 <repeat name="groups" title="Group">
-                    <param name="group" title="Group name" type="text" label="Group name (no spaces or commas)"/>
+                    <param name="group" title="Group name" type="text" label="Group name"/>
                     <repeat name="files" title="Replicate">
                         <param name="file" label="Add file" type="data" format="sam,bam"/>
                     </repeat>

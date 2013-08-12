@@ -1,0 +1,24 @@
+#masthead
+{
+    display: none;
+}
+
+#messagebox
+{
+    display: none;
+}
+
+#center
+{
+	top: 0 !important;
+}
+
+#right
+{
+	top: 0 !important;
+}
+
+#left
+{
+	top: 0 !important;
+}

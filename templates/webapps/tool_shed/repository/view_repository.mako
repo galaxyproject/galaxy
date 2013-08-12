@@ -71,7 +71,7 @@
                 <div class="form-row">
                     ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
-                        Select a revision to inspect and download versions of tools from this repository.
+                        Select a revision to inspect and download versions of Galaxy utilities from this repository.
                     </div>
                 </div>
             </form>
@@ -100,6 +100,7 @@
                 ${repository.name | h}
             %endif
         </div>
+        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
         <div class="form-row">
             <label>Synopsis:</label>
             ${repository.description | h}
@@ -135,7 +136,7 @@
         %endif
     </div>
 </div>
-${render_repository_items( metadata, containers_dict, can_set_metadata=False )}
+${render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )}
 %if repository.categories:
     <p/>
     <div class="toolForm">

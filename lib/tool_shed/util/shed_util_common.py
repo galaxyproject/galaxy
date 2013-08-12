@@ -35,6 +35,11 @@ MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
+DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
+REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
+TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
+
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
 Repository name:       ${repository_name}
@@ -135,6 +140,17 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
             repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
+def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled=False ):
+    """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
+    tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
+    for tool_dependency in tool_shed_repository.tool_dependencies:
+        if uninstalled and tool_dependency.status != trans.model.ToolDependency.installation_status.UNINSTALLED:
+            continue
+        option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
+        option_value = trans.security.encode_id( tool_dependency.id )
+        tool_dependencies_select_field.add_option( option_label, option_value )
+    return tool_dependencies_select_field
+
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -191,7 +207,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
 
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     """Persist the current in-memory list of config_elems to a file named by the value of config_filename."""
-    fd, filename = tempfile.mkstemp()
+    fd, filename = tempfile.mkstemp( prefix="tmp-toolshed-cetxf"  )
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
     for elem in config_elems:
@@ -295,6 +311,32 @@ def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     toolshed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( repo_info_tup )
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
+
+def generate_repository_info_elem( tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd ):
+    """Create and return an ElementTree repository info Element."""
+    if parent_elem is None:
+        elem = XmlET.Element( 'tool_shed_repository' )
+    else:
+        elem = XmlET.SubElement( parent_elem, 'tool_shed_repository' )
+    
+    tool_shed_elem = XmlET.SubElement( elem, 'tool_shed' )
+    tool_shed_elem.text = tool_shed
+    repository_name_elem = XmlET.SubElement( elem, 'repository_name' )
+    repository_name_elem.text = repository_name
+    repository_owner_elem = XmlET.SubElement( elem, 'repository_owner' )
+    repository_owner_elem.text = owner
+    changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
+    changeset_revision_elem.text = changeset_revision
+    #add additional values
+    #TODO: enhance additional values to allow e.g. use of dict values that will recurse
+    for key, value in kwd.iteritems():
+        new_elem = XmlET.SubElement( elem, key )
+        new_elem.text = value
+    return elem
+    
+def generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=None, **kwd ):
+    return generate_repository_info_elem( tool_shed_repository.tool_shed, tool_shed_repository.name, tool_shed_repository.installed_changeset_revision, tool_shed_repository.owner, parent_elem=parent_elem, **kwd )
+    
 
 def generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None ):
     """Generate the URL for sharing a repository that is in the tool shed."""
@@ -510,6 +552,24 @@ def get_file_context_from_ctx( ctx, filename ):
         return 'DELETED'
     return None
 
+def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
+    installing_repository_ids = []
+    new_status = trans.model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
+                                                              trans.model.ToolShedRepository.status == cloning_status,
+                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+        installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
+    if as_string:
+        return ','.join( installing_repository_ids )
+    return installing_repository_ids
+
 def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
@@ -548,7 +608,7 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 fctx = None
                 continue
             if fctx:
-                fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
+                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-gntfc", dir=dir )
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )
@@ -743,6 +803,23 @@ def get_repository_files( trans, folder_path ):
     if contents:
         contents.sort()
     return contents
+
+def get_repository_from_refresh_on_change( trans, **kwd ):
+    # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
+    # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
+    # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
+    # refresh_on_change occurred and we have the necessary repository id and change set revision to pass on.
+    repository_id = None
+    v = None
+    for k, v in kwd.items():
+        changeset_revision_str = 'changeset_revision_'
+        if k.startswith( changeset_revision_str ):
+            repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
+            repository = get_repository_in_tool_shed( trans, repository_id )
+            if repository.tip( trans.app ) != v:
+                return v, repository
+    # This should never be reached - raise an exception?
+    return v, None
 
 def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id."""
@@ -1145,6 +1222,19 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
+def reset_previously_installed_repository( trans, repository ):
+    """
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a 
+    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
+    """
+    repository.deleted = False
+    repository.update_available = False
+    repository.uninstalled = False
+    repository.status = trans.model.ToolShedRepository.installation_status.NEW
+    repository.error_message = None
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
+    
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
@@ -1172,20 +1262,6 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
-
-def set_repository_attributes( trans, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
-    if remove_from_disk:
-        relative_install_dir = repository.repo_path( trans.app )
-        if relative_install_dir:
-            clone_dir = os.path.abspath( relative_install_dir )
-            shutil.rmtree( clone_dir )
-            log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
-    repository.error_message = error_message
-    repository.status = status
-    repository.deleted = deleted
-    repository.uninstalled = uninstalled
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
 
 def set_prior_installation_required( repository, required_repository ):
     """Return True if the received required_repository must be installed before the received repository."""

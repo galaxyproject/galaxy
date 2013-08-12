@@ -80,10 +80,6 @@ def extract_tar( file_name, file_path ):
     tar.extractall( path=file_path )
     tar.close()
 
-def format_traceback():
-    ex_type, ex, tb = sys.exc_info()
-    return ''.join( traceback.format_tb( tb ) )
-
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
     if not zipfile_ok( archive_path ):
@@ -98,6 +94,10 @@ def extract_zip( archive_path, extraction_path ):
             file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
     zip_archive.close()
     return True
+
+def format_traceback():
+    ex_type, ex, tb = sys.exc_info()
+    return ''.join( traceback.format_tb( tb ) )
 
 def get_env_shell_file_path( installation_directory ):
     env_shell_file_name = 'env.sh'
@@ -167,6 +167,14 @@ def get_env_shell_file_paths( app, elem ):
         log.debug( error_message )
     return env_shell_file_paths
 
+def get_env_var_values( install_dir ):
+    env_var_dict = {}
+    env_var_dict[ 'INSTALL_DIR' ] = install_dir
+    env_var_dict[ 'system_install' ] = install_dir
+    # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
+    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
+    return env_var_dict
+
 def isbz2( file_path ):
     return checkers.is_bz2( file_path )
 
@@ -216,7 +224,7 @@ def tar_extraction_directory( file_path, file_name ):
         return os.path.abspath( file_path )
     raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
 
-def url_download( install_dir, downloaded_file_name, download_url ):
+def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
     dst = None
@@ -236,7 +244,22 @@ def url_download( install_dir, downloaded_file_name, download_url ):
             src.close()
         if dst:
             dst.close()
-    return os.path.abspath( file_path )
+    if extract:
+        if istar( file_path ):
+            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
+            extract_tar( file_path, install_dir )
+            dir = tar_extraction_directory( install_dir, downloaded_file_name )
+        elif isjar( file_path ):
+            dir = os.path.curdir
+        elif iszip( file_path ):
+            # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
+            zip_archive_extracted = extract_zip( file_path, install_dir )
+            dir = zip_extraction_directory( install_dir, downloaded_file_name )
+        else:
+            dir = os.path.abspath( install_dir )
+    else:
+        dir = os.path.abspath( install_dir )
+    return dir
 
 def zip_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""

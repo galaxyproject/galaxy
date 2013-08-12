@@ -39,27 +39,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                     params=kwd )
         
     ## ---- Tool related -----------------------------------------------------
-    @web.expose
-    def tool_menu( self, trans ):
-        """Renders the tool panel of the Galaxy UI.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
-        toolbox = self.get_toolbox()
-        ## Get most recently used tools.
-        # recent_tools = []
-        # if trans.user:
-        #     for row in trans.sa_session.query( self.app.model.Job.tool_id ) \
-        #                                 .filter( self.app.model.Job.user == trans.user ) \
-        #                                 .order_by( self.app.model.Job.create_time.desc() ):
-        #         tool_id = row[0]
-        #         a_tool = toolbox.get_tool( tool_id )
-        #         if a_tool and not a_tool.hidden and a_tool not in recent_tools:
-        #             recent_tools.append( a_tool )
-        #             ## TODO: make number of recently used tools a user preference.
-        #             if len( recent_tools ) == 5:
-        #                 break
-        return trans.fill_template( '/root/tool_menu.mako', toolbox=toolbox )
 
     @web.json
     def tool_search( self, trans, **kwd ):
@@ -177,76 +156,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         return trans.stream_template_mako( "root/history.mako",
             history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
             show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status )
-
-    @web.expose
-    def profile_history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
-        """
-        Same as above but adds SimpleProfiler to get some
-        profiling times for the operations done.
-        """
-        if as_xml:
-            return self.history_as_xml( trans,
-                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
-
-        # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = string_as_bool_or_none( show_deleted )
-        show_purged  = show_deleted
-        show_hidden  = string_as_bool_or_none( show_hidden )
-        params = Params( kwd )
-        message = params.get( 'message', '' )
-        #TODO: ugh...
-        message = message if message != 'None' else ''
-        status = params.get( 'status', 'done' )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
-
-        def err_msg( where=None ):
-            where = where if where else 'getting the history data from the server'
-            err_msg = ( 'An error occurred %s. '
-                      + 'Please contact a Galaxy administrator if the problem persists.' ) %( where )
-            return err_msg, 'error'
-
-        profiler = SimpleProfiler()
-        profiler.start()
-
-        history_dictionary = {}
-        hda_dictionaries   = []
-        import pprint
-        try:
-            history = trans.get_history( create=True )
-            profiler.report( 'trans.get_history' )
-            hdas = self.get_history_datasets( trans, history,
-                show_deleted=True, show_hidden=True, show_purged=True )
-            profiler.report( 'get_history_datasets' )
-
-            for hda in hdas:
-                try:
-                    ( hda_profiler, hda_dict ) = self.profile_get_hda_dict( trans, hda )
-                    profiler.reports.extend( hda_profiler.get_reports() )
-                    profiler.report( '\t hda -> dictionary (%s)' %( hda.name ) )
-                    hda_dictionaries.append( hda_dict )
-
-                except Exception, exc:
-                    # don't fail entire list if hda err's, record and move on
-                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
-            profiler.report( 'hdas -> dictionaries' )
-
-            # re-use the hdas above to get the history data...
-            history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
-            profiler.report( 'history -> dictionary' )
-
-        except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.error( 'Error bootstrapping history for user %s: %s', user_id, str( exc ), exc_info=True )
-            message, status = err_msg()
-            history_dictionary[ 'error' ] = message
-
-        return trans.stream_template_mako( "root/history.mako",
-            history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
-            show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status,
-            profiling=profiler.get_reports() )
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
@@ -545,6 +454,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] )
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
+
+    @web.expose
+    def welcome( self, trans ):
+        welcome_url = trans.app.config.welcome_url
+        return trans.response.send_redirect( url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):

@@ -16,6 +16,7 @@ from sqlalchemy.orm import backref, object_session, relation, scoped_session, se
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
+from galaxy.model.orm import dialect_to_egg
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.security import GalaxyRBACAgent
 from galaxy.util.bunch import Bunch
@@ -29,11 +30,6 @@ context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=Tr
 # For backward compatibility with "context.current"
 context.current = Session
 
-dialect_to_egg = {
-    "sqlite"   : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql"    : "MySQL_python"
-}
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the
@@ -1616,17 +1612,27 @@ mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetI
                                                primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
                               ) )
 
-mapper( model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.HistoryDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
+mapper( model.JobToInputDatasetAssociation,
+        model.JobToInputDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.HistoryDatasetAssociation, lazy=False,
+                backref="dependent_jobs" ) ) )
 
-mapper( model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.HistoryDatasetAssociation, lazy=False ) ) )
+mapper( model.JobToOutputDatasetAssociation,
+        model.JobToOutputDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.HistoryDatasetAssociation, lazy=False ) ) )
 
-mapper( model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.LibraryDatasetDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
+mapper( model.JobToInputLibraryDatasetAssociation,
+        model.JobToInputLibraryDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.LibraryDatasetDatasetAssociation, lazy=False,
+                backref="dependent_jobs" ) ) )
 
-mapper( model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table,
-    properties=dict( job=relation( model.Job ), dataset=relation( model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
+mapper( model.JobToOutputLibraryDatasetAssociation,
+        model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset=relation(
+                model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
 
 mapper( model.JobParameter, model.JobParameter.table )
 

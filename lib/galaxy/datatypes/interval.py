@@ -17,6 +17,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
 import math
+import dataproviders
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ for key, value in alias_spec.items():
 VIEWPORT_READLINE_BUFFER_SIZE = 1048576 # 1MB
 VIEWPORT_MAX_READS_PER_LINE = 10 
 
+@dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
     file_ext = "interval"
@@ -331,6 +333,30 @@ class Interval( Tabular ):
     def get_track_resolution( self, dataset, start, end):
         return None
 
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.genomic_region_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'interval',
+                                                    dataproviders.dataset.IntervalDataProvider.settings )
+    def interval_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.IntervalDataProvider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
+                                                    dataproviders.dataset.IntervalDataProvider.settings )
+    def interval_dict_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.interval_dataprovider( dataset, **settings )
+
+
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
 
@@ -565,6 +591,8 @@ class _RemoteCallMixin:
         link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
         return link
 
+
+@dataproviders.decorators.has_dataproviders
 class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
     file_ext = "gff"
@@ -783,6 +811,31 @@ class Gff( Tabular, _RemoteCallMixin ):
         except:
             return False
 
+    # ------------- Dataproviders
+    # redefine bc super is Tabular
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 3, 4, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
+                                                    dataproviders.dataset.GenomicRegionDataProvider.settings )
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.genomic_region_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'interval',
+                                                    dataproviders.dataset.IntervalDataProvider.settings )
+    def interval_dataprovider( self, dataset, **settings ):
+        return dataproviders.dataset.IntervalDataProvider( dataset, 0, 3, 4, 6, 2, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
+                                                    dataproviders.dataset.IntervalDataProvider.settings )
+    def interval_dict_dataprovider( self, dataset, **settings ):
+        settings[ 'named_columns' ] = True
+        return self.interval_dataprovider( dataset, **settings )
+
+
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
     file_ext = "gff3"
@@ -960,6 +1013,7 @@ class Gtf( Gff ):
         except:
             return False
 
+@dataproviders.decorators.has_dataproviders
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
@@ -1146,6 +1200,19 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = max( resolution, 1 )
         return resolution
 
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'wiggle', dataproviders.dataset.WiggleDataProvider.settings )
+    def wiggle_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'wiggle-dict', dataproviders.dataset.WiggleDataProvider.settings )
+    def wiggle_dict_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        settings[ 'named_columns' ] = True
+        return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )
+
+
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
     file_ext = "customtrack"
@@ -1272,6 +1339,7 @@ class CustomTrack ( Tabular ):
                     return False
         return True
         
+
 class ENCODEPeak( Interval ):
     '''
     Human ENCODE peak format. There are both broad and narrow peak formats. 
@@ -1300,6 +1368,7 @@ class ENCODEPeak( Interval ):
     def sniff( self, filename ):
         return False
         
+
 class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
@@ -1324,6 +1393,7 @@ class ChromatinInteractions( Interval ):
     
     def sniff( self, filename ):
         return False
+
 
 if __name__ == '__main__':
     import doctest, sys

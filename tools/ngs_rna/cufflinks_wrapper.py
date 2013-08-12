@@ -42,6 +42,7 @@ def __main__():
     
     # Normalization options.
     parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
+    parser.add_option( "--no-effective-length-correction", dest="no_effective_length_correction", action="store_true" )
 
     # Wrapper / Galaxy options.
     parser.add_option( '-A', '--assembled-isoforms-output', dest='assembled_isoforms_output_file', help='Assembled isoforms output file; formate is GTF.' )
@@ -130,6 +131,8 @@ def __main__():
         cmd += ( " -N" )
     if options.do_bias_correction:
         cmd += ( " -b %s" % seq_path )
+    if options.no_effective_length_correction:
+        cmd += ( " --no-effective-length-correction" )
         
     # Debugging.
     print cmd

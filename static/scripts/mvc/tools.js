@@ -33,9 +33,9 @@ var BaseModel = Backbone.RelationalModel.extend({
 });
 
 /**
- * A tool input.
+ * A tool parameter.
  */
-var ToolInput = Backbone.RelationalModel.extend({
+var ToolParameter = Backbone.RelationalModel.extend({
     defaults: {
         name: null,
         label: null,
@@ -49,7 +49,7 @@ var ToolInput = Backbone.RelationalModel.extend({
     },
 
     copy: function() {
-        return new ToolInput(this.toJSON());
+        return new ToolParameter(this.toJSON());
     },
     
     /**
@@ -88,7 +88,7 @@ var Tool = BaseModel.extend({
         {
             type: Backbone.HasMany,
             key: 'inputs',
-            relatedModel: ToolInput,
+            relatedModel: ToolParameter,
             reverseRelation: {
                 key: 'tool',
                 includeInJSON: false
@@ -545,6 +545,7 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
+        this.$el.find('.tooltip').tooltip();
         return this;
     },
     
@@ -579,7 +580,7 @@ var ToolPanelView = Backbone.View.extend({
     className: 'toolMenu',
     
     /**
-     * Waits for collection to load and then renders.
+     * Set up view.
      */
     initialize: function() {
         this.collection.tool_search.on("change:results", this.handle_search_results, this);

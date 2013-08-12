@@ -217,7 +217,7 @@ spaceghost.historypanel.waitForHdas().then( function(){
         deleted: true
     });
     //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id, true );
     this.test.assert( hdaShow.deleted === true, "Update set the deleted flag: " + hdaShow.deleted );
 
     this.test.comment( 'update should allow changing the deleted flag back' );

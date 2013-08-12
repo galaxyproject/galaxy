@@ -14,6 +14,8 @@ eggs.require( "sqlalchemy_migrate" )
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
 
+from galaxy.model.orm import dialect_to_egg
+
 log = logging.getLogger( __name__ )
 
 if sys.argv[-1] in [ 'tool_shed' ]:
@@ -44,11 +46,6 @@ elif cp.has_option( "app:main", "database_file" ):
 else:
     db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
 
-dialect_to_egg = {
-    "sqlite" : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql" : "MySQL_python"
-}
 dialect = ( db_url.split( ':', 1 ) )[0]
 try:
     egg = dialect_to_egg[dialect]

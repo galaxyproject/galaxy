@@ -54,7 +54,15 @@
             <param id="shell_hostname">foo.example.org</param>
             <param id="Job_Execution_Time">24:00:00</param>
         </destination>
-        <destination id="condor" runner="condor"/>
+        <destination id="condor" runner="condor">
+            <!-- With no params, jobs are submitted to the 'vanilla' universe with:
+                    notification = NEVER
+                    getenv = true
+                 Additional/override query ClassAd params can be specified with
+                 <param> tags.
+            -->
+            <param id="request_cpus">8</param>
+        </destination>
     </destinations>
     <tools>
         <!-- Tools can be configured to use specific destinations or handlers,

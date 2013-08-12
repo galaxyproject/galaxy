@@ -1,4 +1,4 @@
-<tool id="cufflinks" name="Cufflinks" version="0.0.5">
+<tool id="cufflinks" name="Cufflinks" version="0.0.6">
     <!-- Wrapper supports Cufflinks versions v1.3.0 and newer -->
     <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
     <requirements>
@@ -12,6 +12,7 @@
             -I $max_intron_len
             -F $min_isoform_fraction
             -j $pre_mrna_fraction
+            $effective_length_correction
             
             ## Include reference annotation?
             #if $reference_annotation.use_ref == "Use reference annotation":
@@ -96,6 +97,11 @@
             <option value="Yes">Yes</option>
         </param>
 
+        <param name="effective_length_correction" type="select" label="Use effective length correction" help="Cufflinks will not employ its 'effective' length normalization to transcript FPKM.">
+            <option value="" selected="true">Yes</option>
+            <option value="--no-effective-length-correction">No</option>
+        </param>
+
         <param name="global_model" type="hidden_data" label="Global model (for use in Trackster)" optional="True"/>
     </inputs>
 
@@ -123,6 +129,7 @@
             <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>
             <param name="multiread_correct" value="No"/>
+            <param name="effective_length_correction" value="Yes"/>
             <output name="genes_expression" format="tabular" lines_diff="2" file="cufflinks_out3.fpkm_tracking"/>
             <output name="transcripts_expression" format="tabular" lines_diff="2" file="cufflinks_out2.fpkm_tracking"/>
             <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>

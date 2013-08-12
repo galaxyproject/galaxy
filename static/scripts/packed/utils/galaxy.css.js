@@ -1,0 +1,1 @@
+define(["libs/underscore"],function(a){function b(g,d){var e=$('<div class="'+g+'"></div>');e.appendTo(":eq(0)");var f=e.css(d);e.remove();return f}function c(d){if(!$('link[href^="'+d+'"]').length){$('<link href="'+d+'" rel="stylesheet">').appendTo("head")}}return{load_file:c,get_attribute:b}});

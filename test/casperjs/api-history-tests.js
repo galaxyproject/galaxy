@@ -107,7 +107,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'A bad id to show should throw an error' );
     this.assertRaises( function(){
         this.api.histories.show( '1234123412341234' );
-    }, 'Error in history API at showing history detail: 400 Bad Request', 'Raises an exception' );
+    }, '400 Bad Request', 'Raises an exception' );
 
 
     // ------------------------------------------------------------------------------------------- CREATE
@@ -131,8 +131,10 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'calling delete should delete the given history and remove it from the standard index' );
     var deletedHistory = this.api.histories.delete_( createdHistory.id );
     //this.debug( 'returned from delete:\n' + this.jsonStr( deletedHistory ) );
-    this.test.assert( deletedHistory === 'OK',
-        "Deletion returned 'OK' - even though that's not a great, informative response: " + deletedHistory );
+    this.test.assert( deletedHistory.id === createdHistory.id,
+        "Deletion returned id matching created history: " + deletedHistory.id );
+    this.test.assert( deletedHistory.deleted === true,
+        "Deletion return 'deleted: true': " + deletedHistory.deleted );
 
     newFirstHistory = this.api.histories.index()[0];
     //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
@@ -252,7 +254,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         deleted: true
     });
     //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
+    historyShow = this.api.histories.show( newFirstHistory.id, true );
     this.test.assert( historyShow.deleted === true, "Update set the deleted flag: " + historyShow.deleted );
 
     this.test.comment( 'update should allow changing the deleted flag back' );
