@@ -220,8 +220,7 @@ class PluginFramework( object ):
         this version of `fill_template` allows `bler.mako` to call `import my_script`.
         """
         try:
-            plugin_base_path = os.path.split( os.path.dirname( template_filename ) )[0]
-            plugin_path = os.path.join( self.plugin_directory, plugin_base_path )
+            plugin_path = os.path.dirname( os.path.dirname( template_filename ) )
             sys.path.append( plugin_path )
             filled_template = self.fill_template( trans, template_filename, **kwargs )
 
