@@ -8,17 +8,13 @@
 
  define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/backbone/backbone-relational" ], 
          function(_, util, data) {
- 
+
 /**
- * Simple base model for any visible element. Includes useful attributes and ability 
- * to set and track visibility.
+ * Mixin to enable model to track visibility.
  */
-var BaseModel = Backbone.RelationalModel.extend({
-    defaults: {
-        name: null,
-        hidden: false
-    },
-    
+var VisibilityMixin = {
+    hidden: false,
+
     show: function() {
         this.set("hidden", false);
     },
@@ -30,7 +26,8 @@ var BaseModel = Backbone.RelationalModel.extend({
     is_visible: function() {
         return !this.attributes.hidden;
     }
-});
+
+};
 
 /**
  * A tool parameter.
@@ -121,7 +118,7 @@ var IntegerToolParameter = ToolParameter.extend({
 /**
  * A Galaxy tool.
  */
-var Tool = BaseModel.extend({
+var Tool = Backbone.RelationalModel.extend({
     // Default attributes.
     defaults: {
         id: null,
@@ -252,6 +249,7 @@ var Tool = BaseModel.extend({
         return run_deferred;
     }
 });
+_.extend(Tool.prototype, VisibilityMixin);
 
 /**
  * Tool view.
@@ -270,12 +268,12 @@ var ToolCollection = Backbone.Collection.extend({
 /**
  * Label or section header in tool panel.
  */
-var ToolPanelLabel = BaseModel.extend({});
+var ToolPanelLabel = Backbone.Model.extend(VisibilityMixin);
 
 /**
  * Section of tool panel with elements (labels and tools).
  */
-var ToolPanelSection = BaseModel.extend({
+var ToolPanelSection = Backbone.Model.extend({
     defaults: {
         elems: [],
         open: false
@@ -317,13 +315,14 @@ var ToolPanelSection = BaseModel.extend({
         }
     }
 });
+_.extend(ToolPanelSection.prototype, VisibilityMixin);
 
 /**
  * Tool search that updates results when query is changed. Result value of null
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
-var ToolSearch = BaseModel.extend({
+var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -378,65 +377,48 @@ var ToolSearch = BaseModel.extend({
     }
     
 });
+_.extend(ToolSearch.prototype, VisibilityMixin);
 
 /**
- * A collection of ToolPanelSections, Tools, and ToolPanelLabels. Collection
- * applies search results as they become available.
+ * Tool Panel.
  */
-var ToolPanel = Backbone.Collection.extend({
-    // TODO: need to generate this using url_for
-    url: "/tools",
-    tools: new ToolCollection(),
-    
+var ToolPanel = Backbone.Model.extend({
+
+    initialize: function(options) {
+        this.attributes.tool_search = options.tool_search;
+        this.attributes.tool_search.on("change:results", this.apply_search_results, this);
+        this.attributes.tools = options.tools;
+        this.attributes.layout = new Backbone.Collection( this.parse(options.layout) );
+    },
+
+    /**
+     * Parse tool panel dictionary and return collection of tool panel elements.
+     */
     parse: function(response) {
         // Recursive function to parse tool panel elements.
-        var parse_elt = function(elt_dict) {
-            var type = elt_dict.type;
-            if (type === 'tool') {
-                return new Tool(elt_dict);
-            }
-            else if (type === 'section') {
-                // Parse elements.
-                var elems = _.map(elt_dict.elems, parse_elt);
-                elt_dict.elems = elems;
-                return new ToolPanelSection(elt_dict);
-            }
-            else if (type === 'label') {
-                return new ToolPanelLabel(elt_dict);
-            }  
-        };
+        var self = this,
+            // Helper to recursively parse tool panel.
+            parse_elt = function(elt_dict) {
+                var type = elt_dict.type;
+                if (type === 'tool') {
+                    return self.attributes.tools.get(elt_dict.id);
+                }
+                else if (type === 'section') {
+                    // Parse elements.
+                    var elems = _.map(elt_dict.elems, parse_elt);
+                    elt_dict.elems = elems;
+                    return new ToolPanelSection(elt_dict);
+                }
+                else if (type === 'label') {
+                    return new ToolPanelLabel(elt_dict);
+                }
+            };
         
         return _.map(response, parse_elt);
     },
-    
-    initialize: function(options) {
-        this.tool_search = options.tool_search;
-        this.tool_search.on("change:results", this.apply_search_results, this);
-        this.on("reset", this.populate_tools, this);
-    },
-    
-    /**
-     * Populate tool collection from panel elements.
-     */
-    populate_tools: function() {
-        var self = this;
-        self.tools = new ToolCollection(); 
-        this.each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
-                _.each(panel_elt.attributes.elems, function (section_elt) {
-                    if (section_elt instanceof Tool) {
-                        self.tools.push(section_elt);
-                    }
-                });
-            }
-            else if (panel_elt instanceof Tool) {
-                self.tools.push(panel_elt);
-            }
-        });
-    },
-    
+
     clear_search_results: function() {
-        this.each(function(panel_elt) {
+        this.get('layout').each(function(panel_elt) {
             if (panel_elt instanceof ToolPanelSection) {
                 panel_elt.clear_search_results();
             }
@@ -448,14 +430,14 @@ var ToolPanel = Backbone.Collection.extend({
     },
     
     apply_search_results: function() {
-        var results = this.tool_search.attributes.results;
+        var results = this.get('tool_search').get('results');
         if (results === null) {
             this.clear_search_results();
             return;
         }
         
         var cur_label = null;
-        this.each(function(panel_elt) {
+        this.get('layout').each(function(panel_elt) {
             if (panel_elt instanceof ToolPanelLabel) {
                 cur_label = panel_elt;
                 cur_label.hide();
@@ -635,19 +617,19 @@ var ToolPanelView = Backbone.View.extend({
      * Set up view.
      */
     initialize: function() {
-        this.collection.tool_search.on("change:results", this.handle_search_results, this);
+        this.model.get('tool_search').on("change:results", this.handle_search_results, this);
     },
     
     render: function() {
         var self = this;
         
         // Render search.
-        var search_view = new ToolSearchView( {model: this.collection.tool_search} );
+        var search_view = new ToolSearchView( { model: this.model.get('tool_search') } );
         search_view.render();
         self.$el.append(search_view.$el);
         
         // Render panel.
-        this.collection.each(function(panel_elt) {
+        this.model.get('layout').each(function(panel_elt) {
             if (panel_elt instanceof ToolPanelSection) {
                 var section_title_view = new ToolPanelSectionView({model: panel_elt});
                 section_title_view.render();
@@ -670,7 +652,7 @@ var ToolPanelView = Backbone.View.extend({
             // Tool id is always the first class.
             var 
                 tool_id = $(this).attr('class').split(/\s+/)[0],
-                tool = self.collection.tools.get(tool_id);
+                tool = self.model.get('tools').get(tool_id);
                 
             self.trigger("tool_link_click", e, tool);
         });
@@ -679,7 +661,7 @@ var ToolPanelView = Backbone.View.extend({
     },
     
     handle_search_results: function() {
-        var results = this.collection.tool_search.attributes.results;
+        var results = this.model.get('tool_search').get('results');
         if (results && results.length === 0) {
             $("#search-no-results").show();
         }
@@ -752,6 +734,7 @@ return {
     ToolParameter: ToolParameter,
     IntegerToolParameter: IntegerToolParameter,
     Tool: Tool,
+    ToolCollection: ToolCollection,
     ToolSearch: ToolSearch,
     ToolPanel: ToolPanel,
     ToolPanelView: ToolPanelView,
