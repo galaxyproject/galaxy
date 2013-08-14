@@ -28,16 +28,23 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
     """
     DEFAULT_COMMENT_CHAR = '#'
     settings = {
-        'string_lines'  : 'bool',
+        'strip_lines'   : 'bool',
+        'strip_newlines': 'bool',
         'provide_blank' : 'bool',
         'comment_char'  : 'str',
     }
 
-    def __init__( self, source, strip_lines=True, provide_blank=False, comment_char=DEFAULT_COMMENT_CHAR, **kwargs ):
+    def __init__( self, source, strip_lines=True, strip_newlines=False, provide_blank=False,
+                  comment_char=DEFAULT_COMMENT_CHAR, **kwargs ):
         """
         :param strip_lines: remove whitespace from the beginning an ending
             of each line (or not).
             Optional: defaults to True
+        :type strip_lines: bool
+
+        :param strip_newlines: remove newlines only
+            (only functions when ``strip_lines`` is false)
+            Optional: defaults to False
         :type strip_lines: bool
 
         :param provide_blank: are empty lines considered valid and provided?
@@ -51,6 +58,7 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
         """
         super( FilteredLineDataProvider, self ).__init__( source, **kwargs )
         self.strip_lines = strip_lines
+        self.strip_newlines = strip_newlines
         self.provide_blank = provide_blank
         self.comment_char = comment_char
 
@@ -62,17 +70,18 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
         :type line: str
         :returns: a line or `None`
         """
-        line = super( FilteredLineDataProvider, self ).filter( line )
         if line != None:
-            # is this the proper order?
+            #??: shouldn't it strip newlines regardless, if not why not use on of the base.dprovs
             if self.strip_lines:
                 line = line.strip()
+            elif self.strip_newlines:
+                line = line.strip( '\n' )
             if not self.provide_blank and line == '':
                 return None
             elif line.startswith( self.comment_char ):
                 return None
 
-        return line
+        return super( FilteredLineDataProvider, self ).filter( line )
 
 
 class RegexLineDataProvider( FilteredLineDataProvider ):
@@ -108,6 +117,7 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
         #NOTE: no support for flags
 
     def filter( self, line ):
+        #NOTE: filter_fn will occur BEFORE any matching
         line = super( RegexLineDataProvider, self ).filter( line )
         if line != None and self.compiled_regex_list:
             line = self.filter_by_regex( line )
@@ -144,16 +154,15 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         :type block_filter_fn: function
         """
         # composition - not inheritance
-        #TODO: don't pass any?
-        line_provider = FilteredLineDataProvider( source )
-        super( BlockDataProvider, self ).__init__( line_provider, **kwargs )
+        #TODO: not a fan of this:
+        ( filter_fn, limit, offset ) = ( kwargs.pop( 'filter_fn', None ),
+                                         kwargs.pop( 'limit', None ), kwargs.pop( 'offset', 0 ) )
+        line_provider = FilteredLineDataProvider( source, **kwargs )
+        super( BlockDataProvider, self ).__init__( line_provider, filter_fn=filter_fn, limit=limit, offset=offset )
 
         self.new_block_delim_fn = new_block_delim_fn
         self.block_filter_fn = block_filter_fn
         self.init_new_block()
-        # ...well, this is kinda lame - but prevents returning first empty block
-        #TODO: maybe better way in iter
-        self.is_inside_block = False
 
     def init_new_block( self ):
         """
@@ -161,7 +170,6 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         """
         # called in __init__ and after yielding the prev. block
         self.block_lines = collections.deque([])
-        self.block = {}
 
     def __iter__( self ):
         """
@@ -171,8 +179,8 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         for block in parent_gen:
             yield block
 
-        last_block = self.filter_block( self.assemble_current_block() )
-        if last_block != None and self.num_data_returned < self.limit:
+        last_block = self.handle_last_block()
+        if last_block != None:
             self.num_data_returned += 1
             yield last_block
 
@@ -186,26 +194,23 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         :returns: a block or `None`
         """
         line = super( BlockDataProvider, self ).filter( line )
+        #HACK
+        self.num_data_read -= 1
         if line == None:
             return None
 
+        block_to_return = None
         if self.is_new_block( line ):
             # if we're already in a block, return the prev. block and add the line to a new block
-            #TODO: maybe better way in iter
-            if self.is_inside_block:
-                filtered_block = self.filter_block( self.assemble_current_block() )
+            if self.block_lines:
+                block_to_return = self.assemble_current_block()
+                block_to_return = self.filter_block( block_to_return )
+                self.num_data_read += 1
+
                 self.init_new_block()
-                self.add_line_to_block( line )
-
-                # return an assembled block datum if it passed the filter
-                if filtered_block != None:
-                    return filtered_block
-
-            else:
-                self.is_inside_block = True
 
         self.add_line_to_block( line )
-        return None
+        return block_to_return
 
     def is_new_block( self, line ):
         """
@@ -239,7 +244,6 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        # NOTE: we don't want to have mem == 2*data here so - careful
         return list( ( self.block_lines.popleft() for i in xrange( len( self.block_lines ) ) ) )
 
     def filter_block( self, block ):
@@ -251,3 +255,20 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         if self.block_filter_fn:
             return self.block_filter_fn( block )
         return block
+
+    def handle_last_block( self ):
+        """
+        Handle any blocks remaining after the main loop.
+        """
+        if self.limit != None and self.num_data_returned >= self.limit:
+            return None
+        
+        last_block = self.assemble_current_block()
+        self.num_data_read += 1
+
+        last_block = self.filter_block( last_block )
+        if last_block != None:
+            self.num_valid_data_read += 1
+
+        return last_block
+
