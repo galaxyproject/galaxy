@@ -175,7 +175,7 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
                                                  app.model.History.table.c.update_time < cutoff_time ) ) \
                                   .options( eagerload( 'datasets' ) )
     for history in histories:
-        print "### Processing history id %d (%s)" % (history.id, history.name) 
+        print ("### Processing history id %d (%s)" % (history.id, history.name)).encode('utf-8')
         for dataset_assoc in history.datasets:
             _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
         if not info_only:
