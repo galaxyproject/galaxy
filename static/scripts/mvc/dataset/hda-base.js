@@ -49,7 +49,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.model.bind( 'change', function( model, options ){
             // if more than the display apps have changed: render everything
             var nonDisplayAppChanges = _.omit( this.model.changedAttributes(), 'display_apps', 'display_types' );
-            if( nonDisplayAppChanges.length ){
+            if( _.keys( nonDisplayAppChanges ).length ){
                 this.render();
 
             // if just the display links, and it's already expanded: render the links only
