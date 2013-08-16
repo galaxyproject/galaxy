@@ -2308,7 +2308,9 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    this.dataset = new data.Dataset(obj_dict.dataset);
+
+    // Only create dataset if it is defined.
+    this.dataset = (obj_dict.dataset ? new data.Dataset(obj_dict.dataset) : null);
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);

@@ -4,7 +4,11 @@
 <%def name="title()">Galaxy</%def>
 
 <%def name="javascripts()">
-    ${parent.javascripts()}
+${parent.javascripts()}
+
+<!-- quota meter -->
+${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 </%def>
 
 <%def name="get_user_json()">
@@ -35,10 +39,6 @@ ${h.to_json_string( user_dict )}
 
 <%def name="late_javascripts()">
 ${parent.late_javascripts()}
-
-<!-- quota meter -->
-${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 <script type="text/javascript">
 
     // start a Galaxy namespace for objects created

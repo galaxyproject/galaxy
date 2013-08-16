@@ -247,17 +247,22 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
         `offset`, begin providing datat, and stop when `num_data_returned`
         is greater than `offset`.
         """
+        if self.limit != None and self.limit <= 0:
+            return
+            yield
+
         parent_gen = super( LimitedOffsetDataProvider, self ).__iter__()
         for datum in parent_gen:
-
-            if self.limit != None and self.num_data_returned > self.limit:
-                break
+            self.num_data_returned -= 1
+            #print 'self.num_data_returned:', self.num_data_returned
+            #print 'self.num_valid_data_read:', self.num_valid_data_read
 
             if self.num_valid_data_read > self.offset:
+                self.num_data_returned += 1
                 yield datum
-            else:
-                # wot a cheezy way of doing this...
-                self.num_data_returned -= 1
+
+            if self.limit != None and self.num_data_returned >= self.limit:
+                break
 
     #TODO: skipping lines is inefficient - somehow cache file position/line_num pair and allow provider
     #   to seek to a pos/line and then begin providing lines

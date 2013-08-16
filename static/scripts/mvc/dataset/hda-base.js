@@ -46,18 +46,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.expanded = attributes.expanded || false;
 
         // re-rendering on any model changes
-        this.model.bind( 'change', function( event, changed ){
-            // find out if more has changed than just the display applications
-            //TODO: need a better handler for these sorts of partial rendering cases
-            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
-            if( nonDisplayAppChanges.length ){
-                // if it's more, render everything
+        this.model.bind( 'change', function( model, options ){
+            // if more than the display apps have changed: render everything
+            var nonDisplayAppChanges = _.omit( this.model.changedAttributes(), 'display_apps', 'display_types' );
+            if( _.keys( nonDisplayAppChanges ).length ){
                 this.render();
 
-            // if it's just the display links, and it's already expanded
+            // if just the display links, and it's already expanded: render the links only
             } else {
                 if( this.expanded ){
-                    // render the links only
                     this._render_displayApps();
                 }
             }

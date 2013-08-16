@@ -94,6 +94,7 @@ class ToolNotFoundException( Exception ):
 
 class ToolBox( object ):
     """Container for a collection of tools"""
+
     def __init__( self, config_filenames, tool_root_dir, app ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
@@ -144,6 +145,7 @@ class ToolBox( object ):
             # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
             # will be False when things like functional tests are the caller.
             self.write_integrated_tool_panel_config_file()
+
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:
@@ -199,11 +201,13 @@ class ToolBox( object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self.shed_tool_confs.append( shed_tool_conf_dict )
+
     def get_shed_config_dict_by_filename( self, filename, default=None ):
         for shed_config_dict in self.shed_tool_confs:
             if shed_config_dict[ 'config_filename' ] == filename:
                 return shed_config_dict
         return default
+
     def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
         # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
@@ -239,6 +243,7 @@ class ToolBox( object ):
             del panel_dict[ loaded_version_key ]
             panel_dict.insert( index, key, tool )
             log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if key.startswith( 'tool_' ):
@@ -276,6 +281,7 @@ class ToolBox( object ):
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self.tool_panel[ key ] = section
+
     def load_integrated_tool_panel_keys( self ):
         """
         Load the integrated tool panel keys, setting values for tools and workflows to None.  The values will
@@ -308,6 +314,7 @@ class ToolBox( object ):
             elif elem.tag == 'label':
                 key = 'label_%s' % elem.get( 'id' )
                 self.integrated_tool_panel[ key ] = None
+
     def write_integrated_tool_panel_config_file( self ):
         """
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
@@ -350,6 +357,7 @@ class ToolBox( object ):
         os.close( fd )
         shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
         os.chmod( self.integrated_tool_panel_config, 0644 )
+
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_id in self.tools_by_id and not get_all_versions:
@@ -380,6 +388,7 @@ class ToolBox( object ):
                 #No tool matches by version, simply return the first available tool found
                 return rval[0]
         return None
+
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
         tv = self.__get_tool_version( tool_id )
@@ -395,6 +404,7 @@ class ToolBox( object ):
                 tool = self.tools_by_id[ tool_id ]
                 return [ tool ]
         return []
+
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
         return self.sa_session.query( self.app.model.ToolVersion ) \
@@ -527,6 +537,7 @@ class ToolBox( object ):
                 integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
+
     def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
             # TODO: should id be encoded?
@@ -543,6 +554,7 @@ class ToolBox( object ):
                 integrated_panel_dict.insert( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
+
     def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
@@ -552,6 +564,7 @@ class ToolBox( object ):
             integrated_panel_dict[ key ] = label
         else:
             integrated_panel_dict.insert( index, key, label )
+
     def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = 'section_' + elem.get( "id" )
         if key in self.tool_panel:
@@ -580,6 +593,7 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
+
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -597,6 +611,7 @@ class ToolBox( object ):
         else:
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -634,6 +649,7 @@ class ToolBox( object ):
             message += "<b>version:</b> %s" % old_tool.version
             status = 'done'
         return message, status
+    
     def remove_tool_by_id( self, tool_id ):
         """
         Attempt to remove the tool identified by 'tool_id'.
@@ -662,6 +678,7 @@ class ToolBox( object ):
             message += "<b>version:</b> %s" % tool.version
             status = 'done'
         return message, status
+    
     def load_workflow( self, workflow_id ):
         """
         Return an instance of 'Workflow' identified by `id`,
@@ -670,11 +687,13 @@ class ToolBox( object ):
         id = self.app.security.decode_id( workflow_id )
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
+    
     def init_dependency_manager( self ):
         if self.app.config.use_tool_dependencies:
             self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
         else:
             self.dependency_manager = None
+
     @property
     def sa_session( self ):
         """
@@ -683,9 +702,10 @@ class ToolBox( object ):
         return self.app.model.context
 
     def to_dict( self, trans, in_panel=True, **kwds ):
-        #
-        # Dictify toolbox.
-        #
+        """
+        Dictify toolbox.
+        """
+
         context = Bunch( toolbox=self, trans=trans, **kwds )
         if in_panel:
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
@@ -705,8 +725,8 @@ class ToolBox( object ):
                 rval.append( elt.to_dict( trans, for_link=True ) )
         else:
             tools = []
-            for id, tool in self.toolbox.tools_by_id.items():
-                tools.append( tool.to_dict( trans ) )
+            for id, tool in self.tools_by_id.items():
+                tools.append( tool.to_dict( trans, for_link=True ) )
             rval = tools
 
         return rval
