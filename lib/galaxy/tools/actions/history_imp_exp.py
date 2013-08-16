@@ -1,7 +1,7 @@
-import tempfile
+import tempfile, os
 from __init__ import ToolAction
 from galaxy.util.odict import odict
-from galaxy.tools.imp_exp import *
+from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, JobExportHistoryArchiveWrapper
 
 import logging
 log = logging.getLogger( __name__ )
