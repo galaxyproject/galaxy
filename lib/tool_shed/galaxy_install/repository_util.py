@@ -83,8 +83,8 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                 requirements_dict[ 'changeset_revision' ] = changeset_revision
                 new_tool_dependencies[ dependency_key ] = requirements_dict
         tool_dependencies = new_tool_dependencies
-    # Cast unicode to string.
-    repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
+    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
+    repo_info_dict[ str( repository.name ) ] = ( repository.description,
                                                  str( repository_clone_url ),
                                                  str( changeset_revision ),
                                                  str( ctx_rev ),
