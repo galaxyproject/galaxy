@@ -3548,7 +3548,8 @@ class ToolShedRepository( object ):
         for rrda in self.required_repositories:
             repository_dependency = rrda.repository_dependency
             required_repository = repository_dependency.repository
-            required_repositories.append( required_repository )
+            if required_repository:
+                required_repositories.append( required_repository )
         return required_repositories
     @property
     def installed_repository_dependencies( self ):
@@ -3568,6 +3569,7 @@ class ToolShedRepository( object ):
         return missing_required_repositories
     @property
     def repository_dependencies_being_installed( self ):
+        """Return the repository's repository dependencies that are currently being installed."""
         required_repositories_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status == self.installation_status.INSTALLING:
@@ -3575,6 +3577,7 @@ class ToolShedRepository( object ):
         return required_repositories_being_installed
     @property
     def repository_dependencies_missing_or_being_installed( self ):
+        """Return the repository's repository dependencies that are either missing or currently being installed."""
         required_repositories_missing_or_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status in [ self.installation_status.ERROR,
@@ -3585,6 +3588,7 @@ class ToolShedRepository( object ):
         return required_repositories_missing_or_being_installed
     @property
     def repository_dependencies_with_installation_errors( self ):
+        """Return the repository's repository dependencies that have installation errors."""
         required_repositories_with_installation_errors = []
         for required_repository in self.repository_dependencies:
             if required_repository.status == self.installation_status.ERROR:
