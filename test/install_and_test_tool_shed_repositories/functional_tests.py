@@ -6,7 +6,6 @@
 
 import os, sys, shutil, tempfile, re, string, urllib, platform
 from time import strftime
-from ConfigParser import SafeConfigParser
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -21,10 +20,11 @@ galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
-new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, 'test' ), os.path.join( cwd, 'scripts', 'api' ) ]
+new_path = [ os.path.join( cwd, "scripts" ), os.path.join( cwd, "lib" ), os.path.join( cwd, 'test' ), os.path.join( cwd, 'scripts', 'api' ) ]
 new_path.extend( sys.path )
 sys.path = new_path
 
+from functional_tests import generate_config_file
 from galaxy import eggs
 
 eggs.require( "nose" )
@@ -253,36 +253,6 @@ def execute_uninstall_method( app ):
     result, _ = run_tests( test_config )
     success = result.wasSuccessful()
     return success
-
-def generate_config_file( input_filename, output_filename, config_items ):
-    '''
-    Generate a config file with the configuration that has been defined for the embedded web application.
-    This is mostly relevant when setting metadata externally, since the script for doing that does not
-    have access to app.config.
-    ''' 
-    cp = SafeConfigParser()
-    cp.read( input_filename )
-    config_items_by_section = []
-    for label, value in config_items:
-        found = False
-        # Attempt to determine the correct section for this configuration option.
-        for section in cp.sections():
-            if cp.has_option( section, label ):
-                config_tuple = section, label, value
-                config_items_by_section.append( config_tuple )
-                found = True
-                continue
-        # Default to app:main if no section was found.
-        if not found:
-            config_tuple = 'app:main', label, value
-            config_items_by_section.append( config_tuple )
-    # Replace the default values with the provided configuration.
-    for section, label, value in config_items_by_section:
-        cp.remove_option( section, label )
-        cp.set( section, label, str( value ) )
-    fh = open( output_filename, 'w' )
-    cp.write( fh )
-    fh.close()
 
 def get_api_url( base, parts=[], params=None, key=None ):
     if 'api' in parts and parts.index( 'api' ) != 0:
