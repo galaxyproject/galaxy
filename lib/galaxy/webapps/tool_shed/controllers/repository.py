@@ -1716,9 +1716,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if not repository_metadata:
+            # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
+            # changelog that is associated with metadata.
+            changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
         repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
                                                                 repository_clone_url=repository_clone_url,
@@ -2215,6 +2220,25 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         self.email_alerts_repository_grid.title = "Set email alerts for repository changes"
         return self.email_alerts_repository_grid( trans, **kwd )
 
+    @web.expose
+    def next_installable_changeset_revision( self, trans, **kwd ):
+        """
+        Handle a request from a Galaxy instance where the changeset_revision defined for a repository in a dependency definition file is older
+        than the changeset_revision associated with the installed repository.  This will occur with repository's of type tool_dependency_definition,
+        and this scenario will occur while repository dependency hierarchies are bing installed.
+        """
+        name = kwd.get( 'name', None )
+        owner = kwd.get( 'owner', None )
+        changeset_revision = kwd.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        # Get the next installable changeset_revision beyond the received changeset_revision.
+        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if changeset_revision:
+            return changeset_revision
+        return ''
+
     @web.json
     def open_folder( self, trans, folder_path ):
         # Avoid caching
@@ -2276,8 +2300,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         older changeset_revsion, but later the repository was updated in the tool shed and the Galaxy admin is trying to install the latest
         changeset revision of the same repository instead of updating the one that was previously installed.
         """
-        message = kwd.get( 'message', ''  )
-        status = kwd.get( 'status', 'done' )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
