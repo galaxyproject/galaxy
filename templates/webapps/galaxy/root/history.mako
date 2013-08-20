@@ -204,10 +204,9 @@ function galaxyPageSetUp(){
 // set js localizable strings
 GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
 
-// add needed controller urls to GalaxyPaths
-if( !galaxy_paths ){ galaxy_paths = top.galaxy_paths || new GalaxyPaths(); }
-galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
-galaxy_paths.set( 'history', ${get_history_url_templates()} );
+// add needed controller urls to galaxy_config
+galaxy_config['hda'] = ${get_hda_url_templates()};
+galaxy_config['history'] = ${get_history_url_templates()};
 
 $(function(){
     galaxyPageSetUp();
@@ -247,7 +246,7 @@ $(function(){
     var history = new History( historyJson, hdaJson, ( debugging )?( console ):( null ) );
     var historyPanel = new HistoryPanel({
             model           : history,
-            urlTemplates    : galaxy_paths.attributes,
+            urlTemplates    : galaxy_config,
             logger          : ( debugging )?( console ):( null ),
             // is page sending in show settings? if so override history's
             show_deleted    : page_show_deleted,

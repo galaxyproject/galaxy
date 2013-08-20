@@ -174,7 +174,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
 
         // render the tab controls, areas and loading indicator
         this.$el.append( ScatterplotControlForm.templates.mainLayout({
-            loadingIndicatorImagePath   : galaxy_paths.get( 'image_path' ) + '/' + this.loadingIndicatorImage,
+            loadingIndicatorImagePath   : galaxy_config.root + 'static/images/' + this.loadingIndicatorImage,
             message                     : ''
         }));
 

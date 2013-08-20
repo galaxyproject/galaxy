@@ -138,7 +138,7 @@ var Tool = Backbone.RelationalModel.extend({
         }));
     },
     
-    urlRoot: galaxy_paths.get('tool_url'),
+    urlRoot: galaxy_config.root + 'api/tools',
 
     /**
      * Returns object copy, optionally including only inputs that can be sampled.

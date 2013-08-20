@@ -40,7 +40,7 @@ var TracksterView = Backbone.View.extend(
     initialize : function ()
     {
         // load ui
-        ui = new trackster_ui.TracksterUI(config.root);
+        ui = new trackster_ui.TracksterUI(galaxy_config.root);
 
         // create button menu
         ui.createButtonMenu();
@@ -62,7 +62,7 @@ var TracksterView = Backbone.View.extend(
         force_right_panel("hide");
 
         // check if id is available
-        if (config.app.id)
+        if (galaxy_config.app.id)
             this.view_existing();
         else
             this.view_new();
@@ -79,7 +79,7 @@ var TracksterView = Backbone.View.extend(
     view_existing : function ()
     {
         // get config
-        var viz_config = config.app.viz_config;
+        var viz_config = galaxy_config.app.viz_config;
 
         // view
         view = ui.create_visualization(
@@ -98,9 +98,9 @@ var TracksterView = Backbone.View.extend(
     view_new : function ()
     {
         // availability of default database key
-        /*if (config.app.default_dbkey !== undefined)
+        /*if (galaxy_config.app.default_dbkey !== undefined)
         {
-            this.create_browser("Unnamed", config.app.default_dbkey);
+            this.create_browser("Unnamed", galaxy_config.app.default_dbkey);
             return;
         }*/
 
@@ -110,7 +110,7 @@ var TracksterView = Backbone.View.extend(
         // ajax
         $.ajax(
         {
-            url: config.root + "api/genomes?chrom_info=True",
+            url: galaxy_config.root + "api/genomes?chrom_info=True",
             data: {},
             error: function() { alert( "Couldn't create new browser." ); },
             success: function(response)
@@ -118,13 +118,13 @@ var TracksterView = Backbone.View.extend(
                 // show dialog
                 show_modal("New Visualization", self.template_view_new(response),
                 {
-                    "Cancel": function() { window.location = config.root + "visualization/list"; },
+                    "Cancel": function() { window.location = galaxy_config.root + "visualization/list"; },
                     "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); }
                 });
 
                 // select default
-                if (config.app.default_dbkey)
-                    $("#new-dbkey option[value='" + config.default_dbkey +"']").attr("selected", true);
+                if (galaxy_config.app.default_dbkey)
+                    $("#new-dbkey option[value='" + galaxy_config.app.default_dbkey + "']").attr("selected", true);
 
                 // change focus
                 $("#new-title").focus();
@@ -168,7 +168,7 @@ var TracksterView = Backbone.View.extend(
                         '</div>' +
                         '<div class="form-row">' +
                             'Is the build not listed here? ' +
-                            '<a href="' + config.root + 'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
+                            '<a href="' + galaxy_config.root + 'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
                         '</div>' +
                     '</form>';
         
@@ -186,7 +186,7 @@ var TracksterView = Backbone.View.extend(
             container: $("#center .unified-panel-body"),
             name: name,
             dbkey: dbkey
-        }, config.app.gene_region);
+        }, galaxy_config.app.gene_region);
       
         // initialize editor
         this.init_editor();
@@ -205,9 +205,9 @@ var TracksterView = Backbone.View.extend(
         $("#center .unified-panel-title").text(view.name + " (" + view.dbkey + ")");
         
         // add dataset
-        if (config.app.add_dataset)
+        if (galaxy_config.app.add_dataset)
             $.ajax({
-                url: config.root + "api/datasets/" + config.app.add_dataset,
+                url: galaxy_config.root + "api/datasets/" + galaxy_config.app.add_dataset,
                 data: { hda_ldda: 'hda', data_type: 'track_config' },
                 dataType: "json",
                 success: function(track_data) { view.add_drawable( trackster_ui.object_from_template(track_data, view, view) ); }

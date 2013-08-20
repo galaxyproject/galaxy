@@ -68,13 +68,6 @@
             error   : function(){},
             assert  : function(){}
         };
-
-        // set up needed paths
-        var galaxy_paths = new GalaxyPaths({
-            image_path: '${h.url_for( "/static/images" )}',
-            datasets_url: '${h.url_for( controller="/api/datasets" )}',
-            visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
-        });
     </script>
 
     ## load default style
@@ -112,13 +105,13 @@
         });
 
         ## get configuration
-        var config = ${ h.to_json_string( self.galaxy_config ) };
+        var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
 
         ## on page load
         $(function()
         {
             ## check if script is defined
-            var jscript = config.app.jscript;
+            var jscript = galaxy_config.app.jscript;
             if (jscript)
             {
                 ## load galaxy app
@@ -128,7 +121,7 @@
                     var module = new js_lib.GalaxyApp();
                 });
             } else
-                console.log("'config.app.jscript' missing.");
+                console.log("'galaxy_config.app.jscript' missing.");
         });
     </script>
 </%def>

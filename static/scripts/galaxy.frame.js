@@ -74,7 +74,7 @@ var GalaxyFrameManager = Backbone.View.extend(
     initialize : function(options)
     {
         // load required css files
-        css.load_file(options.url.styles + "/galaxy.frame.css");
+        css.load_file(options.root + "static/style/galaxy.frame.css");
         
         // read in defaults
         if (options)

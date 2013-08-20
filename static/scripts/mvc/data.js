@@ -50,7 +50,7 @@ var Dataset = Backbone.RelationalModel.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: galaxy_paths.get('datasets_url')
+    urlRoot: galaxy_config.root + "api/datasets"
 });
 
 /**

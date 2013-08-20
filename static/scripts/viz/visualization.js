@@ -100,7 +100,7 @@ _.extend( CanvasManager.prototype, {
         var patterns = this.patterns,
             dummy_context = this.dummy_context,
             image = new Image();
-        image.src = galaxy_paths.attributes.image_path + path;
+        image.src = galaxy_config.root + "static/images" + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
         };
@@ -914,7 +914,7 @@ var Visualization = Backbone.RelationalModel.extend({
     },
 
     // No API to create/save visualization yet, so use this path:
-    url: galaxy_paths.get("visualization_url"),
+    url: galaxy_config.root + "visualization/save",
     
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

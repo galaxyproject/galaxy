@@ -41,7 +41,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                visualization.select_datasets(config.root + "visualization/list_current_history_datasets", config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
+                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                     _.each(tracks, function(track) {
                         view.add_drawable( object_from_template(track, view,  view) );  
                     });
@@ -83,7 +83,7 @@ var TracksterUI = base.Base.extend({
                     };
 
                 $.ajax({
-                    url: config.root + "visualization/save",
+                    url: galaxy_config.root + "visualization/save",
                     type: "POST",
                     dataType: "json",
                     data: { 
