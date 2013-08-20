@@ -662,7 +662,7 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object, UsesAnnotations ):
+class History( object, APIItem, UsesAnnotations ):
 
     api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
@@ -680,6 +680,7 @@ class History( object, UsesAnnotations ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+        self.tags = []
 
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures
@@ -779,31 +780,20 @@ class History( object, UsesAnnotations ):
             history_name = unicode(history_name, 'utf-8')
         return history_name
 
-    def get_api_value( self, view='collection', value_mapper = None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
+    def get_api_value( self, view='collection', value_mapper = None ): 
 
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[key] = value_mapper.get( key )( rval[key] )
-            except AttributeError:
-                rval[key] = None
-
+        # Get basic value.
+        rval = super( History, self ).get_api_value( view=view, value_mapper=value_mapper )
+        
+        # Add tags.
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
-        rval['model_class'] = self.__class__.__name__
+        rval[ 'tags' ] = tags_str_list
+        
         return rval
 
     def set_from_dict( self, new_data ):
