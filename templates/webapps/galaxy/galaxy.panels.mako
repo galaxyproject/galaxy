@@ -12,7 +12,6 @@
         'left_panel'    : False,
         'right_panel'   : False,
         'message_box'   : False,
-        'overlay'       : False,
         
         ## root
         'root'          : h.url_for("/"),
@@ -158,16 +157,12 @@
 </%def>
 
 ## overlay
-<%def name="overlay( title='', content='', visible=False )">
+<%def name="overlay( title='', content='')">
     <%def name="title()"></%def>
     <%def name="content()"></%def>
     <%
-        if visible:
-            display = "style='display: block;'"
-            overlay_class = "in"
-        else:
-            display = "style='display: none;'"
-            overlay_class = ""
+        display = "style='display: none;'"
+        overlay_class = ""
     %>
 
     <div id="overlay" ${display}>
@@ -227,7 +222,7 @@
             %endif
             
             ## overlay
-            ${self.overlay(visible=self.galaxy_config['overlay'])}
+            ${self.overlay()}
             
             ## left panel
             %if self.galaxy_config['left_panel']:
