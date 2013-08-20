@@ -1,10 +1,11 @@
 import os
-import time
 import urllib
 import simplejson
+from time import sleep
 
-from .transport import get_transport
 from .destination import url_to_destination_params
+
+CACHE_WAIT_SECONDS = 3
 
 
 class parseJson(object):
@@ -40,14 +41,14 @@ class Client(object):
         Galaxy job/task id.
     """
 
-    def __init__(self, destination_params, job_id, transport_type=None):
+    def __init__(self, destination_params, job_id, client_manager):
         if isinstance(destination_params, str) or isinstance(destination_params, unicode):
             destination_params = url_to_destination_params(destination_params)
         self.remote_host = destination_params.get("url")
         assert self.remote_host != None, "Failed to determine url for LWR client."
         self.private_key = destination_params.get("private_token", None)
         self.job_id = job_id
-        self.transport = get_transport(transport_type)
+        self.client_manager = client_manager
 
     def __build_url(self, command, args):
         if self.private_key:
@@ -56,20 +57,20 @@ class Client(object):
         url = self.remote_host + command + "?" + data
         return url
 
-    def __raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
+    def _raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
         url = self.__build_url(command, args)
-        response = self.transport.execute(url, data=data, input_path=input_path, output_path=output_path)
+        response = self.client_manager.transport.execute(url, data=data, input_path=input_path, output_path=output_path)
         return response
 
     @parseJson()
-    def __upload_file(self, action, path, name=None, contents=None):
+    def _upload_file(self, action, path, name=None, contents=None):
         if not name:
             name = os.path.basename(path)
         args = {"job_id": self.job_id, "name": name}
         input_path = path
         if contents:
             input_path = None
-        return self.__raw_execute(action, args, contents, input_path)
+        return self._raw_execute(action, args, contents, input_path)
 
     def upload_tool_file(self, path):
         """
@@ -80,7 +81,7 @@ class Client(object):
         path : str
             Local path tool.
         """
-        return self.__upload_file("upload_tool_file", path)
+        return self._upload_file("upload_tool_file", path)
 
     def upload_input(self, path):
         """
@@ -91,7 +92,7 @@ class Client(object):
         path : str
             Local path of input dataset.
         """
-        return self.__upload_file("upload_input", path)
+        return self._upload_file("upload_input", path)
 
     def upload_extra_input(self, path, relative_name):
         """
@@ -104,7 +105,7 @@ class Client(object):
         relative_name : str
             Relative path of extra file to upload relative to inputs extra files path.
         """
-        return self.__upload_file("upload_extra_input", path, name=relative_name)
+        return self._upload_file("upload_extra_input", path, name=relative_name)
 
     def upload_config_file(self, path, contents):
         """
@@ -117,7 +118,7 @@ class Client(object):
         contents : str
             Rewritten contents of the config file to upload.
         """
-        return self.__upload_file("upload_config_file", path, contents=contents)
+        return self._upload_file("upload_config_file", path, contents=contents)
 
     def upload_working_directory_file(self, path):
         """
@@ -129,11 +130,11 @@ class Client(object):
         path : str
             Path to file to upload.
         """
-        return self.__upload_file("upload_working_directory_file", path)
+        return self._upload_file("upload_working_directory_file", path)
 
     @parseJson()
     def _get_output_type(self, name):
-        return self.__raw_execute("get_output_type", {"name": name,
+        return self._raw_execute("get_output_type", {"name": name,
                                                       "job_id": self.job_id})
 
     def download_work_dir_output(self, source, working_directory, output_path):
@@ -176,7 +177,7 @@ class Client(object):
         self.__raw_download_output(name, self.job_id, output_type, output_path)
 
     def __raw_download_output(self, name, job_id, output_type, output_path):
-        self.__raw_execute("download_output",
+        self._raw_execute("download_output",
                            {"name": name,
                             "job_id": self.job_id,
                             "output_type": output_type},
@@ -192,14 +193,14 @@ class Client(object):
         command_line : str
             Command to execute.
         """
-        return self.__raw_execute("launch", {"command_line": command_line,
+        return self._raw_execute("launch", {"command_line": command_line,
                                              "job_id": self.job_id})
 
     def kill(self):
         """
         Cancel remote job, either removing from the queue or killing it.
         """
-        return self.__raw_execute("kill", {"job_id": self.job_id})
+        return self._raw_execute("kill", {"job_id": self.job_id})
 
     def wait(self):
         """
@@ -209,14 +210,14 @@ class Client(object):
             complete_response = self.raw_check_complete()
             if complete_response["complete"] == "true":
                 return complete_response
-            time.sleep(1)
+            sleep(1)
 
     @parseJson()
     def raw_check_complete(self):
         """
         Get check_complete response from the remote server.
         """
-        check_complete_response = self.__raw_execute("check_complete", {"job_id": self.job_id})
+        check_complete_response = self._raw_execute("check_complete", {"job_id": self.job_id})
         return check_complete_response
 
     def check_complete(self, response=None):
@@ -243,7 +244,7 @@ class Client(object):
         """
         Cleanup the remote job.
         """
-        self.__raw_execute("clean", {"job_id": self.job_id})
+        self._raw_execute("clean", {"job_id": self.job_id})
 
     @parseJson()
     def setup(self, tool_id=None, tool_version=None):
@@ -255,4 +256,47 @@ class Client(object):
             setup_args["tool_id"] = tool_id
         if tool_version:
             setup_args["tool_version"] = tool_version
-        return self.__raw_execute("setup", setup_args)
+        return self._raw_execute("setup", setup_args)
+
+
+class InputCachingClient(Client):
+    """
+    Beta client that cache's staged files to prevent duplication.
+    """
+
+    def __init__(self, destination_params, job_id, client_manager):
+        super(InputCachingClient, self).__init__(destination_params, job_id, client_manager)
+
+    @parseJson()
+    def _upload_file(self, action, path, name=None, contents=None):
+        if not name:
+            name = os.path.basename(path)
+        args = {"job_id": self.job_id, "name": name}
+        input_path = path
+        if contents:
+            input_path = None
+            return self._raw_execute(action, args, contents, input_path)
+        else:
+            event_holder = self.client_manager.event_manager.acquire_event(input_path)
+            cache_required = self.cache_required(input_path)
+            if cache_required:
+                self.client_manager.queue_transfer(self, input_path)
+            while True:
+                available = self.file_available(input_path)
+                if available['ready']:
+                    token = available['token']
+                    args["cache_token"] = token
+                    return self._raw_execute(action, args)
+                event_holder.event.wait(30)
+
+    @parseJson()
+    def cache_required(self, path):
+        return self._raw_execute("cache_required", {"path": path})
+
+    @parseJson()
+    def cache_insert(self, path):
+        return self._raw_execute("cache_insert", {"path": path}, None, path)
+
+    @parseJson()
+    def file_available(self, path):
+        return self._raw_execute("file_available", {"path": path})

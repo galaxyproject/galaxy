@@ -3,12 +3,13 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import JobDestination
+from galaxy.util import string_as_bool
 
 import errno
 from time import sleep
 import os
 
-from lwr_client import FileStager, Client, url_to_destination_params
+from lwr_client import FileStager, ClientManager, url_to_destination_params
 
 log = logging.getLogger( __name__ )
 
@@ -21,12 +22,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None ):
+    def __init__( self, app, nworkers, transport=None, cache='false' ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
-        self.transport_type = transport
+        client_manager_kwargs = {'transport': transport, 'cache': string_as_bool(cache)}
+        self.client_manager = ClientManager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -113,7 +115,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.get_client( job_destination_params, job_id )
 
     def get_client( self, job_destination_params, job_id ):
-        return Client( job_destination_params, job_id, transport_type=self.transport_type )
+        return self.client_manager.get_client( job_destination_params, job_id )
 
     def finish_job( self, job_state ):
         stderr = stdout = command_line = ''
@@ -122,8 +124,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             client = self.get_client_from_state(job_state)
 
             run_results = client.raw_check_complete()
-            stdout = run_results['stdout']
-            stderr = run_results['stderr']
+            stdout = run_results.get('stdout', '')
+            stderr = run_results.get('stderr', '')
 
             download_failure_exceptions = []
             if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
