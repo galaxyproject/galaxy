@@ -17,10 +17,6 @@ from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
-def clean_tool_shed_url( base_url ):
-    protocol, base = base_url.split( '://' )
-    return base.rstrip( '/' )
-
 def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, changeset_revision ):
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
     url = url_join( tool_shed_url,
@@ -54,7 +50,7 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
 
 def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, tool_shed_url, name, owner, changeset_revision ):
     sa_session = app.model.context.current
-    tool_shed = clean_tool_shed_url( tool_shed_url )
+    tool_shed = common_util.clean_tool_shed_url( tool_shed_url )
     tool_shed_repository =  sa_session.query( app.model.ToolShedRepository ) \
                                       .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                                      app.model.ToolShedRepository.table.c.name == name,
