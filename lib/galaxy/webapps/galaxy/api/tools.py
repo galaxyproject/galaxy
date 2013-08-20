@@ -106,7 +106,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
         for output in output_datasets:
-            output_dict = output.get_api_value()
+            output_dict = output.dictify()
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
         
@@ -412,7 +412,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             if joda.name == output_name:
                 output_dataset = joda.dataset
         
-        dataset_dict = output_dataset.get_api_value()
+        dataset_dict = output_dataset.dictify()
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset );
         return dataset_dict

@@ -158,10 +158,12 @@ class UsesAnnotations:
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
 
-class APIItem:
-    """ Mixin for api representation. """
+class DictifiableMixin:
+    """ Mixin that enables objects to be converted to dictionaries. This is useful 
+        when for sharing objects across boundaries, such as the API, tool scripts,
+        and JavaScript code. """
     
-    def get_api_value( self, view='collection', value_mapper=None ):
+    def dictify( self, view='collection', value_mapper=None ):
         """
         Return item dictionary.
         """
@@ -174,9 +176,9 @@ class APIItem:
             Recursive helper function to get item values.
             """
             # FIXME: why use exception here? Why not look for key in value_mapper
-            # first and then default to get_api_value?
+            # first and then default to dictify?
             try:
-                return item.get_api_value( view=view, value_mapper=value_mapper )
+                return item.dictify( view=view, value_mapper=value_mapper )
             except:
                 if key in value_mapper:
                     return value_mapper.get( key )( item )
@@ -189,7 +191,7 @@ class APIItem:
 
         # Fill item dict with visible keys.
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:

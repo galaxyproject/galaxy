@@ -46,14 +46,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                             .order_by( desc( trans.app.model.History.table.c.update_time ) )
                             .all() )
                 for history in query:
-                    item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
+                    item = history.dictify(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
 
             elif trans.galaxy_session.current_history:
                 #No user, this must be session authentication with an anonymous user.
                 history = trans.galaxy_session.current_history
-                item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
+                item = history.dictify(value_mapper={'id':trans.security.encode_id})
                 item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                 rval.append(item)
 
@@ -139,7 +139,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
+        item = new_history.dictify(view='element', value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for( 'history', id=item['id'] )
 
         #TODO: copy own history
@@ -254,7 +254,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :param  id:      the encoded id of the history to undelete
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
-            fields in :func:`galaxy.model.History.get_api_value` and/or the following:
+            fields in :func:`galaxy.model.History.dictify` and/or the following:
             
             * annotation: an annotation for the history
 

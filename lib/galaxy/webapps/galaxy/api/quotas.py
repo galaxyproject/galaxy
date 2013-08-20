@@ -34,7 +34,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
             route = 'quota'
             query = query.filter( trans.app.model.Quota.table.c.deleted == False )
         for quota in query:
-            item = quota.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+            item = quota.dictify( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id( quota.id )
             item['url'] = url_for( route, id=encoded_id )
             rval.append( item )
@@ -49,7 +49,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         Displays information about a quota.
         """
         quota = self.get_quota( trans, id, deleted=util.string_as_bool( deleted ) )
-        return quota.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        return quota.dictify( view='element', value_mapper={ 'id': trans.security.encode_id } )
     
     @web.expose_api
     @web.require_admin
@@ -67,7 +67,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
             quota, message = self._create_quota( params )
         except ActionInputError, e:
             raise HTTPBadRequest( detail=str( e ) )
-        item = quota.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+        item = quota.dictify( value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'quota', id=trans.security.encode_id( quota.id ) )
         item['message'] = message
         return item

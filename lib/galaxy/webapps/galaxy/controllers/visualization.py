@@ -875,7 +875,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
         viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
-        viz_config[ 'dataset' ] = dataset.get_api_value()
+        viz_config[ 'dataset' ] = dataset.dictify()
 
         return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
     

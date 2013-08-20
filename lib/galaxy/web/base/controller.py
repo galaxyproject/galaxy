@@ -422,7 +422,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
-        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict = history.dictify( view='element', value_mapper={ 'id':trans.security.encode_id })
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
@@ -583,7 +583,7 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.get_api_value( view='element' )
+        hda_dict = hda.dictify( view='element' )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
@@ -594,7 +594,7 @@ class UsesHistoryDatasetAssociationMixin:
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
-            #TODO: get_api_value should really go AFTER this - only summary data
+            #TODO: dictify should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
@@ -911,7 +911,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             return query
         return query.all()
 
-    #TODO: move into model (get_api_value)
+    #TODO: move into model (dictify)
     def get_visualization_summary_dict( self, visualization ):
         """
         Return a set of summary attributes for a visualization in dictionary form.
@@ -1132,7 +1132,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                                                                                           source='data' )
                 return {
                     "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
+                    "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
                     "name": track_dict['name'],
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
@@ -1212,7 +1212,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return {
             "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
+            "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": get_tool_def( trans, dataset ),

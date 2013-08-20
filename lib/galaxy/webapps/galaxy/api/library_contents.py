@@ -105,15 +105,15 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :rtype:     dict
         :returns:   detailed library item information
         .. seealso::
-            :func:`galaxy.model.LibraryDataset.get_api_value` and
-            :attr:`galaxy.model.LibraryFolder.api_element_visible_keys`
+            :func:`galaxy.model.LibraryDataset.dictify` and
+            :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
         class_name, content_id = self.__decode_library_content_id( trans, id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
         else:
             content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
-        return self.encode_all_ids( trans, content.get_api_value( view='element' ) )
+        return self.encode_all_ids( trans, content.dictify( view='element' ) )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
@@ -266,7 +266,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
-            ldda_dict = ldda.get_api_value()
+            ldda_dict = ldda.dictify()
             rval = trans.security.encode_dict_ids( ldda_dict )
 
         except Exception, exc:

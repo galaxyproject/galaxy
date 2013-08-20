@@ -560,7 +560,7 @@ class SearchQuery:
         return self.view.get_results(True)
 
     def item_to_api_value(self, item):
-        r = item.get_api_value( view='element' )
+        r = item.dictify( view='element' )
         if self.query.field_list.count("*"):
             return r
         o = {}
