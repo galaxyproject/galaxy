@@ -464,7 +464,7 @@ def error_template(head_html, exception, extra):
     <div class="content">
     <h1>Internal Server Error</h1>
 
-    <h2>Galaxy was unable to sucessfully complete your request</h2>
+    <h2>Galaxy was unable to successfully complete your request</h2>
 
     <p>%s</p>
 

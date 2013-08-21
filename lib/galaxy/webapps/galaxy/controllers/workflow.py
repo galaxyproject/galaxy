@@ -1434,7 +1434,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             workflow_invocation_step.workflow_invocation = workflow_invocation
                             workflow_invocation_step.workflow_step = step
                             workflow_invocation_step.job = job
-                        # All jobs ran sucessfully, so we can save now
+                        # All jobs ran successfully, so we can save now
                         trans.sa_session.add( workflow_invocation )
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
