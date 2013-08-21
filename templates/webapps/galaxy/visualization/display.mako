@@ -1,5 +1,4 @@
 <%inherit file="/display_base.mako"/>
-<%namespace file="/visualization/trackster_common.mako" import="*" />
 
 <%def name="javascripts()">
     <% config = item_data %>
