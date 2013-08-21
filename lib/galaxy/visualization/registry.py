@@ -61,9 +61,6 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
     #: directories under plugin_directory that aren't plugins
     non_plugin_directories = []
 
-    def __str__( self ):
-        return 'VisualizationsRegistry(%s)' %( self.plugin_directory )
-
     def __init__( self, registry_filepath, template_cache_dir ):
         super( VisualizationsRegistry, self ).__init__( registry_filepath, 'visualizations', template_cache_dir )
 
@@ -84,7 +81,7 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
             self.listings = VisualizationsConfigParser.parse( self.get_plugin_directories() )
 
         except Exception, exc:
-            log.exception( 'Error parsing visualizations plugins %s', self.plugin_directory )
+            log.exception( 'Error parsing visualizations plugins %s', self.plugin_directories )
             raise
 
     def get_visualization( self, trans, visualization_name, target_object ):
