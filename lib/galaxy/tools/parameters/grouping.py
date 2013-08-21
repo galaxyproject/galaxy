@@ -23,8 +23,7 @@ class Group( object, DictifiableMixin ):
 
     def __init__( self ):
         self.name = None
-        self.type = 'group'
-    
+        
     @property
     def visible( self ):
         return True
