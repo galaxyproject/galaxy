@@ -2,7 +2,7 @@
 Basic tool parameters.
 """
 
-import logging, string, sys, os, os.path
+import logging, string, sys, os, os.path, urllib
 from elementtree.ElementTree import XML, Element
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
@@ -12,16 +12,19 @@ from sanitize import ToolParameterSanitizer
 import validation, dynamic_options
 # For BaseURLToolParameter
 from galaxy.web import url_for
+from galaxy.model.item_attrs import DictifiableMixin
 import galaxy.model
 
 log = logging.getLogger(__name__)
 
-class ToolParameter( object ):
+class ToolParameter( object, DictifiableMixin ):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
+    dict_collection_visible_keys = ( 'name', 'type', 'label', 'help' )
+
     def __init__( self, tool, param, context=None ):
         self.tool = tool
         self.refresh_on_change = False
@@ -167,6 +170,15 @@ class ToolParameter( object ):
         for validator in self.validators:
             validator.validate( value, history )
 
+    def dictify( self, trans, view='collection', value_mapper=None ):
+        """ Dictify tool parameter. This can be overridden by subclasses. """
+
+        tool_dict = super( ToolParameter, self ).dictify()
+        tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        if hasattr( self, 'value' ):
+            tool_dict[ 'value' ] = self.value
+        return tool_dict
+
     @classmethod
     def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
@@ -223,6 +235,9 @@ class IntegerToolParameter( TextToolParameter ):
         ...
     ValueError: An integer is required
     """
+
+    dict_colletion_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
+
     def __init__( self, tool, elem ):
         TextToolParameter.__init__( self, tool, elem )
         if self.value:
@@ -276,7 +291,7 @@ class IntegerToolParameter( TextToolParameter ):
             return int( self.value )
         else:
             return None
-            
+
 class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
@@ -293,6 +308,9 @@ class FloatToolParameter( TextToolParameter ):
         ...
     ValueError: A real number is required
     """
+
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
+
     def __init__( self, tool, elem ):
         TextToolParameter.__init__( self, tool, elem )
         self.min = elem.get( 'min' )
@@ -853,6 +871,24 @@ class SelectToolParameter( ToolParameter ):
             return self.options.get_dependency_names()
         else:
             return []
+
+    def dictify( self, trans, view='collection', value_mapper=None ):
+        d = super( SelectToolParameter, self ).dictify( trans )
+
+        # Get options, value.
+        options = self.get_options( trans, [] )
+        value = options[0][1]
+        for option in options:
+            if option[2]:
+                # Found selected option.
+                value = option[1]
+
+        d.update( {
+            'options': options,
+            'value': value
+        } )
+        return d
+
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
@@ -1680,7 +1716,7 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
-        
+
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
     Hidden parameter that behaves as a DataToolParameter. As with all hidden 
@@ -1689,6 +1725,7 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     def __init__( self, tool, elem ):
         DataToolParameter.__init__( self, tool, elem )
         self.value = "None"
+        self.type = "hidden_data"
         
     def get_initial_value( self, trans, context ):
         return None

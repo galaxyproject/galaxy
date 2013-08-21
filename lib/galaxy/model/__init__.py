@@ -1508,7 +1508,7 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
+class HistoryDatasetAssociation( DatasetInstance, DictifiableMixin, UsesAnnotations ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """

@@ -268,12 +268,12 @@ var ToolCollection = Backbone.Collection.extend({
 /**
  * Label or section header in tool panel.
  */
-var ToolPanelLabel = Backbone.Model.extend(VisibilityMixin);
+var ToolSectionLabel = Backbone.Model.extend(VisibilityMixin);
 
 /**
  * Section of tool panel with elements (labels and tools).
  */
-var ToolPanelSection = Backbone.Model.extend({
+var ToolSection = Backbone.Model.extend({
     defaults: {
         elems: [],
         open: false
@@ -292,7 +292,7 @@ var ToolPanelSection = Backbone.Model.extend({
         var all_hidden = true,
             cur_label;
         _.each(this.attributes.elems, function(elt) {            
-            if (elt instanceof ToolPanelLabel) {
+            if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
                 cur_label.hide();
             }
@@ -315,7 +315,7 @@ var ToolPanelSection = Backbone.Model.extend({
         }
     }
 });
-_.extend(ToolPanelSection.prototype, VisibilityMixin);
+_.extend(ToolSection.prototype, VisibilityMixin);
 
 /**
  * Tool search that updates results when query is changed. Result value of null
@@ -399,18 +399,20 @@ var ToolPanel = Backbone.Model.extend({
         var self = this,
             // Helper to recursively parse tool panel.
             parse_elt = function(elt_dict) {
-                var type = elt_dict.type;
-                if (type === 'tool') {
+                var type = elt_dict.model_class;
+                // There are many types of tools; for now, anything that ends in 'Tool'
+                // is treated as a generic tool.
+                if ( type.indexOf('Tool') === type.length - 4 ) {
                     return self.attributes.tools.get(elt_dict.id);
                 }
-                else if (type === 'section') {
+                else if (type === 'ToolSection') {
                     // Parse elements.
                     var elems = _.map(elt_dict.elems, parse_elt);
                     elt_dict.elems = elems;
-                    return new ToolPanelSection(elt_dict);
+                    return new ToolSection(elt_dict);
                 }
-                else if (type === 'label') {
-                    return new ToolPanelLabel(elt_dict);
+                else if (type === 'ToolSectionLabel') {
+                    return new ToolSectionLabel(elt_dict);
                 }
             };
         
@@ -419,7 +421,7 @@ var ToolPanel = Backbone.Model.extend({
 
     clear_search_results: function() {
         this.get('layout').each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
+            if (panel_elt instanceof ToolSection) {
                 panel_elt.clear_search_results();
             }
             else {
@@ -438,7 +440,7 @@ var ToolPanel = Backbone.Model.extend({
         
         var cur_label = null;
         this.get('layout').each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelLabel) {
+            if (panel_elt instanceof ToolSectionLabel) {
                 cur_label = panel_elt;
                 cur_label.hide();
             }
@@ -495,12 +497,12 @@ var ToolLinkView = BaseView.extend({
 /**
  * Panel label/section header.
  */
-var ToolPanelLabelView = BaseView.extend({
+var ToolSectionLabelView = BaseView.extend({
     tagName: 'div',
-    className: 'toolPanelLabel',
+    className: 'ToolSectionLabel',
 
     render: function() {
-        this.$el.append( $("<span/>").text(this.model.attributes.name) );
+        this.$el.append( $("<span/>").text(this.model.attributes.text) );
         return this;
     }
 });
@@ -508,7 +510,7 @@ var ToolPanelLabelView = BaseView.extend({
 /**
  * Panel section.
  */
-var ToolPanelSectionView = BaseView.extend({
+var ToolSectionView = BaseView.extend({
     tagName: 'div',
     className: 'toolSectionWrapper',
     template: Handlebars.templates.panel_section,
@@ -528,8 +530,8 @@ var ToolPanelSectionView = BaseView.extend({
                 tool_view.render();
                 section_body.append(tool_view.$el);
             }
-            else if (elt instanceof ToolPanelLabel) {
-                var label_view = new ToolPanelLabelView({model: elt});
+            else if (elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({model: elt});
                 label_view.render();
                 section_body.append(label_view.$el);
             }
@@ -630,8 +632,8 @@ var ToolPanelView = Backbone.View.extend({
         
         // Render panel.
         this.model.get('layout').each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
-                var section_title_view = new ToolPanelSectionView({model: panel_elt});
+            if (panel_elt instanceof ToolSection) {
+                var section_title_view = new ToolSectionView({model: panel_elt});
                 section_title_view.render();
                 self.$el.append(section_title_view.$el);
             }
@@ -640,8 +642,8 @@ var ToolPanelView = Backbone.View.extend({
                 tool_view.render();
                 self.$el.append(tool_view.$el);
             }
-            else if (panel_elt instanceof ToolPanelLabel) {
-                var label_view = new ToolPanelLabelView({model: panel_elt});
+            else if (panel_elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({model: panel_elt});
                 label_view.render();
                 self.$el.append(label_view.$el);
             }

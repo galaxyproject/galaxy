@@ -14,7 +14,6 @@ from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
-from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
 
@@ -865,7 +864,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = get_dataset_job( dataset )
+            job = self.get_hda_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -874,7 +873,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
-        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
+        viz_config[ 'tool' ] = tool.dictify( trans, for_display=True )
         viz_config[ 'dataset' ] = dataset.dictify()
 
         return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )

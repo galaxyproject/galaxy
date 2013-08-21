@@ -1634,7 +1634,17 @@ var TracksterTool = Backbone.RelationalModel.extend({
             key: 'tool',
             relatedModel: tools_mod.Tool
         }
-    ]
+    ],
+
+    initialize: function(options) {
+        // HACK: remove data and group tool inputs because Trackster
+        // does not work with them right now.
+        var tool = this.get('tool'),
+            incompatible_inputs = tool.get('inputs').filter( function(input) {
+                return ( [ 'data', 'hidden_data', 'group'].indexOf( input.get('type') ) !== -1);
+            });
+        tool.get('inputs').remove(incompatible_inputs);
+    }
 
 });
 
@@ -1692,6 +1702,7 @@ var TracksterToolView = Backbone.View.extend({
         // Add name, inputs.
         var name_div = $("<div class='tool-name'>").appendTo(parent_div).text(tool.get('name'));
         tool.get('inputs').each(function(param) {
+            // Render parameter.
             var param_view = new ToolParameterView({ model: param });
             param_view.render();
             parent_div.append(param_view.$el);
@@ -2479,11 +2490,8 @@ extend(Track.prototype, Drawable.prototype, {
         Drawable.prototype.action_icons_def[2]
     ],
 
-    can_draw: function() {        
-        if ( this.dataset.id && Drawable.prototype.can_draw.call(this) ) { 
-            return true;
-        }
-        return false;
+    can_draw: function() {
+        return this.dataset && Drawable.prototype.can_draw.call(this);
     },
 
     build_container_div: function () {

@@ -193,7 +193,7 @@ class DictifiableMixin:
         try:
             visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
+            raise Exception( 'Unknown DictifiableMixin view: %s' % view )
         for key in visible_keys:
             try:
                 item = self.__getattribute__( key )

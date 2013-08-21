@@ -59,6 +59,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
+from galaxy.model.item_attrs import DictifiableMixin
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
 
@@ -92,7 +93,7 @@ class StdioErrorLevel( object ):
 class ToolNotFoundException( Exception ):
     pass
 
-class ToolBox( object ):
+class ToolBox( object, DictifiableMixin ):
     """Container for a collection of tools"""
 
     def __init__( self, config_filenames, tool_root_dir, app ):
@@ -701,7 +702,7 @@ class ToolBox( object ):
         """
         return self.app.model.context
 
-    def to_dict( self, trans, in_panel=True, **kwds ):
+    def dictify( self, trans, in_panel=True, **kwds ):
         """
         Dictify toolbox.
         """
@@ -722,11 +723,11 @@ class ToolBox( object ):
             # Produce panel.
             rval = []
             for elt in panel_elts:
-                rval.append( elt.to_dict( trans, for_link=True ) )
+                rval.append( elt.dictify( trans, link_details=True ) )
         else:
             tools = []
             for id, tool in self.tools_by_id.items():
-                tools.append( tool.to_dict( trans, for_link=True ) )
+                tools.append( tool.dictify( trans, link_details=True ) )
             rval = tools
 
         return rval
@@ -787,11 +788,14 @@ def _filter_for_panel( item, filters, context ):
 
 
 
-class ToolSection( object ):
+class ToolSection( object, DictifiableMixin ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
     """
+
+    dict_collection_visible_keys = ( 'id', 'name', 'version' )
+
     def __init__( self, elem=None ):
         f = lambda elem, val: elem is not None and elem.get( val ) or ''
         self.name = f( elem, 'name' )
@@ -807,26 +811,32 @@ class ToolSection( object ):
         copy.elems = self.elems.copy()
         return copy
 
-    def to_dict( self, trans, for_link=False ):
+    def dictify( self, trans, link_details=False ):
         """ Return a dict that includes section's attributes. """
+
+        section_dict = super( ToolSection, self ).dictify()
         section_elts = []
         for key, val in self.elems.items():
-            section_elts.append( val.to_dict( trans, for_link=for_link ) )
-        return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
+            if isinstance( val, ToolSectionLabel ):
+                section_elts.append( val.dictify() )
+            else:
+                section_elts.append( val.dictify( trans, link_details=link_details ) )
+        section_dict[ 'elems' ] = section_elts
 
-class ToolSectionLabel( object ):
+        return section_dict
+
+class ToolSectionLabel( object, DictifiableMixin ):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
+
+    dict_collection_visible_keys = ( 'id', 'text', 'version' )
+
     def __init__( self, elem ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
-
-    def to_dict( self, trans, **kwargs ):
-        """ Return a dict that includes label's attributes. """
-        return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
 class DefaultToolState( object ):
     """
@@ -874,13 +884,15 @@ class DefaultToolState( object ):
             self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
-class ToolOutput( object ):
+class ToolOutput( object, DictifiableMixin ):
     """
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
       (format, metadata_source, parent)
     """
+
+    dict_collection_visible_keys = ( 'name', 'format', 'label', 'hidden' )
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None,
                   parent=None, label=None, filters = None, actions = None, hidden=False ):
@@ -912,14 +924,6 @@ class ToolOutput( object ):
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
-    def to_dict( self ):
-        return {
-            'name': self.name,
-            'format': self.format,
-            'label': self.label,
-            'hidden': self.hidden
-        }
-
 class ToolRequirement( object ):
     """
     Represents an external requirement that must be available for the tool to run (for example, a program, package, or library).
@@ -930,13 +934,14 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
-class Tool( object ):
+class Tool( object, DictifiableMixin ):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
 
     tool_type = 'default'
     default_tool_action = DefaultToolAction
+    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
 
     def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1225,7 +1230,6 @@ class Tool( object ):
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
         if trackster_conf is not None:
-            from galaxy.visualization.genome.visual_analytics import TracksterConfig
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
@@ -2944,66 +2948,29 @@ class Tool( object ):
                     self.sa_session.flush()
         return primary_datasets
 
-    def to_dict( self, trans, for_link=False, for_display=False ):
+    def dictify( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
 
         # Basic information
-        tool_dict = { 'id': self.id, 'name': self.name,
-                      'version': self.version, 'description': self.description }
-
-        if for_link:
-            # Create tool link.
+        tool_dict = super( Tool, self ).dictify()
+        
+        # Add link details.
+        if link_details:
+            # Add details for creating a hyperlink to the tool.
             if not self.tool_type.startswith( 'data_source' ):
                 link = url_for( '/tool_runner', tool_id=self.id )
             else:
                 link = url_for( self.action, **self.get_static_param_values( trans ) )
 
             # Basic information
-            tool_dict.update( { 'type': 'tool', 'link': link,
+            tool_dict.update( { 'link': link,
                                 'min_width': self.uihints.get( 'minwidth', -1 ),
                                 'target': self.target } )
 
-        if for_display:
-            # Dictify inputs.
-            inputs = []
-            for name, input in self.inputs.items():
-                param_dict = { 'name' : name, 'label' : input.label }
-                if isinstance( input, DataToolParameter ):
-                    param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
-                elif isinstance( input, SelectToolParameter ):
-                    # Get options, value.
-                    options = input.get_options( trans, [] )
-                    value = options[0][1]
-                    for option in options:
-                        if option[2]:
-                            # Found selected option.
-                            value = option[1]
-
-                    # Pack input.
-                    param_dict.update( { 'type' : 'select',
-                                         'html' : urllib.quote( input.get_html( trans ) ),
-                                         'options': options,
-                                         'value': value
-                                         } )
-                elif isinstance( input, Conditional ):
-                    # TODO.
-                    pass
-                elif isinstance( input, ( IntegerToolParameter, FloatToolParameter ) ):
-                    param_dict.update( { 'type' : 'number', 'init_value' : input.value,
-                                         'html' : urllib.quote( input.get_html( trans ) ),
-                                         'min': input.min,
-                                         'max': input.max,
-                                         'value': input.value
-                                          } )
-                else:
-                    param_dict.update( { 'type' : '??', 'init_value' : input.value, \
-                                         'html' : urllib.quote( input.get_html( trans ) ) } )
-                inputs.append( param_dict )
-
-            tool_dict[ 'inputs' ] = inputs
-
-            # Dictify outputs.
-            pass
+        # Add input and output details.
+        if io_details:
+            tool_dict[ 'inputs' ] = [ input.dictify( trans ) for input in self.inputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.dictify() for output in self.outputs.values() ]
 
         return tool_dict
 
@@ -3239,6 +3206,31 @@ for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, 
     tool_types[ tool_class.tool_type ] = tool_class
 
 # ---- Utility classes to be factored out -----------------------------------
+
+class TracksterConfig:
+    """ Trackster configuration encapsulation. """
+    
+    def __init__( self, actions ):
+        self.actions = actions
+    
+    @staticmethod
+    def parse( root ):
+        actions = []
+        for action_elt in root.findall( "action" ):
+            actions.append( SetParamAction.parse( action_elt ) )
+        return TracksterConfig( actions )
+        
+class SetParamAction:
+    """ Set parameter action. """
+    
+    def __init__( self, name, output_name ):
+        self.name = name
+        self.output_name = output_name
+        
+    @staticmethod
+    def parse( elt ):
+        """ Parse action from element. """
+        return SetParamAction( elt.get( "name" ), elt.get( "output_name" ) )    
 
 class BadValue( object ):
     def __init__( self, value ):

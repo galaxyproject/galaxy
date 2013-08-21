@@ -32,12 +32,12 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.model.item_attrs import DictifiableMixin
 
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
-from galaxy.visualization.genome.visual_analytics import get_tool_def
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation,HistoryDatasetAssociation
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
@@ -704,6 +704,15 @@ class UsesHistoryDatasetAssociationMixin:
 
         return changed
 
+    def get_hda_job( self, hda ):
+        # Get dataset's job.
+        job = None
+        for job_output_assoc in hda.creating_job_associations:
+            job = job_output_assoc.job
+            break
+        return job
+
+
 
 class UsesLibraryMixin:
 
@@ -1105,6 +1114,37 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         encoded_id = trans.security.encode_id( vis.id )
         return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
 
+    def get_tool_def( self, trans, hda ):
+        """ Returns definition of an interactive tool for an HDA. """
+
+        job = self.get_hda_job( hda )
+        if not job:
+            return None
+        tool = trans.app.toolbox.get_tool( job.tool_id )
+        if not tool:
+            return None
+            
+        # Tool must have a Trackster configuration.
+        if not tool.trackster_conf:
+            return None
+
+        # Get tool definition and add input values from job.
+        tool_dict = tool.dictify( trans, io_details=True )
+        inputs_dict = tool_dict[ 'inputs' ]
+        tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
+        for t_input in inputs_dict:
+            # Add value to tool.
+            if 'name' in t_input:
+                name = t_input[ 'name' ]
+                if name in tool_param_values:
+                    value = tool_param_values[ name ]
+                    if isinstance( value, DictifiableMixin ):
+                        value = value.dictify()
+                    t_input[ 'value' ] = value
+            
+        return tool_dict
+
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
         config = None
@@ -1137,7 +1177,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
-                    "tool": get_tool_def( trans, dataset ),
+                    "tool": self.get_tool_def( trans, dataset ),
                     "tool_state": track_dict.get( 'tool_state', {} )
                 }
 
@@ -1215,7 +1255,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
-            "tool": get_tool_def( trans, dataset ),
+            "tool": self.get_tool_def( trans, dataset ),
             "tool_state": {}
         }
 

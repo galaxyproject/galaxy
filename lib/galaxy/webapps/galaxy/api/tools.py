@@ -1,6 +1,5 @@
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin
-from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.visualization.data_providers.genome import *
@@ -33,7 +32,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         
         # Create return value.
         try:
-            return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
+            return self.app.toolbox.dictify( trans, in_panel=in_panel, trackster=trackster )
         except Exception, exc:
             log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
             trans.response.status = 500
@@ -46,7 +45,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Returns tool information, including parameters and inputs.
         """
         try:
-            return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
+            return self.app.toolbox.tools_by_id[ id ].dictify( trans, for_display=True )
         except Exception, exc:
             log.error( 'could not convert tool (%s) to dictionary: %s', id, str( exc ), exc_info=True )
             trans.response.status = 500
@@ -217,7 +216,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # job's previous parameters and incoming parameters. Incoming parameters
         # have priority.
         #
-        original_job = get_dataset_job( original_dataset )
+        original_job = self.get_hda_job( original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool:
             return trans.app.model.Dataset.conversion_messages.NO_TOOL

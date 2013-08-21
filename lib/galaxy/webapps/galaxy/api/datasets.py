@@ -199,7 +199,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
             if data_dict:
                 ref_seq = data_dict[ 'data' ]
-
+        
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), 
                                          ref_seq=ref_seq, **kwargs )
