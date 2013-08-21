@@ -243,7 +243,7 @@ def main():
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
-                database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+                database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe.sqlite' )
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
