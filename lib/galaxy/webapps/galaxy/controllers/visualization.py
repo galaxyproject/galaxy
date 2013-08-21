@@ -421,7 +421,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if referer is not "":
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
                     
         # Do import.
         session = trans.sa_session
@@ -512,7 +512,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 self.create_item_slug( session, visualization )
                 session.flush()
                 trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
-                return trans.response.send_redirect( url_for(controller='visualization', action='sharing', id=id ) )
+                return trans.response.send_redirect( web.url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -560,7 +560,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
-        return_dict = { "name" : visualization.title, "link" : url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
+        return_dict = { "name" : visualization.title, "link" : web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
         return return_dict
 
     @web.expose
