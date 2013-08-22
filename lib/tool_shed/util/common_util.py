@@ -76,7 +76,7 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
     return missing_tool_configs_dict
 
 def get_non_shed_tool_panel_configs( app ):
-    # Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml.
+    """Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml."""
     config_filenames = []
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
@@ -98,13 +98,13 @@ def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
                 shed_url = shed_url.rstrip( '/' )
             return shed_url
     return None
-
+    
 def tool_shed_get( app, tool_shed_url, uri ):
     """Make contact with the tool shed via the uri provided."""
     registry = app.tool_shed_registry
     urlopener = urllib2.build_opener()
     password_mgr = registry.password_manager_for_url( tool_shed_url )
-    if ( password_mgr is not None ):
+    if password_mgr is not None:
         auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
         urlopener.add_handler( auth_handler )
     response = urlopener.open( uri )

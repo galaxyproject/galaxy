@@ -3,7 +3,9 @@ Manage automatic installation of tools configured in the xxx.xml files in ~/scri
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
 import os
+import shutil
 import tempfile
+import threading
 from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string
@@ -63,7 +65,9 @@ class InstallManager( object ):
                 if tool_panel_configs:
                     # The missing_tool_configs_dict contents are something like:
                     # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
-                    tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app, tool_panel_configs, latest_migration_script_number )
+                    tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app,
+                                                                                                           tool_panel_configs,
+                                                                                                           latest_migration_script_number )
                 else:
                     # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
                     # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
@@ -79,7 +83,9 @@ class InstallManager( object ):
                         file_names = ', '.join( self.proprietary_tool_confs )
                     if missing_tool_configs_dict:
                         for repository_elem in root:
-                            self.install_repository( repository_elem, install_dependencies )
+                            # Make sure we have a valid repository tag.
+                            if self.__is_valid_repository_tag( repository_elem ):
+                                self.install_repository( repository_elem, install_dependencies )
                     else:
                         message = "\nNo tools associated with migration stage %s are defined in your " % str( latest_migration_script_number )
                         message += "file%s named %s,\nso no repositories will be installed on disk.\n" % ( plural, file_names )
@@ -89,6 +95,43 @@ class InstallManager( object ):
                     message += "Try again later.\n"
                     print message
 
+    def filter_and_persist_proprietary_tool_panel_configs( self, tool_configs_to_filter ):
+        """Eliminate all entries in all non-shed-related tool panel configs for all tool config file names in the received tool_configs_to_filter."""
+        for proprietary_tool_conf in self.proprietary_tool_confs:
+            persist_required = False
+            tree, error_message = xml_util.parse_xml( proprietary_tool_conf )
+            if tree:
+                root = tree.getroot()
+                for elem in root:
+                    if elem.tag == 'tool':
+                        # Tools outside of sections.
+                        file_path = elem.get( 'file', None )
+                        if file_path:
+                            file_name = suc.strip_path( file_path )
+                            if file_name in tool_configs_to_filter:
+                                root.remove( elem )
+                                persist_required = True
+                    elif elem.tag == 'section':
+                        # Tools contained in a section.
+                        for section_elem in elem:
+                            if section_elem.tag == 'tool':
+                                file_path = section_elem.get( 'file', None )
+                                if file_path:
+                                    file_name = suc.strip_path( file_path )
+
+                                    if file_name in tool_configs_to_filter:
+                                        elem.remove( section_elem )
+                                        persist_required = True
+            if persist_required:
+                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-fapptpc"  )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                tree.write( tmp_filename )
+                fh.close()
+                shutil.move( tmp_filename, os.path.abspath( proprietary_tool_conf ) )
+                os.chmod( proprietary_tool_conf, 0644 )
+                
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
             relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
@@ -108,9 +151,11 @@ class InstallManager( object ):
         return suc.generate_tool_guid( repository_clone_url, tool )
 
     def get_proprietary_tool_panel_elems( self, latest_tool_migration_script_number ):
-        # Parse each config in self.proprietary_tool_confs (the default is tool_conf.xml) and generate a list of Elements that are
-        # either ToolSection elements or Tool elements.  These will be used to generate new entries in the migrated_tools_conf.xml
-        # file for the installed tools.
+        """
+        Parse each config in self.proprietary_tool_confs (the default is tool_conf.xml) and generate a list of Elements that are
+        either ToolSection elements or Tool elements.  These will be used to generate new entries in the migrated_tools_conf.xml
+        file for the installed tools.
+        """
         tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
         # Parse the XML and load the file attributes for later checking against the integrated elements from self.proprietary_tool_confs.
         migrated_tool_configs = []
@@ -183,7 +228,13 @@ class InstallManager( object ):
         return is_displayed, tool_sections
 
     def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies ):
-        """Generate the metadata for the installed tool shed repository, among other things."""
+        """
+        Generate the metadata for the installed tool shed repository, among other things.  If the installed tool_shed_repository contains tools
+        that are loaded into the Galaxy tool panel, this method will automatically eliminate all entries for each of the tools defined in the
+        received repository_elem from all non-shed-related tool panel configuration files since the entries are automatically added to the reserved
+        migrated_tools_conf.xml file as part of the migration process.
+        """
+        tool_configs_to_filter = []
         tool_panel_dict_for_display = odict()
         if self.tool_path:
             repo_install_dir = os.path.join( self.tool_path, relative_install_dir )
@@ -197,11 +248,29 @@ class InstallManager( object ):
             is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
             if is_displayed:
                 tool_panel_dict_for_tool_config = tool_util.generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
+                # The tool-panel_dict has the following structure.
+                # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
+                    for tool_panel_dict in v:
+                        # Keep track of tool config file names associated with entries that have been made to the migrated_tools_conf.xml file so
+                        # they can be eliminated from all non-shed-related tool panel configs.
+                        tool_config_file = tool_panel_dict.get( 'tool_config', None )
+                        if tool_config_file:
+                            if tool_config_file not in tool_configs_to_filter:
+                                tool_configs_to_filter.append( tool_config_file )
             else:
                 print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
                 % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+        if tool_configs_to_filter:
+            lock = threading.Lock()
+            lock.acquire( True )
+            try:
+                self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
+            except Exception, e:
+                log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
+            finally:
+                lock.release()
         metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=self.app,
                                                                                                    repository=tool_shed_repository,
                                                                                                    changeset_revision=tool_shed_repository.changeset_revision,
@@ -384,3 +453,13 @@ class InstallManager( object ):
                     # Assume that the repository has been installed if we find a .hg directory.
                     return True
         return False
+
+    def __is_valid_repository_tag( self, elem ):
+        # <repository name="emboss_datatypes" description="Datatypes for Emboss tools" changeset_revision="a89163f31369" />
+        if elem.tag != 'repository':
+            return False
+        if not elem.get( 'name' ):
+            return False
+        if not elem.get( 'changeset_revision' ):
+            return False
+        return True
