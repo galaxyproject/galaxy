@@ -19,6 +19,7 @@ from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
+import tool_shed.galaxy_install.tool_dependencies.common_util as cu
 
 import pkg_resources
 
@@ -1123,6 +1124,7 @@ def handle_repository_elem( app, repository_elem ):
     if not toolshed:
         # Default to the current tool shed.
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
+    cleaned_toolshed = cu.clean_tool_shed_url( toolshed )
     name = repository_elem.get( 'name' )
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
@@ -1135,7 +1137,7 @@ def handle_repository_elem( app, repository_elem ):
         # generating metadata for an installed repository.  See if we can locate the installed repository via the changeset_revision defined in the
         # repository_elem (it may be outdated).  If we're successful in locating an installed repository with the attributes defined in the
         # repository_elem, we know it is valid.
-        repository = suc.get_repository_for_dependency_relationship( app, toolshed, name, owner, changeset_revision )
+        repository = suc.get_repository_for_dependency_relationship( app, cleaned_toolshed, name, owner, changeset_revision )
         if repository:
             return repository_dependency_tup, is_valid, error_message
         else:
@@ -1144,7 +1146,7 @@ def handle_repository_elem( app, repository_elem ):
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:
-                    repository = suc.get_repository_for_dependency_relationship( app, toolshed, name, owner, updated_changeset_revision )
+                    repository = suc.get_repository_for_dependency_relationship( app, cleaned_toolshed, name, owner, updated_changeset_revision )
                     if repository:
                         return repository_dependency_tup, is_valid, error_message
             # We'll currently default to setting the repository dependency definition as invalid if an installed repository cannot be found.

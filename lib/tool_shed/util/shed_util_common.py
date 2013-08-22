@@ -872,8 +872,8 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         # tool shed that is associated with repository_metadata.
         tool_shed_url = get_url_from_tool_shed( app, tool_shed )
         url = url_join( tool_shed_url,
-                        'repository/next_installable_changeset_revision?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
-                        ( url_for( '/', qualified=True ), name, owner, changeset_revision ) )
+                        'repository/next_installable_changeset_revision?name=%s&owner=%s&changeset_revision=%s' % \
+                        ( name, owner, changeset_revision ) )
         text = common_util.tool_shed_get( app, tool_shed_url, url )
         if text:
             repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
