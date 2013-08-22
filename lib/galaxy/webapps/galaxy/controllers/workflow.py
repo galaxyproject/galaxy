@@ -1803,12 +1803,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-            # Unpack and add post-job actions.
-            post_job_actions = step_dict.get( 'post_job_actions', {} )
-            for name, pja_dict in post_job_actions.items():
-                model.PostJobAction( pja_dict[ 'action_type' ],
-                                     step, pja_dict[ 'output_name' ],
-                                     pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
