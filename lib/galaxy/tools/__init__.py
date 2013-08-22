@@ -93,6 +93,15 @@ class StdioErrorLevel( object ):
 class ToolNotFoundException( Exception ):
     pass
 
+def dictify_helper( obj, kwargs ):
+    """ Helper function that provides the appropriate kwargs to dictify an object. """
+
+    # Label.dictify cannot have kwargs.
+    if isinstance( obj, ToolSectionLabel ):
+        kwargs = {}
+
+    return obj.dictify( **kwargs )
+
 class ToolBox( object, DictifiableMixin ):
     """Container for a collection of tools"""
 
@@ -722,8 +731,12 @@ class ToolBox( object, DictifiableMixin ):
 
             # Produce panel.
             rval = []
+            kwargs = dict(
+                trans = trans,
+                link_details = True
+            )
             for elt in panel_elts:
-                rval.append( elt.dictify( trans, link_details=True ) )
+                rval.append( dictify_helper( elt, kwargs ) )
         else:
             tools = []
             for id, tool in self.tools_by_id.items():
@@ -816,11 +829,12 @@ class ToolSection( object, DictifiableMixin ):
 
         section_dict = super( ToolSection, self ).dictify()
         section_elts = []
-        for key, val in self.elems.items():
-            if isinstance( val, ToolSectionLabel ):
-                section_elts.append( val.dictify() )
-            else:
-                section_elts.append( val.dictify( trans, link_details=link_details ) )
+        kwargs = dict(
+            trans = trans,
+            link_details = link_details
+        )
+        for elt in self.elems.values():
+            section_elts.append( dictify_helper( elt, kwargs ) )
         section_dict[ 'elems' ] = section_elts
 
         return section_dict

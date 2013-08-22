@@ -499,7 +499,7 @@ var ToolLinkView = BaseView.extend({
  */
 var ToolSectionLabelView = BaseView.extend({
     tagName: 'div',
-    className: 'ToolSectionLabel',
+    className: 'toolPanelLabel',
 
     render: function() {
         this.$el.append( $("<span/>").text(this.model.attributes.text) );
