@@ -163,7 +163,7 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
                                  preview_strings_displayed=preview_strings_displayed,
                                  strings_displayed=[],
                                  strings_not_displayed=[],
-                                 post_submit_strings_displayed=[ 'package_matplotlib_1_2_0170', 'new' ],
+                                 post_submit_strings_displayed=[ 'package_matplotlib_1_2_0170', 'New' ],
                                  includes_tools_for_display_in_tool_panel=False )
         
     def test_0030_verify_installation_order( self ):

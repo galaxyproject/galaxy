@@ -232,7 +232,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                  category_name,
                                  install_tool_dependencies=True, 
                                  preview_strings_displayed=preview_strings_displayed,
-                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'new' ],
+                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'New' ],
                                  includes_tools_for_display_in_tool_panel=True )
  
     def test_0050_verify_installed_repositories( self ):
