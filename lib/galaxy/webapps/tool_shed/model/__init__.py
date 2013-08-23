@@ -180,7 +180,7 @@ class Repository( object, DictifiableMixin ):
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:
@@ -291,7 +291,7 @@ class RepositoryMetadata( object, DictifiableMixin ):
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:
@@ -322,7 +322,7 @@ class SkipToolTest( object, DictifiableMixin ):
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:
