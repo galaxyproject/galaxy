@@ -95,7 +95,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         // set up url templates
         //TODO: prob. better to put this in class scope (as the handlebars templates), but...
-        //  they're added to GalaxyPaths on page load (after this file is loaded)
+        //  they're added to galaxy_config on page load (after this file is loaded)
         if( !attributes.urlTemplates ){         throw( this + ' needs urlTemplates on initialize' ); }
         if( !attributes.urlTemplates.history ){ throw( this + ' needs urlTemplates.history on initialize' ); }
         if( !attributes.urlTemplates.hda ){     throw( this + ' needs urlTemplates.hda on initialize' ); }

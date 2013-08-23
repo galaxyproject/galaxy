@@ -2,10 +2,10 @@ import logging
 import os
 from galaxy import eggs
 from galaxy.util import json
-from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
+from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
@@ -231,14 +231,16 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                   current_changeset_revision=changeset_revision,
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False )
-                # Add the processed tool shed repository to the list of all processed repositories maintained within this method.
-                all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                if tool_shed_repository not in all_created_or_updated_tool_shed_repositories:
+                    # Add the processed tool shed repository to the list of all processed repositories maintained within this method.
+                    all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                 # Only append the tool shed repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
                 if install_repository_dependencies or is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
-                    # Keep the one-to-one mapping between items in 3 lists.
-                    created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                    tool_panel_section_keys.append( tool_panel_section_key )
-                    filtered_repo_info_dicts.append( repo_info_dict )
+                    if tool_shed_repository not in created_or_updated_tool_shed_repositories:
+                        # Keep the one-to-one mapping between items in 3 lists.
+                        created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                        tool_panel_section_keys.append( tool_panel_section_key )
+                        filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
@@ -249,7 +251,7 @@ def generate_message_for_invalid_repository_dependencies( metadata_dict ):
     if metadata_dict:
         invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
         if invalid_repository_dependencies_dict:
-            invalid_repository_dependencies = invalid_repository_dependencies_dict[ 'invalid_repository_dependencies' ]
+            invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
             for repository_dependency_tup in invalid_repository_dependencies:
                 toolshed, name, owner, changeset_revision, prior_installation_required, error = \
                     suc.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )

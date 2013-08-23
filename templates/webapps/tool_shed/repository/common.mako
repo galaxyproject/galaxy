@@ -163,6 +163,46 @@
     </script>
 </%def>
 
+<%def name="render_repository_type_select_field( repository_type_select_field, render_help=True )">
+    <div class="form-row">
+        <label>Repository type:</label>
+        <%
+            from tool_shed.repository_types import util
+            options = repository_type_select_field.options
+            repository_types = []
+            for option_tup in options:
+                repository_types.append( option_tup[ 1 ] )
+            render_as_text = len( options ) == 1
+            if render_as_text:
+                repository_type = options[ 0 ][ 0 ]
+        %>
+        %if render_as_text:
+            ${repository_type | h}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    This repository's type cannot be changed because it's contents are valid only for it's current type or it has been cloned.
+                </div>
+            %endif
+        %else:
+            ${repository_type_select_field.get_html()}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    Select the repository type based on the following criteria.
+                    <ul>
+                        %if util.UNRESTRICTED in repository_types:
+                            <li><b>Unrestricted</b> - contents can be any set of valid Galaxy utilities or files
+                        %endif
+                        %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
+                            <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml
+                        %endif
+                    </ul>
+                </div>
+            %endif
+        %endif
+        <div style="clear: both"></div>
+    </div>
+</%def>         
+            
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
@@ -405,18 +445,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #failed_test_table{ table-layout:fixed;
-                                width:100%;
-                                overflow-wrap:normal;
-                                overflow:hidden;
-                                border:0px; 
-                                word-break:keep-all;
-                                word-wrap:break-word;
-                                line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="failed_test_table">
+            <table id="failed_test_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
@@ -533,18 +563,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #missing_table{ table-layout:fixed;
-                            width:100%;
-                            overflow-wrap:normal;
-                            overflow:hidden;
-                            border:0px; 
-                            word-break:keep-all;
-                            word-wrap:break-word;
-                            line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="missing_table">
+            <table id="missing_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${missing_test_component.tool_version | h}</td></tr>
                 <tr><td><b>Tool guid:</b> ${missing_test_component.tool_guid | h}</td></tr>
@@ -561,7 +581,9 @@
 <%def name="render_readme( readme, pad, parent, row_counter )">
     <%
         from tool_shed.util.shed_util_common import to_safe_string
+        from galaxy.util import rst_to_html
         encoded_id = trans.security.encode_id( readme.id )
+        render_rst = readme.name.endswith( '.rst' )
     %>
     <style type="text/css">
         #readme_table{ table-layout:fixed;
@@ -580,7 +602,11 @@
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="readme_table">
-                <tr><td>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+                %if render_rst:
+                    <tr><td>${ rst_to_html( readme.text ) }</td></tr>
+                %else:
+                    <tr><td>${readme.name}<br/>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+                %endif
             </table>
         </td>
     </tr>
@@ -657,6 +683,19 @@
     %>
 </%def>
 
+<%def name="render_tool_test_results_css()">
+    <style type="text/css">
+        table.tool_test_results{ table-layout:fixed;
+                                 width:100%;
+                                 overflow-wrap:normal;
+                                 overflow:hidden;
+                                 border:0px; 
+                                 word-break:keep-all;
+                                 word-wrap:break-word;
+                                 line-break:strict; }
+    </style>
+</%def>
+
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <% encoded_id = trans.security.encode_id( installation_error.id ) %>
     <tr class="datasetRow"
@@ -664,18 +703,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #td_install_error_table{ table-layout:fixed;
-                                     width:100%;
-                                     overflow-wrap:normal;
-                                     overflow:hidden;
-                                     border:0px; 
-                                     word-break:keep-all;
-                                     word-wrap:break-word;
-                                     line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table">
+            <table id="td_install_error_table" class="tool_test_results">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -702,18 +731,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #rd_install_error_table{ table-layout:fixed;
-                                     width:100%;
-                                     overflow-wrap:normal;
-                                     overflow:hidden;
-                                     border:0px; 
-                                     word-break:keep-all;
-                                     word-wrap:break-word;
-                                     line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table">
+            <table id="rd_install_error_table" class="tool_test_results">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
@@ -743,18 +762,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #not_tested_table{ table-layout:fixed;
-                               width:100%;
-                               overflow-wrap:normal;
-                               overflow:hidden;
-                               border:0px; 
-                               word-break:keep-all;
-                               word-wrap:break-word;
-                               line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="not_tested_table">
+            <table id="not_tested_table" class="tool_test_results">
                 <tr><td>${not_tested.reason | h}</td></tr>
             </table>
         </td>
@@ -772,18 +781,8 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <style type="text/css">
-            #passed_tests_table{ table-layout:fixed;
-                                 width:100%;
-                                 overflow-wrap:normal;
-                                 overflow:hidden;
-                                 border:0px; 
-                                 word-break:keep-all;
-                                 word-wrap:break-word;
-                                 line-break:strict; }
-        </style>
         <td style="padding-left: ${pad+20}px;">
-            <table id="passed_tests_table">
+            <table id="passed_tests_table" class="tool_test_results">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
@@ -889,11 +888,7 @@
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
         <${cell_type}>
             %if trans.webapp.name == 'galaxy':
-                %if is_missing:
-                    ${tool_dependency.installation_status | h}
-                %elif tool_dependency.install_dir:
-                    ${tool_dependency.install_dir | h}
-                %endif
+                ${tool_dependency.installation_status | h}
             %else:
                 %if row_is_header:
                     ${tool_dependency.is_orphan | h}
@@ -1160,6 +1155,7 @@
         </div>
     %endif
     %if tool_test_results_root_folder:
+        ${render_tool_test_results_css()}
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Automated tool test results</div>

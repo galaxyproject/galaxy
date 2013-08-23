@@ -1,19 +1,18 @@
 ;(function($){ // secure $ jQuery alias
 /*******************************************************************************************/	
-// jquery.event.hover.js - rev 5 
+// jquery.event.hover.js 
 // Copyright (c) 2008, Three Dub Media (http://threedubmedia.com)
-// Liscensed under the MIT License (MIT-LICENSE.txt)
+// Licensed under the MIT License (MIT-LICENSE.txt)
 // http://www.opensource.org/licenses/mit-license.php
-// Created: 2008-06-02 | Updated: 2008-07-30
+//
+// JQuery 1.9+ compatible version
+//
+// Optional settings :
+// $.event.special.hover.delay = 100;
+// Defines the delay (msec) while mouse is inside the element before checking the speed
+// $.event.special.hover.speed = 100;
+// Defines the maximum speed (px/sec) the mouse may be moving to trigger the hover event
 /*******************************************************************************************/
-
-//	USE THESE PROPERTIES TO CUSTOMIZE SETTINGS...
-
-//	$.event.special.hover.delay = 100; 
-//	Defines the delay (msec) while mouse is inside the element before checking the speed
-
-//	$.event.special.hover.speed = 100; 
-//	Defines the maximum speed (px/sec) the mouse may be moving to trigger the hover event
 
 // save the old jquery "hover" method
 $.fn._hover = $.fn.hover;
@@ -47,8 +46,8 @@ function hoverHandler( event ){
 			data.dist2 = 0; // init mouse distance²
 			data.event = event; // store the event
 			event.type = "hoverstart"; // hijack event
-			if ( $.event.handle.call( this, event ) !== false ){ // handle "hoverstart"
-				data.elem = this; // ref to the current element
+            if($.event.dispatch.call(this, event) !== false) {
+            	data.elem = this; // ref to the current element
 				$.event.add( this, "mousemove", hoverHandler, data ); // track the mouse
 				data.timer = setTimeout( compare, data.delay ); // start async compare
 				}
@@ -62,7 +61,7 @@ function hoverHandler( event ){
 			clearTimeout( data.timer ); // uncompare
 			if ( data.hovered ){ 
 				event.type = "hoverend"; // hijack event
-				$.event.handle.call( this, event ); // handle "hoverend"
+                $.event.dispatch.call(this, event); // handle "hoverend"
 				data.hovered--; // reset flag
 				}
 			else $.event.remove( data.elem, "mousemove", hoverHandler ); // untrack
@@ -71,7 +70,7 @@ function hoverHandler( event ){
 			if ( data.dist2 <= Math.pow( data.speed*( data.delay/1e3 ), 2 ) ){ // speed acceptable
 				$.event.remove( data.elem, "mousemove", hoverHandler ); // untrack
 				data.event.type = "hover"; // hijack event
-				if ( $.event.handle.call( data.elem, data.event ) !== false ) // handle "hover"
+                if($.event.dispatch.call(data.elem, data.event) !== false) // handle "hover"
 					data.hovered++; // flag for "hoverend"
 				}
 			else data.timer = setTimeout( compare, data.delay ); // async recurse

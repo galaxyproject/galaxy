@@ -6,18 +6,12 @@ Dataproviders that use either:
         (e.g. parsing genomic regions from their source)
 """
 
+from galaxy import eggs
+
 import pkg_resources
 pkg_resources.require( 'bx-python' )
 from bx import seq as bx_seq
 from bx import wiggle as bx_wig
-
-import galaxy.model
-import galaxy.datatypes
-import galaxy.datatypes.data
-
-#TODO: can't import these due to circular ref in model/registry
-#import galaxy.datatypes.binary
-#import galaxy.datatypes.tabular
 
 import exceptions
 import base
@@ -27,8 +21,9 @@ import external
 
 _TODO = """
 use bx as much as possible
-the use of DatasetInstance seems to create some import problems
 gff3 hierarchies
+
+change SamtoolsDataProvider to use pysam
 """
 
 import logging
@@ -50,11 +45,8 @@ class DatasetDataProvider( base.DataProvider ):
         """
         :param dataset: the Galaxy dataset whose file will be the source
         :type dataset: model.DatasetInstance
-
-        :raises exceptions.InvalidDataProviderSource: if not a DatsetInstance
         """
-        if not isinstance( dataset, galaxy.model.DatasetInstance ):
-            raise exceptions.InvalidDataProviderSource( "Data provider can only be used with a DatasetInstance" )
+        #precondition: dataset is a galaxy.model.DatasetInstance
         self.dataset = dataset
         # this dataset file is obviously the source
         #TODO: this might be a good place to interface with the object_store...
@@ -203,16 +195,16 @@ class DatasetColumnarDataProvider( column.ColumnarDataProvider ):
         super( DatasetColumnarDataProvider, self ).__init__( dataset_source, **kwargs )
 
 
-class DatasetMapDataProvider( column.MapDataProvider ):
+class DatasetDictDataProvider( column.DictDataProvider ):
     """
     Data provider that uses a DatasetDataProvider as it's source and the
-    dataset's metadata to buuild settings for the MapDataProvider it's
+    dataset's metadata to buuild settings for the DictDataProvider it's
     inherited from.
     """
     def __init__( self, dataset, **kwargs ):
         """
-        All kwargs are inherited from MapDataProvider.
-        .. seealso:: column.MapDataProvider
+        All kwargs are inherited from DictDataProvider.
+        .. seealso:: column.DictDataProvider
 
         If no kwargs are given, this class will attempt to get those kwargs
         from the dataset source's metadata.
@@ -255,7 +247,7 @@ class DatasetMapDataProvider( column.MapDataProvider ):
         if not kwargs.get( 'column_types', None ):
             kwargs[ 'column_types' ] = dataset_source.get_metadata_column_types( indeces=indeces )
 
-        super( DatasetMapDataProvider, self ).__init__( dataset_source, **kwargs )
+        super( DatasetDictDataProvider, self ).__init__( dataset_source, **kwargs )
 
 
 # ----------------------------------------------------------------------------- provides a bio-relevant datum
@@ -615,13 +607,7 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
         """
         #TODO: into validate_source
 
-        #TODO: have to import these here due to circular ref in model/datatypes
-        import galaxy.datatypes.binary
-        import galaxy.datatypes.tabular
-        if( not( isinstance( dataset.datatype, galaxy.datatypes.tabular.Sam )
-        or       isinstance( dataset.datatype, galaxy.datatypes.binary.Bam ) ) ):
-            raise exceptions.InvalidDataProviderSource(
-                'dataset must be a Sam or Bam datatype: %s' %( str( dataset.datatype ) ) )
+        #precondition: dataset.datatype is a tabular.Sam or binary.Bam
         self.dataset = dataset
 
         options_dict = options_dict or {}
@@ -661,8 +647,9 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
         validated_flag_list = set([ flag for flag in options_string if flag in self.FLAGS_WO_ARGS ])
 
         # if sam add -S
-        if( ( isinstance( self.dataset.datatype, galaxy.datatypes.tabular.Sam )
-        and ( 'S' not in validated_flag_list ) ) ):
+        #TODO: not the best test in the world...
+        if( ( self.dataset.ext == 'sam' )
+        and ( 'S' not in validated_flag_list ) ):
             validated_flag_list.append( 'S' )
 
         if validated_flag_list:

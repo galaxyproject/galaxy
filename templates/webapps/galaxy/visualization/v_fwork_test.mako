@@ -19,7 +19,7 @@ ${h.css(
 
 <%def name="process_hda( hda )">
 <%
-    hda_dict = hda.get_api_value()
+    hda_dict = hda.dictify()
     hda_dict[ 'id' ] = trans.security.encode_id( hda_dict[ 'id' ] )
     hda_dict[ 'history_id' ] = trans.security.encode_id( hda_dict[ 'history_id' ] )
     del hda_dict[ 'peek' ]

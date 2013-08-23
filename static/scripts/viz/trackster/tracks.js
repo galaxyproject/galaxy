@@ -1,7 +1,7 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
-         "viz/trackster/slotting", "viz/trackster/painters", "mvc/data",
-         "viz/trackster/filters" ], 
-         function( _, visualization, util, slotting, painters, data, filters_mod ) {
+         "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters",
+         "mvc/data", "mvc/tools" ], 
+         function(_, visualization, util, slotting, painters, filters_mod, data, tools_mod) {
 
 var extend = _.extend;
 
@@ -254,7 +254,7 @@ var Drawable = function(view, container, obj_dict) {
         this.container_div.hover(
             function() { drawable.icons_div.show(); }, function() { drawable.icons_div.hide(); }
         );
-        
+       
         // Needed for floating elts in header.
         $("<div style='clear: both'/>").appendTo(this.container_div);
     }
@@ -951,7 +951,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(select_datasets_url, add_track_async_url, { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
@@ -1215,11 +1215,11 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     load_chroms: function(url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
 
-        var 
+        var
             view = this,
             chrom_data = $.Deferred();
         $.ajax({
-            url: chrom_url + "/" + this.dbkey, 
+            url: galaxy_config.root + "api/genomes/" + this.dbkey,
             data: url_parms,
             dataType: "json",
             success: function (result) {
@@ -1253,7 +1253,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 alert("Could not load chroms for this dbkey:", view.dbkey);
             }
         });
-        
         return chrom_data;
     },
     
@@ -1623,89 +1622,114 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 /**
  * Encapsulation of a tool that users can apply to tracks/datasets.
  */
-var Tool = function(track, tool_dict, tool_state_dict) {    
-    //
-    // Unpack tool information from dictionary.
-    //
-    this.track = track;
-    this.id = tool_dict.id;
-    this.name = tool_dict.name;
-    this.params = [];
-    var params_dict = tool_dict.params;
-    for (var i = 0; i < params_dict.length; i++) {
-        // FIXME: use dict for creating parameters.
-        var param_dict = params_dict[i],
-            name = param_dict.name,
-            label = param_dict.label,
-            html = unescape(param_dict.html),
-            value = param_dict.value,
-            type = param_dict.type;
-        if (type === "number") {
-            this.params.push(
-                new NumberParameter(name, label, html, 
-                                    (name in tool_state_dict ? tool_state_dict[name] : value),
-                                    param_dict.min, param_dict.max)
-                            );
+var TracksterTool = Backbone.RelationalModel.extend({
+    defaults: {
+        track: null,
+        tool: null,
+    },
+
+    relations: [
+        {
+            type: Backbone.HasOne,
+            key: 'tool',
+            relatedModel: tools_mod.Tool
         }
-        else if (type === "select") {
-            this.params.push(
-                new ToolParameter(name, label, html, 
-                                  (name in tool_state_dict ? tool_state_dict[name] : value))
-                            );
-        }
-        else {
-            console.log("WARNING: unrecognized tool parameter type:", name, type);
-        }        
+    ],
+
+    initialize: function(options) {
+        // HACK: remove data and group tool inputs because Trackster
+        // does not work with them right now.
+        var tool = this.get('tool'),
+            incompatible_inputs = tool.get('inputs').filter( function(input) {
+                return ( [ 'data', 'hidden_data', 'group'].indexOf( input.get('type') ) !== -1);
+            });
+        tool.get('inputs').remove(incompatible_inputs);
     }
-    
-    //
-    // Create div elt for tool UI.
-    //
-    this.parent_div = $("<div/>").addClass("dynamic-tool").hide();
-    // Disable dragging, clicking, double clicking on div so that actions on slider do not impact viz.
-    this.parent_div.bind("drag", function(e) {
-        e.stopPropagation();
-    }).click(function(e) {
-        e.stopPropagation();
-    }).bind("dblclick", function(e) {
-        e.stopPropagation();
-    });
-    var name_div = $("<div class='tool-name'>").appendTo(this.parent_div).text(this.name);
-    var tool_params = this.params;
-    var tool = this;
-    $.each(this.params, function(index, param) {
-        var param_div = $("<div>").addClass("param-row").appendTo(tool.parent_div);
+
+});
+
+/**
+ * View renders tool parameter HTML and updates parameter value as it is changed in the HTML.
+ */
+ var ToolParameterView = Backbone.View.extend({
+
+    events: {
+        'change input': 'update_value'
+    },
+
+    render: function() {
+        var param_div = this.$el.addClass("param-row"),
+            param = this.model;
+
         // Param label.
-        var label_div = $("<div>").addClass("param-label").text(param.label).appendTo(param_div);
+        var label_div = $("<div>").addClass("param-label").text(param.get('label')).appendTo(param_div);
         // Param HTML.
-        var html_div = $("<div/>").addClass("param-input").html(param.html).appendTo(param_div);
+        var html_div = $("<div/>").addClass("param-input").html(param.get('html')).appendTo(param_div);
         // Set initial value.
-        html_div.find(":input").val(param.value);
+        html_div.find(":input").val(param.get('value'));
         
         // Add to clear floating layout.
         $("<div style='clear: both;'/>").appendTo(param_div);
-    });
-    
-    // Highlight value for inputs for easy replacement.
-    this.parent_div.find("input").click(function() { $(this).select(); });
-    
-    // Add buttons for running on dataset, region.
-    var run_tool_row = $("<div>").addClass("param-row").appendTo(this.parent_div);
-    var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
-    var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
-    run_on_region_button.click( function() {
-        // Run tool to create new track.
-        tool.run_on_region();
-    });
-    run_on_dataset_button.click( function() {
-        tool.run_on_dataset();
-    });
-    
-    if ('visible' in tool_state_dict && tool_state_dict.visible) {
-        this.parent_div.show();
+    },
+
+    update_value: function(update_event) {
+        this.model.set_value($(update_event.target).val());
     }
-};
-extend(Tool.prototype, {
+ });
+
+/**
+ * View for TracksterTool.
+ */
+var TracksterToolView = Backbone.View.extend({
+
+    /**
+     * Render tool UI.
+     */
+    render: function() {
+        var self = this;
+            tool = this.model.get('tool'),
+            parent_div = this.$el.addClass("dynamic-tool").hide();
+
+        // Prevent div events from propogating to other elements.
+        parent_div.bind("drag", function(e) {
+            e.stopPropagation();
+        }).click(function(e) {
+            e.stopPropagation();
+        }).bind("dblclick", function(e) {
+            e.stopPropagation();
+        }).keydown(function(e) { e.stopPropagation(); });
+
+        // Add name, inputs.
+        var name_div = $("<div class='tool-name'>").appendTo(parent_div).text(tool.get('name'));
+        tool.get('inputs').each(function(param) {
+            // Render parameter.
+            var param_view = new ToolParameterView({ model: param });
+            param_view.render();
+            parent_div.append(param_view.$el);
+        });
+
+        // Highlight value for inputs for easy replacement.
+        parent_div.find("input").click(function() { $(this).select(); });
+        
+        // Add buttons for running on dataset, region.
+        var run_tool_row = $("<div>").addClass("param-row").appendTo(parent_div);
+        var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
+        var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
+        run_on_region_button.click( function() {
+            // Run tool to create new track.
+            self.run_on_region();
+        });
+        run_on_dataset_button.click( function() {
+            self.run_on_dataset();
+        });
+        
+        /*
+        if ('visible' in tool_state_dict && tool_state_dict.visible) {
+            this.parent_div.show();
+        }
+        */
+    },
+
     /**
      * Update tool parameters.
      */
@@ -1714,68 +1738,42 @@ extend(Tool.prototype, {
             this.params[i].update_value();
         }
     },
+
     /**
      * Returns a dict with tool state information.
      */
     state_dict: function() {
         // Save parameter values.
-        var tool_state = {};
-        for (var i = 0; i < this.params.length; i++) {
-            tool_state[this.params[i].name] = this.params[i].value;
-        }
+        var tool_state = this.model.get('tool').get_param_values_dict();
         
         // Save visibility.
         tool_state.visible = this.parent_div.is(":visible");
         
         return tool_state;
     },
-    /** 
-     * Returns dictionary of parameter name-values.
-     */
-    get_param_values_dict: function() {
-        var param_dict = {};
-        this.parent_div.find(":input").each(function() {
-            var name = $(this).attr("name"), value = $(this).val();
-            param_dict[name] = value;
-        });
-        return param_dict;
-    },
-    /**
-     * Returns array of parameter values.
-     */
-    get_param_values: function() {
-        var param_values = [];
-        this.parent_div.find(":input").each(function() {
-            // Only include inputs with names; this excludes Run button.
-            var name = $(this).attr("name"), value = $(this).val();
-            if (name) {
-                param_values[param_values.length] = value;
-            }
-        });
-        return param_values;
-    },
+
     /**
      * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
      */
     run_on_dataset: function() {
-        var tool = this;
-        tool.run(
-                 // URL params.
-                 { 
-                     target_dataset_id: this.track.dataset.id,
-                     action: 'rerun',
-                     tool_id: tool.id
-                 },
-                 null,
-                 // Success callback.
-                 function(track_data) {
-                     show_modal(tool.name + " is Running", 
-                                tool.name + " is running on the complete dataset. Tool outputs are in dataset's history.", 
-                                { "Close" : hide_modal } );
-                 }
-                );
-        
+        var tool = this.model.get('tool');
+        this.run(
+            // URL params.
+            { 
+                target_dataset_id: this.model.get('track').dataset.id,
+                action: 'rerun',
+                tool_id: tool.id
+            },
+            null,
+            // Success callback.
+            function(track_data) {
+                show_modal(tool.get('name') + " is Running", 
+                            tool.get('name') + " is running on the complete dataset. Tool outputs are in dataset's history.", 
+                            { "Close" : hide_modal } );
+            }
+        );
     },
+
     /**
      * Run dataset on visible region. This creates a new track and sets the track's contents
      * to the tool's output.
@@ -1784,21 +1782,23 @@ extend(Tool.prototype, {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
-        var region = new visualization.GenomeRegion({
-                chrom: this.track.view.chrom,
-                start: this.track.view.low,
-                end: this.track.view.high
+        var track = this.model.get('track'),
+            tool = this.model.get('tool'),
+            region = new visualization.GenomeRegion({
+                chrom: track.view.chrom,
+                start: track.view.low,
+                end: track.view.high
             }),
             url_params = 
             { 
-                target_dataset_id: this.track.dataset.id,
+                target_dataset_id: track.dataset.id,
                 action: 'rerun',
-                tool_id: this.id,
+                tool_id: tool.id,
                 regions: [
                     region.toJSON()
                 ]
             },
-            current_track = this.track,
+            current_track = track,
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
                          current_track.tool_region_and_parameters_str(region),
@@ -1839,25 +1839,25 @@ extend(Tool.prototype, {
         new_track.tiles_div.text("Starting job.");
         
         // Run tool.
-        this.update_params();
         this.run(url_params, new_track,
-                 // Success callback.
-                 function(track_data) {
-                     new_track.set_dataset(new data.Dataset(track_data));
-                     new_track.tiles_div.text("Running job.");
-                     new_track.init();
-                 }
-                );
+                // Success callback.
+                function(track_data) {
+                    new_track.set_dataset(new data.Dataset(track_data));
+                    new_track.tiles_div.text("Running job.");
+                    new_track.init();
+                }
+        );
     },
+
     /**
      * Run tool using a set of URL params and a success callback.
      */
     run: function(url_params, new_track, success_callback) {
         // Run tool.
-        url_params.inputs = this.get_param_values_dict();
+        url_params.inputs = this.model.get('tool').get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: galaxy_paths.get('tool_url'),
+                url: galaxy_config.root + "api/tools",
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: 'application/json',
@@ -1890,36 +1890,7 @@ extend(Tool.prototype, {
             }            
         });
     }
-});
 
-/**
- * Tool parameters.
- */
-var ToolParameter = function(name, label, html, value) {
-    this.name = name;
-    this.label = label;
-    // Need to use jQuery for HTML so that value can be queried and updated dynamically.
-    this.html = $(html);
-    this.value = value;
-};
-
-extend(ToolParameter.prototype, {
-    update_value: function() {
-        this.value = $(this.html).val();
-    } 
-});
-
-var NumberParameter = function(name, label, html, value, min, max) {
-    ToolParameter.call(this, name, label, html, value);
-    this.min = min;
-    this.max = max;
-};
-
-extend(NumberParameter.prototype, ToolParameter.prototype, {
-    update_value: function() {
-        ToolParameter.prototype.update_value.call(this);
-        this.value = parseFloat(this.value);
-    }
 });
 
 /**
@@ -2237,10 +2208,12 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     // Only show popups in Pack mode.
     if (tile.mode !== "Pack") { return; }
     
-    $(this.html_elt).hover( function() { 
+    $(this.html_elt).hover(
+    function() {
         this.hovered = true; 
         $(this).mousemove();
-    }, function() { 
+    },
+    function() {
         this.hovered = false; 
         // Clear popup if it is still hanging around (this is probably not needed) 
         $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
@@ -2284,7 +2257,6 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
                 }
                 
                 // Build popup.
-                
                 var popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup"),
                     table = $("<table/>"),
                     key, value, row;
@@ -2347,7 +2319,9 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    this.dataset = new data.Dataset(obj_dict.dataset);
+
+    // Only create dataset if it is defined.
+    this.dataset = (obj_dict.dataset ? new data.Dataset(obj_dict.dataset) : null);
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
@@ -2490,7 +2464,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                         // Go to visualization.
                         window.location.href = 
-                            galaxy_paths.get('sweepster_url') + "?" + 
+                            galaxy_config.root + "visualization/sweepster" + "?" +
                             $.param({
                                 dataset_id: track.dataset.id,
                                 hda_ldda: track.dataset.get('hda_ldda'),
@@ -2516,11 +2490,8 @@ extend(Track.prototype, Drawable.prototype, {
         Drawable.prototype.action_icons_def[2]
     ],
 
-    can_draw: function() {        
-        if ( this.dataset.id && Drawable.prototype.can_draw.call(this) ) { 
-            return true;
-        }
-        return false;
+    can_draw: function() {
+        return this.dataset && Drawable.prototype.can_draw.call(this);
     },
 
     build_container_div: function () {
@@ -2819,7 +2790,12 @@ var TiledTrack = function(view, container, obj_dict) {
     // FIXME: prolly need function to set filters and update data_manager reference.
     this.data_manager.set('filters_manager', this.filters_manager);
     this.filters_available = false;
-    this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool, obj_dict.tool_state) : null);
+    this.tool = (obj_dict.tool ? new TracksterTool({
+        'track': this, 
+        'tool': obj_dict.tool,
+        'tool_state': obj_dict.tool_state
+    }) 
+    : null);
     this.tile_cache = new visualization.Cache(TILE_CACHE_SIZE);
     this.left_offset = 0;
     
@@ -2830,10 +2806,12 @@ var TiledTrack = function(view, container, obj_dict) {
         this.set_filters_manager(this.filters_manager);
         
         //
-        // Create dynamic tool div.
+        // Create dynamic tool view.
         //
-        if (this.tool) {  
-            this.dynamic_tool_div = this.tool.parent_div;
+        if (this.tool) {
+            var tool_view = new TracksterToolView({ model: this.tool });
+            tool_view.render();
+            this.dynamic_tool_div = tool_view.$el;
             this.header_div.after(this.dynamic_tool_div);
         }
     }
@@ -3427,8 +3405,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     tool_region_and_parameters_str: function(region) {
         var track = this,
-            region_str = (region !== undefined ? region.toString() : "all");
-        return " - region=[" + region_str + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+            region_str = (region !== undefined ? region.toString() : "all"),
+            param_str = _.values( track.tool.get('tool').get_inputs_dict()).join(', ');
+        return " - region=[" + region_str + "], parameters=[" + param_str + "]";
     },
 
     /**
@@ -3757,7 +3736,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
-    this.data_url = reference_url + "/" + this.view.dbkey;
+    this.data_url = galaxy_config.root + "api/genomes/" + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,

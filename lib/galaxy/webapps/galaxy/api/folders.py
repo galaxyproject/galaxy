@@ -35,7 +35,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         # check_ownership=false since we are only displaying it.
         content = self.get_library_folder( trans, id, check_ownership=False, 
                                            check_accessible=True )
-        return self.encode_all_ids( trans, content.get_api_value( view='element' ) )
+        return self.encode_all_ids( trans, content.dictify( view='element' ) )
 
     @web.expose_api
     def create( self, trans, payload, **kwd ):
@@ -78,7 +78,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         status, output = trans.webapp.controllers['library_common'].create_folder( trans, 'api', real_parent_folder_id, '', **payload )
         rval = []
 
-        # SM: When a folder is sucessfully created:
+        # SM: When a folder is successfully created:
         #   - get all of the created folders. We know that they're
         #     folders, so prepend an "F" to them.
         if 200 == status:

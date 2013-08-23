@@ -20,10 +20,11 @@ galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
-new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, 'test' ), os.path.join( cwd, 'scripts', 'api' ) ]
+new_path = [ os.path.join( cwd, "scripts" ), os.path.join( cwd, "lib" ), os.path.join( cwd, 'test' ), os.path.join( cwd, 'scripts', 'api' ) ]
 new_path.extend( sys.path )
 sys.path = new_path
 
+from functional_tests import generate_config_file
 from galaxy import eggs
 
 eggs.require( "nose" )
@@ -72,6 +73,40 @@ log = logging.getLogger( 'install_and_test_repositories' )
 default_galaxy_test_port_min = 10000
 default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
+
+# should this serve static resources (scripts, images, styles, etc.)
+STATIC_ENABLED = True
+
+def get_static_settings():
+    """Returns dictionary of the settings necessary for a galaxy App
+    to be wrapped in the static middleware.
+
+    This mainly consists of the filesystem locations of url-mapped
+    static resources.
+    """
+    cwd = os.getcwd()
+    static_dir = os.path.join( cwd, 'static' )
+    #TODO: these should be copied from universe_wsgi.ini
+    return dict(
+        #TODO: static_enabled needed here?
+        static_enabled      = True,
+        static_cache_time   = 360,
+        static_dir          = static_dir,
+        static_images_dir   = os.path.join( static_dir, 'images', '' ),
+        static_favicon_dir  = os.path.join( static_dir, 'favicon.ico' ),
+        static_scripts_dir  = os.path.join( static_dir, 'scripts', '' ),
+        static_style_dir    = os.path.join( static_dir, 'june_2007_style', 'blue' ),
+        static_robots_txt   = os.path.join( static_dir, 'robots.txt' ),
+    )
+
+def get_webapp_global_conf():
+    """Get the global_conf dictionary sent as the first argument to app_factory.
+    """
+    # (was originally sent 'dict()') - nothing here for now except static settings
+    global_conf = dict()
+    if STATIC_ENABLED:
+        global_conf.update( get_static_settings() )
+    return global_conf
 
 # Optionally, set the environment variable GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF
 # to the location of a tool sheds configuration file that includes the tool shed
@@ -554,48 +589,64 @@ def main():
     # Generate the migrated_tool_conf.xml file.
     migrated_tool_conf_xml = tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
     file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
-
+    # Write the embedded web application's specific configuration to a temporary file. This is necessary in order for
+    # the external metadata script to find the right datasets.
+    kwargs = dict( admin_users = 'test@bx.psu.edu',
+                   allow_user_creation = True,
+                   allow_user_deletion = True,
+                   allow_library_path_paste = True,
+                   database_connection = database_connection,
+                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                   file_path = galaxy_file_path,
+                   id_secret = galaxy_encode_secret,
+                   job_queue_workers = 5,
+                   log_destination = "stdout",
+                   migrated_tools_config = galaxy_migrated_tool_conf_file,
+                   new_file_path = galaxy_tempfiles,
+                   running_functional_tests = True,
+                   shed_tool_data_table_config = shed_tool_data_table_conf_file,
+                   shed_tool_path = galaxy_shed_tool_path,
+                   template_path = "templates",
+                   tool_config_file = ','.join( [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ] ),
+                   tool_data_path = tool_data_path,
+                   tool_data_table_config_path = galaxy_tool_data_table_conf_file,
+                   tool_dependency_dir = tool_dependency_dir,
+                   tool_path = tool_path,
+                   tool_parse_help = False,
+                   tool_sheds_config_file = galaxy_tool_sheds_conf_file,
+                   update_integrated_tool_panel = False,
+                   use_heartbeat = False )
+    galaxy_config_file = os.environ.get( 'GALAXY_INSTALL_TEST_INI_FILE', None )
+    # If the user has passed in a path for the .ini file, do not overwrite it.
+    if not galaxy_config_file:
+        galaxy_config_file = os.path.join( galaxy_test_tmp_dir, 'install_test_tool_shed_repositories_wsgi.ini' )
+        config_items = []
+        for label in kwargs:
+            config_tuple = label, kwargs[ label ]
+            config_items.append( config_tuple )
+        # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
+        generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+    kwargs[ 'tool_config_file' ] = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ]
+    # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
+    kwargs[ 'global_conf' ] = get_webapp_global_conf()
+    kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
     # ---- Build Galaxy Application -------------------------------------------------- 
-    global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
     if not database_connection.startswith( 'sqlite://' ):
         kwargs[ 'database_engine_option_max_overflow' ] = '20'
         kwargs[ 'database_engine_option_pool_size' ] = '10'
-    app = UniverseApplication( admin_users = 'test@bx.psu.edu',
-                               allow_user_creation = True,
-                               allow_user_deletion = True,
-                               allow_library_path_paste = True,
-                               database_connection = database_connection,
-                               datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                               file_path = galaxy_file_path,
-                               global_conf = global_conf,
-                               id_secret = galaxy_encode_secret,
-                               job_queue_workers = 5,
-                               log_destination = "stdout",
-                               migrated_tools_config = galaxy_migrated_tool_conf_file,
-                               new_file_path = galaxy_tempfiles,
-                               running_functional_tests=True,
-                               shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                               shed_tool_path = galaxy_shed_tool_path,
-                               template_path = "templates",
-                               tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
-                               tool_data_path = tool_data_path,
-                               tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                               tool_dependency_dir = tool_dependency_dir,
-                               tool_path = tool_path,
-                               tool_parse_help = False,
-                               tool_sheds_config_file = galaxy_tool_sheds_conf_file,
-                               update_integrated_tool_panel = False,
-                               use_heartbeat = False,
-                               **kwargs )
+    kwargs[ 'config_file' ] = galaxy_config_file
+    app = UniverseApplication( **kwargs )
     
     log.info( "Embedded Galaxy application started" )
 
     # ---- Run galaxy webserver ------------------------------------------------------
     server = None
-    webapp = buildapp.app_factory( dict( database_file=database_connection ),
-                                         use_translogger=False,
-                                         static_enabled=False,
-                                         app=app )
+    global_conf = get_webapp_global_conf()
+    global_conf[ 'database_file' ] = database_connection
+    webapp = buildapp.app_factory( global_conf,
+                                   use_translogger=False,
+                                   static_enabled=STATIC_ENABLED,
+                                   app=app )
 
     # Serve the app on a specified or random port.
     if galaxy_test_port is not None:
@@ -976,6 +1027,7 @@ def main():
                         repositories_passed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                         params[ 'tools_functionally_correct' ] = True
                         params[ 'do_not_test' ] = False
+                        params[ 'test_install_error' ] = False
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 
                                               repository_status, 
@@ -1027,6 +1079,7 @@ def main():
                         repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                         set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
                         params[ 'tools_functionally_correct' ] = False
+                        params[ 'test_install_error' ] = False
                         params[ 'do_not_test' ] = str( set_do_not_test )
                         register_test_result( galaxy_tool_shed_url, 
                                               metadata_revision_id, 

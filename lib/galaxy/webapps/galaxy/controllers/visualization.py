@@ -14,7 +14,6 @@ from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
-from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
 
@@ -421,7 +420,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if referer is not "":
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
                     
         # Do import.
         session = trans.sa_session
@@ -512,7 +511,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 self.create_item_slug( session, visualization )
                 session.flush()
                 trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
-                return trans.response.send_redirect( url_for(controller='visualization', action='sharing', id=id ) )
+                return trans.response.send_redirect( web.url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -560,7 +559,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
-        return_dict = { "name" : visualization.title, "link" : url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
+        return_dict = { "name" : visualization.title, "link" : web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
         return return_dict
 
     @web.expose
@@ -684,16 +683,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     #
     # Visualizations.
     #
-
-    @web.expose
-    @web.require_login()
-    def new_browser( self, trans, **kwargs ):
-        """
-        Provide info necessary for creating a new trackster browser.
-        """
-        return trans.fill_template( "tracks/new_browser.mako", 
-                                    dbkeys=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), 
-                                    default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
@@ -708,7 +697,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # validate name vs. registry
         registry = trans.app.visualizations_registry
         if not registry:
-            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)')
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)' )
         if visualization_name not in registry.listings:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
             # or redirect to list?
@@ -722,16 +711,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
 
             # look up template and render
-            template_root = registry_listing.get( 'template_root', registry.TEMPLATE_ROOT )
-            template = registry_listing[ 'template' ]
-            template_path = os.path.join( template_root, template )
+            template_path = registry_listing[ 'template' ]
+            returned = registry.fill_template( trans, template_path,
+                visualization_name=visualization_name, query_args=kwargs,
+                embedded=embedded, shared_vars={}, **resources )
             #NOTE: passing *unparsed* kwargs as query_args
             #NOTE: shared_vars is a dictionary for shared data in the template
             #   this feels hacky to me but it's what mako recommends:
             #   http://docs.makotemplates.org/en/latest/runtime.html
             #TODO: embedded
-            returned = trans.fill_template( template_path, visualization_name=visualization_name,
-                embedded=embedded, query_args=kwargs, shared_vars={}, **resources )
 
         except Exception, exception:
             log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
@@ -745,47 +733,55 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     @web.require_login()
-    def trackster(self, trans, id=None, **kwargs):
+    def trackster(self, trans, **kwargs):
         """
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
 
-        # Get dataset to add.
+        # define app configuration
+        app = { 'jscript' : "viz/trackster" }
+    
+        # get dataset to add
+        id = kwargs.get( "id", None )
+
+        # get dataset to add
         new_dataset_id = kwargs.get( "dataset_id", None )
 
-        # Check for gene region
-        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
-    
-        # Set up new browser if no id provided.
+        # set up new browser if no id provided
         if not id:
-            # Use dbkey from dataset to be added or from incoming parameter.
+            # use dbkey from dataset to be added or from incoming parameter
             dbkey = None
             if new_dataset_id:
                 dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
-        
-            # fill template
-            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region.__dict__, add_dataset=new_dataset_id, default_dbkey=dbkey )
+    
+            # save database key
+            app['default_dbkey'] = dbkey
+        else:
+            # load saved visualization
+            vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+            app['viz_config'] = self.get_visualization_config( trans, vis )
+            
+        # backup id
+        app['id'] = id;
 
-        # Display saved visualization.
-        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
-        viz_config = self.get_visualization_config( trans, vis )
-        
-        # Update gene region of saved visualization if user parses a new gene region in the url
+        # add dataset id
+        app['add_dataset'] = new_dataset_id
+            
+        # check for gene region
+        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
+
+        # update gene region of saved visualization if user parses a new gene region in the url
         if gene_region.chrom is not None:
-            viz_config['viewport']['chrom'] = gene_region.chrom
-            viz_config['viewport']['start'] = gene_region.start
-            viz_config['viewport']['end']   = gene_region.end
-        
-        '''
-        FIXME:
-        if new_dataset is not None:
-            if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
-                new_dataset = None # Already in browser, so don't add
-        '''
+            app['gene_region'] = {
+                'chrom' : gene_region.chrom,
+                'start' : gene_region.start,
+                'end'   : gene_region.end
+            }
+    
         # fill template
-        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset_id )
+        return trans.fill_template('galaxy.panels.mako', config = {'right_panel' : True, 'app' : app})
 
     @web.expose
     def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):
@@ -839,7 +835,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if not isinstance( genome_data, str ):
                 track[ 'preloaded_data' ] = genome_data
         
-        return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
+        # define app configuration for generic mako template
+        app = {
+            'jscript'       : "viz/circster",
+            'viz_config'    : viz_config,
+            'genome'        : genome
+        }
+        
+        # fill template
+        return trans.fill_template('galaxy.panels.mako', config = {'app' : app})
 
     @web.expose
     def sweepster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
@@ -860,7 +864,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = get_dataset_job( dataset )
+            job = self.get_hda_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -869,8 +873,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
-        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
-        viz_config[ 'dataset' ] = dataset.get_api_value()
+        viz_config[ 'tool' ] = tool.dictify( trans, for_display=True )
+        viz_config[ 'dataset' ] = dataset.dictify()
 
         return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
     

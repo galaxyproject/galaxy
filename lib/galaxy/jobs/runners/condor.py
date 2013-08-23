@@ -246,12 +246,12 @@ class CondorJobRunner( AsynchronousJobRunner ):
         if job_id is None:
             self.put( job_wrapper )
             return
-        cjs = CondorJobState()
+        cjs = CondorJobState( job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory )
         cjs.job_id = str( job_id )
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join( self.app.config.cluster_files_directory, '%s.condor.log' % galaxy_id_tag )
+        cjs.user_log = os.path.join( self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag )
         cjs.register_cleanup_file_attribute( 'user_log' )
         self.__old_state_paths( cjs )
         if job.state == model.Job.states.RUNNING:
@@ -268,9 +268,9 @@ class CondorJobRunner( AsynchronousJobRunner ):
         files in the AsychronousJobState object
         """
         if cjs.job_wrapper is not None:
-            user_log = "%s/%s.condor.log" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-            if not os.path.exists( cjs.job_file ) and os.path.exists( job_file ):
-                cjs.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-                cjs.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-                cjs.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+            user_log = "%s/%s.condor.log" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+            if not os.path.exists( cjs.user_log ) and os.path.exists( user_log ):
+                cjs.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+                cjs.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+                cjs.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
                 cjs.user_log = user_log

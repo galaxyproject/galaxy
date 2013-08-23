@@ -4,7 +4,11 @@
 <%def name="title()">Galaxy</%def>
 
 <%def name="javascripts()">
-    ${parent.javascripts()}
+${parent.javascripts()}
+
+<!-- quota meter -->
+${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 </%def>
 
 <%def name="get_user_json()">
@@ -12,7 +16,7 @@
     """Bootstrapping user API JSON"""
     #TODO: move into common location (poss. BaseController)
     if trans.user:
-        user_dict = trans.user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+        user_dict = trans.user.dictify( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
         user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
     else:
@@ -35,10 +39,6 @@ ${h.to_json_string( user_dict )}
 
 <%def name="late_javascripts()">
 ${parent.late_javascripts()}
-
-<!-- quota meter -->
-${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 <script type="text/javascript">
 
     // start a Galaxy namespace for objects created
@@ -117,8 +117,8 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
-    
+    ${tab( "workflow", _("Workflow"), "javascript:frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+
     ## 'Shared Items' or Libraries tab.
     <%
         menu_options = [ 

@@ -16,9 +16,9 @@ from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
-from galaxy.util.json import to_json_string
+from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
 from galaxy.model.orm import and_, eagerload_all
 
@@ -73,7 +73,7 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
+class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -536,6 +536,39 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.flush()
             message = "Information updated for library dataset '%s'." % ldda.name
             status = 'done'
+        elif params.get( 'change_extended_metadata', False):
+            em_string = util.restore_text( params.get("extended_metadata", "") )
+            if len(em_string):
+                payload = None
+                try:
+                    payload = from_json_string(em_string)
+                except Exception, e:
+                    message = 'Invalid JSON input'
+                    status = 'error'
+                if payload is not None:
+                    if ldda is not None:
+                        ex_obj = self.get_item_extended_metadata_obj(trans, ldda)
+                        if ex_obj is not None:
+                            self.unset_item_extended_metadata_obj(trans, ldda)
+                            self.delete_extended_metadata(trans, ex_obj)
+                        ex_obj = self.create_extended_metadata(trans, payload)
+                        self.set_item_extended_metadata_obj(trans, ldda, ex_obj)
+                        message = "Updated Extended metadata '%s'." % ldda.name
+                        status = 'done'
+                    else:
+                        message = "LDDA not found"
+                        status = 'error'
+            else:
+                if ldda is not None:
+                    ex_obj = self.get_item_extended_metadata_obj(trans, ldda)
+                    if ex_obj is not None:
+                        self.unset_item_extended_metadata_obj(trans, ldda)
+                        self.delete_extended_metadata(trans, ex_obj)
+                message = "Deleted Extended metadata '%s'." % ldda.name
+                status = 'done'
+                        
+            
+
         if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
             # Copy dbkey into metadata, for backwards compatability
             # This looks like it does nothing, but getting the dbkey
@@ -949,7 +982,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         
         # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
+
         dbkeys = trans.app.genomes.get_dbkeys( trans )
+        dbkeys.sort( key=lambda dbkey: dbkey[0].lower() )
+
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         if history is not None:

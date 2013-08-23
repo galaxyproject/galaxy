@@ -4,6 +4,7 @@
     <requirements>
         <requirement type="package">cufflinks</requirement>
     </requirements>
+    <version_command>cufflinks 2>&amp;1 | head -n 1</version_command>
     <command interpreter="python">
         cufflinks_wrapper.py 
             --input=$input
@@ -12,6 +13,7 @@
             -I $max_intron_len
             -F $min_isoform_fraction
             -j $pre_mrna_fraction
+            $effective_length_correction
             
             ## Include reference annotation?
             #if $reference_annotation.use_ref == "Use reference annotation":
@@ -28,12 +30,14 @@
             
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
-                -b
+	           -b
                 #if $bias_correction.seq_source.index_source == "history":
                     --ref_file=$bias_correction.seq_source.ref_file
                 #else:
-                    --index=${bias_correction.seq_source.index.fields.path}
+                    --ref_file="None"
                 #end if
+                --dbkey=${input.metadata.dbkey} 
+                --index_dir=${GALAXY_DATA_INDEX_DIR}
             #end if
 
             ## Multi-read correct?
@@ -64,15 +68,15 @@
             <when value="No"></when>
             <when value="Use reference annotation">
                 <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
-            </when>
-            <when value="Use reference annotation guide">
+            	</when>
+	        <when value="Use reference annotation guide">
                 <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
-            </when>
+                </when>
         </conditional>
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
                 <option value="No" selected="true">No</option>
-                <option value="Yes">Yes</option>
+		            <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
                 <conditional name="seq_source">
@@ -80,14 +84,7 @@
                     <option value="cached"  selected="true">Locally cached</option>
                     <option value="history">History</option>
                   </param>
-                  <when value="cached">
-                    <param name="index" type="select" label="Using reference genome">
-                      <options from_data_table="sam_fa_indexes">
-                        <filter type="data_meta" ref="input" key="dbkey" column="1" />
-                        <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
-                      </options>
-                    </param>
-                  </when>
+                  <when value="cached"></when>
                   <when value="history">
                       <param name="ref_file" type="data" format="fasta" label="Using reference file" />
                   </when>
@@ -99,6 +96,11 @@
         <param name="multiread_correct" type="select" label="Use multi-read correct" help="Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome.">
             <option value="No" selected="true">No</option>
             <option value="Yes">Yes</option>
+        </param>
+
+        <param name="effective_length_correction" type="select" label="Use effective length correction" help="Cufflinks will not employ its 'effective' length normalization to transcript FPKM.">
+            <option value="" selected="true">Yes</option>
+            <option value="--no-effective-length-correction">No</option>
         </param>
 
         <param name="global_model" type="hidden_data" label="Global model (for use in Trackster)" optional="True"/>
@@ -128,6 +130,7 @@
             <param name="do_normalization" value="No" />
             <param name="do_bias_correction" value="No"/>
             <param name="multiread_correct" value="No"/>
+            <param name="effective_length_correction" value="Yes"/>
             <output name="genes_expression" format="tabular" lines_diff="2" file="cufflinks_out3.fpkm_tracking"/>
             <output name="transcripts_expression" format="tabular" lines_diff="2" file="cufflinks_out2.fpkm_tracking"/>
             <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>

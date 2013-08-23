@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import stat
 import subprocess
 import tempfile
 from string import Template
@@ -16,10 +17,6 @@ from galaxy.web import url_for
 from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
-
-def clean_tool_shed_url( base_url ):
-    protocol, base = base_url.split( '://' )
-    return base.rstrip( '/' )
 
 def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, changeset_revision ):
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
@@ -54,7 +51,7 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
 
 def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, tool_shed_url, name, owner, changeset_revision ):
     sa_session = app.model.context.current
-    tool_shed = clean_tool_shed_url( tool_shed_url )
+    tool_shed = common_util.clean_tool_shed_url( tool_shed_url )
     tool_shed_repository =  sa_session.query( app.model.ToolShedRepository ) \
                                       .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                                      app.model.ToolShedRepository.table.c.name == name,
@@ -177,22 +174,25 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                                                            tool_dependency_name=package_name,
                                                                            tool_dependency_version=package_version )
                         env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
-                        for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
-                            env_var_dict = env_var_dicts[ i ]
-                            action = env_var_dict.get( 'action', None )
-                            name = env_var_dict.get( 'name', None )
-                            value = env_var_dict.get( 'value', None )
-                            if action and name and value:
-                                new_value = parse_env_shell_entry( action, name, value, line )
-                                env_var_dict[ 'value' ] = new_value
-                            new_env_var_dicts.append( env_var_dict )
+                        if os.path.exists( env_sh_file_path ):
+                            for i, line in enumerate( open( env_sh_file_path, 'r' ) ):
+                                env_var_dict = env_var_dicts[ i ]
+                                action = env_var_dict.get( 'action', None )
+                                name = env_var_dict.get( 'name', None )
+                                value = env_var_dict.get( 'value', None )
+                                if action and name and value:
+                                    new_value = parse_env_shell_entry( action, name, value, line )
+                                    env_var_dict[ 'value' ] = new_value
+                                new_env_var_dicts.append( env_var_dict )
+                        else:
+                            log.debug( 'Invalid file %s specified, ignoring set_environment_for_install action.', env_sh_file_path )
                         action_dict[ 'environment_variable' ] = new_env_var_dicts
                     else:
                         action_dict[ 'environment_variable' ] = env_var_dicts
                     actions.append( ( 'set_environment', action_dict ) )
-                    return tool_dependency, actions
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
+            return tool_dependency, actions
     return None, actions
 
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
@@ -361,12 +361,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     sa_session = app.model.context.current
 
     def evaluate_template( text ):
-        """ Substitute variables defined in XML blocks obtained loaded from dependencies file. """
-        # # Added for compatibility with CloudBioLinux.
-        # TODO: Add tool_version substitution for compat with CloudBioLinux.
-        substitutions = { "INSTALL_DIR" : install_dir,
-                          "system_install" : install_dir }
-        return Template( text ).safe_substitute( substitutions )
+        """ Substitute variables defined in XML blocks from dependencies file."""
+        return Template( text ).safe_substitute( common_util.get_env_var_values( install_dir ) )
 
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -380,13 +376,48 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     for action_elem in actions_elem.findall( 'action' ):
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
-        if action_type == 'shell_command':
+        if action_type == 'download_binary':
+            platform_info_dict = tool_dependency_util.get_platform_info_dict()
+            platform_info_dict[ 'name' ] = tool_dependency.name
+            platform_info_dict[ 'version' ] = tool_dependency.version
+            url_template_elems = action_elem.findall( 'url_template' )
+            # Check if there are multiple url_template elements, each with attrib entries for a specific platform.
+            if len( url_template_elems ) > 1:
+                # <base_url os="darwin" extract="false">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</base_url>
+                # This method returns the url_elem that best matches the current platform as received from os.uname().
+                # Currently checked attributes are os and architecture.
+                # These correspond to the values sysname and processor from the Python documentation for os.uname().
+                url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
+            else:
+                url_template_elem = url_template_elems[ 0 ]
+            action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+            action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
+        elif action_type == 'shell_command':
             # <action type="shell_command">make</action>
             action_elem_text = evaluate_template( action_elem.text )
             if action_elem_text:
                 action_dict[ 'command' ] = action_elem_text
             else:
                 continue
+        elif action_type == 'template_command':
+            # Default to Cheetah as it's the first template language supported.
+            language = action_elem.get( 'language', 'cheetah' ).lower()
+            if language == 'cheetah':
+                # Cheetah template syntax.
+                # <action type="template_command" language="cheetah">
+                #     #if env.PATH:
+                #         make
+                #     #end if
+                # </action>
+                action_elem_text = action_elem.text.strip()
+                if action_elem_text:
+                    action_dict[ 'language' ] = language
+                    action_dict[ 'command' ] = action_elem_text
+                else:
+                    continue
+            else:
+                log.debug( "Unsupported template language '%s'. Not proceeding." % str( language ) )
+                raise Exception( "Unsupported template language '%s' in tool dependency definition." % str( language ) )
         elif action_type == 'download_by_url':
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             if action_elem.text:
@@ -474,6 +505,27 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # lxml==2.3.0</action>
             ## Manually specify contents of requirements.txt file to create dynamically.
             action_dict[ 'requirements' ] = evaluate_template( action_elem.text or 'requirements.txt' )
+        elif action_type == 'chmod':
+            # Change the read, write, and execute bits on a file.
+            file_elems = action_elem.findall( 'file' )
+            chmod_actions = []
+            # A unix octal mode is the sum of the following values:
+            # Owner:
+            # 400 Read    200 Write    100 Execute
+            # Group:
+            # 040 Read    020 Write    010 Execute
+            # World:
+            # 004 Read    002 Write    001 Execute
+            for file_elem in file_elems:
+                # So by the above table, owner read/write/execute and group read permission would be 740.
+                # Python's os.chmod uses base 10 modes, convert received unix-style octal modes to base 10.
+                received_mode = int( file_elem.get( 'mode', 600 ), base=8 )
+                # For added security, ensure that the setuid and setgid bits are not set.
+                mode = received_mode & ~( stat.S_ISUID | stat.S_ISGID )
+                file = evaluate_template( file_elem.text )
+                chmod_tuple = ( file, mode )
+                chmod_actions.append( chmod_tuple )
+            action_dict[ 'change_modes' ] = chmod_actions
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )

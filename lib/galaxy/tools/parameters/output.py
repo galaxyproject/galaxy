@@ -217,7 +217,10 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
         else:
             self.missing_tool_data_table_name = self.name
     def get_value( self, other_values ):
-        options = self.options
+        try:
+            options = self.options
+        except:
+            options = []
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
         try:

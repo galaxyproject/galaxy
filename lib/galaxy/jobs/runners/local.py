@@ -26,11 +26,18 @@ class LocalJobRunner( BaseJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
 
+        #create a local copy of os.environ to use as env for subprocess.Popen
+        self._environ = os.environ.copy()
+        
         # put lib into the PYTHONPATH for subprocesses
-        if 'PYTHONPATH' in os.environ:
-            os.environ['PYTHONPATH'] = '%s:%s' % ( os.environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
+        if 'PYTHONPATH' in self._environ:
+            self._environ['PYTHONPATH'] = '%s:%s' % ( self._environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
         else:
-            os.environ['PYTHONPATH'] = os.path.abspath( 'lib' )
+            self._environ['PYTHONPATH'] = os.path.abspath( 'lib' )
+        
+        #Set TEMP if a valid temp value is not already set
+        if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
+            self._environ[ 'TEMP' ] = tempfile.gettempdir()
 
         super( LocalJobRunner, self ).__init__( app, nworkers )
         self._init_worker_threads()
@@ -57,7 +64,7 @@ class LocalJobRunner( BaseJobRunner ):
                                      cwd = job_wrapper.working_directory, 
                                      stdout = stdout_file,
                                      stderr = stderr_file,
-                                     env = os.environ,
+                                     env = self._environ,
                                      preexec_fn = os.setpgrp )
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state( model.Job.states.RUNNING )

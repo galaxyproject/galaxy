@@ -64,7 +64,7 @@ def upgrade(migrate_engine):
         except Exception, e:
             print "Adding missing_test_components column to the repository_metadata table failed: %s" % str( e )
 
-def downgrade():
+def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Drop missing_test_components and tool_test_results from the repository_metadata table and add tool_test_errors to the repository_metadata table.

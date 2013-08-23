@@ -23,7 +23,7 @@ import galaxy.datatypes
 import galaxy.datatypes.registry
 import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.model.item_attrs import APIItem, UsesAnnotations
+from galaxy.model.item_attrs import DictifiableMixin, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
@@ -61,16 +61,16 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 
-class User( object, APIItem ):
+class User( object, DictifiableMixin ):
     use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
     """
-    # attributes that will be accessed and returned when calling get_api_value( view='collection' )
-    api_collection_visible_keys = ( 'id', 'email' )
-    # attributes that will be accessed and returned when calling get_api_value( view='element' )
-    api_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+    # attributes that will be accessed and returned when calling dictify( view='collection' )
+    dict_collection_visible_keys = ( 'id', 'email' )
+    # attributes that will be accessed and returned when calling dictify( view='element' )
+    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -157,9 +157,9 @@ class User( object, APIItem ):
         return total
 
 
-class Job( object, APIItem ):
-    api_collection_visible_keys = [ 'id', 'state'  ]
-    api_element_visible_keys = [ 'id', 'state' ]
+class Job( object, DictifiableMixin ):
+    dict_collection_visible_keys = [ 'id'  ]
+    dict_element_visible_keys = [ 'id' ]
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -363,8 +363,8 @@ class Job( object, APIItem ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
-    def get_api_value( self, view='collection' ):
-        rval = super( Job, self ).get_api_value( view=view )
+    def dictify( self, view='collection' ):
+        rval = super( Job, self ).dictify( view=view )
         rval['tool_name'] = self.tool_id
         param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
         rval['params'] = param_dict
@@ -372,10 +372,10 @@ class Job( object, APIItem ):
         input_dict = {}
         for i in self.input_datasets:
             if i.dataset is not None:
-                input_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+                input_dict[i.name] = {"hda_id" : i.dataset.id}
         for i in self.input_library_datasets:
             if i.dataset is not None:
-                input_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+                input_dict[i.name] = {"ldda_id" : i.dataset.id}
         for k in input_dict:
             if k in param_dict:
                 del param_dict[k]
@@ -384,10 +384,10 @@ class Job( object, APIItem ):
         output_dict = {}
         for i in self.output_datasets:
             if i.dataset is not None:
-                output_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+                output_dict[i.name] = {"hda_id" : i.dataset.id}
         for i in self.output_library_datasets:
             if i.dataset is not None:
-                output_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+                output_dict[i.name] = {"ldda_id" : i.dataset.id}
         rval['outputs'] = output_dict
 
         return rval
@@ -649,9 +649,9 @@ class DeferredJob( object ):
         else:
             return False
 
-class Group( object, APIItem  ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+class Group( object, DictifiableMixin  ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name' )
 
     def __init__( self, name = None ):
         self.name = name
@@ -662,14 +662,15 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object, UsesAnnotations ):
+class History( object, DictifiableMixin, UsesAnnotations ):
 
-    api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
-        self.name = name or "Unnamed history"
+        self.name = name or History.default_name
         self.deleted = False
         self.purged = False
         self.importing = False
@@ -679,6 +680,7 @@ class History( object, UsesAnnotations ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+        self.tags = []
 
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures
@@ -778,45 +780,34 @@ class History( object, UsesAnnotations ):
             history_name = unicode(history_name, 'utf-8')
         return history_name
 
-    def get_api_value( self, view='collection', value_mapper = None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
+    def dictify( self, view='collection', value_mapper = None ): 
 
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[key] = value_mapper.get( key )( rval[key] )
-            except AttributeError:
-                rval[key] = None
-
+        # Get basic value.
+        rval = super( History, self ).dictify( view=view, value_mapper=value_mapper )
+        
+        # Add tags.
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
-        rval['model_class'] = self.__class__.__name__
+        rval[ 'tags' ] = tags_str_list
+        
         return rval
 
     def set_from_dict( self, new_data ):
         #AKA: set_api_value
         """
         Set object attributes to the values in dictionary new_data limiting
-        to only those keys in api_element_visible_keys.
+        to only those keys in dict_element_visible_keys.
 
         Returns a dictionary of the keys, values that have been changed.
         """
         # precondition: keys are proper, values are parsed and validated
         changed = {}
         # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in self.api_element_visible_keys ]:
+        for key in [ k for k in new_data.keys() if k in self.dict_element_visible_keys ]:
             new_val = new_data[ key ]
             old_val = self.__getattribute__( key )
             if new_val == old_val:
@@ -878,9 +869,9 @@ class GroupRoleAssociation( object ):
         self.group = group
         self.role = role
 
-class Role( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
+class Role( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
     types = Bunch(
         PRIVATE = 'private',
@@ -895,21 +886,21 @@ class Role( object, APIItem ):
         self.type = type
         self.deleted = deleted
 
-class UserQuotaAssociation( object, APIItem ):
-    api_element_visible_keys = ( 'user', )
+class UserQuotaAssociation( object, DictifiableMixin ):
+    dict_element_visible_keys = ( 'user', )
     def __init__( self, user, quota ):
         self.user = user
         self.quota = quota
 
-class GroupQuotaAssociation( object, APIItem ):
-    api_element_visible_keys = ( 'group', )
+class GroupQuotaAssociation( object, DictifiableMixin ):
+    dict_element_visible_keys = ( 'group', )
     def __init__( self, group, quota ):
         self.group = group
         self.quota = quota
 
-class Quota( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
+class Quota( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
     valid_operations = ( '+', '-', '=' )
     def __init__( self, name="", description="", amount=0, operation="=" ):
         self.name = name
@@ -936,8 +927,8 @@ class Quota( object, APIItem ):
         else:
             return nice_size( self.bytes )
 
-class DefaultQuotaAssociation( Quota, APIItem ):
-    api_element_visible_keys = ( 'type', )
+class DefaultQuotaAssociation( Quota, DictifiableMixin ):
+    dict_element_visible_keys = ( 'type', )
     types = Bunch(
         UNREGISTERED = 'unregistered',
         REGISTERED = 'registered'
@@ -1517,7 +1508,7 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
+class HistoryDatasetAssociation( DatasetInstance, DictifiableMixin, UsesAnnotations ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -1689,7 +1680,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
             rval += child.get_disk_usage( user )
         return rval
 
-    def get_api_value( self, view='collection' ):
+    def dictify( self, view='collection' ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -1771,10 +1762,10 @@ class HistoryDatasetAssociationSubset( object ):
         self.subset = subset
         self.location = location
 
-class Library( object, APIItem ):
+class Library( object, DictifiableMixin ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1840,8 +1831,8 @@ class Library( object, APIItem ):
             name = unicode( name, 'utf-8' )
         return name
 
-class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
+class LibraryFolder( object, DictifiableMixin ):
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -1912,8 +1903,8 @@ class LibraryFolder( object, APIItem ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
-    def get_api_value( self, view='collection' ):
-        rval = super( LibraryFolder, self ).get_api_value( view=view )
+    def dictify( self, view='collection' ):
+        rval = super( LibraryFolder, self ).dictify( view=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1978,7 +1969,7 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def get_api_value( self, view='collection' ):
+    def dictify( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -2108,7 +2099,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
-    def get_api_value( self, view='collection' ):
+    def dictify( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -2335,9 +2326,9 @@ class UCI( object ):
         self.id = None
         self.user = None
 
-class StoredWorkflow( object, APIItem):
-    api_collection_visible_keys = ( 'id', 'name', 'published' )
-    api_element_visible_keys = ( 'id', 'name', 'published' )
+class StoredWorkflow( object, DictifiableMixin):
+    dict_collection_visible_keys = ( 'id', 'name', 'published' )
+    dict_element_visible_keys = ( 'id', 'name', 'published' )
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2353,8 +2344,8 @@ class StoredWorkflow( object, APIItem):
             new_swta.user = target_user
             self.tags.append(new_swta)
 
-    def get_api_value( self, view='collection', value_mapper = None  ):
-        rval = APIItem.get_api_value(self, view=view, value_mapper = value_mapper)
+    def dictify( self, view='collection', value_mapper = None  ):
+        rval = DictifiableMixin.dictify(self, view=view, value_mapper = value_mapper)
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -2446,7 +2437,7 @@ class MetadataFile( object ):
             return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 
-class FormDefinition( object, APIItem ):
+class FormDefinition( object, DictifiableMixin ):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
@@ -2455,8 +2446,8 @@ class FormDefinition( object, APIItem ):
                    RUN_DETAILS_TEMPLATE = 'Sample run details template',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
@@ -2574,12 +2565,12 @@ class FormValues( object ):
         self.form_definition = form_def
         self.content = content
 
-class Request( object, APIItem ):
+class Request( object, DictifiableMixin ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete' )
-    api_collection_visible_keys = ( 'id', 'name', 'state' )
+    dict_collection_visible_keys = ( 'id', 'name', 'state' )
     def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
         self.desc = desc
@@ -2765,9 +2756,9 @@ class ExternalService( object ):
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
 
-class RequestType( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'desc' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
+class RequestType( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name', 'desc' )
+    dict_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
                                     EXPERIMENT_NAME = 'Prepend experiment name',
@@ -2851,12 +2842,12 @@ class RequestTypePermissions( object ):
         self.request_type = request_type
         self.role = role
 
-class Sample( object, APIItem ):
+class Sample( object, DictifiableMixin ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state',
                              SELECT_LIBRARY = 'Select data library and folder' )
-    api_collection_visible_keys = ( 'id', 'name' )
+    dict_collection_visible_keys = ( 'id', 'name' )
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
         self.desc = desc
@@ -3181,9 +3172,9 @@ class Tag ( object ):
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
 
-class ItemTagAssociation ( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'user_tname', 'user_value' )
-    api_element_visible_keys = api_collection_visible_keys
+class ItemTagAssociation ( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'user_tname', 'user_value' )
+    dict_element_visible_keys = dict_collection_visible_keys
 
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -3318,10 +3309,10 @@ class UserAction( object ):
 class APIKeys( object ):
     pass
 
-class ToolShedRepository( object ):
-    api_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+class ToolShedRepository( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
-    api_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+    dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
@@ -3359,7 +3350,7 @@ class ToolShedRepository( object ):
         self.status = status
         self.error_message = error_message
     def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
+        return self.dictify( view='element', value_mapper=value_mapper )
     def repo_files_directory( self, app ):
         repo_path = self.repo_path( app )
         if repo_path:
@@ -3447,12 +3438,12 @@ class ToolShedRepository( object ):
                 if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
                     return shed_tool_conf_dict
         return default
-    def get_api_value( self, view='collection', value_mapper=None ):
+    def dictify( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
             raise Exception( 'Unknown API view: %s' % view )
         for key in visible_keys:
@@ -3462,7 +3453,7 @@ class ToolShedRepository( object ):
                     rval[ key ] = value_mapper.get( key, rval[ key ] )
             except AttributeError:
                 rval[ key ] = None
-        return rval
+        return rval    
     @property
     def can_install( self ):
         return self.status == self.installation_status.NEW
@@ -3550,7 +3541,8 @@ class ToolShedRepository( object ):
         for rrda in self.required_repositories:
             repository_dependency = rrda.repository_dependency
             required_repository = repository_dependency.repository
-            required_repositories.append( required_repository )
+            if required_repository:
+                required_repositories.append( required_repository )
         return required_repositories
     @property
     def installed_repository_dependencies( self ):
@@ -3570,6 +3562,7 @@ class ToolShedRepository( object ):
         return missing_required_repositories
     @property
     def repository_dependencies_being_installed( self ):
+        """Return the repository's repository dependencies that are currently being installed."""
         required_repositories_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status == self.installation_status.INSTALLING:
@@ -3577,6 +3570,7 @@ class ToolShedRepository( object ):
         return required_repositories_being_installed
     @property
     def repository_dependencies_missing_or_being_installed( self ):
+        """Return the repository's repository dependencies that are either missing or currently being installed."""
         required_repositories_missing_or_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status in [ self.installation_status.ERROR,
@@ -3587,6 +3581,7 @@ class ToolShedRepository( object ):
         return required_repositories_missing_or_being_installed
     @property
     def repository_dependencies_with_installation_errors( self ):
+        """Return the repository's repository dependencies that have installation errors."""
         required_repositories_with_installation_errors = []
         for required_repository in self.repository_dependencies:
             if required_repository.status == self.installation_status.ERROR:
@@ -3707,8 +3702,8 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
-class ToolVersion( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'tool_shed_repository' )
+class ToolVersion( object, DictifiableMixin ):
+    dict_element_visible_keys = ( 'id', 'tool_shed_repository' )
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
         self.create_time = create_time
@@ -3765,8 +3760,8 @@ class ToolVersion( object, APIItem ):
             return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
-    def get_api_value( self, view='element' ):
-        rval = APIItem.get_api_value(self, view)
+    def dictify( self, view='element' ):
+        rval = DictifiableMixin.dictify(self, view)
         rval['tool_name'] = self.tool_id
         for a in self.parent_tool_association:
             rval['parent_tool_id'] = a.parent_id

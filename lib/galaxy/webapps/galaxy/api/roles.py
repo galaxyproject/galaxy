@@ -18,7 +18,7 @@ class RoleAPIController( BaseAPIController ):
         rval = []
         for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ):
             if trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role ):
-                item = role.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+                item = role.dictify( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( role.id )
                 item['url'] = url_for( 'role', id=encoded_id )
                 rval.append( item )
@@ -43,7 +43,7 @@ class RoleAPIController( BaseAPIController ):
         if not role or not (trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role )):
             trans.response.status = 400
             return "Invalid role id ( %s ) specified." % str( role_id )
-        item = role.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = role.dictify( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'role', id=role_id )
         return item
     
@@ -81,6 +81,6 @@ class RoleAPIController( BaseAPIController ):
             trans.app.security_agent.associate_group_role( group, role ) 
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( role.id )
-        item = role.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = role.dictify( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'role', id=encoded_id )
         return [ item ]

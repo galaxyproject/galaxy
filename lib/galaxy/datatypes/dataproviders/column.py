@@ -220,9 +220,9 @@ class FilteredByColumnDataProvider( ColumnarDataProvider ):
         super( FilteredByColumnDataProvider, self ).__init__( source, **kwargs )
 
 
-class MapDataProvider( ColumnarDataProvider ):
+class DictDataProvider( ColumnarDataProvider ):
     """
-    Data provider that column_names and columns from the source's contents
+    Data provider that zips column_names and columns from the source's contents
     into a dictionary.
 
     A combination use of both `column_names` and `indeces` allows 'picking'
@@ -244,11 +244,11 @@ class MapDataProvider( ColumnarDataProvider ):
         :type column_names:
         """
         #TODO: allow passing in a map instead of name->index { 'name1': index1, ... }
-        super( MapDataProvider, self ).__init__( source, **kwargs )
+        super( DictDataProvider, self ).__init__( source, **kwargs )
         self.column_names = column_names or []
 
     def __iter__( self ):
-        parent_gen = super( MapDataProvider, self ).__iter__()
+        parent_gen = super( DictDataProvider, self ).__iter__()
         for column_values in parent_gen:
             map = dict( zip( self.column_names, column_values ) )
             yield map

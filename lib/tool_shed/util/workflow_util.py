@@ -108,7 +108,12 @@ class RepoToolModule( ToolModule ):
                                           label=prefixed_label,
                                           extensions=input.extensions ) )
         if self.tool:
-            galaxy.tools.parameters.visit_input_values( self.tool.inputs, self.state.inputs, callback )
+            try:
+                galaxy.tools.parameters.visit_input_values( self.tool.inputs, self.state.inputs, callback )
+            except:
+                # TODO have this actually use default parameters?  Fix at
+                # refactor, needs to be discussed wrt: reproducibility though.
+                log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow." % self.tool.id)
         return data_inputs
 
     def get_data_outputs( self ):

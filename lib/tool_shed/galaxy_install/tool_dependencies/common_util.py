@@ -8,8 +8,15 @@ import urllib2
 import zipfile
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
+from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
+
+def clean_tool_shed_url( base_url ):
+    if base_url:
+        protocol, base = base_url.split( '://' )
+        return base.rstrip( '/' )
+    return base_url
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
@@ -70,6 +77,13 @@ def create_or_update_env_shell_file_with_command( install_dir, command ):
                                           __shellquote(env_shell_file_path))
     return cmd
 
+def download_binary( url, work_dir ):
+    '''
+    Download a pre-compiled binary from the specified URL.
+    '''
+    downloaded_filename = os.path.split( url )[ -1 ]
+    dir = url_download( work_dir, downloaded_filename, url, extract=False )
+    return downloaded_filename
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
@@ -79,10 +93,6 @@ def extract_tar( file_name, file_path ):
         tar = tarfile.open( file_name, errorlevel=0 )
     tar.extractall( path=file_path )
     tar.close()
-
-def format_traceback():
-    ex_type, ex, tb = sys.exc_info()
-    return ''.join( traceback.format_tb( tb ) )
 
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
@@ -98,6 +108,10 @@ def extract_zip( archive_path, extraction_path ):
             file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
     zip_archive.close()
     return True
+
+def format_traceback():
+    ex_type, ex, tb = sys.exc_info()
+    return ''.join( traceback.format_tb( tb ) )
 
 def get_env_shell_file_path( installation_directory ):
     env_shell_file_name = 'env.sh'
@@ -121,6 +135,7 @@ def get_env_shell_file_paths( app, elem ):
     repository_owner = elem.get( 'owner', None )
     changeset_revision = elem.get( 'changeset_revision', None )
     if toolshed and repository_name and repository_owner and changeset_revision:
+        toolshed = clean_tool_shed_url( toolshed )
         repository = suc.get_repository_for_dependency_relationship( app, toolshed, repository_name, repository_owner, changeset_revision )
         if repository:
             for sub_elem in elem:
@@ -167,6 +182,14 @@ def get_env_shell_file_paths( app, elem ):
         log.debug( error_message )
     return env_shell_file_paths
 
+def get_env_var_values( install_dir ):
+    env_var_dict = {}
+    env_var_dict[ 'INSTALL_DIR' ] = install_dir
+    env_var_dict[ 'system_install' ] = install_dir
+    # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
+    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
+    return env_var_dict
+
 def isbz2( file_path ):
     return checkers.is_bz2( file_path )
 
@@ -181,6 +204,12 @@ def istar( file_path ):
 
 def iszip( file_path ):
     return checkers.check_zip( file_path )
+
+def is_compressed( file_path ):
+    if isjar( file_path ):
+        return False
+    else:
+        return iszip( file_path ) or isgzip( file_path ) or istar( file_path ) or isbz2( file_path )
 
 def make_directory( full_path ):
     if not os.path.exists( full_path ):

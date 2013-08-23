@@ -7,6 +7,27 @@ define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/paint
 
 var object_from_template = tracks.object_from_template;
 
+
+/**
+ * Returns an IconButtonMenuView for the provided configuration.
+ * Configuration is a list of dictionaries where each dictionary
+ * defines an icon button. Each dictionary must have the following
+ * elements: icon_class, title, and on_click.
+ */
+var create_icon_buttons_menu = function(config, global_config) {
+    if (!global_config) { global_config = {}; }
+
+    // Create and initialize menu.
+    var buttons = new IconButtonCollection( 
+            _.map(config, function(button_config) { 
+                return new IconButton(_.extend(button_config, global_config)); 
+            })
+        );
+    
+    return new IconButtonMenuView( {collection: buttons} );
+};
+
+
 var TracksterUI = base.Base.extend({
 
     initialize: function( baseURL ) {
@@ -20,7 +41,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                visualization.select_datasets(select_datasets_url, add_track_async_url, { 'f-dbkey': view.dbkey }, function(tracks) {
+                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                     _.each(tracks, function(track) {
                         view.add_drawable( object_from_template(track, view,  view) );  
                     });
@@ -31,7 +52,7 @@ var TracksterUI = base.Base.extend({
             } },
             { icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
                 // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
+                force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
             } },
             {
                 icon_class: 'globe',
@@ -62,15 +83,15 @@ var TracksterUI = base.Base.extend({
                     };
 
                 $.ajax({
-                    url: galaxy_paths.get("visualization_url"),
+                    url: galaxy_config.root + "visualization/save",
                     type: "POST",
                     dataType: "json",
                     data: { 
-                        'id': view.vis_id,
-                        'title': view.name,
-                        'dbkey': view.dbkey,
-                        'type': 'trackster',
-                        vis_json: JSON.stringify(viz_config)
+                        'id'        : view.vis_id,
+                        'title'     : view.name,
+                        'dbkey'     : view.dbkey,
+                        'type'      : 'trackster',
+                        'vis_json'  : JSON.stringify(viz_config)
                     }
                 }).success(function(vis_info) {
                     hide_modal();
@@ -81,12 +102,8 @@ var TracksterUI = base.Base.extend({
                     window.history.pushState({}, "", vis_info.url + window.location.hash);
                 })
                 .error(function() { 
-                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
-                                { "Close" : hide_modal } );
+                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", { "Close" : hide_modal } );
                 });
-            } },
-            { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
-                window.location = self.baseURL + "visualization/list";
             } }
         ], 
         { 
@@ -148,7 +165,7 @@ var TracksterUI = base.Base.extend({
      */
     add_bookmark: function(position, annotation, editable) {
         // Create HTML.
-        var bookmarks_container = $("#bookmarks-container"),
+        var bookmarks_container = $("#right .unified-panel-body"),
             new_bookmark = $("<div/>").addClass("bookmark").appendTo(bookmarks_container);
 
         var position_div = $("<div/>").addClass("position").appendTo(new_bookmark),

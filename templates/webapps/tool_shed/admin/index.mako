@@ -1,7 +1,7 @@
 <%inherit file="/webapps/tool_shed/base_panels.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="stylesheets()">   
+<%def name="stylesheets()">
     ## Include "base.css" for styling tool menu and forms (details)
     ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
 
@@ -12,6 +12,12 @@
         body { margin: 0; padding: 0; overflow: hidden; }
         #left {
             background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
+        }
+        .unified-panel-body {
+            overflow: auto;
+        }
+        .toolMenu {
+            margin-left: 10px;
         }
     </style>
 </%def>
@@ -40,7 +46,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body" style="padding: 10px; overflow: auto;">
+    <div class="unified-panel-body">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">

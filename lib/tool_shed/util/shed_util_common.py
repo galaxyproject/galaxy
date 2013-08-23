@@ -7,6 +7,7 @@ from datetime import datetime
 from time import gmtime
 from time import strftime
 from galaxy import util
+from galaxy.util import asbool
 from galaxy.util import json
 from galaxy.util import unicodify
 from galaxy.web import url_for
@@ -22,7 +23,10 @@ from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import cmdutil
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -34,6 +38,11 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
+
+DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
+REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
+TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
 
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
@@ -233,7 +242,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
-    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
+    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
     if current_changeset_revision is None:
         # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
         # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
@@ -525,6 +534,20 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
                 return manifest_ctx, ctx_file
     return None, None
 
+def get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision ):
+    encoded_repository_id = trans.security.encode_id( repository.id )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, changeset_revision )
+    if repository_metadata:
+        return repository_metadata
+    # The installable changeset_revision may have been changed because it was "moved ahead" in the repository changelog.
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    updated_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
+    if updated_changeset_revision:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, updated_changeset_revision )
+        if repository_metadata:
+            return repository_metadata
+    return None
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
@@ -546,6 +569,17 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+
+def get_file_type_str( changeset_revision, file_type ):
+    if file_type == 'zip':
+        file_type_str = '%s.zip' % changeset_revision
+    elif file_type == 'bz2':
+        file_type_str = '%s.tar.bz2' % changeset_revision
+    elif file_type == 'gz':
+        file_type_str = '%s.tar.gz' % changeset_revision
+    else:
+        file_type_str = ''
+    return file_type_str
 
 def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
     installing_repository_ids = []
@@ -588,6 +622,18 @@ def get_latest_downloadable_changeset_revision( trans, repository, repo ):
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return INITIAL_CHANGELOG_HASH
+
+def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
+    '''Borrowed from repoman - get default parameters for a mercurial command.'''
+    if command_table is None:
+        command_table = commands.table
+    possible = cmdutil.findpossible( command, command_table )
+    if len( possible ) != 1:
+        raise Exception, 'unable to find mercurial command "%s"' % command
+    default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
+    for option in kwd:
+        default_options_dict[ option ] = kwd[ option ]
+    return default_options_dict
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
@@ -632,6 +678,36 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
             # We've found the changeset in the changelog for which we need to get the next downloadable changeset.
             found_after_changeset_revision = True
     return None
+
+def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
+    """
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
+    are being installed.  The order in which the prior_required_dict is processed is critical in order to ensure that the ultimate repository import
+    or installation order is correctly defined.  This method determines the next key / value pair from the received prior_required_dict that should
+    be processed.
+    """
+    # Return the first key / value pair that is not yet processed and whose value is an empty list.
+    for key, value in prior_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        if not value:
+            return key
+    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
+    for key, value in prior_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        all_contained = True
+        for required_repository_id in value:
+            if required_repository_id not in processed_tsr_ids:
+                all_contained = False
+                break
+        if all_contained:
+            return key
+    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
+    for key, value in prior_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        return key
 
 def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision ):
     """
@@ -698,6 +774,28 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
         else:
             previous_changeset_revision = changeset_revision
 
+def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts ):
+    """
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
+    are being installed.  Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained
+    in the received list of tsr_ids and whose associated repository must be imported or installed prior to the repository associated with the tsr_id key.
+    """
+    # Initialize the dictionary.
+    prior_import_or_install_required_dict = {}
+    for tsr_id in tsr_ids:
+        prior_import_or_install_required_dict[ tsr_id ] = []
+    # Inspect the repository dependencies for each repository about to be installed and populate the dictionary.
+    for repo_info_dict in repo_info_dicts:
+        repository, repository_dependencies = get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
+        if repository:
+            encoded_repository_id = trans.security.encode_id( repository.id )
+            if encoded_repository_id in tsr_ids:
+                # We've located the database table record for one of the repositories we're about to install, so find out if it has any repository
+                # dependencies that require prior installation.
+                prior_import_or_install_ids = get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies )
+                prior_import_or_install_required_dict[ encoded_repository_id ] = prior_import_or_install_ids
+    return prior_import_or_install_required_dict
+
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len( repo_info_tuple ) == 6:
@@ -706,6 +804,20 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     elif len( repo_info_tuple ) == 7:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
+
+def get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict ):
+    """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
+    repository_name = repo_info_dict.keys()[ 0 ]
+    repo_info_tuple = repo_info_dict[ repository_name ]
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+        get_repo_info_tuple_contents( repo_info_tuple )
+    if trans.webapp.name == 'galaxy':
+        tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
+        repository = get_repository_for_dependency_relationship( trans.app, tool_shed, repository_name, repository_owner, changeset_revision )
+    else:
+        # We're in the tool shed.
+        repository = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+    return repository, repository_dependencies
 
 def get_repository_by_id( trans, id ):
     """Get a repository from the database via id."""
@@ -740,7 +852,7 @@ def get_repository_by_name_and_owner( app, name, owner ):
     return None
 
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
-    """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
+    """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
     if tool_shed.endswith( '/' ):
         tool_shed = tool_shed.rstrip( '/' )
@@ -755,6 +867,20 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
                                                                                      name=name,
                                                                                      owner=owner,
                                                                                      changeset_revision=changeset_revision )
+    if not repository:
+        # The received changeset_revision is no longer installable, so get the next changeset_revision in the repository's changelog in the
+        # tool shed that is associated with repository_metadata.
+        tool_shed_url = get_url_from_tool_shed( app, tool_shed )
+        url = url_join( tool_shed_url,
+                        'repository/next_installable_changeset_revision?name=%s&owner=%s&changeset_revision=%s' % \
+                        ( name, owner, changeset_revision ) )
+        text = common_util.tool_shed_get( app, tool_shed_url, url )
+        if text:
+            repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
+                                                                                         tool_shed=tool_shed,
+                                                                                         name=name,
+                                                                                         owner=owner,
+                                                                                         changeset_revision=text )
     return repository
 
 def get_repository_file_contents( file_path ):
@@ -798,6 +924,49 @@ def get_repository_files( trans, folder_path ):
     if contents:
         contents.sort()
     return contents
+
+def get_repository_from_refresh_on_change( trans, **kwd ):
+    # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
+    # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
+    # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
+    # refresh_on_change occurred and we have the necessary repository id and change set revision to pass on.
+    repository_id = None
+    v = None
+    for k, v in kwd.items():
+        changeset_revision_str = 'changeset_revision_'
+        if k.startswith( changeset_revision_str ):
+            repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
+            repository = get_repository_in_tool_shed( trans, repository_id )
+            if repository.tip( trans.app ) != v:
+                return v, repository
+    # This should never be reached - raise an exception?
+    return v, None
+
+def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
+    """
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
+    are being installed.  Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received
+    tsr_ids.  If so, then determine whether that required repository should be imported / installed prior to it's dependent repository.  Return a list
+    of encoded repository ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be impoerted / installed
+    prior to the dependent repository associated with the received repository_dependencies.
+    """
+    prior_tsr_ids = []
+    if repository_dependencies:
+        for key, rd_tups in repository_dependencies.items():
+            if key in [ 'description', 'root_key' ]:
+                continue
+            for rd_tup in rd_tups:
+                tool_shed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( rd_tup )
+                if asbool( prior_installation_required ):
+                    if trans.webapp.name == 'galaxy':
+                        repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
+                    else:
+                        repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                    if repository:
+                        encoded_repository_id = trans.security.encode_id( repository.id )
+                        if encoded_repository_id in tsr_ids:
+                            prior_tsr_ids.append( encoded_repository_id )
+    return prior_tsr_ids
 
 def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id."""

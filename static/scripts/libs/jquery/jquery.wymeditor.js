@@ -713,7 +713,8 @@ WYMeditor.editor.prototype.init = function() {
   else if (jQuery.browser.opera) {
     var WymClass = new WYMeditor.WymClassOpera(this);
   }
-  else if (jQuery.browser.safari) {
+  // Galaxy HACK: add Chrome to browser detection; this is fixed in later versions of WYMEditor.
+  else if (jQuery.browser.safari || jQuery.browser.chrome) {
     var WymClass = new WYMeditor.WymClassSafari(this);
   }
   

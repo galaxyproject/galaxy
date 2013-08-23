@@ -20,10 +20,8 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // Set metadata.
         // FIXME: pass back a metadata dict and then Backbone-relational
         // can be used unpack metadata automatically.
-        this._set_metadata();
         // Update metadata on change.
         this.on('change', this._set_metadata, this);
     },
@@ -52,7 +50,7 @@ var Dataset = Backbone.RelationalModel.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: galaxy_paths.get('datasets_url')
+    urlRoot: galaxy_config.root + "api/datasets"
 });
 
 /**

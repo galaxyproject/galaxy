@@ -35,8 +35,11 @@
                 %elif input.type == "conditional":
                     %if tool_state.items():
                         <%
-                            group_state = tool_state[input.name][0]
-                            current_case = group_state['__current_case__']
+                            try:
+                                group_state = tool_state[ input.name ][ 0 ]
+                            except Exception, e:
+                                group_state = tool_state[ input.name ]
+                            current_case = group_state[ '__current_case__' ]
                             group_prefix = prefix + input.name + "|"
                         %>
                         %if input.value_ref_in_group:
@@ -67,6 +70,8 @@
         
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
             <%
+                # Disable refresh_on_change for select lists displayed in the tool shed. 
+                param.refresh_on_change = False
                 label = param.get_label()
                 if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
                     field = SelectField( param.name )
@@ -120,7 +125,7 @@
                 <div class="toolFormBody">
                     <form id="tool_form" name="tool_form" action="" method="get">
                         <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
-                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}  
+                        ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}
                     </form>
                 </div>
             </div>

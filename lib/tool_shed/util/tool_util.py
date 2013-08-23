@@ -11,6 +11,7 @@ from galaxy.model.orm import and_
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import xml_util
 from galaxy.tools.actions.upload import UploadToolAction
@@ -157,7 +158,9 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                     else:
                         correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
                         correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+                        invalid_tup = ( tool_config_name, correction_msg )
+                        if invalid_tup not in invalid_files_and_errors_tups:
+                            invalid_files_and_errors_tups.append( invalid_tup )
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
@@ -639,8 +642,7 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
-            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something
-            # into the field.
+            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something into the field.
             new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -649,7 +651,7 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
             else:
                 tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
             if tool_panel_dict:
-                #tool_panel_dict is empty when tools exist but are not installed into a tool panel
+                # The tool_panel_dict is empty when tools exist but are not installed into a tool panel section.
                 tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
                 tool_section_dict = tool_section_dicts[ 0 ]
                 original_section_id = tool_section_dict[ 'id' ]
@@ -888,6 +890,22 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
         except:
             pass
     return tool, message
+
+def new_state( trans, tool, invalid=False ):
+    """Create a new `DefaultToolState` for the received tool.  Only inputs on the first page will be initialized."""
+    state = galaxy.tools.DefaultToolState()
+    state.inputs = {}
+    if invalid:
+        # We're attempting to display a tool in the tool shed that has been determined to have errors, so is invalid.
+        return state
+    inputs = tool.inputs_by_page[ 0 ]
+    context = ExpressionContext( state.inputs, parent=None )
+    for input in inputs.itervalues():
+        try:
+            state.inputs[ input.name ] = input.get_initial_value( trans, context )
+        except:
+            state.inputs[ input.name ] = []
+    return state
 
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.

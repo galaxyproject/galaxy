@@ -59,6 +59,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
+from galaxy.model.item_attrs import DictifiableMixin
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
 
@@ -92,8 +93,18 @@ class StdioErrorLevel( object ):
 class ToolNotFoundException( Exception ):
     pass
 
-class ToolBox( object ):
+def dictify_helper( obj, kwargs ):
+    """ Helper function that provides the appropriate kwargs to dictify an object. """
+
+    # Label.dictify cannot have kwargs.
+    if isinstance( obj, ToolSectionLabel ):
+        kwargs = {}
+
+    return obj.dictify( **kwargs )
+
+class ToolBox( object, DictifiableMixin ):
     """Container for a collection of tools"""
+
     def __init__( self, config_filenames, tool_root_dir, app ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
@@ -144,6 +155,7 @@ class ToolBox( object ):
             # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
             # will be False when things like functional tests are the caller.
             self.write_integrated_tool_panel_config_file()
+
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:
@@ -199,11 +211,13 @@ class ToolBox( object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self.shed_tool_confs.append( shed_tool_conf_dict )
+
     def get_shed_config_dict_by_filename( self, filename, default=None ):
         for shed_config_dict in self.shed_tool_confs:
             if shed_config_dict[ 'config_filename' ] == filename:
                 return shed_config_dict
         return default
+
     def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
         # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
@@ -239,6 +253,7 @@ class ToolBox( object ):
             del panel_dict[ loaded_version_key ]
             panel_dict.insert( index, key, tool )
             log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if key.startswith( 'tool_' ):
@@ -276,6 +291,7 @@ class ToolBox( object ):
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self.tool_panel[ key ] = section
+
     def load_integrated_tool_panel_keys( self ):
         """
         Load the integrated tool panel keys, setting values for tools and workflows to None.  The values will
@@ -308,6 +324,7 @@ class ToolBox( object ):
             elif elem.tag == 'label':
                 key = 'label_%s' % elem.get( 'id' )
                 self.integrated_tool_panel[ key ] = None
+
     def write_integrated_tool_panel_config_file( self ):
         """
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
@@ -350,6 +367,7 @@ class ToolBox( object ):
         os.close( fd )
         shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
         os.chmod( self.integrated_tool_panel_config, 0644 )
+
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_id in self.tools_by_id and not get_all_versions:
@@ -380,6 +398,7 @@ class ToolBox( object ):
                 #No tool matches by version, simply return the first available tool found
                 return rval[0]
         return None
+
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
         tv = self.__get_tool_version( tool_id )
@@ -395,6 +414,7 @@ class ToolBox( object ):
                 tool = self.tools_by_id[ tool_id ]
                 return [ tool ]
         return []
+
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
         return self.sa_session.query( self.app.model.ToolVersion ) \
@@ -527,6 +547,7 @@ class ToolBox( object ):
                 integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
+
     def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
             # TODO: should id be encoded?
@@ -543,6 +564,7 @@ class ToolBox( object ):
                 integrated_panel_dict.insert( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
+
     def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         label = ToolSectionLabel( elem )
         key = 'label_' + label.id
@@ -552,6 +574,7 @@ class ToolBox( object ):
             integrated_panel_dict[ key ] = label
         else:
             integrated_panel_dict.insert( index, key, label )
+
     def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = 'section_' + elem.get( "id" )
         if key in self.tool_panel:
@@ -580,6 +603,7 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
+
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -597,6 +621,7 @@ class ToolBox( object ):
         else:
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -634,6 +659,7 @@ class ToolBox( object ):
             message += "<b>version:</b> %s" % old_tool.version
             status = 'done'
         return message, status
+    
     def remove_tool_by_id( self, tool_id ):
         """
         Attempt to remove the tool identified by 'tool_id'.
@@ -662,6 +688,7 @@ class ToolBox( object ):
             message += "<b>version:</b> %s" % tool.version
             status = 'done'
         return message, status
+    
     def load_workflow( self, workflow_id ):
         """
         Return an instance of 'Workflow' identified by `id`,
@@ -670,11 +697,13 @@ class ToolBox( object ):
         id = self.app.security.decode_id( workflow_id )
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
+    
     def init_dependency_manager( self ):
         if self.app.config.use_tool_dependencies:
             self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
         else:
             self.dependency_manager = None
+
     @property
     def sa_session( self ):
         """
@@ -682,10 +711,11 @@ class ToolBox( object ):
         """
         return self.app.model.context
 
-    def to_dict( self, trans, in_panel=True, **kwds ):
-        #
-        # Dictify toolbox.
-        #
+    def dictify( self, trans, in_panel=True, **kwds ):
+        """
+        Dictify toolbox.
+        """
+
         context = Bunch( toolbox=self, trans=trans, **kwds )
         if in_panel:
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
@@ -701,12 +731,16 @@ class ToolBox( object ):
 
             # Produce panel.
             rval = []
+            kwargs = dict(
+                trans = trans,
+                link_details = True
+            )
             for elt in panel_elts:
-                rval.append( elt.to_dict( trans, for_link=True ) )
+                rval.append( dictify_helper( elt, kwargs ) )
         else:
             tools = []
-            for id, tool in self.toolbox.tools_by_id.items():
-                tools.append( tool.to_dict( trans ) )
+            for id, tool in self.tools_by_id.items():
+                tools.append( tool.dictify( trans, link_details=True ) )
             rval = tools
 
         return rval
@@ -767,11 +801,14 @@ def _filter_for_panel( item, filters, context ):
 
 
 
-class ToolSection( object ):
+class ToolSection( object, DictifiableMixin ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
     """
+
+    dict_collection_visible_keys = ( 'id', 'name', 'version' )
+
     def __init__( self, elem=None ):
         f = lambda elem, val: elem is not None and elem.get( val ) or ''
         self.name = f( elem, 'name' )
@@ -787,26 +824,33 @@ class ToolSection( object ):
         copy.elems = self.elems.copy()
         return copy
 
-    def to_dict( self, trans, for_link=False ):
+    def dictify( self, trans, link_details=False ):
         """ Return a dict that includes section's attributes. """
-        section_elts = []
-        for key, val in self.elems.items():
-            section_elts.append( val.to_dict( trans, for_link=for_link ) )
-        return { 'type': 'section', 'id': self.id, 'name': self.name, 'version': self.version, 'elems': section_elts }
 
-class ToolSectionLabel( object ):
+        section_dict = super( ToolSection, self ).dictify()
+        section_elts = []
+        kwargs = dict(
+            trans = trans,
+            link_details = link_details
+        )
+        for elt in self.elems.values():
+            section_elts.append( dictify_helper( elt, kwargs ) )
+        section_dict[ 'elems' ] = section_elts
+
+        return section_dict
+
+class ToolSectionLabel( object, DictifiableMixin ):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
+
+    dict_collection_visible_keys = ( 'id', 'text', 'version' )
+
     def __init__( self, elem ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
-
-    def to_dict( self, trans, **kwargs ):
-        """ Return a dict that includes label's attributes. """
-        return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
 class DefaultToolState( object ):
     """
@@ -854,13 +898,15 @@ class DefaultToolState( object ):
             self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
-class ToolOutput( object ):
+class ToolOutput( object, DictifiableMixin ):
     """
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
       (format, metadata_source, parent)
     """
+
+    dict_collection_visible_keys = ( 'name', 'format', 'label', 'hidden' )
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None,
                   parent=None, label=None, filters = None, actions = None, hidden=False ):
@@ -892,14 +938,6 @@ class ToolOutput( object ):
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
-    def to_dict( self ):
-        return {
-            'name': self.name,
-            'format': self.format,
-            'label': self.label,
-            'hidden': self.hidden
-        }
-
 class ToolRequirement( object ):
     """
     Represents an external requirement that must be available for the tool to run (for example, a program, package, or library).
@@ -910,13 +948,14 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
-class Tool( object ):
+class Tool( object, DictifiableMixin ):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
 
     tool_type = 'default'
     default_tool_action = DefaultToolAction
+    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
 
     def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1205,7 +1244,6 @@ class Tool( object ):
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
         if trackster_conf is not None:
-            from galaxy.visualization.genome.visual_analytics import TracksterConfig
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
@@ -2924,66 +2962,29 @@ class Tool( object ):
                     self.sa_session.flush()
         return primary_datasets
 
-    def to_dict( self, trans, for_link=False, for_display=False ):
+    def dictify( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
 
         # Basic information
-        tool_dict = { 'id': self.id, 'name': self.name,
-                      'version': self.version, 'description': self.description }
-
-        if for_link:
-            # Create tool link.
+        tool_dict = super( Tool, self ).dictify()
+        
+        # Add link details.
+        if link_details:
+            # Add details for creating a hyperlink to the tool.
             if not self.tool_type.startswith( 'data_source' ):
                 link = url_for( '/tool_runner', tool_id=self.id )
             else:
                 link = url_for( self.action, **self.get_static_param_values( trans ) )
 
             # Basic information
-            tool_dict.update( { 'type': 'tool', 'link': link,
+            tool_dict.update( { 'link': link,
                                 'min_width': self.uihints.get( 'minwidth', -1 ),
                                 'target': self.target } )
 
-        if for_display:
-            # Dictify inputs.
-            inputs = []
-            for name, input in self.inputs.items():
-                param_dict = { 'name' : name, 'label' : input.label }
-                if isinstance( input, DataToolParameter ):
-                    param_dict.update( { 'type' : 'data', 'html' : urllib.quote( input.get_html( trans ) ) } )
-                elif isinstance( input, SelectToolParameter ):
-                    # Get options, value.
-                    options = input.get_options( trans, [] )
-                    value = options[0][1]
-                    for option in options:
-                        if option[2]:
-                            # Found selected option.
-                            value = option[1]
-
-                    # Pack input.
-                    param_dict.update( { 'type' : 'select',
-                                         'html' : urllib.quote( input.get_html( trans ) ),
-                                         'options': options,
-                                         'value': value
-                                         } )
-                elif isinstance( input, Conditional ):
-                    # TODO.
-                    pass
-                elif isinstance( input, ( IntegerToolParameter, FloatToolParameter ) ):
-                    param_dict.update( { 'type' : 'number', 'init_value' : input.value,
-                                         'html' : urllib.quote( input.get_html( trans ) ),
-                                         'min': input.min,
-                                         'max': input.max,
-                                         'value': input.value
-                                          } )
-                else:
-                    param_dict.update( { 'type' : '??', 'init_value' : input.value, \
-                                         'html' : urllib.quote( input.get_html( trans ) ) } )
-                inputs.append( param_dict )
-
-            tool_dict[ 'inputs' ] = inputs
-
-            # Dictify outputs.
-            pass
+        # Add input and output details.
+        if io_details:
+            tool_dict[ 'inputs' ] = [ input.dictify( trans ) for input in self.inputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.dictify() for output in self.outputs.values() ]
 
         return tool_dict
 
@@ -3220,6 +3221,31 @@ for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, 
 
 # ---- Utility classes to be factored out -----------------------------------
 
+class TracksterConfig:
+    """ Trackster configuration encapsulation. """
+    
+    def __init__( self, actions ):
+        self.actions = actions
+    
+    @staticmethod
+    def parse( root ):
+        actions = []
+        for action_elt in root.findall( "action" ):
+            actions.append( SetParamAction.parse( action_elt ) )
+        return TracksterConfig( actions )
+        
+class SetParamAction:
+    """ Set parameter action. """
+    
+    def __init__( self, name, output_name ):
+        self.name = name
+        self.output_name = output_name
+        
+    @staticmethod
+    def parse( elt ):
+        """ Parse action from element. """
+        return SetParamAction( elt.get( "name" ), elt.get( "output_name" ) )    
+
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
@@ -3258,7 +3284,14 @@ class ToolParameterValueWrapper( object ):
     def __nonzero__( self ):
         return bool( self.value )
     def get_display_text( self, quote=True ):
-        return pipes.quote( self.input.value_to_display_text( self.value, self.input.tool.app ) )
+        """
+        Returns a string containing the value that would be displayed to the user in the tool interface.
+        When quote is True (default), the string is escaped for e.g. command-line usage.
+        """
+        rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
+        if quote:
+            return pipes.quote( rval ) or "''" #pipes.quote in Python < 2.7 returns an empty string instead of the expected quoted empty string
+        return rval
 
 class RawObjectWrapper( ToolParameterValueWrapper ):
     """

@@ -4,7 +4,6 @@
 
 // dependencies
 define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
-       
 
 // frame manager
 var GalaxyFrameManager = Backbone.View.extend(
@@ -75,7 +74,7 @@ var GalaxyFrameManager = Backbone.View.extend(
     initialize : function(options)
     {
         // load required css files
-        css.load_file(options.url.styles + "/galaxy.frame.css");
+        css.load_file(options.root + "static/style/galaxy.frame.css");
         
         // read in defaults
         if (options)
@@ -91,8 +90,8 @@ var GalaxyFrameManager = Backbone.View.extend(
         $(this.el).append(this.frame_template_menu());
         
         // load load button
-        $(this.el_header).append(this.frame_template_load());
-
+        $(this.el_header).append(this.frame_template_header());
+        
         //
         // define shadow frame
         //
@@ -121,7 +120,11 @@ var GalaxyFrameManager = Backbone.View.extend(
         
         // link events
         this.event_initialize();
-        
+
+        // add
+        $(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
+        $(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
+
         // catch window resize event
         var self = this;
         $(window).resize(function ()
@@ -162,7 +165,6 @@ var GalaxyFrameManager = Backbone.View.extend(
         {*/
             this.events = {
                 // global page events
-                'mousedown'                                 : 'event_frame_mouse_down',
                 'mousemove'                                 : 'event_frame_mouse_move',
                 'mouseup'                                   : 'event_frame_mouse_up',
                 'mouseleave'                                : 'event_frame_mouse_up',
@@ -170,13 +172,14 @@ var GalaxyFrameManager = Backbone.View.extend(
                 'DOMMouseScroll'                            : 'event_panel_scroll',
                 
                 // events fixed to elements
-                'mousedown .f-close'                        : 'event_frame_close',
-                'mousedown .f-pin'                          : 'event_frame_lock',
+                'mousedown .galaxy-frame'                   : 'event_frame_mouse_down',
                 'mousedown .galaxy-frame-active'            : 'event_panel_active',
                 'mousedown .galaxy-frame-load'              : 'event_panel_load',
                 'mousedown .galaxy-frame-background'        : 'event_panel_load',
                 'mousedown .galaxy-frame-scroll-up'         : 'event_panel_scroll_up',
-                'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down'
+                'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down',
+                'mousedown .f-close'                        : 'event_frame_close',
+                'mousedown .f-pin'                          : 'event_frame_lock'
             };
         /*} else {
             this.events = {
@@ -197,9 +200,6 @@ var GalaxyFrameManager = Backbone.View.extend(
     // drag start
     event_frame_mouse_down: function (e)
     {
-        // prevent text selection
-        e.preventDefault();
-        
         // skip if event is already active
         if (this.event.type !== null)
             return;
@@ -212,11 +212,14 @@ var GalaxyFrameManager = Backbone.View.extend(
         // check for resize event
         if ($(e.target).hasClass('f-resize'))
             this.event.type = 'resize';
-            
+        
         // skip if no event has to be handled
         if (this.event.type === null)
             return;
-        
+
+        // prevent
+        e.preventDefault();
+            
         // identify frame
         this.event.target = this.event_get_frame(e.target);
        
@@ -336,6 +339,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
+        // prevent
+        e.preventDefault();
+
         // get frame
         var frame = this.event_get_frame(e.target);
         var self  = this;
@@ -371,6 +377,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null)
             return;
         
+        // prevent
+        e.preventDefault();
+
         // get frame
         var frame = this.event_get_frame(e.target);
         
@@ -400,23 +409,29 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
 
     // show/hide panel
-    event_panel_load: function ()
+    event_panel_load: function (e)
     {
         // check
         if (this.event.type !== null)
             return;
         
+        // prevent
+        e.preventDefault();
+
         // load panel
         this.panel_show_hide();
     },
     
     // activate/disable panel
-    event_panel_active: function ()
+    event_panel_active: function (e)
     {
         // check
         if (this.event.type !== null)
             return;
         
+        // prevent
+        e.preventDefault();
+
         // load panel
         this.panel_active_disable();
     },
@@ -428,6 +443,9 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (this.event.type !== null || !this.visible)
             return;
             
+        // prevent
+        e.preventDefault();
+
         // get wheel delta
         var delta = e.originalEvent.detail ? e.originalEvent.detail : e.originalEvent.wheelDelta / -3;
         
@@ -436,23 +454,29 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // scroll up
-    event_panel_scroll_up: function()
+    event_panel_scroll_up: function(e)
     {
         // check
         if (this.event.type !== null)
             return;
   
+        // prevent
+        e.preventDefault();
+
         // scroll up
         this.panel_scroll(-this.options.scroll);
     },
     
     // scroll down
-    event_panel_scroll_down: function()
+    event_panel_scroll_down: function(e)
     {
         // check
         if (this.event.type !== null)
             return;
      
+        // prevent
+        e.preventDefault();
+        
         // scroll down
         this.panel_scroll(this.options.scroll);
     },
@@ -706,8 +730,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             this.visible = false;
             
             // hide 
-            for (var i in this.frame_list)
-                $(this.frame_list[i].id).fadeOut('fast');
+            $(".galaxy-frame").fadeOut('fast');
             
             // add class
             $(".galaxy-frame-load .icon").addClass("fa-icon-eye-close");
@@ -723,8 +746,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             this.visible = true;
             
             // show
-            for (var i in this.frame_list)
-                $(this.frame_list[i].id).fadeIn('fast');
+            $(".galaxy-frame").fadeIn('fast');
             
             // add class
             $(".galaxy-frame-load .icon").addClass("fa-icon-eye-open");
@@ -752,6 +774,10 @@ var GalaxyFrameManager = Backbone.View.extend(
             
             // untoggle
             $(".galaxy-frame-active .icon").removeClass("f-toggle");
+
+            // hide panel
+            if (this.visible)
+                this.panel_show_hide();
         } else {
             // activate
             this.active = true;
@@ -771,59 +797,68 @@ var GalaxyFrameManager = Backbone.View.extend(
         if (!this.active)
         {
             // load frame in main window
-            if (options.center)
+            if (options.location == 'center')
             {
                 var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' );
                 galaxy_main.attr( 'src', options.content );
             } else
                 window.location = options.content;
-                
+
             // stop
             return;
         }
-        
+
+        // check for number of frames
+        if (this.frame_counter > this.options.frame_max)
+        {
+            alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");   
+            return;   
+        }
+
         // generate frame identifier
         var frame_id = '#galaxy-frame-' + (this.frame_counter_id++);
 
         // check if frame exists
-        if ($(frame_id).length === 0 && this.options.frame_max > this.frame_counter)
+        if ($(frame_id).length !== 0)
         {
-            // reset top
-            this.top = this.options.top_min;
-            
-            // set dimensions
-            options.width   = this.to_pixel_coord('width', this.options.frame.cols);
-            options.height  = this.to_pixel_coord('height', this.options.frame.rows);
-       
-            // append
-            $(this.el).append(this.frame_template(frame_id.substring(1), options.title, options.type, options.content));
-            
-            // construct a new frame
-            var frame = {
-                id              : frame_id,
-                screen_location : {},
-                grid_location   : {},
-                grid_rank       : null,
-                grid_lock       : false
-            };
+            alert("This frame already exists. This page might contain multiple frame managers.");
+            return;
+        }
+        
+        // reset top
+        this.top = this.options.top_min;
 
-            // increase frame counter
-            this.frame_counter++;
+        // append
+        $(this.el).append(this.frame_template(frame_id.substring(1), options.title, options.type, options.content));
             
-            // add to frame list
-            this.frame_list[frame_id] = frame;
-            
-            // resize
-            this.frame_resize(frame, {width: options.width, height: options.height});
+        // construct a new frame
+        var frame = {
+            id              : frame_id,
+            screen_location : {},
+            grid_location   : {},
+            grid_rank       : null,
+            grid_lock       : false
+        };
+        
+        // set dimensions
+        options.width   = this.to_pixel_coord('width', this.options.frame.cols);
+        options.height  = this.to_pixel_coord('height', this.options.frame.rows);
+        
+        // add to frame list
+        this.frame_list[frame_id] = frame;
+
+        // increase frame counter
+        this.frame_counter++;
+
+        // resize
+        this.frame_resize(frame, {width: options.width, height: options.height});
        
-            // place frame
-            this.frame_insert(frame, {top: 0, left: 0}, true);
+        // place frame
+        this.frame_insert(frame, {top: 0, left: 0}, true);
             
-            // show frames if hidden
-            if (!this.visible)
-                this.panel_show_hide();
-        } else
-            alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");
+        // show frames if hidden
+        if (!this.visible)
+            this.panel_show_hide();
     },
       
     // frame insert at given location
@@ -893,7 +928,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         // panel menu
         this.menu_refresh();
     },
-    
+
     // naive frame place
     frame_place: function(frame, animate)
     {
@@ -1023,7 +1058,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                         '<span class="f-title">' + title + '</span>' +
                         '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
                         '<span class="f-icon f-close fa-icon-trash"></span>' +            
-                '</div>' +
+                    '</div>' +
                     '<div class="f-content f-corner">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
@@ -1044,13 +1079,13 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // fill load button template
-    frame_template_load: function()
+    frame_template_header: function()
     {
         return  '<div class="galaxy-frame-load f-corner">' +
                    '<div class="number f-corner">0</div>' +
                    '<div class="icon fa-icon-2x"></div>' +
-                '</div>'+
-                '<div class="galaxy-frame-active f-corner">' +
+                '</div>' +
+                '<div class="galaxy-frame-active f-corner" style="position: absolute; top: 8px;">' +
                    '<div class="icon fa-icon-2x fa-icon-th"></div>' +
                 '</div>';
     },

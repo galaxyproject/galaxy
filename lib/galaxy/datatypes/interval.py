@@ -339,9 +339,9 @@ class Interval( Tabular ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -350,9 +350,9 @@ class Interval( Tabular ):
     def interval_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.IntervalDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'interval-map',
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
                                                     dataproviders.dataset.IntervalDataProvider.settings )
-    def interval_map_dataprovider( self, dataset, **settings ):
+    def interval_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.interval_dataprovider( dataset, **settings )
 
@@ -818,9 +818,9 @@ class Gff( Tabular, _RemoteCallMixin ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 3, 4, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -829,9 +829,9 @@ class Gff( Tabular, _RemoteCallMixin ):
     def interval_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.IntervalDataProvider( dataset, 0, 3, 4, 6, 2, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'interval-map',
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
                                                     dataproviders.dataset.IntervalDataProvider.settings )
-    def interval_map_dataprovider( self, dataset, **settings ):
+    def interval_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.interval_dataprovider( dataset, **settings )
 
@@ -1206,8 +1206,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'wiggle-map', dataproviders.dataset.WiggleDataProvider.settings )
-    def wiggle_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'wiggle-dict', dataproviders.dataset.WiggleDataProvider.settings )
+    def wiggle_dict_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         settings[ 'named_columns' ] = True
         return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )

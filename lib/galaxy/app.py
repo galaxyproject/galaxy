@@ -54,7 +54,7 @@ class UniverseApplication( object ):
         from tool_shed.galaxy_install.migrate.check import verify_tools
         verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
-        self.object_store = build_object_store_from_config(self.config)
+        self.object_store = build_object_store_from_config(self.config, fsmon=True)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
@@ -123,8 +123,8 @@ class UniverseApplication( object ):
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = ( VisualizationsRegistry( self.config.root, self.config.visualizations_conf_path )
-                                         if self.config.visualizations_conf_path else None )
+        self.visualizations_registry = VisualizationsRegistry.from_config(
+            self.config.visualizations_plugins_directory, self.config )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )

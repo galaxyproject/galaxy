@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="render_repository_type_select_field" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -23,6 +24,7 @@
                 <input  name="name" type="textfield" value="${name | h}" size="40"/>
                 <div style="clear: both"></div>
             </div>
+            ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
             <div class="form-row">
                 <label>Synopsis:</label>
                 <input  name="description" type="textfield" value="${description | h}" size="80"/>

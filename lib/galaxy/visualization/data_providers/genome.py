@@ -13,6 +13,7 @@ from galaxy.datatypes.util.gff_util import GFFReaderWrapper, GFFInterval, GFFFea
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
+from bx.bbi.bigbed_file import BigBedFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
@@ -861,14 +862,14 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
-        start, end = int(start), int(end)
+        start, end = int( start ), int( end )
         orig_data_filename = self.original_dataset.file_name
         index_filename = self.converted_dataset.file_name
         
         # Attempt to open the BAM file with index
         bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
         try:
-            data = bamfile.fetch(start=start, end=end, reference=chrom)
+            data = bamfile.fetch( start=start, end=end, reference=chrom )
         except ValueError, e:
             # Try alternative chrom naming.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )

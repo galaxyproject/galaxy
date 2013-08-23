@@ -8,8 +8,9 @@ import shutil
 import tempfile
 import shutil
 from contextlib import contextmanager
-
+from galaxy.util.template import fill_template
 from galaxy import eggs
+
 import pkg_resources
 
 pkg_resources.require('ssh' )
@@ -29,6 +30,15 @@ def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
+
+def filter_actions_after_binary_installation( actions ):
+    '''Filter out actions that should not be processed if a binary download succeeded.'''
+    filtered_actions = []
+    for action in actions:
+        action_type, action_dict = action
+        if action_type in [ 'set_environment', 'chmod', 'download_binary' ]:
+            filtered_actions.append( action )
+    return filtered_actions
 
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
     sa_session = app.model.context.current
@@ -170,6 +180,39 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 # The first action in the list of actions will be the one that defines the installation process.  There
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
+                if action_type == 'download_binary':
+                    url = action_dict[ 'url' ]
+                    # Get the target directory for this download, if the user has specified one. Default to the root of $INSTALL_DIR.
+                    target_directory = action_dict.get( 'target_directory', None )
+                    # Attempt to download a binary from the specified URL.
+                    log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
+                    downloaded_filename = None
+                    try:
+                        downloaded_filename = common_util.download_binary( url, work_dir )
+                        # Filter out any actions that are not download_binary, chmod, or set_environment.
+                        filtered_actions = filter_actions_after_binary_installation( actions[ 1: ] )
+                        # Set actions to the same, so that the current download_binary doesn't get re-run in the filtered actions below.
+                        actions = filtered_actions
+                    except Exception, e:
+                        log.exception( str( e ) )
+                        # No binary exists, or there was an error downloading the binary from the generated URL. Proceed with the remaining actions.
+                        filtered_actions = actions[ 1: ]
+                        action_type, action_dict = filtered_actions[ 0 ]
+                    # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                    # any errors in the move step are correctly sent to the tool dependency error handler.
+                    if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                        if target_directory:
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                            # Make sure the target directory is not outside of $INSTALL_DIR.
+                            if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                            else:
+                                full_path_to_dir = os.path.abspath( install_dir )
+                        else:
+                            full_path_to_dir = os.path.abspath( install_dir )
+                        common_util.move_file( current_dir=work_dir,
+                                               source=downloaded_filename,
+                                               destination_dir=full_path_to_dir )
                 if action_type == 'download_by_url':
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
@@ -237,8 +280,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # in the set_environment action.
                             cmds = []
                             for env_shell_file_path in env_shell_file_paths:
-                                for i, env_setting in enumerate( open( env_shell_file_path ) ):
-                                    cmds.append( env_setting.strip( '\n' ) )
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        cmds.append( env_setting.strip( '\n' ) )
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
@@ -273,7 +319,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # POSIXLY_CORRECT forces shell commands . and source to have the same
                             # and well defined behavior in bash/zsh.
                             activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
-                            install_command = "pip install -r '%s'" % requirements_path
+                            install_command = "python '%s' install -r '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path )
                             full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
@@ -297,12 +343,34 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             with settings( warn_only=True ):
                                 cmd = ''
                                 for env_shell_file_path in env_shell_file_paths:
-                                    for i, env_setting in enumerate( open( env_shell_file_path ) ):
-                                        cmd += '%s\n' % env_setting
+                                    if os.path.exists( env_shell_file_path ):
+                                        for env_setting in open( env_shell_file_path ):
+                                            cmd += '%s\n' % env_setting
+                                    else:
+                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
                                 cmd += action_dict[ 'command' ]
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+                        elif action_type == 'template_command':
+                            env_vars = dict()
+                            for env_shell_file_path in env_shell_file_paths:
+                                if os.path.exists( env_shell_file_path ):
+                                    for env_setting in open( env_shell_file_path ):
+                                        env_string = env_setting.split( ';' )[ 0 ]
+                                        env_name, env_path = env_string.split( '=' )
+                                        env_vars[ env_name ] = env_path
+                                else:
+                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+                            env_vars.update( common_util.get_env_var_values( install_dir ) )
+                            language = action_dict[ 'language' ]
+                            with settings( warn_only=True, **env_vars ):
+                                if language == 'cheetah':
+                                    # We need to import fabric.api.env so that we can access all collected environment variables.
+                                    cmd = fill_template( '#from fabric.api import env\n%s' % action_dict[ 'command' ], context=env_vars )
+                                    return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                    if return_code:
+                                        return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
@@ -313,11 +381,41 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             extract = action_dict.get( 'extract', False )
                             common_util.url_download( current_dir, filename, url, extract=extract )
                         elif action_type == 'change_directory':
-                            target_directory = os.path.realpath( os.path.join( current_dir, action_dict[ 'directory' ] ) )
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
                             if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory within the current working directory.
                                 dir = target_directory
+                            elif target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
+                                # Change directory to a directory above the current working directory, but within the defined work_dir.
+                                dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
                             else:
                                 log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
+                        elif action_type == 'chmod':
+                            for target_file, mode in action_dict[ 'change_modes' ]:
+                                if os.path.exists( target_file ):
+                                    os.chmod( target_file, mode )
+                        elif action_type == 'download_binary':
+                            url = action_dict[ 'url' ]
+                            target_directory = action_dict.get( 'target_directory', None )
+                            try:
+                                downloaded_filename = common_util.download_binary( url, work_dir )
+                            except Exception, e:
+                                log.exception( str( e ) )
+                            # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                            # any errors in the move step are correctly sent to the tool dependency error handler.
+                            if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                                if target_directory:
+                                    target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                                    # Make sure the target directory is not outside of $INSTALL_DIR.
+                                    if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                        full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                                    else:
+                                        full_path_to_dir = os.path.abspath( install_dir )
+                                else:
+                                    full_path_to_dir = os.path.abspath( install_dir )
+                                common_util.move_file( current_dir=work_dir,
+                                                       source=downloaded_filename,
+                                                       destination_dir=full_path_to_dir )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """

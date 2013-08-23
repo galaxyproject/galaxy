@@ -174,9 +174,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
-# Visualizations config file, defines what visualizations apply to particular data and how to pass them
-# the necessary parameters
-#visualizations_conf_path = visualizations_conf.xml
+# Visualizations config directory: where to look for individual visualization plugins.
+# The path is relative to the Galaxy root dir. To use an absolute path begin the path
+# with '/'.
+#visualizations_plugins_directory = config/plugins/visualizations
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -279,6 +280,10 @@ nglims_config_file = tool-data/nglims.yaml
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
 
+# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
+# an absolute or relative URL.
+#welcome_url = /static/welcome.html
+
 # The URL linked by the "Galaxy/brand" text.
 #logo_url = /
 
@@ -319,9 +324,10 @@ static_robots_txt = %(here)s/static/robots.txt
 # Note that this requires java > 1.4 for executing yuicompressor.jar
 #pack_scripts = False
 
-# Enable Cloud Launch
+# Cloud Launch
 
 #enable_cloud_launch = False
+#cloudlaunch_default_ami = ami-118bfc78
 
 # -- Advanced proxy features
 

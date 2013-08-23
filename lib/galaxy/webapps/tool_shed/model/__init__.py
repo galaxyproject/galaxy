@@ -4,7 +4,8 @@ import os
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.model.item_attrs import APIItem
+from galaxy.model.item_attrs import DictifiableMixin
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -18,9 +19,9 @@ class APIKeys( object ):
     pass
 
 
-class User( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'email' )
-    api_element_visible_keys = ( 'id', 'email', 'username' )
+class User( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'email' )
+    dict_element_visible_keys = ( 'id', 'email', 'username' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -60,18 +61,18 @@ class User( object, APIItem ):
         return 0
 
 
-class Group( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+class Group( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name' )
 
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
 
 
-class Role( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
+class Role( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
     types = Bunch( 
         PRIVATE = 'private',
@@ -129,19 +130,21 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 
-class Repository( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+class Repository( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
+                                 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
 
-    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, deleted=None, email_alerts=None,
-                  times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False, deleted=None,
+                  email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
+        self.type = type
         self.description = description
         self.long_description = long_description
         self.user_id = user_id
@@ -152,9 +155,27 @@ class Repository( object, APIItem ):
         self.deprecated = deprecated
 
     def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
+        return self.dictify( view='element', value_mapper=value_mapper )
 
-    def get_api_value( self, view='collection', value_mapper=None ):
+    def can_change_type( self, app ):
+        # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
+        # the default type.
+        if self.is_new( app ):
+            return True
+        if self.times_downloaded == 0:
+            return True
+        if self.type == rt_util.UNRESTRICTED:
+            return True
+        return False
+
+    def can_change_type_to( self, app, new_type_label ):
+        if self.can_change_type( app ):
+            new_type = app.repository_types_registry.get_class_by_label( new_type_label )
+            if new_type.is_valid_for_type( app, self ):
+                return True
+        return False
+
+    def dictify( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -172,6 +193,13 @@ class Repository( object, APIItem ):
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
+
+    def get_changesets_for_setting_metadata( self, app ):
+        type_class = self.get_type_class( app )
+        return type_class.get_changesets_for_setting_metadata( app, self )
+
+    def get_type_class( self, app ):
+        return app.repository_types_registry.get_class_by_label( self.type )
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
@@ -216,10 +244,10 @@ class Repository( object, APIItem ):
         fp.close()
 
 
-class RepositoryMetadata( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
+class RepositoryMetadata( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
                                     'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
+    dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
                                  'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
                                  'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
@@ -256,9 +284,9 @@ class RepositoryMetadata( object, APIItem ):
         return False
 
     def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
+        return self.dictify( view='element', value_mapper=value_mapper )
 
-    def get_api_value( self, view='collection', value_mapper=None ):
+    def dictify( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -276,9 +304,9 @@ class RepositoryMetadata( object, APIItem ):
         return rval
 
 
-class SkipToolTest( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
-    api_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
+class SkipToolTest( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
+    dict_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
 
     def __init__( self, id=None, repository_metadata_id=None, initial_changeset_revision=None, comment=None ):
         self.id = id
@@ -287,9 +315,9 @@ class SkipToolTest( object, APIItem ):
         self.comment = comment
 
     def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
+        return self.dictify( view='element', value_mapper=value_mapper )
 
-    def get_api_value( self, view='collection', value_mapper=None ):
+    def dictify( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -307,9 +335,9 @@ class SkipToolTest( object, APIItem ):
         return rval
 
 
-class RepositoryReview( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
+class RepositoryReview( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes' )
 
     def __init__( self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False ):
@@ -319,9 +347,9 @@ class RepositoryReview( object, APIItem ):
         self.rating = rating
         self.deleted = deleted
 
-class ComponentReview( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
-    api_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
+class ComponentReview( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
 
     def __init__( self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False ):
@@ -361,9 +389,9 @@ class RepositoryRatingAssociation( ItemRatingAssociation ):
         self.repository = repository
 
 
-class Category( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
+class Category( object, DictifiableMixin ):
+    dict_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
 
     def __init__( self, name=None, description=None, deleted=False ):
         self.name = name

@@ -271,8 +271,16 @@
                         <label>Genome:</label>
                         <div class="form-row-input">
                             <select name="dbkey" last_selected_value="?">
+                                <%
+                                    # move unspecified to the first option and set as default if not last_used_build
+                                    #TODO: remove when we decide on a common dbkey selector widget
+                                    unspecified = ('unspecified (?)', '?')
+                                    dbkeys.remove( unspecified )
+                                    dbkeys.insert( 0, unspecified )
+                                    default_selected = last_used_build or '?'
+                                %>
                                 %for dbkey in dbkeys:
-                                    %if dbkey[1] == last_used_build:
+                                    %if dbkey[1] == default_selected:
                                         <option value="${dbkey[1]}" selected>${dbkey[0]}</option>
                                     %else:
                                         <option value="${dbkey[1]}">${dbkey[0]}</option>
@@ -331,13 +339,6 @@
                 </form>
             </div>
         </div>
-        ## Script to replace dbkey select with select+search.
-        <script type="text/javascript">
-            // Replace dbkey select with search+select.
-            jQuery(document).ready( function() {
-                replace_big_select_inputs();
-            });
-        </script>
     %elif upload_option == 'import_from_history':
         <div class="toolForm">
             <div class="toolFormTitle">Active datasets in your current history (${ util.unicodify( history.name )})</div>

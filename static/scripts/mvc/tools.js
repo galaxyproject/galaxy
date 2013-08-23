@@ -8,17 +8,13 @@
 
  define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/backbone/backbone-relational" ], 
          function(_, util, data) {
- 
+
 /**
- * Simple base model for any visible element. Includes useful attributes and ability 
- * to set and track visibility.
+ * Mixin to enable model to track visibility.
  */
-var BaseModel = Backbone.RelationalModel.extend({
-    defaults: {
-        name: null,
-        hidden: false
-    },
-    
+var VisibilityMixin = {
+    hidden: false,
+
     show: function() {
         this.set("hidden", false);
     },
@@ -30,17 +26,19 @@ var BaseModel = Backbone.RelationalModel.extend({
     is_visible: function() {
         return !this.attributes.hidden;
     }
-});
+
+};
 
 /**
- * A tool input.
+ * A tool parameter.
  */
-var ToolInput = Backbone.RelationalModel.extend({
+var ToolParameter = Backbone.RelationalModel.extend({
     defaults: {
         name: null,
         label: null,
         type: null,
         value: null,
+        html: null,
         num_samples: 5
     },
     
@@ -49,7 +47,7 @@ var ToolInput = Backbone.RelationalModel.extend({
     },
 
     copy: function() {
-        return new ToolInput(this.toJSON());
+        return new ToolParameter(this.toJSON());
     },
     
     /**
@@ -70,33 +68,77 @@ var ToolInput = Backbone.RelationalModel.extend({
         }
         
         return samples;
-    }   
+    },
+
+    set_value: function(value) {
+        this.set('value', value || '');
+    }
+},
+{
+    /**
+     * Dictionary mapping parameter type strings to parameter classes.
+     */
+    TYPE_DICT: {
+        'number': IntegerToolParameter
+    },
+
+    /**
+     * Create new parameter from a dictionary.
+     */
+    create: function(options) {
+        var param_class = ToolParameter.TYPE_DICT[options.type] || ToolParameter;
+        return new param_class(options);
+    }
+});
+
+/**
+ * A number tool parameter.
+ */
+var IntegerToolParameter = ToolParameter.extend({
+    defaults: _.extend({}, ToolParameter.prototype.defaults, {
+        min: null,
+        max: null
+    }),
+
+    initialize: function() {
+        ToolParameter.prototype.initialize.call(this);
+        if (this.attributes.min) {
+            this.attributes.min = parseInt(this.attributes.min, 10);    
+        }
+        if (this.attributes.max) {
+            this.attributes.max = parseInt(this.attributes.max, 10);
+        }
+    },
+
+    set_value: function(value) {
+        this.set('value', parseInt(value, 10))
+    }
 });
 
 /**
  * A Galaxy tool.
  */
-var Tool = BaseModel.extend({
+var Tool = Backbone.RelationalModel.extend({
     // Default attributes.
     defaults: {
+        id: null,
+        name: null,
         description: null,
         target: null,
         inputs: []
     },
+
+    initialize: function(options) {
+        // Unpack parameters manually so that different parameter types can be created.
+        this.attributes.inputs = new Backbone.Collection( _.map(options.inputs, function(param_dict) {
+            // FIXME: it is still useful to be able to save/restore tool state?
+            // Update parameter value from tool state dict.
+            //param_dict.value = tool_state_dict[ param_dict[name] ] || param_dict.value;
+            return ToolParameter.create(param_dict);
+        }));
+    },
     
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'inputs',
-            relatedModel: ToolInput,
-            reverseRelation: {
-                key: 'tool',
-                includeInJSON: false
-            }
-        }
-    ],
-    
-    urlRoot: galaxy_paths.get('tool_url'),
+    urlRoot: galaxy_config.root + 'api/tools',
 
     /**
      * Returns object copy, optionally including only inputs that can be sampled.
@@ -207,6 +249,14 @@ var Tool = BaseModel.extend({
         return run_deferred;
     }
 });
+_.extend(Tool.prototype, VisibilityMixin);
+
+/**
+ * Tool view.
+ */
+var ToolView = Backbone.View.extend({
+
+});
 
 /**
  * Wrap collection of tools for fast access/manipulation.
@@ -218,12 +268,12 @@ var ToolCollection = Backbone.Collection.extend({
 /**
  * Label or section header in tool panel.
  */
-var ToolPanelLabel = BaseModel.extend({});
+var ToolSectionLabel = Backbone.Model.extend(VisibilityMixin);
 
 /**
  * Section of tool panel with elements (labels and tools).
  */
-var ToolPanelSection = BaseModel.extend({
+var ToolSection = Backbone.Model.extend({
     defaults: {
         elems: [],
         open: false
@@ -242,7 +292,7 @@ var ToolPanelSection = BaseModel.extend({
         var all_hidden = true,
             cur_label;
         _.each(this.attributes.elems, function(elt) {            
-            if (elt instanceof ToolPanelLabel) {
+            if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
                 cur_label.hide();
             }
@@ -265,13 +315,14 @@ var ToolPanelSection = BaseModel.extend({
         }
     }
 });
+_.extend(ToolSection.prototype, VisibilityMixin);
 
 /**
  * Tool search that updates results when query is changed. Result value of null
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
-var ToolSearch = BaseModel.extend({
+var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -326,66 +377,51 @@ var ToolSearch = BaseModel.extend({
     }
     
 });
+_.extend(ToolSearch.prototype, VisibilityMixin);
 
 /**
- * A collection of ToolPanelSections, Tools, and ToolPanelLabels. Collection
- * applies search results as they become available.
+ * Tool Panel.
  */
-var ToolPanel = Backbone.Collection.extend({
-    // TODO: need to generate this using url_for
-    url: "/tools",
-    tools: new ToolCollection(),
-    
+var ToolPanel = Backbone.Model.extend({
+
+    initialize: function(options) {
+        this.attributes.tool_search = options.tool_search;
+        this.attributes.tool_search.on("change:results", this.apply_search_results, this);
+        this.attributes.tools = options.tools;
+        this.attributes.layout = new Backbone.Collection( this.parse(options.layout) );
+    },
+
+    /**
+     * Parse tool panel dictionary and return collection of tool panel elements.
+     */
     parse: function(response) {
         // Recursive function to parse tool panel elements.
-        var parse_elt = function(elt_dict) {
-            var type = elt_dict.type;
-            if (type === 'tool') {
-                return new Tool(elt_dict);
-            }
-            else if (type === 'section') {
-                // Parse elements.
-                var elems = _.map(elt_dict.elems, parse_elt);
-                elt_dict.elems = elems;
-                return new ToolPanelSection(elt_dict);
-            }
-            else if (type === 'label') {
-                return new ToolPanelLabel(elt_dict);
-            }  
-        };
+        var self = this,
+            // Helper to recursively parse tool panel.
+            parse_elt = function(elt_dict) {
+                var type = elt_dict.model_class;
+                // There are many types of tools; for now, anything that ends in 'Tool'
+                // is treated as a generic tool.
+                if ( type.indexOf('Tool') === type.length - 4 ) {
+                    return self.attributes.tools.get(elt_dict.id);
+                }
+                else if (type === 'ToolSection') {
+                    // Parse elements.
+                    var elems = _.map(elt_dict.elems, parse_elt);
+                    elt_dict.elems = elems;
+                    return new ToolSection(elt_dict);
+                }
+                else if (type === 'ToolSectionLabel') {
+                    return new ToolSectionLabel(elt_dict);
+                }
+            };
         
         return _.map(response, parse_elt);
     },
-    
-    initialize: function(options) {
-        this.tool_search = options.tool_search;
-        this.tool_search.on("change:results", this.apply_search_results, this);
-        this.on("reset", this.populate_tools, this);
-    },
-    
-    /**
-     * Populate tool collection from panel elements.
-     */
-    populate_tools: function() {
-        var self = this;
-        self.tools = new ToolCollection(); 
-        this.each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
-                _.each(panel_elt.attributes.elems, function (section_elt) {
-                    if (section_elt instanceof Tool) {
-                        self.tools.push(section_elt);
-                    }
-                });
-            }
-            else if (panel_elt instanceof Tool) {
-                self.tools.push(panel_elt);
-            }
-        });
-    },
-    
+
     clear_search_results: function() {
-        this.each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
+        this.get('layout').each(function(panel_elt) {
+            if (panel_elt instanceof ToolSection) {
                 panel_elt.clear_search_results();
             }
             else {
@@ -396,15 +432,15 @@ var ToolPanel = Backbone.Collection.extend({
     },
     
     apply_search_results: function() {
-        var results = this.tool_search.attributes.results;
+        var results = this.get('tool_search').get('results');
         if (results === null) {
             this.clear_search_results();
             return;
         }
         
         var cur_label = null;
-        this.each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelLabel) {
+        this.get('layout').each(function(panel_elt) {
+            if (panel_elt instanceof ToolSectionLabel) {
                 cur_label = panel_elt;
                 cur_label.hide();
             }
@@ -461,12 +497,12 @@ var ToolLinkView = BaseView.extend({
 /**
  * Panel label/section header.
  */
-var ToolPanelLabelView = BaseView.extend({
+var ToolSectionLabelView = BaseView.extend({
     tagName: 'div',
     className: 'toolPanelLabel',
 
     render: function() {
-        this.$el.append( $("<span/>").text(this.model.attributes.name) );
+        this.$el.append( $("<span/>").text(this.model.attributes.text) );
         return this;
     }
 });
@@ -474,7 +510,7 @@ var ToolPanelLabelView = BaseView.extend({
 /**
  * Panel section.
  */
-var ToolPanelSectionView = BaseView.extend({
+var ToolSectionView = BaseView.extend({
     tagName: 'div',
     className: 'toolSectionWrapper',
     template: Handlebars.templates.panel_section,
@@ -494,8 +530,8 @@ var ToolPanelSectionView = BaseView.extend({
                 tool_view.render();
                 section_body.append(tool_view.$el);
             }
-            else if (elt instanceof ToolPanelLabel) {
-                var label_view = new ToolPanelLabelView({model: elt});
+            else if (elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({model: elt});
                 label_view.render();
                 section_body.append(label_view.$el);
             }
@@ -583,21 +619,21 @@ var ToolPanelView = Backbone.View.extend({
      * Set up view.
      */
     initialize: function() {
-        this.collection.tool_search.on("change:results", this.handle_search_results, this);
+        this.model.get('tool_search').on("change:results", this.handle_search_results, this);
     },
     
     render: function() {
         var self = this;
         
         // Render search.
-        var search_view = new ToolSearchView( {model: this.collection.tool_search} );
+        var search_view = new ToolSearchView( { model: this.model.get('tool_search') } );
         search_view.render();
         self.$el.append(search_view.$el);
         
         // Render panel.
-        this.collection.each(function(panel_elt) {
-            if (panel_elt instanceof ToolPanelSection) {
-                var section_title_view = new ToolPanelSectionView({model: panel_elt});
+        this.model.get('layout').each(function(panel_elt) {
+            if (panel_elt instanceof ToolSection) {
+                var section_title_view = new ToolSectionView({model: panel_elt});
                 section_title_view.render();
                 self.$el.append(section_title_view.$el);
             }
@@ -606,8 +642,8 @@ var ToolPanelView = Backbone.View.extend({
                 tool_view.render();
                 self.$el.append(tool_view.$el);
             }
-            else if (panel_elt instanceof ToolPanelLabel) {
-                var label_view = new ToolPanelLabelView({model: panel_elt});
+            else if (panel_elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({model: panel_elt});
                 label_view.render();
                 self.$el.append(label_view.$el);
             }
@@ -618,7 +654,7 @@ var ToolPanelView = Backbone.View.extend({
             // Tool id is always the first class.
             var 
                 tool_id = $(this).attr('class').split(/\s+/)[0],
-                tool = self.collection.tools.get(tool_id);
+                tool = self.model.get('tools').get(tool_id);
                 
             self.trigger("tool_link_click", e, tool);
         });
@@ -627,7 +663,7 @@ var ToolPanelView = Backbone.View.extend({
     },
     
     handle_search_results: function() {
-        var results = this.collection.tool_search.attributes.results;
+        var results = this.model.get('tool_search').get('results');
         if (results && results.length === 0) {
             $("#search-no-results").show();
         }
@@ -697,7 +733,10 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
 
 // Exports
 return {
+    ToolParameter: ToolParameter,
+    IntegerToolParameter: IntegerToolParameter,
     Tool: Tool,
+    ToolCollection: ToolCollection,
     ToolSearch: ToolSearch,
     ToolPanel: ToolPanel,
     ToolPanelView: ToolPanelView,
