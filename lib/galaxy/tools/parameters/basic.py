@@ -236,7 +236,7 @@ class IntegerToolParameter( TextToolParameter ):
     ValueError: An integer is required
     """
 
-    dict_colletion_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
+    dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ( 'min', 'max' )
 
     def __init__( self, tool, elem ):
         TextToolParameter.__init__( self, tool, elem )
@@ -251,12 +251,12 @@ class IntegerToolParameter( TextToolParameter ):
         self.max = elem.get( 'max' )
         if self.min:
             try:
-                int( self.min )
+                self.min = int( self.min )
             except:
                 raise ValueError( "An integer is required" )
         if self.max:
             try:
-                int( self.max )
+                self.max = int( self.max )
             except:
                 raise ValueError( "An integer is required" )
         if self.min and self.max:

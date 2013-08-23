@@ -37,7 +37,7 @@ from galaxy.model.item_attrs import DictifiableMixin
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation,HistoryDatasetAssociation
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter

@@ -919,7 +919,7 @@ var TracksterView = Backbone.View.extend({
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
                 { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
-                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" },
+                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" }
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {
@@ -1393,7 +1393,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         //
 
         // Redraw without requesting more data immediately.
-        view.request_redraw({ data_fetch: false })
+        view.request_redraw({ data_fetch: false });
 
         // Set up timeout to redraw with more data when moving stops.
         if (this.redraw_on_move_fn) {
@@ -1637,15 +1637,11 @@ var TracksterTool = Backbone.RelationalModel.extend({
     ],
 
     initialize: function(options) {
-        // HACK: remove data and group tool inputs because Trackster
-        // does not work with them right now.
-        var tool = this.get('tool'),
-            incompatible_inputs = tool.get('inputs').filter( function(input) {
-                return ( [ 'data', 'hidden_data', 'group'].indexOf( input.get('type') ) !== -1);
-            });
-        tool.get('inputs').remove(incompatible_inputs);
-    }
+        // HACK: remove some inputs because Trackster does yet not work with them.
+        this.get('tool').remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
 
+        // FIXME: need to restore tool values/visibility.
+    }
 });
 
 /**
@@ -2320,8 +2316,12 @@ var Track = function(view, container, obj_dict) {
     // Attribute init.
     //
 
-    // Only create dataset if it is defined.
-    this.dataset = (obj_dict.dataset ? new data.Dataset(obj_dict.dataset) : null);
+    // Set or create dataset.
+    this.dataset = null;
+    if (obj_dict.dataset) {
+        // Dataset can be a Backbone model or a dict that can be used to create a model.
+        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset) );
+    }
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
@@ -3452,9 +3452,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.data_query_wait = 1000;
         this.dataset_check_type = 'state';
         
+        // FIXME: this is optional and is disabled for now because it creates
+        // additional converter jobs without a clear benefit because indexing
+        // such a small dataset provides little benefit.
         //
         // Set up one-time, post-draw to clear tool execution settings.
         //
+        /*
         this.normal_postdraw_actions = this.postdraw_actions;
         this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
             var self = this;
@@ -3484,6 +3488,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Reset post-draw actions function.
             self.postdraw_actions = self.normal_postdraw_actions;
         };
+        */
     }
 });
 

@@ -1,16 +1,12 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
- *
- * Models have no references to views, instead using events to indicate state 
- * changes; this is advantageous because multiple views can use the same object 
- * and models can be used without views.
  */
 
  define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/backbone/backbone-relational" ], 
          function(_, util, data) {
 
 /**
- * Mixin to enable model to track visibility.
+ * Mixin for tracking model visibility.
  */
 var VisibilityMixin = {
     hidden: false,
@@ -41,6 +37,13 @@ var ToolParameter = Backbone.RelationalModel.extend({
         html: null,
         num_samples: 5
     },
+
+    subModelTypes: {
+        'integer': 'IntegerToolParameter',
+        'float': 'FloatToolParameter',
+        'data': 'DataToolParameter',
+        'select': 'SelectToolParameter'
+    },
     
     initialize: function() {
         this.attributes.html = unescape(this.attributes.html);
@@ -49,69 +52,57 @@ var ToolParameter = Backbone.RelationalModel.extend({
     copy: function() {
         return new ToolParameter(this.toJSON());
     },
-    
-    /**
-     * Returns samples from a tool input.
-     */
-    get_samples: function() {
-        var type = this.get('type'),
-            samples = null;
-        if (type === 'number') {
-            samples = d3.scale.linear()
-                        .domain([this.get('min'), this.get('max')])
-                        .ticks(this.get('num_samples'));
-        }
-        else if (type === 'select') {
-            samples = _.map(this.get('options'), function(option) {
-                return option[0];
-            });
-        }
-        
-        return samples;
-    },
 
     set_value: function(value) {
         this.set('value', value || '');
     }
-},
-{
-    /**
-     * Dictionary mapping parameter type strings to parameter classes.
-     */
-    TYPE_DICT: {
-        'number': IntegerToolParameter
+});
+
+// In order to resolve subModelTypes for tool parameters, use a custom scope here rather
+// than polluting the global scope.
+var tools_scope = {};
+Backbone.Relational.store.addModelScope(tools_scope);
+
+/**
+ * A data tool parameter.
+ */
+var DataToolParameter = tools_scope.DataToolParameter = ToolParameter.extend({});
+
+/**
+ * An integer tool parameter.
+ */
+var IntegerToolParameter = tools_scope.IntegerToolParameter = ToolParameter.extend({
+    set_value: function(value) {
+        this.set('value', parseInt(value, 10));
     },
 
     /**
-     * Create new parameter from a dictionary.
+     * Returns samples from a tool input.
      */
-    create: function(options) {
-        var param_class = ToolParameter.TYPE_DICT[options.type] || ToolParameter;
-        return new param_class(options);
+    get_samples: function() {
+        return d3.scale.linear()
+                        .domain([this.get('min'), this.get('max')])
+                        .ticks(this.get('num_samples'));
     }
 });
 
-/**
- * A number tool parameter.
- */
-var IntegerToolParameter = ToolParameter.extend({
-    defaults: _.extend({}, ToolParameter.prototype.defaults, {
-        min: null,
-        max: null
-    }),
-
-    initialize: function() {
-        ToolParameter.prototype.initialize.call(this);
-        if (this.attributes.min) {
-            this.attributes.min = parseInt(this.attributes.min, 10);    
-        }
-        if (this.attributes.max) {
-            this.attributes.max = parseInt(this.attributes.max, 10);
-        }
-    },
-
+var FloatToolParameter = tools_scope.FloatToolParameter = IntegerToolParameter.extend({
     set_value: function(value) {
-        this.set('value', parseInt(value, 10))
+        this.set('value', parseFloat(value));
+    }
+});
+
+/** 
+ * A select tool parameter.
+ */
+var SelectToolParameter = tools_scope.SelectToolParameter = ToolParameter.extend({
+    /**
+     * Returns tool options.
+     */
+    get_samples: function() {
+        return _.map(this.get('options'), function(option) {
+            return option[0];
+        });
     }
 });
 
@@ -125,21 +116,32 @@ var Tool = Backbone.RelationalModel.extend({
         name: null,
         description: null,
         target: null,
-        inputs: []
+        inputs: [],
+        outputs: []
     },
 
-    initialize: function(options) {
-        // Unpack parameters manually so that different parameter types can be created.
-        this.attributes.inputs = new Backbone.Collection( _.map(options.inputs, function(param_dict) {
-            // FIXME: it is still useful to be able to save/restore tool state?
-            // Update parameter value from tool state dict.
-            //param_dict.value = tool_state_dict[ param_dict[name] ] || param_dict.value;
-            return ToolParameter.create(param_dict);
-        }));
-    },
-    
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'inputs',
+            relatedModel: ToolParameter
+        }
+    ],
+
     urlRoot: galaxy_config.root + 'api/tools',
 
+    /**
+     * Removes inputs of a particular type; this is useful because not all inputs can be handled by
+     * client and server yet.
+     */
+    remove_inputs: function(types) {
+        var tool = this,
+            incompatible_inputs = tool.get('inputs').filter( function(input) {
+                return ( types.indexOf( input.get('type') ) !== -1);
+            });
+        tool.get('inputs').remove(incompatible_inputs);
+    },
+    
     /**
      * Returns object copy, optionally including only inputs that can be sampled.
      */
@@ -735,6 +737,7 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
 return {
     ToolParameter: ToolParameter,
     IntegerToolParameter: IntegerToolParameter,
+    SelectToolParameter: SelectToolParameter,
     Tool: Tool,
     ToolCollection: ToolCollection,
     ToolSearch: ToolSearch,
