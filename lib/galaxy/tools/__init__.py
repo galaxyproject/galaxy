@@ -3284,7 +3284,14 @@ class ToolParameterValueWrapper( object ):
     def __nonzero__( self ):
         return bool( self.value )
     def get_display_text( self, quote=True ):
-        return pipes.quote( self.input.value_to_display_text( self.value, self.input.tool.app ) )
+        """
+        Returns a string containing the value that would be displayed to the user in the tool interface.
+        When quote is True (default), the string is escaped for e.g. command-line usage.
+        """
+        rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
+        if quote:
+            return pipes.quote( rval ) or "''" #pipes.quote in Python < 2.7 returns an empty string instead of the expected quoted empty string
+        return rval
 
 class RawObjectWrapper( ToolParameterValueWrapper ):
     """
