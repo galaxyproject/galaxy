@@ -920,11 +920,16 @@ var SweepsterVisualizationView = Backbone.View.extend({
                         // Set inputs and run tool.
                         tool.set_input_values(pm_track.get('settings').get('values'));
                         $.when(tool.rerun(dataset, regions)).then(function(output) {
-                            // HACK: output is an HDA with track config attribute. To create a track, rearrange
-                            // track config to point to HDA.
+                            // HACKish: output is an HDA with track config attribute. To create a track
+                            // that works correctly with Backbone relational, it is necessary to
+                            // use a modified version of the track config.
                             var dataset = output.first(),
                                 track_config = dataset.get('track_config');
+                            // Set dataset to be the tool's output.
                             track_config.dataset = dataset;
+                            // Set tool to null so that it is not unpacked; unpacking it messes with 
+                            // the tool parameters and parameter tree.
+                            track_config.tool = null;
 
                             // Create and add track for output dataset.
                             var track_obj = tracks.object_from_template(track_config, self, null);
