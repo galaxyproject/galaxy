@@ -39,37 +39,6 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
         tool_dependencies[ dependency_key ] = requirements_dict
     return tool_dependencies
 
-def get_download_url_for_platform( url_templates, platform_info_dict ):
-    '''
-    Compare the dict returned by get_platform_info() with the values specified in the base_url element. Return
-    true if and only if all defined attributes match the corresponding dict entries. If an entry is not
-    defined in the base_url element, it is assumed to be irrelevant at this stage. For example,
-    <base_url os="darwin">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</base_url>
-    where the OS must be 'darwin', but the architecture is filled in later using string.Template.
-    '''
-    os_ok = False
-    architecture_ok = False
-    for url_template in url_templates:
-        os_name = url_template.get( 'os', None )
-        architecture = url_template.get( 'architecture', None )
-        if os_name:
-            if os_name.lower() == platform_info_dict[ 'os' ]:
-                os_ok = True
-            else:
-                os_ok = False
-        else:
-            os_ok = True
-        if architecture:
-            if architecture.lower() == platform_info_dict[ 'architecture' ]:
-                architecture_ok = True
-            else:
-                architecture_ok = False
-        else:
-            architecture_ok = True
-        if os_ok and architecture_ok:
-            return url_template
-    return None
-
 def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
     sa_session = app.model.context.current
@@ -188,6 +157,37 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
             else:
                 message += "This repository contains no tools, so it's defined tool dependencies are considered orphans within this repository.<br/>"
     return message
+
+def get_download_url_for_platform( url_templates, platform_info_dict ):
+    '''
+    Compare the dict returned by get_platform_info() with the values specified in the base_url element. Return
+    true if and only if all defined attributes match the corresponding dict entries. If an entry is not
+    defined in the base_url element, it is assumed to be irrelevant at this stage. For example,
+    <base_url os="darwin">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</base_url>
+    where the OS must be 'darwin', but the architecture is filled in later using string.Template.
+    '''
+    os_ok = False
+    architecture_ok = False
+    for url_template in url_templates:
+        os_name = url_template.get( 'os', None )
+        architecture = url_template.get( 'architecture', None )
+        if os_name:
+            if os_name.lower() == platform_info_dict[ 'os' ]:
+                os_ok = True
+            else:
+                os_ok = False
+        else:
+            os_ok = True
+        if architecture:
+            if architecture.lower() == platform_info_dict[ 'architecture' ]:
+                architecture_ok = True
+            else:
+                architecture_ok = False
+        else:
+            architecture_ok = True
+        if os_ok and architecture_ok:
+            return url_template
+    return None
 
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
     if all_tool_dependencies:

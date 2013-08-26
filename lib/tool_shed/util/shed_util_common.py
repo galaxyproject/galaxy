@@ -1521,10 +1521,12 @@ def update_repository( repo, ctx_rev=None ):
     # purging is not supported by the mercurial API.
     commands.update( get_configured_ui(), repo, rev=ctx_rev )
 
-def update_tool_shed_repository_status( app, tool_shed_repository, status ):
+def update_tool_shed_repository_status( app, tool_shed_repository, status, error_message=None ):
     """Update the status of a tool shed repository in the process of being installed into Galaxy."""
     sa_session = app.model.context.current
     tool_shed_repository.status = status
+    if error_message:
+        tool_shed_repository.error_message = str( error_message )
     sa_session.add( tool_shed_repository )
     sa_session.flush()
 

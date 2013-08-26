@@ -108,7 +108,11 @@ class InstallManager( object ):
                                                                                                            repository_dependencies_dict )
 
                                 for tool_shed_repository in ordered_tool_shed_repositories:
-                                    self.install_repository( repository_elem, tool_shed_repository, install_dependencies )
+                                    is_repository_dependency = self.__is_repository_dependency( name, changeset_revision, tool_shed_repository )
+                                    self.install_repository( repository_elem,
+                                                             tool_shed_repository,
+                                                             install_dependencies,
+                                                             is_repository_dependency=is_repository_dependency )
                     else:
                         message = "\nNo tools associated with migration stage %s are defined in your " % str( latest_migration_script_number )
                         message += "file%s named %s,\nso no repositories will be installed on disk.\n" % ( plural, file_names )
@@ -320,7 +324,7 @@ class InstallManager( object ):
                                         tool_panel_elems.append( elem )
         return tool_panel_elems
 
-    def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies ):
+    def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies, is_repository_dependency=False ):
         """
         Generate the metadata for the installed tool shed repository, among other things.  If the installed tool_shed_repository contains tools
         that are loaded into the Galaxy tool panel, this method will automatically eliminate all entries for each of the tools defined in the
@@ -333,37 +337,38 @@ class InstallManager( object ):
             repo_install_dir = os.path.join( self.tool_path, relative_install_dir )
         else:
             repo_install_dir = relative_install_dir
-        for tool_elem in repository_elem:
-            # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
-            tool_config = tool_elem.get( 'file' )
-            guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
-            # See if tool_config is defined inside of a section in self.proprietary_tool_panel_elems.
-            is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
-            if is_displayed:
-                tool_panel_dict_for_tool_config = tool_util.generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
-                # The tool-panel_dict has the following structure.
-                # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
-                for k, v in tool_panel_dict_for_tool_config.items():
-                    tool_panel_dict_for_display[ k ] = v
-                    for tool_panel_dict in v:
-                        # Keep track of tool config file names associated with entries that have been made to the migrated_tools_conf.xml file so
-                        # they can be eliminated from all non-shed-related tool panel configs.
-                        tool_config_file = tool_panel_dict.get( 'tool_config', None )
-                        if tool_config_file:
-                            if tool_config_file not in tool_configs_to_filter:
-                                tool_configs_to_filter.append( tool_config_file )
-            else:
-                print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
-                % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
-        if tool_configs_to_filter:
-            lock = threading.Lock()
-            lock.acquire( True )
-            try:
-                self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
-            except Exception, e:
-                log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
-            finally:
-                lock.release()
+        if not is_repository_dependency:
+            for tool_elem in repository_elem:
+                # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
+                tool_config = tool_elem.get( 'file' )
+                guid = self.get_guid( repository_clone_url, relative_install_dir, tool_config )
+                # See if tool_config is defined inside of a section in self.proprietary_tool_panel_elems.
+                is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
+                if is_displayed:
+                    tool_panel_dict_for_tool_config = tool_util.generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
+                    # The tool-panel_dict has the following structure.
+                    # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
+                    for k, v in tool_panel_dict_for_tool_config.items():
+                        tool_panel_dict_for_display[ k ] = v
+                        for tool_panel_dict in v:
+                            # Keep track of tool config file names associated with entries that have been made to the migrated_tools_conf.xml file so
+                            # they can be eliminated from all non-shed-related tool panel configs.
+                            tool_config_file = tool_panel_dict.get( 'tool_config', None )
+                            if tool_config_file:
+                                if tool_config_file not in tool_configs_to_filter:
+                                    tool_configs_to_filter.append( tool_config_file )
+                else:
+                    print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
+                    % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+            if tool_configs_to_filter:
+                lock = threading.Lock()
+                lock.acquire( True )
+                try:
+                    self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
+                except Exception, e:
+                    log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
+                finally:
+                    lock.release()
         metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=self.app,
                                                                                                    repository=tool_shed_repository,
                                                                                                    changeset_revision=tool_shed_repository.changeset_revision,
@@ -377,7 +382,8 @@ class InstallManager( object ):
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
-        if 'tool_dependencies' in metadata_dict:
+        has_tool_dependencies = self.__has_tool_dependencies( metadata_dict )
+        if has_tool_dependencies:
             # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
             tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app, tool_shed_repository, relative_install_dir, set_status=True )
         else:
@@ -400,30 +406,31 @@ class InstallManager( object ):
                                                                                                   sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
                 tool_util.copy_sample_files( self.app, sample_files, tool_path=self.tool_path, sample_files_copied=sample_files_copied )
-                if install_dependencies and tool_dependencies and 'tool_dependencies' in metadata_dict:
-                    # Install tool dependencies.
-                    suc.update_tool_shed_repository_status( self.app,
-                                                            tool_shed_repository,
-                                                            self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
-                    # Get the tool_dependencies.xml file from disk.
-                    tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-                    installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=self.app,
-                                                                                                tool_shed_repository=tool_shed_repository,
-                                                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                                                tool_dependencies=tool_dependencies )
-                    for installed_tool_dependency in installed_tool_dependencies:
-                        if installed_tool_dependency.status == self.app.model.ToolDependency.installation_status.ERROR:
-                            print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
-                            print installed_tool_dependency.error_message, '\n\n'
-                tool_util.add_to_tool_panel( self.app,
-                                             tool_shed_repository.name,
-                                             repository_clone_url,
-                                             tool_shed_repository.installed_changeset_revision,
-                                             repository_tools_tups,
-                                             self.repository_owner,
-                                             self.migrated_tools_config,
-                                             tool_panel_dict=tool_panel_dict_for_display,
-                                             new_install=True )
+                if not is_repository_dependency:
+                    tool_util.add_to_tool_panel( self.app,
+                                                 tool_shed_repository.name,
+                                                 repository_clone_url,
+                                                 tool_shed_repository.installed_changeset_revision,
+                                                 repository_tools_tups,
+                                                 self.repository_owner,
+                                                 self.migrated_tools_config,
+                                                 tool_panel_dict=tool_panel_dict_for_display,
+                                                 new_install=True )
+        if install_dependencies and tool_dependencies and has_tool_dependencies:
+            # Install tool dependencies.
+            suc.update_tool_shed_repository_status( self.app,
+                                                    tool_shed_repository,
+                                                    self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+            # Get the tool_dependencies.xml file from disk.
+            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
+            installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=self.app,
+                                                                                        tool_shed_repository=tool_shed_repository,
+                                                                                        tool_dependencies_config=tool_dependencies_config,
+                                                                                        tool_dependencies=tool_dependencies )
+            for installed_tool_dependency in installed_tool_dependencies:
+                if installed_tool_dependency.status == self.app.model.ToolDependency.installation_status.ERROR:
+                    print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
+                    print installed_tool_dependency.error_message, '\n\n'
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
@@ -455,7 +462,7 @@ class InstallManager( object ):
             except:
                 pass
 
-    def install_repository( self, repository_elem, tool_shed_repository, install_dependencies ):
+    def install_repository( self, repository_elem, tool_shed_repository, install_dependencies, is_repository_dependency=False ):
         """Install a single repository, loading contained tools into the tool panel."""
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
         relative_clone_dir = os.path.join( tool_shed_repository.tool_shed,
@@ -482,7 +489,8 @@ class InstallManager( object ):
                                                  repository_clone_url=repository_clone_url,
                                                  relative_install_dir=relative_install_dir,
                                                  repository_elem=repository_elem,
-                                                 install_dependencies=install_dependencies )
+                                                 install_dependencies=install_dependencies,
+                                                 is_repository_dependency=is_repository_dependency )
                 self.app.sa_session.refresh( tool_shed_repository )
                 metadata_dict = tool_shed_repository.metadata
                 if 'tools' in metadata_dict:
@@ -526,6 +534,12 @@ class InstallManager( object ):
                                 self.app.sa_session.add( tool_version_association )
                                 self.app.sa_session.flush()
                 suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
+            else:
+                print 'Error attempting to clone repository %s: %s' % ( str( tool_shed_repository.name ), str( error_message ) )
+                suc.update_tool_shed_repository_status( self.app,
+                                                        tool_shed_repository,
+                                                        self.app.model.ToolShedRepository.installation_status.ERROR,
+                                                        error_message=error_message )
 
     @property
     def non_shed_tool_panel_configs( self ):
@@ -565,6 +579,12 @@ class InstallManager( object ):
                     break
         return ordered_tool_shed_repositories
 
+    def __has_tool_dependencies( self, metadata_dict ):
+        '''Determine if the provided metadata_dict specifies tool dependencies.'''
+        if 'tool_dependencies' in metadata_dict or 'orphan_tool_dependencies' in metadata_dict:
+            return True
+        return False
+
     def __isinstalled( self, clone_dir ):
         full_path = os.path.abspath( clone_dir )
         if os.path.exists( full_path ):
@@ -572,6 +592,14 @@ class InstallManager( object ):
                 if '.hg' in dirs:
                     # Assume that the repository has been installed if we find a .hg directory.
                     return True
+        return False
+
+    def __is_repository_dependency( self, name, changeset_revision, tool_shed_repository ):
+        '''Determine if the provided tool shed repository is a repository dependency.'''
+        if str( tool_shed_repository.name ) != str( name ) or \
+                str( tool_shed_repository.owner ) != str( self.repository_owner ) or \
+                str( tool_shed_repository.changeset_revision ) != str( changeset_revision ):
+            return True
         return False
 
     def __is_valid_repository_tag( self, elem ):
