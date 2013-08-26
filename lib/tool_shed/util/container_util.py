@@ -3,6 +3,7 @@ import os
 import threading
 from galaxy.util import asbool
 from galaxy.web.framework.helpers import time_ago
+from tool_shed.util import common_util
 from tool_shed.util import readme_util
 import tool_shed.util.shed_util_common as suc
 
@@ -63,7 +64,7 @@ class Folder( object ):
                 self.repository_dependencies.remove( contained_repository_dependency )
 
     def to_repository_dependency( self, repository_dependency_id ):
-        toolshed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
+        toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
         return RepositoryDependency( id=repository_dependency_id,
                                      toolshed=toolshed,
                                      repository_name=name,
@@ -463,7 +464,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
             folder_id += 1
             invalid_repository_dependency_id += 1
             toolshed, name, owner, changeset_revision, prior_installation_required, error = \
-                suc.parse_repository_dependency_tuple( invalid_repository_dependency, contains_error=True )
+                common_util.parse_repository_dependency_tuple( invalid_repository_dependency, contains_error=True )
             key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision, prior_installation_required )
             label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, changeset_revision, owner )
             folder = Folder( id=folder_id,
@@ -1336,7 +1337,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         can_create_dependency = not is_subfolder_of( sub_folder, repository_dependency )
         if can_create_dependency:
             toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
-                suc.parse_repository_dependency_tuple( repository_dependency )
+                common_util.parse_repository_dependency_tuple( repository_dependency )
             repository_dependency_id += 1
             repository_dependency = RepositoryDependency( id=repository_dependency_id,
                                                           toolshed=toolshed,
@@ -1352,7 +1353,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
 
 def is_subfolder_of( folder, repository_dependency ):
     toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
-        suc.parse_repository_dependency_tuple( repository_dependency )
+        common_util.parse_repository_dependency_tuple( repository_dependency )
     key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, asbool( prior_installation_required ) )
     for sub_folder in folder.folders:
         if key == sub_folder.key:

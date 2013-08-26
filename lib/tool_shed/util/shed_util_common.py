@@ -237,8 +237,8 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
                                            status, current_changeset_revision=None, owner='', dist_to_shed=False ):
     """
-    Update a tool shed repository record in the Galaxy database with the new information received.  If a record defined by the received tool shed, repository name
-    and owner does not exists, create a new record with the received information.
+    Update a tool shed repository record in the Galaxy database with the new information received.  If a record defined by the received tool shed,
+    repository name and owner does not exist, create a new record with the received information.
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
@@ -312,7 +312,7 @@ def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
 def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     """Generate teh URL for cloning a repositoyr given a tuple of toolshed, name, owner, changeset_revision."""
     # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
-    toolshed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( repo_info_tup )
+    toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repo_info_tup )
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
 
@@ -947,7 +947,7 @@ def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, reposi
     This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
     are being installed.  Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received
     tsr_ids.  If so, then determine whether that required repository should be imported / installed prior to it's dependent repository.  Return a list
-    of encoded repository ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be impoerted / installed
+    of encoded repository ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be imported / installed
     prior to the dependent repository associated with the received repository_dependencies.
     """
     prior_tsr_ids = []
@@ -956,7 +956,7 @@ def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, reposi
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( rd_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
                 if asbool( prior_installation_required ):
                     if trans.webapp.name == 'galaxy':
                         repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
@@ -983,7 +983,7 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
                                            .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
                                            .all()
     if len( all_metadata_records ) > 1:
-        # Delete all recrds older than the last one updated.
+        # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[ 1: ]:
             trans.sa_session.delete( repository_metadata )
             trans.sa_session.flush()
@@ -1307,28 +1307,6 @@ def open_repository_files_folder( trans, folder_path ):
                      "key" : full_path }
             folder_contents.append( node )
     return folder_contents
-
-def parse_repository_dependency_tuple( repository_dependency_tuple, contains_error=False ):
-    if contains_error:
-        if len( repository_dependency_tuple ) == 5:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
-            tool_shed, name, owner, changeset_revision, error = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
-        elif len( repository_dependency_tuple ) == 6:
-            toolshed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return toolshed, name, owner, changeset_revision, prior_installation_required, error
-    else:
-        if len( repository_dependency_tuple ) == 4:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
-            tool_shed, name, owner, changeset_revision = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
-        elif len( repository_dependency_tuple ) == 5:
-            tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return tool_shed, name, owner, changeset_revision, prior_installation_required
 
 def pretty_print( dict=None ):
     if dict:

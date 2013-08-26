@@ -54,7 +54,8 @@ class InstallManager( object ):
                 print error_message
             else:
                 root = tree.getroot()
-                self.tool_shed = suc.clean_tool_shed_url( root.get( 'name' ) )
+                self.tool_shed_url = suc.get_url_from_tool_shed( self.app, root.get( 'name' ) )
+                self.tool_shed = suc.clean_tool_shed_url( self.tool_shed_url )
                 self.repository_owner = common_util.REPOSITORY_OWNER
                 index, self.shed_config_dict = suc.get_shed_tool_conf_dict( app, self.migrated_tools_config )
                 # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
@@ -85,7 +86,29 @@ class InstallManager( object ):
                         for repository_elem in root:
                             # Make sure we have a valid repository tag.
                             if self.__is_valid_repository_tag( repository_elem ):
-                                self.install_repository( repository_elem, install_dependencies )
+                                # Get all repository dependencies for the repository defined by the current repository_elem.  Repository dependency
+                                # definitions contained in tool shed repositories with migrated tools must never define a relationship to a repository
+                                # dependency that contains a tool.  The repository dependency can only contain items that are not loaded into the Galaxy
+                                # tool panel (e.g., tool dependency definitions, custom datatypes, etc).  This restriction must be followed down the
+                                # entire dependency hierarchy.
+                                name = repository_elem.get( 'name' )
+                                changeset_revision = repository_elem.get( 'changeset_revision' )
+                                tool_shed_accessible, repository_dependencies_dict = \
+                                    common_util.get_repository_dependencies( app, self.tool_shed_url, name, self.repository_owner, changeset_revision )
+                                # Make sure all repository dependency records exist (as tool_shed_repository table rows) in the Galaxy database.
+                                created_tool_shed_repositories = self.create_or_update_tool_shed_repository_records( name,
+                                                                                                                     changeset_revision,
+                                                                                                                     repository_dependencies_dict )
+                                # Order the repositories for proper installation.  This process is similar to the process used when installing tool
+                                # shed repositories (i.e., the order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/
+                                # repository_util), but does not handle managing tool panel sections and other components since repository dependency
+                                # definitions contained in tool shed repositories with migrated tools must never define a relationship to a repository
+                                # dependency that contains a tool.
+                                ordered_tool_shed_repositories = self.order_repositories_for_installation( created_tool_shed_repositories,
+                                                                                                           repository_dependencies_dict )
+
+                                for tool_shed_repository in ordered_tool_shed_repositories:
+                                    self.install_repository( repository_elem, tool_shed_repository, install_dependencies )
                     else:
                         message = "\nNo tools associated with migration stage %s are defined in your " % str( latest_migration_script_number )
                         message += "file%s named %s,\nso no repositories will be installed on disk.\n" % ( plural, file_names )
@@ -94,6 +117,52 @@ class InstallManager( object ):
                     message = "\nThe main Galaxy tool shed is not currently available, so skipped migration stage %s.\n" % str( latest_migration_script_number )
                     message += "Try again later.\n"
                     print message
+
+    def create_or_update_tool_shed_repository_record( self, name, owner, changeset_revision, description=None ):
+
+        # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
+        relative_clone_dir = os.path.join( self.tool_shed, 'repos', owner, name, changeset_revision )
+        clone_dir = os.path.join( self.tool_path, relative_clone_dir )
+        if not self.__isinstalled( clone_dir ):
+            repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
+            relative_install_dir = os.path.join( relative_clone_dir, name )
+            install_dir = os.path.join( clone_dir, name )
+            ctx_rev = suc.get_ctx_rev( self.app, self.tool_shed_url, name, owner, changeset_revision )
+            tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
+                                                                              name=name,
+                                                                              description=description,
+                                                                              installed_changeset_revision=changeset_revision,
+                                                                              ctx_rev=ctx_rev,
+                                                                              repository_clone_url=repository_clone_url,
+                                                                              metadata_dict={},
+                                                                              status=self.app.model.ToolShedRepository.installation_status.NEW,
+                                                                              current_changeset_revision=None,
+                                                                              owner=self.repository_owner,
+                                                                              dist_to_shed=True )
+            return tool_shed_repository
+        return None
+
+    def create_or_update_tool_shed_repository_records( self, name, changeset_revision, repository_dependencies_dict ):
+        """
+        Make sure the repository defined by name and changeset_revision and all of it's repository dependencies have associated tool_shed_repository
+        table rows in the Galaxy database.
+        """
+        created_tool_shed_repositories = []
+        description = repository_dependencies_dict.get( 'description', None )
+        tool_shed_repository = self.create_or_update_tool_shed_repository_record( name, self.repository_owner, changeset_revision, description=description )
+        if tool_shed_repository:
+            created_tool_shed_repositories.append( tool_shed_repository )
+        for rd_key, rd_tups in repository_dependencies_dict.items():
+            if rd_key in [ 'root_key', 'description' ]:
+                continue
+            for rd_tup in rd_tups:
+                rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                # TODO: Make sure the repository description is applied to the new repository record during installation.
+                tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name, rd_owner, rd_changeset_revision, description=None )
+                if tool_shed_repository:
+                    created_tool_shed_repositories.append( tool_shed_repository )
+        return created_tool_shed_repositories
 
     def filter_and_persist_proprietary_tool_panel_configs( self, tool_configs_to_filter ):
         """Eliminate all entries in all non-shed-related tool panel configs for all tool config file names in the received tool_configs_to_filter."""
@@ -131,7 +200,38 @@ class InstallManager( object ):
                 fh.close()
                 shutil.move( tmp_filename, os.path.abspath( proprietary_tool_conf ) )
                 os.chmod( proprietary_tool_conf, 0644 )
-                
+
+    def get_containing_tool_sections( self, tool_config ):
+        """
+        If tool_config is defined somewhere in self.proprietary_tool_panel_elems, return True and a list of ToolSections in which the
+        tool is displayed.  If the tool is displayed outside of any sections, None is appended to the list.
+        """
+        tool_sections = []
+        is_displayed = False
+        for proprietary_tool_panel_elem in self.proprietary_tool_panel_elems:
+            if proprietary_tool_panel_elem.tag == 'tool':
+                # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
+                proprietary_tool_config = proprietary_tool_panel_elem.get( 'file' )
+                proprietary_name = suc.strip_path( proprietary_tool_config )
+                if tool_config == proprietary_name:
+                    # The tool is loaded outside of any sections.
+                    tool_sections.append( None )
+                    if not is_displayed:
+                        is_displayed = True
+            if proprietary_tool_panel_elem.tag == 'section':
+                # The proprietary_tool_panel_elem looks something like <section name="EMBOSS" id="EMBOSSLite">.
+                for section_elem in proprietary_tool_panel_elem:
+                    if section_elem.tag == 'tool':
+                        # The section_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
+                        proprietary_tool_config = section_elem.get( 'file' )
+                        proprietary_name = suc.strip_path( proprietary_tool_config )
+                        if tool_config == proprietary_name:
+                            # The tool is loaded inside of the section_elem.
+                            tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
+                            if not is_displayed:
+                                is_displayed = True
+        return is_displayed, tool_sections
+
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
             relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
@@ -149,6 +249,30 @@ class InstallManager( object ):
         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
         tool = self.toolbox.load_tool( full_path )
         return suc.generate_tool_guid( repository_clone_url, tool )
+
+    def get_prior_install_required_dict( self, tool_shed_repositories, repository_dependencies_dict ):
+        """
+        Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received
+        list of tsr_ids and whose associated repository must be installed prior to the repository associated with the tsr_id key.
+        """
+        # Initialize the dictionary.
+        prior_install_required_dict = {}
+        tsr_ids = [ tool_shed_repository.id for tool_shed_repository in tool_shed_repositories ]
+        for tsr_id in tsr_ids:
+            prior_install_required_dict[ tsr_id ] = []
+        # Inspect the repository dependencies about to be installed and populate the dictionary.
+        for rd_key, rd_tups in repository_dependencies_dict.items():
+            if rd_key in [ 'root_key', 'description' ]:
+                continue
+            for rd_tup in rd_tups:
+                prior_install_ids = []
+                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
+                if util.asbool( prior_installation_required ):
+                    for tsr in tool_shed_repositories:
+                        if tsr.name == name and tsr.owner == owner and tsr.changeset_revision == changeset_revision:
+                            prior_install_ids.append( tsr.id )
+                        prior_install_required_dict[ tsr.id ] = prior_install_ids
+        return prior_install_required_dict
 
     def get_proprietary_tool_panel_elems( self, latest_tool_migration_script_number ):
         """
@@ -195,37 +319,6 @@ class InstallManager( object ):
                                     if elem not in tool_panel_elems:
                                         tool_panel_elems.append( elem )
         return tool_panel_elems
-
-    def get_containing_tool_sections( self, tool_config ):
-        """
-        If tool_config is defined somewhere in self.proprietary_tool_panel_elems, return True and a list of ToolSections in which the
-        tool is displayed.  If the tool is displayed outside of any sections, None is appended to the list.
-        """
-        tool_sections = []
-        is_displayed = False
-        for proprietary_tool_panel_elem in self.proprietary_tool_panel_elems:
-            if proprietary_tool_panel_elem.tag == 'tool':
-                # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
-                proprietary_tool_config = proprietary_tool_panel_elem.get( 'file' )
-                proprietary_name = suc.strip_path( proprietary_tool_config )
-                if tool_config == proprietary_name:
-                    # The tool is loaded outside of any sections.
-                    tool_sections.append( None )
-                    if not is_displayed:
-                        is_displayed = True
-            if proprietary_tool_panel_elem.tag == 'section':
-                # The proprietary_tool_panel_elem looks something like <section name="EMBOSS" id="EMBOSSLite">.
-                for section_elem in proprietary_tool_panel_elem:
-                    if section_elem.tag == 'tool':
-                        # The section_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
-                        proprietary_tool_config = section_elem.get( 'file' )
-                        proprietary_name = suc.strip_path( proprietary_tool_config )
-                        if tool_config == proprietary_name:
-                            # The tool is loaded inside of the section_elem.
-                            tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
-                            if not is_displayed:
-                                is_displayed = True
-        return is_displayed, tool_sections
 
     def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies ):
         """
@@ -362,33 +455,26 @@ class InstallManager( object ):
             except:
                 pass
 
-    def install_repository( self, repository_elem, install_dependencies ):
-        # Install a single repository, loading contained tools into the tool panel.
-        name = repository_elem.get( 'name' )
-        description = repository_elem.get( 'description' )
-        installed_changeset_revision = repository_elem.get( 'changeset_revision' )
+    def install_repository( self, repository_elem, tool_shed_repository, install_dependencies ):
+        """Install a single repository, loading contained tools into the tool panel."""
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
-        relative_clone_dir = os.path.join( self.tool_shed, 'repos', self.repository_owner, name, installed_changeset_revision )
+        relative_clone_dir = os.path.join( tool_shed_repository.tool_shed,
+                                           'repos',
+                                           tool_shed_repository.owner,
+                                           tool_shed_repository.name,
+                                           tool_shed_repository.installed_changeset_revision )
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
         if self.__isinstalled( clone_dir ):
-            print "Skipping automatic install of repository '", name, "' because it has already been installed in location ", clone_dir
+            print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
         else:
-            tool_shed_url = suc.get_url_from_tool_shed( self.app, self.tool_shed )
-            repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
-            relative_install_dir = os.path.join( relative_clone_dir, name )
-            install_dir = os.path.join( clone_dir, name )
-            ctx_rev = suc.get_ctx_rev( self.app, tool_shed_url, name, self.repository_owner, installed_changeset_revision )
-            tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
-                                                                              name=name,
-                                                                              description=description,
-                                                                              installed_changeset_revision=installed_changeset_revision,
-                                                                              ctx_rev=ctx_rev,
-                                                                              repository_clone_url=repository_clone_url,
-                                                                              metadata_dict={},
-                                                                              status=self.app.model.ToolShedRepository.installation_status.NEW,
-                                                                              current_changeset_revision=None,
-                                                                              owner=self.repository_owner,
-                                                                              dist_to_shed=True )
+            repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
+            relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
+            install_dir = os.path.join( clone_dir, tool_shed_repository.name )
+            ctx_rev = suc.get_ctx_rev( self.app,
+                                       self.tool_shed_url,
+                                       tool_shed_repository.name,
+                                       tool_shed_repository.owner,
+                                       tool_shed_repository.installed_changeset_revision )
             suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
             cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok:
@@ -405,8 +491,8 @@ class InstallManager( object ):
                                                             self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
                     url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
-                        ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
-                    text = common_util.tool_shed_get( self.app, tool_shed_url, url )
+                        ( self.tool_shed_url, tool_shed_repository.name, self.repository_owner, tool_shed_repository.installed_changeset_revision )
+                    text = common_util.tool_shed_get( self.app, self.tool_shed_url, url )
                     if text:
                         tool_version_dicts = from_json_string( text )
                         tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
@@ -444,6 +530,40 @@ class InstallManager( object ):
     @property
     def non_shed_tool_panel_configs( self ):
         return common_util.get_non_shed_tool_panel_configs( self.app )
+
+    def order_repositories_for_installation( self, tool_shed_repositories, repository_dependencies_dict ):
+        """
+        Some repositories may have repository dependencies that are required to be installed before the dependent repository.  This method will
+        inspect the list of repositories about to be installed and make sure to order them appropriately.  For each repository about to be installed,
+        if required repositories are not contained in the list of repositories about to be installed, then they are not considered.  Repository
+        dependency definitions that contain circular dependencies should not result in an infinite loop, but obviously prior installation will not be
+        handled for one or more of the repositories that require prior installation.  This process is similar to the process used when installing tool
+        shed repositories (i.e., the order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/repository_util), but does not handle
+        managing tool panel sections and other components since repository dependency definitions contained in tool shed repositories with migrated
+        tools must never define a relationship to a repository dependency that contains a tool.
+        """
+        ordered_tool_shed_repositories = []
+        ordered_tsr_ids = []
+        processed_tsr_ids = []
+        prior_install_required_dict = self.get_prior_install_required_dict( tool_shed_repositories, repository_dependencies_dict )
+        tsr_ids = [ tool_shed_repository.id for tool_shed_repository in tool_shed_repositories ]
+        while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
+            tsr_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
+            processed_tsr_ids.append( tsr_id )
+            # Create the ordered_tsr_ids, the ordered_repo_info_dicts and the ordered_tool_panel_section_keys lists.
+            if tsr_id not in ordered_tsr_ids:
+                prior_install_required_ids = prior_install_required_dict[ tsr_id ]
+                for prior_install_required_id in prior_install_required_ids:
+                    if prior_install_required_id not in ordered_tsr_ids:
+                        # Install the associated repository dependency first.
+                        ordered_tsr_ids.append( prior_install_required_id )
+                ordered_tsr_ids.append( tsr_id )
+        for ordered_tsr_id in ordered_tsr_ids:
+            for tool_shed_repository in tool_shed_repositories:
+                if tool_shed_repository.id == ordered_tsr_id:
+                    ordered_tool_shed_repositories.append( tool_shed_repository )
+                    break
+        return ordered_tool_shed_repositories
 
     def __isinstalled( self, clone_dir ):
         full_path = os.path.abspath( clone_dir )

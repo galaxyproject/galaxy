@@ -17,6 +17,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util as scu
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import export_util
@@ -1579,6 +1580,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
+        # We aren't concerned with repository's of type tool_dependency_definition here if a repository_metadata record is not returned
+        # because repositories of this type will never have repository dependencies.
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -1642,7 +1645,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             encoded_repository_ids = []
             changeset_revisions = []
             for required_repository_tup in decoded_required_repository_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( required_repository_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required = scu.parse_repository_dependency_tuple( required_repository_tup )
                 repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
                 changeset_revisions.append( changeset_revision )

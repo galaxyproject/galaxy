@@ -354,9 +354,9 @@ def different_revision_defines_tip_only_repository_dependency( trans, rd_tup, re
     Determine if the only difference between rd_tup and a dependency definition in the list of repository_dependencies is the changeset_revision value.
     """
     new_metadata_required = False
-    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
+    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
     for repository_dependency in repository_dependencies:
-        tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
+        tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repository_dependency )
         if rd_tool_shed == tool_shed and rd_name == name and rd_owner == owner:
             # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
