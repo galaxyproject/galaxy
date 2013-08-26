@@ -17,7 +17,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import common_util as scu
+from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import export_util
@@ -31,7 +31,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util import ratings_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -51,7 +51,7 @@ malicious_error = "  This changeset cannot be downloaded because it potentially 
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
 
 
-class RepositoryController( BaseUIController, common_util.ItemRatings ):
+class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     category_grid = repository_grids.CategoryGrid()
     datatypes_grid = repository_grids.DatatypesGrid()
@@ -1233,7 +1233,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( common_util.stringify( tool_ids ), common_util.stringify( tool_names ), common_util.stringify( tool_versions ), str( exact_matches_checked ) )
+                        ( suc.stringify( tool_ids ), suc.stringify( tool_names ), suc.stringify( tool_versions ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -1241,9 +1241,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 status = "error"
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/tool_shed/repository/find_tools.mako',
-                                    tool_id=common_util.stringify( tool_ids ),
-                                    tool_name=common_util.stringify( tool_names ),
-                                    tool_version=common_util.stringify( tool_versions ),
+                                    tool_id=suc.stringify( tool_ids ),
+                                    tool_name=suc.stringify( tool_names ),
+                                    tool_version=suc.stringify( tool_versions ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
@@ -1317,7 +1317,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( common_util.stringify( workflow_names ), str( exact_matches_checked ) )
+                        ( suc.stringify( workflow_names ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching workflows"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -1328,7 +1328,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             workflow_names = []
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/tool_shed/repository/find_workflows.mako',
-                                    workflow_name=common_util.stringify( workflow_names ),
+                                    workflow_name=suc.stringify( workflow_names ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
@@ -1645,7 +1645,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             encoded_repository_ids = []
             changeset_revisions = []
             for required_repository_tup in decoded_required_repository_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = scu.parse_repository_dependency_tuple( required_repository_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required = \
+                    common_util.parse_repository_dependency_tuple( required_repository_tup )
                 repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
                 changeset_revisions.append( changeset_revision )

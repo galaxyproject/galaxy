@@ -25,8 +25,3 @@ class ItemRatings( UsesItemRatings ):
             trans.sa_session.add( item_rating )
             trans.sa_session.flush()
         return item_rating
-
-def stringify( list ):
-    if list:
-        return ','.join( list )
-    return ''

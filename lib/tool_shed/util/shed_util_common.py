@@ -1401,7 +1401,12 @@ def set_prior_installation_required( repository, required_repository ):
             # Return the boolean value of prior_installation_required, which defaults to False.
             return required_rd_tup[ 4 ]
     return False
-    
+
+def stringify( list ):
+    if list:
+        return ','.join( list )
+    return ''
+
 def strip_path( fpath ):
     """Attempt to strip the path from a file name."""
     if not fpath:
