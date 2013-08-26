@@ -19,7 +19,7 @@ from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-import tool_shed.galaxy_install.tool_dependencies.common_util as cu
+from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
 import pkg_resources
 
@@ -1124,7 +1124,7 @@ def handle_repository_elem( app, repository_elem ):
     if not toolshed:
         # Default to the current tool shed.
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
-    cleaned_toolshed = cu.clean_tool_shed_url( toolshed )
+    cleaned_toolshed = td_common_util.clean_tool_shed_url( toolshed )
     name = repository_elem.get( 'name' )
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
