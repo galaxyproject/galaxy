@@ -5,10 +5,10 @@ import stat
 import subprocess
 import tempfile
 from string import Template
-import common_util
 import fabric_util
+import td_common_util
 import tool_shed.util.shed_util_common as suc
-import tool_shed.util.common_util as cu
+from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
@@ -22,7 +22,7 @@ def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, 
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
     url = url_join( tool_shed_url,
                     'repository/get_tool_dependencies_config_contents?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    text = cu.tool_shed_get( app, tool_shed_url, url )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
     if text:
         # Write the contents to a temporary file on disk so it can be reloaded and parsed.
         fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-cttdc"  )
@@ -51,7 +51,7 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
 
 def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, tool_shed_url, name, owner, changeset_revision ):
     sa_session = app.model.context.current
-    tool_shed = common_util.clean_tool_shed_url( tool_shed_url )
+    tool_shed = td_common_util.clean_tool_shed_url( tool_shed_url )
     tool_shed_repository =  sa_session.query( app.model.ToolShedRepository ) \
                                       .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                                      app.model.ToolShedRepository.table.c.name == name,
@@ -103,7 +103,7 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     """
     url = suc.url_join( tool_shed_url,
                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    text = cu.tool_shed_get( app, tool_shed_url, url )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
 
 def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem, required_repository ):
@@ -139,7 +139,7 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                             # </action>
                             for env_elem in action_elem:
                                 if env_elem.tag == 'environment_variable':
-                                    env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
+                                    env_var_dict = td_common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
                                     if env_var_dict:
                                         if env_var_dict not in env_var_dicts:
                                             env_var_dicts.append( env_var_dict )
@@ -203,7 +203,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     except Exception, e:
         log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-        tool_dependency.error_message = '%s\n%s' % ( common_util.format_traceback(), str( e ) ) 
+        tool_dependency.error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) ) 
         sa_session.add( tool_dependency )
         sa_session.flush()
     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
@@ -362,7 +362,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
 
     def evaluate_template( text ):
         """ Substitute variables defined in XML blocks from dependencies file."""
-        return Template( text ).safe_substitute( common_util.get_env_var_values( install_dir ) )
+        return Template( text ).safe_substitute( td_common_util.get_env_var_values( install_dir ) )
 
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -469,7 +469,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # </action>
             for env_elem in action_elem:
                 if env_elem.tag == 'environment_variable':
-                    env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
+                    env_var_dict = td_common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
                     if env_var_dict:
                         env_var_dicts.append( env_var_dict )
             if env_var_dicts:
@@ -489,7 +489,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
             for env_elem in action_elem:
                 if env_elem.tag == 'repository':
-                    env_shell_file_paths = common_util.get_env_shell_file_paths( app, env_elem )
+                    env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, env_elem )
                     if env_shell_file_paths:
                         all_env_shell_file_paths.extend( env_shell_file_paths )
             if all_env_shell_file_paths:
@@ -705,7 +705,7 @@ def set_environment( app, elem, tool_shed_repository ):
                                                            tool_dependency_name=env_var_name,
                                                            tool_dependency_version=None )
             tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
-            env_var_dict = common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+            env_var_dict = td_common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
             if env_var_dict:
                 if not os.path.exists( install_dir ):
                     os.makedirs( install_dir )
@@ -716,7 +716,7 @@ def set_environment( app, elem, tool_shed_repository ):
                                                                                          type='set_environment',
                                                                                          status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                                          set_status=True )
-                cmd = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                cmd = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                 if env_var_version == '1.0':
                     # Handle setting environment variables using a fabric method.
                     fabric_util.handle_command( app, tool_dependency, install_dir, cmd )

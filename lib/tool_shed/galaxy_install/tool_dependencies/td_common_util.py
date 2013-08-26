@@ -306,9 +306,6 @@ def zipfile_ok( path_to_archive ):
             return False
     return True
 
-
 def __shellquote(s):
-    """
-    Quote and escape the supplied string for use in shell expressions.
-    """
-    return "'" + s.replace("'", "'\\''") + "'"
+    """Quote and escape the supplied string for use in shell expressions."""
+    return "'" + s.replace( "'", "'\\''" ) + "'"
