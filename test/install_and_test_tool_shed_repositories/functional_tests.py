@@ -269,6 +269,14 @@ def get_api_url( base, parts=[], params=None, key=None ):
         url += '&%s' % params
     return url
 
+def get_failed_tool_dependencies( repository ):
+    missing_dependencies = repository.missing_tool_dependencies
+    for repository_dependency in repository.repository_dependencies:
+        if not repository_dependency.includes_tool_dependencies:
+            continue
+        missing_dependencies.extend( get_failed_tool_dependencies( repository_dependency ) )
+    return missing_dependencies
+
 def get_latest_downloadable_changeset_revision( url, name, owner ):
     api_url_parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
     params = urllib.urlencode( dict( name=name, owner=owner ) )
@@ -459,7 +467,7 @@ def register_test_result( url, metadata_id, test_results_dict, repository_info_d
     Update the repository metadata tool_test_results and appropriate flags using the API.
     '''
     params[ 'tool_test_results' ] = test_results_dict
-    if '-info_only' in sys.argv:
+    if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
         return {}
     else:
         return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
@@ -914,7 +922,7 @@ def main():
                 #             "reason": "The Galaxy development team has determined that this repository should not be installed and tested by the automated framework."
                 #         }
                 # }
-                failed_tool_dependencies = repository.includes_tool_dependencies and repository.tool_dependencies_with_installation_errors
+                failed_tool_dependencies = get_failed_tool_dependencies( repository )
                 failed_repository_dependencies = repository.repository_dependencies_with_installation_errors
                 if 'missing_test_components' not in repository_status:
                     repository_status[ 'missing_test_components' ] = []
@@ -958,7 +966,7 @@ def main():
                     log.error( 'One or more tool dependencies of this repository are marked as missing.' )
                     log.error( 'Updating repository and skipping functional tests.' )
                     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
-                    for dependency in repository.tool_dependencies_with_installation_errors:
+                    for dependency in failed_tool_dependencies:
                         test_result = dict( type=dependency.type, 
                                             name=dependency.name, 
                                             version=dependency.version,
