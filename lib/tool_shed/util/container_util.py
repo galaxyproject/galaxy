@@ -1265,6 +1265,35 @@ def get_folder( folder, key ):
         return get_folder( sub_folder, key )
     return None
 
+def get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency ):
+    """
+    Parse a repository dependency and return components necessary for proper display in Galaxy on the Manage repository page.
+    """
+    if len( repository_dependency ) == 6:
+        # Metadata should have been reset on this installed repository, but it wasn't.
+        tool_shed_repository_id = repository_dependency[ 4 ]
+        installation_status = repository_dependency[ 5 ]
+        tool_shed, name, owner, changeset_revision = repository_dependency[ 0:4 ]
+        # Default prior_installation_required to False.
+        prior_installation_required = False
+        repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_dependency ) == 7:
+        # We have a repository dependency tuple that includes a prior_installation_required value.
+        tool_shed_repository_id = repository_dependency[ 5 ]
+        installation_status = repository_dependency[ 6 ]
+        repository_dependency = repository_dependency[ 0:5 ]
+    else:
+        tool_shed_repository_id = None
+        installation_status = 'unknown'
+    if tool_shed_repository_id:
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, trans.security.encode_id( tool_shed_repository_id ) )
+        if tool_shed_repository:
+            if tool_shed_repository.missing_repository_dependencies:
+                installation_status = '%s, missing repository dependencies' % installation_status
+            elif tool_shed_repository.missing_tool_dependencies:
+                installation_status = '%s, missing tool dependencies' % installation_status
+    return tool_shed_repository_id, installation_status, repository_dependency
+
 def get_components_from_key( key ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
     items = key.split( STRSEP )
@@ -1315,22 +1344,8 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         sub_folder.repository_dependencies.append( repository_dependency )
     for repository_dependency in rd_value:
         if trans.webapp.name == 'galaxy':
-            if len( repository_dependency ) == 6:
-                # Metadata should have been reset on this installed repository, but it wasn't.
-                tool_shed_repository_id = repository_dependency[ 4 ]
-                installation_status = repository_dependency[ 5 ]
-                tool_shed, name, owner, changeset_revision = repository_dependency[ 0:4 ]
-                # Default prior_installation_required to False.
-                prior_installation_required = False
-                repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required ]
-            elif len( repository_dependency ) == 7:
-                # We have a repository dependency tuple that includes a prior_installation_required value.
-                tool_shed_repository_id = repository_dependency[ 5 ]
-                installation_status = repository_dependency[ 6 ]
-                repository_dependency = repository_dependency[ 0:5 ]
-            else:
-                tool_shed_repository_id = None
-                installation_status = 'unknown'
+            tool_shed_repository_id, installation_status, repository_dependency = \
+                get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency )
         else:
             tool_shed_repository_id = None
             installation_status = None
