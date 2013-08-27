@@ -3,7 +3,7 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import JobDestination
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool_or_none
 
 import errno
 from time import sleep
@@ -22,12 +22,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache='false' ):
+    def __init__( self, app, nworkers, transport=None, cache=None ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
-        client_manager_kwargs = {'transport': transport, 'cache': string_as_bool(cache)}
+        client_manager_kwargs = {'transport': transport, 'cache': string_as_bool_or_none(cache)}
         self.client_manager = ClientManager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
