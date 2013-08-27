@@ -27,7 +27,8 @@ class ClientManager(object):
         if cache:
             log.info("Setting LWR client class to caching variant.")
             self.client_class = InputCachingClient
-            num_transfer_threads = int(kwds.get('transfer_threads', _environ_default_int('LWR_CACHE_TRANSFERS', DEFAULT_TRANSFER_THREADS)))
+            default_transfer_threads = _environ_default_int('LWR_CACHE_THREADS', DEFAULT_TRANSFER_THREADS)
+            num_transfer_threads = int(kwds.get('transfer_threads', default_transfer_threads))
             self.__init_transfer_threads(num_transfer_threads)
         else:
             log.info("Setting LWR client class to standard, non-caching variant.")
@@ -49,6 +50,7 @@ class ClientManager(object):
         event_holder.event.set()
 
     def __init_transfer_threads(self, num_transfer_threads):
+        self.num_transfer_threads = num_transfer_threads
         self.transfer_queue = Queue()
         for i in range(num_transfer_threads):
             t = Thread(target=self._transfer_worker)
