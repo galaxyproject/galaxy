@@ -664,10 +664,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
         suc.update_repository( repo )
-        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        changeset_revision = repository.tip( trans.app )
+        metadata = self.get_metadata( trans, id, changeset_revision )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
                                     metadata=metadata,
                                     commit_message=commit_message,
                                     repository_type_select_field=repository_type_select_field,
@@ -1102,6 +1104,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repositories_archive_filename = os.path.basename( repositories_archive.name )
             if error_message:
                 message = error_message
+                status = 'error'
             else:
                 trans.response.set_content_type( 'application/x-gzip' )
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % ( repositories_archive_filename )
@@ -1109,9 +1112,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Make sure the file is removed from disk after the contents have been downloaded.
                 os.unlink( repositories_archive.name )
                 return opened_archive
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
-                                                                                 trans.security.encode_id( repository.id ),
-                                                                                 changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
         repository_dependencies = \
@@ -1822,6 +1823,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return trans.fill_template( '/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd )
 
     @web.expose
+    def import_capsule( self, trans, **kwd ):
+        pass
+
+    @web.expose
     def index( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
@@ -2449,9 +2454,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        changeset_revision = repository.tip( trans.app )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
                                     commit_message=commit_message,
                                     repository_type_select_field=repository_type_select_field,
                                     message=message,
