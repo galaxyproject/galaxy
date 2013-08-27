@@ -37,7 +37,7 @@ CHUNK_SIZE = 2**20 # 1Mb
 INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>|" )
 
 DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
