@@ -214,24 +214,39 @@ def get_repair_dict( trans, repository ):
 
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
-    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-    metadata = repository_metadata.metadata
-    if 'tools' in metadata:
-        includes_tools = True
-    else:
-        includes_tools = False
-    includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-    if 'repository_dependencies' in metadata:
-        has_repository_dependencies = True
-    else:
-        has_repository_dependencies = False
-    if 'tool_dependencies' in metadata:
-        includes_tool_dependencies = True
-    else:
-        includes_tool_dependencies = False
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+    if not repository_metadata:
+        # The received changeset_revision is no longer installable, so get the next changeset_revision in the repository's changelog.
+        # This generally occurs only with repositories of type tool_dependency_definition.
+        next_downloadable_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if next_downloadable_changeset_revision:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, next_downloadable_changeset_revision )
+    if repository_metadata:
+        # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption is not valid we'll have to
+        # enhance the callers to handle repository_metadata values of None in the returned repo_info_dict.
+        metadata = repository_metadata.metadata
+        if 'tools' in metadata:
+            includes_tools = True
+        else:
+            includes_tools = False
+        includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
+        if 'repository_dependencies' in metadata:
+            has_repository_dependencies = True
+        else:
+            has_repository_dependencies = False
+        if 'tool_dependencies' in metadata:
+            includes_tool_dependencies = True
+        else:
+            includes_tool_dependencies = False
+    else:
+        # Here's where we may have to handle enhancements to the callers. See above comment.
+        includes_tools = False
+        has_repository_dependencies = False
+        includes_tool_dependencies = False
+        includes_tools_for_display_in_tool_panel = False
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     repo_info_dict = create_repo_info_dict( trans=trans,
                                             repository_clone_url=repository_clone_url,
