@@ -297,7 +297,7 @@ class DiskObjectStore(ObjectStore):
                 util.umask_fix_perms(path, self.config.umask, 0666)
 
     def empty(self, obj, **kwargs):
-        return os.path.getsize(self.get_filename(obj, **kwargs)) > 0
+        return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
 
     def size(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
