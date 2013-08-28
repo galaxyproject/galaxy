@@ -25,7 +25,7 @@ class ObjectStore(object):
     """
     ObjectStore abstract interface
     """
-    def __init__(self):
+    def __init__(self, config, **kwargs):
         self.running = True
         self.extra_dirs = {}
 
@@ -195,7 +195,7 @@ class DiskObjectStore(ObjectStore):
     >>> assert s.get_filename(obj) == file_path + '/000/dataset_1.dat'
     """
     def __init__(self, config, file_path=None, extra_dirs=None):
-        super(DiskObjectStore, self).__init__()
+        super(DiskObjectStore, self).__init__(config, file_path=file_path, extra_dirs=extra_dirs)
         self.file_path = file_path or config.file_path
         self.config = config
         self.extra_dirs['job_work'] = config.job_working_directory
@@ -213,6 +213,7 @@ class DiskObjectStore(ObjectStore):
         if not os.path.exists(path):
             return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
 
+    # TODO: rename to _disk_path or something like that to avoid conflicts with children that'll use the local_extra_dirs decorator, e.g. S3
     def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, **kwargs):
         """ Construct the expected absolute path for accessing the object
             identified by `obj`.id.
@@ -543,6 +544,19 @@ def build_object_store_from_config(config, fsmon=False):
         return HierarchicalObjectStore()
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
+
+def local_extra_dirs( func ):
+    """ A decorator for non-local plugins to utilize local directories for their extra_dirs (job_working_directory and temp).
+    """
+    def wraps( self, *args, **kwargs ):
+        if kwargs.get( 'base_dir', None ) is None:
+            return func( self, *args, **kwargs )
+        else:
+            for c in self.__class__.__mro__:
+                if c.__name__ == 'DiskObjectStore':
+                    return getattr( c, func.__name__ )( self, *args, **kwargs )
+            raise Exception( "Could not call DiskObjectStore's %s method, does your Object Store plugin inherit from DiskObjectStore?" % func.__name__ )
+    return wraps
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """
