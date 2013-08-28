@@ -565,25 +565,3 @@ def convert_bytes(bytes):
     else:
         size = '%.2fb' % bytes
     return size
-
-def get_OS_connection(config):
-    """
-    Get a connection object for a cloud Object Store specified in the config.
-    Currently, this is a ``boto`` connection object.
-    """
-    log.debug("Getting a connection object for '{0}' object store".format(config.object_store))
-    a_key = config.os_access_key
-    s_key = config.os_secret_key
-    if config.object_store == 's3':
-        return S3Connection(a_key, s_key)
-    else:
-        # Establish the connection now
-        calling_format = boto.s3.connection.OrdinaryCallingFormat()
-        s3_conn = boto.connect_s3(aws_access_key_id=a_key,
-                            aws_secret_access_key=s_key,
-                            is_secure=config.os_is_secure,
-                            host=config.os_host,
-                            port=int(config.os_port),
-                            calling_format=calling_format,
-                            path=config.os_conn_path)
-        return s3_conn
