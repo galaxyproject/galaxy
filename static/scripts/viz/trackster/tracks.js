@@ -1622,25 +1622,25 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 /**
  * Encapsulation of a tool that users can apply to tracks/datasets.
  */
-var TracksterTool = Backbone.RelationalModel.extend({
+var TracksterTool = tools_mod.Tool.extend({
     defaults: {
-        track: null,
-        tool: null,
+        track: null
     },
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'tool',
-            relatedModel: tools_mod.Tool
-        }
-    ],
-
     initialize: function(options) {
-        // HACK: remove some inputs because Trackster does yet not work with them.
-        this.get('tool').remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
+        // Restore tool visibility from state.
+        if (options.tool_state !== undefined) {
+            this.set('hidden', options.tool_state.hidden)
+        }
 
-        // FIXME: need to restore tool values/visibility.
+        // FIXME: need to restore tool values from options.tool_state
+
+        // HACK: remove some inputs because Trackster does yet not work with them.
+        this.remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
+    },
+
+    state_dict: function(options) {
+        return _.extend( this.get_inputs_dict(), { hidden: !this.is_visible() } );
     }
 });
 
@@ -1678,12 +1678,16 @@ var TracksterTool = Backbone.RelationalModel.extend({
  */
 var TracksterToolView = Backbone.View.extend({
 
+    initialize: function(options) {
+        this.model.on('change:hidden', this.set_visible, this);
+    },
+
     /**
      * Render tool UI.
      */
     render: function() {
         var self = this;
-            tool = this.model.get('tool'),
+            tool = this.model,
             parent_div = this.$el.addClass("dynamic-tool").hide();
 
         // Prevent div events from propogating to other elements.
@@ -1719,11 +1723,21 @@ var TracksterToolView = Backbone.View.extend({
             self.run_on_dataset();
         });
         
-        /*
-        if ('visible' in tool_state_dict && tool_state_dict.visible) {
-            this.parent_div.show();
+        if (tool.is_visible()) {
+            this.$el.show();
         }
-        */
+    },
+
+    /**
+     * Show or hide tool depending on tool visibility state.
+     */
+    set_visible: function() {
+        if (this.model.is_visible()) {
+            this.$el.show();
+        }
+        else {
+            this.$el.hide();
+        }
     },
 
     /**
@@ -1736,23 +1750,10 @@ var TracksterToolView = Backbone.View.extend({
     },
 
     /**
-     * Returns a dict with tool state information.
-     */
-    state_dict: function() {
-        // Save parameter values.
-        var tool_state = this.model.get('tool').get_param_values_dict();
-        
-        // Save visibility.
-        tool_state.visible = this.parent_div.is(":visible");
-        
-        return tool_state;
-    },
-
-    /**
      * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
      */
     run_on_dataset: function() {
-        var tool = this.model.get('tool');
+        var tool = this.model;
         this.run(
             // URL params.
             { 
@@ -1779,7 +1780,7 @@ var TracksterToolView = Backbone.View.extend({
         // Create track for tool's output immediately to provide user feedback.
         //
         var track = this.model.get('track'),
-            tool = this.model.get('tool'),
+            tool = this.model,
             region = new visualization.GenomeRegion({
                 chrom: track.view.chrom,
                 start: track.view.low,
@@ -1850,7 +1851,7 @@ var TracksterToolView = Backbone.View.extend({
      */
     run: function(url_params, new_track, success_callback) {
         // Run tool.
-        url_params.inputs = this.model.get('tool').get_inputs_dict();
+        url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
                 url: galaxy_config.root + "api/tools",
@@ -2405,10 +2406,10 @@ extend(Track.prototype, Drawable.prototype, {
             on_click_fn: function(track) {
                 // TODO: update tipsy text.
 
-                track.dynamic_tool_div.toggle();
+                track.tool.toggle();
 
                 // Update track name.
-                if (track.dynamic_tool_div.is(":visible")) {
+                if (track.tool.is_visible()) {
                     track.set_name(track.name + track.tool_region_and_parameters_str());
                 }
                 else {
@@ -2790,11 +2791,10 @@ var TiledTrack = function(view, container, obj_dict) {
     // FIXME: prolly need function to set filters and update data_manager reference.
     this.data_manager.set('filters_manager', this.filters_manager);
     this.filters_available = false;
-    this.tool = (obj_dict.tool ? new TracksterTool({
-        'track': this, 
-        'tool': obj_dict.tool,
+    this.tool = (obj_dict.tool ? new TracksterTool( _.extend( obj_dict.tool, {
+        'track': this,
         'tool_state': obj_dict.tool_state
-    }) 
+    } ) )
     : null);
     this.tile_cache = new visualization.Cache(TILE_CACHE_SIZE);
     this.left_offset = 0;
@@ -3333,9 +3333,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
-        console.log("Warning: TiledTrack.draw_tile() not implemented.");
-    },
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {},
 
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
@@ -3406,7 +3404,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     tool_region_and_parameters_str: function(region) {
         var track = this,
             region_str = (region !== undefined ? region.toString() : "all"),
-            param_str = _.values( track.tool.get('tool').get_inputs_dict()).join(', ');
+            param_str = _.values( track.tool.get_inputs_dict()).join(', ');
         return " - region=[" + region_str + "], parameters=[" + param_str + "]";
     },
 

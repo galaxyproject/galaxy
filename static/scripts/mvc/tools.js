@@ -18,6 +18,10 @@ var VisibilityMixin = {
     hide: function() {
         this.set("hidden", true);
     },
+
+    toggle: function() {
+        this.set("hidden", !this.get("hidden"));
+    },
     
     is_visible: function() {
         return !this.attributes.hidden;
@@ -600,8 +604,8 @@ var ToolSearchView = Backbone.View.extend({
     
     query_changed: function( evData ) {
         // check for the 'clear key' (ESC) first
-        if( ( this.model.attributes.clear_key )
-        &&  ( this.model.attributes.clear_key === evData.which ) ){
+        if( ( this.model.attributes.clear_key ) &&
+            ( this.model.attributes.clear_key === evData.which ) ){
             this.clear();
             return false;
         }
