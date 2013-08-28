@@ -387,7 +387,8 @@ class GalaxyConfig( object ):
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
-                         "pysam":           lambda: check_pysam()
+                         "pysam":           lambda: check_pysam(),
+                         "PyRods":          lambda: self.config.get( "app:main", "object_store" ) == "irods"
                        }.get( egg_name, lambda: True )()
             except:
                 return False

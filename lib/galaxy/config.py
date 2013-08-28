@@ -209,6 +209,7 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key= kwargs.get( 'aws_access_key', None )
@@ -228,6 +229,8 @@ class Configuration( object ):
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
+        self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
+        self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
@@ -369,6 +372,7 @@ class Configuration( object ):
                     self.nginx_upload_store, \
                     './static/genetrack/plots', \
                     self.whoosh_index_dir, \
+                    self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:

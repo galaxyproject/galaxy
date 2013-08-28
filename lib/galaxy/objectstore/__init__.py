@@ -542,6 +542,9 @@ def build_object_store_from_config(config, fsmon=False):
         return DistributedObjectStore(config=config, fsmon=fsmon)
     elif store == 'hierarchical':
         return HierarchicalObjectStore()
+    elif store == 'irods':
+        from galaxy.objectstore.rods import IRODSObjectStore
+        return IRODSObjectStore(config=config)
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
 
