@@ -344,6 +344,7 @@ class DiskObjectStore(ObjectStore):
             except IOError, ex:
                 log.critical('Error copying %s to %s: %s' % (file_name,
                     self._get_filename(obj, **kwargs), ex))
+                raise ex
 
     def get_object_url(self, obj, **kwargs):
         return None
