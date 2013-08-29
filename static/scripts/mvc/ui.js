@@ -1,17 +1,5 @@
 /**
- * necessary galaxy paths
- */
-var GalaxyPaths = Backbone.Model.extend(
-{
-    defaults:
-    {
-        root_path: "",
-        image_path: ""
-    }
-});
-
-/**
- * functions for creating large ui elements
+ * functions for creating major ui elements
  */
 
 /**

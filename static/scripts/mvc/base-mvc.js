@@ -196,10 +196,14 @@ var PersistantStorage = function( storageKey, storageDefaults ){
     storageDefaults = storageDefaults || {};
 
     // ~constants for the current engine
-    //TODO:?? this would be greatly simplified if we're IE9+ only (setters/getters)
-    var STORAGE_ENGINE_GETTER       = jQuery.jStorage.get,
-        STORAGE_ENGINE_SETTER       = jQuery.jStorage.set,
-        STORAGE_ENGINE_KEY_DELETER  = jQuery.jStorage.deleteKey;
+    var STORAGE_ENGINE = sessionStorage,
+        STORAGE_ENGINE_GETTER = function sessionStorageGet( key ){
+            return JSON.parse( this.getItem( key ) );
+        },
+        STORAGE_ENGINE_SETTER = function sessionStorageSet( key, val ){
+            return this.setItem( key, JSON.stringify( val ) );
+        },
+        STORAGE_ENGINE_KEY_DELETER  = function sessionStorageDel( key ){ return this.removeItem( key ); };
 
     /** Inner, recursive, private class for method chaining access.
      *  @name StorageRecursionHelper
@@ -258,18 +262,16 @@ var PersistantStorage = function( storageKey, storageDefaults ){
     //??: more readable to make another class?
     var returnedStorage = {};
         // attempt to get starting data from engine...
-        data = STORAGE_ENGINE_GETTER( storageKey );
+        data = STORAGE_ENGINE_GETTER.call( STORAGE_ENGINE, storageKey );
 
     // ...if that fails, use the defaults (and store them)
-    if( data === null ){
-        //console.debug( 'no previous data. using defaults...' );
+    if( data === null || data === undefined ){
         data = jQuery.extend( true, {}, storageDefaults );
-        STORAGE_ENGINE_SETTER( storageKey, data );
+        STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, data );
     }
 
     // the object returned by this constructor will be a modified StorageRecursionHelper
     returnedStorage = new StorageRecursionHelper( data );
-
     jQuery.extend( returnedStorage, /**  @lends PersistantStorage.prototype */{
         /** The base case for save()'s upward recursion - save everything to storage.
          *  @private
@@ -277,13 +279,13 @@ var PersistantStorage = function( storageKey, storageDefaults ){
          */
         _save : function( newData ){
             //console.debug( returnedStorage, '._save:', JSON.stringify( returnedStorage.get() ) );
-            return STORAGE_ENGINE_SETTER( storageKey, returnedStorage.get() );
+            return STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, returnedStorage.get() );
         },
         /** Delete function to remove the entire base data object from the storageEngine.
          */
         destroy : function(){
             //console.debug( returnedStorage, '.destroy:' );
-            return STORAGE_ENGINE_KEY_DELETER( storageKey );
+            return STORAGE_ENGINE_KEY_DELETER.call( STORAGE_ENGINE, storageKey );
         },
         /** String representation.
          */

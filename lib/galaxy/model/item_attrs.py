@@ -158,36 +158,52 @@ class UsesAnnotations:
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
 
-class APIItem:
-    """ Mixin for api representation. """
-    #api_collection_visible_keys = ( 'id' )
-    #api_element_visible_keys = ( 'id' )
-    def get_api_value( self, view='collection', value_mapper = None ):
+class DictifiableMixin:
+    """ Mixin that enables objects to be converted to dictionaries. This is useful 
+        when for sharing objects across boundaries, such as the API, tool scripts,
+        and JavaScript code. """
+    
+    def dictify( self, view='collection', value_mapper=None ):
+        """
+        Return item dictionary.
+        """
+
+        if not value_mapper:
+            value_mapper = {}
+
         def get_value( key, item ):
+            """
+            Recursive helper function to get item values.
+            """
+            # FIXME: why use exception here? Why not look for key in value_mapper
+            # first and then default to dictify?
             try:
-                return item.get_api_value( view=view, value_mapper=value_mapper )
+                return item.dictify( view=view, value_mapper=value_mapper )
             except:
                 if key in value_mapper:
                     return value_mapper.get( key )( item )
                 return item
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
+
+        # Create dict to represent item.
+        rval = dict(
+            model_class=self.__class__.__name__
+        )
+
+        # Fill item dict with visible keys.
         try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
+            raise Exception( 'Unknown DictifiableMixin view: %s' % view )
         for key in visible_keys:
             try:
                 item = self.__getattribute__( key )
                 if type( item ) == InstrumentedList:
-                    rval[key] = []
+                    rval[ key ] = []
                     for i in item:
-                        rval[key].append( get_value( key, i ) )
+                        rval[ key ].append( get_value( key, i ) )
                 else:
-                    rval[key] = get_value( key, item )
+                    rval[ key ] = get_value( key, item )
             except AttributeError:
-                rval[key] = None
+                rval[ key ] = None
 
-        rval['model_class'] = self.__class__.__name__
         return rval

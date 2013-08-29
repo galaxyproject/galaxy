@@ -113,7 +113,7 @@ class RepositoriesController( BaseAPIController ):
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_id = trans.security.encode_id( repository.id )
-            repository_dict = repository.get_api_value( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.dictify( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=encoded_repository_id )
@@ -129,7 +129,7 @@ class RepositoriesController( BaseAPIController ):
                 changeset_revision = new_changeset_revision
             if repository_metadata:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-                repository_metadata_dict = repository_metadata.get_api_value( view='collection',
+                repository_metadata_dict = repository_metadata.dictify( view='collection',
                                                                               value_mapper=default_repository_metadata_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
@@ -164,7 +164,7 @@ class RepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.Repository.table.c.name ) \
                                     .all()
             for repository in query:
-                repository_dict = repository.get_api_value( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.dictify( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -187,7 +187,7 @@ class RepositoriesController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
         try:
             repository = suc.get_repository_in_tool_shed( trans, id )
-            repository_dict = repository.get_api_value( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.dictify( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=trans.security.encode_id( repository.id ) )

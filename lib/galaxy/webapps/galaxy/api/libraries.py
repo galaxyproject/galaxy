@@ -26,7 +26,7 @@ class LibrariesController( BaseAPIController ):
 
         :rtype:     list
         :returns:   list of dictionaries containing library information
-        .. seealso:: :attr:`galaxy.model.Library.api_collection_visible_keys`
+        .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
         """
         log.debug( "LibrariesController.index: enter" )
         query = trans.sa_session.query( trans.app.model.Library )
@@ -49,7 +49,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         rval = []
         for library in query:
-            item = library.get_api_value()
+            item = library.dictify()
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
@@ -71,7 +71,7 @@ class LibrariesController( BaseAPIController ):
 
         :rtype:     dictionary
         :returns:   detailed library information
-        .. seealso:: :attr:`galaxy.model.Library.api_element_visible_keys`
+        .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
@@ -87,7 +87,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise HTTPBadRequest( detail='Invalid library id ( %s ) specified.' % id )
-        item = library.get_api_value( view='element' )
+        item = library.dictify( view='element' )
         #item['contents_url'] = url_for( 'contents', library_id=library_id )
         item['contents_url'] = url_for( 'library_contents', library_id=library_id )
         return item
@@ -145,7 +145,7 @@ class LibrariesController( BaseAPIController ):
 
         :rtype:     dictionary
         :returns:   detailed library information
-        .. seealso:: :attr:`galaxy.model.Library.api_element_visible_keys`
+        .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
         if not trans.user_is_admin():
             raise HTTPForbidden( detail='You are not authorized to delete libraries.' )
@@ -162,4 +162,4 @@ class LibrariesController( BaseAPIController ):
         library.deleted = True
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.get_api_value( view='element', value_mapper={ 'id' : trans.security.encode_id } )
+        return library.dictify( view='element', value_mapper={ 'id' : trans.security.encode_id } )

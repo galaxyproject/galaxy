@@ -21,7 +21,7 @@ class GroupAPIController( BaseAPIController ):
         rval = []
         for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ):
             if trans.user_is_admin():
-                item = group.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+                item = group.dictify( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( group.id )
                 item['url'] = url_for( 'group', id=encoded_id )
                 rval.append( item )
@@ -65,7 +65,7 @@ class GroupAPIController( BaseAPIController ):
         """
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( group.id )
-        item = group.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = group.dictify( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'group', id=encoded_id )
         return [ item ]
 
@@ -89,7 +89,7 @@ class GroupAPIController( BaseAPIController ):
         if not group:
             trans.response.status = 400
             return "Invalid group id ( %s ) specified." % str( group_id )
-        item = group.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = group.dictify( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'group', id=group_id )
         item['users_url'] = url_for( 'group_users', group_id=group_id )
         item['roles_url'] = url_for( 'group_roles', group_id=group_id )

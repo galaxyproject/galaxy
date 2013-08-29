@@ -33,7 +33,7 @@
     ${render_msg( message, status )}
 %endif
 
-${render_tool_shed_repository_actions( repository, repo=None, metadata=None, changeset_revision=None )}
+${render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )}
 
 %if repository.user != trans.user:
     <div class="toolForm">

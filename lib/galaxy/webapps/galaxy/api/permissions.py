@@ -47,6 +47,6 @@ class PermissionsController( BaseAPIController ):
         trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         message = "Permissions updated for library '%s'." % library.name
 
-        item = library.get_api_value( view='element' )
+        item = library.dictify( view='element' )
         return item
 

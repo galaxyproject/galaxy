@@ -33,13 +33,13 @@ class UserAPIController( BaseAPIController ):
             query = query.filter( trans.app.model.User.table.c.deleted == False )
             # special case: user can see only their own user
             if not trans.user_is_admin():
-                item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+                item = trans.user.dictify( value_mapper={ 'id': trans.security.encode_id } )
                 item['url'] = url_for( route, id=item['id'] )
                 item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
                 return [item]
 
         for user in query:
-            item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+            item = user.dictify( value_mapper={ 'id': trans.security.encode_id } )
             #TODO: move into api_values
             item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
             item['url'] = url_for( route, id=item['id'] )
@@ -77,7 +77,7 @@ class UserAPIController( BaseAPIController ):
                 raise
             else:
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
-        item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+        item = user.dictify( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                   'total_disk_usage': float } )
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??
@@ -94,7 +94,7 @@ class UserAPIController( BaseAPIController ):
             raise HTTPNotImplemented( detail='User creation is not allowed in this Galaxy instance' )
         if trans.app.config.use_remote_user and trans.user_is_admin():
             user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
-            item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+            item = user.dictify( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                       'total_disk_usage': float } )
         else:
             raise HTTPNotImplemented()

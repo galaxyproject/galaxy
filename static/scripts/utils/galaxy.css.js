@@ -29,7 +29,7 @@ function load_file (url)
 {
     // check if css is already available
     if (!$('link[href^="' + url + '"]').length)
-        $('<link href="' + url + '" rel="stylesheet">').appendTo('head');
+        $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
 };
 
 // return

@@ -919,7 +919,7 @@ var TracksterView = Backbone.View.extend({
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
                 { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
-                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" },
+                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" }
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {
@@ -951,7 +951,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(config.root + "visualization/list_current_history_datasets", config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
@@ -1219,7 +1219,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view = this,
             chrom_data = $.Deferred();
         $.ajax({
-            url: config.root + "api/genomes/" + this.dbkey,
+            url: galaxy_config.root + "api/genomes/" + this.dbkey,
             data: url_parms,
             dataType: "json",
             success: function (result) {
@@ -1393,7 +1393,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         //
 
         // Redraw without requesting more data immediately.
-        view.request_redraw({ data_fetch: false })
+        view.request_redraw({ data_fetch: false });
 
         // Set up timeout to redraw with more data when moving stops.
         if (this.redraw_on_move_fn) {
@@ -1622,20 +1622,26 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 /**
  * Encapsulation of a tool that users can apply to tracks/datasets.
  */
-var TracksterTool = Backbone.RelationalModel.extend({
+var TracksterTool = tools_mod.Tool.extend({
     defaults: {
-        track: null,
-        tool: null,
+        track: null
     },
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'tool',
-            relatedModel: tools_mod.Tool
+    initialize: function(options) {
+        // Restore tool visibility from state.
+        if (options.tool_state !== undefined) {
+            this.set('hidden', options.tool_state.hidden)
         }
-    ]
 
+        // FIXME: need to restore tool values from options.tool_state
+
+        // HACK: remove some inputs because Trackster does yet not work with them.
+        this.remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
+    },
+
+    state_dict: function(options) {
+        return _.extend( this.get_inputs_dict(), { hidden: !this.is_visible() } );
+    }
 });
 
 /**
@@ -1672,12 +1678,16 @@ var TracksterTool = Backbone.RelationalModel.extend({
  */
 var TracksterToolView = Backbone.View.extend({
 
+    initialize: function(options) {
+        this.model.on('change:hidden', this.set_visible, this);
+    },
+
     /**
      * Render tool UI.
      */
     render: function() {
         var self = this;
-            tool = this.model.get('tool'),
+            tool = this.model,
             parent_div = this.$el.addClass("dynamic-tool").hide();
 
         // Prevent div events from propogating to other elements.
@@ -1692,6 +1702,7 @@ var TracksterToolView = Backbone.View.extend({
         // Add name, inputs.
         var name_div = $("<div class='tool-name'>").appendTo(parent_div).text(tool.get('name'));
         tool.get('inputs').each(function(param) {
+            // Render parameter.
             var param_view = new ToolParameterView({ model: param });
             param_view.render();
             parent_div.append(param_view.$el);
@@ -1712,11 +1723,21 @@ var TracksterToolView = Backbone.View.extend({
             self.run_on_dataset();
         });
         
-        /*
-        if ('visible' in tool_state_dict && tool_state_dict.visible) {
-            this.parent_div.show();
+        if (tool.is_visible()) {
+            this.$el.show();
         }
-        */
+    },
+
+    /**
+     * Show or hide tool depending on tool visibility state.
+     */
+    set_visible: function() {
+        if (this.model.is_visible()) {
+            this.$el.show();
+        }
+        else {
+            this.$el.hide();
+        }
     },
 
     /**
@@ -1729,23 +1750,10 @@ var TracksterToolView = Backbone.View.extend({
     },
 
     /**
-     * Returns a dict with tool state information.
-     */
-    state_dict: function() {
-        // Save parameter values.
-        var tool_state = this.model.get('tool').get_param_values_dict();
-        
-        // Save visibility.
-        tool_state.visible = this.parent_div.is(":visible");
-        
-        return tool_state;
-    },
-
-    /**
      * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
      */
     run_on_dataset: function() {
-        var tool = this.model.get('tool');
+        var tool = this.model;
         this.run(
             // URL params.
             { 
@@ -1772,7 +1780,7 @@ var TracksterToolView = Backbone.View.extend({
         // Create track for tool's output immediately to provide user feedback.
         //
         var track = this.model.get('track'),
-            tool = this.model.get('tool'),
+            tool = this.model,
             region = new visualization.GenomeRegion({
                 chrom: track.view.chrom,
                 start: track.view.low,
@@ -1843,10 +1851,10 @@ var TracksterToolView = Backbone.View.extend({
      */
     run: function(url_params, new_track, success_callback) {
         // Run tool.
-        url_params.inputs = this.model.get('tool').get_inputs_dict();
+        url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: config.root + "api/tools",
+                url: galaxy_config.root + "api/tools",
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: 'application/json',
@@ -2309,8 +2317,12 @@ var Track = function(view, container, obj_dict) {
     // Attribute init.
     //
 
-    // Only create dataset if it is defined.
-    this.dataset = (obj_dict.dataset ? new data.Dataset(obj_dict.dataset) : null);
+    // Set or create dataset.
+    this.dataset = null;
+    if (obj_dict.dataset) {
+        // Dataset can be a Backbone model or a dict that can be used to create a model.
+        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset) );
+    }
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
@@ -2394,10 +2406,10 @@ extend(Track.prototype, Drawable.prototype, {
             on_click_fn: function(track) {
                 // TODO: update tipsy text.
 
-                track.dynamic_tool_div.toggle();
+                track.tool.toggle();
 
                 // Update track name.
-                if (track.dynamic_tool_div.is(":visible")) {
+                if (track.tool.is_visible()) {
                     track.set_name(track.name + track.tool_region_and_parameters_str());
                 }
                 else {
@@ -2453,7 +2465,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                         // Go to visualization.
                         window.location.href = 
-                            config.root + "visualization/sweepster" + "?" +
+                            galaxy_config.root + "visualization/sweepster" + "?" +
                             $.param({
                                 dataset_id: track.dataset.id,
                                 hda_ldda: track.dataset.get('hda_ldda'),
@@ -2479,11 +2491,8 @@ extend(Track.prototype, Drawable.prototype, {
         Drawable.prototype.action_icons_def[2]
     ],
 
-    can_draw: function() {        
-        if ( this.dataset.id && Drawable.prototype.can_draw.call(this) ) { 
-            return true;
-        }
-        return false;
+    can_draw: function() {
+        return this.dataset && Drawable.prototype.can_draw.call(this);
     },
 
     build_container_div: function () {
@@ -2782,11 +2791,10 @@ var TiledTrack = function(view, container, obj_dict) {
     // FIXME: prolly need function to set filters and update data_manager reference.
     this.data_manager.set('filters_manager', this.filters_manager);
     this.filters_available = false;
-    this.tool = (obj_dict.tool ? new TracksterTool({
-        'track': this, 
-        'tool': obj_dict.tool,
+    this.tool = (obj_dict.tool ? new TracksterTool( _.extend( obj_dict.tool, {
+        'track': this,
         'tool_state': obj_dict.tool_state
-    }) 
+    } ) )
     : null);
     this.tile_cache = new visualization.Cache(TILE_CACHE_SIZE);
     this.left_offset = 0;
@@ -3325,9 +3333,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
-        console.log("Warning: TiledTrack.draw_tile() not implemented.");
-    },
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {},
 
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
@@ -3398,7 +3404,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     tool_region_and_parameters_str: function(region) {
         var track = this,
             region_str = (region !== undefined ? region.toString() : "all"),
-            param_str = _.values( track.tool.get('tool').get_inputs_dict()).join(', ');
+            param_str = _.values( track.tool.get_inputs_dict()).join(', ');
         return " - region=[" + region_str + "], parameters=[" + param_str + "]";
     },
 
@@ -3444,9 +3450,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.data_query_wait = 1000;
         this.dataset_check_type = 'state';
         
+        // FIXME: this is optional and is disabled for now because it creates
+        // additional converter jobs without a clear benefit because indexing
+        // such a small dataset provides little benefit.
         //
         // Set up one-time, post-draw to clear tool execution settings.
         //
+        /*
         this.normal_postdraw_actions = this.postdraw_actions;
         this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
             var self = this;
@@ -3476,6 +3486,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Reset post-draw actions function.
             self.postdraw_actions = self.normal_postdraw_actions;
         };
+        */
     }
 });
 
@@ -3728,7 +3739,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
-    this.data_url = config.root + "api/genomes/" + "/" + this.view.dbkey;
+    this.data_url = galaxy_config.root + "api/genomes/" + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,

@@ -242,8 +242,8 @@ class HideDatasetAction(DefaultJobAction):
                 }
                 """
     @classmethod
-    def get_short_str(cls, trans):
-        return "Hide this dataset."
+    def get_short_str(cls, pja):
+        return "Hide output '%s'." % pja.output_name
 
 class DeleteDatasetAction(DefaultJobAction):
     # This is disabled for right now.  Deleting a dataset in the middle of a workflow causes errors (obviously) for the subsequent steps using the data.

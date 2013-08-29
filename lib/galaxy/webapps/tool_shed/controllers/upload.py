@@ -241,6 +241,7 @@ class UploadController( BaseUIController ):
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,
+                                    changeset_revision=tip,
                                     url=url,
                                     commit_message=commit_message,
                                     uncompress_file=uncompress_file,

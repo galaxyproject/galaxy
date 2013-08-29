@@ -285,9 +285,6 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
-    <sniffer type="galaxy.datatypes.graph:Xgmml"/>
-    <sniffer type="galaxy.datatypes.graph:Sif"/>
-    <sniffer type="galaxy.datatypes.graph:Rdf"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>

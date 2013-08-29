@@ -17,6 +17,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import export_util
@@ -30,7 +31,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util import ratings_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -50,7 +51,7 @@ malicious_error = "  This changeset cannot be downloaded because it potentially 
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
 
 
-class RepositoryController( BaseUIController, common_util.ItemRatings ):
+class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     category_grid = repository_grids.CategoryGrid()
     datatypes_grid = repository_grids.DatatypesGrid()
@@ -663,10 +664,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
         suc.update_repository( repo )
-        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        changeset_revision = repository.tip( trans.app )
+        metadata = self.get_metadata( trans, id, changeset_revision )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
                                     metadata=metadata,
                                     commit_message=commit_message,
                                     repository_type_select_field=repository_type_select_field,
@@ -1101,6 +1104,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             repositories_archive_filename = os.path.basename( repositories_archive.name )
             if error_message:
                 message = error_message
+                status = 'error'
             else:
                 trans.response.set_content_type( 'application/x-gzip' )
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % ( repositories_archive_filename )
@@ -1108,9 +1112,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # Make sure the file is removed from disk after the contents have been downloaded.
                 os.unlink( repositories_archive.name )
                 return opened_archive
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
-                                                                                 trans.security.encode_id( repository.id ),
-                                                                                 changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
         repository_dependencies = \
@@ -1232,7 +1234,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( common_util.stringify( tool_ids ), common_util.stringify( tool_names ), common_util.stringify( tool_versions ), str( exact_matches_checked ) )
+                        ( suc.stringify( tool_ids ), suc.stringify( tool_names ), suc.stringify( tool_versions ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -1240,9 +1242,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 status = "error"
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/tool_shed/repository/find_tools.mako',
-                                    tool_id=common_util.stringify( tool_ids ),
-                                    tool_name=common_util.stringify( tool_names ),
-                                    tool_version=common_util.stringify( tool_versions ),
+                                    tool_id=suc.stringify( tool_ids ),
+                                    tool_name=suc.stringify( tool_names ),
+                                    tool_version=suc.stringify( tool_versions ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
@@ -1316,7 +1318,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( common_util.stringify( workflow_names ), str( exact_matches_checked ) )
+                        ( suc.stringify( workflow_names ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching workflows"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -1327,7 +1329,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             workflow_names = []
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/tool_shed/repository/find_workflows.mako',
-                                    workflow_name=common_util.stringify( workflow_names ),
+                                    workflow_name=suc.stringify( workflow_names ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
@@ -1579,6 +1581,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
+        # We aren't concerned with repository's of type tool_dependency_definition here if a repository_metadata record is not returned
+        # because repositories of this type will never have repository dependencies.
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -1642,7 +1646,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             encoded_repository_ids = []
             changeset_revisions = []
             for required_repository_tup in decoded_required_repository_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( required_repository_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required = \
+                    common_util.parse_repository_dependency_tuple( required_repository_tup )
                 repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
                 changeset_revisions.append( changeset_revision )
@@ -1716,9 +1721,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if not repository_metadata:
+            # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
+            # changelog that is associated with metadata.
+            changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
         repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
                                                                 repository_clone_url=repository_clone_url,
@@ -1811,6 +1821,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         return trans.fill_template( '/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd )
+
+    @web.expose
+    def import_capsule( self, trans, **kwd ):
+        pass
 
     @web.expose
     def index( self, trans, **kwd ):
@@ -2215,6 +2229,25 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         self.email_alerts_repository_grid.title = "Set email alerts for repository changes"
         return self.email_alerts_repository_grid( trans, **kwd )
 
+    @web.expose
+    def next_installable_changeset_revision( self, trans, **kwd ):
+        """
+        Handle a request from a Galaxy instance where the changeset_revision defined for a repository in a dependency definition file is older
+        than the changeset_revision associated with the installed repository.  This will occur with repository's of type tool_dependency_definition,
+        and this scenario will occur while repository dependency hierarchies are bing installed.
+        """
+        name = kwd.get( 'name', None )
+        owner = kwd.get( 'owner', None )
+        changeset_revision = kwd.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        # Get the next installable changeset_revision beyond the received changeset_revision.
+        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if changeset_revision:
+            return changeset_revision
+        return ''
+
     @web.json
     def open_folder( self, trans, folder_path ):
         # Avoid caching
@@ -2276,8 +2309,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         older changeset_revsion, but later the repository was updated in the tool shed and the Galaxy admin is trying to install the latest
         changeset revision of the same repository instead of updating the one that was previously installed.
         """
-        message = kwd.get( 'message', ''  )
-        status = kwd.get( 'status', 'done' )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -2423,9 +2454,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        changeset_revision = repository.tip( trans.app )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
+                                    changeset_revision=changeset_revision,
                                     commit_message=commit_message,
                                     repository_type_select_field=repository_type_select_field,
                                     message=message,

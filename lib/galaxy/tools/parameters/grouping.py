@@ -15,30 +15,43 @@ from galaxy.util import relpath
 from galaxy.util import sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.model.item_attrs import DictifiableMixin
 
-class Group( object ):
+class Group( object, DictifiableMixin ):
+
+    dict_collection_visible_keys = ( 'name', 'type' )
+
     def __init__( self ):
         self.name = None
+        
     @property
     def visible( self ):
         return True
+    
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
         types (dict, list, tuple, str, unicode, int, long, float, bool, None)
         """
         return value
+    
     def value_from_basic( self, value, app, ignore_errors=False ):
         """
         Convert a basic representation as produced by `value_to_basic` back
         into the preferred value form.
         """
         return value
+    
     def get_initial_value( self, trans, context ):
         """
         Return the initial state/value for this group
         """
         raise TypeError( "Not implemented" )
+
+    def dictify( self, trans, view='collection', value_mapper=None ):
+        # TODO: need to dictify conditions.
+        group_dict = super( Group, self ).dictify( view=view, value_mapper=value_mapper )
+        return group_dict
         
 class Repeat( Group ):
     type = "repeat"

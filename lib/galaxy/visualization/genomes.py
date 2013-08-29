@@ -73,7 +73,7 @@ class Genome( object ):
         self.len_file = len_file
         self.twobit_file = twobit_file
         
-    def to_dict( self, num=None, chrom=None, low=None ):
+    def dictify( self, num=None, chrom=None, low=None ):
         """
         Returns representation of self as a dictionary.
         """
@@ -289,7 +289,7 @@ class Genomes( object ):
         # Set up return value or log exception if genome not found for key.
         rval = None
         if genome:
-            rval = genome.to_dict( num=num, chrom=chrom, low=low )
+            rval = genome.dictify( num=num, chrom=chrom, low=low )
         else:
             log.exception( 'genome not found for key %s' % dbkey )
             

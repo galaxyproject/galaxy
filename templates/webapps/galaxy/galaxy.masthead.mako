@@ -4,7 +4,7 @@
     """Bootstrapping user API JSON"""
     #TODO: move into common location (poss. BaseController)
     if trans.user:
-        user_dict = trans.user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+        user_dict = trans.user.dictify( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
         user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
     else:
@@ -29,16 +29,9 @@ ${h.to_json_string( user_dict )}
 <%def name="load()">
     ## load the frame manager
     <script type="text/javascript">
-        ## path to style sheets
-        var galaxy_config = {
-            url: {
-                styles : "${h.url_for('/static/style')}"
-            }
-        };
-
         ## load additional style sheet
         if (window != window.top)
-            $('<link href="' + galaxy_config.url.styles + '/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
         
         ## frame manager
         var frame_manager = null;

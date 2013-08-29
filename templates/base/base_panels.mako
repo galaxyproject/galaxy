@@ -71,16 +71,15 @@
     )}
 
     <script type="text/javascript">
-        ## path to style sheets
-        var galaxy_config = {
-            url: {
-                styles : "${h.url_for('/static/style')}"
-            }
+        ## global configuration object
+        var galaxy_config =
+        {
+            root: '${h.url_for( "/" )}'
         };
 
         ## load additional style sheet
         if (window != window.top)
-            $('<link href="' + galaxy_config.url.styles + '/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         // console protection
         window.console = window.console || {
@@ -91,19 +90,6 @@
             error   : function(){},
             assert  : function(){}
         };
-
-        // Set up needed paths.
-        var galaxy_paths = new GalaxyPaths({
-            root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}',
-            
-            tool_url: '${h.url_for( controller="/api/tools" )}',
-            history_url: '${h.url_for( controller="/api/histories" )}',
-            
-            datasets_url: '${h.url_for( controller="/api/datasets" )}',
-            sweepster_url: '${h.url_for( controller="/visualization", action="sweepster" )}',
-            visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
-        });
 
         ## configure require
         require.config({

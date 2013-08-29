@@ -1,8 +1,10 @@
-import sys, os, ConfigParser
+import ConfigParser
+import os
+import sys
 import galaxy.config
 import galaxy.datatypes.registry
 from galaxy import tools
-from galaxy.tools.data import *
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.web import security
 import galaxy.model.mapping
 import galaxy.tools.search
@@ -10,8 +12,10 @@ from galaxy.objectstore import build_object_store_from_config
 import tool_shed.tool_shed_registry
 from tool_shed.galaxy_install import install_manager
 
+
 class MigrateToolsApplication( object ):
     """Encapsulates the state of a basic Galaxy Universe application in order to initiate the Install Manager"""
+
     def __init__( self, tools_migration_config ):
         install_dependencies = 'install_dependencies' in sys.argv
         galaxy_config_file = 'universe_wsgi.ini'
@@ -23,7 +27,7 @@ class MigrateToolsApplication( object ):
         if not os.path.exists( galaxy_config_file ):
             print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % galaxy_config_file
             sys.exit( 1 )
-        config_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )
+        config_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
         config_parser.read( galaxy_config_file )
         galaxy_config_dict = {}
         for key, value in config_parser.items( "app:main" ):
@@ -77,8 +81,10 @@ class MigrateToolsApplication( object ):
                                                                                                       tools_migration_config ),
                                                                migrated_tools_config=self.config.migrated_tools_config,
                                                                install_dependencies=install_dependencies )
+
     @property
     def sa_session( self ):
         return self.model.context.current
+
     def shutdown( self ):
         self.object_store.shutdown()

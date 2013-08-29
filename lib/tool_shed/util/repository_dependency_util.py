@@ -54,7 +54,7 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                     for repository_dependency_components_list in val:
                         required_repository = None
                         rd_toolshed, rd_name, rd_owner, rd_changeset_revision, prior_installation_required = \
-                            suc.parse_repository_dependency_tuple( repository_dependency_components_list )
+                            common_util.parse_repository_dependency_tuple( repository_dependency_components_list )
                         # Get the the tool_shed_repository defined by rd_name, rd_owner and rd_changeset_revision.  This is the repository that will be
                         # required by the current dependent_repository.
                         # TODO: Check tool_shed_repository.tool_shed as well when repository dependencies across tool sheds is supported.
@@ -254,7 +254,7 @@ def generate_message_for_invalid_repository_dependencies( metadata_dict ):
             invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
             for repository_dependency_tup in invalid_repository_dependencies:
                 toolshed, name, owner, changeset_revision, prior_installation_required, error = \
-                    suc.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
+                    common_util.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
                 if error:
                     message = '%s  ' % str( error )
     return message
@@ -279,7 +279,7 @@ def get_prior_installation_required_for_key( toolshed_base_url, repository, repo
         if rd_key in [ 'root_key', 'description' ]:
             continue
         for rd_tup in rd_tups:
-            rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
+            rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
             if rd_toolshed == toolshed_base_url and \
                 rd_name == repository.name and \
                 rd_owner == repository.user.username and \
@@ -370,7 +370,8 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
     for key_rd_dict in key_rd_dicts:
         key = key_rd_dict.keys()[ 0 ]
         repository_dependency = key_rd_dict[ key ]
-        rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
+        rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
+            common_util.parse_repository_dependency_tuple( repository_dependency )
         if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
             repository = suc.get_repository_by_name_and_owner( trans.app, rd_name, rd_owner )
             if repository:
@@ -457,7 +458,7 @@ def handle_current_repository_dependency( trans, current_repository_key, key_rd_
 def handle_key_rd_dicts_for_repository( trans, current_repository_key, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, circular_repository_dependencies ):
     key_rd_dict = repository_key_rd_dicts.pop( 0 )
     repository_dependency = key_rd_dict[ current_repository_key ]
-    toolshed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
+    toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repository_dependency )
     if suc.tool_shed_is_this_tool_shed( toolshed ):
         required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
@@ -686,11 +687,11 @@ def remove_ropository_dependency_reference_to_self( key_rd_dicts ):
     clean_key_rd_dicts = []
     key = key_rd_dicts[ 0 ].keys()[ 0 ]
     repository_tup = key.split( container_util.STRSEP )
-    rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = suc.parse_repository_dependency_tuple( repository_tup )
+    rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = common_util.parse_repository_dependency_tuple( repository_tup )
     for key_rd_dict in key_rd_dicts:
         k = key_rd_dict.keys()[ 0 ]
         repository_dependency = key_rd_dict[ k ]
-        toolshed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
+        toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repository_dependency )
         if rd_toolshed == toolshed and rd_name == name and rd_owner == owner:
             log.debug( "Removing repository dependency for repository %s owned by %s since it refers to a revision within itself." % ( name, owner ) )
         else:
@@ -700,7 +701,7 @@ def remove_ropository_dependency_reference_to_self( key_rd_dicts ):
     return clean_key_rd_dicts
 
 def get_repository_dependency_as_key( repository_dependency ):
-    tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( repository_dependency )
+    tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repository_dependency )
     return container_util.generate_repository_dependencies_key_for_repository( tool_shed, name, owner, changeset_revision, str( prior_installation_required ) )
 
 def get_repository_dependency_by_repository_id( trans, decoded_repository_id ):

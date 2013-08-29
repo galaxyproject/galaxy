@@ -211,7 +211,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
                 # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
                 # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
                 # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )

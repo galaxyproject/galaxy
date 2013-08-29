@@ -138,7 +138,7 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
                                  preview_strings_displayed=preview_strings_displayed,
                                  strings_displayed=strings_displayed,
                                  strings_not_displayed=[],
-                                 post_submit_strings_displayed=[ 'column_maker_0150', 'new' ],
+                                 post_submit_strings_displayed=[ 'column_maker_0150', 'New' ],
                                  includes_tools_for_display_in_tool_panel=True )
     
     def test_0030_verify_installation_order( self ):

@@ -3,6 +3,7 @@ import os
 import threading
 from galaxy.util import asbool
 from galaxy.web.framework.helpers import time_ago
+from tool_shed.util import common_util
 from tool_shed.util import readme_util
 import tool_shed.util.shed_util_common as suc
 
@@ -63,7 +64,7 @@ class Folder( object ):
                 self.repository_dependencies.remove( contained_repository_dependency )
 
     def to_repository_dependency( self, repository_dependency_id ):
-        toolshed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
+        toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
         return RepositoryDependency( id=repository_dependency_id,
                                      toolshed=toolshed,
                                      repository_name=name,
@@ -463,7 +464,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
             folder_id += 1
             invalid_repository_dependency_id += 1
             toolshed, name, owner, changeset_revision, prior_installation_required, error = \
-                suc.parse_repository_dependency_tuple( invalid_repository_dependency, contains_error=True )
+                common_util.parse_repository_dependency_tuple( invalid_repository_dependency, contains_error=True )
             key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision, prior_installation_required )
             label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, changeset_revision, owner )
             folder = Folder( id=folder_id,
@@ -1264,6 +1265,35 @@ def get_folder( folder, key ):
         return get_folder( sub_folder, key )
     return None
 
+def get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency ):
+    """
+    Parse a repository dependency and return components necessary for proper display in Galaxy on the Manage repository page.
+    """
+    if len( repository_dependency ) == 6:
+        # Metadata should have been reset on this installed repository, but it wasn't.
+        tool_shed_repository_id = repository_dependency[ 4 ]
+        installation_status = repository_dependency[ 5 ]
+        tool_shed, name, owner, changeset_revision = repository_dependency[ 0:4 ]
+        # Default prior_installation_required to False.
+        prior_installation_required = False
+        repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_dependency ) == 7:
+        # We have a repository dependency tuple that includes a prior_installation_required value.
+        tool_shed_repository_id = repository_dependency[ 5 ]
+        installation_status = repository_dependency[ 6 ]
+        repository_dependency = repository_dependency[ 0:5 ]
+    else:
+        tool_shed_repository_id = None
+        installation_status = 'unknown'
+    if tool_shed_repository_id:
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, trans.security.encode_id( tool_shed_repository_id ) )
+        if tool_shed_repository:
+            if tool_shed_repository.missing_repository_dependencies:
+                installation_status = '%s, missing repository dependencies' % installation_status
+            elif tool_shed_repository.missing_tool_dependencies:
+                installation_status = '%s, missing tool dependencies' % installation_status
+    return tool_shed_repository_id, installation_status, repository_dependency
+
 def get_components_from_key( key ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
     items = key.split( STRSEP )
@@ -1314,29 +1344,15 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         sub_folder.repository_dependencies.append( repository_dependency )
     for repository_dependency in rd_value:
         if trans.webapp.name == 'galaxy':
-            if len( repository_dependency ) == 6:
-                # Metadata should have been reset on this installed repository, but it wasn't.
-                tool_shed_repository_id = repository_dependency[ 4 ]
-                installation_status = repository_dependency[ 5 ]
-                tool_shed, name, owner, changeset_revision = repository_dependency[ 0:4 ]
-                # Default prior_installation_required to False.
-                prior_installation_required = False
-                repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required ]
-            elif len( repository_dependency ) == 7:
-                # We have a repository dependency tuple that includes a prior_installation_required value.
-                tool_shed_repository_id = repository_dependency[ 5 ]
-                installation_status = repository_dependency[ 6 ]
-                repository_dependency = repository_dependency[ 0:5 ]
-            else:
-                tool_shed_repository_id = None
-                installation_status = 'unknown'
+            tool_shed_repository_id, installation_status, repository_dependency = \
+                get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency )
         else:
             tool_shed_repository_id = None
             installation_status = None
         can_create_dependency = not is_subfolder_of( sub_folder, repository_dependency )
         if can_create_dependency:
             toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
-                suc.parse_repository_dependency_tuple( repository_dependency )
+                common_util.parse_repository_dependency_tuple( repository_dependency )
             repository_dependency_id += 1
             repository_dependency = RepositoryDependency( id=repository_dependency_id,
                                                           toolshed=toolshed,
@@ -1352,7 +1368,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
 
 def is_subfolder_of( folder, repository_dependency ):
     toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
-        suc.parse_repository_dependency_tuple( repository_dependency )
+        common_util.parse_repository_dependency_tuple( repository_dependency )
     key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, asbool( prior_installation_required ) )
     for sub_folder in folder.folders:
         if key == sub_folder.key:

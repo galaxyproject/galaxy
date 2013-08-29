@@ -960,8 +960,8 @@ var Circster = Backbone.View.extend(
     initialize: function ()
     {
         // configure visualization
-        var genome = new visualization.Genome(config.app.genome),
-        vis = new visualization.GenomeVisualization(config.app.viz_config),
+        var genome = new visualization.Genome(galaxy_config.app.genome),
+        vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config),
         viz_view = new CircsterView(
         {
             // view pane
@@ -978,13 +978,13 @@ var Circster = Backbone.View.extend(
         viz_view.render();
         
         // setup title
-        $('#center .unified-panel-header-inner').append(config.app.viz_config.title + " " + config.app.viz_config.dbkey);
+        $('#center .unified-panel-header-inner').append(galaxy_config.app.viz_config.title + " " + galaxy_config.app.viz_config.dbkey);
     
         // setup menu
         var menu = create_icon_buttons_menu([
         {   icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
-                visualization.select_datasets(config.root + "visualization/list_current_history_datasets", config.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", vis.get('dbkey'), function(tracks)
                 {
                     vis.add_tracks(tracks);
                 });
@@ -996,11 +996,11 @@ var Circster = Backbone.View.extend(
                 show_modal("Saving...", "progress");
      
                 // link configuration
-                var view = config.app.viz_config;
+                var view = galaxy_config.app.viz_config;
                 
                 // send to server
                 $.ajax({
-                    url: config.root + "visualization/save",
+                    url: galaxy_config.root + "visualization/save",
                     type: "POST",
                     dataType: "json",
                     data: {
@@ -1025,7 +1025,7 @@ var Circster = Backbone.View.extend(
         },{
             icon_class: 'cross-circle', title: 'Close', on_click: function()
             {
-                window.location = config.root + "visualization/list";
+                window.location = galaxy_config.root + "visualization/list";
             }
         }], { tooltip_config: { placement: 'bottom' } });
             

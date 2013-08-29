@@ -45,7 +45,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.ToolShedRepository.table.c.name ) \
                                     .all()
             for tool_shed_repository in query:
-                tool_shed_repository_dict = tool_shed_repository.get_api_value( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                tool_shed_repository_dict = tool_shed_repository.dictify( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
                 tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                                   action='show',
                                                                   id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -402,7 +402,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repair_dict = repository_util.repair_tool_shed_repository( trans,
                                                                            repository,
                                                                            encoding_util.tool_shed_encode( repo_info_dict ) )
-                repository_dict = repository.get_api_value( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.dictify( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )

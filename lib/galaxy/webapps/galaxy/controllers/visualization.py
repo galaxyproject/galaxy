@@ -14,7 +14,6 @@ from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
-from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
 
@@ -421,7 +420,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if referer is not "":
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
                     
         # Do import.
         session = trans.sa_session
@@ -512,7 +511,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 self.create_item_slug( session, visualization )
                 session.flush()
                 trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
-                return trans.response.send_redirect( url_for(controller='visualization', action='sharing', id=id ) )
+                return trans.response.send_redirect( web.url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -560,7 +559,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
-        return_dict = { "name" : visualization.title, "link" : url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
+        return_dict = { "name" : visualization.title, "link" : web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
         return return_dict
 
     @web.expose
@@ -865,7 +864,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = get_dataset_job( dataset )
+            job = self.get_hda_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -874,8 +873,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 
         # Add tool, dataset attributes to config based on id.
         tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
-        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
-        viz_config[ 'dataset' ] = dataset.get_api_value()
+        viz_config[ 'tool' ] = tool.dictify( trans, io_details=True )
+        viz_config[ 'dataset' ] = trans.security.encode_dict_ids( dataset.dictify() )
 
         return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
     

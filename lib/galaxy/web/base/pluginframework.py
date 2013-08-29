@@ -14,6 +14,8 @@ pkg_resources.require( 'MarkupSafe' )
 pkg_resources.require( 'Mako' )
 import mako
 
+from galaxy.util import listify
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -94,24 +96,29 @@ class PluginFramework( object ):
             return None
 
     def __str__( self ):
-        return '%s(%s)' %( self.__class__.__name__, self.plugin_directory )
+        return '%s(%s)' %( self.__class__.__name__, self.plugin_directories )
 
-    def __init__( self, plugin_directory, name=None, template_cache_dir=None, debug=False ):
+    def __init__( self, plugin_directories, name=None, template_cache_dir=None, debug=False, assert_exists=True ):
         """
-        :type   plugin_directory:   string
-        :param  plugin_directory:   the base directory where plugin code is kept
-        :type   name:               (optional) string (default: None)
-        :param  name:               the name of this plugin
+        :type   plugin_directories:   string or list
+        :param  plugin_directories:   the base directory where plugin code is kept
+        :type   name:                 (optional) string (default: None)
+        :param  name:                 the name of this plugin
             (that will appear in url pathing, etc.)
-        :type   template_cache_dir: (optional) string (default: None)
-        :param  template_cache_dir: the cache directory to store compiled mako
+        :type   template_cache_dir:   (optional) string (default: None)
+        :param  template_cache_dir:   the cache directory to store compiled mako
+        :type   assert_exists:        (optional) bool (default: False)
+        :param  assert_exists:        If True, each configured plugin directory must exist.
         """
-        if not os.path.isdir( plugin_directory ):
-            raise PluginFrameworkException( 'Framework plugin directory not found: %s, %s'
-                                            %( self.__class__.__name__, plugin_directory ) )
-        self.plugin_directory = plugin_directory
+        self.plugin_directories = listify( plugin_directories )
+        if assert_exists:
+            for plugin_directory in self.plugin_directories:
+                if not os.path.isdir( plugin_directory ):
+                    raise PluginFrameworkException( 'Framework plugin directory not found: %s, %s'
+                                                    % ( self.__class__.__name__, plugin_directory ) )
+
         #TODO: or pass in from config
-        self.name = name or os.path.basename( self.plugin_directory )
+        self.name = name or os.path.basename( self.plugin_directories[0] )
 
         if self.has_config:
             self.load_configuration()
@@ -127,14 +134,15 @@ class PluginFramework( object ):
         themselves and whose ``basename`` is not in ``plugin_directory``.
         """
         # could instead explicitly list on/off in master config file
-        for plugin_path in glob.glob( os.path.join( self.plugin_directory, '*' ) ):
-            if not os.path.isdir( plugin_path ):
-                continue
+        for plugin_directory in self.plugin_directories:
+            for plugin_path in glob.glob( os.path.join( plugin_directory, '*' ) ):
+                if not os.path.isdir( plugin_path ):
+                    continue
 
-            if os.path.basename( plugin_path ) in self.non_plugin_directories:
-                continue
+                if os.path.basename( plugin_path ) in self.non_plugin_directories:
+                    continue
 
-            yield plugin_path
+                yield plugin_path
 
     # ------------------------------------------------------------------------- config
     def load_configuration( self ):
@@ -185,7 +193,7 @@ class PluginFramework( object ):
         """
         Get the paths that will be searched for templates.
         """
-        return [ self.plugin_directory ]
+        return self.plugin_directories
 
     def _create_mako_template_lookup( self, cache_dir, paths, collection_size=500, output_encoding='utf-8' ):
         """
@@ -220,8 +228,7 @@ class PluginFramework( object ):
         this version of `fill_template` allows `bler.mako` to call `import my_script`.
         """
         try:
-            plugin_base_path = os.path.split( os.path.dirname( template_filename ) )[0]
-            plugin_path = os.path.join( self.plugin_directory, plugin_base_path )
+            plugin_path = os.path.dirname( os.path.dirname( template_filename ) )
             sys.path.append( plugin_path )
             filled_template = self.fill_template( trans, template_filename, **kwargs )
 

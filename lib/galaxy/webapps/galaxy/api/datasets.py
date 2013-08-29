@@ -60,7 +60,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
                     rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
                 else:
-                    rval = dataset.get_api_value()
+                    rval = dataset.dictify()
                 
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )
@@ -199,7 +199,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
             if data_dict:
                 ref_seq = data_dict[ 'data' ]
-
+        
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), 
                                          ref_seq=ref_seq, **kwargs )

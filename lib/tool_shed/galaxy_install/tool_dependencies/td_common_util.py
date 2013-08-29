@@ -12,6 +12,12 @@ from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
+def clean_tool_shed_url( base_url ):
+    if base_url:
+        protocol, base = base_url.split( '://' )
+        return base.rstrip( '/' )
+    return base_url
+
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
@@ -129,6 +135,7 @@ def get_env_shell_file_paths( app, elem ):
     repository_owner = elem.get( 'owner', None )
     changeset_revision = elem.get( 'changeset_revision', None )
     if toolshed and repository_name and repository_owner and changeset_revision:
+        toolshed = clean_tool_shed_url( toolshed )
         repository = suc.get_repository_for_dependency_relationship( app, toolshed, repository_name, repository_owner, changeset_revision )
         if repository:
             for sub_elem in elem:
@@ -299,9 +306,6 @@ def zipfile_ok( path_to_archive ):
             return False
     return True
 
-
 def __shellquote(s):
-    """
-    Quote and escape the supplied string for use in shell expressions.
-    """
-    return "'" + s.replace("'", "'\\''") + "'"
+    """Quote and escape the supplied string for use in shell expressions."""
+    return "'" + s.replace( "'", "'\\''" ) + "'"

@@ -243,8 +243,9 @@ def get_repository_attributes_and_sub_elements( repository, archive_name ):
     attributes[ 'type' ] = str( repository.type )
     # We have to associate the public username since the user_id will be different between tool sheds.
     attributes[ 'username' ] = str( repository.user.username )
-    sub_elements[ 'description' ] = str( repository.description )
-    sub_elements[ 'long_description' ] = str( repository.long_description )
+    # Don't coerce description or long description from unicode to string because the fields are free text.
+    sub_elements[ 'description' ] = repository.description
+    sub_elements[ 'long_description' ] = repository.long_description 
     sub_elements[ 'archive' ] = archive_name
     # Keep track of Category associations.
     categories = []
