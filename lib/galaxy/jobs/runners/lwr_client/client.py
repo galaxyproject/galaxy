@@ -6,17 +6,37 @@ from time import sleep
 from .destination import url_to_destination_params
 
 CACHE_WAIT_SECONDS = 3
+MAX_RETRY_COUNT = 5
+RETRY_SLEEP_TIME = 0.1
 
 
 class parseJson(object):
-
-    def __init__(self):
-        pass
 
     def __call__(self, func):
         def replacement(*args, **kwargs):
             response = func(*args, **kwargs)
             return simplejson.loads(response)
+        return replacement
+
+
+class retry(object):
+
+    def __call__(self, func):
+
+        def replacement(*args, **kwargs):
+            max_count = MAX_RETRY_COUNT
+            count = 0
+            while True:
+                count += 1
+                try:
+                    return func(*args, **kwargs)
+                except:
+                    if count >= max_count:
+                        raise
+                    else:
+                        sleep(RETRY_SLEEP_TIME)
+                        continue
+
         return replacement
 
 
@@ -176,6 +196,7 @@ class Client(object):
             raise OutputNotFoundException(path)
         self.__raw_download_output(name, self.job_id, output_type, output_path)
 
+    @retry()
     def __raw_download_output(self, name, job_id, output_type, output_path):
         self._raw_execute("download_output",
                            {"name": name,
@@ -228,6 +249,7 @@ class Client(object):
             response = self.raw_check_complete()
         return response["complete"] == "true"
 
+    @retry()
     def get_status(self):
         check_complete_response = self.raw_check_complete()
         # Older LWR instances won't set status so use 'complete', at some
