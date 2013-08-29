@@ -210,7 +210,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
         if count == -1:
             return h.read()
         else:
-            return f.read( count )
+            return h.read( count )
         # TODO: make sure implicit close is okay, DiskObjectStore actually
         # reads data into a var, closes, and returns the var
 
