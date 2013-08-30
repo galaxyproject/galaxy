@@ -1,12 +1,21 @@
 """
 File format detector
 """
-import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
+import gzip
+import logging
+import os
+import re
 import registry
-from galaxy import util
-from galaxy.datatypes.checkers import *
+import shutil
+import sys
+import tempfile
+import zipfile
+
 from encodings import search_function as encodings_search_function
-from binary import Binary
+
+from galaxy import util
+from galaxy.datatypes.checkers import check_binary, check_html, is_gzip
+from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
@@ -405,5 +414,5 @@ class InappropriateDatasetContentError( Exception ):
     pass
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__])
