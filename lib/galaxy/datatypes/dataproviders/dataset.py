@@ -145,10 +145,10 @@ class DatasetDataProvider( base.DataProvider ):
         :returns: list of column indeces for the named columns.
         """
         region_column_names = ( 'chromCol', 'startCol', 'endCol' )
-        region_indeces = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
-        if check and not all( map( lambda i: i != None, indeces ) ):
-            raise ValueError( "Could not determine proper column indeces for chrom, start, end: %s" %( str( indeces ) ) )
-        return region_indeces
+        region_indices = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
+        if check and not all( map( lambda i: i != None, region_indices) ):
+            raise ValueError( "Could not determine proper column indices for chrom, start, end: %s" %( str( region_indices ) ) )
+        return region_indices
 
 
 class ConvertedDatasetDataProvider( DatasetDataProvider ):
