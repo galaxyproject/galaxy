@@ -6,18 +6,17 @@ Dataproviders that use either:
         (e.g. parsing genomic regions from their source)
 """
 
-from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( 'bx-python' )
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
-
-import exceptions
 import base
 import line
 import column
 import external
+
+from galaxy import eggs
+eggs.require( 'bx-python' )
+from bx import seq as bx_seq
+from bx import wiggle as bx_wig
+from bx import bbi as bx_bbi
 
 _TODO = """
 use bx as much as possible
