@@ -39,6 +39,7 @@ class Grid( object ):
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
     pass_through_operations = {}
+    legend = None
     def __init__( self ):
         # Determine if any multiple row operations are defined
         self.has_multiple_item_operations = False

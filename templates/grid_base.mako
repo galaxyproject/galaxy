@@ -454,5 +454,12 @@
         </td>
     </tr>
     %endif
+    %if grid.legend:
+        <tr>
+            <td colspan="100">
+                ${grid.legend}
+            </td>
+         </tr>
+    %endif
 </%def>
 

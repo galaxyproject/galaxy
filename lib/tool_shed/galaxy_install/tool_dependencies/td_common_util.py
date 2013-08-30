@@ -14,8 +14,15 @@ log = logging.getLogger( __name__ )
 
 def clean_tool_shed_url( base_url ):
     if base_url:
-        protocol, base = base_url.split( '://' )
-        return base.rstrip( '/' )
+        if base_url.find( '://' ) > -1:
+            try:
+                protocol, base = base_url.split( '://' )
+            except ValueError, e:
+                # The received base_url must be an invalid url.
+                log.debug( "Returning unchanged invalid base_url from td_common_util.clean_tool_shed_url: %s" % str( base_url ) )
+                return base_url
+            return base.rstrip( '/' )
+        return base_url.rstrip( '/' )
     return base_url
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):

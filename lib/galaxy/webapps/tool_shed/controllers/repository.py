@@ -2651,6 +2651,59 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               owner=owner ) )
 
     @web.expose
+    def status_for_installed_repository( self, trans, **kwd ):
+        """
+        Handle a request from a local Galaxy instance, returning a dictionary with boolean values for whether there are updates available
+        for the repository revision, newer installable revisions available, the revision is the latest installable revision, or if the repository
+        is deprecated.
+        """
+        name = kwd.get( 'name', None )
+        owner = kwd.get( 'owner', None )
+        changeset_revision = kwd.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        if repository:
+            repo_dir = repository.repo_path( trans.app )
+            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            tool_shed_status_dict = {}            
+            # Handle repository deprecation.
+            tool_shed_status_dict[ 'repository_deprecated' ] = str( repository.deprecated )
+            # Handle latest installable revision.
+            if changeset_revision == repository.tip( trans.app ):
+                tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
+            else:
+                next_installable_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                if next_installable_revision:
+                    tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
+                else:
+                    tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
+            # Handle revision updates.
+            if changeset_revision == repository.tip( trans.app ):
+                tool_shed_status_dict[ 'revision_update' ] = 'False'
+            else:
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
+                                                                                         trans.security.encode_id( repository.id ),
+                                                                                         changeset_revision )
+                if repository_metadata:
+                    tool_shed_status_dict[ 'revision_update' ] = 'False'
+                else:
+                    tool_shed_status_dict[ 'revision_update' ] = 'True'
+            # Handle revision upgrades.
+            ordered_metadata_changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+            num_metadata_revisions = len( ordered_metadata_changeset_revisions )
+            for index, metadata_changeset_revision in enumerate( ordered_metadata_changeset_revisions ):
+                if index == num_metadata_revisions:
+                    tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
+                    break
+                if metadata_changeset_revision == changeset_revision:
+                    if num_metadata_revisions - index > 0:
+                        tool_shed_status_dict[ 'revision_upgrade' ] = 'True'
+                    else:
+                        tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
+                    break
+            return encoding_util.tool_shed_encode( tool_shed_status_dict )
+        return encoding_util.tool_shed_encode( {} )
+
+    @web.expose
     def updated_changeset_revisions( self, trans, **kwd ):
         """
         Handle a request from a local Galaxy instance to retrieve the list of changeset revisions to which an installed repository can be updated.  This

@@ -182,7 +182,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( installed_tool_shed_repository.name )
                         debug_msg += "The current state of the tool_shed_repository is:\n"
                         debug_msg += "deleted: %s\n" % str( installed_tool_shed_repository.deleted )
-                        debug_msg += "update_available: %s\n" % str( installed_tool_shed_repository.update_available )
+                        debug_msg += "tool_shed_status: %s\n" % str( installed_tool_shed_repository.tool_shed_status )
                         debug_msg += "uninstalled: %s\n" % str( installed_tool_shed_repository.uninstalled )
                         debug_msg += "status: %s\n" % str( installed_tool_shed_repository.status )
                         debug_msg += "error_message: %s\n" % str( installed_tool_shed_repository.error_message )

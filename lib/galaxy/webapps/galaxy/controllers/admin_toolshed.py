@@ -94,6 +94,10 @@ class AdminToolshed( AdminGalaxy ):
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='check_for_updates',
                                                                   **kwd ) )
+            if operation == "update tool shed status":
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='update_tool_shed_status_for_installed_repository',
+                                                                  **kwd ) )
             if operation == "reset to install":
                 kwd[ 'reset_repository' ] = True
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -146,8 +150,6 @@ class AdminToolshed( AdminGalaxy ):
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='deactivate_or_uninstall_repository',
                                                                   **kwd ) )
-        if 'message' not in kwd or not kwd[ 'message' ]:
-            kwd[ 'message' ] = 'Names of repositories for which updates are available are highlighted in yellow.'
         return self.installed_repository_grid( trans, **kwd )
 
     @web.expose
@@ -1627,10 +1629,15 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                                updating_installed_repository=True,
                                                                                                                persist=True )
                     repository.metadata = metadata_dict
-                    # Update the repository changeset_revision in the database.
+                    # Update the repository.changeset_revision column in the database.
                     repository.changeset_revision = latest_changeset_revision
                     repository.ctx_rev = latest_ctx_rev
-                    repository.update_available = False
+                    # Update the repository.tool_shed_status column in the database.
+                    tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( trans.app, repository )
+                    if tool_shed_status_dict:
+                        repository.tool_shed_status = tool_shed_status_dict
+                    else:
+                        repository.tool_shed_status = None
                     trans.sa_session.add( repository )
                     trans.sa_session.flush()
                     if 'tools' in metadata_dict:
@@ -1673,6 +1680,46 @@ class AdminToolshed( AdminGalaxy ):
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_repository',
                                                           id=trans.security.encode_id( repository.id ),
+                                                          message=message,
+                                                          status=status ) )
+
+    @web.expose
+    @web.require_admin
+    def update_tool_shed_status_for_installed_repository( self, trans, all_installed_repositories=False, **kwd ):
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        if all_installed_repositories:
+            success_count = 0
+            repository_names_not_updated = []
+            updated_count = 0
+            for repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                              .filter( trans.model.ToolShedRepository.table.c.deleted == False ):
+                ok, updated = suc.check_or_update_tool_shed_status_for_installed_repository( trans, repository )
+                if ok:
+                    success_count += 1
+                else:
+                    repository_names_not_updated.append( '<b>%s</b>' % str( repository.name ) )
+                if updated:
+                    updated_count += 1
+            message = "Checked the status in the tool shed for %d repositories.  " % success_count
+            message += "Updated the tool shed status for %d repositories.  " % updated_count
+            if repository_names_not_updated:
+                message += "Unable to retrieve status from the tool shed for the following repositories:\n"
+                message += ", ".join( repository_names_not_updated )
+        else:
+            repository_id = kwd.get( 'id', None )
+            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+            ok, updated = suc.check_or_update_tool_shed_status_for_installed_repository( trans, repository )
+            if ok:
+                if updated:
+                    message = "The tool shed status for repository <b>%s</b> has been updated." % str( repository.name )
+                else:
+                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % str( repository.name )
+            else:
+                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % str( repository.name )
+                status = 'error'
+        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='browse_repositories',
                                                           message=message,
                                                           status=status ) )
 
