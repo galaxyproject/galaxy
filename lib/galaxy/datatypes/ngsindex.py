@@ -1,7 +1,9 @@
 """
 NGS indexes
 """
+import os
 import logging
+
 from metadata import MetadataElement
 from images import Html
 
