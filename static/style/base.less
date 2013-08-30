@@ -1,6 +1,42 @@
-@import "variables.less";
+// Variables translated from the theme color.ini file (to be deprecated)
+//@import "variables.less";
 
-@import "galaxy_bootstrap.less";
+// Theme variables to be factored out
+@base-bg: @white;
+@base-text-color: @black;
+@header-text-color: @base-text-color;
+@menu-bg: lighten(black,95%);
+@layout-border-color: darken(@border-default-color,15%);
+
+@form-heading-bg: @complement-color-3;
+@form-border: @complement-color-3;
+
+@state-default-text:          @gray-dark;
+@state-default-bg:            @gray-lighter;
+@state-default-border:        @border-default-color;
+
+@state-paused-border: #6666AA;
+@state-paused-bg: #d9edf7;
+
+@state-running-border: #AAAA66;
+@state-running-bg: #FFFFCC;
+
+@state-deleted-border: #330066;
+@state-deleted-bg: #3399FF;
+
+// bootstrap.less modified for Galaxy
+@import "bootstrap.less";
+@import "galaxy_bootstrap/overrides.less";
+@import "galaxy_bootstrap/variables.less";
+
+// override some classes from bootstrap
+// @import "galaxy_bootstrap_overrides.less";
+
+// Galaxy theme variables
+@import "galaxy_variables.less";
+
+@white: #fff;
+@black: #000;
 
 @import "fontawesome/font-awesome.less";
 
@@ -29,11 +65,8 @@
 }
 
 body  {
-    background: @base_bg_bottom;
-    color: @base_text;
-    background-image: url(base_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
+    background: @base-bg;
+    color: @base-text-color;
     margin: 10px;
 
     // For panel layout pages
@@ -52,10 +85,12 @@ img {
     border: 0;
 }
 
+/*
 a, a:link, a:visited, a:active {
     text-decoration: underline;
     color: @link_text;
 }
+*/
 
 // Overrides for links that shouldn't be underlined
 .nav-tabs a {
@@ -63,7 +98,7 @@ a, a:link, a:visited, a:active {
 }
 
 h1, h2, h3, h4 {
-    color: @header_text;
+    color: @header-text-color;
     margin: 0.5em 0;
 }
 
@@ -73,7 +108,7 @@ h1 {
 
 h2 {
     font-size: 18px;
-    line-height: @baseLineHeight * 1.5;
+    line-height: @line-height-base * 1.5;
     small {
         font-size: 14px;
     }
@@ -81,7 +116,7 @@ h2 {
 
 h3 { 
     font-size: 14px;
-    line-height: @baseLineHeight;
+    line-height: @line-height-base;
     small {
         font-size: 12px;
     }
@@ -89,12 +124,6 @@ h3 {
 
 h1:first-child, h2:first-child, h3:first-child, h4:first-child {
     margin-top: 0px;
-}
-
-hr {
-    border: none;
-    height: 0px;
-    border-bottom: dotted @base_text 1px;
 }
 
 table {
@@ -109,7 +138,7 @@ th {
 
 #background {
     position: absolute;
-    background: @layout_bg;
+    background: #fff;
     z-index: -1;
     top: 0;
     left: 0;
@@ -121,7 +150,7 @@ th {
 
 #messagebox {
     position:absolute; 
-    top: @navbarHeight + @layout_top_padding + 1;
+    top: @navbar-height + @layout_top_padding + 1;
     left:0; 
     width:100%; 
     height: @panel_header_height !important;
@@ -131,7 +160,7 @@ th {
 }
 
 @layout_top_padding: 0px;
-@layout_border_padding: 0px;
+@border-default-color_padding: 0px;
 
 @panel_header_height: 30px;
 @panel_footer_height: 25px;
@@ -140,26 +169,26 @@ th {
 
 #left, #left-border, #center, #right-border, #right {
     position: absolute; 
-    top: @navbarHeight + @layout_top_padding + 1;
+    top: @navbar-height + @layout_top_padding + 1;
     bottom: 0px;
     overflow: hidden; 
     background: #fff;
 }
 #left, #center, #right, #left-border, #right-border {
-    // border-top: solid @layout_border 1px;
+    // border-top: solid @border-default-color 1px;
 }
 #left  {
     left: 0px;
     width: 250px;
     z-index: 200;
-    border-right: solid @layout_border 1px;
+    border-right: solid @layout-border-color 1px;
 }
 #left-border  {
     left: 250px;
 }
 #center  {
-    left:250 + @layout_border_padding;
-    right: 250 + @layout_border_padding;
+    left:250 + @border-default-color_padding;
+    right: 250 + @border-default-color_padding;
     overflow: hidden;
     z-index: 1;
 }
@@ -170,13 +199,13 @@ th {
     width: 250px;
     right: 0px; 
     z-index: 200;
-    border-left: solid @layout_border 1px;
+    border-left: solid @layout-border-color 1px;
 }
 
 .subnavbar {
     #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
-    border-bottom: solid @layout_border 1px;
-    border-top: solid @layout_border 1px;
+    border-bottom: solid @border-default-color 1px;
+    border-top: solid @border-default-color 1px;
     padding: 5px;
     color: #555;
 }
@@ -185,13 +214,9 @@ th {
     .unselectable();
     height: @panel_header_height;
     z-index: 1000;
-    //background: @panel_header_bg_bottom;
-    //background-image: url(panel_header_bg.png);
-    //background-position: top center;
-    //background-repeat: repeat-x;
     text-shadow: rgba(255,255,255,.8) 0 1px 0;
-    #gradient > .vertical-three-colors(@white, @white, 25%, darken(@white, 10%));
-    border-bottom: solid @layout_border 1px;
+    background: @navbar-default-bg;
+    border-bottom: solid @layout-border-color 1px;
     margin: 0;
     padding: 0;
     padding-right: 10px;
@@ -216,8 +241,8 @@ th {
     line-height: @panel_footer_height;
     width: 100%;
     z-index: 1000;
-    border-top: solid @layout_border 1px;
-    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
+    border-top: solid @layout-border-color 1px;
+    background: @navbar-default-bg;
 
     color: #555;
     a {
@@ -268,14 +293,14 @@ th {
     line-height: @panel_footer_height;
     width: @panel_footer_height - 5;
     background: none;
-    border-right: solid @layout_border 1px;
-    border-top: solid @layout_border 1px;
-    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
+    border-right: solid @layout-border-color 1px;
+    border-top: solid @layout-border-color 1px;
+    background: @navbar-default-bg;
     &.right {
         left: inherit;
         right: 0;
         border-right: none;
-        border-left: solid @layout_border 1px;
+        border-left: solid @border-default-color 1px;
         &.right:before{
             content:'\f054';
         }
@@ -294,7 +319,6 @@ div.unified-panel-body {
     top: @panel_header_height;
     bottom: 0;
     width: 100%;
-    margin-top: 1px;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
@@ -387,10 +411,9 @@ div.unified-panel-body {
 {
     height: 24px;
     line-height: 24px;
-    color: @base_text;
     padding: 0px;
     padding-left: 26px;
-    background-color: @error_message_bg;
+    background-color: @state-danger-bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
     background-position: 6px 50%;
@@ -399,66 +422,46 @@ div.unified-panel-body {
 .panel-warning-message 
 {
     background-image: url(warn_small.png);
-    background-color: @warn_message_bg;
+    background-color: @state-warning-bg;
 }
 
 .panel-done-message 
 {
     background-image: url(ok_small.png);
-    background-color: @done_message_bg;
+    background-color: @state-success-bg;
 }
 
 .panel-info-message 
 {
     background-image: url(info_small.png);
-    background-color: @info_message_bg;
+    background-color: @state-info-bg;
 }
 
 // Masthead
 
 #masthead {
-    .border-radius(0);
-    .navbar();
+
     position:absolute; 
     top:0; 
     left:0; 
     width:100%;
     min-width:900px;
-    height:32px;
-    background: @masthead_bg; 
-    // color:#fff;
-    border-bottom: solid @layout_masthead_border 1px;
-    z-index: 15000;
     padding: 0;
-
-    /*
-    a {
-        color: @masthead_link;
-        text-decoration: none;
-    }
-    */
+    z-index: 15000;
 
     .nav {
-        z-index: 10000;
-        background-color: @masthead_bg;
+        z-index: 15001;
     }
 
     .nav > li > a {
-        // Override height of navbar links
-        padding: 8px 10px 8px;
-        // Force cursor to be pointer since tabs are either a link of a button
         cursor: pointer;
         &:hover {
             color: gold;
         }
     }
     
-    .dropdown-menu a, .dropdown-menu a:hover {
-        text-decoration: none;
-    }
-
-    .dropdown-toggle .caret {
-        margin-top: 7px;
+    .dropdown-menu {
+        z-index: 15002;
     }
 
     li.dropdown > a:hover .caret {
@@ -466,7 +469,7 @@ div.unified-panel-body {
         border-bottom-color: gold;
     }
 
-    .title {
+    .navbar-brand {
 
         position: absolute;
         left: 0;
@@ -492,19 +495,9 @@ div.unified-panel-body {
             text-decoration: none;
         }
     }
-
-    .masthead-inner {
-        .navbar-inner();
-        .navbar-fixed-top.navbar-inner();
-        border: none;
-        border-width: 0px;
-        height: 32px;
-    }
 }
 
-#masthead a:hover {
-    text-decoration: underline;
-}
+
 
 .quota-meter-container
 {
@@ -521,7 +514,7 @@ div.unified-panel-body {
     right: 8px;
     height: 16px;
     width: 100px;
-    background-color: @quota_meter_bg;
+    background-color: @progress-bg;
 }
 
 .quota-meter-bar
@@ -530,17 +523,17 @@ div.unified-panel-body {
     top: 0;
     left: 0;
     height: 16px;
-    background-color: @quota_meter_bar;
+    background-color: @brand-primary;
 }
 
 .quota-meter-bar-warn
 {
-    background-color: @quota_meter_warn_bar;
+    background-color: @brand-warning;
 }
 
 .quota-meter-bar-error
 {
-    background-color: @quota_meter_error_bar;
+    background-color: @brand-danger;
 }
 
 .quota-meter-text
@@ -553,7 +546,7 @@ div.unified-panel-body {
     margin-top: -6px;
     text-align: center;
     z-index: 9001;
-    color: @quota_meter_text;
+    color: @black;
     white-space: nowrap;
 }
 
@@ -578,9 +571,6 @@ div.metadataFormTitle {
 
 div.metadataFormBody {
     background:#FFFFFF;
-    background-image:url(form_body_bg.png);
-    background-repeat:repeat-x;
-    background-position:top;
     padding:5px 0;
 }
 
@@ -614,29 +604,21 @@ div.titleRow {
 
 // Forms 
 
-div.toolFormBody { 
-    background: @form_body_bg_bottom;
-    background-image: url(form_body_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    padding: 5px 0;
-}
-
 div.toolFormBody div.toolFormTitle {
     background: transparent;
     border: none;
     font-weight: bold;
-    border-bottom: solid @form_border 1px;
+    border-bottom: solid @form-border 1px;
     margin-bottom: 5px;
 }
 
 div.toolFormDisabled div.toolFormTitle {
-    background: @layout_bg;
-    border-color: @layout_border;
+    background: @panel-default-heading-bg;
+    border-color: @border-default-color;
 }
 
 div.toolFormDisabled {
-    border-color: @layout_border;
+    border-color: @border-default-color;
 }
 
 div.toolHelp {
@@ -651,31 +633,30 @@ div.toolHelpBody {
 // In workflow
 
 .toolForm.toolFormInCanvas {
-    border: solid @form_border 1px;
+    border: solid @form-border 1px;
+    background: @white;
     &.toolForm-active {
-        border: solid @blue 3px;
+        border: solid blue 3px;
         margin: 4px;
     }
     .toolFormTitle {
-        font-size: @baseFontSize;
-        line-height: @baseLineHeight;
+        font-size: @font-size-base;
+        line-height: @line-height-base;
     }
 }
 
 
 div.form, div.toolForm {
-    // border: solid @form_border 1px;
+    border: solid @form-border 1px;
+    .border-radius(@panel-border-radius);
 }
 
 div.form-title, div.toolFormTitle { 
-    font-size: @baseFontSize * 1.25;
-    line-height: @baseLineHeight * 1.5;
+    // font-size: @font-size-base * 1.25;
+    // line-height: @line-height-base * 1.5;
     padding: 5px 10px;
-    background: @form_title_bg_bottom;
-    // background-image: url(form_title_bg.png);
-    // background-repeat: repeat-x;
-    // background-position: top;
-    border-bottom: solid @form_border 1px;
+    background: @form-heading-bg;
+    border-bottom: solid @form-border 1px;
 }
 
 div.form-body { 
@@ -691,13 +672,13 @@ div.form-title-row {
 }
 
 div.repeat-group-item {
-    border-left: solid @form_border 5px;
+    border-left: solid @form-border 5px;
     margin-left: 10px;
     margin-bottom: 10px;
 }
 
 div.form-row-error {
-    background: @error_message_bg;
+    background: @state-danger-bg;
 }
 
 div.form-row label {
@@ -745,10 +726,10 @@ div.form-row-error-message {
 
 // Selects
 select {
-    //border: 1px solid @inputBorder;
+    //border: 1px solid @input-border;
     padding: 2px;
-    font-size: @baseFontSize;
-    line-height: @baseLineHeight;
+    font-size: @font-size-base;
+    line-height: @line-height-base;
 }
 
 select, input, textarea {
@@ -763,19 +744,19 @@ select, input, textarea {
 }
 
 textarea, input[type="text"], input[type="password"] {
-    font-size: @baseFontSize;
-    line-height: @baseLineHeight;
-    border: 1px solid @inputBorder;
+    font-size: @font-size-base;
+    line-height: @line-height-base;
+    border: 1px solid @input-border;
     padding: 3px;
 }
 
 .search-query {
   display: inline-block;
   padding: 4px;
-  font-size: @baseFontSize;
-  line-height: @baseLineHeight;
+  font-size: @font-size-base;
+  line-height: @line-height-base;
   color: @gray;
-  border: 1px solid @inputBorder;
+  border: 1px solid @input-border;
   padding-left: 14px !important;
   padding-right: 14px !important;
   margin-bottom: 0; // remove the default margin on all inputs
@@ -814,12 +795,6 @@ textarea, input[type="text"], input[type="password"] {
 // Messages 
 
 .errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
-    /*padding: 10px;
-    padding-left: 52px;
-    min-height: 32px;
-    border: 1px solid @error_message_border;
-    background-color: @error_message_bg;
-    */
     .alert();
     min-height: 36px;
     padding-left: 52px;
@@ -829,29 +804,25 @@ textarea, input[type="text"], input[type="password"] {
 }
 
 .errormessagelarge {
-    .alert-error();
+    .alert-danger();
     padding-left: 52px;
 }
 
 .warningmessagelarge {
+    .alert-warning();
+    padding-left: 52px;
     background-image: url(warn_large.png);
-    border-color: @warn_message_border;
-    background-color: @warn_message_bg;
 }
 
 .donemessagelarge {
     .alert-success();
     padding-left: 52px;
     background-image: url(ok_large.png);
-    //border-color: @done_message_border;
-    //background-color: @done_message_bg;
 }
 
 .infomessagelarge {
     .alert-info();
     background-image: url(info_large.png);
-    border-color: @info_message_border;
-    background-color: @info_message_bg;
 }
 
 .screencastBox {   
@@ -874,7 +845,7 @@ textarea, input[type="text"], input[type="password"] {
 }
 
 .errormessage {
-    .alert-error();
+    .alert-danger();
 }
 
 .warningmessage, .warningmessagesmall {
@@ -954,31 +925,32 @@ table.tabletip tbody tr:hover td {
 
 
 table.colored {
-    border-top: solid @table_border 1px;
-    border-bottom: solid @table_border 1px;
+    .border-top-radius(@panel-border-radius - 1);
+    border-top: solid @complement-color-3 1px;
+    border-bottom: solid @complement-color-3 1px;
 }
 
 table.colored td, table.colored th {
     text-align: left;
     padding: 5px;
-    line-height: @baseLineHeight;
+    line-height: @line-height-base;
 }
 
 table.colored tr.header { 
-    background: @table_header_bg;
-    background-image: url(form_title_bg.png);
+    background: @complement-color-3;
+    color: contrast(@complement-color-3);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid @table_border 1px;
+    border-bottom: solid @complement-color-3 1px;
     font-weight: bold;
 }
 
 table.colored tr { 
-    background: @table_row_bg;
+    background: @white;
 }
 
 table.colored tr.odd_row { 
-    background: @odd_row_bg;
+    background: @table-bg-accent;
 }
 
 div.debug {
@@ -1010,7 +982,7 @@ div.debug {
     width: 100%;
 }
 .grid tbody td {
-    line-height: @baseLineHeight;
+    line-height: @line-height-base;
     border-top: solid #DDDDDD 1px;
     border-bottom: solid #DDDDDD 1px;
     padding: 5px;
@@ -1022,13 +994,13 @@ div.debug {
     height: 2em;
 }
 .grid thead th {
-    line-height: @baseLineHeight;
-    background: @table_header_bg;
+    line-height: @line-height-base;
+    background: @panel-primary-heading-bg;
     // background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
-    border-top: solid @table_border 1px;
-    border-bottom: solid @table_border 1px;
+    border-top: solid @border-default-color 1px;
+    border-bottom: solid @border-default-color 1px;
     padding: 5px;
     text-align: left;
     white-space: nowrap;
@@ -1071,8 +1043,8 @@ div.debug {
 .submit-image {
     background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
     background-color: #eee;
-    width: @baseLineHeight + 8;
-    height: @baseLineHeight + 8;
+    width: @line-height-base + 8;
+    height: @line-height-base + 8;
     cursor: pointer;
     margin: 0;
     padding: 0;
@@ -1131,7 +1103,7 @@ div.debug {
 
 
 div.odd_row {
-    background: @odd_row_bg;
+    background: @table-bg-accent;
 }
     
 #footer {
@@ -1139,40 +1111,6 @@ div.odd_row {
 }
 
 // Tool panel stuff
-
-/*
-td.panel-body {
-    background: white;
-    color: @base_text;
-    background: @menu_bg_over url(menu_bg.png) top repeat-x;
-}
-
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
-div.toolSectionDetailsInner { 
-    margin-left: 5px;
-    margin-right: 5px;
-}
-
-div.toolSectionTitle {
-    // padding-bottom: 0px;
-    // font-weight: bold;
-}
-
-div.toolTitle {
-    //padding-top: 5px;
-    //padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
-}
-*/
 
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
@@ -1195,43 +1133,43 @@ ul.manage-table-actions li {
 // State colors
 
 .state-color-new {
-    border-color: @history_new_border;
-    background: @history_new_bg;
+    border-color: @state-default-border;
+    background: @state-default-bg;
 }
 
 .state-color-upload {
-    border-color: @history_upload_border;
-    background: @history_upload_bg;
+    border-color: @state-info-border;
+    background: @state-info-bg;
 }
 
 .state-color-waiting {
-    border-color: @history_waiting_border;
-    background: @history_waiting_bg;
+    border-color: @state-default-border;
+    background: @state-default-bg;
 }
 
 .state-color-queued {
-    border-color: @history_queued_border;
-    background: @history_queued_bg;
+    border-color: @state-default-border;
+    background: @state-default-bg;
 }
 
 .state-color-running {
-    border-color: @history_running_border;
-    background: @history_running_bg;
+    border-color: @state-running-border;
+    background: @state-running-bg;
 }
 
 .state-color-ok {
-    border-color: @history_ok_border;
-    background: @history_ok_bg;
+    border-color: @state-success-border;
+    background: @state-success-bg;
 }
 
 .state-color-error {
-    border-color: @history_error_border;
-    background: @history_error_bg;
+    border-color: @state-danger-border;
+    background: @state-danger-bg;
 }
 
 .state-color-deleted {
-    border-color: @history_deleted_border;
-    background: @history_deleted_bg;
+    border-color: @state-deleted-border;
+    background: @state-deleted-bg;
 }
 
 .state-fg-new {
@@ -1268,14 +1206,17 @@ ul.manage-table-actions li {
 
 // Button styles
 
-//button {
-//    .btn();
-//}
+button {
+    .btn();
+    .btn-default();
+}
 
 .action-button {
     .btn();
+    .btn-default();
 }
 a.action-button {
+    color: @btn-default-color;
     text-decoration: none;
 }
 .action-button > img {
@@ -1302,6 +1243,7 @@ a.action-button {
 
 .menubutton {
     .btn();
+    .btn-default();
 
     &:hover { .btn.hover(); }
     &:active { .btn.active(); }
@@ -1331,14 +1273,14 @@ a.action-button {
         text-decoration: none;
         text-align: left;
         // The following properties truncate the text and force the button to have one line
-        max-height: 2*@baseLineHeight;
-        line-height: @baseLineHeight;
+        max-height: 2*@line-height-base;
+        line-height: @line-height-base;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     &.popup .label {
-        border-right: solid @btnBorder 1px;
+        border-right: solid @btn-default-border 1px;
         padding-right: 6px;
     }
 
@@ -1347,7 +1289,6 @@ a.action-button {
         &:after {
             margin-top: 6px;
             position: absolute;
-            top: 2px;
             right: 6px;
             .caret();
         }
@@ -1409,8 +1350,8 @@ ul.dropdown-menu {
         text-shadow: 0 1px 0 rgba(255,255,255,.5);
         font-size: 11px;
         font-weight: bold;
-        line-height: @baseLineHeight;
-        color: @grayLight;
+        line-height: @line-height-base;
+        color: @gray-light;
         text-transform: uppercase;
     }
 
@@ -1552,8 +1493,8 @@ div.permissionContainer {
 // ==== History styles ====
 
 body.historyPage {
-    background: @menu_bg_over;
-    color: @base_text;
+    background: @menu-bg;
+    color: @base-text-color;
     margin: 5px;
     border: 0;
     padding: 0;
@@ -1568,11 +1509,11 @@ div.historyLinks {
 div.historyItem {
     margin: 0px -5px;
     padding: 8px 10px;
-    border-top: solid @layout_border 1px;
-    // border-left: solid @history_queued_border 5px;
+    border-top: solid @border-default-color 1px;
+    // border-left: solid @state-queued-border 5px;
     border-right: none;
     word-wrap: break-word;
-    background: @history_queued_bg;
+    background: @state-default-bg;
     .state-icon {
         display: inline-block;
         vertical-align: middle;
@@ -1588,7 +1529,7 @@ div.historyItem {
 }
 
 .historyItemContainer:last-child div.historyItem {
-    border-bottom: solid @layout_border 1px;
+    border-bottom: solid @border-default-color 1px;
 }
 
 // Nested history items
@@ -1599,8 +1540,7 @@ div.historyItem div.historyItem {
 // Change background/border color depending on state
 div.historyItem-ok,
 div.historyItem-failed_metadata {
-    // border-color: @history_ok_border;
-    background: @history_ok_bg;
+    background: @state-success-bg;
     .state-icon {
         display: none;
     }
@@ -1608,7 +1548,7 @@ div.historyItem-failed_metadata {
 
 div.historyItem-error {
     // border-color: @history_error_border;
-    background: @history_error_bg;
+    background: @state-danger-bg;
     // .state-icon {
     //     -sprite-group: history-states;
     //     -sprite-image: data_error.png;
@@ -1617,7 +1557,7 @@ div.historyItem-error {
 
 div.historyItem-empty {
     // border-color: @history_error_border;
-    background: @history_error_bg;
+    background: @state-danger-bg;
     // .state-icon {
     //     -sprite-group: history-states;
     //     -sprite-image: data_empty.png;
@@ -1626,7 +1566,7 @@ div.historyItem-empty {
 
 div.historyItem-running {
     // border-color: @history_running_border;
-    background: @history_running_bg;
+    background: @state-running-bg;
     .state-icon {
         background-image: url(data_running.gif);
     }
@@ -1634,7 +1574,7 @@ div.historyItem-running {
 
 div.historyItem-setting_metadata {
     // border-color: @history_running_border;
-    background: @history_running_bg;
+    background: @state-running-bg;
     .state-icon {
         background-image: url(data_running.gif);
     }
@@ -1642,14 +1582,14 @@ div.historyItem-setting_metadata {
 
 div.historyItem-upload {
     // border-color: @history_upload_border;
-    background: @history_upload_bg;
+    background: @state-info-bg;
     .state-icon {
         background-image: url(data_upload.gif);
     }
 }
 
 div.historyItem-queued {
-    background: @history_queued_bg;
+    background: @state-default-bg;
     // .state-icon {
     //     -sprite-group: history-states;
     //     -sprite-image: data_queued.png;
@@ -1664,7 +1604,7 @@ div.historyItem-noPermission {
 
 div.historyItem-paused {
     // border-color: @history_paused_border;
-    background: @history_paused_bg;
+    background: @state-paused-bg;
     .state-icon {
         .fa-icon();
         &:before {
@@ -1704,10 +1644,10 @@ pre.peek {
     overflow: auto;
     th {
         color: white;
-        background: @peek_table_header;
+        background: @panel-primary-heading-bg;
     }
     table, th, tr, td {
-        font-family: @monospaceFontFamily;
+        font-family: @font-family-monospace;
         font-size: 10px;
     }
 }
@@ -1716,10 +1656,10 @@ pre.peek {
 
 .toolMenuContainer
 {
-    color: @base_text;
-    background: @menu_bg_over;
+    color: @base-text-color;
+    background: @menu-bg;
     min-height: 100%;
-    padding: 0px 5px;
+    padding: 5px 10px;
 }
 
 div.toolSectionPad
