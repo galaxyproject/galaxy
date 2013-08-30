@@ -568,7 +568,7 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom=None, start=None, end=None, **kwargs ):
+    def get_iterator( self, source, chrom=None, start=None, end=None, **kwargs ):
         # Read first line in order to match chrom naming format.
         line = source.readline()
         dataset_chrom = line.split()[0]
