@@ -31,7 +31,7 @@ from mercurial import ui
 
 eggs.require( 'markupsafe' )
 import markupsafe
-        
+
 log = logging.getLogger( __name__ )
 
 CHUNK_SIZE = 2**20 # 1Mb
@@ -209,7 +209,7 @@ def clean_tool_shed_url( tool_shed_url ):
         return tool_shed_url.split( ':' )[ 0 ]
     return tool_shed_url.rstrip( '/' )
 
-def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):   
+def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
     """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
     try:
         commands.clone( get_configured_ui(),
@@ -263,7 +263,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
         # to it being uninstalled.
         current_changeset_revision = installed_changeset_revision
-    sa_session = app.model.context.current  
+    sa_session = app.model.context.current
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     if not owner:
         owner = get_repository_owner_from_clone_url( repository_clone_url )
@@ -351,7 +351,7 @@ def generate_repository_info_elem( tool_shed, repository_name, changeset_revisio
         new_elem = XmlET.SubElement( elem, key )
         new_elem.text = value
     return elem
-    
+
 def generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=None, **kwd ):
     return generate_repository_info_elem( tool_shed_repository.tool_shed,
                                           tool_shed_repository.name,
@@ -394,7 +394,7 @@ def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, t
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
-    the tool in the Galaxy tool shed from which it is being installed.  The form of the guid is    
+    the tool in the Galaxy tool shed from which it is being installed.  The form of the guid is
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
     tmp_url = clean_repository_clone_url( repository_clone_url )
@@ -417,7 +417,7 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
             tool_config = tool_dict[ 'tool_config' ]
             file_name = strip_path( tool_config )
             guids_and_configs[ guid ] = file_name
-    # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
+    # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
     tree, error_message = xml_util.parse_xml( shed_tool_conf )
     if tree is None:
         return tool_panel_dict
@@ -535,7 +535,7 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset
     revision.
     """
-    url = url_join( tool_shed_url, 
+    url = url_join( tool_shed_url,
                     'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     ctx_rev = common_util.tool_shed_get( app, tool_shed_url, url )
     return ctx_rev
@@ -1385,7 +1385,7 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
 
 def reset_previously_installed_repository( trans, repository ):
     """
-    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a 
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a
     status of INSTALLED, so all atributes will be set to the default (NEW( state.  This will enable the repository to be freshly installed.
     """
     repository.deleted = False

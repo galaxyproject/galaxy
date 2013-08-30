@@ -2664,7 +2664,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if repository:
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
-            tool_shed_status_dict = {}            
+            tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict[ 'repository_deprecated' ] = str( repository.deprecated )
             # Handle latest installable revision.
@@ -2680,7 +2680,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if changeset_revision == repository.tip( trans.app ):
                 tool_shed_status_dict[ 'revision_update' ] = 'False'
             else:
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                          trans.security.encode_id( repository.id ),
                                                                                          changeset_revision )
                 if repository_metadata:
