@@ -187,7 +187,6 @@ def open_or_build_maf_index( maf_file, index_filename, species = None ):
     except:
         return build_maf_index( maf_file, species = species )
 
-#*** ANYCHANGE TO THIS METHOD HERE OR IN galaxy.datatypes.sequences MUST BE PROPAGATED ***
 def build_maf_index_species_chromosomes( filename, index_species = None ):
     species = []
     species_chromosomes = {}
