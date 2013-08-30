@@ -116,8 +116,6 @@ class Sequence( data.Text ):
         elif split_params['split_mode'] == 'to_size':
             # loop through the sections and calculate the number of sequences
             chunk_size = long(split_params['split_size'])
-
-            chunks = total_sequences / chunk_size
             rem = total_sequences % chunk_size
             sequences_per_file = [chunk_size for i in range(total_sequences / chunk_size)]
             # TODO: Should we invest the time in a better way to handle small remainders?
