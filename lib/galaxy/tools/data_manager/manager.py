@@ -2,7 +2,7 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 
-import os, shutil, errno
+import os, errno
 import simplejson
 
 from galaxy import util
@@ -112,7 +112,7 @@ class DataManager( object ):
         if elem is not None:
             self.load_from_element( elem, tool_path or self.data_managers.tool_path )
     def load_from_element( self, elem, tool_path ):
-        assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % ( root.tag )
+        assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % ( elem.tag )
         self.declared_id = elem.get( 'id', None )
         self.guid = elem.get( 'guid', None )
         path = elem.get( 'tool_file', None )
