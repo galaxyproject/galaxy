@@ -100,6 +100,9 @@ tool-data/shared/jars/
 */variables.less
 static/style/blue/base_sprites.less
 
+# Local node_modules directories
+node_modules
+
 # Testing
 selenium-server.jar
 selenium_results.html
