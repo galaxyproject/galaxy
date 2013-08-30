@@ -60,7 +60,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
                     rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
                 else:
-                    rval = dataset.dictify()
+                    rval = dataset.to_dict()
 
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )

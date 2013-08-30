@@ -49,7 +49,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         rval = []
         for library in query:
-            item = library.dictify()
+            item = library.to_dict()
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
@@ -87,7 +87,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise HTTPBadRequest( detail='Invalid library id ( %s ) specified.' % id )
-        item = library.dictify( view='element' )
+        item = library.to_dict( view='element' )
         #item['contents_url'] = url_for( 'contents', library_id=library_id )
         item['contents_url'] = url_for( 'library_contents', library_id=library_id )
         return item
@@ -162,4 +162,4 @@ class LibrariesController( BaseAPIController ):
         library.deleted = True
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.dictify( view='element', value_mapper={ 'id' : trans.security.encode_id } )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id } )

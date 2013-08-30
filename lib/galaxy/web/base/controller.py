@@ -32,7 +32,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
@@ -422,7 +422,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
-        history_dict = history.dictify( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
@@ -583,7 +583,7 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.dictify( view='element' )
+        hda_dict = hda.to_dict( view='element' )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
@@ -594,7 +594,7 @@ class UsesHistoryDatasetAssociationMixin:
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
-            #TODO: dictify should really go AFTER this - only summary data
+            #TODO: to_dict should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
@@ -920,7 +920,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             return query
         return query.all()
 
-    #TODO: move into model (dictify)
+    #TODO: move into model (to_dict)
     def get_visualization_summary_dict( self, visualization ):
         """
         Return a set of summary attributes for a visualization in dictionary form.
@@ -949,7 +949,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             'user_id'   : visualization.user.id,
             'dbkey'     : visualization.dbkey,
             'slug'      : visualization.slug,
-            # dictify only the latest revision (allow older to be fetched elsewhere)
+            # to_dict only the latest revision (allow older to be fetched elsewhere)
             'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
             'revisions' : [ r.id for r in visualization.revisions ],
         }
@@ -1129,7 +1129,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             return None
 
         # Get tool definition and add input values from job.
-        tool_dict = tool.dictify( trans, io_details=True )
+        tool_dict = tool.to_dict( trans, io_details=True )
         inputs_dict = tool_dict[ 'inputs' ]
         tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
@@ -1139,8 +1139,8 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                 name = t_input[ 'name' ]
                 if name in tool_param_values:
                     value = tool_param_values[ name ]
-                    if isinstance( value, DictifiableMixin ):
-                        value = value.dictify()
+                    if isinstance( value, Dictifiable ):
+                        value = value.to_dict()
                     t_input[ 'value' ] = value
 
         return tool_dict
@@ -1172,7 +1172,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                                                                                           source='data' )
                 return {
                     "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
+                    "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
                     "name": track_dict['name'],
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
@@ -1252,7 +1252,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return {
             "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
+            "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": self.get_tool_def( trans, dataset ),

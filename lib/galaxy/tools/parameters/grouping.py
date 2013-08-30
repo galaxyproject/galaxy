@@ -15,9 +15,9 @@ from galaxy.util import relpath
 from galaxy.util import sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 
-class Group( object, DictifiableMixin ):
+class Group( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'type' )
 
@@ -48,9 +48,9 @@ class Group( object, DictifiableMixin ):
         """
         raise TypeError( "Not implemented" )
 
-    def dictify( self, trans, view='collection', value_mapper=None ):
-        # TODO: need to dictify conditions.
-        group_dict = super( Group, self ).dictify( view=view, value_mapper=value_mapper )
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # TODO: need to to_dict conditions.
+        group_dict = super( Group, self ).to_dict( view=view, value_mapper=value_mapper )
         return group_dict
 
 class Repeat( Group ):

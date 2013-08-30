@@ -158,12 +158,12 @@ class UsesAnnotations:
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
 
-class DictifiableMixin:
+class Dictifiable:
     """ Mixin that enables objects to be converted to dictionaries. This is useful
         when for sharing objects across boundaries, such as the API, tool scripts,
         and JavaScript code. """
 
-    def dictify( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         """
         Return item dictionary.
         """
@@ -176,9 +176,9 @@ class DictifiableMixin:
             Recursive helper function to get item values.
             """
             # FIXME: why use exception here? Why not look for key in value_mapper
-            # first and then default to dictify?
+            # first and then default to to_dict?
             try:
-                return item.dictify( view=view, value_mapper=value_mapper )
+                return item.to_dict( view=view, value_mapper=value_mapper )
             except:
                 if key in value_mapper:
                     return value_mapper.get( key )( item )
@@ -193,7 +193,7 @@ class DictifiableMixin:
         try:
             visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
         except AttributeError:
-            raise Exception( 'Unknown DictifiableMixin view: %s' % view )
+            raise Exception( 'Unknown Dictifiable view: %s' % view )
         for key in visible_keys:
             try:
                 item = self.__getattribute__( key )

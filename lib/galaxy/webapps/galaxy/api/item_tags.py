@@ -49,7 +49,7 @@ class BaseItemTagsController( BaseAPIController, UsesTagsMixin ):
         return 'OK'
 
     def _api_value( self, tag, trans, view='element' ):
-        return tag.dictify( view=view, value_mapper={ 'id': trans.security.encode_id } )
+        return tag.to_dict( view=view, value_mapper={ 'id': trans.security.encode_id } )
 
 class HistoryContentTagsController( BaseItemTagsController ):
     controller_name = "history_content_tags"

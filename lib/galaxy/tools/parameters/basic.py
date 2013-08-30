@@ -12,12 +12,12 @@ from sanitize import ToolParameterSanitizer
 import validation, dynamic_options
 # For BaseURLToolParameter
 from galaxy.web import url_for
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 import galaxy.model
 
 log = logging.getLogger(__name__)
 
-class ToolParameter( object, DictifiableMixin ):
+class ToolParameter( object, Dictifiable ):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
@@ -170,10 +170,10 @@ class ToolParameter( object, DictifiableMixin ):
         for validator in self.validators:
             validator.validate( value, history )
 
-    def dictify( self, trans, view='collection', value_mapper=None ):
-        """ Dictify tool parameter. This can be overridden by subclasses. """
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        """ to_dict tool parameter. This can be overridden by subclasses. """
 
-        tool_dict = super( ToolParameter, self ).dictify()
+        tool_dict = super( ToolParameter, self ).to_dict()
         tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
@@ -872,8 +872,8 @@ class SelectToolParameter( ToolParameter ):
         else:
             return []
 
-    def dictify( self, trans, view='collection', value_mapper=None ):
-        d = super( SelectToolParameter, self ).dictify( trans )
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
         options = self.get_options( trans, [] )

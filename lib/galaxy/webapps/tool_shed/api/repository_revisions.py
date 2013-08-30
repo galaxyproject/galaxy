@@ -127,7 +127,7 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                repository_metadata_dict = repository_metadata.dictify( view='collection',
+                repository_metadata_dict = repository_metadata.to_dict( view='collection',
                                                                               value_mapper=default_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',

@@ -35,7 +35,7 @@ class SamplesAPIController( BaseAPIController ):
             return "Invalid request id ( %s ) specified." % str( request_id )
         rval = []
         for sample in request.samples:
-            item = sample.dictify()
+            item = sample.to_dict()
             item['url'] = url_for( 'samples',
                                    request_id=trans.security.encode_id( request_id ),
                                    id=trans.security.encode_id( sample.id ) )

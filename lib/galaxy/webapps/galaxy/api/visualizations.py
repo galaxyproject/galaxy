@@ -212,7 +212,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             'id', 'model_class'
-            #TODO: fill out when we create dictify, get_dict, whatevs
+            #TODO: fill out when we create to_dict, get_dict, whatevs
         )
         #TODO: deleted
         #TODO: importable

@@ -4,7 +4,7 @@ import os
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -19,7 +19,7 @@ class APIKeys( object ):
     pass
 
 
-class User( object, DictifiableMixin ):
+class User( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'email' )
     dict_element_visible_keys = ( 'id', 'email', 'username' )
 
@@ -61,7 +61,7 @@ class User( object, DictifiableMixin ):
         return 0
 
 
-class Group( object, DictifiableMixin ):
+class Group( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name' )
 
@@ -70,7 +70,7 @@ class Group( object, DictifiableMixin ):
         self.deleted = False
 
 
-class Role( object, DictifiableMixin ):
+class Role( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
@@ -130,7 +130,7 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 
-class Repository( object, DictifiableMixin ):
+class Repository( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
     dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
                                  'deprecated' )
@@ -155,7 +155,7 @@ class Repository( object, DictifiableMixin ):
         self.deprecated = deprecated
 
     def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
     def can_change_type( self, app ):
         # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
@@ -175,7 +175,7 @@ class Repository( object, DictifiableMixin ):
                 return True
         return False
 
-    def dictify( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -244,7 +244,7 @@ class Repository( object, DictifiableMixin ):
         fp.close()
 
 
-class RepositoryMetadata( object, DictifiableMixin ):
+class RepositoryMetadata( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
                                     'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
@@ -284,9 +284,9 @@ class RepositoryMetadata( object, DictifiableMixin ):
         return False
 
     def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
-    def dictify( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -304,7 +304,7 @@ class RepositoryMetadata( object, DictifiableMixin ):
         return rval
 
 
-class SkipToolTest( object, DictifiableMixin ):
+class SkipToolTest( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
     dict_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
 
@@ -315,9 +315,9 @@ class SkipToolTest( object, DictifiableMixin ):
         self.comment = comment
 
     def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
-    def dictify( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -335,7 +335,7 @@ class SkipToolTest( object, DictifiableMixin ):
         return rval
 
 
-class RepositoryReview( object, DictifiableMixin ):
+class RepositoryReview( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes' )
@@ -347,7 +347,7 @@ class RepositoryReview( object, DictifiableMixin ):
         self.rating = rating
         self.deleted = deleted
 
-class ComponentReview( object, DictifiableMixin ):
+class ComponentReview( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     dict_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
@@ -389,7 +389,7 @@ class RepositoryRatingAssociation( ItemRatingAssociation ):
         self.repository = repository
 
 
-class Category( object, DictifiableMixin ):
+class Category( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
 

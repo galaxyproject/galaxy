@@ -35,7 +35,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         # check_ownership=false since we are only displaying it.
         content = self.get_library_folder( trans, id, check_ownership=False,
                                            check_accessible=True )
-        return self.encode_all_ids( trans, content.dictify( view='element' ) )
+        return self.encode_all_ids( trans, content.to_dict( view='element' ) )
 
     @web.expose_api
     def create( self, trans, payload, **kwd ):

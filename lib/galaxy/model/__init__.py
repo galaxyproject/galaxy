@@ -23,7 +23,7 @@ import galaxy.datatypes
 import galaxy.datatypes.registry
 import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.model.item_attrs import DictifiableMixin, UsesAnnotations
+from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
@@ -61,15 +61,15 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 
-class User( object, DictifiableMixin ):
+class User( object, Dictifiable ):
     use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
     """
-    # attributes that will be accessed and returned when calling dictify( view='collection' )
+    # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ( 'id', 'email' )
-    # attributes that will be accessed and returned when calling dictify( view='element' )
+    # attributes that will be accessed and returned when calling to_dict( view='element' )
     dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
 
     def __init__( self, email=None, password=None ):
@@ -157,7 +157,7 @@ class User( object, DictifiableMixin ):
         return total
 
 
-class Job( object, DictifiableMixin ):
+class Job( object, Dictifiable ):
     dict_collection_visible_keys = [ 'id'  ]
     dict_element_visible_keys = [ 'id' ]
 
@@ -363,8 +363,8 @@ class Job( object, DictifiableMixin ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
-    def dictify( self, view='collection' ):
-        rval = super( Job, self ).dictify( view=view )
+    def to_dict( self, view='collection' ):
+        rval = super( Job, self ).to_dict( view=view )
         rval['tool_name'] = self.tool_id
         param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
         rval['params'] = param_dict
@@ -649,7 +649,7 @@ class DeferredJob( object ):
         else:
             return False
 
-class Group( object, DictifiableMixin  ):
+class Group( object, Dictifiable  ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name' )
 
@@ -662,7 +662,7 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object, DictifiableMixin, UsesAnnotations ):
+class History( object, Dictifiable, UsesAnnotations ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
@@ -780,10 +780,10 @@ class History( object, DictifiableMixin, UsesAnnotations ):
             history_name = unicode(history_name, 'utf-8')
         return history_name
 
-    def dictify( self, view='collection', value_mapper = None ):
+    def to_dict( self, view='collection', value_mapper = None ):
 
         # Get basic value.
-        rval = super( History, self ).dictify( view=view, value_mapper=value_mapper )
+        rval = super( History, self ).to_dict( view=view, value_mapper=value_mapper )
 
         # Add tags.
         tags_str_list = []
@@ -869,7 +869,7 @@ class GroupRoleAssociation( object ):
         self.group = group
         self.role = role
 
-class Role( object, DictifiableMixin ):
+class Role( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
@@ -886,19 +886,19 @@ class Role( object, DictifiableMixin ):
         self.type = type
         self.deleted = deleted
 
-class UserQuotaAssociation( object, DictifiableMixin ):
+class UserQuotaAssociation( object, Dictifiable ):
     dict_element_visible_keys = ( 'user', )
     def __init__( self, user, quota ):
         self.user = user
         self.quota = quota
 
-class GroupQuotaAssociation( object, DictifiableMixin ):
+class GroupQuotaAssociation( object, Dictifiable ):
     dict_element_visible_keys = ( 'group', )
     def __init__( self, group, quota ):
         self.group = group
         self.quota = quota
 
-class Quota( object, DictifiableMixin ):
+class Quota( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
     valid_operations = ( '+', '-', '=' )
@@ -927,7 +927,7 @@ class Quota( object, DictifiableMixin ):
         else:
             return nice_size( self.bytes )
 
-class DefaultQuotaAssociation( Quota, DictifiableMixin ):
+class DefaultQuotaAssociation( Quota, Dictifiable ):
     dict_element_visible_keys = ( 'type', )
     types = Bunch(
         UNREGISTERED = 'unregistered',
@@ -1508,7 +1508,7 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance, DictifiableMixin, UsesAnnotations ):
+class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -1680,7 +1680,7 @@ class HistoryDatasetAssociation( DatasetInstance, DictifiableMixin, UsesAnnotati
             rval += child.get_disk_usage( user )
         return rval
 
-    def dictify( self, view='collection' ):
+    def to_dict( self, view='collection' ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -1759,7 +1759,7 @@ class HistoryDatasetAssociationSubset( object ):
         self.subset = subset
         self.location = location
 
-class Library( object, DictifiableMixin ):
+class Library( object, Dictifiable ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
@@ -1828,7 +1828,7 @@ class Library( object, DictifiableMixin ):
             name = unicode( name, 'utf-8' )
         return name
 
-class LibraryFolder( object, DictifiableMixin ):
+class LibraryFolder( object, Dictifiable ):
     dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
@@ -1900,8 +1900,8 @@ class LibraryFolder( object, DictifiableMixin ):
         if isinstance( name, str ):
             name = unicode( name, 'utf-8' )
         return name
-    def dictify( self, view='collection' ):
-        rval = super( LibraryFolder, self ).dictify( view=view )
+    def to_dict( self, view='collection' ):
+        rval = super( LibraryFolder, self ).to_dict( view=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1966,7 +1966,7 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def dictify( self, view='collection' ):
+    def to_dict( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -2096,7 +2096,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
-    def dictify( self, view='collection' ):
+    def to_dict( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -2323,7 +2323,7 @@ class UCI( object ):
         self.id = None
         self.user = None
 
-class StoredWorkflow( object, DictifiableMixin):
+class StoredWorkflow( object, Dictifiable):
     dict_collection_visible_keys = ( 'id', 'name', 'published' )
     dict_element_visible_keys = ( 'id', 'name', 'published' )
     def __init__( self ):
@@ -2341,8 +2341,8 @@ class StoredWorkflow( object, DictifiableMixin):
             new_swta.user = target_user
             self.tags.append(new_swta)
 
-    def dictify( self, view='collection', value_mapper = None  ):
-        rval = super( StoredWorkflow, self ).dictify(self, view=view, value_mapper = value_mapper)
+    def to_dict( self, view='collection', value_mapper = None  ):
+        rval = super( StoredWorkflow, self ).to_dict(self, view=view, value_mapper = value_mapper)
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -2434,7 +2434,7 @@ class MetadataFile( object ):
             return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 
-class FormDefinition( object, DictifiableMixin ):
+class FormDefinition( object, Dictifiable ):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
@@ -2562,7 +2562,7 @@ class FormValues( object ):
         self.form_definition = form_def
         self.content = content
 
-class Request( object, DictifiableMixin ):
+class Request( object, Dictifiable ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
@@ -2753,7 +2753,7 @@ class ExternalService( object ):
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
 
-class RequestType( object, DictifiableMixin ):
+class RequestType( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'desc' )
     dict_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
@@ -2839,7 +2839,7 @@ class RequestTypePermissions( object ):
         self.request_type = request_type
         self.role = role
 
-class Sample( object, DictifiableMixin ):
+class Sample( object, Dictifiable ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state',
@@ -3169,7 +3169,7 @@ class Tag ( object ):
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
 
-class ItemTagAssociation ( object, DictifiableMixin ):
+class ItemTagAssociation ( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'user_tname', 'user_value' )
     dict_element_visible_keys = dict_collection_visible_keys
 
@@ -3350,7 +3350,7 @@ class ToolShedRepository( object ):
         self.error_message = error_message
 
     def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
     @property
     def can_install( self ):
@@ -3372,7 +3372,7 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
 
-    def dictify( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -3772,7 +3772,7 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
-class ToolVersion( object, DictifiableMixin ):
+class ToolVersion( object, Dictifiable ):
     dict_element_visible_keys = ( 'id', 'tool_shed_repository' )
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
@@ -3830,8 +3830,8 @@ class ToolVersion( object, DictifiableMixin ):
             return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
-    def dictify( self, view='element' ):
-        rval = super( ToolVersion, self ).dictify( self, view )
+    def to_dict( self, view='element' ):
+        rval = super( ToolVersion, self ).to_dict( self, view )
         rval['tool_name'] = self.tool_id
         for a in self.parent_tool_association:
             rval['parent_tool_id'] = a.parent_id

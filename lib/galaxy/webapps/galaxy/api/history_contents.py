@@ -190,7 +190,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
-            return hda.dictify()
+            return hda.to_dict()
 
         else:
             # TODO: implement other "upload" methods here.
@@ -210,7 +210,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :param  id:         the encoded id of the history to undelete
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
-            fields in :func:`galaxy.model.HistoryDatasetAssociation.dictify`
+            fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`
             and/or the following:
 
             * annotation: an annotation for the HDA

@@ -59,7 +59,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
 
@@ -93,16 +93,16 @@ class StdioErrorLevel( object ):
 class ToolNotFoundException( Exception ):
     pass
 
-def dictify_helper( obj, kwargs ):
-    """ Helper function that provides the appropriate kwargs to dictify an object. """
+def to_dict_helper( obj, kwargs ):
+    """ Helper function that provides the appropriate kwargs to to_dict an object. """
 
-    # Label.dictify cannot have kwargs.
+    # Label.to_dict cannot have kwargs.
     if isinstance( obj, ToolSectionLabel ):
         kwargs = {}
 
-    return obj.dictify( **kwargs )
+    return obj.to_dict( **kwargs )
 
-class ToolBox( object, DictifiableMixin ):
+class ToolBox( object, Dictifiable ):
     """Container for a collection of tools"""
 
     def __init__( self, config_filenames, tool_root_dir, app ):
@@ -711,9 +711,9 @@ class ToolBox( object, DictifiableMixin ):
         """
         return self.app.model.context
 
-    def dictify( self, trans, in_panel=True, **kwds ):
+    def to_dict( self, trans, in_panel=True, **kwds ):
         """
-        Dictify toolbox.
+        to_dict toolbox.
         """
 
         context = Bunch( toolbox=self, trans=trans, **kwds )
@@ -736,11 +736,11 @@ class ToolBox( object, DictifiableMixin ):
                 link_details = True
             )
             for elt in panel_elts:
-                rval.append( dictify_helper( elt, kwargs ) )
+                rval.append( to_dict_helper( elt, kwargs ) )
         else:
             tools = []
             for id, tool in self.tools_by_id.items():
-                tools.append( tool.dictify( trans, link_details=True ) )
+                tools.append( tool.to_dict( trans, link_details=True ) )
             rval = tools
 
         return rval
@@ -801,7 +801,7 @@ def _filter_for_panel( item, filters, context ):
 
 
 
-class ToolSection( object, DictifiableMixin ):
+class ToolSection( object, Dictifiable ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -824,22 +824,22 @@ class ToolSection( object, DictifiableMixin ):
         copy.elems = self.elems.copy()
         return copy
 
-    def dictify( self, trans, link_details=False ):
+    def to_dict( self, trans, link_details=False ):
         """ Return a dict that includes section's attributes. """
 
-        section_dict = super( ToolSection, self ).dictify()
+        section_dict = super( ToolSection, self ).to_dict()
         section_elts = []
         kwargs = dict(
             trans = trans,
             link_details = link_details
         )
         for elt in self.elems.values():
-            section_elts.append( dictify_helper( elt, kwargs ) )
+            section_elts.append( to_dict_helper( elt, kwargs ) )
         section_dict[ 'elems' ] = section_elts
 
         return section_dict
 
-class ToolSectionLabel( object, DictifiableMixin ):
+class ToolSectionLabel( object, Dictifiable ):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -898,7 +898,7 @@ class DefaultToolState( object ):
             self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
-class ToolOutput( object, DictifiableMixin ):
+class ToolOutput( object, Dictifiable ):
     """
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
@@ -948,7 +948,7 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
-class Tool( object, DictifiableMixin ):
+class Tool( object, Dictifiable ):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -2962,11 +2962,11 @@ class Tool( object, DictifiableMixin ):
                     self.sa_session.flush()
         return primary_datasets
 
-    def dictify( self, trans, link_details=False, io_details=False ):
+    def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
 
         # Basic information
-        tool_dict = super( Tool, self ).dictify()
+        tool_dict = super( Tool, self ).to_dict()
 
         # Add link details.
         if link_details:
@@ -2983,8 +2983,8 @@ class Tool( object, DictifiableMixin ):
 
         # Add input and output details.
         if io_details:
-            tool_dict[ 'inputs' ] = [ input.dictify( trans ) for input in self.inputs.values() ]
-            tool_dict[ 'outputs' ] = [ output.dictify() for output in self.outputs.values() ]
+            tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
 
         return tool_dict
 

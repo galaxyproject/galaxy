@@ -32,7 +32,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Create return value.
         try:
-            return self.app.toolbox.dictify( trans, in_panel=in_panel, trackster=trackster )
+            return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
         except Exception, exc:
             log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
             trans.response.status = 500
@@ -45,7 +45,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Returns tool information, including parameters and inputs.
         """
         try:
-            return self.app.toolbox.tools_by_id[ id ].dictify( trans, for_display=True )
+            return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
         except Exception, exc:
             log.error( 'could not convert tool (%s) to dictionary: %s', id, str( exc ), exc_info=True )
             trans.response.status = 500
@@ -105,7 +105,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
         for output in output_datasets:
-            output_dict = output.dictify()
+            output_dict = output.to_dict()
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
 
@@ -411,7 +411,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             if joda.name == output_name:
                 output_dataset = joda.dataset
 
-        dataset_dict = output_dataset.dictify()
+        dataset_dict = output_dataset.to_dict()
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset );
         return dataset_dict
