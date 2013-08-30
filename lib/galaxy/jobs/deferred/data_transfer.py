@@ -367,7 +367,7 @@ class DataTransfer( object ):
                 outputs[ step.id ] = out_data
                 for pja in step.post_job_actions:
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(self.app, self.sa_session, pja, job, replacement_dict)
+                        ActionBox.execute(self.app, self.sa_session, pja, job, replacement_dict=None)
                     else:
                         job.add_post_job_action(pja)
             else:
