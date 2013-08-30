@@ -453,6 +453,11 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
             ### ----------------------------------- ###
             ## RPARK EDIT ##
+
+            # TODO: This is duplicated from
+            # lib/galaxy/webapps/controllres/workflow.py -- refactor and
+            # eliminate copied code.
+
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
             annotation_str = ""
