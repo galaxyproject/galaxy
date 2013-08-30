@@ -27,7 +27,7 @@ class AdminRequestsGrid( RequestsGrid ):
     operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ) )
     global_actions = [
         grids.GridAction( "Create new request", dict( controller='requests_common',
-                                                      action='create_request', 
+                                                      action='create_request',
                                                       cntrller='requests_admin' ) )
     ]
 
@@ -57,14 +57,14 @@ class DataTransferGrid( grids.Grid ):
     preserve_state = True
     use_paging = False
     columns = [
-        NameColumn( "Name", 
+        NameColumn( "Name",
                     link=( lambda item: dict( operation="view", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         SizeColumn( "Size",
                     filterable="advanced" ),
-        grids.GridColumn( "Last Updated", 
-                          key="update_time", 
+        grids.GridColumn( "Last Updated",
+                          key="update_time",
                           format=time_ago ),
         ExternalServiceColumn( 'External service',
                                link=( lambda item: dict( operation="view_external_service", id=item.external_service.id ) ), ),
@@ -72,8 +72,8 @@ class DataTransferGrid( grids.Grid ):
                       filterable="advanced",
                       label_id_prefix='datasetTransferStatus-' ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -172,7 +172,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         if not comment:
             status='error'
             message='A reason for rejecting the request is required.'
-            return trans.fill_template( '/admin/requests/reject.mako', 
+            return trans.fill_template( '/admin/requests/reject.mako',
                                         cntrller='requests_admin',
                                         request=request,
                                         status=status,
@@ -268,7 +268,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                                       sample_id=trans.security.encode_id( selected_sample_datasets[0].sample.id ),
                                                                       status=status,
                                                                       message=message ) )
-                return trans.fill_template( '/admin/requests/rename_datasets.mako', 
+                return trans.fill_template( '/admin/requests/rename_datasets.mako',
                                             sample=selected_sample_datasets[0].sample,
                                             id_list=id_list )
             elif operation == "transfer":
@@ -284,13 +284,13 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
-        self.datatx_grid.global_actions = [ grids.GridAction( "Browse target data library", 
-                                                              dict( controller='library_common', 
-                                                                    action='browse_library', 
-                                                                    cntrller='library_admin', 
+        self.datatx_grid.global_actions = [ grids.GridAction( "Browse target data library",
+                                                              dict( controller='library_common',
+                                                                    action='browse_library',
+                                                                    cntrller='library_admin',
                                                                     id=library_id ) ),
-                                            grids.GridAction( "Browse this request", 
-                                                              dict( controller='requests_common', 
+                                            grids.GridAction( "Browse this request",
+                                                              dict( controller='requests_common',
                                                                     action='view_request',
                                                                     cntrller='requests_admin',
                                                                     id=request_id ) ) ]
@@ -329,7 +329,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                 new_name = util.sanitize_for_filename( new_name )
                 if selected_option == 'none':
                     sample_dataset.name = new_name
-                else: 
+                else:
                     sample_dataset.name = '%s_%s' % ( selected_option, new_name )
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
@@ -341,7 +341,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                 message = 'Changes saved successfully. The following datasets were renamed incorrectly: %s.' % str( incorrect_dataset_names )
             else:
                 message = 'Changes saved successfully.'
-            return trans.fill_template( '/admin/requests/rename_datasets.mako', 
+            return trans.fill_template( '/admin/requests/rename_datasets.mako',
                                         sample=sample,
                                         id_list=id_list,
                                         message=message,
@@ -397,7 +397,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                                   id=trans.security.encode_id( request.id ),
                                                                   status=status,
                                                                   message=message ) )
-            # Save the sample datasets 
+            # Save the sample datasets
             sample_dataset_file_names = self.__create_sample_datasets( trans, sample, selected_datasets_to_transfer, external_service )
             if sample_dataset_file_names:
                 message = 'Datasets (%s) have been selected for sample (%s)' % \
@@ -437,7 +437,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         output = pexpect.run( cmd,
                               events={ '\(yes\/no\)\.*' : 'yes\r\n',
                                        '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
-                                       pexpect.TIMEOUT : print_ticks }, 
+                                       pexpect.TIMEOUT : print_ticks },
                               timeout=10 )
         for password_str in [ 'Password:\r\n', 'password:\r\n' ]:
             # Eliminate the output created using ssh from the tree
@@ -482,9 +482,9 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # Handle the authentication message if keys are not set - the message is
         # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
-                              events={ '\(yes\/no\)\.*' : 'yes\r\n', 
+                              events={ '\(yes\/no\)\.*' : 'yes\r\n',
                                       '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
-                                       pexpect.TIMEOUT : print_ticks }, 
+                                       pexpect.TIMEOUT : print_ticks },
                               timeout=10 )
         if 'No such file or directory' in output:
             status = 'error'
@@ -528,7 +528,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
     def __rename_dataset( self, sample, filepath, scp_configs ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
-        option = scp_configs.get( 'rename_dataset', options.NO ) 
+        option = scp_configs.get( 'rename_dataset', options.NO )
         if option == options.SAMPLE_NAME:
             new_name = sample.name + '_' + name
         if option == options.EXPERIMENT_AND_SAMPLE_NAME:
@@ -537,7 +537,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             new_name = sample.request.name + '_' + name
         else:
             new_name = name
-        return util.sanitize_for_filename( new_name ) 
+        return util.sanitize_for_filename( new_name )
     def __ensure_library_add_permission( self, trans, target_library, target_folder ):
         """
         Ensures the current admin user has ADD_LIBRARY permission on the target data library and folder.
@@ -547,13 +547,13 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         flush_needed = False
         if not trans.app.security_agent.can_add_library_item( current_user_roles, target_library ):
             lp = trans.model.LibraryPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                 target_library, 
+                                                 target_library,
                                                  current_user_private_role )
             trans.sa_session.add( lp )
             flush_needed = True
         if not trans.app.security_agent.can_add_library_item( current_user_roles, target_folder ):
             lfp = trans.model.LibraryFolderPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
-                                                        target_folder, 
+                                                        target_folder,
                                                         current_user_private_role )
             trans.sa_session.add( lfp )
             flush_needed = True
@@ -585,7 +585,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                    <file>%(FILE)s</file>
                </dataset>'''
         # Here we group all the sample_datasets by the external service used to transfer them.
-        # The idea is to bundle up the sample_datasets which uses the same external service and 
+        # The idea is to bundle up the sample_datasets which uses the same external service and
         # send a single AMQP message to the galaxy_listener
         dataset_elements = {}
         for sample_dataset in selected_sample_datasets:
@@ -600,7 +600,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                 sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
                 trans.sa_session.flush()
-        # Finally prepend the external service info to the sets of sample datasets 
+        # Finally prepend the external service info to the sets of sample datasets
         messages = []
         for external_service, dataset_elem in dataset_elements.items():
             external_service.load_data_transfer_settings( trans )
@@ -685,22 +685,22 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                                                             external_service_type=external_service_type )
         else:
             # TODO: Using RabbitMq for now, but eliminate this entire block when we replace RabbitMq with Galaxy's
-            # own messaging engine.  We're holding off on using the new way to transfer files manually until we 
+            # own messaging engine.  We're holding off on using the new way to transfer files manually until we
             # implement a Galaxy-proprietary messaging engine because the deferred job plugins currently perform
             # constant db hits to check for deferred jobs that are not in a finished state.
             # Create the message
             messages = self.__create_data_transfer_messages( trans, sample, sample_datasets )
-            # Send the messages 
+            # Send the messages
             for rmq_msg in messages:
                 try:
-                    conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ], 
-                                            userid=trans.app.config.amqp[ 'userid' ], 
-                                            password=trans.app.config.amqp[ 'password' ], 
-                                            virtual_host=trans.app.config.amqp[ 'virtual_host' ], 
-                                            insist=False )   
+                    conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ],
+                                            userid=trans.app.config.amqp[ 'userid' ],
+                                            password=trans.app.config.amqp[ 'password' ],
+                                            virtual_host=trans.app.config.amqp[ 'virtual_host' ],
+                                            insist=False )
                     chan = conn.channel()
-                    msg = amqp.Message( rmq_msg, 
-                                        content_type='text/plain', 
+                    msg = amqp.Message( rmq_msg,
+                                        content_type='text/plain',
                                         application_headers={ 'msg_type': 'data_transfer' } )
                     msg.properties[ "delivery_mode" ] = 2
                     chan.basic_publish( msg,
@@ -722,7 +722,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
         # check if the new status is a valid transfer status
-        possible_status_list = [ v[1] for v in trans.app.model.SampleDataset.transfer_status.items() ] 
+        possible_status_list = [ v[1] for v in trans.app.model.SampleDataset.transfer_status.items() ]
         if new_status not in possible_status_list:
             trans.response.status = 400
             return 400, "The requested transfer status ( %s ) is not a valid transfer status." % new_status

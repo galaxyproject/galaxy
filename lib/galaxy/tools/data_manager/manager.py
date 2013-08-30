@@ -95,7 +95,7 @@ class DataManagers( object ):
 class DataManager( object ):
     GUID_TYPE = 'data_manager'
     DEFAULT_VERSION = "0.0.1"
-    
+
     def __init__( self, data_managers, elem=None, tool_path=None ):
         self.data_managers = data_managers
         self.declared_id = None
@@ -144,7 +144,7 @@ class DataManager( object ):
         self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id, tool_shed_repository_id=tool_shed_repository_id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
-        
+
         for data_table_elem in elem.findall( 'data_table' ):
             data_table_name = data_table_elem.get( "name" )
             assert data_table_name is not None, "A name is required for a data table entry"
@@ -210,7 +210,7 @@ class DataManager( object ):
         self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
         return tool
-    
+
     def process_result( self, out_data ):
         data_manager_dicts = {}
         data_manager_dict = {}
@@ -227,7 +227,7 @@ class DataManager( object ):
                     data_manager_dict[ key ] = {}
                 data_manager_dict[ key ].update( value )
             data_manager_dict.update( output_dict )
-        
+
         data_tables_dict = data_manager_dict.get( 'data_tables', {} )
         for data_table_name, data_table_columns in self.data_tables.iteritems():
             data_table_values = data_tables_dict.pop( data_table_name, None )
@@ -247,7 +247,7 @@ class DataManager( object ):
                     output_ref_dataset = out_data.get( output_ref, None )
                     assert output_ref_dataset is not None, "Referenced output was not found."
                     output_ref_values[ data_table_column ] = output_ref_dataset
-            
+
             if not isinstance( data_table_values, list ):
                 data_table_values = [ data_table_values ]
             for data_table_row in data_table_values:
@@ -257,12 +257,12 @@ class DataManager( object ):
                         moved = self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
                 data_table.add_entry( data_table_value, persist=True, entry_source=self )
-        
+
         for data_table_name, data_table_values in data_tables_dict.iteritems():
             #tool returned extra data table entries, but data table was not declared in data manager
             #do not add these values, but do provide messages
             log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename ) )
-    
+
     def process_move( self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd ):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[ data_table_name ]:
             move_dict = self.move_by_data_table_column[ data_table_name ][ column_name ]
@@ -280,7 +280,7 @@ class DataManager( object ):
                 target = fill_template( target, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd )
             if move_dict[ 'target_value' ]:
                 target = os.path.join( target, fill_template( move_dict[ 'target_value' ], GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd  ) )
-            
+
             if move_dict[ 'type' ] == 'file':
                 dirs, filename = os.path.split( target )
                 try:
@@ -291,13 +291,13 @@ class DataManager( object ):
                     #log.debug( 'Error creating directory "%s": %s' % ( dirs, e ) )
             #moving a directory and the target already exists, we move the contents instead
             util.move_merge( source, target )
-            
+
             if move_dict.get( 'relativize_symlinks', False ):
                 util.relativize_symlinks( target )
-            
+
             return True
         return False
-    
+
     def process_value_translation( self, data_table_name, column_name, **kwd ):
         value = kwd.get( column_name )
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[ data_table_name ]:
@@ -307,6 +307,6 @@ class DataManager( object ):
                 else:
                     value = value_translation( value )
         return value
-    
+
     def get_tool_shed_repository_info_dict( self ):
         return self.tool_shed_repository_info_dict

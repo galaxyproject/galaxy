@@ -11,7 +11,7 @@ from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 log = logging.getLogger( __name__ )
 
 class LibrariesController( BaseAPIController ):
-    
+
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
         """

@@ -149,7 +149,7 @@ class Egg( object ):
             env = get_env() # reset the global Environment object now that we've obtained a new egg
         return rval
     def unpack_if_needed( self ):
-        meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )    
+        meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )
         if meta.has_metadata( 'not-zip-safe' ):
             unpack_zipfile( self.distribution.location, self.distribution.location + "-tmp" )
             os.remove( self.distribution.location )

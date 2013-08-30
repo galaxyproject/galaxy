@@ -157,30 +157,30 @@ class ToolDataTable( object ):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-    
+
     def _update_version( self ):
         self._loaded_content_version += 1
         return self._loaded_content_version
-    
+
     def get_empty_field_by_name( self, name ):
         return self.empty_field_values.get( name, self.empty_field_value )
-    
+
     def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         raise NotImplementedError( "Abstract method" )
-    
+
     def add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         self._add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._update_version()
-    
+
     def add_entries( self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         if entries:
             for entry in entries:
                 self.add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._loaded_content_version
-    
+
     def is_current_version( self, other_version ):
         return self._loaded_content_version == other_version
-    
+
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         raise NotImplementedError( "Abstract method" )
 
@@ -212,11 +212,11 @@ class TabularToolDataTable( ToolDataTable ):
         self.comment_char = config_element.get( 'comment_char', '#' )
         # Configure columns
         self.parse_column_spec( config_element )
-        
+
         #store repo info if available:
         repo_elem = config_element.find( 'tool_shed_repository' )
         if repo_elem is not None:
-            repo_info = dict( tool_shed=repo_elem.find( 'tool_shed' ).text, name=repo_elem.find( 'repository_name' ).text, 
+            repo_info = dict( tool_shed=repo_elem.find( 'tool_shed' ).text, name=repo_elem.find( 'repository_name' ).text,
                               owner=repo_elem.find( 'repository_owner' ).text, installed_changeset_revision=repo_elem.find( 'installed_changeset_revision' ).text )
         else:
             repo_info = None
@@ -227,12 +227,12 @@ class TabularToolDataTable( ToolDataTable ):
             if file_path is None:
                 log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
                 continue
-            
+
             #FIXME: splitting on and merging paths from a configuration file when loading is wonky
             # Data should exist on disk in the state needed, i.e. the xml configuration should
             # point directly to the desired file to load. Munging of the tool_data_tables_conf.xml.sample
             # can be done during installing / testing / metadata resetting with the creation of a proper
-            # tool_data_tables_conf.xml file, containing correct <file path=> attributes. Allowing a 
+            # tool_data_tables_conf.xml file, containing correct <file path=> attributes. Allowing a
             # path.join with a different root should be allowed, but splitting should not be necessary.
             if tool_data_path and from_shed_config:
                 # Must identify with from_shed_config as well, because the
@@ -254,21 +254,21 @@ class TabularToolDataTable( ToolDataTable ):
                     if os.path.exists( corrected_filename ):
                         filename = corrected_filename
                         found = True
-            
+
             if found:
                 self.data.extend( self.parse_file_fields( open( filename ) ) )
                 self._update_version()
             else:
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
-            
+
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
-                self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path, 
+                self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
                                                    config_element=config_element, tool_shed_repository=repo_info )
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
-            
-    
+
+
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )
         #merge filename info
@@ -277,14 +277,14 @@ class TabularToolDataTable( ToolDataTable ):
                 self.filenames[ filename ] = info
         #add data entries and return current data table version
         return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
-    
+
     def handle_found_index_file( self, filename ):
         self.missing_index_file = None
         self.data.extend( self.parse_file_fields( open( filename ) ) )
 
     def get_fields( self ):
         return self.data
-    
+
     def get_version_fields( self ):
         return ( self._loaded_content_version, self.data )
 
@@ -377,7 +377,7 @@ class TabularToolDataTable( ToolDataTable ):
                 rval = fields[ return_col ]
                 break
         return rval
-    
+
     def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         #accepts dict or list of columns
         if isinstance( entry, dict ):
@@ -403,7 +403,7 @@ class TabularToolDataTable( ToolDataTable ):
             log.error( "Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len( fields ), self.largest_index + 1 )
             is_error = True
         filename = None
-                    
+
         if persist and ( not is_error or persist_on_error ):
             if entry_source:
                 #if dict, assume is compatible info dict, otherwise call method
@@ -438,7 +438,7 @@ class TabularToolDataTable( ToolDataTable ):
                         data_table_fh.write( '\n' )
                 data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
         return not is_error
-    
+
     def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
         #make sure none of the fields contain separator
         #make sure separator replace is different from comment_char,
@@ -457,6 +457,6 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
-    
+
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

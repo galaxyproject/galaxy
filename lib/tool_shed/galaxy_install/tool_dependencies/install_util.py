@@ -98,7 +98,7 @@ def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
 
 def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
     """
-    Get all appropriate newer changeset revisions for the repository defined by 
+    Get all appropriate newer changeset revisions for the repository defined by
     the received tool_shed_url / name / owner combination.
     """
     url = suc.url_join( tool_shed_url,
@@ -161,7 +161,7 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                         # setting in the received tool_shed_repository's tool_dependencies.xml file and the required repository's
                         # tool_dependencies.xml file may include the use of the $ENV[] variable inheritance feature.  To handle this,
                         # we will replace the current "value" entries in each env_var_dict with the actual path taken from the env.sh
-                        # file generated for the installed required repository.  Each env_var_dict currently looks something like this: 
+                        # file generated for the installed required repository.  Each env_var_dict currently looks something like this:
                         # {'action': 'append_to', 'name': 'LD_LIBRARY_PATH', 'value': '$BOOST_ROOT_DIR/lib/'}
                         # We'll read the contents of the received required_repository's env.sh file and replace the 'value' entry of each env_var_dict
                         # with the associated value in the env.sh file.
@@ -203,7 +203,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     except Exception, e:
         log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-        tool_dependency.error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) ) 
+        tool_dependency.error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) )
         sa_session.add( tool_dependency )
         sa_session.flush()
     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
@@ -255,7 +255,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
                     # We can get everything we need from the discovered installed required_repository.
                     if required_repository.status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                       app.model.ToolShedRepository.installation_status.INSTALLED ]:                        
+                                                       app.model.ToolShedRepository.installation_status.INSTALLED ]:
                         if not os.path.exists( required_repository_package_install_dir ):
                             print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
                         repo_files_dir = required_repository.repo_files_directory( app )
@@ -484,7 +484,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             #    </repository>
             # </action>
             # This action type allows for defining an environment that will properly compile a tool dependency.  Currently, tag set definitions like
-            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be 
+            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be
             # supported.  The above tag set will result in the installed and compiled numpy version 1.7.1 binary to be used when compiling the current
             # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
             for env_elem in action_elem:
@@ -574,7 +574,7 @@ def parse_env_shell_entry( action, name, value, line ):
         new_value = new_value.split( ';' )[ 0 ]
     return new_value
 
-        
+
 def populate_actions_dict( app, dependent_install_dir, required_install_dir, tool_shed_repository, required_repository, package_name, package_version, tool_dependencies_config ):
     """
     Populate an actions dictionary that can be sent to fabric_util.install_and_build_package.  This method handles the scenario where a tool_dependencies.xml
@@ -648,7 +648,7 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
     except Exception, e:
         return "Exception executing fabric script %s: %s.  " % ( str( proprietary_fabfile_path ), str( e ) )
     if returncode:
-        return message    
+        return message
     handle_environment_settings( app, tool_dependency, install_dir, cmd )
 
 def run_subprocess( app, cmd ):

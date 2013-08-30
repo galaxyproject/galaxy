@@ -10,7 +10,7 @@ class odict(UserDict):
 
     This dictionary class extends UserDict to record the order in which items are
     added. Calling keys(), values(), items(), etc. will return results in this
-    order. 
+    order.
     """
     def __init__( self, dict = None ):
         self._keys = []
@@ -70,12 +70,12 @@ class odict(UserDict):
 
     def iteritems( self ):
         for key in self._keys:
-            yield key, self.get( key )        
+            yield key, self.get( key )
 
     def __iter__( self ):
-        for key in self._keys: 
+        for key in self._keys:
             yield key
-    
+
     def reverse( self ):
         self._keys.reverse()
 

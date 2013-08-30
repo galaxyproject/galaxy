@@ -1,5 +1,5 @@
 """
-API operations on folders 
+API operations on folders
 """
 import logging, os, string, shutil, urllib, re, socket, traceback
 from cgi import escape, FieldStorage
@@ -25,7 +25,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
     def show( self, trans, id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}
-        Displays information about a folder 
+        Displays information about a folder
         """
         # Eliminate any 'F' in front of the folder id. Just take the
         # last 16 characters:
@@ -33,7 +33,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             id = id[-16:]
         # Retrieve the folder and return its contents encoded. Note that the
         # check_ownership=false since we are only displaying it.
-        content = self.get_library_folder( trans, id, check_ownership=False, 
+        content = self.get_library_folder( trans, id, check_ownership=False,
                                            check_accessible=True )
         return self.encode_all_ids( trans, content.dictify( view='element' ) )
 
@@ -42,7 +42,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         POST /api/folders/{encoded_folder_id}
         Create a new object underneath the one specified in the parameters.
-        This will use the same parameters and semantics as 
+        This will use the same parameters and semantics as
         /api/libraries/{LibID}/contents/{ContentId} for consistency.
         This means that datasets and folders can be generated. Note that
         /api/libraries/{LibID}/contents/{ContentId} did not need the library
@@ -89,18 +89,18 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                 rval.append( dict( id = encoded_id,
                                    name = v.name,
                                    url = url_for( 'folder', id=encoded_id ) ) )
-        else: 
+        else:
             log.debug( "Error creating folder; setting output and status" )
             trans.response.status = status
-            rval = output 
-        return rval 
+            rval = output
+        return rval
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}
         For now this does nothing. There are no semantics for folders that
-        indicates that an update operation is needed; the existing 
+        indicates that an update operation is needed; the existing
         library_contents folder does not allow for update, either.
         """
         pass

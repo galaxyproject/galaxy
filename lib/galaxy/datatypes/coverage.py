@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class LastzCoverage( Tabular ):
     file_ext = "coverage"
-    
+
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="positionCol", default=2, desc="Position column", param=metadata.ColumnParameter )
     MetadataElement( name="forwardCol", default=3, desc="Forward or aggregate read column", param=metadata.ColumnParameter )
@@ -44,7 +44,7 @@ class LastzCoverage( Tabular ):
         t_end = math.ceil( end / resolution )
         x = numpy.arange( t_start, t_end ) * resolution
         y = data[ t_start : t_end ]
-    
+
         return zip(x.tolist(), y.tolist())
 
     def get_track_resolution( self, dataset, start, end):

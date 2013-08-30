@@ -526,7 +526,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
                         trans.sa_session.add( hda.dataset )
                     except:
                         log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
@@ -1312,7 +1312,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         copy_choice = params.get( 'copy_choice', None )
         if not copy_choice:
             return trans.fill_template( "/history/copy.mako", id_argument=id )
-            
+
         # Extract histories for id argument, defaulting to current
         if id is None:
             histories = [ trans.history ]
@@ -1352,7 +1352,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history = self.get_history( trans, hist_id )
         trans.set_history( history )
         return trans.response.send_redirect( url_for( "/" ) )
-        
+
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
 

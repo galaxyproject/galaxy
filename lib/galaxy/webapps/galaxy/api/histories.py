@@ -128,7 +128,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
             * name:     the new history's name
-            
+
         :rtype:     dict
         :returns:   element view of new history
         """
@@ -159,7 +159,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :param  id:     the encoded id of the history to delete
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
-        
+
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the history and all of it's HDAs
 
@@ -255,7 +255,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             fields in :func:`galaxy.model.History.dictify` and/or the following:
-            
+
             * annotation: an annotation for the history
 
         :rtype:     dict

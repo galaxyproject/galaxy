@@ -282,7 +282,7 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
-        # Experimental: This will not be enabled by default and will hide 
+        # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
@@ -302,7 +302,7 @@ class Configuration( object ):
     @property
     def sentry_dsn_public( self ):
         """
-        Sentry URL with private key removed for use in client side scripts, 
+        Sentry URL with private key removed for use in client side scripts,
         sentry server will need to be configured to accept events
         """
         if self.sentry_dsn:
@@ -436,8 +436,8 @@ def configure_logging( config ):
     """
     # Get root logger
     root = logging.getLogger()
-    # PasteScript will have already configured the logger if the 
-    # 'loggers' section was found in the config file, otherwise we do 
+    # PasteScript will have already configured the logger if the
+    # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
     if not config.global_conf_parser.has_section( "loggers" ):
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )

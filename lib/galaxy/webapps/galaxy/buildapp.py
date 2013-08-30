@@ -55,7 +55,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
-    
+
     # allow for subdirectories in extra_files_path
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
@@ -83,13 +83,13 @@ def app_factory( global_conf, **kwargs ):
                                 'contents',
                                 controller='library_contents',
                                 name_prefix='library_',
-                                path_prefix='/api/libraries/:library_id', 
+                                path_prefix='/api/libraries/:library_id',
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )
     webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
                                 name_prefix='history_',
-                                path_prefix='/api/histories/:history_id', 
+                                path_prefix='/api/histories/:history_id',
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
     webapp.mapper.connect("history_contents_display",
                               "/api/histories/:history_id/contents/:history_content_id/display",
@@ -122,7 +122,7 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
-    _add_item_extended_metadata_controller( webapp, 
+    _add_item_extended_metadata_controller( webapp,
                                name_prefix="library_dataset_",
                                path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
 
@@ -157,7 +157,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
-    webapp.mapper.resource( 'search', 'search', path_prefix='/api' )    
+    webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
 
     # visualizations registry generic template renderer
     webapp.add_route( '/visualization/show/:visualization_name',
@@ -259,7 +259,7 @@ def _add_item_provenance_controller( webapp, name_prefix, path_prefix, **kwd ):
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """
-    Based on the configuration wrap `app` in a set of common and useful 
+    Based on the configuration wrap `app` in a set of common and useful
     middleware.
     """
     # Merge the global and local configurations
@@ -280,7 +280,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
-    # The recursive middleware allows for including requests in other 
+    # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
@@ -334,7 +334,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = RequestIDMiddleware( app )
     log.debug( "Enabling 'Request ID' middleware" )
     return app
-    
+
 def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -367,7 +367,7 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
 
     # URL mapper becomes the root webapp
     return urlmap
-    
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error

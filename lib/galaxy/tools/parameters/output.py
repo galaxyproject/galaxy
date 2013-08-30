@@ -65,7 +65,7 @@ class ValueToolOutputActionConditionalWhen( ToolOutputActionConditionalWhen ):
     def is_case( self, output_dataset, other_values ):
         ref = self.get_ref( output_dataset, other_values )
         return bool( str( ref ) == self.value )
-        
+
 class DatatypeIsInstanceToolOutputActionConditionalWhen( ToolOutputActionConditionalWhen ):
     tag = "when datatype_isinstance"
     def __init__( self, parent, config_elem, value ):
@@ -248,7 +248,7 @@ class FormatToolOutputAction( ToolOutputAction ):
     def __init__( self, parent, elem ):
         super( FormatToolOutputAction, self ).__init__( parent, elem )
         self.default = elem.get( 'default', None )
-        
+
     def apply_action( self, output_dataset, other_values ):
         value = self.option.get_value( other_values )
         if value is None and self.default is not None:
@@ -431,7 +431,7 @@ class MetadataValueFilter( ToolOutputActionOptionFilter ):
         value = str( getattr( ref.metadata, self.name ) )
         rval = []
         for fields in options:
-            if self.keep == ( self.compare( fields[self.column], value ) ): 
+            if self.keep == ( self.compare( fields[self.column], value ) ):
                 rval.append( fields )
         return rval
 
@@ -452,7 +452,7 @@ class BooleanFilter( ToolOutputActionOptionFilter ):
                 value = self.cast( value )
             except:
                 value = False #unable to cast or access value; treat as false
-            if self.keep == bool( value ): 
+            if self.keep == bool( value ):
                 rval.append( fields )
         return rval
 
@@ -480,7 +480,7 @@ for action_type in [ MetadataToolOutputAction, FormatToolOutputAction ]:
 option_types = {}
 for option_type in [ NullToolOutputActionOption, FromFileToolOutputActionOption, FromParamToolOutputActionOption, FromDataTableOutputActionOption ]:
     option_types[ option_type.tag ] = option_type
-    
+
 filter_types = {}
 for filter_type in [ ParamValueToolOutputActionOptionFilter, InsertColumnToolOutputActionOptionFilter, MultipleSplitterFilter, ColumnStripFilter, MetadataValueFilter, BooleanFilter, StringFunctionFilter, ColumnReplaceFilter ]:
     filter_types[ filter_type.tag ] = filter_type
@@ -524,5 +524,5 @@ def compare_endswith( value1, value2 ):
 def compare_re_search( value1, value2 ):
     #checks pattern=value2 in value1
     return bool( re.search( value2, value1 ) )
-    
+
 compare_types = { 'eq':compare_eq, 'neq':compare_neq, 'gt':compare_gt, 'gte':compare_gte, 'lt':compare_lt, 'lte':compare_lte, 'in':compare_in, 'startswith':compare_startswith, 'endswith':compare_endswith, "re_search":compare_re_search }

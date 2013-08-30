@@ -20,7 +20,7 @@ class fastaReader( object ):
         while line and line.startswith( '#' ):
             line = self.file.readline()
         if not line:
-            raise StopIteration 
+            raise StopIteration
         assert line.startswith( '>' ), "FASTA headers must start with >"
         rval = fastaSequence()
         rval.identifier = line.strip()
@@ -31,7 +31,7 @@ class fastaReader( object ):
                 if line:
                     self.file.seek( offset ) #this causes sequence id lines to be read twice, once to determine previous sequence end and again when getting actual sequence; can we cache this to prevent it from being re-read?
                 return rval
-            #454 qual test data that was used has decimal scores that don't have trailing spaces 
+            #454 qual test data that was used has decimal scores that don't have trailing spaces
             #so we'll need to parse and build these sequences not based upon de facto standards
             #i.e. in a less than ideal fashion
             line = line.rstrip()

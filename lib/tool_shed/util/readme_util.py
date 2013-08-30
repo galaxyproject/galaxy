@@ -28,7 +28,7 @@ def build_readme_files_dict( metadata, tool_path=None ):
 
 def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
     """
-    Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section 
+    Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section
     selection page.
     """
     name = repo_info_dict.keys()[ 0 ]

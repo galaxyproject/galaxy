@@ -28,13 +28,13 @@ class LocalJobRunner( BaseJobRunner ):
 
         #create a local copy of os.environ to use as env for subprocess.Popen
         self._environ = os.environ.copy()
-        
+
         # put lib into the PYTHONPATH for subprocesses
         if 'PYTHONPATH' in self._environ:
             self._environ['PYTHONPATH'] = '%s:%s' % ( self._environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
         else:
             self._environ['PYTHONPATH'] = os.path.abspath( 'lib' )
-        
+
         #Set TEMP if a valid temp value is not already set
         if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
             self._environ[ 'TEMP' ] = tempfile.gettempdir()
@@ -48,7 +48,7 @@ class LocalJobRunner( BaseJobRunner ):
             return
 
         stderr = stdout = ''
-        exit_code = 0 
+        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
@@ -59,9 +59,9 @@ class LocalJobRunner( BaseJobRunner ):
             log.debug( '(%s) executing: %s' % ( job_id, command_line ) )
             stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
             stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
-            proc = subprocess.Popen( args = command_line, 
-                                     shell = True, 
-                                     cwd = job_wrapper.working_directory, 
+            proc = subprocess.Popen( args = command_line,
+                                     shell = True,
+                                     cwd = job_wrapper.working_directory,
                                      stdout = stdout_file,
                                      stderr = stderr_file,
                                      env = self._environ,

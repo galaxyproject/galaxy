@@ -129,7 +129,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :param  library_id: encoded id string of the library that contains this item
         :type   payload:    dict
         :param  payload:    dictionary structure containing:
-        
+
             * folder_id:    the parent folder of the new item
             * create_type:  the type of item to create ('file' or 'folder')
             * from_hda_id:  (optional) the id of an accessible HDA to copy into the
@@ -172,7 +172,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if create_type == 'file' and from_hda_id:
             return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
 
-        #check for extended metadata, store it and pop it out of the param 
+        #check for extended metadata, store it and pop it out of the param
         #otherwise sanitize_param will have a fit
         ex_meta_payload = None
         if 'extended_metadata' in payload:

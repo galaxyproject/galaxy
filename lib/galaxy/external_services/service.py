@@ -209,7 +209,7 @@ class PopulatedExternalService( object ):
             assert action_found, 'Action not found: %s in %s' % ( name, actions_list )
         assert action, 'Action not found: %s' % actions_list
         return action
-    
+
     def get_action_links( self ):
         rval = []
         param_dict = {}

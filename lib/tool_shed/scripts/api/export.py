@@ -33,7 +33,7 @@ def string_as_bool( string ):
         return True
     else:
         return False
- 
+
 def main( options ):
     """Collect all user data and export the repository via the Tool Shed API."""
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )

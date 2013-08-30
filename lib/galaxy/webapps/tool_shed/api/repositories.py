@@ -34,10 +34,10 @@ class RepositoriesController( BaseAPIController ):
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
         """
         GET /api/repositories/get_ordered_installable_revisions
-        
+
         :param name: the name of the Repository
         :param owner: the owner of the Repository
-        
+
         Returns the ordered list of changeset revision hash strings that are associated with installable revisions.  As in the changelog, the
         list is ordered oldest to newest.
         """
@@ -60,50 +60,50 @@ class RepositoriesController( BaseAPIController ):
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
         """
         GET /api/repositories/get_repository_revision_install_info
-        
+
         :param name: the name of the Repository
         :param owner: the owner of the Repository
         :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository
-        
+
         Returns a list of the following dictionaries::
         - a dictionary defining the Repository.  For example:
         {
-            "deleted": false, 
-            "deprecated": false, 
-            "description": "add_column hello", 
-            "id": "f9cad7b01a472135", 
-            "long_description": "add_column hello", 
-            "name": "add_column", 
-            "owner": "test", 
-            "private": false, 
-            "times_downloaded": 6, 
-            "url": "/api/repositories/f9cad7b01a472135", 
+            "deleted": false,
+            "deprecated": false,
+            "description": "add_column hello",
+            "id": "f9cad7b01a472135",
+            "long_description": "add_column hello",
+            "name": "add_column",
+            "owner": "test",
+            "private": false,
+            "times_downloaded": 6,
+            "url": "/api/repositories/f9cad7b01a472135",
             "user_id": "f9cad7b01a472135"
         }
         - a dictionary defining the Repository revision (RepositoryMetadata).  For example:
         {
-            "changeset_revision": "3a08cc21466f", 
-            "downloadable": true, 
-            "has_repository_dependencies": false, 
-            "id": "f9cad7b01a472135", 
-            "includes_datatypes": false, 
-            "includes_tool_dependencies": false, 
+            "changeset_revision": "3a08cc21466f",
+            "downloadable": true,
+            "has_repository_dependencies": false,
+            "id": "f9cad7b01a472135",
+            "includes_datatypes": false,
+            "includes_tool_dependencies": false,
             "includes_tools": true,
             "includes_tools_for_display_in_tool_panel": true,
-            "includes_workflows": false, 
-            "malicious": false, 
-            "repository_id": "f9cad7b01a472135", 
+            "includes_workflows": false,
+            "malicious": false,
+            "repository_id": "f9cad7b01a472135",
             "url": "/api/repository_revisions/f9cad7b01a472135"
         }
         - a dictionary including the additional information required to install the repository.  For example:
         {
             "add_column": [
-                "add_column hello", 
-                "http://test@localhost:9009/repos/test/add_column", 
-                "3a08cc21466f", 
-                "1", 
-                "test", 
-                {}, 
+                "add_column hello",
+                "http://test@localhost:9009/repos/test/add_column",
+                "3a08cc21466f",
+                "1",
+                "test",
+                {},
                 {}
             ]
         }
@@ -181,7 +181,7 @@ class RepositoriesController( BaseAPIController ):
         """
         GET /api/repositories/{encoded_repository_id}
         Returns information about a repository in the Tool Shed.
-        
+
         :param id: the encoded id of the Repository object
         """
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135

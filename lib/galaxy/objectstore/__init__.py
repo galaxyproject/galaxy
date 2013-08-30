@@ -331,7 +331,7 @@ class DiskObjectStore(ObjectStore):
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """ `create` parameter is not used in this implementation """
         preserve_symlinks = kwargs.pop( 'preserve_symlinks', False )
-        #FIXME: symlinks and the object store model may not play well together 
+        #FIXME: symlinks and the object store model may not play well together
         #these should be handled better, e.g. registering the symlink'd file as an object
         if create:
             self.create(obj, **kwargs)

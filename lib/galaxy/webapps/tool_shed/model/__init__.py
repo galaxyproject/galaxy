@@ -74,7 +74,7 @@ class Role( object, DictifiableMixin ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
-    types = Bunch( 
+    types = Bunch(
         PRIVATE = 'private',
         SYSTEM = 'system',
         USER = 'user',
@@ -109,15 +109,15 @@ class GroupRoleAssociation( object ):
 
 class GalaxySession( object ):
 
-    def __init__( self, 
-                  id=None, 
-                  user=None, 
-                  remote_host=None, 
-                  remote_addr=None, 
-                  referer=None, 
-                  current_history=None, 
-                  session_key=None, 
-                  is_valid=False, 
+    def __init__( self,
+                  id=None,
+                  user=None,
+                  remote_host=None,
+                  remote_addr=None,
+                  referer=None,
+                  current_history=None,
+                  session_key=None,
+                  is_valid=False,
                   prev_session_id=None ):
         self.id = id
         self.user = user
@@ -251,7 +251,7 @@ class RepositoryMetadata( object, DictifiableMixin ):
                                  'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
                                  'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
-    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
+    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False,
                   missing_test_components=None, tools_functionally_correct=False, do_not_test=False, test_install_error=False, time_last_tested=None,
                   tool_test_results=None, has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
                   includes_workflows=False ):

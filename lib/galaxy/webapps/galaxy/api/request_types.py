@@ -92,7 +92,7 @@ class RequestTypeAPIController( BaseAPIController ):
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = roles
         if permissions:
             trans.app.security_agent.set_request_type_permissions( request_type, permissions )
-        
+
         #flush objects
         trans.sa_session.add( request_type )
         trans.sa_session.flush()

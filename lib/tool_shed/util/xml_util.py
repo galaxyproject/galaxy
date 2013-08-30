@@ -16,7 +16,7 @@ class Py26CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
     def __init__ ( self, html=0, target=None ):
         XmlET.XMLTreeBuilder.__init__( self, html, target )
         self._parser.CommentHandler = self.handle_comment
-    
+
     def handle_comment ( self, data ):
         self._target.start( XmlET.Comment, {} )
         self._target.data( data )
@@ -25,7 +25,7 @@ class Py26CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
 
 class Py27CommentedTreeBuilder ( XmlET.TreeBuilder ):
     # Python 2.7 uses ElementTree 1.3.x.
-    
+
     def comment( self, data ):
         self.start( XmlET.Comment, {} )
         self.data( data )

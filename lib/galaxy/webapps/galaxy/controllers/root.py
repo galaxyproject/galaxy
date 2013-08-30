@@ -21,13 +21,13 @@ log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     """Controller class that maps to the url root of Galaxy (i.e. '/')."""
-    
+
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
         """Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
-    
+
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
         """Called on the root url to display the main Galaxy page.
@@ -37,7 +37,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                     workflow_id=workflow_id,
                                     m_c=m_c, m_a=m_a,
                                     params=kwd )
-        
+
     ## ---- Tool related -----------------------------------------------------
 
     @web.json

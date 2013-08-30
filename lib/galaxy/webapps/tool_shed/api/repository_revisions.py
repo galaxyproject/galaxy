@@ -27,7 +27,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         POST /api/repository_revisions/export
         Creates and saves a gzip compressed tar archive of a repository and optionally all of it's repository dependencies.
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
@@ -145,7 +145,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
         Displays information about a repository_metadata record in the Tool Shed.
-        
+
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620

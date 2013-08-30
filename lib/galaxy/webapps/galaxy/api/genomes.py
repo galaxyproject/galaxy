@@ -13,20 +13,20 @@ class GenomesController( BaseAPIController ):
     """
     RESTful controller for interactions with genome data.
     """
-    
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/genomes: returns a list of installed genomes
-        """        
-        
+        """
+
         return self.app.genomes.get_dbkeys( trans, **kwd )
 
     @web.json
     def show( self, trans, id, num=None, chrom=None, low=None, high=None, **kwd ):
         """
         GET /api/genomes/{id}
-        
+
         Returns information about build <id>
         """
 
@@ -41,13 +41,13 @@ class GenomesController( BaseAPIController ):
         else:
             rval = self.app.genomes.chroms( trans, dbkey=id, num=num, chrom=chrom, low=low )
         return rval
-    
+
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
         POST /api/genomes
         Download and/or index a genome.
-        
+
         Parameters::
             liftover        None or array of liftover url partial paths
             dbkey           DB key of the build to download
@@ -59,10 +59,10 @@ class GenomesController( BaseAPIController ):
         Returns::
             If no error:
             dict( status: 'ok', job: <job ID> )
-        
+
             If error:
             dict( status: 'error', error: <error message> )
-        
+
         """
         #??: Planned?
         #Parameters::

@@ -23,25 +23,25 @@ class Group( object, DictifiableMixin ):
 
     def __init__( self ):
         self.name = None
-        
+
     @property
     def visible( self ):
         return True
-    
+
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
         types (dict, list, tuple, str, unicode, int, long, float, bool, None)
         """
         return value
-    
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         """
         Convert a basic representation as produced by `value_to_basic` back
         into the preferred value form.
         """
         return value
-    
+
     def get_initial_value( self, trans, context ):
         """
         Return the initial state/value for this group
@@ -52,7 +52,7 @@ class Group( object, DictifiableMixin ):
         # TODO: need to dictify conditions.
         group_dict = super( Group, self ).dictify( view=view, value_mapper=value_mapper )
         return group_dict
-        
+
 class Repeat( Group ):
     type = "repeat"
     def __init__( self ):
@@ -92,7 +92,7 @@ class Repeat( Group ):
                     if ignore_errors and input.name not in d:
                         # If we do not have a value, and are ignoring errors, we simply
                         # do nothing. There will be no value for the parameter in the
-                        # conditional's values dictionary.     
+                        # conditional's values dictionary.
                         pass
                     else:
                         rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
@@ -100,7 +100,7 @@ class Repeat( Group ):
         except Exception, e:
             if not ignore_errors:
                 raise e
-        return rval 
+        return rval
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
@@ -131,7 +131,7 @@ class UploadDataset( Group ):
     def get_composite_dataset_name( self, context ):
         #FIXME: HACK
         #Special case of using 'base_name' metadata for use as Dataset name needs to be done in a General Fashion, as defined within a particular Datatype.
-        
+
         #We get two different types of contexts here, one straight from submitted parameters, the other after being parsed into tool inputs
         dataset_name = context.get('files_metadata|base_name', None )
         if dataset_name is None:
@@ -193,7 +193,7 @@ class UploadDataset( Group ):
                 else:
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
-        return rval 
+        return rval
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
@@ -473,7 +473,7 @@ class Conditional( Group ):
                 if ignore_errors and input.name not in value:
                     # If we do not have a value, and are ignoring errors, we simply
                     # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.                 
+                    # conditional's values dictionary.
                     pass
                 else:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
@@ -490,7 +490,7 @@ class Conditional( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
     def get_initial_value( self, trans, context ):
-        # State for a conditional is a plain dictionary. 
+        # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
@@ -505,7 +505,7 @@ class Conditional( Group ):
         for child_input in self.cases[current_case].inputs.itervalues():
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
-                         
+
 class ConditionalWhen( object ):
     def __init__( self ):
         self.value = None

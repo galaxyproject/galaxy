@@ -33,7 +33,7 @@ class Configuration( object ):
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/community.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
-        self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/community_files" ), self.root )
@@ -200,7 +200,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -208,7 +208,7 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )

@@ -663,7 +663,7 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        
+
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = hda.datatype.get_display_links( hda,
                 display_app, trans.app, trans.request.base )
@@ -1123,7 +1123,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         tool = trans.app.toolbox.get_tool( job.tool_id )
         if not tool:
             return None
-            
+
         # Tool must have a Trackster configuration.
         if not tool.trackster_conf:
             return None
@@ -1142,7 +1142,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                     if isinstance( value, DictifiableMixin ):
                         value = value.dictify()
                     t_input[ 'value' ] = value
-            
+
         return tool_dict
 
     def get_visualization_config( self, trans, visualization ):
@@ -2328,16 +2328,16 @@ class UsesTagsMixin( object ):
 
 class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
     """ Mixin for getting and setting item extended metadata. """
-            
+
     def get_item_extended_metadata_obj( self, trans, item ):
         """
-        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object 
+        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object
         of the associated extended metadata
         """
         if item.extended_metadata:
             return item.extended_metadata
         return None
- 
+
     def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
         print "setting", extmeta_obj.data
         if item.__class__ == LibraryDatasetDatasetAssociation:

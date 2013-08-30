@@ -91,7 +91,7 @@ def compare_changeset_revisions( trans, ancestor_changeset_revision, ancestor_me
     current_readme_files = current_metadata_dict.get( 'readme_files', [] )
     current_repository_dependencies_dict = current_metadata_dict.get( 'repository_dependencies', {} )
     current_repository_dependencies = current_repository_dependencies_dict.get( 'repository_dependencies', [] )
-    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', {} ) 
+    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', {} )
     current_workflows = current_metadata_dict.get( 'workflows', [] )
     current_data_manager = current_metadata_dict.get( 'data_manager', {} )
     # Handle case where no metadata exists for either changeset.
@@ -216,7 +216,7 @@ def compare_repository_dependencies( trans, ancestor_repository_dependencies, cu
                     break
             if not found_in_current:
                 # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
-                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.        
+                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
                 if not different_revision_defines_tip_only_repository_dependency( trans, ancestor_tup, current_repository_dependencies ):
                     return NOT_EQUAL_AND_NOT_SUBSET
                 return SUBSET
@@ -383,8 +383,8 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
     data_managers = {}
     invalid_data_managers = []
     data_manager_metadata = { 'config_filename': rel_data_manager_config_filename,
-                              'data_managers': data_managers, 
-                              'invalid_data_managers': invalid_data_managers, 
+                              'data_managers': data_managers,
+                              'invalid_data_managers': invalid_data_managers,
                               'error_messages': [] }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
     tree, error_message = xml_util.parse_xml( data_manager_config_filename )
@@ -445,12 +445,12 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
             invalid_data_managers.append( { 'index': i,
                                             'error_message': 'Unable to determine tools metadata' } )
             continue
-        data_managers[ data_manager_id ] = { 'id': data_manager_id, 
-                                             'name': data_manager_name, 
-                                             'guid': guid, 
-                                             'version': version, 
-                                             'tool_config_file': data_manager_metadata_tool_file, 
-                                             'data_tables': data_tables, 
+        data_managers[ data_manager_id ] = { 'id': data_manager_id,
+                                             'name': data_manager_name,
+                                             'guid': guid,
+                                             'version': version,
+                                             'tool_config_file': data_manager_metadata_tool_file,
+                                             'data_tables': data_tables,
                                              'tool_guid': tool[ 'guid' ] }
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
@@ -563,14 +563,14 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
     disk files, so the value of repository_files_dir will not always be repository.repo_path( app ) (it could be an absolute path to a temporary
     directory containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path( app ).
-    
+
     The value of persist will be True when the installed repository contains a valid tool_data_table_conf.xml.sample file, in which case the entries
     should ultimately be persisted to the file referred to by app.config.shed_tool_data_table_config.
     """
     if shed_config_dict is None:
         shed_config_dict = {}
     if updating_installed_repository:
-        # Keep the original tool shed repository metadata if setting metadata on a repository installed into a local Galaxy instance for which 
+        # Keep the original tool shed repository metadata if setting metadata on a repository installed into a local Galaxy instance for which
         # we have pulled updates.
         original_repository_metadata = repository.metadata
     else:
@@ -683,8 +683,8 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                                                                                              work_dir,
                                                                                                              shed_config_dict,
                                                                                                              resetting_all_metadata_on_repository )
-                                        
-                                        
+
+
                                         metadata_dict = generate_tool_metadata( relative_path_to_tool_config, tool, repository_clone_url, metadata_dict )
                                     else:
                                         for tup in invalid_files_and_errors_tups:
@@ -706,7 +706,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                                     suc.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
                                                     metadata_dict,
                                                     shed_config_dict=shed_config_dict )
-    
+
     if readme_files:
         metadata_dict[ 'readme_files' ] = readme_files
     # This step must be done after metadata for tools has been defined.
@@ -1157,14 +1157,14 @@ def handle_repository_elem( app, repository_elem ):
             log.debug( error_message )
             is_valid = False
             return repository_dependency_tup, is_valid, error_message
-    else:        
+    else:
         # We're in the tool shed.
         if suc.tool_shed_is_this_tool_shed( toolshed ):
             try:
                 user = sa_session.query( app.model.User ) \
                                  .filter( app.model.User.table.c.username == owner ) \
                                  .one()
-            except Exception, e:                
+            except Exception, e:
                 error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
                     ( toolshed, name, owner, changeset_revision )
                 error_message += "because the owner is invalid.  "
@@ -1743,12 +1743,12 @@ def set_add_to_tool_panel_attribute_for_tool( tool, guid, datatypes ):
     if datatypes:
         for datatype_dict in datatypes:
             converters = datatype_dict.get( 'converters', None )
-            # [{"converters": 
-            #    [{"target_datatype": "gff", 
-            #      "tool_config": "bed_to_gff_converter.xml", 
-            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}], 
-            #   "display_in_upload": "true", 
-            #   "dtype": "galaxy.datatypes.interval:Bed", 
+            # [{"converters":
+            #    [{"target_datatype": "gff",
+            #      "tool_config": "bed_to_gff_converter.xml",
+            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}],
+            #   "display_in_upload": "true",
+            #   "dtype": "galaxy.datatypes.interval:Bed",
             #   "extension": "bed"}]
             if converters:
                 for converter_dict in converters:
@@ -1888,12 +1888,12 @@ def tool_dependency_is_orphan( type, name, version, tools ):
 
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """
-    Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 
+    Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates
     to an installed tool shed repository.  The original_dependency_dict is a single tool dependency definition, an example of which is::
 
-        {"name": "bwa", 
-         "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
-         "type": "package", 
+        {"name": "bwa",
+         "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ",
+         "type": "package",
          "version": "0.6.2"}
 
     The new_dependencies_dict is the dictionary generated by the metadata_util.generate_tool_dependency_metadata method.

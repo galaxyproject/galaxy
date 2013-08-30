@@ -10,9 +10,9 @@ DEFAULT_DATASET_NAME = 'dataset'
 
 class DisplayApplicationParameter( object ):
     """ Abstract Class for Display Application Parameters """
-    
+
     type = None
-    
+
     @classmethod
     def from_elem( cls, elem, link ):
         param_type = elem.get( 'type', None )
@@ -42,9 +42,9 @@ class DisplayApplicationParameter( object ):
 
 class DisplayApplicationDataParameter( DisplayApplicationParameter ):
     """ Parameter that returns a file_name containing the requested content """
-    
+
     type = 'data'
-    
+
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
         self.extensions = elem.get( 'format', None )
@@ -113,7 +113,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
         return False
     def ready( self, other_values ):
         value = self._get_dataset_like_object( other_values )
-        if value: 
+        if value:
             if value.state == value.states.OK:
                 return True
             elif value.state == value.states.ERROR:
@@ -122,9 +122,9 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
 
 class DisplayApplicationTemplateParameter( DisplayApplicationParameter ):
     """ Parameter that returns a string containing the requested content """
-    
+
     type = 'template'
-    
+
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
         self.text = elem.text or ''
@@ -154,7 +154,7 @@ class DisplayParameterValueWrapper( object ):
         if self.parameter.guess_mime_type:
             mime, encoding = mimetypes.guess_type( self._url )
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None ) 
+                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
             if mime:
                 return mime
         return 'text/plain'
@@ -193,7 +193,7 @@ class DisplayDataValueWrapper( DisplayParameterValueWrapper ):
         if self.parameter.guess_mime_type:
             mime, encoding = mimetypes.guess_type( self._url )
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None ) 
+                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
             if mime:
                 return mime
         if hasattr( self.value, 'get_mime' ):

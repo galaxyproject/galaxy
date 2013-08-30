@@ -89,7 +89,7 @@ class MetadataType( JSONType ):
 class UUIDType(TypeDecorator):
     """
     Platform-independent UUID type.
-    
+
     Based on http://docs.sqlalchemy.org/en/rel_0_8/core/types.html#backend-agnostic-guid-type
     Changed to remove sqlalchemy 0.8 specific code
 

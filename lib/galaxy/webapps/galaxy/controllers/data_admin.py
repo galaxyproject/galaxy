@@ -19,8 +19,8 @@ except:
 import logging
 log = logging.getLogger( __name__ )
 
-class DataAdmin( BaseUIController ): 
-    jobstyles = dict( 
+class DataAdmin( BaseUIController ):
+    jobstyles = dict(
                      done='panel-done-message',
                      waiting='state-color-waiting',
                      running='state-color-running',
@@ -30,7 +30,7 @@ class DataAdmin( BaseUIController ):
                      error='panel-error-message',
                      queued='state-color-waiting'
                     )
-    
+
     @web.expose
     @web.require_admin
     def manage_data( self, trans, **kwd ):
@@ -74,7 +74,7 @@ class DataAdmin( BaseUIController ):
             jobgrid.append( dict( jobtype=jobtype, indexers=indexers, rowclass=state, deferred=job.deferred.id, state=state, intname=job.deferred.params[ 'intname' ], dbkey=job.deferred.params[ 'dbkey' ] ) )
         styles = dict( Generate=self.jobstyles['new'], Generated=self.jobstyles['ok'], Disabled=self.jobstyles['error'] )
         return trans.fill_template( '/admin/data_admin/local_data.mako', jobgrid=jobgrid, indextable=indextable, labels=labels, dbkeys=dbkeys, styles=styles, indexfuncs=indexfuncs )
-    
+
     @web.expose
     @web.require_admin
     def add_genome( self, trans, **kwd ):
@@ -84,7 +84,7 @@ class DataAdmin( BaseUIController ):
         ensemblkeys = trans.ensembl_builds
         ncbikeys = trans.ncbi_builds
         return trans.fill_template( '/admin/data_admin/data_form.mako', dbkeys=dbkeys, ensembls=ensemblkeys, ncbi=ncbikeys )
-        
+
     @web.expose
     @web.require_admin
     def genome_search( self, trans, **kwd ):
@@ -114,7 +114,7 @@ class DataAdmin( BaseUIController ):
         intname = params.get( 'longname', None )
         indexjob = trans.app.job_manager.deferred_job_queue.plugins['GenomeIndexPlugin'].create_job( trans, path, indexes, dbkey, intname )
         return indexjob
-        
+
     @web.expose
     @web.require_admin
     def download_build( self, trans, **kwd ):
@@ -149,21 +149,21 @@ class DataAdmin( BaseUIController ):
         return trans.response.send_redirect( web.url_for( controller='data_admin',
                                                           action='monitor_status',
                                                           job=jobid ) )
-        
+
     @web.expose
     @web.require_admin
     def monitor_status( self, trans, **kwd ):
         params = util.Params( kwd )
         jobid = params.get( 'job', '' )
         deferred = trans.app.model.context.current.query( model.DeferredJob ).filter_by( id=jobid ).first()
-        if deferred is None: 
+        if deferred is None:
             return trans.fill_template( '/admin/data_admin/generic_error.mako', message='Invalid genome downloader job specified.' )
         gname = deferred.params[ 'intname' ]
         indexers = ', '.join( deferred.params[ 'indexes' ] )
         jobs = self._get_jobs( deferred, trans )
         jsonjobs = simplejson.dumps( jobs )
         return trans.fill_template( '/admin/data_admin/download_status.mako', name=gname, indexers=indexers, mainjob=jobid, jobs=jobs, jsonjobs=jsonjobs )
-        
+
     @web.expose
     @web.require_admin
     def get_jobs( self, trans, **kwd ):
@@ -174,7 +174,7 @@ class DataAdmin( BaseUIController ):
         job = sa_session.query( model.DeferredJob ).filter_by( id=jobid ).first()
         jobs = self._get_jobs( job, trans )
         return trans.fill_template( '/admin/data_admin/ajax_status.mako', json=simplejson.dumps( jobs ) )
-        
+
     def _get_job( self, jobid, jobtype, trans ):
         sa = trans.app.model.context.current
         if jobtype == 'liftover':
@@ -191,7 +191,7 @@ class DataAdmin( BaseUIController ):
             job = sa.query( model.Job ).filter_by( id=jobid.job_id ).first()
             joblabel = 'Index Genome (%s)' % jobid.indexer
         return dict( status=job.state, jobid=job.id, style=self.jobstyles[job.state], type=jobtype, label=joblabel )
-        
+
     def _get_jobs( self, deferredjob, trans ):
         jobs = []
         idxjobs = []
@@ -210,7 +210,7 @@ class DataAdmin( BaseUIController ):
         return jobs
 
 def build_param_dict( params, trans ):
-    
+
     source = params.get('source', '')
     longname = params.get('longname', None)
     if not isinstance( params.get( 'indexers', None ), list ):
@@ -226,7 +226,7 @@ def build_param_dict( params, trans ):
     dbkey = params.get( 'dbkey', None )
     dbkeys = dict()
     protocol = 'http'
-    
+
     if source == 'NCBI':
         build = params.get('ncbi_name', '')
         dbkey = build.split( ': ' )[0]
@@ -242,7 +242,7 @@ def build_param_dict( params, trans ):
             if dbkey == build[0]:
                 dbkey = build[0]
                 longname = build[1]
-                break       
+                break
         if dbkey == '?':
             return dict( status='error', message='An invalid build was specified.' )
         ftp = ftplib.FTP('hgdownload.cse.ucsc.edu')
@@ -281,7 +281,7 @@ def build_param_dict( params, trans ):
             message = 'The genome %s was not found on the UCSC server.' % dbkey
             status = 'error'
             return dict( status=status, message=message )
-            
+
     elif source == 'Ensembl':
         dbkey = params.get( 'ensembl_dbkey', None )
         if dbkey == '?':
@@ -294,7 +294,7 @@ def build_param_dict( params, trans ):
                 longname = build[ 'name' ].replace('_', ' ')
                 break
         url = 'ftp://ftp.ensembl.org/pub/release-%s/fasta/%s/dna/%s.%s.%s.dna.toplevel.fa.gz' % ( release, pathname.lower(), pathname, dbkey, release )
-        
+
     params = dict( status='ok', dbkey=dbkey, datatype='fasta', url=url, user=trans.user.id, liftover=newlift, longname=longname, indexers=indexers )
 
     return params

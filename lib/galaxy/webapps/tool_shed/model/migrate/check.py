@@ -26,12 +26,12 @@ def create_or_verify_database( url, engine_options={} ):
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
     user to do it using the management script so they can create backups).
-    
+
     1) Empty database --> initialize with latest version and return
     2) Database older than migration support --> fail and require manual update
     3) Database at state where migrate support introduced --> add version control information but make no changes (might still require manual update)
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
-    
+
     """
     dialect = ( url.split( ':', 1 ) )[0]
     try:
@@ -84,7 +84,7 @@ def create_or_verify_database( url, engine_options={} ):
         raise Exception( exception_msg )
     else:
         log.info( "At database version %d" % db_schema.version )
-        
+
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
     changeset = schema.changeset( None )

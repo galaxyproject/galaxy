@@ -186,6 +186,6 @@ class UniverseApplication( object ):
     def configure_fluent_log( self ):
         if self.config.fluent_log:
             from galaxy.util.log.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port ) 
+            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port )
         else:
             self.trace_logger = None

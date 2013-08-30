@@ -273,11 +273,11 @@ class Registry( object ):
             self.to_xml_file()
         # Default values.
         if not self.datatypes_by_extension:
-            self.datatypes_by_extension = { 
+            self.datatypes_by_extension = {
                 'ab1'         : binary.Ab1(),
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
-                'bed'         : interval.Bed(), 
+                'bed'         : interval.Bed(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
@@ -289,7 +289,7 @@ class Registry( object ):
                 'gff'         : interval.Gff(),
                 'gff3'        : interval.Gff3(),
                 'genetrack'   : tracks.GeneTrack(),
-                'interval'    : interval.Interval(), 
+                'interval'    : interval.Interval(),
                 'laj'         : images.Laj(),
                 'lav'         : sequence.Lav(),
                 'maf'         : sequence.Maf(),
@@ -297,7 +297,7 @@ class Registry( object ):
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
-                'sam'         : tabular.Sam(), 
+                'sam'         : tabular.Sam(),
                 'scf'         : binary.Scf(),
                 'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
@@ -306,11 +306,11 @@ class Registry( object ):
                 'wig'         : interval.Wiggle(),
                 'xml'         : xml.GenericXml(),
             }
-            self.mimetypes_by_extension = { 
+            self.mimetypes_by_extension = {
                 'ab1'         : 'application/octet-stream',
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
-                'bed'         : 'text/plain', 
+                'bed'         : 'text/plain',
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'eland'       : 'application/octet-stream',
@@ -320,7 +320,7 @@ class Registry( object ):
                 'gtf'         : 'text/plain',
                 'gff'         : 'text/plain',
                 'gff3'        : 'text/plain',
-                'interval'    : 'text/plain', 
+                'interval'    : 'text/plain',
                 'laj'         : 'text/plain',
                 'lav'         : 'text/plain',
                 'maf'         : 'text/plain',
@@ -359,7 +359,7 @@ class Registry( object ):
                 interval.Wiggle(),
                 images.Html(),
                 sequence.Axt(),
-                interval.Bed(), 
+                interval.Bed(),
                 interval.CustomTrack(),
                 interval.Gtf(),
                 interval.Gff(),
@@ -381,7 +381,7 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
-        
+
     def get_datatype_class_by_name( self, name ):
         """
         Return the datatype class where the datatype's `type` attribute
@@ -450,7 +450,7 @@ class Registry( object ):
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
         to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
         app's toolbox.
-        """   
+        """
         if installed_repository_dict:
             # Load converters defined by datatypes_conf.xml included in installed tool shed repository.
             converters = self.proprietary_converters
@@ -574,7 +574,7 @@ class Registry( object ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
-        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file 
+        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file
         tool_xml_text = """
             <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>

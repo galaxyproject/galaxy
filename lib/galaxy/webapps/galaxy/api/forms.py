@@ -10,7 +10,7 @@ from elementtree.ElementTree import XML
 log = logging.getLogger( __name__ )
 
 class FormDefinitionAPIController( BaseAPIController ):
-    
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """

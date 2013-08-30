@@ -100,7 +100,7 @@ class UploadController( BaseUIController ):
                     if isempty:
                         tar = None
                         istar = False
-                    else:                
+                    else:
                         # Determine what we have - a single file or an archive
                         try:
                             if ( isgzip or isbz2 ) and uncompress_file:

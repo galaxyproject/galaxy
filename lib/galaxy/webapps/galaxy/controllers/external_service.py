@@ -32,7 +32,7 @@ class ExternalServiceGrid( grids.Grid ):
     use_paging = True
     default_filter = dict( deleted="False" )
     columns = [
-        NameColumn( "Name", 
+        NameColumn( "Name",
                     key="name",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view", id=item.id ) ) ),
                     attach_popup=True,
@@ -41,23 +41,23 @@ class ExternalServiceGrid( grids.Grid ):
                            key='description',
                            filterable="advanced" ),
         ExternalServiceTypeColumn( "External Service Type" ),
-        grids.GridColumn( "Last Updated", 
-                          key="update_time", 
+        grids.GridColumn( "Last Updated",
+                          key="update_time",
                           format=time_ago ),
-        grids.DeletedColumn( "Deleted", 
-                             key="deleted", 
-                             visible=False, 
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
                              filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),
     ]
     global_actions = [
         grids.GridAction( "Reload external service types", dict( controller='external_service', action='reload_external_service_types' ) ),
@@ -131,7 +131,7 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
         except:
             return invalid_id_redirect( trans, 'external_service', external_service_id, 'external_service', action='browse_external_services' )
         external_service_type = self.get_external_service_type( trans, external_service.external_service_type_id )
-        return trans.fill_template( '/admin/external_service/view_external_service.mako', 
+        return trans.fill_template( '/admin/external_service/view_external_service.mako',
                                     external_service=external_service,
                                     external_service_type=external_service_type )
     @web.expose
@@ -271,9 +271,9 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
         if params.get( 'reload_external_service_type_button', False ):
             new_external_service_type = trans.app.external_service_types.reload( external_service_type_id )
             status = 'done'
-            message = 'Reloaded external service type: %s' % new_external_service_type.name  
-        external_service_type_select_field = self.__build_external_service_type_select_field( trans, 
-                                                                                external_service_type_id, 
+            message = 'Reloaded external service type: %s' % new_external_service_type.name
+        external_service_type_select_field = self.__build_external_service_type_select_field( trans,
+                                                                                external_service_type_id,
                                                                                 refresh_on_change=False,
                                                                                 visible_external_service_types_only=False )
         if not trans.app.external_service_types.visible_external_service_types:
@@ -283,7 +283,7 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
                                                               action='browse_external_services',
                                                               message=message,
                                                               status=status ) )
-        return trans.fill_template( '/admin/external_service/reload_external_service_types.mako', 
+        return trans.fill_template( '/admin/external_service/reload_external_service_types.mako',
                                     external_service_type_select_field=external_service_type_select_field,
                                     message=message,
                                     status=status )
@@ -315,13 +315,13 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
             else:
                 seq_type = 'none'
         widgets = [ dict( label='Name',
-                          widget=TextField( 'external_service_name', 40, name ), 
+                          widget=TextField( 'external_service_name', 40, name ),
                           helptext='' ),
                     dict( label='Description',
-                          widget=TextField( 'external_service_description', 40, description ), 
+                          widget=TextField( 'external_service_description', 40, description ),
                           helptext='' ),
                     dict( label='Version',
-                          widget=TextField( 'external_service_version', 40, version ), 
+                          widget=TextField( 'external_service_version', 40, version ),
                           helptext='' ) ]
         # Do not show the external_service_type selectfield when editing a external_service
         if not external_service:
@@ -335,10 +335,10 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
             objs_list = [ external_service_types[ seq_type_id ] for seq_type_id in trans.app.external_service_types.visible_external_service_types ]
         else:
             objs_list = external_service_types.values()
-        refresh_on_change_values = [ 'none' ] 
+        refresh_on_change_values = [ 'none' ]
         refresh_on_change_values.extend( [ trans.security.encode_id( obj.id ) for obj in objs_list] )
-        select_external_service_type = SelectField( 'external_service_type_id', 
-                                                     refresh_on_change=refresh_on_change, 
+        select_external_service_type = SelectField( 'external_service_type_id',
+                                                     refresh_on_change=refresh_on_change,
                                                      refresh_on_change_values=refresh_on_change_values )
         if selected_value == 'none':
             select_external_service_type.add_option( 'Select one', 'none', selected=True )

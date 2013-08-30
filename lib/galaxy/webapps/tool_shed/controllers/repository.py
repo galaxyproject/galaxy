@@ -832,7 +832,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             update = 'true'
             no_update = 'false'
         elif galaxy_url:
-            # Start building up the url to redirect back to the calling Galaxy instance.            
+            # Start building up the url to redirect back to the calling Galaxy instance.
             url = suc.url_join( galaxy_url,
                                 'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                                 ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
@@ -846,7 +846,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Return the same value for changeset_revision and latest_changeset_revision.
             url += latest_changeset_revision
         else:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                      trans.security.encode_id( repository.id ),
                                                                                      changeset_revision )
             if repository_metadata:
@@ -993,7 +993,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.require_login( "deprecate repository" )
     def deprecate( self, trans, **kwd ):
         """Mark a repository in the tool shed as deprecated or not deprecated."""
-        # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset revisions that may be associated with the 
+        # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset revisions that may be associated with the
         # repository.  Revisions are not marked as not downlaodable because those that have installed the repository must be allowed to get updates.
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
@@ -1006,7 +1006,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if mark_deprecated:
             message = 'The repository <b>%s</b> has been marked as deprecated.' % repository.name
         else:
-            message = 'The repository <b>%s</b> has been marked as not deprecated.' % repository.name        
+            message = 'The repository <b>%s</b> has been marked as not deprecated.' % repository.name
         trans.response.send_redirect( web.url_for( controller='repository',
                                                    action='browse_repositories',
                                                    operation='repositories_i_own',
@@ -1373,7 +1373,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
         includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
@@ -1536,15 +1536,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
             # that behavior.
-            functional_test_results.append( dict( title=title, 
-                                                  guid=repository_citable_url, 
-                                                  link=repository_citable_url, 
-                                                  description='\n'.join( description_lines ), 
+            functional_test_results.append( dict( title=title,
+                                                  guid=repository_citable_url,
+                                                  link=repository_citable_url,
+                                                  description='\n'.join( description_lines ),
                                                   pubdate=time_tested ) )
         trans.response.set_content_type( 'application/rss+xml' )
-        return trans.fill_template( '/rss.mako', 
-                                    title='Tool functional test results', 
-                                    link=tool_shed_url, 
+        return trans.fill_template( '/rss.mako',
+                                    title='Tool functional test results',
+                                    link=tool_shed_url,
                                     description='Functional test results for repositories owned by %s.' % user.username,
                                     pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
                                     items=functional_test_results )
@@ -1558,7 +1558,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.json
     def get_readme_files( self, trans, **kwd ):
         """
-        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision 
+        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision
         includes one or more readme files, return them in a dictionary.
         """
         repository_name = kwd[ 'name' ]
@@ -1612,7 +1612,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
-            repository_id, changeset_revision = tup            
+            repository_id, changeset_revision = tup
             repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, cur_has_repository_dependencies = \
                 repository_util.get_repo_info_dict( trans, repository_id, changeset_revision )
             if cur_has_repository_dependencies and not has_repository_dependencies:
@@ -2354,7 +2354,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
-        return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     avg_rating=avg_rating,
@@ -2445,7 +2445,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                     kwd[ 'message' ] = message
-                    
+
                 else:
                     message += 'The selected files were deleted from the repository.  '
                     kwd[ 'message' ] = message
@@ -2707,7 +2707,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        return trans.fill_template( '/webapps/tool_shed/repository/view_changelog.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/view_changelog.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     changesets=changesets,
@@ -2754,7 +2754,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             next = "%s:%s" % ( ctx_child_rev, ctx_child )
         else:
             next = None
-        return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     prev=prev,

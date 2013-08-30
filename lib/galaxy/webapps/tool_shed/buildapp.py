@@ -29,7 +29,7 @@ class CommunityWebApplication( galaxy.web.framework.WebApplication ):
 
 def add_ui_controllers( webapp, app ):
     """
-    Search for controllers in the 'galaxy.webapps.controllers' module and add 
+    Search for controllers in the 'galaxy.webapps.controllers' module and add
     them to the webapp.
     """
     from galaxy.web.base.controller import BaseUIController
@@ -125,7 +125,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
-    # The recursive middleware allows for including requests in other 
+    # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
@@ -177,7 +177,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = hg.Hg( app, conf )
     log.debug( "Enabling hg middleware" )
     return app
-    
+
 def wrap_in_static( app, global_conf, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -199,7 +199,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
     # URL mapper becomes the root webapp
     return urlmap
-    
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error

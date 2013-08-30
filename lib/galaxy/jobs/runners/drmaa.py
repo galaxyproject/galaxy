@@ -109,7 +109,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
-        
+
         # get configured job destination
         job_destination = job_wrapper.job_destination
 
@@ -182,7 +182,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         ajs.job_id = external_job_id
         ajs.old_state = 'new'
         ajs.job_destination = job_destination
-        
+
         # delete the job template
         self.ds.deleteJobTemplate( jt )
 
@@ -234,7 +234,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             new_watched.append( ajs )
         # Replace the watch list with the updated version
         self.watched = new_watched
-        
+
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
         try:
@@ -320,7 +320,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             raise RuntimeError("External_runjob failed (exit code %s)\nChild process reported error:\n%s" % (str(exitcode), stderrdata))
         if not stdoutdata.strip():
             raise RuntimeError("External_runjob did return the job id: %s" % (stdoutdata))
-        
+
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
         jobId = stdoutdata

@@ -61,7 +61,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                                                                                                        latest_tool_migration_script_number )
             else:
                 # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
-                # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
+                # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                 # the database.
                 tool_shed_accessible = True
                 missing_tool_configs_dict = odict()

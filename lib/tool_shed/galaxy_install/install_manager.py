@@ -71,7 +71,7 @@ class InstallManager( object ):
                                                                                                            latest_migration_script_number )
                 else:
                     # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
-                    # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
+                    # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                     # the database.
                     tool_shed_accessible = True
                     missing_tool_configs_dict = odict()
@@ -249,7 +249,7 @@ class InstallManager( object ):
                         found = True
                         break
             if found:
-                break      
+                break
         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
         tool = self.toolbox.load_tool( full_path )
         return suc.generate_tool_guid( repository_clone_url, tool )

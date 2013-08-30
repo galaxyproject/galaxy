@@ -91,12 +91,12 @@ class RequestsAPIController( BaseAPIController ):
             trans.response.status = 400
             return "Invalid request id ( %s ) specified." % str( request_id )
         # check update type
-        if update_type == 'request_state': 
+        if update_type == 'request_state':
             return self.__update_request_state( trans, encoded_request_id=id )
 
     def __update_request_state( self, trans, encoded_request_id ):
         requests_common_cntrller = trans.webapp.controllers['requests_common']
-        status, output = requests_common_cntrller.update_request_state( trans, 
-                                                                        cntrller='api', 
+        status, output = requests_common_cntrller.update_request_state( trans,
+                                                                        cntrller='api',
                                                                         request_id=encoded_request_id )
         return status, output

@@ -295,7 +295,7 @@ def zip_extraction_directory( file_path, file_name ):
 
 def zipfile_ok( path_to_archive ):
     """
-    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 
+    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction,
     because ZipFile.extractall() has some potential security holes.  See python zipfile documentation for more details.
     """
     basename = os.path.realpath( os.path.dirname( path_to_archive ) )

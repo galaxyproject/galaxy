@@ -450,7 +450,7 @@ class ToolBox( object, DictifiableMixin ):
                     tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
                 break
         return tool_version_select_field, tools, tool
-    
+
     def build_tool_version_select_field( self, tools, tool_id, set_selected ):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
@@ -466,7 +466,7 @@ class ToolBox( object, DictifiableMixin ):
             else:
                 select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
         return select_field
-    
+
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
@@ -659,7 +659,7 @@ class ToolBox( object, DictifiableMixin ):
             message += "<b>version:</b> %s" % old_tool.version
             status = 'done'
         return message, status
-    
+
     def remove_tool_by_id( self, tool_id ):
         """
         Attempt to remove the tool identified by 'tool_id'.
@@ -688,7 +688,7 @@ class ToolBox( object, DictifiableMixin ):
             message += "<b>version:</b> %s" % tool.version
             status = 'done'
         return message, status
-    
+
     def load_workflow( self, workflow_id ):
         """
         Return an instance of 'Workflow' identified by `id`,
@@ -697,7 +697,7 @@ class ToolBox( object, DictifiableMixin ):
         id = self.app.security.decode_id( workflow_id )
         stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
-    
+
     def init_dependency_manager( self ):
         if self.app.config.use_tool_dependencies:
             self.dependency_manager = DependencyManager( [ self.app.config.tool_dependency_dir ] )
@@ -1566,7 +1566,7 @@ class Tool( object, DictifiableMixin ):
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" % 
+                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" %
                                ( self.id, err_level ) )
         except Exception:
             log.error( "Exception in parse_error_level "
@@ -1823,7 +1823,7 @@ class Tool( object, DictifiableMixin ):
             version = requirement_elem.get( "version", None )
             requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
-    
+
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
             repository_id = self.app.security.decode_id( self.repository_id )
@@ -1833,7 +1833,7 @@ class Tool( object, DictifiableMixin ):
                 self.repository_name = tool_shed_repository.name
                 self.repository_owner = tool_shed_repository.owner
                 self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-    
+
     def check_workflow_compatible( self, root ):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -2967,7 +2967,7 @@ class Tool( object, DictifiableMixin ):
 
         # Basic information
         tool_dict = super( Tool, self ).dictify()
-        
+
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
@@ -3223,28 +3223,28 @@ for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, 
 
 class TracksterConfig:
     """ Trackster configuration encapsulation. """
-    
+
     def __init__( self, actions ):
         self.actions = actions
-    
+
     @staticmethod
     def parse( root ):
         actions = []
         for action_elt in root.findall( "action" ):
             actions.append( SetParamAction.parse( action_elt ) )
         return TracksterConfig( actions )
-        
+
 class SetParamAction:
     """ Set parameter action. """
-    
+
     def __init__( self, name, output_name ):
         self.name = name
         self.output_name = output_name
-        
+
     @staticmethod
     def parse( elt ):
         """ Parse action from element. """
-        return SetParamAction( elt.get( "name" ), elt.get( "output_name" ) )    
+        return SetParamAction( elt.get( "name" ), elt.get( "output_name" ) )
 
 class BadValue( object ):
     def __init__( self, value ):
@@ -3305,7 +3305,7 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
         try:
             return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
         except:
-            #Most likely None, which lacks __module__. 
+            #Most likely None, which lacks __module__.
             return str( self.obj )
     def __getattr__( self, key ):
         return getattr( self.obj, key )

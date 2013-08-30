@@ -36,7 +36,7 @@ def bundle_to_json( fh ):
     hg_unbundle10_obj = readbundle( fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.to_json_string( groups, indent=4 )
-    
+
 def check_archive( repository, archive ):
     for member in archive.getmembers():
         # Allow regular files and directories only
@@ -134,7 +134,7 @@ def handle_bz2( repository, uploaded_file_name ):
     shutil.move( uncompressed, uploaded_file_name )
 
 def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
-                              undesirable_dirs_removed, undesirable_files_removed ):    
+                              undesirable_dirs_removed, undesirable_files_removed ):
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( suc.get_configured_ui(), repo_dir )
     content_alert_str = ''
@@ -210,7 +210,7 @@ def handle_missing_repository_attribute( elem ):
         error_message += 'The tag is missing the required owner attribute.  '
     log.debug( error_message )
     return error_message
-    
+
 def handle_gzip( repository, uploaded_file_name ):
     fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
@@ -306,7 +306,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
     if tree is None:
         return False, None
-    root = tree.getroot()        
+    root = tree.getroot()
     if root.tag == 'tool_dependency':
         for root_index, root_elem in enumerate( root ):
             # <package name="eigen" version="2.0.17">

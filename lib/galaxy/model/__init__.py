@@ -780,11 +780,11 @@ class History( object, DictifiableMixin, UsesAnnotations ):
             history_name = unicode(history_name, 'utf-8')
         return history_name
 
-    def dictify( self, view='collection', value_mapper = None ): 
+    def dictify( self, view='collection', value_mapper = None ):
 
         # Get basic value.
         rval = super( History, self ).dictify( view=view, value_mapper=value_mapper )
-        
+
         # Add tags.
         tags_str_list = []
         for tag in self.tags:
@@ -793,7 +793,7 @@ class History( object, DictifiableMixin, UsesAnnotations ):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval[ 'tags' ] = tags_str_list
-        
+
         return rval
 
     def set_from_dict( self, new_data ):
@@ -1918,7 +1918,7 @@ class LibraryFolder( object, DictifiableMixin ):
         f = self
         while f.parent:
             l_path.insert(0, f.name)
-            f = f.parent        
+            f = f.parent
         return l_path
     @property
     def parent_library( self ):

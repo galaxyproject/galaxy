@@ -64,7 +64,7 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                                 break
                         if required_repository is None:
                             # The required repository is not in the received list so look in the database.
-                            required_repository = suc.get_or_create_tool_shed_repository( trans, rd_toolshed, rd_name, rd_owner, rd_changeset_revision )                                                             
+                            required_repository = suc.get_or_create_tool_shed_repository( trans, rd_toolshed, rd_name, rd_owner, rd_changeset_revision )
                         # Ensure there is a repository_dependency relationship between dependent_repository and required_repository.
                         rrda = None
                         for rd in dependent_repository.repository_dependencies:
@@ -214,7 +214,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
                                                                                                     tool_panel_section=tool_panel_section,
                                                                                                     new_tool_panel_section=new_tool_panel_section )
-                            
+
                 else:
                     # We're installing a new tool shed repository that does not yet have a database record.
                     tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
@@ -266,7 +266,7 @@ def get_key_for_repository_changeset_revision( toolshed_base_url, repository, re
                                                                               repository_name=repository.name,
                                                                               repository_owner=repository.user.username,
                                                                               changeset_revision=repository_metadata.changeset_revision,
-                                                                              prior_installation_required=prior_installation_required )            
+                                                                              prior_installation_required=prior_installation_required )
     return key
 
 def get_prior_installation_required_for_key( toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):

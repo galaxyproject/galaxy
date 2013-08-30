@@ -100,7 +100,7 @@ def get_non_shed_tool_panel_configs( app ):
         # <toolbox tool_path="../shed_tools">
         tree, error_message = xml_util.parse_xml( config_filename )
         if tree is None:
-            continue 
+            continue
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
         if tool_path is None:

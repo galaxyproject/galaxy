@@ -585,14 +585,14 @@ class DefaultJobDispatcher( object ):
         Stop the given job. The input variable job may be either a Job or a Task.
         """
         # The Job and Task classes have been modified so that their accessors
-        # will return the appropriate value. 
+        # will return the appropriate value.
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
         if ( isinstance( job, model.Job ) ):
             log.debug( "Stopping job %d:", job.get_id() )
         elif( isinstance( job, model.Task ) ):
-            log.debug( "Stopping job %d, task %d" 
+            log.debug( "Stopping job %d, task %d"
                      % ( job.get_job().get_id(), job.get_id() ) )
         else:
             log.debug( "Unknown job to stop" )
@@ -605,7 +605,7 @@ class DefaultJobDispatcher( object ):
             if ( isinstance( job, model.Job ) ):
                 log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
             elif ( isinstance( job, model.Task ) ):
-                log.debug( "Stopping job %d, task %d in %s runner" 
+                log.debug( "Stopping job %d, task %d in %s runner"
                          % ( job.get_job().get_id(), job.get_id(), runner_name ) )
             try:
                 self.job_runners[runner_name].stop_job( job )

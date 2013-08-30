@@ -35,8 +35,8 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                            repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
     """
     Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
-    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  
-    
+    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.
+
     This method is called from Galaxy under three scenarios:
     1. During the tool shed repository installation process via the tool shed's get_repository_information() method.  In this case both the received
     repository and repository_metadata will be objects., but tool_dependencies and repository_dependencies will be None
@@ -166,7 +166,7 @@ def get_repair_dict( trans, repository ):
                 # The installed_repository must be in the uninstalled state.  The structure of tool_panel_section_dict is:
                 # {<tool guid> : [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
                 # Here is an example:
-                # {"localhost:9009/repos/test/filter/Filter1/1.1.0": 
+                # {"localhost:9009/repos/test/filter/Filter1/1.1.0":
                 #    [{"id": "filter_and_sort", "name": "Filter and Sort", "tool_config": "filtering.xml", "version": ""}]}
                 # Currently all tools contained within an installed tool shed repository must be loaded into the same section in the tool panel, so we can
                 # get the section id of the first guid in the tool_panel_section_dict.  In the future, we'll have to handle different sections per guid.
@@ -186,7 +186,7 @@ def get_repair_dict( trans, repository ):
             else:
                 # The installed_repository must be in the installed state, so we can skip determining if it has tools that are displayed in a tool panel section
                 # since no changes will be made to it.
-                tool_panel_section_keys.append( None ) 
+                tool_panel_section_keys.append( None )
         else:
             tool_dependencies = None
             # The tools will be loaded outside of any sections in the tool panel.
@@ -292,7 +292,7 @@ def get_tool_shed_repository_ids( as_string=False, **kwd ):
     if as_string:
         ''
     return []
-            
+
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     changeset_revision_dict = {}
@@ -502,7 +502,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
         try:
             tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
         except KeyError:
-            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.', 
+            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.',
                        str( tool_panel_section_key ) )
             tool_section = None
     else:
@@ -591,7 +591,7 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
     dependencies and tool dependencies.  The entries for missing dependencies are all None since they have previously been merged into the installed
     dependencies.  This method will merge the dependencies entries into a single container and return it for display.
     """
-    new_containers_dict = dict( readme_files=None, 
+    new_containers_dict = dict( readme_files=None,
                                 datatypes=None,
                                 missing_repository_dependencies=None,
                                 repository_dependencies=None,

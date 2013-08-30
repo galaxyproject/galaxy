@@ -109,7 +109,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                        visible=False,
                        filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,

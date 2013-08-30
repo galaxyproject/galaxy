@@ -270,7 +270,7 @@ class WebApplication( base.WebApplication ):
 
     def add_ui_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseUIController
@@ -294,7 +294,7 @@ class WebApplication( base.WebApplication ):
 
     def add_api_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseAPIController
@@ -842,10 +842,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if not self.galaxy_session.user:
             return self.new_history()
 
-        # Look for default history that (a) has default name + is not deleted and 
-        # (b) has no datasets. If suitable history found, use it; otherwise, create 
+        # Look for default history that (a) has default name + is not deleted and
+        # (b) has no datasets. If suitable history found, use it; otherwise, create
         # new history.
-        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by( 
+        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by(
                                 user=self.galaxy_session.user,
                                 name=self.app.model.History.default_name,
                                 deleted=False )
@@ -855,7 +855,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 # Found suitable default history.
                 default_history = history
                 break
-            
+
         # Set or create hsitory.
         if default_history:
             history = default_history

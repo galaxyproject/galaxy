@@ -47,7 +47,7 @@ class UserOpenIDGrid( grids.Grid ):
 class User( BaseUIController, UsesFormDefinitionsMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
-    
+
     @web.expose
     def index( self, trans, cntrller, **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
@@ -326,7 +326,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                                        use_panels=use_panels,
                                                                        redirect=redirect,
                                                                        message=message,
-                                                                       status='info' ) ) 
+                                                                       status='info' ) )
                 else:
                     message = error
                     status = 'error'
@@ -678,8 +678,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if user_type_form_definition:
             if user:
                 if user.values:
-                    widgets = user_type_form_definition.get_widgets( user=user, 
-                                                                     contents=user.values.content, 
+                    widgets = user_type_form_definition.get_widgets( user=user,
+                                                                     contents=user.values.content,
                                                                      **kwd )
                 else:
                     widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
@@ -811,7 +811,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
         elif user and params.get( 'change_password_button', False ):
-            # Editing password.  Do not sanitize passwords, so get from kwd 
+            # Editing password.  Do not sanitize passwords, so get from kwd
             # and not params (which were sanitized).
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
@@ -846,7 +846,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in [ 'none' ]:
-                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )   
+                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
@@ -943,7 +943,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             message = validate_publicname( trans, username )
         if not message:
             if trans.webapp.name == 'galaxy':
-                if self.get_all_forms( trans, 
+                if self.get_all_forms( trans,
                                        filter=dict( deleted=False ),
                                        form_type=trans.app.model.FormDefinition.types.USER_INFO ):
                     user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -975,30 +975,30 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         status=status )
         else:
             # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permitted actions." )   
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
     @web.expose
     @web.require_login( "to get most recently used tool" )
     @web.json_pretty
     def get_most_recently_used_tool_async( self, trans ):
         """ Returns information about the most recently used tool. """
-        
+
         # Get most recently used tool.
         query = trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
                                         filter( self.app.model.History.user==trans.user ). \
                                         order_by( self.app.model.Job.create_time.desc() ).limit(1)
         tool_id = query[0][0] # Get first element in first row of query.
         tool = self.get_toolbox().get_tool( tool_id )
-        
+
         # Return tool info.
-        tool_info = { 
-            "id" : tool.id, 
+        tool_info = {
+            "id" : tool.id,
             "link" : url_for( controller='tool_runner', tool_id=tool.id ),
             "target" : tool.target,
             "name" : tool.name, ## TODO: translate this using _()
             "minsizehint" : tool.uihints.get( 'minwidth', -1 ),
             "description" : tool.description
         }
-        return tool_info          
+        return tool_info
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
@@ -1012,7 +1012,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 addresses = [address for address in trans.user.addresses if address.deleted]
             else:
                 addresses = [address for address in trans.user.addresses if not address.deleted]
-            return trans.fill_template( 'user/address.mako', 
+            return trans.fill_template( 'user/address.mako',
                                         addresses=addresses,
                                         show_filter=show_filter,
                                         message=message,
@@ -1072,11 +1072,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 user_address = trans.model.UserAddress( user=user,
                                                         desc=short_desc,
                                                         name=name,
-                                                        institution=institution, 
+                                                        institution=institution,
                                                         address=address,
                                                         city=city,
                                                         state=state,
-                                                        postal_code=postal_code, 
+                                                        postal_code=postal_code,
                                                         country=country,
                                                         phone=phone )
                 trans.sa_session.add( user_address )
@@ -1118,7 +1118,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         address_id = params.get( 'address_id', None )
         if not address_id:
             return trans.show_error_message( "No address id received for editing." )
-        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )     
+        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         if params.get( 'edit_address_button', False  ):
             short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
             name = util.restore_text( params.get( 'name', ''  ) )
@@ -1232,12 +1232,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         """ Log a user action asynchronously. If user is not logged in, do nothing. """
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
-    
+
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
         """ Handle custom builds. """
-        
+
         #
         # Process arguments and add/delete build.
         #
@@ -1262,18 +1262,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             # Add new custom build.
             name = kwds.get('name', '')
             key = kwds.get('key', '')
-            
+
             # Look for build's chrom info in len_file and len_text.
             len_file = kwds.get( 'len_file', None )
             if getattr( len_file, "file", None ): # Check if it's a FieldStorage object
                 len_text = len_file.file.read()
             else:
                 len_text = kwds.get( 'len_text', None )
-            
+
             if not len_text:
                 # Using FASTA from history.
                 dataset_id = kwds.get('dataset_id', '')
-                
+
             if not name or not key or not ( len_text or dataset_id ):
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
@@ -1317,18 +1317,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)
         trans.sa_session.flush()
-        
+
         #
         # Display custom builds page.
         #
-        
+
         # Add chrom/contig count to dbkeys dict.
         updated = False
         for key, attributes in dbkeys.items():
             if 'count' in attributes:
                 # Already have count, so do nothing.
                 continue
-                
+
             # Get len file.
             fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
@@ -1338,7 +1338,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if len_dataset.state == trans.app.model.Job.states.ERROR:
                 # Can't use len dataset.
                 continue
-                
+
             # Get chrom count file.
             chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
             if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
@@ -1349,12 +1349,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
                 attributes[ 'count' ] = chrom_count
                 updated = True
-        
+
         if updated:
             user.preferences['dbkeys'] = to_json_string(dbkeys)
             trans.sa_session.flush()
-            
-        
+
+
         # Potential genome data for custom builds is limited to fasta datasets in current history for now.
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                         .filter_by( history=trans.history, extension="fasta", deleted=False ) \
@@ -1367,7 +1367,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
                                     fasta_hdas=fasta_hdas,
-                                    use_panels=kwds.get( 'use_panels', False ) )          
+                                    use_panels=kwds.get( 'use_panels', False ) )
     @web.expose
     @web.require_login()
     def api_keys( self, trans, cntrller, **kwd ):

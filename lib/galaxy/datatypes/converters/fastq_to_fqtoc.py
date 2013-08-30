@@ -38,11 +38,11 @@ def main():
             chunk_end = in_file.tell()
             out_file.write('{"start":"%s","end":"%s","sequences":"%s"},' % (chunk_begin, chunk_end, sequences))
             chunk_begin = chunk_end
-        
+
     chunk_end = in_file.tell()
     out_file.write('{"start":"%s","end":"%s","sequences":"%s"}' % (chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
     out_file.write(']}\n')
-    
 
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     main()

@@ -84,9 +84,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
         :param name (required): the name of the Repository
@@ -279,12 +279,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install_repository_revisions
         Install one or more specified repository revisions from one or more specified tool sheds into Galaxy.  The received parameters
         must be ordered lists so that positional values in tool_shed_urls, names, owners and changeset_revisions are associated.
-        
+
         It's questionable whether this method is needed as the above method for installing a single repository can probably cover all
         desired scenarios.  We'll keep this one around just in case...
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
@@ -365,9 +365,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         POST /api/tool_shed_repositories/repair_repository_revision
         Repair a specified repository revision previously installed into Galaxy.
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository

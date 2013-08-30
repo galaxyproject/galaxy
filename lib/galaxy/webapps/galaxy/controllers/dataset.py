@@ -157,13 +157,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
-    
+
     def _can_access_dataset( self, trans, dataset_association, allow_admin=True, additional_roles=None ):
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
         return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( roles, dataset_association.dataset )
-    
+
     @web.expose
     def errors( self, trans, id ):
         try:
@@ -185,7 +185,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stdout = job.stdout
         except:
             stdout = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stdout 
+        return stdout
 
     @web.expose
     # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
@@ -197,7 +197,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stderr = job.stderr
         except:
             stderr = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stderr 
+        return stderr
 
     @web.expose
     def exit_code( self, trans, dataset_id=None, **kwargs ):
@@ -208,7 +208,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             exit_code = job.exit_code
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
-        return exit_code 
+        return exit_code
     @web.expose
     def report_error( self, trans, id, email='', message="", **kwd ):
         smtp_server = trans.app.config.smtp_server
@@ -549,7 +549,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     #
 
                     target_histories = [ trans.get_history() ]
-                    
+
                     # Reverse HDAs so that they appear in the history in the order they are provided.
                     hda_ids.reverse()
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
@@ -652,8 +652,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, dataset )
 
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, 
-                                                 truncated=truncated, user_item_rating = user_item_rating, 
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data,
+                                                 truncated=truncated, user_item_rating = user_item_rating,
                                                  ave_item_rating=ave_item_rating, num_ratings=num_ratings,
                                                  first_chunk=first_chunk )
         else:

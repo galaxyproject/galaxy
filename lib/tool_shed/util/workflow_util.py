@@ -47,9 +47,9 @@ class RepoInputDataModule( InputDataModule ):
 
 
 class RepoToolModule( ToolModule ):
-    
+
     type = "tool"
-    
+
     def __init__( self, trans, repository_id, changeset_revision, tools_metadata, tool_id ):
         self.trans = trans
         self.tools_metadata = tools_metadata
@@ -267,7 +267,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         if trans.webapp.name == 'tool_shed' and tool_unavailable:
             fill = "#EBBCB2"
         else:
-            fill = "#EBD9B2"    
+            fill = "#EBD9B2"
         boxes.append( svgfig.Rect( x - margin, y, x + width - margin, y + 30, fill=fill ).SVG() )
         box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * line_px + margin
         # Draw separator line.
@@ -351,7 +351,7 @@ def get_workflow_data_outputs( step, module, steps ):
             if not found:
                 # We're at the last step of the workflow.
                 data_outputs_dict[ 'name' ] = 'output'
-            data_outputs.append( data_outputs_dict )       
+            data_outputs.append( data_outputs_dict )
             return data_outputs
     return module.get_data_outputs()
 

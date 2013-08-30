@@ -7,7 +7,7 @@ the order should be:
 1st line: @title_of_seq
 2nd line: nucleotides
 3rd line: +title_of_qualityscore (might be skipped)
-4th line: quality scores 
+4th line: quality scores
 (in three forms: a. digits, b. ASCII codes, the first char as the coding base, c. ASCII codes without the first char.)
 
 Usage:
@@ -52,4 +52,4 @@ def __main__():
 
     outfile.close()
 
-if __name__ == "__main__": __main__() 
+if __name__ == "__main__": __main__()

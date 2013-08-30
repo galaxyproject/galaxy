@@ -30,7 +30,7 @@ class DependencyManager( object ):
             self.base_paths.append( os.path.abspath( base_path ) )
     def find_dep( self, name, version=None, type='package', installed_tool_dependencies=None ):
         """
-        Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a 
+        Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
         if version is None:

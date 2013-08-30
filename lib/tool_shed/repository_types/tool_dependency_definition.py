@@ -38,4 +38,3 @@ class ToolDependencyDefinition( TipOnly ):
                 if file_name not in self.valid_file_names:
                     return False
         return True
-        

@@ -376,12 +376,12 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
                              subclass='subclass' )
         folder.datatypes.append( datatype )
         for datatypes_dict in datatypes:
-            # {"converters": 
-            #    [{"target_datatype": "gff", 
-            #      "tool_config": "bed_to_gff_converter.xml", 
-            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}], 
-            # "display_in_upload": "true", 
-            # "dtype": "galaxy.datatypes.interval:Bed", 
+            # {"converters":
+            #    [{"target_datatype": "gff",
+            #      "tool_config": "bed_to_gff_converter.xml",
+            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}],
+            # "display_in_upload": "true",
+            # "dtype": "galaxy.datatypes.interval:Bed",
             # "extension": "bed"}
             # TODO: converters and display_app information is not currently rendered.  Should it be?
             # Handle defined converters, if any.
@@ -1112,15 +1112,15 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             tool_dependency_errors = installation_error_dicts.get( 'tool_dependencies', [] )
             if current_repository_errors or repository_dependency_errors or tool_dependency_errors:
                 folder_id += 1
-                installation_error_base_folder = Folder( id=folder_id, 
-                                                         key='installation_errors', 
-                                                         label='Installation errors', 
+                installation_error_base_folder = Folder( id=folder_id,
+                                                         key='installation_errors',
+                                                         label='Installation errors',
                                                          parent=test_results_folder )
                 if current_repository_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='current_repository_errors', 
-                                        label='This repository', 
+                    subfolder = Folder( id=folder_id,
+                                        key='current_repository_errors',
+                                        label='This repository',
                                         parent=installation_error_base_folder )
                     repository_error_id = 0
                     for repository_error_dict in current_repository_errors:
@@ -1135,9 +1135,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                     installation_error_base_folder.folders.append( subfolder )
                 if repository_dependency_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='repository_dependency_errors', 
-                                        label='Repository dependencies', 
+                    subfolder = Folder( id=folder_id,
+                                        key='repository_dependency_errors',
+                                        label='Repository dependencies',
                                         parent=installation_error_base_folder )
                     repository_error_id = 0
                     for repository_error_dict in repository_dependency_errors:
@@ -1152,9 +1152,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                     installation_error_base_folder.folders.append( subfolder )
                 if tool_dependency_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='tool_dependency_errors', 
-                                        label='Tool dependencies', 
+                    subfolder = Folder( id=folder_id,
+                                        key='tool_dependency_errors',
+                                        label='Tool dependencies',
                                         parent=installation_error_base_folder )
                     tool_dependency_error_id = 0
                     for tool_dependency_error_dict in tool_dependency_errors:
@@ -1421,4 +1421,3 @@ def prune_repository_dependencies( folder ):
     for sub_folder in folder.folders:
         return prune_repository_dependencies( sub_folder )
     return folder
-    

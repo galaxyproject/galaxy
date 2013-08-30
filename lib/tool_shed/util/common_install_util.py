@@ -88,7 +88,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
-        includes_tools = all_repo_info_dict.get( 'includes_tools', False )        
+        includes_tools = all_repo_info_dict.get( 'includes_tools', False )
         required_repo_info_dicts = all_repo_info_dict.get( 'all_repo_info_dicts', [] )
         # Display tool dependencies defined for each of the repository dependencies.
         if required_repo_info_dicts:
@@ -131,7 +131,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
-        includes_tools = all_repo_info_dict.get( 'includes_tools', False )        
+        includes_tools = all_repo_info_dict.get( 'includes_tools', False )
         required_repo_info_dicts = all_repo_info_dict.get( 'all_repo_info_dicts', [] )
         installed_rd = None
         missing_rd = None
@@ -188,7 +188,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
             if missing_rd_tups:
                 missing_repository_dependencies[ 'root_key' ] = root_key
                 missing_repository_dependencies[ root_key ] = missing_rd_tups
-                missing_repository_dependencies[ 'description' ] = description 
+                missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 
 def get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple ):
@@ -333,13 +333,13 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                             else:
                                 if v and not all_required_repo_info_dict[ k ]:
                                     all_required_repo_info_dict[ k ] = v
-                        if required_repo_info_dicts:                            
+                        if required_repo_info_dicts:
                             for required_repo_info_dict in required_repo_info_dicts:
                                 if required_repo_info_dict not in all_repo_info_dicts:
                                     all_repo_info_dicts.append( required_repo_info_dict )
                     all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
     return all_required_repo_info_dict
-                    
+
 def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation

@@ -70,7 +70,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         """
         Apply a new set of tags to an item; previous tags are deleted.
         """
-        # Apply tags.  
+        # Apply tags.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
         self.get_tag_handler( trans ).delete_item_tags( trans, item )
@@ -108,7 +108,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
             item_class = item.__class__
         item_tag_assoc_class = self.get_tag_handler( trans ).get_tag_assoc_class( item_class )
         # Build select statement.
-        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ] 
+        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ]
         from_obj = item_tag_assoc_class.table.join( item_class.table ).join( trans.app.model.Tag.table )
         where_clause = and_( trans.app.model.Tag.table.c.name.like( q + "%" ),
                              item_tag_assoc_class.table.c.user_id == user.id )
@@ -126,7 +126,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         ac_data = "#Header|Your Tags\n"
         for row in result_set:
             tag = self.get_tag_handler( trans ).get_tag_by_id( trans, row[0] )
-            # Exclude tags that are already applied to the item.    
+            # Exclude tags that are already applied to the item.
             if ( item is not None ) and ( self.get_tag_handler( trans ).item_has_tag( trans, trans.user, item, tag ) ):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
@@ -154,7 +154,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
             item_class = item.__class__
         item_tag_assoc_class = self.get_tag_handler( trans ).get_tag_assoc_class( item_class )
         # Build select statement.
-        cols_to_select = [ item_tag_assoc_class.table.c.value, func.count( '*' ) ] 
+        cols_to_select = [ item_tag_assoc_class.table.c.value, func.count( '*' ) ]
         from_obj = item_tag_assoc_class.table.join( item_class.table ).join( trans.app.model.Tag.table )
         where_clause = and_( item_tag_assoc_class.table.c.user_id == user.id,
                              trans.app.model.Tag.table.c.id == tag.id,

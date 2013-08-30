@@ -142,7 +142,7 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     if i is None:
         i = 0
     else:
-        i += 1        
+        i += 1
     if in_place:
         shutil.move( temp_name, fname )
         # Return number of lines in file.
@@ -327,7 +327,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         for hdr in headers:
             for char in hdr:
                 #old behavior had 'char' possibly having length > 1,
-                #need to determine when/if this occurs 
+                #need to determine when/if this occurs
                 is_binary = util.is_binary( char )
                 if is_binary:
                     break

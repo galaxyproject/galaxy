@@ -22,7 +22,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         """
         trans.response.status = 501
         return 'not implemented'
-        
+
     @web.expose_api
     def show( self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd ):
         """
@@ -40,7 +40,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             if data_type == 'state':
                 rval = self._dataset_state( trans, dataset )
             elif data_type == 'converted_datasets_state':
-                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ), 
+                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ),
                                                        is_true( kwd.get( 'retry', False ) ) )
             elif data_type == 'data':
                 rval = self._data( trans, dataset, **kwd )
@@ -61,7 +61,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
                 else:
                     rval = dataset.dictify()
-                
+
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
@@ -77,16 +77,16 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             msg = dataset.conversion_messages.DATA
 
         return msg
-        
+
     def _converted_datasets_state( self, trans, dataset, chrom=None, retry=False ):
         """
-        Init-like method that returns state of dataset's converted datasets. 
+        Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-            
+
         # Get datasources and check for messages (which indicate errors). Retry if flag is set.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
@@ -98,7 +98,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 return self._converted_datasets_state( trans, dataset, chrom )
             else:
                 return msg
-            
+
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider_registry = trans.app.data_provider_registry
@@ -112,7 +112,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
 
     def _search_features( self, trans, dataset, query ):
         """
-        Returns features, locations in dataset that match query. Format is a 
+        Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]
         """
         if dataset.can_convert_to( "fli" ):
@@ -121,9 +121,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 data_provider = FeatureLocationIndexDataProvider( converted_dataset=converted_dataset )
                 if data_provider:
                     return data_provider.get_data( query )
-        
+
         return []
-    
+
     def _data( self, trans, dataset, chrom, low, high, start_val=0, max_vals=None, **kwargs ):
         """
         Provides a block of data from a dataset.
@@ -131,19 +131,19 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         # Parameter check.
         if not chrom:
             return dataset.conversion_messages.NO_DATA
-        
+
         # Dataset check.
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-            
+
         # Get datasources and check for essages.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         return_message = self._get_highest_priority_msg( messages_list )
         if return_message:
             return return_message
-            
+
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
         data_provider_registry = trans.app.data_provider_registry
@@ -154,10 +154,10 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             return indexer.get_data( chrom, low, high, **kwargs )
 
-        # TODO: 
+        # TODO:
         # (1) add logic back in for no_detail
         # (2) handle scenario where mode is Squish/Pack but data requested is large, so reduced data needed to be returned.
-            
+
         # If mode is Auto, need to determine what type of data to return.
         if mode == "Auto":
             # Get stats from indexer.
@@ -170,25 +170,25 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     return { 'dataset_type': indexer.dataset_type, 'data': None }
                 else:
                     return stats
-            
-            # Stats provides features/base and resolution is bases/pixel, so 
+
+            # Stats provides features/base and resolution is bases/pixel, so
             # multiplying them yields features/pixel.
             features_per_pixel = stats[ 'data' ][ 'max' ] * float( kwargs[ 'resolution' ] )
 
-            # Use heuristic based on features/pixel and region size to determine whether to 
+            # Use heuristic based on features/pixel and region size to determine whether to
             # return coverage data. When zoomed out and region is large, features/pixel
-            # is determining factor. However, when sufficiently zoomed in and region is 
+            # is determining factor. However, when sufficiently zoomed in and region is
             # small, coverage data is no longer provided.
             if int( high ) - int( low ) > 50000 and features_per_pixel > 1000:
                 return indexer.get_data( chrom, low, high )
- 
+
         #
         # Provide individual data points.
         #
-        
+
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
-        
+
         # Allow max_vals top be data provider set if not passed
         if max_vals is None:
             max_vals = data_provider.get_default_max_vals()
@@ -199,16 +199,16 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
             if data_dict:
                 ref_seq = data_dict[ 'data' ]
-        
+
         # Get and return data from data_provider.
-        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), 
+        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
                                          ref_seq=ref_seq, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
     def _raw_data( self, trans, dataset, provider=None, **kwargs ):
         """
-        Uses original (raw) dataset to return data. This method is useful 
+        Uses original (raw) dataset to return data. This method is useful
         when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
@@ -216,7 +216,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-    
+
         registry = trans.app.data_provider_registry
 
         # allow the caller to specifiy which provider is used

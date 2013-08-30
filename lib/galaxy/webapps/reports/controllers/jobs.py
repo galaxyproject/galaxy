@@ -20,8 +20,8 @@ class SpecifiedDateListGrid( grids.Grid ):
             return '<div class="count-box state-color-%s">%s</div>' % ( job.state, job.state )
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'Unfinished':
-                return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                model.Job.table.c.state == model.Job.states.ERROR, 
+                return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK,
+                                                model.Job.table.c.state == model.Job.states.ERROR,
                                                 model.Job.table.c.state == model.Job.states.DELETED ) ) )
             return query
     class ToolColumn( grids.TextColumn ):
@@ -102,8 +102,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                            visible=False,
                            filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -198,12 +198,12 @@ class Jobs( BaseUIController ):
                            row.monitor_jobs,
                            row.total_jobs,
                            row.date.strftime( "%d" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako', 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    month=month, 
-                                    jobs=jobs, 
-                                    message=message ) 
+        return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    month=month,
+                                    jobs=jobs,
+                                    message=message )
     @web.expose
     def specified_month_in_error( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -219,7 +219,7 @@ class Jobs( BaseUIController ):
         q = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause = sa.and_( model.Job.table.c.state == 'error',
-                                              model.Job.table.c.create_time >= start_date, 
+                                              model.Job.table.c.create_time >= start_date,
                                               model.Job.table.c.create_time < end_date ),
                        from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
                        group_by = [ 'date' ],
@@ -230,11 +230,11 @@ class Jobs( BaseUIController ):
                            row.date,
                            row.total_jobs,
                            row.date.strftime( "%d" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako', 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    month=month, 
-                                    jobs=jobs, 
+        return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    month=month,
+                                    jobs=jobs,
                                     message=message )
     @web.expose
     def per_month_all( self, trans, **kwd ):
@@ -251,7 +251,7 @@ class Jobs( BaseUIController ):
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs - row.monitor_jobs,
-                           row.monitor_jobs, 
+                           row.monitor_jobs,
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
@@ -270,7 +270,7 @@ class Jobs( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
@@ -288,7 +288,7 @@ class Jobs( BaseUIController ):
                        group_by = [ 'user_email' ],
                        order_by = [ sa.desc( 'total_jobs' ), 'user_email' ] )
         for row in q.execute():
-            jobs.append( ( row.user_email, 
+            jobs.append( ( row.user_email,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako', jobs=jobs, message=message )
     @web.expose
@@ -307,7 +307,7 @@ class Jobs( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
@@ -325,7 +325,7 @@ class Jobs( BaseUIController ):
                        group_by = [ 'tool_id' ],
                        order_by = [ 'tool_id' ] )
         for row in q.execute():
-            jobs.append( ( row.tool_id, 
+            jobs.append( ( row.tool_id,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
                                     jobs=jobs,
@@ -338,13 +338,13 @@ class Jobs( BaseUIController ):
         specified_date = params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = model.Job.table.c.tool_id == tool_id, 
+                       whereclause = model.Job.table.c.tool_id == tool_id,
                        from_obj = [ model.Job.table ],
                        group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
                        order_by = [ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )

@@ -17,7 +17,7 @@ def __main__():
     for i, line in enumerate( open( input_name ) ):
         complete_interval = False
         line = line.rstrip( '\r\n' )
-        if line: 
+        if line:
             if line.startswith( HEADER_STARTS_WITH ):
                 header_lines += 1
             else:

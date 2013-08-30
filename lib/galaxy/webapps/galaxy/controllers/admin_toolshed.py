@@ -105,7 +105,7 @@ class AdminToolshed( AdminGalaxy ):
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated so that we
                     # can reset the metadata if necessary.  This will ensure that information about repository dependencies and tool dependencies
                     # will be current.  Only allow selecting a different section in the tool panel if the repository was uninstalled and it contained
-                    # tools that should be displayed in the tool panel.                        
+                    # tools that should be displayed in the tool panel.
                     changeset_revision_dict = repository_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
                     current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
                     current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
@@ -321,7 +321,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def get_tool_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
         """
-        Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for the received repository name, 
+        Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for the received repository name,
         owner and changeset revision.  The received repository_id is the encoded id of the installed tool shed repository in Galaxy.  We need
         it so that we can derive the tool shed from which it was installed.
         """
@@ -394,7 +394,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 repository_id=repository_id,
                                                                                 changeset_revision=changeset_revision )
             # Save the workflow in the Galaxy database.
-            # Pass workflow_dict along to create annotation at this point 
+            # Pass workflow_dict along to create annotation at this point
             stored_workflow = workflow_util.save_workflow( trans, workflow, workflow_dict )
             # Use the latest version of the saved workflow.
             workflow = stored_workflow.latest_workflow
@@ -838,7 +838,7 @@ class AdminToolshed( AdminGalaxy ):
                                 'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s' % \
                                 ( repository_ids, changeset_revisions ) )
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-            repo_information_dict = json.from_json_string( raw_text )            
+            repo_information_dict = json.from_json_string( raw_text )
             for encoded_repo_info_dict in repo_information_dict.get( 'repo_info_dicts', [] ):
                 decoded_repo_info_dict = encoding_util.tool_shed_decode( encoded_repo_info_dict )
                 if not includes_tools:
@@ -1651,7 +1651,7 @@ class AdminToolshed( AdminGalaxy ):
                         if 'data_manager' in metadata_dict:
                             new_data_managers = data_manager_util.install_data_managers( trans.app,
                                                                                          trans.app.config.shed_data_manager_config_file,
-                                                                                         metadata_dict, 
+                                                                                         metadata_dict,
                                                                                          repository.get_shed_config_dict( trans.app ),
                                                                                          os.path.join( relative_install_dir, name ),
                                                                                          repository,

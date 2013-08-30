@@ -13,15 +13,15 @@ class SetMetadataToolAction( ToolAction ):
         """
         Execute using a web transaction.
         """
-        job, odict = self.execute_via_app( tool, trans.app, trans.get_galaxy_session().id, 
+        job, odict = self.execute_via_app( tool, trans.app, trans.get_galaxy_session().id,
                                            trans.history.id, trans.user, incoming, set_output_hid,
                                            overwrite, history, job_params )
         # FIXME: can remove this when logging in execute_via_app method.
         trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         return job, odict
-    
-    def execute_via_app( self, tool, app, session_id, history_id, user=None, 
-                         incoming = {}, set_output_hid = False, overwrite = True, 
+
+    def execute_via_app( self, tool, app, session_id, history_id, user=None,
+                         incoming = {}, set_output_hid = False, overwrite = True,
                          history=None, job_params=None ):
         """
         Execute using application.
@@ -41,7 +41,7 @@ class SetMetadataToolAction( ToolAction ):
                 raise Exception( 'The dataset to set metadata on could not be determined.' )
 
         sa_session = app.model.context
-                                
+
         # Create the job object
         job = app.model.Job()
         job.session_id = session_id
@@ -61,9 +61,9 @@ class SetMetadataToolAction( ToolAction ):
         job.set_handler(tool.get_job_handler( job_params ))
         sa_session.add( job )
         sa_session.flush() #ensure job.id is available
-        
+
         #add parameters to job_parameter table
-        # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)? 
+        # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming[ '__ORIGINAL_DATASET_STATE__' ] = dataset.state
         external_metadata_wrapper = JobExternalOutputMetadataWrapper( job )
         cmd_line = external_metadata_wrapper.setup_external_metadata( dataset,
@@ -90,13 +90,13 @@ class SetMetadataToolAction( ToolAction ):
         dataset._state = dataset.states.SETTING_METADATA
         job.state = start_job_state #job inputs have been configured, restore initial job state
         sa_session.flush()
-        
+
         # Queue the job for execution
         app.job_queue.put( job.id, tool.id )
         # FIXME: need to add event logging to app and log events there rather than trans.
         #trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        
+
         #clear e.g. converted files
         dataset.datatype.before_setting_metadata( dataset )
-        
+
         return job, odict()

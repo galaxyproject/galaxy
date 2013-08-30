@@ -1,5 +1,5 @@
 '''
-Functions for working with SAM/BAM CIGAR representation. 
+Functions for working with SAM/BAM CIGAR representation.
 '''
 
 import operator
@@ -8,9 +8,9 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
     '''
     Returns a ( new_read_seq, new_cigar ) that can be used with reference
     sequence to reconstruct the read. The new read sequence includes only
-    bases that cannot be recovered from the reference: mismatches and 
+    bases that cannot be recovered from the reference: mismatches and
     insertions (soft clipped bases are not included). The new cigar replaces
-    Ms with =s and Xs because the M operation can denote a sequence match or 
+    Ms with =s and Xs because the M operation can denote a sequence match or
     mismatch.
     '''
 
@@ -48,7 +48,7 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
                 while total_count < op_len and ref_seq_pos < len( ref_seq ):
                     match, count = _match_mismatch_counter( read_seq, read_pos, ref_seq, ref_seq_pos )
                     # Use min because count cannot exceed remainder of operation.
-                    count = min( count, op_len - total_count )                        
+                    count = min( count, op_len - total_count )
                     if match:
                         new_op = '='
                     else:
@@ -59,7 +59,7 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
                     total_count += count
                     read_pos += count
                     ref_seq_pos += count
-                
+
                 # If end of read falls outside of ref_seq data, leave as M.
                 if total_count < op_len:
                     new_cigar += '%iM' % ( op_len - total_count )
