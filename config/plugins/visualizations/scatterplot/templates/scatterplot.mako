@@ -41,7 +41,7 @@
 
 <script type="text/javascript">
 $(function(){
-    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.dictify() ) )},
+    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )},
         querySettings   = ${h.to_json_string( query_args )},
         chartConfig     = _.extend( querySettings, {
             containerSelector : '#chart',

@@ -16,7 +16,7 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     """Bootstrapping user API JSON"""
     #TODO: move into common location (poss. BaseController)
     if trans.user:
-        user_dict = trans.user.dictify( view='element', value_mapper={ 'id': trans.security.encode_id,
+        user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
         user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
     else:

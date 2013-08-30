@@ -20,7 +20,7 @@
         require(['mvc/data'], function(data) {
             data.createTabularDatasetChunkedView(
                 // Dataset config. TODO: encode id.
-                _.extend( ${h.to_json_string( item.dictify() )}, 
+                _.extend( ${h.to_json_string( item.to_dict() )}, 
                         {
                             chunk_url: "${h.url_for( controller='/dataset', action='display', 
                                              dataset_id=trans.security.encode_id( item.id ))}",
