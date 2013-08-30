@@ -2695,7 +2695,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
                     break
                 if metadata_changeset_revision == changeset_revision:
-                    if num_metadata_revisions - index > 0:
+                    if num_metadata_revisions - index > 1:
                         tool_shed_status_dict[ 'revision_upgrade' ] = 'True'
                     else:
                         tool_shed_status_dict[ 'revision_upgrade' ] = 'False'
