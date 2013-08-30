@@ -176,20 +176,7 @@ class Repository( object, Dictifiable ):
         return False
 
     def to_dict( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
+        rval = super( Repository, self ).to_dict( view=view, value_mapper=value_mapper )
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
@@ -286,23 +273,6 @@ class RepositoryMetadata( object, Dictifiable ):
     def as_dict( self, value_mapper=None ):
         return self.to_dict( view='element', value_mapper=value_mapper )
 
-    def to_dict( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
-
 
 class SkipToolTest( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
@@ -316,23 +286,6 @@ class SkipToolTest( object, Dictifiable ):
 
     def as_dict( self, value_mapper=None ):
         return self.to_dict( view='element', value_mapper=value_mapper )
-
-    def to_dict( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
 
 
 class RepositoryReview( object, Dictifiable ):
