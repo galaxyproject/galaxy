@@ -2342,7 +2342,7 @@ class StoredWorkflow( object, DictifiableMixin):
             self.tags.append(new_swta)
 
     def dictify( self, view='collection', value_mapper = None  ):
-        rval = DictifiableMixin.dictify(self, view=view, value_mapper = value_mapper)
+        rval = super( StoredWorkflow, self ).dictify(self, view=view, value_mapper = value_mapper)
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -3831,7 +3831,7 @@ class ToolVersion( object, DictifiableMixin ):
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
     def dictify( self, view='element' ):
-        rval = DictifiableMixin.dictify(self, view)
+        rval = super( ToolVersion, self ).dictify( self, view )
         rval['tool_name'] = self.tool_id
         for a in self.parent_tool_association:
             rval['parent_tool_id'] = a.parent_id
