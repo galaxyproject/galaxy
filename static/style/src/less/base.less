@@ -1,7 +1,5 @@
 // bootstrap.less modified for Galaxy
 @import "bootstrap.less";
-@import "galaxy_bootstrap/overrides.less";
-@import "galaxy_bootstrap/variables.less";
 
 // Galaxy specific variables 
 @import "galaxy_variables.less";
@@ -899,9 +897,8 @@ table.tabletip tbody tr:hover td {
 
 
 table.colored {
-    .border-top-radius(@panel-border-radius - 1);
-    border-top: solid @complement-color-3 1px;
-    border-bottom: solid @complement-color-3 1px;
+    border-top: solid @table-border 1px;
+    border-bottom: solid @table-border 1px;
 }
 
 table.colored td, table.colored th {
@@ -911,11 +908,11 @@ table.colored td, table.colored th {
 }
 
 table.colored tr.header { 
-    background: @complement-color-3;
+    background: @table-heading-bg;
     color: contrast(@complement-color-3);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid @complement-color-3 1px;
+    border-bottom: solid @table-border 1px;
     font-weight: bold;
 }
 
@@ -969,12 +966,12 @@ div.debug {
 }
 .grid thead th {
     line-height: @line-height-base;
-    background: @panel-primary-heading-bg;
-    // background-image: url(form_title_bg.png);
+    background: @table-heading-bg;
+    color: contrast(@table-heading-bg);
     background-repeat: repeat-x;
     background-position: top;
-    border-top: solid @border-default-color 1px;
-    border-bottom: solid @border-default-color 1px;
+    border-top: solid @table-border-color 1px;
+    border-bottom: solid @table-border-color 1px;
     padding: 5px;
     text-align: left;
     white-space: nowrap;
@@ -1467,7 +1464,7 @@ div.permissionContainer {
 // ==== History styles ====
 
 body.historyPage {
-    background: @menu-bg;
+    background: @side-panel-bg;
     color: @base-text-color;
     margin: 5px;
     border: 0;
@@ -1520,26 +1517,23 @@ div.historyItem-failed_metadata {
     }
 }
 
+@import "sprite-history-states.less";
+
 div.historyItem-error {
-    // border-color: @history_error_border;
     background: @state-danger-bg;
-    // .state-icon {
-    //     -sprite-group: history-states;
-    //     -sprite-image: data_error.png;
-    // }
+    .state-icon {
+        .sprite(@data_error);
+    }
 }
 
 div.historyItem-empty {
-    // border-color: @history_error_border;
     background: @state-danger-bg;
-    // .state-icon {
-    //     -sprite-group: history-states;
-    //     -sprite-image: data_empty.png;
-    // }
+    .state-icon {
+        .sprite(@data_empty);
+    }
 }
 
 div.historyItem-running {
-    // border-color: @history_running_border;
     background: @state-running-bg;
     .state-icon {
         background-image: url(data_running.gif);
@@ -1547,7 +1541,6 @@ div.historyItem-running {
 }
 
 div.historyItem-setting_metadata {
-    // border-color: @history_running_border;
     background: @state-running-bg;
     .state-icon {
         background-image: url(data_running.gif);
@@ -1555,7 +1548,6 @@ div.historyItem-setting_metadata {
 }
 
 div.historyItem-upload {
-    // border-color: @history_upload_border;
     background: @state-info-bg;
     .state-icon {
         background-image: url(data_upload.gif);
@@ -1564,10 +1556,9 @@ div.historyItem-upload {
 
 div.historyItem-queued {
     background: @state-default-bg;
-    // .state-icon {
-    //     -sprite-group: history-states;
-    //     -sprite-image: data_queued.png;
-    // }
+    .state-icon {
+        .sprite(@data_queued);
+    }
 }
 
 div.historyItem-noPermission {
@@ -1577,7 +1568,6 @@ div.historyItem-noPermission {
 }
 
 div.historyItem-paused {
-    // border-color: @history_paused_border;
     background: @state-paused-bg;
     .state-icon {
         .fa-icon();
@@ -1604,6 +1594,36 @@ div.historyItemTitleBar.spinner .state-icon {
 // Buttons
 div.historyItemButtons {
     float: right;
+
+    @import "sprite-history-buttons.less";
+
+    .icon-button.display {
+        .sprite(@eye_icon);
+    }
+    .icon-button.display:hover {
+        .sprite(@eye_icon_dark);
+    }
+    .icon-button.display_disabled {
+        .sprite(@eye_icon_grey);
+    }
+    .icon-button.delete {
+        .sprite(@delete_icon);
+    }
+    .icon-button.delete:hover {
+        .sprite(@delete_icon_dark);
+    }
+    .icon-button.delete_disabled {
+        .sprite(@delete_icon_grey);
+    }
+    .icon-button.edit {
+        .sprite(@pencil_icon);
+    }
+    .icon-button.edit:hover {
+        .sprite(@pencil_icon_dark);
+    }
+    .icon-button.edit_disabled {
+        .sprite(@pencil_icon_grey);
+    }
 }
 
 div.historyItemBody div {
@@ -1631,7 +1651,7 @@ pre.peek {
 .toolMenuContainer
 {
     color: @base-text-color;
-    background: @menu-bg;
+    background: @side-panel-bg;
     min-height: 100%;
     padding: 5px 10px;
 }
@@ -1731,7 +1751,7 @@ div.toolTitleNoSection
 	margin: 10px;
 }
 
-@import "base_sprites";
+// @import "base_sprites";
 
 .text-and-autocomplete-select {
     // -sprite-group: fugue;
@@ -1764,4 +1784,87 @@ div.toolTitleNoSection
     float: right;
     margin-top: 3px;
     margin-right: 4px;
+}
+
+// ==== General Sprites ====
+
+@import "sprite-fugue.less";
+
+.icon-button.tag {
+    .sprite(@tag-label);
+}
+.icon-button.tags {
+    .sprite(@tags);
+}
+.icon-button.tag--plus {
+    .sprite(@tag--plus);
+}
+.icon-button.toggle-expand {
+    .sprite(@toggle-expand);
+}
+.icon-button.toggle {
+    .sprite(@toggle-bw);
+}
+.icon-button.toggle:hover {
+    .sprite(@toggle);
+}
+.icon-button.arrow-circle {
+    .sprite(@arrow-circle);
+}
+.icon-button.chevron {
+    .sprite(@chevron);
+}
+.icon-button.bug {
+    .sprite(@bug);
+}
+.icon-button.disk {
+    .sprite(@disk);
+}
+.icon-button.information {
+    .sprite(@information-white);
+}
+.icon-button.annotate {
+    .sprite(@sticky-note-text);
+}
+.icon-button.go-to-full-screen {
+    .sprite(@external);
+}
+.icon-button.import {
+    .sprite(@plus-circle);
+}
+.icon-button.plus-button {
+    .sprite(@plus-button-bw);
+}
+.icon-button.plus-button:hover {
+    .sprite(@plus-button);
+}
+.icon-button.gear {
+    .sprite(@gear);
+}
+.icon-button.chart_curve {
+    .sprite(@chart);
+}
+.icon-button.disk--arrow {
+    .sprite(@disk--arrow-bw);
+}
+.icon-button.disk--arrow:hover {
+    .sprite(@disk--arrow);
+}
+.icon-button.cross-circle {
+    .sprite(@cross-circle-bw);
+}
+.icon-button.cross-circle:hover {
+    .sprite(@cross-circle);
+}
+.icon-button.arrow-split {
+    .sprite(@arrow-split-bw);
+}
+.icon-button.arrow-split:hover {
+    .sprite(@arrow-split);
+}
+.icon-button.chevron-expand:hover {
+    .sprite(@chevron-expand);
+}
+.icon-button.chevron-expand {
+    .sprite(@chevron-expand-bw);
 }

@@ -1,1 +1,19 @@
-.embedded-item{width:90%;margin:0 auto;-webkit-border-radius:.5em;-moz-border-radius:.5em;border-radius:.5em}.embedded-item.display{padding:2px}.embedded-item.history{background-color:#c1c9e5}.embedded-item.history p{margin-top:0;margin-bottom:0;background:#c1c9e5 no-repeat 2px 2px}.embedded-item.dataset{background-color:#cfc}.embedded-item.dataset p{margin-top:0;margin-bottom:0;background:#cfc no-repeat 2px 2px}.embedded-item.workflow{background-color:#fbddb3}.embedded-item.workflow p{margin-top:0;margin-bottom:0;background:#fbddb3 no-repeat 2px 2px}.embedded-item.visualization{background-color:#bbb}.embedded-item.visualization p{margin-top:0;margin-bottom:0;background:#bbb no-repeat 2px 2px}.embedded-item .expanded-content{display:none}.embedded-item .item-content{max-height:25em;overflow:auto}.embedded-item.visualization .item-content{overflow:hidden}.embedded-item .title{padding-bottom:2px;font-weight:bold;text-align:center;vertical-align:top}.embedded-item.placeholder .content{padding:.5em .5em;font-style:italic;text-align:center}table.annotated-item{width:100%;border-collapse:collapse}table.annotated-item td,th{padding:0}table.annotated-item .annotation{width:40%;padding-left:2em}table.annotated-item td.annotation{padding-top:1em;vertical-align:text-top}
+.embedded-item{margin:0em auto;width:90%;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em}
+.embedded-item.display{padding:2px}
+.embedded-item.history{background-color:#c1c9e5}
+.embedded-item.history p{background:#c1c9e5 no-repeat 2px 2px;margin-top:0;margin-bottom:0}
+.embedded-item.dataset{background-color:#cfc}
+.embedded-item.dataset p{background:#cfc no-repeat 2px 2px;margin-top:0;margin-bottom:0}
+.embedded-item.workflow{background-color:#fbddb3}
+.embedded-item.workflow p{background:#fbddb3 no-repeat 2px 2px;margin-top:0;margin-bottom:0}
+.embedded-item.visualization{background-color:#bbb}
+.embedded-item.visualization p{background:#bbb no-repeat 2px 2px;margin-top:0;margin-bottom:0}
+.embedded-item .expanded-content{display:none}
+.embedded-item .item-content{max-height:25em;overflow:auto}
+.embedded-item.visualization .item-content{overflow:hidden}
+.embedded-item .title{vertical-align:top;text-align:center;font-weight:bold;padding-bottom:2px}
+.embedded-item.placeholder .content{padding:0.5em 0.5em;font-style:italic;text-align:center}
+table.annotated-item{width:100%;border-collapse:collapse}
+table.annotated-item td,th{padding:0}
+table.annotated-item .annotation{padding-left:2em;width:40%}
+table.annotated-item td.annotation{vertical-align:text-top;padding-top:1em}

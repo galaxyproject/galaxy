@@ -97,8 +97,7 @@ test/unit/**.log
 tool-data/shared/jars/
 
 # CSS build artifacts.
-*/variables.less
-static/style/blue/base_sprites.less
+sprite-*.less
 
 # Local node_modules directories
 node_modules

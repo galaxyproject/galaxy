@@ -1,1 +1,21 @@
-.libraryRow{background-color:#c6bfa8}.datasetHighlighted{background-color:#f9f9f9}.libraryItemDeleted-True{font-style:italic}div.libraryItemBody{padding:4px 4px 2px 4px}li.folderRow,li.datasetRow{border-top:solid 1px #ddd}li.folderRow:hover,li.datasetRow:hover{background-color:#f9f9f9}img.expanderIcon{padding-right:4px}input.datasetCheckbox,li,ul{padding:0;margin:0}.rowTitle{padding:2px}ul{list-style:none}.libraryTitle th{text-align:left}pre.peek{width:100%;overflow:auto;color:black;background:white}pre.peek th{color:white;background:#c6bfa8}span.expandLink{display:inline-block;padding-left:12px;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat}.folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat}.folderRow span.rowIcon{display:inline-block;float:left;width:16px;height:16px;margin-right:5px;vertical-align:middle;background:url(../images/silk/folder.png)}.libraryItem-error{padding:0 2px 0 2px;margin-right:2px;background:#f9c7c5;border:1px solid #ec3f39}.libraryItem-queued{padding:0 2px 0 2px;margin-right:2px;background:#eee;border:1px solid #bfbfbf}.libraryItem-running{padding:0 2px 0 2px;margin-right:2px;background:#ffc;border:1px solid #aa6}.libraryItem-upload{padding:0 2px 0 2px;margin-right:2px;background:#a6e4f7;border:1px solid #1abaea}
+a{text-decoration:underline}
+.libraryRow{background-color:#ebd9b2}
+.datasetHighlighted{background-color:#f9f9f9}
+.libraryItemDeleted-True{font-style:italic}
+div.libraryItemBody{padding:4px 4px 2px 4px}
+li.folderRow,li.datasetRow{border-top:solid 1px #ddd}
+li.folderRow:hover,li.datasetRow:hover{background-color:#f9f9f9}
+img.expanderIcon{padding-right:4px}
+input.datasetCheckbox,li,ul{padding:0;margin:0}
+.rowTitle{padding:2px}
+ul{list-style:none}
+.libraryTitle th{text-align:left}
+pre.peek{background:white;color:black;width:100%;overflow:auto}
+pre.peek th{color:white;background:#ebd9b2}
+span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat}
+.folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat}
+.folderRow span.rowIcon{float:left;margin-right:5px;width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png)}
+.libraryItem-error{margin-right:2px;padding:0 2px 0 2px;border:1px solid #ec3f39;background:#f9c7c5}
+.libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #bfbfbf;background:#eee}
+.libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #aa6;background:#ffc}
+.libraryItem-upload{margin-right:2px;padding:0 2px 0 2px;border:1px solid #1abaea;background:#a6e4f7}

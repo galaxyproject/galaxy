@@ -1,7 +1,11 @@
+// Additional variables that are not used by bootstrap but are used
+// in Galaxy stylesheets 
+
 @base-bg: @white;
 @base-text-color: @black;
 @header-text-color: @base-text-color;
-@menu-bg: lighten(black,95%);
+
+@side-panel-bg: lighten(black,95%);
 @layout-border-color: darken(@border-default-color,15%);
 
 @form-heading-bg: @complement-color-3;
@@ -10,9 +14,11 @@
 @table-heading-bg: @complement-color-3;
 @table-border: @complement-color-3;
 
-@state-default-text:          @gray-dark;
-@state-default-bg:            @gray-lighter;
-@state-default-border:        @border-default-color;
+// Additional state colors
+
+@state-default-text: @gray-dark;
+@state-default-bg: @gray-lighter;
+@state-default-border: @border-default-color;
 
 @state-upload-border: @state-info-border;
 @state-upload-bg: @state-info-bg;
@@ -25,3 +31,6 @@
 
 @state-deleted-border: #330066;
 @state-deleted-bg: #3399FF;
+
+// Figure out how to easily override which theme
+@import "theme/blue.less";

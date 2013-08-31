@@ -3,6 +3,7 @@
 module.exports = function(grunt) {
   "use strict";
   
+  var out = 'blue'
   var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster' ];
 
   var _ = grunt.util._; 
@@ -14,24 +15,47 @@ module.exports = function(grunt) {
     // Metadata.
     pkg: grunt.file.readJSON('package.json'),
 
-    recess: {
+    // Create sprite images and .less files
+    sprite : {
       options: {
-        compile: true,
+        algorithm: 'binary-tree'
+      },
+      'history-buttons': {
+        src: '../images/history-buttons/*.png',
+        destImg: fmt( '%s/sprite-history-buttons.png', out ),
+        destCSS: fmt( '%s/sprite-history-buttons.less', out )
+      },
+      'history-states': {
+        src: '../images/history-states/*.png',
+        destImg: fmt( '%s/sprite-history-states.png', out ),
+        destCSS: fmt( '%s/sprite-history-states.less', out )
+      },
+      'fugue': {
+        src: '../images/fugue/*.png',
+        destImg: fmt( '%s/sprite-fugue.png', out ),
+        destCSS: fmt( '%s/sprite-fugue.less', out )
+      }
+    },
+
+    // Compile less files
+    less: {
+      options: {
         compress: true,
-        includePath: 'blue'
+        paths: [ out ]
       },
       dist: {
         files: _.reduce( lessFiles, function( d, s ) { 
-          d[ fmt( 'blue/%s.css', s ) ] = [ fmt( 'src/less/%s.less', s ) ]; return d 
+          d[ fmt( '%s/%s.css', out, s ) ] = [ fmt( 'src/less/%s.less', s ) ]; return d 
         }, {} )
       }
     },
   });
 
   // These plugins provide necessary tasks.
-  grunt.loadNpmTasks('grunt-recess');
+  grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-spritesmith');
 
   // Default task.
-  grunt.registerTask('default', ['recess']);
+  grunt.registerTask('default', ['sprite', 'less']);
 
 };
