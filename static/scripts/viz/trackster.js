@@ -22,7 +22,6 @@ require(
 {
     // load css
     css.load_file("static/style/jquery.rating.css");
-    css.load_file("static/style/history.css");
     css.load_file("static/style/autocomplete_tagging.css");
     css.load_file("static/style/jquery-ui/smoothness/jquery-ui.css");
     css.load_file("static/style/library.css");
