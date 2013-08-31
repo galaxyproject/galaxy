@@ -3,7 +3,7 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
         html, body {
             background-color: #fff;

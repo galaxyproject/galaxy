@@ -5,7 +5,7 @@ INI=$(OUT)_colors.ini
 all:
 	@( cd blue; make -f ../Makefile VPATH=.. css )
 
-ALL_CSS=base panel_layout masthead library history tool_menu iphone autocomplete_tagging trackster
+ALL_CSS=base masthead library history tool_menu iphone autocomplete_tagging trackster
 
 css: $(foreach N,$(ALL_CSS),$N.css)
 
