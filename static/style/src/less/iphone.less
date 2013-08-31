@@ -1,4 +1,7 @@
-## Parts taken from iui.css (c) 2007-8 by iUI Project Members, see LICENSE.txt for license
+// Parts taken from iui.css (c) 2007-8 by iUI Project Members, see LICENSE.txt for license
+
+@import "galaxy_bootstrap/variables.less";
+@import "galaxy_variables.less";
 
 body {
     margin: 0;
@@ -75,7 +78,7 @@ body[orient="landscape"] > .toolbar > h1 {
 }
 
 body > .toolbar.masthead {
-    background: ${masthead_bg} repeat-x;
+    background: @navbar-inverse-bg;
 }
 
 body > .toolbar.masthead > h1 {
@@ -416,24 +419,20 @@ fieldset > .row:last-child {
         url(blueButton.png), url(listArrowSel.png), url(listGroup.png);
 }
 
-## State colors
+// State colors
 
 .state-color-queued {
-    ## border-color: $history_queued_border;
-    background: $history_queued_bg;
+    background: @state-default-bg;
 }
 
 .state-color-ok {
-    ## border-color: $history_ok_border;
-    background: $history_ok_bg;
+    background: @state-success-bg;
 }
 
 .state-color-error {
-    ## border-color: $history_error_border;
-    background: $history_error_bg;
+    background: @state-danger-bg;
 }
 
 .state-color-running {
-    ## border-color: $history_running_border;
-    background: $history_running_bg;
+    background: @state-running-bg;
 }

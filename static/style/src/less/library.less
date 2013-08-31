@@ -1,9 +1,12 @@
+@import "galaxy_bootstrap/variables.less";
+@import "galaxy_variables.less";
+
 .libraryRow {
-    background-color: $form_title_bg_bottom;
+    background-color: @form-heading-bg;
 }
 
 .datasetHighlighted {
-    background-color: $menu_bg_over;
+    background-color: @table-bg-accent;
 }
 
 .libraryItemDeleted-True {
@@ -23,7 +26,7 @@ li.datasetRow
 li.folderRow:hover,
 li.datasetRow:hover
 {
-    background-color: $menu_bg_over;
+    background-color: @table-bg-accent;
 }
 
 img.expanderIcon {
@@ -57,7 +60,7 @@ pre.peek {
 
 pre.peek th {
     color: white;
-    background: $peek_table_header;
+    background: @table-heading-bg;
 }
 
 span.expandLink {
@@ -84,27 +87,27 @@ span.expandLink {
 .libraryItem-error {
     margin-right: 2px;
     padding: 0 2px 0 2px;
-    border: 1px solid $history_error_border;
-    background: $history_error_bg;
+    border: 1px solid @state-danger-border;
+    background: @state-danger-bg;
 }
 
 .libraryItem-queued {
     margin-right: 2px;
     padding: 0 2px 0 2px;
-    border: 1px solid $history_queued_border;
-    background: $history_queued_bg;
+    border: 1px solid @state-default-border;
+    background: @state-default-bg;
 }
 
 .libraryItem-running {
     margin-right: 2px;
     padding: 0 2px 0 2px;
-    border: 1px solid $history_running_border;
-    background: $history_running_bg;
+    border: 1px solid @state-running-border;
+    background: @state-running-bg;
 }
 
 .libraryItem-upload {
     margin-right: 2px;
     padding: 0 2px 0 2px;
-    border: 1px solid $history_upload_border;
-    background: $history_upload_bg;
+    border: 1px solid @state-upload-border;
+    background: @state-upload-bg;
 }

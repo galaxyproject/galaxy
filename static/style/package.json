@@ -2,6 +2,7 @@
     "name": "galaxy-styles",
     "devDependencies": {
       "grunt": "~0.4.1",
-      "grunt-recess": "~0.3.3"
+      "grunt-recess": "~0.3.3",
+      "grunt-spritesmith": "~0.5.2"
   }
 }

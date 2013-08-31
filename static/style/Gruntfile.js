@@ -2,6 +2,11 @@
 
 module.exports = function(grunt) {
   "use strict";
+  
+  var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster' ];
+
+  var _ = grunt.util._; 
+  var fmt = _.sprintf; 
 
   // Project configuration.
   grunt.initConfig({
@@ -15,9 +20,10 @@ module.exports = function(grunt) {
         compress: true,
         includePath: 'blue'
       },
-      bootstrap: {
-        src: ['base.less'],
-        dest: 'blue/base.css',
+      dist: {
+        files: _.reduce( lessFiles, function( d, s ) { 
+          d[ fmt( 'blue/%s.css', s ) ] = [ fmt( 'src/less/%s.less', s ) ]; return d 
+        }, {} )
       }
     },
   });
