@@ -740,9 +740,6 @@ button.close{padding:0;cursor:pointer;background:transparent;border:0;-webkit-ap
 .btn.active,.btn:active{color:inherit}
 .dropdown-menu{max-width:auto}
 input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
-.modal{position:absolute;top:50px;width:660px;margin-left:-330px}
-.modal:after{content:"";height:0px;position:relative;top:50px;display:block;border:solid transparent 1px}
-.modal-body{height:auto;max-height:none}
 .nav-tabs{border-bottom:1px solid #bfbfbf}
 .nav-tabs>li>a:hover{border-color:#eee #eee #bfbfbf}
 .nav-tabs>.active>a,.nav-tabs>.active>a:hover{border:1px solid #bfbfbf;border-bottom-color:transparent}
@@ -1113,7 +1110,7 @@ ul.icons{list-style-type:none;text-indent:-0.75em}ul.icons li [class^="fa-icon-"
 body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;margin:0;padding:0;width:100%;height:100%}
 img{border:0}
 .nav-tabs a{text-decoration:none}
-h1,h2,h3,h4{color:#000;margin:0.5em 0}
+h1,h2,h3,h4{color:#000;margin:0.5em 0;font-weight:bold}
 h1{font-size:24px}
 h2{font-size:18px;line-height:2.1428571435}h2 small{font-size:14px}
 h3{font-size:14px;line-height:1.428571429}h3 small{font-size:12px}
@@ -1146,14 +1143,12 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 .panel-header-button{color:#333;text-decoration:none;display:inline-block;cursor:pointer;margin:-1px;padding:1px;margin-top:-0.2em;padding-right:0.5em;padding-left:0.5em}.panel-header-button:hover{color:maroon;-webkit-transition:color .25s linear;transition:color .25s linear}
 .panel-header-button .caret{margin-top:7px}
 .panel-header-button.popup{padding-right:1.75em;background:url(../images/dropdownarrow.png) no-repeat right 7px}
-#overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:20000;overflow-y:auto}
-#overlay.is_modal #overlay-background,.overlay-background{background:rgba(0,0,0,0.5)}
 .panel-error-message,.panel-warning-message,.panel-done-message,.panel-info-message{height:24px;line-height:24px;padding:0px;padding-left:26px;background-color:#f9c7c5;background-image:url(error_small.png);background-repeat:no-repeat;background-position:6px 50%}
 .panel-warning-message{background-image:url(warn_small.png);background-color:#fce1ba}
 .panel-done-message{background-image:url(ok_small.png);background-color:#aff1af}
 .panel-info-message{background-image:url(info_small.png);background-color:#a6e4f7}
-#masthead{position:absolute;top:0;left:0;width:100%;min-width:900px;padding:0;z-index:15000}#masthead .nav{z-index:15001}
-#masthead .nav>li>a{cursor:pointer}#masthead .nav>li>a:hover{color:gold}
+#masthead{position:absolute;top:0;left:0;width:100%;min-width:900px;padding:0}#masthead .nav{z-index:15001}
+#masthead .nav>li>a{cursor:pointer;text-decoration:none}#masthead .nav>li>a:hover{color:gold}
 #masthead .dropdown-menu{z-index:15002}
 #masthead li.dropdown>a:hover .caret{border-top-color:gold;border-bottom-color:gold}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}

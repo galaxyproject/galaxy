@@ -201,7 +201,7 @@ $.extend( Modal.prototype, {
 var modal;
 
 $(function(){
-   modal = new Modal( { overlay: $("#overlay"), dialog: $("#dialog-box"), backdrop: $("#overlay-background") } );
+   modal = new Modal( { overlay: $("#top-modal"), dialog: $("#top-modal-dialog"), backdrop: $("#singleton-modal-backdrop") } );
 });
 
 // Backward compatibility

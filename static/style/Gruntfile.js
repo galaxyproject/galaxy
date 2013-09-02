@@ -3,6 +3,8 @@
 module.exports = function(grunt) {
   "use strict";
   
+  var theme = grunt.option( 'theme', 'blue' );
+
   var out = 'blue'
   var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster' ];
 
@@ -51,11 +53,16 @@ module.exports = function(grunt) {
     },
   });
 
+  // Write theme variable for less
+  grunt.registerTask('less-site-config', 'Write site configuration for less', function() {
+    grunt.file.write( fmt('%s/tmp-site-config.less', out), fmt( "@theme-name: %s;", theme ) )
+  });
+
   // These plugins provide necessary tasks.
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-spritesmith');
 
   // Default task.
-  grunt.registerTask('default', ['sprite', 'less']);
+  grunt.registerTask('default', ['sprite', 'less-site-config', 'less']);
 
 };
