@@ -370,7 +370,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                         tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
                     except Exception, e:
                         error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
-                        log.debug( error_message )
+                        log.exception( error_message )
                         if tool_dependency:
                             tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
                             tool_dependency.error_message = error_message

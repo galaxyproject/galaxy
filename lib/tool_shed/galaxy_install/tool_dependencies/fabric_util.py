@@ -217,13 +217,25 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
+                    is_binary = action_dict.get( 'is_binary', False )
+                    log.debug( 'Attempting to download via url: %s', url )
                     if 'target_filename' in action_dict:
-                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # Sometimes compressed archives extract their content to a folder other than the default defined file name.  Using this
                         # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
                     dir = td_common_util.url_download( work_dir, downloaded_filename, url, extract=True )
+                    if is_binary:
+                        log_file = os.path.join( install_dir, INSTALLATION_LOG )
+                        log.debug( 'log_file: %s' % log_file )
+                        if os.path.exists( log_file ):
+                            logfile = open( log_file, 'ab' )
+                        else:
+                            logfile = open( log_file, 'wb' )
+                        logfile.write( 'Successfully downloaded from url: %s\n' % action_dict[ 'url' ] )
+                        logfile.close()
+                    log.debug( 'Successfully downloaded from url: %s' % action_dict[ 'url' ] )
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
