@@ -6,7 +6,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import to_safe_string
+    from tool_shed.util.shed_util_common import to_html_string
 
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
@@ -106,7 +106,7 @@
             ${repository.description | h}
         </div>
         %if repository.long_description:
-            ${render_long_description( to_safe_string( repository.long_description, to_html=True ) )}
+            ${render_long_description( to_html_string( repository.long_description ) )}
         %endif
         <div class="form-row">
             <label>Revision:</label>
@@ -214,7 +214,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=False, re
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_safe_string( review.comment, to_html=True ) )}</td>
+                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username}</td>
                             </tr>

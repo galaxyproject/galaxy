@@ -580,7 +580,7 @@
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
     <%
-        from tool_shed.util.shed_util_common import to_safe_string
+        from tool_shed.util.shed_util_common import to_html_string
         from galaxy.util import rst_to_html
         encoded_id = trans.security.encode_id( readme.id )
         render_rst = readme.name.endswith( '.rst' )
@@ -605,7 +605,7 @@
                 %if render_rst:
                     <tr><td>${ rst_to_html( readme.text ) }</td></tr>
                 %else:
-                    <tr><td>${readme.name}<br/>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+                    <tr><td>${readme.name}<br/>${ to_html_string( readme.text ) }</td></tr>
                 %endif
             </table>
         </td>

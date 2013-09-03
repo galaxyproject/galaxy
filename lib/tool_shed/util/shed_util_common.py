@@ -38,8 +38,6 @@ CHUNK_SIZE = 2**20 # 1Mb
 INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAX_DISPLAY_SIZE = 32768
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>|" )
-
 DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
 REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
@@ -902,31 +900,34 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
     return repository
 
 def get_repository_file_contents( file_path ):
-    """Return the display-safe contents of a repository file."""
+    """Return the display-safe contents of a repository file for display in a browser."""
     if checkers.is_gzip( file_path ):
-        safe_str = to_safe_string( '\ngzip compressed file\n' )
+        return '<br/>gzip compressed file<br/>'
     elif checkers.is_bz2( file_path ):
-        safe_str = to_safe_string( '\nbz2 compressed file\n' )
+        return '<br/>bz2 compressed file<br/>'
     elif checkers.check_zip( file_path ):
-        safe_str = to_safe_string( '\nzip compressed file\n' )
+        return '<br/>zip compressed file<br/>'
     elif checkers.check_binary( file_path ):
-        safe_str = to_safe_string( '\nBinary file\n' )
+        return '<br/>Binary file<br/>'
     else:
         safe_str = ''
         for i, line in enumerate( open( file_path ) ):
-            safe_str = '%s%s' % ( safe_str, to_safe_string( line ) )
+            safe_str = '%s%s' % ( safe_str, to_html_string( line ) )
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len( safe_str ) > MAX_CONTENT_SIZE:
                 large_str = \
-                    to_safe_string( '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE ) )
+                    '<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>' % \
+                    util.nice_size( MAX_CONTENT_SIZE )
                 safe_str = '%s%s' % ( safe_str, large_str )
                 break
         if len( safe_str ) > MAX_DISPLAY_SIZE:
-            # Eliminate the middle of the file to display a file no larger than MAX_DISPLAY_SIZE.  This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
+            # Eliminate the middle of the file to display a file no larger than MAX_DISPLAY_SIZE.  This may not be ideal if the file is larger
+            # than MAX_CONTENT_SIZE.
             join_by_str = \
-                to_safe_string( "\n\n...some text eliminated here because file size is larger than maximum viewing size of %s...\n\n" % util.nice_size( MAX_DISPLAY_SIZE ) )
+                "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>" % \
+                util.nice_size( MAX_DISPLAY_SIZE )
             safe_str = util.shrink_string_by_size( safe_str, MAX_DISPLAY_SIZE, join_by=join_by_str, left_larger=True, beginning_on_size_error=True )
-    return safe_str
+        return safe_str
 
 def get_repository_files( trans, folder_path ):
     """Return the file hierarchy of a tool shed repository."""
@@ -1438,6 +1439,13 @@ def set_prior_installation_required( repository, required_repository ):
             return required_rd_tup[ 4 ]
     return False
 
+def size_string( raw_text, size=MAX_DISPLAY_SIZE ):
+    """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
+    if raw_text and len( raw_text ) >= size:
+        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( size )
+        raw_text = '%s%s' % ( raw_text[ 0:size ], large_str )
+    return raw_text or ''
+
 def stringify( list ):
     if list:
         return ','.join( list )
@@ -1453,40 +1461,17 @@ def strip_path( fpath ):
         file_name = fpath
     return file_name
 
-def to_safe_string( text, to_html=True ):
+def to_html_string( text ):
     """Translates the characters in text to an html string"""
     if text:
-        if to_html:
-            try:
-                escaped_text = unicodify( text )
-                escaped_text = escaped_text.encode( 'ascii', 'ignore' )
-                escaped_text = str( markupsafe.escape( escaped_text ) )
-            except UnicodeDecodeError, e:
-                escaped_text = "Error decoding string: %s" % str( e )
-        else:
-            escaped_text = str( text )
-        translated = []
-        for c in escaped_text:
-            if c in VALID_CHARS:
-                translated.append( c )
-            elif c in [ '\n' ]:
-                if to_html:
-                    translated.append( '<br/>' )
-                else:
-                    translated.append( c )
-            elif c in [ '\r' ]:
-                continue
-            elif c in [ ' ', '    ' ]:
-                if to_html:
-                    if c == ' ':
-                        translated.append( '&nbsp;' )
-                    else:
-                        translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
-                else:
-                    translated.append( c )
-            else:
-                translated.append( '' )
-        return ''.join( translated )
+        try:
+            text = unicodify( text )
+        except UnicodeDecodeError, e:
+            return "Error decoding string: %s" % str( e )
+        text = markupsafe.escape( text )
+        text = text.replace( '\n', '<br/>' )
+        text = text.replace( '    ', '&nbsp;&nbsp;&nbsp;&nbsp;' )
+        text = text.replace( ' ', '&nbsp;' )
     return text
 
 def tool_shed_from_repository_clone_url( repository_clone_url ):
@@ -1496,18 +1481,6 @@ def tool_shed_from_repository_clone_url( repository_clone_url ):
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     """Determine if a tool shed is the current tool shed."""
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
-
-def translate_string( raw_text, to_html=True ):
-    """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
-    if raw_text:
-        if len( raw_text ) <= MAX_DISPLAY_SIZE:
-            translated_string = to_safe_string( raw_text, to_html=to_html )
-        else:
-            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_DISPLAY_SIZE )
-            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_DISPLAY_SIZE ], large_str ), to_html=to_html )
-    else:
-        translated_string = ''
-    return translated_string
 
 def update_in_shed_tool_config( app, repository ):
     """

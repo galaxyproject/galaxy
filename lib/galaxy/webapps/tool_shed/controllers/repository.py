@@ -1566,7 +1566,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         if repository:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                     trans.security.encode_id( repository.id ),
+                                                                                     changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -2791,7 +2793,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         anchors = modified + added + removed + deleted + unknown + ignored + clean
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            diffs.append( suc.to_safe_string( diff, to_html=True ) )
+            diffs.append( suc.to_html_string( diff ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         # For rendering the prev button.
         if ctx_parent:

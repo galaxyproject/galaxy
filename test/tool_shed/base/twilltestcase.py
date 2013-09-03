@@ -374,7 +374,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        strings_displayed.append( installed_repository.installed_changeset_revision )
+        strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):

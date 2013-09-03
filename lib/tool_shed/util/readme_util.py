@@ -1,6 +1,7 @@
 import logging
 import os
 from galaxy.util import json
+from galaxy.util import unicodify
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 
@@ -19,9 +20,9 @@ def build_readme_files_dict( metadata, tool_path=None ):
                     full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
                 try:
                     f = open( full_path_to_readme_file, 'r' )
-                    text = f.read()
+                    text = unicodify( f.read() )
                     f.close()
-                    readme_files_dict[ readme_file_name ] = suc.translate_string( text, to_html=False )
+                    readme_files_dict[ readme_file_name ] = suc.size_string( text )
                 except Exception, e:
                     log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict

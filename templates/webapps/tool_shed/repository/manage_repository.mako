@@ -355,7 +355,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_safe_string( review.comment, to_html=True ) )}</td>
+                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username | h}</td>
                             </tr>
