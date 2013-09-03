@@ -186,10 +186,10 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         self.login( email=common.test_user_3_email, username=common.test_user_3_name )
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = test_db_util.get_user( common.test_user_2_email )
-        strings_displayed = [ 'A&amp;nbsp;good&amp;nbsp;set&amp;nbsp;of&amp;nbsp;functional&amp;nbsp;tests.', 
-                              'Clear&amp;nbsp;and&amp;nbsp;concise&amp;nbsp;readme&amp;nbsp;file',
-                              'a&amp;nbsp;true&amp;nbsp;pleasure&amp;nbsp;to&amp;nbsp;read.',
-                              'Excellent&amp;nbsp;tool,&amp;nbsp;easy&amp;nbsp;to&amp;nbsp;use.' ]
+        strings_displayed = [ 'A&nbsp;good&nbsp;set&nbsp;of&nbsp;functional&nbsp;tests.', 
+                              'Clear&nbsp;and&nbsp;concise&nbsp;readme&nbsp;file',
+                              'a&nbsp;true&nbsp;pleasure&nbsp;to&nbsp;read.',
+                              'Excellent&nbsp;tool,&nbsp;easy&nbsp;to&nbsp;use.' ]
         changeset_revision = self.get_repository_tip( repository )
         review = test_db_util.get_repository_review_by_user_id_changeset_revision( user.id, repository.id, changeset_revision )
         self.browse_component_review( review, strings_displayed=strings_displayed )
