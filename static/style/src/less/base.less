@@ -213,7 +213,7 @@ th {
     height: @panel_footer_height;
     line-height: @panel_footer_height;
     width: 100%;
-    z-index: 1000;
+    z-index: 1000; // Above #DD-helper
     border-top: solid @layout-border-color 1px;
     background: @navbar-default-bg;
 
@@ -323,6 +323,18 @@ div.unified-panel-body {
         background: url(../images/dropdownarrow.png) no-repeat right 7px;
     }
 }
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#DD-helper {
+    background: white;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    position: absolute;
+    top: 0;
+    left: 0; 
+    width: 100%;
+    height: 100%;
+} 
 
 // Messages for message box, slightly different style
 

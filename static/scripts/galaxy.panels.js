@@ -5,10 +5,7 @@
 var ensure_dd_helper = function () {
     // Insert div that covers everything when dragging the borders
     if ( $( "#DD-helper" ).length == 0 ) {
-        $( "<div id='DD-helper'/>" ).css( {
-            background: 'white', opacity: 0, zIndex: 9000,
-            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
-        } ).appendTo( "body" ).hide();
+        $( "<div id='DD-helper'/>" ).appendTo( "body" ).hide();
     }
 }
 
