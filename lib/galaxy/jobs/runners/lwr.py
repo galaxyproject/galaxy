@@ -143,12 +143,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
                         client.download_output(output_file, working_directory=job_wrapper.working_directory)
                     except Exception, e:
                         download_failure_exceptions.append(e)
-            if download_failure_exceptions or self.app.config.cleanup_job == "always":
+            failed = len(download_failure_exceptions) > 0
+            if not failed or self.app.config.cleanup_job == "always":
                 try:
                     client.clean()
                 except:
                     log.warn("Failed to cleanup remote LWR job")
-            if download_failure_exceptions:
+            if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
             log.debug('execution finished: %s' % command_line)
         except:
