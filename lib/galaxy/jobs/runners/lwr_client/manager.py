@@ -21,7 +21,8 @@ class ClientManager(object):
     state between multiple client connections.
     """
     def __init__(self, **kwds):
-        self.transport = get_transport(kwds.get('transport_type', None))
+        transport_type = kwds.get('transport_type', None)
+        self.transport = get_transport(transport_type)
         self.event_manager = TransferEventManager()
         cache = kwds.get('cache', None)
         if cache is None:

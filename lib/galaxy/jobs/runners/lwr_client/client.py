@@ -1,4 +1,5 @@
 import os
+import shutil
 import urllib
 import simplejson
 from time import sleep
@@ -65,6 +66,7 @@ class Client(object):
         if isinstance(destination_params, str) or isinstance(destination_params, unicode):
             destination_params = url_to_destination_params(destination_params)
         self.remote_host = destination_params.get("url")
+        self.default_file_action = destination_params.get("default_file_action", "transfer")
         assert self.remote_host != None, "Failed to determine url for LWR client."
         self.private_key = destination_params.get("private_token", None)
         self.job_id = job_id
@@ -83,99 +85,48 @@ class Client(object):
         return response
 
     @parseJson()
-    def _upload_file(self, action, path, name=None, contents=None):
+    def input_path(self, path, input_type, name=None):
+        args = {"job_id": self.job_id, "name": name, "input_type": input_type}
+        return self._raw_execute('input_path', args)
+
+    def put_file(self, path, input_type, name=None, contents=None, action='transfer'):
         if not name:
             name = os.path.basename(path)
-        args = {"job_id": self.job_id, "name": name}
+        args = {"job_id": self.job_id, "name": name, "input_type": input_type}
         input_path = path
         if contents:
             input_path = None
-        return self._raw_execute(action, args, contents, input_path)
+        if action == 'transfer':
+            return self._upload_file(args, contents, input_path)
+        elif action == 'copy':
+            lwr_path = self._raw_execute('input_path', args)
+            self._copy(path, lwr_path)
+            return {'path': lwr_path}
 
-    def upload_tool_file(self, path):
-        """
-        Upload a tool related file (e.g. wrapper) required to run job.
+    @parseJson()
+    def _upload_file(self, args, contents, input_path):
+        return self._raw_execute(self._upload_file_action(args), args, contents, input_path)
 
-        **Parameters**
-
-        path : str
-            Local path tool.
-        """
-        return self._upload_file("upload_tool_file", path)
-
-    def upload_input(self, path):
-        """
-        Upload input dataset to remote server.
-
-        **Parameters**
-
-        path : str
-            Local path of input dataset.
-        """
-        return self._upload_file("upload_input", path)
-
-    def upload_extra_input(self, path, relative_name):
-        """
-        Upload extra input file to remote server.
-
-        **Parameters**
-
-        path : str
-            Extra files path of input dataset corresponding to this input.
-        relative_name : str
-            Relative path of extra file to upload relative to inputs extra files path.
-        """
-        return self._upload_file("upload_extra_input", path, name=relative_name)
-
-    def upload_config_file(self, path, contents):
-        """
-        Upload a job's config file to the remote server.
-
-        **Parameters**
-
-        path : str
-            Local path to the original config file.
-        contents : str
-            Rewritten contents of the config file to upload.
-        """
-        return self._upload_file("upload_config_file", path, contents=contents)
-
-    def upload_working_directory_file(self, path):
-        """
-        Upload the supplied file (path) from a job's working directory
-        to remote server.
-
-        **Parameters**
-
-        path : str
-            Path to file to upload.
-        """
-        return self._upload_file("upload_working_directory_file", path)
+    def _upload_file_action(self, args):
+        ## Hack for backward compatibility, instead of using new upload_file
+        ## path. Use old paths.
+        input_type = args['input_type']
+        action = {
+            'input': 'upload_input',
+            'input_extra': 'upload_extra_input',
+            'config': 'upload_config_file',
+            'work_dir': 'upload_working_directory_file',
+            'tool': 'upload_tool_file'
+        }[input_type]
+        del args['input_type']
+        return action
 
     @parseJson()
     def _get_output_type(self, name):
         return self._raw_execute("get_output_type", {"name": name,
                                                       "job_id": self.job_id})
 
-    def download_work_dir_output(self, source, working_directory, output_path):
-        """
-        Download an output dataset specified with from_work_dir from the
-        remote server.
-
-        **Parameters**
-
-        source : str
-            Path in job's working_directory to find output in.
-        working_directory : str
-            Local working_directory for the job.
-        output_path : str
-            Full path to output dataset.
-        """
-        output = open(output_path, "wb")
-        name = os.path.basename(source)
-        self.__raw_download_output(name, self.job_id, "work_dir", output)
-
-    def download_output(self, path, working_directory):
+    def fetch_output(self, path, working_directory, action='transfer'):
         """
         Download an output dataset from the remote server.
 
@@ -192,9 +143,49 @@ class Client(object):
             output_path = path
         elif output_type == "task":
             output_path = os.path.join(working_directory, name)
+        elif output_type == "none":
+            if action == "transfer":
+                raise OutputNotFoundException(path)
         else:
-            raise OutputNotFoundException(path)
-        self.__raw_download_output(name, self.job_id, output_type, output_path)
+            raise Exception("Unknown output_type returned from LWR server %s" % output_type)
+        if action == 'transfer':
+            self.__raw_download_output(name, self.job_id, output_type, output_path)
+        elif output_type == 'none':
+            # Just make sure the file was created.
+            if not os.path.exists(path):
+                raise OutputNotFoundException(path)
+        elif action == 'copy':
+            lwr_path = self._output_path(name, self.job_id, output_type)['path']
+            self._copy(lwr_path, output_path)
+
+    def fetch_work_dir_output(self, source, working_directory, output_path, action='transfer'):
+        """
+        Download an output dataset specified with from_work_dir from the
+        remote server.
+
+        **Parameters**
+
+        source : str
+            Path in job's working_directory to find output in.
+        working_directory : str
+            Local working_directory for the job.
+        output_path : str
+            Full path to output dataset.
+        """
+        output = open(output_path, "wb")
+        name = os.path.basename(source)
+        if action == 'transfer':
+            self.__raw_download_output(name, self.job_id, "work_dir", output)
+        elif action == 'copy':
+            lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
+            self._copy(lwr_path, output_path)
+
+    @parseJson()
+    def _output_path(self, name, job_id, output_type):
+        self._raw_execute("output_path",
+                           {"name": name,
+                            "job_id": self.job_id,
+                            "output_type": output_type})
 
     @retry()
     def __raw_download_output(self, name, job_id, output_type, output_path):
@@ -280,6 +271,12 @@ class Client(object):
             setup_args["tool_version"] = tool_version
         return self._raw_execute("setup", setup_args)
 
+    def _copy(self, source, destination):
+        source = os.path.abspath(source)
+        destination = os.path.abspath(destination)
+        if source != destination:
+            shutil.copyfile(source, destination)
+
 
 class InputCachingClient(Client):
     """
@@ -290,11 +287,8 @@ class InputCachingClient(Client):
         super(InputCachingClient, self).__init__(destination_params, job_id, client_manager)
 
     @parseJson()
-    def _upload_file(self, action, path, name=None, contents=None):
-        if not name:
-            name = os.path.basename(path)
-        args = {"job_id": self.job_id, "name": name}
-        input_path = path
+    def _upload_file(self, args, contents, input_path):
+        action = self._upload_file_action(args)
         if contents:
             input_path = None
             return self._raw_execute(action, args, contents, input_path)

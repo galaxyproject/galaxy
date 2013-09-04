@@ -9,7 +9,8 @@ import errno
 from time import sleep
 import os
 
-from lwr_client import FileStager, ClientManager, url_to_destination_params
+from .lwr_client import FileStager, ClientManager, url_to_destination_params
+from .lwr_client import finish_job as lwr_finish_job
 
 log = logging.getLogger( __name__ )
 
@@ -118,7 +119,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.client_manager.get_client( job_destination_params, job_id )
 
     def finish_job( self, job_state ):
-        stderr = stdout = command_line = ''
+        stderr = stdout = ''
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
@@ -127,31 +128,23 @@ class LwrJobRunner( AsynchronousJobRunner ):
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
 
-            download_failure_exceptions = []
-            if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
-                work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-                output_files = self.get_output_files(job_wrapper)
-                for source_file, output_file in work_dir_outputs:
-                    try:
-                        client.download_work_dir_output(source_file, job_wrapper.working_directory, output_file)
-                    except Exception, e:
-                        download_failure_exceptions.append(e)
-                    # Remove from full output_files list so don't try to download directly.
-                    output_files.remove(output_file)
-                for output_file in output_files:
-                    try:
-                        client.download_output(output_file, working_directory=job_wrapper.working_directory)
-                    except Exception, e:
-                        download_failure_exceptions.append(e)
-            failed = len(download_failure_exceptions) > 0
-            if not failed or self.app.config.cleanup_job == "always":
-                try:
-                    client.clean()
-                except:
-                    log.warn("Failed to cleanup remote LWR job")
+            # Use LWR client code to transfer/copy files back
+            # and cleanup job if needed.
+            completed_normally = \
+                job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]
+            cleanup_job = self.app.config.cleanup_job
+            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
+            output_files = self.get_output_files( job_wrapper )
+            finish_args = dict( client=client,
+                                working_directory=job_wrapper.working_directory,
+                                job_completed_normally=completed_normally,
+                                cleanup_job=cleanup_job,
+                                work_dir_outputs=work_dir_outputs,
+                                output_files=output_files )
+            failed = lwr_finish_job( **finish_args )
+
             if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
-            log.debug('execution finished: %s' % command_line)
         except:
             message = "Failed to communicate with remote job server."
             job_wrapper.fail( message, exception=True )
