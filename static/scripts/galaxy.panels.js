@@ -167,6 +167,7 @@ $.extend( Modal.prototype, {
             }
             this.$overlay.show();
             this.$dialog.show();
+            this.$overlay.addClass("in");
             // Fix min-width so that modal cannot shrink considerably if 
             // new content is loaded.
             this.$body.css( "min-width", this.$body.width() );
@@ -198,7 +199,7 @@ $.extend( Modal.prototype, {
 var modal;
 
 $(function(){
-   modal = new Modal( { overlay: $("#top-modal"), dialog: $("#top-modal-dialog"), backdrop: $("#singleton-modal-backdrop") } );
+   modal = new Modal( { overlay: $("#top-modal"), dialog: $("#top-modal-dialog"), backdrop: $("#top-modal-backdrop") } );
 });
 
 // Backward compatibility
