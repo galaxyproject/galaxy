@@ -1,4 +1,3 @@
-
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -180,7 +179,7 @@
             ${repository_type | h}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
-                    This repository's type cannot be changed because it's contents are valid only for it's current type or it has been cloned.
+                    This repository's type cannot be changed because its contents are valid only for its current type or it has been cloned.
                 </div>
             %endif
         %else:
