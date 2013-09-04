@@ -238,7 +238,7 @@
         overlay_class = ""
     %>
 
-    <div id="top-modal" class="modal fade ${overlay_class}" ${display} style="background:rgba(0,0,0,0.5)">
+    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
         <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
         <div id="top-modal-dialog" class="modal-dialog">
             <div class="modal-content">
