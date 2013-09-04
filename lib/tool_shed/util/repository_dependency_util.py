@@ -189,6 +189,10 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         log.debug( debug_msg )
                         suc.reset_previously_installed_repository( trans, installed_tool_shed_repository )
                         can_update = True
+                        reinstalling = True
+                        # Set changeset_revision here so suc.create_or_update_tool_shed_repository will find the previously installed
+                        # and uninstalled repository instead of creating a new record.
+                        changeset_revision = installed_tool_shed_repository.installed_changeset_revision
             else:
                 # A tool shed repository is being installed into a Galaxy instance for the first time, or we're attempting to install it or reinstall it resulted
                 # in an error.  In the latter case, the repository record in the database has no metadata and it's status has been set to 'New'.  In either case,
