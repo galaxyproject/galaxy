@@ -28,7 +28,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
-        client_manager_kwargs = {'transport': transport, 'cache': string_as_bool_or_none(cache)}
+        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache)}
         self.client_manager = ClientManager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
