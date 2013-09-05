@@ -670,9 +670,15 @@ class VcfDataProvider( GenomeDataProvider ):
             # Split line and aggregate data.
             feature = line.split()
             pos, c_id, ref, alt, qual, c_filter, info = feature[ 1:8 ]
-            format = feature[ 8 ]
-            samples_data = feature [ 9: ]
-            # VCF is 1-based.
+
+            # Format and samples data are optional.
+            format = None
+            samples_data = []
+            if len( feature ) > 8:
+                format = feature[ 8 ]
+                samples_data = feature [ 9: ]
+
+            # VCF is 1-based but provided position is 0-based.
             pos = int( pos ) - 1
 
             # FIXME: OK to skip?
@@ -680,11 +686,11 @@ class VcfDataProvider( GenomeDataProvider ):
                 count -= 1
                 continue
 
-            # Count number of samples matching each allele.
+            # Set up array to track allele counts.
             allele_counts = [ 0 for i in range ( alt.count( ',' ) + 1 ) ]
-
-            # Process and pack sample genotype.
             sample_gts = []
+
+            # Process and pack samples' genotype and count alleles across samples.
             alleles_seen = {}
             has_alleles = False
 
@@ -711,7 +717,7 @@ class VcfDataProvider( GenomeDataProvider ):
                     genotype = ''
 
                 sample_gts.append( genotype )
-
+            
             # Add locus data.
             locus_data = [
                 -1,
