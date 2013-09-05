@@ -8,7 +8,7 @@ ${parent.javascripts()}
 
 <!-- quota meter -->
 ${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 </%def>
 
 <%def name="get_user_json()">
