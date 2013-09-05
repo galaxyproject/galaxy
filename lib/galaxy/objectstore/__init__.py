@@ -372,7 +372,7 @@ class DistributedObjectStore(ObjectStore):
     """
 
     def __init__(self, config, fsmon=False):
-        super(DistributedObjectStore, self).__init__()
+        super(DistributedObjectStore, self).__init__(config)
         self.distributed_config = config.distributed_object_store_config_file
         assert self.distributed_config is not None, "distributed object store ('object_store = distributed') " \
                                                     "requires a config file, please set one in " \
