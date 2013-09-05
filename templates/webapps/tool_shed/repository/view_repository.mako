@@ -86,7 +86,7 @@
             <label>${sharable_link_label}</label>
             ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
         </div>
-        %if can_download:
+        %if can_download or can_push:
             <div class="form-row">
                 <label>Clone this repository:</label>
                 ${render_clone_str( repository )}
