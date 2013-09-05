@@ -230,7 +230,7 @@ ${h.to_json_string( user_dict )}
     
     <!-- quota meter -->
     ${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-    ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+    ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     <script type="text/javascript">
 
         // start a Galaxy namespace for objects created
