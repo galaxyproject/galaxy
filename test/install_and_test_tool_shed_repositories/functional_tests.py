@@ -567,6 +567,7 @@ def main():
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
         os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' ] = tool_dependency_dir
+    os.environ[ 'GALAXY_TOOL_DEPENDENCY_DIR' ] = tool_dependency_dir
     if 'GALAXY_INSTALL_TEST_DBURI' in os.environ:
         database_connection = os.environ[ 'GALAXY_INSTALL_TEST_DBURI' ]
     else:
