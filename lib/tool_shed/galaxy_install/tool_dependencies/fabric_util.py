@@ -155,12 +155,10 @@ def install_virtualenv( app, venv_dir ):
     if not os.path.exists( venv_dir ):
         with make_tmp_dir() as work_dir:
             downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
-            downloaded_file_path = td_common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
-            if td_common_util.istar( downloaded_file_path ):
-                td_common_util.extract_tar( downloaded_file_path, work_dir )
-                dir = td_common_util.tar_extraction_directory( work_dir, downloaded_filename )
-            else:
-                log.error( "Failed to download virtualenv: Downloaded file '%s' is not a tar file", downloaded_filename )
+            try:
+                dir = td_common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
+            except:
+                log.error( "Failed to download virtualenv: td_common_util.url_download( '%s', '%s', '%s' ) threw an exception", work_dir, downloaded_filename, VIRTUALENV_URL )
                 return False
             full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
             shutil.move( full_path_to_dir, venv_dir )
