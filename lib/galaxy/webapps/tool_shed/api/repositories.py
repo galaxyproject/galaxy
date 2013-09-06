@@ -14,18 +14,6 @@ from mercurial import hg, ui, commands
 
 log = logging.getLogger( __name__ )
 
-def default_repository_value_mapper( trans, repository ):
-    value_mapper={ 'id' : trans.security.encode_id( repository.id ),
-                   'user_id' : trans.security.encode_id( repository.user_id ) }
-    return value_mapper
-
-def default_repository_metadata_value_mapper( trans, repository_metadata ):
-    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
-                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
-    if repository_metadata.time_last_tested:
-        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
-    return value_mapper
-
 
 class RepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with repositories in the Tool Shed."""
@@ -108,12 +96,17 @@ class RepositoriesController( BaseAPIController ):
             ]
         }
         """
+        metadata_value_mapper = { 'id' : trans.security.encode_id,
+                                  'repository_id' : trans.security.encode_id,
+                                  'time_last_tested' : time_ago }
+        repository_value_mapper = { 'id' : trans.security.encode_id,
+                                    'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories/get_repository_revision_install_info?name=add_column&owner=test&changeset_revision=3a08cc21466f
         try:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_id = trans.security.encode_id( repository.id )
-            repository_dict = repository.to_dict( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.to_dict( view='element', value_mapper=repository_value_mapper )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=encoded_repository_id )
@@ -130,7 +123,7 @@ class RepositoriesController( BaseAPIController ):
             if repository_metadata:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
-                                                                              value_mapper=default_repository_metadata_value_mapper( trans, repository_metadata ) )
+                                                                              value_mapper=metadata_value_mapper )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
@@ -155,6 +148,8 @@ class RepositoriesController( BaseAPIController ):
         GET /api/repositories
         Displays a collection (list) of repositories.
         """
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.string_as_bool( deleted )
@@ -164,7 +159,7 @@ class RepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.Repository.table.c.name ) \
                                     .all()
             for repository in query:
-                repository_dict = repository.to_dict( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.to_dict( view='collection', value_mapper=value_mapper )
                 repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -184,10 +179,12 @@ class RepositoriesController( BaseAPIController ):
 
         :param id: the encoded id of the Repository object
         """
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
         try:
             repository = suc.get_repository_in_tool_shed( trans, id )
-            repository_dict = repository.to_dict( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.to_dict( view='element', value_mapper=value_mapper )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=trans.security.encode_id( repository.id ) )

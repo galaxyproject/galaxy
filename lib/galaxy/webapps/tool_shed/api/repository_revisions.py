@@ -11,13 +11,6 @@ import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
-def default_value_mapper( trans, repository_metadata ):
-    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
-                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
-    if repository_metadata.time_last_tested:
-        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
-    return value_mapper
-
 
 class RepositoryRevisionsController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repository revisions."""
@@ -79,6 +72,9 @@ class RepositoryRevisionsController( BaseAPIController ):
         GET /api/repository_revisions
         Displays a collection (list) of repository revisions.
         """
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'repository_id' : trans.security.encode_id,
+                         'time_last_tested' : time_ago }
         # Example URL: http://localhost:9009/api/repository_revisions
         repository_metadata_dicts = []
         # Build up an anded clause list of filters.
@@ -128,7 +124,7 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .all()
             for repository_metadata in query:
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
-                                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
+                                                                        value_mapper=value_mapper )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=trans.security.encode_id( repository_metadata.id ) )
@@ -148,10 +144,13 @@ class RepositoryRevisionsController( BaseAPIController ):
 
         :param id: the encoded id of the `RepositoryMetadata` object
         """
+        value_mapper = { 'id' : trans.security.encode_id, 
+                         'repository_id' : trans.security.encode_id, 
+                         'time_last_tested' : time_ago }
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( value_mapper=value_mapper )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -168,6 +167,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         PUT /api/repository_revisions/{encoded_repository_metadata_id}/{payload}
         Updates the value of specified columns of the repository_metadata table based on the key / value pairs in payload.
         """
+        value_mapper = dict( id=trans.security.encode_id, repository_id=trans.security.encode_id, time_last_tested=time_ago )
         repository_metadata_id = kwd.get( 'id', None )
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -188,7 +188,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( value_mapper=value_mapper )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )

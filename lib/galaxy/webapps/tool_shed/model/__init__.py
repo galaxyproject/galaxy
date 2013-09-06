@@ -154,9 +154,6 @@ class Repository( object, Dictifiable ):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
 
-    def as_dict( self, value_mapper=None ):
-        return self.to_dict( view='element', value_mapper=value_mapper )
-
     def can_change_type( self, app ):
         # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
         # the default type.
@@ -233,7 +230,7 @@ class Repository( object, Dictifiable ):
 
 class RepositoryMetadata( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
-                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
+                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'time_last_tested' )
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
                                  'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
                                  'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
@@ -269,9 +266,6 @@ class RepositoryMetadata( object, Dictifiable ):
                 if tool_dict.get( 'add_to_tool_panel', True ):
                     return True
         return False
-
-    def as_dict( self, value_mapper=None ):
-        return self.to_dict( view='element', value_mapper=value_mapper )
 
 
 class SkipToolTest( object, Dictifiable ):
