@@ -365,14 +365,15 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
         missing_tool_dependencies = repository_missing_tool_dependencies
     return installed_tool_dependencies, missing_tool_dependencies
 
-def remove_tool_dependency( trans, tool_dependency ):
-    dependency_install_dir = tool_dependency.installation_directory( trans.app )
+def remove_tool_dependency( app, tool_dependency ):
+    sa_session = app.model.context.current
+    dependency_install_dir = tool_dependency.installation_directory( app )
     removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
-        tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
+        tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
-        trans.sa_session.add( tool_dependency )
-        trans.sa_session.flush()
+        sa_session.add( tool_dependency )
+        sa_session.flush()
     return removed, error_message
 
 def remove_tool_dependency_installation_directory( dependency_install_dir ):

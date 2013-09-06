@@ -133,6 +133,24 @@ def handle_bz2( repository, uploaded_file_name ):
     bzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
 
+def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
+    """
+    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines a complex repository
+    dependency.
+    """
+    # The received sub_elem looks something like the following:
+    # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
+    revised, repository_elem, error_message = handle_repository_dependency_elem( trans, sub_elem, unpopulate=unpopulate )
+    if error_message:
+        exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+        raise Exception( exception_message )
+    if revised:
+        elem[ sub_elem_index ] = repository_elem
+        sub_elem_altered = True
+        if not altered:
+            altered = True
+    return altered, sub_elem_altered, elem
+
 def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
                               undesirable_dirs_removed, undesirable_files_removed ):
     repo_dir = repository.repo_path( trans.app )
@@ -300,7 +318,30 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
     return revised, elem, error_message
 
+def handle_set_environment_for_install( trans, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
+    # <action type="set_environment_for_install">
+    #     <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0">
+    #        <package name="eigen" version="2.0.17" />
+    #     </repository>
+    # </action>
+    for repo_index, repo_elem in enumerate( action_elem ):
+        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
+        if error_message:
+            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+            raise Exception( exception_message )
+        if revised:
+            action_elem[ repo_index ] = repository_elem
+            package_altered = True
+            if not altered:
+                altered = True
+    if package_altered:
+        actions_elem[ action_index ] = action_elem
+    return package_altered, altered, actions_elem
+
 def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopulate=False ):
+    """
+    Populate or unpopulate the tooshed and changeset_revision attributes of each <repository> tag defined within a tool_dependencies.xml file.
+    """
     altered = False
     # Make sure we're looking at a valid tool_dependencies.xml file.
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
@@ -308,51 +349,88 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
         return False, None
     root = tree.getroot()
     if root.tag == 'tool_dependency':
+        package_altered = False
         for root_index, root_elem in enumerate( root ):
             # <package name="eigen" version="2.0.17">
+            package_altered = False
             if root_elem.tag == 'package':
-                package_altered = False
                 for package_index, package_elem in enumerate( root_elem ):
                     if package_elem.tag == 'repository':
-                        # <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0" prior_installation_required="True" />
-                        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, package_elem, unpopulate=unpopulate )
-                        if error_message:
-                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-                            raise Exception( exception_message )
-                        if revised:
-                            root_elem[ package_index ] = repository_elem
-                            package_altered = True
-                            if not altered:
-                                altered = True
+                        # We have a complex repository dependency.
+                        altered, package_altered, root_elem = handle_complex_repository_dependency_elem( trans,
+                                                                                                         root_elem,
+                                                                                                         package_index,
+                                                                                                         package_elem,
+                                                                                                         package_altered,
+                                                                                                         altered,
+                                                                                                         unpopulate=unpopulate )
                     elif package_elem.tag == 'install':
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
-                            for action_index, action_elem in enumerate( actions_elem ):
-                                action_type = action_elem.get( 'type' )
-                                if action_type == 'set_environment_for_install':
-                                    # <action type="set_environment_for_install">
-                                    #     <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0">
-                                    #        <package name="eigen" version="2.0.17" />
-                                    #     </repository>
-                                    # </action>
-                                    for repo_index, repo_elem in enumerate( action_elem ):
-                                        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
-                                        if error_message:
-                                            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-                                            raise Exception( exception_message )
-                                        if revised:
-                                            action_elem[ repo_index ] = repository_elem
-                                            package_altered = True
-                                            if not altered:
-                                                altered = True
-                                    if package_altered:
-                                        actions_elem[ action_index ] = action_elem
+                            if actions_elem.tag == 'actions_group':
+                                # Inspect all entries in the <actions_group> tag set, skipping <actions> tag sets that define os and architecture
+                                # attributes.  We want to inspect only the last <actions> tag set contained within the <actions_group> tag set to
+                                # see if a complex repository dependency is defined.
+                                for actions_group_index, actions_group_elem in enumerate( actions_elem ):
+                                    if actions_group_elem.tag == 'actions':
+                                        # Skip all actions tags that include os or architecture attributes.
+                                        system = actions_group_elem.get( 'os' )
+                                        architecture = actions_group_elem.get( 'architecture' )
+                                        if system or architecture:
+                                            continue
+                                        # ...
+                                        # <actions>
+                                        #     <package name="libgtextutils" version="0.6">
+                                        #         <repository name="package_libgtextutils_0_6" owner="test" prior_installation_required="True" />
+                                        #     </package>
+                                        # ...
+                                        for last_actions_index, last_actions_elem in enumerate( actions_group_elem ):
+                                            last_actions_package_altered = False
+                                            if last_actions_elem.tag == 'package':
+                                                for last_actions_elem_package_index, last_actions_elem_package_elem in enumerate( last_actions_elem ):
+                                                    if last_actions_elem_package_elem.tag == 'repository':
+                                                        # We have a complex repository dependency.
+                                                        altered, last_actions_package_altered, last_actions_elem = \
+                                                            handle_complex_repository_dependency_elem( trans,
+                                                                                                       last_actions_elem,
+                                                                                                       last_actions_elem_package_index,
+                                                                                                       last_actions_elem_package_elem,
+                                                                                                       last_actions_package_altered,
+                                                                                                       altered,
+                                                                                                       unpopulate=unpopulate )
+                                                if last_actions_package_altered:
+                                                    last_actions_elem[ last_actions_elem_package_index ] = last_actions_elem_package_elem
+                                                    actions_group_elem[ last_actions_index ] = last_actions_elem
+                                            else:        
+                                                last_actions_elem_action_type = last_actions_elem.get( 'type' )
+                                                if last_actions_elem_action_type == 'set_environment_for_install':
+                                                    last_actions_package_altered, altered, last_actions_elem = \
+                                                        handle_set_environment_for_install( trans,
+                                                                                            last_actions_package_altered,
+                                                                                            altered,
+                                                                                            actions_group_elem,
+                                                                                            last_actions_index,
+                                                                                            last_actions_elem,
+                                                                                            unpopulate=unpopulate )
+                            elif actions_elem.tag == 'actions':
+                                # We are not in an <actions_group> tag set, so we must be in an <actions> tag set.
+                                for action_index, action_elem in enumerate( actions_elem ):
+                                    
+                                    action_type = action_elem.get( 'type' )
+                                    if action_type == 'set_environment_for_install':
+                                        package_altered, altered, actions_elem = handle_set_environment_for_install( trans,
+                                                                                                                     package_altered,
+                                                                                                                     altered,
+                                                                                                                     actions_elem,
+                                                                                                                     action_index,
+                                                                                                                     action_elem,
+                                                                                                                     unpopulate=unpopulate )
                             if package_altered:
                                 package_elem[ actions_index ] = actions_elem
-                        if package_altered:
-                            root_elem[ package_index ] = package_elem
-                if package_altered:
-                    root[ root_index ] = root_elem
+                    if package_altered:
+                        root_elem[ package_index ] = package_elem
+            if package_altered:
+                root[ root_index ] = root_elem
         return altered, root
     return False, None
 

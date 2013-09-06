@@ -242,9 +242,8 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
 
 def get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool_dependencies ):
     """Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories being installed into Galaxy."""
-    # FIXME: this method currently populates and returns only missing tool dependencies since tool dependencies defined for complex repository dependency
-    # relationships is not currently supported.  This method should be enhanced to search for installed tool dependencies defined as complex repository
-    # dependency relationships when that feature is implemented.
+    # FIXME: confirm that this method currently populates and returns only missing tool dependencies.  If so, this method should be enhanced to search for
+    # installed tool dependencies defined as complex repository dependency relationships.
     if all_tool_dependencies:
         tool_dependencies = {}
         missing_tool_dependencies = {}

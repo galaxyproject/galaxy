@@ -281,8 +281,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),
                                                                  destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
                         elif action_type == 'move_file':
-                            # TODO: Remove this hack that resets current_dir so that the pre-compiled bwa binary can be found.
-                            # current_dir = '/Users/gvk/workspaces_2008/bwa/bwa-0.5.9'
                             td_common_util.move_file( current_dir=current_dir,
                                                       source=os.path.join( action_dict[ 'source' ] ),
                                                       destination_dir=os.path.join( action_dict[ 'destination' ] ) )

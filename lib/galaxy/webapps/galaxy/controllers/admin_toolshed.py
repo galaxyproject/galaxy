@@ -252,7 +252,7 @@ class AdminToolshed( AdminGalaxy ):
                     tool_shed_repository.uninstalled = True
                     # Remove all installed tool dependencies, but don't touch any repository dependencies..
                     for tool_dependency in tool_shed_repository.installed_tool_dependencies:
-                        uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans, tool_dependency )
+                        uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans.app, tool_dependency )
                         if error_message:
                             errors = '%s  %s' % ( errors, error_message )
             tool_shed_repository.deleted = True
@@ -1559,7 +1559,7 @@ class AdminToolshed( AdminGalaxy ):
                 if tool_dependency.can_uninstall:
                     tool_dependencies_for_uninstallation.append( tool_dependency )
             for tool_dependency in tool_dependencies_for_uninstallation:
-                uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans, tool_dependency )
+                uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans.app, tool_dependency )
                 if error_message:
                     errors = True
                     message = '%s  %s' % ( message, error_message )

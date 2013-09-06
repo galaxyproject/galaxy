@@ -751,6 +751,32 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                 # dependency definition will be set as invalid.  This is currently the only case where a tool dependency definition is
                 # considered invalid.
                 repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app=app, repository_elem=sub_elem )
+            elif sub_elem.tag == 'install':
+                package_install_version = sub_elem.get( 'version', '1.0' )
+                if package_install_version == '1.0':
+                    # Complex repository dependencies can be defined within the last <actions> tag set contained in an <actions_group> tag set.
+                    # Comments, <repository> tag sets and <readme> tag sets will be skipped in td_common_util.parse_package_elem().
+                    actions_elem_tuples = td_common_util.parse_package_elem( sub_elem, platform_info_dict=None, include_after_install_actions=False )
+                    if actions_elem_tuples:
+                        # We now have a list of a single tuple that looks something like: [(True, <Element 'actions' at 0x104017850>)]
+                        actions_elem_tuple = actions_elem_tuples[ 0 ]
+                        in_actions_group, actions_elem = actions_elem_tuple
+                        if in_actions_group:
+                            # Since we're inside an <actions_group> tag set, inspect the actions_elem to see if a complex repository dependency
+                            # is defined.
+                            for action_elem in actions_elem:
+                                if action_elem.tag == 'package':
+                                    # <package name="libgtextutils" version="0.6">
+                                    #    <repository name="package_libgtextutils_0_6" owner="test" prior_installation_required="True" />
+                                    # </package>
+                                    ae_package_name = action_elem.get( 'name', None )
+                                    ae_package_version = action_elem.get( 'version', None )
+                                    if ae_package_name and ae_package_version:
+                                        for sub_action_elem in action_elem:
+                                            if sub_action_elem.tag == 'repository':
+                                                # We have a complex repository dependency.
+                                                repository_dependency_tup, repository_dependency_is_valid, error_message = \
+                                                    handle_repository_elem( app=app, repository_elem=sub_action_elem )
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         if repository_dependency_is_valid:
