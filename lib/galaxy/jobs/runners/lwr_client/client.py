@@ -2,6 +2,7 @@ import os
 import shutil
 import urllib
 import simplejson
+from simplejson import dumps
 from time import sleep
 
 from .destination import url_to_destination_params
@@ -67,6 +68,7 @@ class Client(object):
             destination_params = url_to_destination_params(destination_params)
         self.remote_host = destination_params.get("url")
         self.default_file_action = destination_params.get("default_file_action", "transfer")
+        self.action_config_path = destination_params.get("file_action_config", None)
         assert self.remote_host != None, "Failed to determine url for LWR client."
         self.private_key = destination_params.get("private_token", None)
         self.job_id = job_id
@@ -124,7 +126,7 @@ class Client(object):
     @parseJson()
     def _get_output_type(self, name):
         return self._raw_execute("get_output_type", {"name": name,
-                                                      "job_id": self.job_id})
+                                                     "job_id": self.job_id})
 
     def fetch_output(self, path, working_directory, action='transfer'):
         """
@@ -182,10 +184,10 @@ class Client(object):
 
     @parseJson()
     def _output_path(self, name, job_id, output_type):
-        self._raw_execute("output_path",
-                           {"name": name,
-                            "job_id": self.job_id,
-                            "output_type": output_type})
+        return self._raw_execute("output_path",
+                                 {"name": name,
+                                  "job_id": self.job_id,
+                                  "output_type": output_type})
 
     @retry()
     def __raw_download_output(self, name, job_id, output_type, output_path):
@@ -195,7 +197,7 @@ class Client(object):
                             "output_type": output_type},
                            output_path=output_path)
 
-    def launch(self, command_line):
+    def launch(self, command_line, submit_params=None):
         """
         Run or queue up the execution of the supplied
         `command_line` on the remote server.
@@ -205,8 +207,10 @@ class Client(object):
         command_line : str
             Command to execute.
         """
-        return self._raw_execute("launch", {"command_line": command_line,
-                                             "job_id": self.job_id})
+        launch_params = dict(command_line=command_line, job_id=self.job_id)
+        if submit_params:
+            launch_params['params'] = dumps(submit_params)
+        return self._raw_execute("launch", launch_params)
 
     def kill(self):
         """

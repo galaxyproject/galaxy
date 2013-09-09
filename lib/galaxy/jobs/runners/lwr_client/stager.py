@@ -2,6 +2,8 @@ from os.path import abspath, basename, join, exists
 from os import listdir, sep
 from re import findall
 
+from .action_mapper import FileActionMapper
+
 from logging import getLogger
 log = getLogger(__name__)
 
@@ -99,20 +101,6 @@ class JobInputs(object):
         return items
 
 
-class FileActionMapper(object):
-
-    def __init__(self, client):
-        self.default_action = client.default_file_action
-
-    def action(self, path, type):
-        action = self.default_action
-        if type in ["work_dir", "output_task", "output"] and action == "none":
-            ## We are changing the working_directory relative to what
-            ## Galaxy would use, these need to be copied over.
-            action = "copy"
-        return (action,)
-
-
 class TransferTracker(object):
 
     def __init__(self, client, job_inputs):
@@ -123,9 +111,12 @@ class TransferTracker(object):
 
     def handle_transfer(self, path, type, name=None, contents=None):
         if contents:
+            # If contents loaded in memory, no need to write out file and copy,
+            # just transfer.
             action = ('transfer', )
         else:
             action = self.__action(path, type)
+
         if action[0] in ['transfer', 'copy']:
             response = self.client.put_file(path, type, name=name, contents=contents)
             self.register_rewrite(path, response['path'], type, force=True)
@@ -137,7 +128,7 @@ class TransferTracker(object):
 
     def register_rewrite(self, local_path, remote_path, type, force=False):
         action = self.__action(local_path, type)
-        if action[0] == "transfer" or force:
+        if action[0] in ['transfer', 'copy'] or force:
             self.file_renames[local_path] = remote_path
 
     def rewrite_input_paths(self):
