@@ -1,4 +1,5 @@
 a{text-decoration:underline}
+label{font-weight:normal}
 body{background:#2c3143;color:#999;padding:0;border:0;margin:3px;margin-right:5px;margin-left:5px;overflow:hidden}
 div.pageTitle{font-size:175%;font-weight:bold}
 div.pageTitle a:link,div.pageTitle a:visited,div.pageTitle a:active,div.pageTitle a:hover{text-decoration:none}

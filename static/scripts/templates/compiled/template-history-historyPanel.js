@@ -8,7 +8,7 @@ helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
 function program1(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div id=\"history-name\" class=\"tooltip editable-text\"\n                title=\"";
+  buffer += "\n            <div id=\"history-name\" class=\"editable-text\"\n                title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
@@ -30,7 +30,7 @@ function program2(depth0,data) {
 function program4(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div id=\"history-name\" class=\"tooltip\"\n                title=\"";
+  buffer += "\n            <div id=\"history-name\"\n                title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }

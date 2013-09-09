@@ -9,10 +9,10 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
         <div id="history-name-container">
             {{! TODO: factor out conditional css }}
             {{#if user.email}}
-            <div id="history-name" class="tooltip editable-text"
+            <div id="history-name" class="editable-text"
                 title="{{#local}}Click to rename history{{/local}}">{{name}}</div>
             {{else}}
-            <div id="history-name" class="tooltip"
+            <div id="history-name"
                 title="{{#local}}You must be logged in to edit your history name{{/local}}">{{name}}</div>
             {{/if}}
         </div>

@@ -1085,7 +1085,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                    '<div class="number f-corner">0</div>' +
                    '<div class="icon fa-icon-2x"></div>' +
                 '</div>' +
-                '<div class="galaxy-frame-active f-corner" style="position: absolute; top: 8px;">' +
+                '<div class="galaxy-frame-active f-corner">' +
                    '<div class="icon fa-icon-2x fa-icon-th"></div>' +
                 '</div>';
     },

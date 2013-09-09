@@ -1,4 +1,5 @@
 a{text-decoration:underline}
+label{font-weight:normal}
 body{margin:0;font-family:Helvetica;background:#FFFFFF;color:#000000;overflow-x:hidden;-webkit-user-select:none;-webkit-text-size-adjust:none}
 body>*:not(.toolbar){display:none;position:absolute;margin:0;padding:0;left:0;width:100%;min-height:372px}
 body[orient="landscape"]>*:not(.toolbar){min-height:268px}

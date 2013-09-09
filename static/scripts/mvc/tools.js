@@ -587,7 +587,7 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
-        this.$el.find('.tooltip').tooltip();
+        this.$el.find('[title]').tooltip();
         return this;
     },
     

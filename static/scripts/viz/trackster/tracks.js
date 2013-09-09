@@ -313,7 +313,7 @@ Drawable.prototype.action_icons_def = [
         css_class: "remove-icon",
         on_click_fn: function(drawable) {
             // Tipsy for remove icon must be deleted when drawable is deleted.
-            $(".bs-tooltip").remove();
+            $(".tooltip").remove();
             drawable.remove();
         }
     }
@@ -641,7 +641,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             title: "Show composite track",
             css_class: "layers-stack",
             on_click_fn: function(group) {
-                $(".bs-tooltip").remove();
+                $(".tooltip").remove();
                 group.show_composite_track();
             }
         },
@@ -741,7 +741,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             }
             else {
                 this.action_icons.composite_icon.hide();
-                $(".bs-tooltip").remove();
+                $(".tooltip").remove();
             }
         
             //
@@ -1608,7 +1608,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     /** Close and reset overview. */
     reset_overview: function() {
         // Update UI.
-        $(".bs-tooltip").remove();
+        $(".tooltip").remove();
         this.overview_viewport.find(".track-tile").remove();
         this.overview_viewport.height(this.default_overview_height);
         this.overview_box.height(this.default_overview_height);
@@ -2020,10 +2020,10 @@ extend(DrawableConfig.prototype, {
                         input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
                             .appendTo(container_div).click(function(e) {
                             // Hide other pickers.
-                            $(".bs-tooltip").removeClass( "in" );
+                            $(".tooltip").removeClass( "in" );
                             
                             // Show input's color picker.
-                            var tip = $(this).siblings(".bs-tooltip").addClass( "in" );
+                            var tip = $(this).siblings(".tooltip").addClass( "in" );
                             tip.css( { 
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                                 // top: $(this).position().top + $(this.height) 
@@ -2051,7 +2051,7 @@ extend(DrawableConfig.prototype, {
                         new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
                                          .attr("title", "Set new random color").tooltip(),
                         // Color picker in tool tip style.
-                        tip = $( "<div class='bs-tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
+                        tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
                         // Inner div for padding purposes
                         tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
                         tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
@@ -2171,7 +2171,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
-            $(".bs-tooltip").hide();
+            $(".tooltip").hide();
             track.request_draw();
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
@@ -2182,7 +2182,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
-            $(".bs-tooltip").hide();
+            $(".tooltip").hide();
             track.request_draw();
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
@@ -2416,7 +2416,7 @@ extend(Track.prototype, Drawable.prototype, {
                     track.revert_name();
                 }
                 // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
-                $(".bs-tooltip").remove();
+                $(".tooltip").remove();
             }
         },
         // Go to parameter exploration visualization.
@@ -2833,7 +2833,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
             css_class: "exclamation",
             on_click_fn: function(track) {
-                $(".bs-tooltip").remove();
+                $(".tooltip").remove();
                 // HACKish: is it always reasonble to use view to get w_scale/current resolution?
                 track.slotters[ track.view.resolution_px_b ].max_rows *= 2;
                 track.request_draw({ clear_tile_cache: true });
@@ -3098,7 +3098,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             label = $("<div/>").text(track.prefs[pref_name]).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
-                    $(".bs-tooltip").remove();
+                    $(".tooltip").remove();
                     track.config.set_param_value(pref_name, new_val);
                     on_change();
                 },
@@ -3579,7 +3579,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             title: "Show individual tracks",
             css_class: "layers-stack",
             on_click_fn: function(track) {
-                $(".bs-tooltip").remove();
+                $(".tooltip").remove();
                 track.show_group();
             }
         }

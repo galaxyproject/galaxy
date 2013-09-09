@@ -682,6 +682,7 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+
     // Tooltips
     // if ( $.fn.tipsy ) {
     //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
@@ -690,10 +691,10 @@ $(document).ready( function() {
     // }
     if ( $.fn.tooltip ) {
         // Put tooltips below items in panel header so that they do not overlap masthead.
-        $(".unified-panel-header .tooltip").tooltip( { placement: 'bottom' } );
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
         
         // Default tooltip location to be above item.
-        $(".tooltip").tooltip( { placement: 'top' } );
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();

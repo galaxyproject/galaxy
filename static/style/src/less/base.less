@@ -706,13 +706,13 @@ textarea, input[type="text"], input[type="password"] {
     position: absolute; 
     display: none; 
     right: 5px; 
-    top: 9px;
+    top: 8px;
 }
 
 #search-clear-btn {
     position: absolute; 
     right: 5px; 
-    top: 9px;
+    top: 8px;
     display: block;
     font-size: 1.4em;
     text-decoration: none;
@@ -856,8 +856,8 @@ table.tabletip tbody tr:hover td {
 
 
 table.colored {
-    border-top: solid @table-border 1px;
-    border-bottom: solid @table-border 1px;
+    border-top: solid @table-border-color 1px;
+    border-bottom: solid @table-border-color 1px;
 }
 
 table.colored td, table.colored th {
@@ -871,7 +871,7 @@ table.colored tr.header {
     color: contrast(@complement-color-3);
     background-repeat: repeat-x;
     background-position: top;
-    border-bottom: solid @table-border 1px;
+    border-bottom: solid @table-border-color 1px;
     font-weight: bold;
 }
 
@@ -927,8 +927,6 @@ div.debug {
     line-height: @line-height-base;
     background: @table-heading-bg;
     color: contrast(@table-heading-bg);
-    background-repeat: repeat-x;
-    background-position: top;
     border-top: solid @table-border-color 1px;
     border-bottom: solid @table-border-color 1px;
     padding: 5px;
