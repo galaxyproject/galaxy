@@ -7,15 +7,19 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <h3 align="center">Jobs per month for tool "${tool_id}"</h3>
-        <h4 align="center">Click Total Jobs to see the tool's jobs for that month</h4>
+        <h4 align="center">Jobs per month for tool "${tool_id}"</h4>
+        <h5 align="center">Click Jobs to view details</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs for tool "${tool_id}"</td></tr>
             %else:
                 <tr class="header">
                     <td>Month</td>
-                    <td>Total Jobs</td>
+                    %if is_user_jobs_only:
+    					<td>User Jobs</td>
+					%else:
+	                    <td>User + Monitor Jobs</td>
+	                %endif
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

@@ -341,6 +341,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+            
+        
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -348,6 +350,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # If an error message is set here, it's sent back using
             # trans.show_error in the response -- in expose_api.
             self.error_message = self._authenticate_api( session_cookie )
+        elif self.app.name == "reports":
+            self.galaxy_session = None
         else:
             #This is a web request, get or create session.
             self._ensure_valid_session( session_cookie )
