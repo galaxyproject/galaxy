@@ -347,15 +347,17 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                             get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
                         if required_repository_installed_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
-                            required_repository_installed_tool_dependencies = add_installation_directories_to_tool_dependencies( trans=trans,
-                                                                                                                                 tool_dependencies=required_repository_installed_tool_dependencies )
+                            required_repository_installed_tool_dependencies = \
+                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                   tool_dependencies=required_repository_installed_tool_dependencies )
                             for td_key, td_dict in required_repository_installed_tool_dependencies.items():
                                 if td_key not in repository_installed_tool_dependencies:
                                     repository_installed_tool_dependencies[ td_key ] = td_dict
                         if required_repository_missing_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
-                            required_repository_missing_tool_dependencies = add_installation_directories_to_tool_dependencies( trans=trans,
-                                                                                                                               tool_dependencies=required_repository_missing_tool_dependencies )
+                            required_repository_missing_tool_dependencies = \
+                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                   tool_dependencies=required_repository_missing_tool_dependencies )
                             for td_key, td_dict in required_repository_missing_tool_dependencies.items():
                                 if td_key not in repository_missing_tool_dependencies:
                                     repository_missing_tool_dependencies[ td_key ] = td_dict

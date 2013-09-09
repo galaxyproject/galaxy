@@ -165,11 +165,20 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
         missing_rd_tups = []
         for tsr in repository.repository_dependencies:
             prior_installation_required = suc.set_prior_installation_required( repository, tsr )
-            rd_tup = [ tsr.tool_shed, tsr.name, tsr.owner, tsr.changeset_revision, prior_installation_required, tsr.id, tsr.status ]
+            only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
+            rd_tup = [ tsr.tool_shed, tsr.name, tsr.owner, tsr.changeset_revision, prior_installation_required, only_if_compiling_contained_td, tsr.id, tsr.status ]
             if tsr.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                 installed_rd_tups.append( rd_tup )
             else:
-               missing_rd_tups.append( rd_tup )
+                # We'll only add the rd_tup to the missing_rd_tups list if the received repository has tool dependencies that are not
+                # correctly installed.  This may prove to be a weak check since the repository in question may not have anything to do
+                # with compiling the missing tool dependencies.  If we discover that this is a problem, more granular checking will be
+                # necessary here.
+                if repository.missing_tool_dependencies:
+                    if not repository_dependency_needed_only_for_compiling_tool_dependency( repository, tsr ):
+                        missing_rd_tups.append( rd_tup )
+                else:
+                    missing_rd_tups.append( rd_tup )
         if installed_rd_tups or missing_rd_tups:
             # Get the description from the metadata in case it has a value.
             repository_dependencies = metadata.get( 'repository_dependencies', {} )
@@ -180,7 +189,8 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
                                                                                            repository.name,
                                                                                            repository.owner,
                                                                                            repository.installed_changeset_revision,
-                                                                                           prior_installation_required )
+                                                                                           prior_installation_required,
+                                                                                           only_if_compiling_contained_td )
             if installed_rd_tups:
                 installed_repository_dependencies[ 'root_key' ] = root_key
                 installed_repository_dependencies[ root_key ] = installed_rd_tups
@@ -211,7 +221,8 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
                 # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
                 # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
                 # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )
@@ -219,17 +230,39 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, current_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), repository.id, repository.status ]
+                    new_rd_tup = [ tool_shed,
+                                  name,
+                                  owner,
+                                  changeset_revision,
+                                  prior_installation_required,
+                                  only_if_compiling_contained_td,
+                                  repository.id,
+                                  repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
+                        # A repository dependency that is not installed will not be considered missing if it's value for only_if_compiling_contained_td is
+                        # True  This is because this type of repository dependency will only be considered at the time that the specified tool dependency
+                        # is being installed, and even then only if the compiled binary of the tool dependency could not be installed due to the unsupported
+                        # installation environment.
+                        if not util.asbool( only_if_compiling_contained_td ):
+                            if new_rd_tup not in missing_rd_tups:
+                                missing_rd_tups.append( new_rd_tup )
+                else:
+                    new_rd_tup = [ tool_shed,
+                                  name,
+                                  owner,
+                                  changeset_revision,
+                                  prior_installation_required,
+                                  only_if_compiling_contained_td,
+                                  None,
+                                  'Never installed' ]
+                    if not util.asbool( only_if_compiling_contained_td ):
+                        # A repository dependency that is not installed will not be considered missing if it's value for only_if_compiling_contained_td is
+                        # True - see above...
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
-                else:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, str( prior_installation_required ), None, 'Never installed' ]
-                    if new_rd_tup not in missing_rd_tups:
-                        missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
         installed_repository_dependencies[ 'root_key' ] = root_key
         installed_repository_dependencies[ root_key ] = installed_rd_tups
@@ -286,20 +319,32 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                         if key in [ 'root_key', 'description' ]:
                             continue
                         try:
-                            toolshed, name, owner, changeset_revision, prior_installation_required = container_util.get_components_from_key( key )
-                            components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+                            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                                container_util.get_components_from_key( key )
+                            components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
                         except ValueError:
-                            # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False in the caller.
+                            # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required and only_if_compiling_contained_td
+                            # to False in the caller.
                             toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
                             components_list = [ toolshed, name, owner, changeset_revision ]
-                        if components_list not in required_repository_tups:
-                            required_repository_tups.append( components_list )
-                        for components_list in val:
+                            only_if_compiling_contained_td = 'False'
+                        # Skip listing a repository dependency if it is required only to compile a tool dependency defined for the dependent repository.
+                        if not util.asbool( only_if_compiling_contained_td ):
                             if components_list not in required_repository_tups:
                                 required_repository_tups.append( components_list )
+                        for components_list in val:
+                            try:
+                                only_if_compiling_contained_td = components_list[ 5 ]
+                            except:
+                                only_if_compiling_contained_td = 'False'
+                            # TODO: Fix this to display the tool dependency if only_if_compiling_contained_td is True, but clarify that installation may not
+                            # happen.
+                            if not util.asbool( only_if_compiling_contained_td ):
+                                if components_list not in required_repository_tups:
+                                    required_repository_tups.append( components_list )
                 else:
                     # We have a single repository with no dependencies.
-                    components_list = [ tool_shed_url, repository_name, repository_owner, changeset_revision, 'False' ]
+                    components_list = [ tool_shed_url, repository_name, repository_owner, changeset_revision, 'False', 'False' ]
                     required_repository_tups.append( components_list )
             if required_repository_tups:
                 # The value of required_repository_tups is a list of tuples, so we need to encode it.
@@ -393,3 +438,16 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
+
+def repository_dependency_needed_only_for_compiling_tool_dependency( repository, repository_dependency ):
+    for rd_tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
+        # TODO: we may discover that we need to check more than just installed_changeset_revision and changeset_revision here, in which
+        # case we'll need to contact the tool shed to get the list of all possible changeset_revisions.
+        if repository_dependency.tool_shed == tool_shed and \
+            repository_dependency.name == name and \
+            repository_dependency.owner == owner and \
+            ( repository_dependency.installed_changeset_revision == changeset_revision or \
+              repository_dependency.changeset_revision == changeset_revision ):
+            return True
+    return False

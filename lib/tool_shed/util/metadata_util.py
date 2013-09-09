@@ -199,19 +199,23 @@ def compare_readme_files( ancestor_readme_files, current_readme_files ):
 
 def compare_repository_dependencies( trans, ancestor_repository_dependencies, current_repository_dependencies ):
     """Determine if ancestor_repository_dependencies is the same as or a subset of current_repository_dependencies."""
-    # The list of repository_dependencies looks something like: [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407", False]].
+    # The list of repository_dependencies looks something like:
+    # [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407", "False", "False"]].
     # Create a string from each tuple in the list for easier comparison.
     if len( ancestor_repository_dependencies ) <= len( current_repository_dependencies ):
         for ancestor_tup in ancestor_repository_dependencies:
-            ancestor_tool_shed, ancestor_repository_name, ancestor_repository_owner, ancestor_changeset_revision, ancestor_prior_installation_required = ancestor_tup
+            a_tool_shed, a_repo_name, a_repo_owner, a_changeset_revision, a_prior_installation_required, a_only_if_compiling_contained_td = \
+                ancestor_tup
             found_in_current = False
             for current_tup in current_repository_dependencies:
-                current_tool_shed, current_repository_name, current_repository_owner, current_changeset_revision, current_prior_installation_required = current_tup
-                if current_tool_shed == ancestor_tool_shed and \
-                    current_repository_name == ancestor_repository_name and \
-                    current_repository_owner == ancestor_repository_owner and \
-                    current_changeset_revision == ancestor_changeset_revision and \
-                    util.string_as_bool( current_prior_installation_required ) == util.string_as_bool( ancestor_prior_installation_required ):
+                c_tool_shed, c_repo_name, c_repo_owner, c_changeset_revision, c_prior_installation_required, c_only_if_compiling_contained_td = \
+                    current_tup
+                if c_tool_shed == a_tool_shed and \
+                    c_repo_name == a_repo_name and \
+                    c_repo_owner == a_repo_owner and \
+                    c_changeset_revision == a_changeset_revision and \
+                    util.string_as_bool( c_prior_installation_required ) == util.string_as_bool( a_prior_installation_required ) and \
+                    util.string_as_bool( c_only_if_compiling_contained_td ) == util.string_as_bool( a_only_if_compiling_contained_td ):
                     found_in_current = True
                     break
             if not found_in_current:
@@ -354,9 +358,11 @@ def different_revision_defines_tip_only_repository_dependency( trans, rd_tup, re
     Determine if the only difference between rd_tup and a dependency definition in the list of repository_dependencies is the changeset_revision value.
     """
     new_metadata_required = False
-    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
+    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
+        common_util.parse_repository_dependency_tuple( rd_tup )
     for repository_dependency in repository_dependencies:
-        tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repository_dependency )
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( repository_dependency )
         if rd_tool_shed == tool_shed and rd_name == name and rd_owner == owner:
             # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
@@ -750,7 +756,9 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                 # We have a complex repository dependency.  If the returned value of repository_dependency_is_valid is True, the tool
                 # dependency definition will be set as invalid.  This is currently the only case where a tool dependency definition is
                 # considered invalid.
-                repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app=app, repository_elem=sub_elem )
+                repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app=app,
+                                                                                                                   repository_elem=sub_elem,
+                                                                                                                   only_if_compiling_contained_td=False )
             elif sub_elem.tag == 'install':
                 package_install_version = sub_elem.get( 'version', '1.0' )
                 if package_install_version == '1.0':
@@ -763,7 +771,8 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                         in_actions_group, actions_elem = actions_elem_tuple
                         if in_actions_group:
                             # Since we're inside an <actions_group> tag set, inspect the actions_elem to see if a complex repository dependency
-                            # is defined.
+                            # is defined.  By definition, complex repository dependency definitions contained within the last <actions> tag set
+                            # within an <actions_group> tag set will have the value of "only_if_compiling_contained_td" set to True in 
                             for action_elem in actions_elem:
                                 if action_elem.tag == 'package':
                                     # <package name="libgtextutils" version="0.6">
@@ -776,7 +785,9 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                                             if sub_action_elem.tag == 'repository':
                                                 # We have a complex repository dependency.
                                                 repository_dependency_tup, repository_dependency_is_valid, error_message = \
-                                                    handle_repository_elem( app=app, repository_elem=sub_action_elem )
+                                                    handle_repository_elem( app=app,
+                                                                            repository_elem=sub_action_elem,
+                                                                            only_if_compiling_contained_td=True )
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         if repository_dependency_is_valid:
@@ -806,13 +817,21 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
         valid_repository_dependencies_dict = dict( description=root.get( 'description' ) )
         valid_repository_dependency_tups = []
         for repository_elem in root.findall( 'repository' ):
-            repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app, repository_elem )
+            repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app,
+                                                                                                               repository_elem,
+                                                                                                               only_if_compiling_contained_td=False )
             if repository_dependency_is_valid:
                 valid_repository_dependency_tups.append( repository_dependency_tup )
             else:
                 # Append the error_message to the repository dependencies tuple.
-                toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), error_message )
+                toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tup
+                repository_dependency_tup = ( toolshed,
+                                              name,
+                                              owner,
+                                              changeset_revision,
+                                              prior_installation_required,
+                                              only_if_compiling_contained_td,
+                                              error_message )
                 invalid_repository_dependency_tups.append( repository_dependency_tup )
         if invalid_repository_dependency_tups:
             invalid_repository_dependencies_dict[ 'repository_dependencies' ] = invalid_repository_dependency_tups
@@ -859,8 +878,9 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
-                    toolshed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
-                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, str( prior_installation_required ), message )
+                    toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tup
+                    repository_dependency_tup = \
+                        ( toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
@@ -1137,7 +1157,7 @@ def handle_existing_tool_dependencies_that_changed_in_update( app, repository, o
                 deleted_tool_dependency_names.append( original_dependency_val_dict[ 'name' ] )
     return updated_tool_dependency_names, deleted_tool_dependency_names
 
-def handle_repository_elem( app, repository_elem ):
+def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td=False ):
     """
     Process the received repository_elem which is a <repository> tag either from a repository_dependencies.xml file or a tool_dependencies.xml file.
     If the former, we're generating repository dependencies metadata for a repository in the tool shed.  If the latter, we're generating package
@@ -1155,7 +1175,7 @@ def handle_repository_elem( app, repository_elem ):
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
     prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
-    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, str( prior_installation_required ) ]
+    repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required, str( only_if_compiling_contained_td ) ]
     user = None
     repository = None
     if app.name == 'galaxy':
@@ -1974,9 +1994,9 @@ def update_repository_dependencies_metadata( metadata, repository_dependency_tup
         repository_dependencies_dict = metadata.get( 'invalid_repository_dependencies', None )
     for repository_dependency_tup in repository_dependency_tups:
         if is_valid:
-            tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tup
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tup
         else:
-            tool_shed, name, owner, changeset_revision, prior_installation_required, error_message = repository_dependency_tup
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error_message = repository_dependency_tup
         if repository_dependencies_dict:
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
             for repository_dependency_tup in repository_dependency_tups:

@@ -1648,7 +1648,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             encoded_repository_ids = []
             changeset_revisions = []
             for required_repository_tup in decoded_required_repository_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = \
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( required_repository_tup )
                 repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )

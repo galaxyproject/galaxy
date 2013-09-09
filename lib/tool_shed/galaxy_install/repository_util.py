@@ -101,7 +101,8 @@ def get_installed_repositories_from_repository_dependencies( trans, repository_d
         # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
         # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
         try:
-            tool_shed, name, owner, changeset_revision, prior_installation_required = container_util.get_components_from_key( rd_key )
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                container_util.get_components_from_key( rd_key )
         except:
             tool_shed, name, owner, changeset_revision = container_util.get_components_from_key( rd_val )
         installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
@@ -109,7 +110,7 @@ def get_installed_repositories_from_repository_dependencies( trans, repository_d
             installed_repositories.append( installed_repository )
         for rd_val in rd_vals:
             try:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = rd_val
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_val
             except:
                 tool_shed, name, owner, changeset_revision = rd_val
             installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
@@ -627,7 +628,7 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
                     folder_id += 1
                     # Generate the label by retrieving the repository name.
                     try:
-                        toolshed, name, owner, changeset_revision, prior_installation_required = \
+                        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                             container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
                     except ValueError:
                         # For backward compatibility to the 12/20/12 Galaxy release.

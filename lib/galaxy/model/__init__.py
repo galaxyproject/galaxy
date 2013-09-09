@@ -3571,6 +3571,10 @@ class ToolShedRepository( object ):
 
     @property
     def repository_dependencies( self ):
+        """
+        Return all of this repository's repository dependencies, ignoring their attributes like prior_installation_required and
+        only_if_compiling_contained_td.
+        """
         required_repositories = []
         for rrda in self.required_repositories:
             repository_dependency = rrda.repository_dependency
@@ -3608,7 +3612,7 @@ class ToolShedRepository( object ):
             if required_repository.status == self.installation_status.ERROR:
                 required_repositories_with_installation_errors.append( required_repository )
         return required_repositories_with_installation_errors
-
+    
     @property
     def requires_prior_installation_of( self ):
         """
@@ -3624,15 +3628,18 @@ class ToolShedRepository( object ):
         if self.has_repository_dependencies:
             rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
-                if len( rd_tup ) == 4:
-                    # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
-                    tool_shed, name, owner, changeset_revision = rd_tup
-                    prior_installation_required = False
-                elif len( rd_tup ) == 5:
+                if len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup
-                    prior_installation_required = galaxy.util.asbool( str( prior_installation_required ) )
-                if prior_installation_required:
-                    required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, prior_installation_required ) )
+                    if galaxy.util.asbool( prior_installation_required ):
+                        required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, 'True', 'False' ) )
+                elif len( rd_tup ) == 6: 
+                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
+                    # The repository dependency will only be required to be previsously installed if it does not fall into the category of
+                    # a repository that must be installed only so that it's contained tool dependency can be used for compiling the tool
+                    # dependency of the dependent repository.
+                    if not galaxy.util.asbool( only_if_compiling_contained_td ):
+                        if galaxy.util.asbool( prior_installation_required ):
+                            required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, 'True', 'False' ) )
         return required_rd_tups_that_must_be_installed
 
     @property
@@ -3686,6 +3693,19 @@ class ToolShedRepository( object ):
         return tool_shed_url.rstrip( '/' )
 
     @property
+    def tuples_of_repository_dependencies_needed_for_compiling_td( self ):
+        """Return this repository's repository dependencies that are necessary only for compiling this repository's tool dependencies."""
+        rd_tups_of_repositories_needed_for_compiling_td = []
+        if self.has_repository_dependencies:
+            rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+            for rd_tup in rd_tups:
+                if len( rd_tup ) == 6: 
+                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
+                    if galaxy.util.asbool( only_if_compiling_contained_td ):
+                        rd_tups_of_repositories_needed_for_compiling_td.append( ( tool_shed, name, owner, changeset_revision, 'False', 'True' ) )
+        return rd_tups_of_repositories_needed_for_compiling_td
+
+    @property
     def uninstalled_repository_dependencies( self ):
         """Return the repository's repository dependencies that have been uninstalled."""
         uninstalled_required_repositories = []
@@ -3723,6 +3743,7 @@ class RepositoryDependency( object ):
     def __init__( self, tool_shed_repository_id=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
 
+
 class ToolDependency( object ):
     installation_status = Bunch( NEVER_INSTALLED='Never installed',
                                  INSTALLING='Installing',
@@ -3734,6 +3755,7 @@ class ToolDependency( object ):
                     WARNING = 'queued',
                     ERROR = 'error',
                     UNINSTALLED = 'deleted_new' )
+
     def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.name = name
@@ -3741,21 +3763,26 @@ class ToolDependency( object ):
         self.type = type
         self.status = status
         self.error_message = error_message
+
     @property
     def can_install( self ):
         return self.status in [ self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED ]
+
     @property
     def can_uninstall( self ):
         return self.status in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
+
     @property
     def can_update( self ):
         return self.status in [ self.installation_status.NEVER_INSTALLED,
                                 self.installation_status.INSTALLED,
                                 self.installation_status.ERROR,
                                 self.installation_status.UNINSTALLED ]
+
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
+
     def installation_directory( self, app ):
         if self.type == 'package':
             return os.path.join( app.config.tool_dependency_dir,
@@ -3771,6 +3798,7 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.owner,
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
+
 
 class ToolVersion( object, Dictifiable ):
     dict_element_visible_keys = ( 'id', 'tool_shed_repository' )

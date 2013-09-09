@@ -325,7 +325,8 @@ def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
 def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     """Generate teh URL for cloning a repositoyr given a tuple of toolshed, name, owner, changeset_revision."""
     # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
-    toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( repo_info_tup )
+    toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+        common_util.parse_repository_dependency_tuple( repo_info_tup )
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
 
@@ -975,16 +976,24 @@ def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, reposi
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
-                if asbool( prior_installation_required ):
-                    if trans.webapp.name == 'galaxy':
-                        repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
-                    else:
-                        repository = get_repository_by_name_and_owner( trans.app, name, owner )
-                    if repository:
-                        encoded_repository_id = trans.security.encode_id( repository.id )
-                        if encoded_repository_id in tsr_ids:
-                            prior_tsr_ids.append( encoded_repository_id )
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                # If only_if_compiling_contained_td is False, then the repository dependency is not required to be installed prior to the dependent
+                # repository even if prior_installation_required is True.  This is because the only meaningful content of the repository dependency
+                # is it's contained tool dependency, which is required in order to compile the dependent repository's tool dependency.  In the scenario
+                # where the repository dependency is not installed prior to the dependent repository's tool dependency compilation process, the tool
+                # dependency compilation framework will install the repository dependency prior to compilation of the dependent repository's tool
+                # dependency.
+                if not asbool( only_if_compiling_contained_td ):
+                    if asbool( prior_installation_required ):
+                        if trans.webapp.name == 'galaxy':
+                            repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
+                        else:
+                            repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                        if repository:
+                            encoded_repository_id = trans.security.encode_id( repository.id )
+                            if encoded_repository_id in tsr_ids:
+                                prior_tsr_ids.append( encoded_repository_id )
     return prior_tsr_ids
 
 def get_repository_in_tool_shed( trans, id ):
@@ -1425,9 +1434,21 @@ def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revi
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
 
+def set_only_if_compiling_contained_td( repository, required_repository ):
+    """Return True if the received required_repository is only needed to compile a tool dependency defined for the received repository."""
+    # This method is called only from Galaxy when rendering repository dependencies for an installed tool shed repository.
+    # TODO: Do we need to check more than changeset_revision here?
+    required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
+    for tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
+        partial_tup = tup[ 0:4 ]
+        if partial_tup == required_repository_tup:
+            return 'True'
+    return 'False'
+
 def set_prior_installation_required( repository, required_repository ):
     """Return True if the received required_repository must be installed before the received repository."""
     # This method is called only from Galaxy when rendering repository dependencies for an installed tool shed repository.
+    # TODO: Do we need to check more than changeset_revision here?
     required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
     # Get the list of repository dependency tuples associated with the received repository where prior_installation_required is True.
     required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
@@ -1435,9 +1456,9 @@ def set_prior_installation_required( repository, required_repository ):
         # Repository dependency tuples in metadata include a prior_installation_required value, so strip it for comparision.
         partial_required_rd_tup = required_rd_tup[ 0:4 ]
         if partial_required_rd_tup == required_repository_tup:
-            # Return the boolean value of prior_installation_required, which defaults to False.
-            return required_rd_tup[ 4 ]
-    return False
+            # Return the string value of prior_installation_required, which defaults to 'False'.
+            return str( required_rd_tup[ 4 ] )
+    return 'False'
 
 def size_string( raw_text, size=MAX_DISPLAY_SIZE ):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""

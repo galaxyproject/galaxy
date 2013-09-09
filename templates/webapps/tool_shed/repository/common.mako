@@ -619,7 +619,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
                 
     <%
-        from galaxy.util import string_as_bool
+        from galaxy.util import asbool
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -633,8 +633,7 @@
         repository_name = str( repository_dependency.repository_name )
         repository_owner = str( repository_dependency.repository_owner )
         changeset_revision = str( repository_dependency.changeset_revision )
-        prior_installation_required = string_as_bool( str( repository_dependency.prior_installation_required ) ) 
-        if prior_installation_required:
+        if asbool( str( repository_dependency.prior_installation_required ) ):
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""

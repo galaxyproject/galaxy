@@ -46,7 +46,8 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                     if rd_key in [ 'root_key', 'description' ]:
                         continue
                     for rd_tup in rd_tups:
-                        tool_shed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( rd_tup )
+                        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td \
+                            = parse_repository_dependency_tuple( rd_tup )
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
                                                                                      tool_shed,
                                                                                      name,
@@ -155,26 +156,26 @@ def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
     return None
 
 def parse_repository_dependency_tuple( repository_dependency_tuple, contains_error=False ):
+    # Default both prior_installation_required and only_if_compiling_contained_td to False in cases where metadata should be reset on the
+    # repository containing the repository_dependency definition.
+    prior_installation_required = 'False'
+    only_if_compiling_contained_td = 'False'
     if contains_error:
         if len( repository_dependency_tuple ) == 5:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
             tool_shed, name, owner, changeset_revision, error = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
         elif len( repository_dependency_tuple ) == 6:
             toolshed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return toolshed, name, owner, changeset_revision, prior_installation_required, error
+        elif len( repository_dependency_tuple ) == 7:
+            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = repository_dependency_tuple
+        return toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error
     else:
         if len( repository_dependency_tuple ) == 4:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
             tool_shed, name, owner, changeset_revision = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
         elif len( repository_dependency_tuple ) == 5:
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return tool_shed, name, owner, changeset_revision, prior_installation_required
+        elif len( repository_dependency_tuple ) == 6:
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tuple
+        return tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
 
 def tool_shed_get( app, tool_shed_url, uri ):
     """Make contact with the tool shed via the uri provided."""
