@@ -275,8 +275,9 @@
                                     # move unspecified to the first option and set as default if not last_used_build
                                     #TODO: remove when we decide on a common dbkey selector widget
                                     unspecified = ('unspecified (?)', '?')
-                                    dbkeys.remove( unspecified )
-                                    dbkeys.insert( 0, unspecified )
+                                    if unspecified in dbkeys:
+                                        dbkeys.remove( unspecified )
+                                        dbkeys.insert( 0, unspecified )
                                     default_selected = last_used_build or '?'
                                 %>
                                 %for dbkey in dbkeys:
