@@ -625,10 +625,7 @@ def filter_only_if_compiling_contained_td( key_rd_dict ):
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( required_rd_tup )
         if not asbool( only_if_compiling_contained_td ):
-            if rd_key in filtered_key_rd_dict:
-                filtered_key_rd_dict[ rd_key ].append( required_rd_tup )
-            else:
-                filtered_key_rd_dict[ rd_key ] = [ required_rd_tup ]
+            filtered_key_rd_dict[ rd_key ] = required_rd_tup
     return filtered_key_rd_dict
 
 def merge_missing_repository_dependencies_to_installed_container( containers_dict ):
