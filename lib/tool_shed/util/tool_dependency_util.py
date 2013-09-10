@@ -150,14 +150,17 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
                         version = requirements_dict[ 'version' ]
                         message += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % ( str( name ), str( type ), str( version ) )
                     message += "<br/>"
-            elif repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-                tool_dependency_definition_type_class = trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
-                message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
-                message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % tool_dependency_definition_type_class.label
-            else:
-                message += "This repository contains no tools, so it's defined tool dependencies are considered orphans within this repository.<br/>"
     return message
 
+def generate_message_for_repository_type_change( trans, repository ):
+    message = ''
+    if repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
+        tool_dependency_definition_type_class = trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
+        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
+        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % tool_dependency_definition_type_class.label
+    return message
+                
+                
 def get_download_url_for_platform( url_templates, platform_info_dict ):
     '''
     Compare the dict returned by get_platform_info() with the values specified in the url_template element. Return

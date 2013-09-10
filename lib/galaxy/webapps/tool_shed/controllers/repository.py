@@ -2159,11 +2159,17 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                    all_repository_dependencies=None,
                                                                                                    handled_key_rd_dicts=None )
                 if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
-                    # Handle messaging for orphan tool dependencies.
-                    orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
-                    if orphan_message:
-                        message += orphan_message
+                    # Handle messaging for resetting repository type to the optimal value.
+                    change_repository_type_message = tool_dependency_util.generate_message_for_repository_type_change( trans, repository )
+                    if change_repository_type_message:
+                        message += change_repository_type_message
                         status = 'warning'
+                    else:
+                        # Handle messaging for orphan tool dependency definitions.
+                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
+                        if orphan_message:
+                            message += orphan_message
+                            status = 'warning'
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push

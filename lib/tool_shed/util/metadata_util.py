@@ -906,13 +906,13 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                                                                  repository_dependency_tups=invalid_repository_dependency_tups,
                                                                  is_valid=False,
                                                                  description=description )
-    # We need to continue to restrict the behavior of orphan tool dependencies, possibly eliminating them altoghether at some point.
+    # We need to continue to restrict the behavior for defining orphan tool dependencies, possibly eliminating them altoghether at some point.
     check_for_orphan_tool_dependencies = False
     if app.name == 'tool_shed':
-        if repository.type == rt_util.UNRESTRICTED and 'tools' not in metadata_dict:
+        if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and not repository.can_change_type_to( app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
             check_for_orphan_tool_dependencies = True
-        elif 'tools' in metadata_dict:
-            check_for_orphan_tool_dependencies = True
+    elif 'tools' in metadata_dict:
+        check_for_orphan_tool_dependencies = True
     if check_for_orphan_tool_dependencies:
         # Determine and store orphan tool dependencies.
         orphan_tool_dependencies = get_orphan_tool_dependencies( metadata_dict )
