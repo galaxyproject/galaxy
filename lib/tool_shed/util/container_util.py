@@ -984,7 +984,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               tool_dependency_id=None,
                                               is_orphan='Orphan' )
         folder.tool_dependencies.append( tool_dependency )
-        is_orphan_description = "these dependencies may not be required by tools in this repository"
+        not_used_by_local_tools_description = "these dependencies may not be required by tools in this repository"
         for dependency_key, requirements_dict in tool_dependencies.items():
             tool_dependency_id += 1
             if dependency_key in [ 'set_environment' ]:
@@ -995,7 +995,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                         # TODO: handle this is Galaxy
                         is_orphan = False
                     if is_orphan:
-                        folder.description = is_orphan_description
+                        folder.description = not_used_by_local_tools_description
                     name = set_environment_dict.get( 'name', None )
                     type = set_environment_dict[ 'type' ]
                     repository_id = set_environment_dict.get( 'repository_id', None )
@@ -1018,10 +1018,9 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                 if trans.webapp.name == 'tool_shed':
                     is_orphan = requirements_dict.get( 'is_orphan', False )
                 else:
-                    # TODO: handle this is Galaxy
                     is_orphan = False
                 if is_orphan:
-                    folder.description = is_orphan_description
+                    folder.description = not_used_by_local_tools_description
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
                 type = requirements_dict[ 'type' ]

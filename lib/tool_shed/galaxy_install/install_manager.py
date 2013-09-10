@@ -270,7 +270,8 @@ class InstallManager( object ):
                 continue
             for rd_tup in rd_tups:
                 prior_install_ids = []
-                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
                 if util.asbool( prior_installation_required ):
                     for tsr in tool_shed_repositories:
                         if tsr.name == name and tsr.owner == owner and tsr.changeset_revision == changeset_revision:

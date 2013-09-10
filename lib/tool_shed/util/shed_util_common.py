@@ -1190,6 +1190,27 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         return {}
     return tool_shed_status_dict
 
+def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
+    """
+    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision for the repository
+    defined by the received name and owner.
+    """
+    repository = get_repository_by_name_and_owner( trans.app, name, owner )
+    repo_dir = repository.repo_path( trans.app )
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    # Get the upper bound changeset revision.
+    upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+    # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
+    changeset_hashes = []
+    for changeset in reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
+        # Make sure to exclude upper_bound_changeset_revision.
+        if changeset != upper_bound_changeset_revision:
+            changeset_hashes.append( str( repo.changectx( changeset ) ) )
+    if changeset_hashes:
+        changeset_hashes_str = ','.join( changeset_hashes )
+        return changeset_hashes_str
+    return ''
+
 def get_url_from_tool_shed( app, tool_shed ):
     """
     The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:

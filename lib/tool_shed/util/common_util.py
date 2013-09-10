@@ -46,8 +46,8 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                     if rd_key in [ 'root_key', 'description' ]:
                         continue
                     for rd_tup in rd_tups:
-                        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td \
-                            = parse_repository_dependency_tuple( rd_tup )
+                        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                            parse_repository_dependency_tuple( rd_tup )
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
                                                                                      tool_shed,
                                                                                      name,

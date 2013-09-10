@@ -19,7 +19,9 @@ from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
+from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
+import tool_shed.repository_types.util as rt_util
 
 import pkg_resources
 
@@ -904,10 +906,18 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                                                                  repository_dependency_tups=invalid_repository_dependency_tups,
                                                                  is_valid=False,
                                                                  description=description )
-    # Determine and store orphan tool dependencies.
-    orphan_tool_dependencies = get_orphan_tool_dependencies( metadata_dict )
-    if orphan_tool_dependencies:
-        metadata_dict[ 'orphan_tool_dependencies' ] = orphan_tool_dependencies
+    # We need to continue to restrict the behavior of orphan tool dependencies, possibly eliminating them altoghether at some point.
+    check_for_orphan_tool_dependencies = False
+    if app.name == 'tool_shed':
+        if repository.type == rt_util.UNRESTRICTED and 'tools' not in metadata_dict:
+            check_for_orphan_tool_dependencies = True
+        elif 'tools' in metadata_dict:
+            check_for_orphan_tool_dependencies = True
+    if check_for_orphan_tool_dependencies:
+        # Determine and store orphan tool dependencies.
+        orphan_tool_dependencies = get_orphan_tool_dependencies( metadata_dict )
+        if orphan_tool_dependencies:
+            metadata_dict[ 'orphan_tool_dependencies' ] = orphan_tool_dependencies
     return metadata_dict, error_message
 
 def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict ):
@@ -1128,16 +1138,6 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
 
-def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
-    """
-    Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination.
-    """
-    url  = suc.url_join( tool_shed_url,
-                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' %
-                         ( name, owner, changeset_revision ) )
-    text = common_util.tool_shed_get( app, tool_shed_url, url )
-    return text
-
 def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
     """
     This method is called when a Galaxy admin is getting updates for an installed tool shed repository in order to cover the case where an
@@ -1188,7 +1188,7 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
             return repository_dependency_tup, is_valid, error_message
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository may have been installed.
-            text = get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
+            text = install_util.get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:

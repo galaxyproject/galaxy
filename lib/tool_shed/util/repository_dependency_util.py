@@ -1,7 +1,9 @@
 import logging
 import os
 from galaxy import eggs
+from galaxy.util import asbool
 from galaxy.util import json
+from galaxy.util import listify
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
@@ -263,9 +265,9 @@ def generate_message_for_invalid_repository_dependencies( metadata_dict ):
                     message = '%s  ' % str( error )
     return message
 
-def get_key_for_repository_changeset_revision( toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
+def get_key_for_repository_changeset_revision( trans, toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
     prior_installation_required, only_if_compiling_contained_td = \
-        get_prior_installation_required_and_only_if_compiling_contained_td( toolshed_base_url, repository, repository_metadata, all_repository_dependencies )
+        get_prior_installation_required_and_only_if_compiling_contained_td( trans, toolshed_base_url, repository, repository_metadata, all_repository_dependencies )
     # Create a key with the value of prior_installation_required defaulted to False.
     key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=toolshed_base_url,
                                                                               repository_name=repository.name,
@@ -275,21 +277,47 @@ def get_key_for_repository_changeset_revision( toolshed_base_url, repository, re
                                                                               only_if_compiling_contained_td=only_if_compiling_contained_td )
     return key
 
-def get_prior_installation_required_and_only_if_compiling_contained_td( toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
+def get_prior_installation_required_and_only_if_compiling_contained_td( trans, toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
     """
-    If all_repository_dependencies contains a repository dependency tuple that is associated with the received repository, return the
-    value of the tuple's prior_installation_required component.
+    This method is called from the tool shed and never Galaxy.  If all_repository_dependencies contains a repository dependency tuple that is associated with
+    the received repository, return the value of the tuple's prior_installation_required component.
     """
-    for rd_key, rd_tups in all_repository_dependencies.items():
-        if rd_key in [ 'root_key', 'description' ]:
-            continue
+    if all_repository_dependencies:
+        for rd_key, rd_tups in all_repository_dependencies.items():
+            if rd_key in [ 'root_key', 'description' ]:
+                continue
+            for rd_tup in rd_tups:
+                rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if rd_toolshed == toolshed_base_url and \
+                    rd_name == repository.name and \
+                    rd_owner == repository.user.username and \
+                    rd_changeset_revision == repository_metadata.changeset_revision:
+                    return rd_prior_installation_required, rd_only_if_compiling_contained_td
+    elif repository_metadata:
+        # Get the list of changeset revisions from the tool shed to which the repository may be updated.
+        metadata = repository_metadata.metadata
+        current_changeset_revision = str( repository_metadata.changeset_revision )
+        # Get the changeset revision to which the current value of required_repository_changeset_revision should be updated if it's not current.
+        text = suc.get_updated_changeset_revisions( trans,
+                                                    name=str( repository.name ),
+                                                    owner=str( repository.user.username ),
+                                                    changeset_revision=current_changeset_revision )
+        if text:
+            valid_changeset_revisions = listify( text )
+            if current_changeset_revision not in valid_changeset_revisions:
+                valid_changeset_revisions.append( current_changeset_revision )
+        else:
+            valid_changeset_revisions = [ current_changeset_revision ]
+        repository_dependencies_dict = metadata[ 'repository_dependencies' ]
+        rd_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
         for rd_tup in rd_tups:
             rd_toolshed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( rd_tup )
             if rd_toolshed == toolshed_base_url and \
                 rd_name == repository.name and \
                 rd_owner == repository.user.username and \
-                rd_changeset_revision == repository_metadata.changeset_revision:
+                rd_changeset_revision in valid_changeset_revisions:
                 return rd_prior_installation_required, rd_only_if_compiling_contained_td
     # Default both prior_installation_required and only_if_compiling_contained_td to False.
     return 'False', 'False'
@@ -333,7 +361,11 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
     metadata = repository_metadata.metadata
     if metadata:
         if 'repository_dependencies' in metadata:
-            current_repository_key = get_key_for_repository_changeset_revision( toolshed_base_url, repository, repository_metadata, all_repository_dependencies )
+            current_repository_key = get_key_for_repository_changeset_revision( trans,
+                                                                                toolshed_base_url,
+                                                                                repository,
+                                                                                repository_metadata,
+                                                                                all_repository_dependencies )
             repository_dependencies_dict = metadata[ 'repository_dependencies' ]
             if not all_repository_dependencies:
                 all_repository_dependencies = initialize_all_repository_dependencies( current_repository_key,
@@ -583,6 +615,22 @@ def is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
                         return True
         return False
 
+def filter_only_if_compiling_contained_td( key_rd_dict ):
+    """
+    Return a copy of the received key_rd_dict with repository dependencies that are needed only_if_compiling_contained_td filtered out
+    of the list of repository dependencies for each rd_key.
+    """
+    filtered_key_rd_dict = {}
+    for rd_key, required_rd_tup in key_rd_dict.items():
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( required_rd_tup )
+        if not asbool( only_if_compiling_contained_td ):
+            if rd_key in filtered_key_rd_dict:
+                filtered_key_rd_dict[ rd_key ].append( required_rd_tup )
+            else:
+                filtered_key_rd_dict[ rd_key ] = [ required_rd_tup ]
+    return filtered_key_rd_dict
+
 def merge_missing_repository_dependencies_to_installed_container( containers_dict ):
     """Merge the list of missing repository dependencies into the list of installed repository dependencies."""
     missing_rd_container_root = containers_dict.get( 'missing_repository_dependencies', None )
@@ -629,32 +677,35 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
         current_repository_key_rd_dicts = remove_ropository_dependency_reference_to_self( current_repository_key_rd_dicts )
     current_repository_key_rd_dicts = get_updated_changeset_revisions_for_repository_dependencies( trans, current_repository_key_rd_dicts )
     for key_rd_dict in current_repository_key_rd_dicts:
-        is_circular = False
-        if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
-            filtered_current_repository_key_rd_dicts.append( key_rd_dict )
-            repository_dependency = key_rd_dict[ current_repository_key ]
-            if current_repository_key in all_repository_dependencies:
-                # Add all repository dependencies for the current repository into it's entry in all_repository_dependencies.
-                all_repository_dependencies_val = all_repository_dependencies[ current_repository_key ]
-                if repository_dependency not in all_repository_dependencies_val:
-                    all_repository_dependencies_val.append( repository_dependency )
-                    all_repository_dependencies[ current_repository_key ] = all_repository_dependencies_val
-            elif not in_all_repository_dependencies( current_repository_key, repository_dependency, all_repository_dependencies ):
-                # Handle circular repository dependencies.
-                if is_circular_repository_dependency( current_repository_key, repository_dependency, all_repository_dependencies ):
-                    is_circular = True
-                    circular_repository_dependencies, handled_key_rd_dicts, all_repository_dependencies = \
-                        handle_circular_repository_dependency( current_repository_key,
-                                                               repository_dependency,
-                                                               circular_repository_dependencies,
-                                                               handled_key_rd_dicts,
-                                                               all_repository_dependencies )
-                else:
-                    all_repository_dependencies[ current_repository_key ] = [ repository_dependency ]
-            if not is_circular and can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
-                new_key_rd_dict = {}
-                new_key_rd_dict[ current_repository_key ] = repository_dependency
-                key_rd_dicts_to_be_processed.append( new_key_rd_dict )
+        # Filter out repository dependencies that are required only if compiling the dependent repository's tool dependency.
+        all_repository_dependencieskey_rd_dict = filter_only_if_compiling_contained_td( key_rd_dict )
+        if key_rd_dict:
+            is_circular = False
+            if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
+                filtered_current_repository_key_rd_dicts.append( key_rd_dict )
+                repository_dependency = key_rd_dict[ current_repository_key ]
+                if current_repository_key in all_repository_dependencies:
+                    # Add all repository dependencies for the current repository into it's entry in all_repository_dependencies.
+                    all_repository_dependencies_val = all_repository_dependencies[ current_repository_key ]
+                    if repository_dependency not in all_repository_dependencies_val:
+                        all_repository_dependencies_val.append( repository_dependency )
+                        all_repository_dependencies[ current_repository_key ] = all_repository_dependencies_val
+                elif not in_all_repository_dependencies( current_repository_key, repository_dependency, all_repository_dependencies ):
+                    # Handle circular repository dependencies.
+                    if is_circular_repository_dependency( current_repository_key, repository_dependency, all_repository_dependencies ):
+                        is_circular = True
+                        circular_repository_dependencies, handled_key_rd_dicts, all_repository_dependencies = \
+                            handle_circular_repository_dependency( current_repository_key,
+                                                                   repository_dependency,
+                                                                   circular_repository_dependencies,
+                                                                   handled_key_rd_dicts,
+                                                                   all_repository_dependencies )
+                    else:
+                        all_repository_dependencies[ current_repository_key ] = [ repository_dependency ]
+                if not is_circular and can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
+                    new_key_rd_dict = {}
+                    new_key_rd_dict[ current_repository_key ] = repository_dependency
+                    key_rd_dicts_to_be_processed.append( new_key_rd_dict )
     return filtered_current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies
 
 def prune_invalid_repository_dependencies( repository_dependencies ):

@@ -2280,8 +2280,20 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                handled_key_rd_dicts=None )
             if metadata:
                 if 'repository_dependencies' in metadata and not repository_dependencies:
-                    message += 'The repository dependency definitions for this repository are invalid and will be ignored.'
-                    status = 'error'
+                    # See if we have an invalid repository dependency definition or if the repository dependency is required only for compiling the
+                    # repository's tool dependency.
+                    invalid = False
+                    repository_dependencies_dict = metadata[ 'repository_dependencies' ]
+                    rd_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                    for rd_tup in rd_tups:
+                        rdtool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
+                            common_util.parse_repository_dependency_tuple( rd_tup )
+                        if not util.asbool( rd_only_if_compiling_contained_td ):
+                            invalid = True
+                            break
+                    if invalid:
+                        message += 'The repository dependency definitions for this repository are invalid and will be ignored.'
+                        status = 'error'
         else:
             repository_metadata_id = None
             metadata = None
@@ -2718,20 +2730,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        # Get the upper bound changeset revision.
-        upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-        # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
-        changeset_hashes = []
-        for changeset in suc.reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
-            # Make sure to exclude upper_bound_changeset_revision.
-            if changeset != upper_bound_changeset_revision:
-                changeset_hashes.append( str( repo.changectx( changeset ) ) )
-        if changeset_hashes:
-            changeset_hashes_str = ','.join( changeset_hashes )
-            return changeset_hashes_str
+        if name and owner and changeset_revision:
+            return suc.get_updated_changeset_revisions( trans, name, owner, changeset_revision )
         return ''
 
     @web.expose
