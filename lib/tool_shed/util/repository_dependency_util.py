@@ -678,7 +678,7 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
     current_repository_key_rd_dicts = get_updated_changeset_revisions_for_repository_dependencies( trans, current_repository_key_rd_dicts )
     for key_rd_dict in current_repository_key_rd_dicts:
         # Filter out repository dependencies that are required only if compiling the dependent repository's tool dependency.
-        all_repository_dependencieskey_rd_dict = filter_only_if_compiling_contained_td( key_rd_dict )
+        key_rd_dict = filter_only_if_compiling_contained_td( key_rd_dict )
         if key_rd_dict:
             is_circular = False
             if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
