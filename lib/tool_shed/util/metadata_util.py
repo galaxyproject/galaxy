@@ -1195,14 +1195,17 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                     repository = suc.get_repository_for_dependency_relationship( app, cleaned_toolshed, name, owner, updated_changeset_revision )
                     if repository:
                         return repository_dependency_tup, is_valid, error_message
-            # We'll currently default to setting the repository dependency definition as invalid if an installed repository cannot be found.
-            # This may not be ideal because the tool shed may have simply been inaccessible when metadata was being generated for the installed
-            # tool shed repository.
-            error_message = "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
-                ( toolshed, name, owner, changeset_revision )
-            log.debug( error_message )
-            is_valid = False
-            return repository_dependency_tup, is_valid, error_message
+            # Don't generate an error message for missing repository dependencies that are required only if compiling the dependent repository's
+            # tool dependency.
+            if not only_if_compiling_contained_td:
+                # We'll currently default to setting the repository dependency definition as invalid if an installed repository cannot be found.
+                # This may not be ideal because the tool shed may have simply been inaccessible when metadata was being generated for the installed
+                # tool shed repository.
+                error_message = "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                    ( toolshed, name, owner, changeset_revision )
+                log.debug( error_message )
+                is_valid = False
+                return repository_dependency_tup, is_valid, error_message
     else:
         # We're in the tool shed.
         if suc.tool_shed_is_this_tool_shed( toolshed ):
