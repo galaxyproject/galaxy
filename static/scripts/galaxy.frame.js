@@ -1069,6 +1069,18 @@ var GalaxyFrameManager = Backbone.View.extend(
         return '<div class="galaxy-frame-background"></div>';
     },
     
+    // fill load button template
+    frame_template_header: function()
+    {
+        return  '<div class="galaxy-frame-load f-corner">' +
+                   '<div class="number f-corner">0</div>' +
+                   '<div class="icon fa-icon-2x"></div>' +
+                '</div>' +
+                '<div class="galaxy-frame-active f-corner">' +
+                   '<div class="icon fa-icon-2x fa-icon-th"></div>' +
+                '</div>';
+    },
+    
     // fill menu button template
     frame_template_menu: function()
     {

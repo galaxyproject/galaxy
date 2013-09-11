@@ -206,7 +206,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
                 add_tag_button.show();
                 tag_input_field.hide();
                 tag_area.removeClass("active-tag-area");
-                tag_area.addClass("tooltip");
+                // tag_area.addClass("tooltip");
             } else {
                 // No tags, so do nothing to ensure that input is still visible.
             }
@@ -227,7 +227,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             }
             
             // Remove tooltip.
-            $(this).removeClass("tooltip");
+            // $(this).removeClass("tooltip");
 
             // Hide add tag button, show tag_input field. Change background to show 
             // area is active.

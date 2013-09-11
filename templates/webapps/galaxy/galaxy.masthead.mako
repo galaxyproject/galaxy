@@ -42,14 +42,13 @@ ${h.to_json_string( user_dict )}
     </script>
 
     ## start main tag
-    <div id="masthead" class="navbar navbar-fixed-top">
-    <div class="masthead-inner navbar-inner">
+    <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
 
     ## Tab area, fills entire width
     <div style="position: relative; right: -50%; float: left;">
     <div style="display: block; position: relative; right: 50%;">
 
-    <ul class="nav" border="0" cellspacing="0">
+    <ul class="nav navbar-nav" border="0" cellspacing="0">
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
@@ -211,11 +210,12 @@ ${h.to_json_string( user_dict )}
     
     </ul>
 
+    ## End centered tabs
     </div>
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title">
+    <div class="navbar-brand">
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy
@@ -226,10 +226,6 @@ ${h.to_json_string( user_dict )}
     </div>
 
     <div class="quota-meter-container"></div>
-
-    ## end main tag
-    </div>
-    </div>
     
     <!-- quota meter -->
     ${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
@@ -246,4 +242,9 @@ ${h.to_json_string( user_dict )}
             el      : $( document ).find( '.quota-meter-container' )
         }).render();
     </script>
+
+
+    ## end main tag
+    </div>
+
 </%def>

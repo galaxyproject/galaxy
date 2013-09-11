@@ -27,7 +27,7 @@ function program3(depth0,data) {
   else { stack1 = depth0.quota_percent; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
     + "%\"></div>\n    "
-    + "\n    <div id=\"quota-meter-text\" class=\"quota-meter-text tooltip\"\n        style=\"top: 6px\"";
+    + "\n    <div id=\"quota-meter-text\" class=\"quota-meter-text\"\n        style=\"top: 6px\"";
   stack1 = helpers['if'].call(depth0, depth0.nice_total_disk_usage, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += ">\n        ";

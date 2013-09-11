@@ -415,7 +415,7 @@ var SweepsterTrackView = Backbone.View.extend({
                 icon_class: 'cross-circle',
                 on_click: function() {
                     self.$el.remove();
-                    $('.bs-tooltip').remove();
+                    $('.tooltip').remove();
                     // TODO: remove track from viz collection.
                 }
             }
@@ -745,7 +745,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 title: 'Close',
                 icon_class: 'cross-circle',
                 on_click: function() {
-                    $('.bs-tooltip').remove();
+                    $('.tooltip').remove();
                     help_div.remove();
                 }
             }

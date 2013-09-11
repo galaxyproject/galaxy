@@ -524,7 +524,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });
@@ -564,7 +564,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
                         }
                         annotationElem.html( htmlFromAjax );
-                        annotationArea.find(".tooltip").tooltip();
+                        annotationArea.find("[title]").tooltip();
                         
                         async_save_text(
                             annotationElem.attr("id"), annotationElem.attr("id"),

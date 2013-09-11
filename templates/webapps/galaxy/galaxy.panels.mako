@@ -161,9 +161,10 @@
         overlay_class = ""
     %>
 
-    <div id="overlay" ${display}>
-        <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
-        <div id="dialog-box" class="modal dialog-box" border="0" ${display}>
+    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
+        <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
+        <div id="top-modal-dialog" class="modal-dialog" border="0" ${display}>
+            <div class="modal-content">
                 <div class="modal-header">
                     <span><h3 class='title'>${title}</h3></span>
                 </div>
@@ -173,6 +174,7 @@
                     <div class="extra_buttons" style=""></div>
                     <div style="clear: both;"></div>
                 </div>
+            </div>
         </div>
     
     </div>

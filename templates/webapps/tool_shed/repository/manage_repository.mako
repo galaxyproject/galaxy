@@ -84,7 +84,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','panel_layout','jquery.rating')}
+    ${h.css('base','library','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
