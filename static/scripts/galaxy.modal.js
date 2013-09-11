@@ -20,10 +20,7 @@ var GalaxyModal = Backbone.View.extend(
     
     // initialize
     initialize : function(options)
-    {
-        // load required css files
-        css.load_file("static/style/galaxy.modal.css");
-        
+    {        
         // read in defaults
         if (!options)
             options = this.options;
@@ -101,14 +98,16 @@ var GalaxyModal = Backbone.View.extend(
     // fill regular modal template
     template: function(title, body)
     {
-        return  '<div class="galaxy-modal">' +
-                    '<div class="background"></div>' +
-                    '<div class="dialog galaxy-corner">' +
-                        '<div class="header">' +
-                            '<span><h3 class="title">' + title + '</h3></span>' +
-                        '</div>' +
-                        '<div class="body">' + body + '</div>' +
-                        '<div class="footer"></div>' +
+        return  '<div class="modal">' +
+                    '<div class="modal-backdrop"></div>' +
+                    '<div class="modal-dialog galaxy-corner">' +
+                        '<div class="modal-content">' +
+                            '<div class="header">' +
+                                '<span><h3 class="title">' + title + '</h3></span>' +
+                            '</div>' +
+                            '<div class="body">' + body + '</div>' +
+                            '<div class="footer"></div>' +
+                        '</div' +
                     '</div>' +
                 '</div>';
     }
