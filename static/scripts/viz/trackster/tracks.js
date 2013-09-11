@@ -2321,7 +2321,7 @@ var Track = function(view, container, obj_dict) {
     this.dataset = null;
     if (obj_dict.dataset) {
         // Dataset can be a Backbone model or a dict that can be used to create a model.
-        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset) );
+        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : data.Dataset.findOrCreate(obj_dict.dataset) );
     }
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
