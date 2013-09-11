@@ -344,7 +344,7 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                                     required_repository_tups.append( components_list )
                 else:
                     # We have a single repository with no dependencies.
-                    components_list = [ tool_shed_url, repository_name, repository_owner, changeset_revision, 'False', 'False' ]
+                    components_list = [ tool_shed_url, repository_name, repository_owner, changeset_revision ]
                     required_repository_tups.append( components_list )
             if required_repository_tups:
                 # The value of required_repository_tups is a list of tuples, so we need to encode it.
