@@ -752,6 +752,7 @@ button.close{padding:0;cursor:pointer;background:transparent;border:0;-webkit-ap
 .text-hide{font:0/0 a;color:transparent;text-shadow:none;background-color:transparent;border:0}
 .affix{position:fixed}
 .navbar-fixed-top .navbar-brand{font-family:Verdana;font-weight:bold;font-size:160%}
+pre{overflow:auto;word-wrap:normal;white-space:pre}
 .btn.active,.btn:active{color:inherit}
 .dropdown-menu{max-width:auto}
 input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
