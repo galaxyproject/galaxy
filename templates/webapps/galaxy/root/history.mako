@@ -342,13 +342,6 @@ $(function(){
             margin: 0px;
         }
 
-        #history-subtitle-area {
-        }
-        #history-size {
-        }
-        #history-secondary-links {
-        }
-
         #history-secondary-links #history-refresh {
             text-decoration: none;
         }

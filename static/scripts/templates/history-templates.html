@@ -24,9 +24,9 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
         <div id="history-secondary-links" style="float: right;">
             {{#if user.email}}
             <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
-                class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
+                class="icon-button tags" target="galaxy_main" href="javascript:void(0)"></a>
             <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
-                class="icon-button annotate tooltip" target="galaxy_main" href="javascript:void(0)"></a>
+                class="icon-button annotate" target="galaxy_main" href="javascript:void(0)"></a>
             {{/if}}
         </div>
         <div style="clear: both;"></div>
@@ -45,7 +45,7 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
         <div id="history-annotation-area" style="display: none">
             <strong>{{#local}}Annotation{{/local}}:</strong>
             <div id="history-annotation-container">
-            <div id="history-annotation" class="tooltip editable-text"
+            <div id="history-annotation" class="editable-text"
                 title="{{#local}}Click to edit annotation{{/local}}">
                 {{#if annotation}}
                     {{annotation}}

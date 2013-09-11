@@ -174,7 +174,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
-        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar

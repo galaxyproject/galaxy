@@ -271,7 +271,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
-        newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
+        newRender.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
@@ -485,7 +485,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });

@@ -1341,6 +1341,7 @@ div.permissionContainer{padding-left:20px}
 .icon-button.link-broken{background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px}
 body.historyPage{background:#dfe5f9;color:#000;margin:5px;border:0;padding:0}
+body.historyPage>*{margin:0px;padding:0px}
 div.historyLinks{margin:5px 5px}
 div.historyItem{margin:0 -5px;padding:8px 10px;border-top:solid #bfbfbf 1px;border-right:none;word-wrap:break-word;background:#eee}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}
 div.historyItem .historyItemTitle{font-weight:bold;line-height:16px}
