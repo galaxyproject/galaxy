@@ -58,6 +58,9 @@
     
     ## make sure console exists
     <script type="text/javascript">
+        // start a Galaxy namespace for objects created
+        window.Galaxy = window.Galaxy || {};
+
         // console protection
         window.console = window.console ||
         {

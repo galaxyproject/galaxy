@@ -81,6 +81,9 @@
         if (window != window.top)
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
+        // start a Galaxy namespace for objects created
+        window.Galaxy = window.Galaxy || {};
+
         // console protection
         window.console = window.console || {
             log     : function(){},
