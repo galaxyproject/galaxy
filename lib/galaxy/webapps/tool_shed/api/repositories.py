@@ -96,9 +96,6 @@ class RepositoriesController( BaseAPIController ):
             ]
         }
         """
-        metadata_value_mapper = { 'id' : trans.security.encode_id,
-                                  'repository_id' : trans.security.encode_id,
-                                  'time_last_tested' : time_ago }
         repository_value_mapper = { 'id' : trans.security.encode_id,
                                     'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories/get_repository_revision_install_info?name=add_column&owner=test&changeset_revision=3a08cc21466f
@@ -123,7 +120,7 @@ class RepositoriesController( BaseAPIController ):
             if repository_metadata:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
-                                                                              value_mapper=metadata_value_mapper )
+                                                                              value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
@@ -194,3 +191,10 @@ class RepositoriesController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
+
+    def __get_value_mapper( self, trans, repository_metadata ):
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'repository_id' : trans.security.encode_id }
+        if repository_metadata.time_last_tested is not None:
+            value_mapper[ 'time_last_tested' ] = time_ago 
+        return value_mapper
