@@ -3,7 +3,6 @@ define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visu
 /**
  * Utility class for working with SVG.
  */
-// TODO: make into a mixin.
 var SVGUtils = Backbone.Model.extend({
 
     /**
