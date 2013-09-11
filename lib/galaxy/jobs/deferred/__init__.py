@@ -11,7 +11,7 @@ log = logging.getLogger( __name__ )
 
 class DeferredJobQueue( object ):
     job_states = Bunch( READY = 'ready',
-                        WAIT = 'wait', 
+                        WAIT = 'wait',
                         INVALID = 'invalid' )
     def __init__( self, app ):
         self.app = app

@@ -3,7 +3,7 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
         html, body {
             background-color: #fff;
@@ -13,7 +13,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.panels", "libs/jquery/select2", "libs/jquery/jstorage" )}
+    ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
     <script type="text/javascript">
     $(function() {
         $(window).bind("refresh_on_change", function() {
@@ -74,7 +74,7 @@
             $(this).append(select_link).append(" ").append(unselect_link);
         });
 
-        $(".add-librarydataset").live("click", function() {
+        $(".add-librarydataset").click(function() {
             var link = $(this);
             $.ajax({
                 url: "/visualization/list_libraries",
@@ -253,6 +253,18 @@
     </div>
 </%def>
 
+<%def name="row_for_rerun()">
+    %if trans.app.config.track_jobs_in_database and tool_state.rerun_remap_job_id is not None:
+        <div class="form-row">
+            <input type="checkbox" name="rerun_remap_job_id" value="${tool_state.rerun_remap_job_id}"> Resume dependencies from this job
+            <div class="toolParamHelp" style="clear: both;">
+                The previous run of this tool failed and other tools were waiting for it to finish successfully, use this option to resume those tools using the outputs of this tool run.
+            </div>
+        <div>
+        <div style="clear: both;"></div>
+    %endif
+</%def>
+
 <% overlay(visible=False) %>
 
 %if add_frame.from_noframe:
@@ -310,9 +322,8 @@
         %endif
 
         %if trans.app.config.biostar_url:
-            <!-- BioStar links -->
-            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
-            <!-- End of BioStar links -->
+            ## BioStar links
+            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign" title="Ask a question about this tool"></a></span>
         %endif
         </div>
         <div class="toolFormBody">
@@ -321,9 +332,13 @@
             <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
             %if tool.display_by_page[tool_state.page]:
                 ${trans.fill_template_string( tool.display_by_page[tool_state.page], context=tool.get_param_html_map( trans, tool_state.page, tool_state.inputs ) )}
+                ${row_for_rerun()}
                 <input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute">
             %else:
                 ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, errors, "" )}
+                %if tool_state.page == tool.last_page:
+                    ${row_for_rerun()}
+                %endif
                 <div class="form-row form-actions">
                     %if tool_state.page == tool.last_page:
                         <input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute">

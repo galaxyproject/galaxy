@@ -239,8 +239,25 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_visualizationsButton : function(){
+        var visualizations = this.model.get( 'visualizations' );
+        if( ( !this.model.hasData() )
+        ||  ( _.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        //TODO: this is a bridge to allow the framework to be switched off
+        // remove this fn and use the other when fully integrated
+        if( _.isObject( visualizations[0] ) ){
+            return this._render_visualizationsFrameworkButton( visualizations );
+        }
+
+        if( !this.urls.visualization ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
         var dbkey = this.model.get( 'dbkey' ),
-            visualizations = this.model.get( 'visualizations' ),
             visualization_url = this.urls.visualization,
             popup_menu_dict = {},
             params = {
@@ -250,17 +267,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
-        if( !( this.model.hasData() )
-        ||  !( visualizations && visualizations.length )
-        ||  !( visualization_url ) ){
-            this.visualizationsButton = null;
-            return null;
-        }
-        
         // render the icon from template
         this.visualizationsButton = new IconButtonView({ model : new IconButton({
             title       : _l( 'Visualize' ),
-            href        : visualization_url,
+            href        : this.urls.visualization,
             icon_class  : 'chart_curve'
         })});
         var $icon = this.visualizationsButton.render().$el;
@@ -278,8 +288,14 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 case 'scatterplot':
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
-                    return function(){
-                        window.parent.location = visualization_url + '/' + visualization + '?' + $.param( params ); };
+                    return function(){// add widget
+                        Galaxy.frame_manager.frame_new(
+                        {
+                            title    : "Visualization",
+                            type     : "url",
+                            content  : visualization_url + '/' + visualization + '?' + $.param( params )
+                        });
+                    };
             }
         }
 
@@ -296,6 +312,40 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
+        }
+        return $icon;
+    },
+
+    /** Render an icon-button or popupmenu of links based on the applicable visualizations
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_visualizationsFrameworkButton : function( visualizations ){
+        if( !( this.model.hasData() )
+        ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        // render the icon from template
+        this.visualizationsButton = new IconButtonView({ model : new IconButton({
+            title       : _l( 'Visualize' ),
+            icon_class  : 'chart_curve'
+        })});
+        var $icon = this.visualizationsButton.render().$el;
+        $icon.addClass( 'visualize-icon' ); // needed?
+
+        // No need for popup menu because there's a single visualization.
+        if( _.keys( visualizations ).length === 1 ) {
+            $icon.attr( 'title', _.keys( visualizations )[0] );
+            $icon.attr( 'href', _.values( visualizations )[0] );
+
+        // >1: Populate menu dict with visualization fns, make the popupmenu
+        } else {
+            var popup_menu_options = [];
+            _.each( visualizations, function( linkData ) {
+                popup_menu_options.push( linkData );
+            });
+            var popup = new PopupMenu( $icon, popup_menu_options );
         }
         return $icon;
     },
@@ -371,7 +421,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/tags.js
         return $( HDAEditView.templates.tagArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
 
     /** Render area to display annotation.
@@ -384,7 +434,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/annotations.js
         return $( HDAEditView.templates.annotationArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
     
     // ......................................................................... state body renderers
@@ -474,7 +524,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });
@@ -514,7 +564,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
                         }
                         annotationElem.html( htmlFromAjax );
-                        annotationArea.find(".tooltip").tooltip();
+                        annotationArea.find("[title]").tooltip();
                         
                         async_save_text(
                             annotationElem.attr("id"), annotationElem.attr("id"),
@@ -560,9 +610,15 @@ HDAEditView.templates = {
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
 function create_scatterplot_action_fn( url, params ){
     action = function() {
-        var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
-            final_url = url + '/scatterplot?' + $.param(params);
-        galaxy_main.attr( 'src', final_url );
+        // add widget
+        Galaxy.frame_manager.frame_new(
+        {
+            title      : "Scatterplot",
+            type       : "url",
+            content    : url + '/scatterplot?' + $.param(params),
+            location   : 'center'
+        });
+
         //TODO: this needs to go away
         $( 'div.popmenu-wrapper' ).remove();
         return false;
@@ -606,13 +662,32 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
                                 $(parent.document).find('input[name=id]:checked').each(function() {
                                     var vis_id = $(this).val();
                                     dataset_params.id = vis_id;
-                                    parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+
+                                    // hide modal
+                                    parent.hide_modal();
+
+                                    // add widget
+                                    Galaxy.frame_manager.frame_new(
+                                    {
+                                        title    : "Trackster",
+                                        type     : "url",
+                                        content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                    });
                                 });
                             }
                         });
                     },
                     "View in new visualization": function() {
-                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                        // hide modal
+                        parent.hide_modal();
+
+                        // add widget
+                        Galaxy.frame_manager.frame_new(
+                        {
+                            title    : "Trackster",
+                            type     : "url",
+                            content  : vis_url + "/trackster?" + $.param(dataset_params)
+                        });
                     }
                 });
             }

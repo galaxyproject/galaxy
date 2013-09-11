@@ -2,15 +2,15 @@
 <div id="quota-meter" class="quota-meter progress">
     <div id="quota-meter-bar"  class="quota-meter-bar bar" style="width: {{quota_percent}}%"></div>
     {{! TODO: remove the hardcoded style }}
-    <div id="quota-meter-text" class="quota-meter-text tooltip"
+    <div id="quota-meter-text" class="quota-meter-text"
         style="top: 6px"{{#if nice_total_disk_usage}} title="Using {{nice_total_disk_usage}}"{{/if}}>
         {{#local}}Using{{/local}} {{ quota_percent }}%
     </div>
 </div>
 </script>
 
+<!-- TODO: remove the hardcoded styles -->
 <script type="text/template" class="template-user" id="template-user-quotaMeter-usage">
-{{! TODO: remove the hardcoded styles }}
 <div id="quota-meter" class="quota-meter" style="background-color: transparent">
     <div id="quota-meter-text" class="quota-meter-text" style="top: 6px; color: white">
         {{#if nice_total_disk_usage }}{{#local}}Using{{/local}} {{ nice_total_disk_usage }}{{/if}}

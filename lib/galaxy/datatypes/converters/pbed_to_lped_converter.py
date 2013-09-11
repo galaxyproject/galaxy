@@ -28,11 +28,11 @@ def timenow():
     """
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
-   
+
 def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):
     """
     """
-    
+
     basename = os.path.split(inpedfilepath)[-1] # get basename
     outroot = os.path.join(outfilepath,basename)
     cl = '%s --noweb --bfile %s --recode --out %s ' % (plink,inpedfilepath,outroot)
@@ -74,7 +74,7 @@ def main():
     f.write("</div></body></html>")
     f.close()
 
-  
+
 
 if __name__ == "__main__":
    main()

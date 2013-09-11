@@ -64,19 +64,34 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml'
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
+        self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
+        if self.shed_tool_data_path:
+            self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
+        else:
+            self.shed_tool_data_path = self.tool_data_path
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
+        self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         try:
-            self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
-            if isinstance( self.hours_between_check, float ):
-                # Float values are supported for functional tests.
-                if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
-                    self.hours_between_check = 12.0
-            else:
+            if isinstance( self.hours_between_check, int ):
                 if self.hours_between_check < 1 or self.hours_between_check > 24:
                     self.hours_between_check = 12
+            elif isinstance( self.hours_between_check, float ):
+                # If we're running functional tests, the minimum hours between check should be reduced to 0.001, or 3.6 seconds.
+                if self.running_functional_tests:
+                    if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+                else:
+                    if self.hours_between_check < 1.0 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+            else:
+                self.hours_between_check = 12
         except:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
@@ -86,7 +101,6 @@ class Configuration( object ):
         self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
-        self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
@@ -155,6 +169,11 @@ class Configuration( object ):
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
+        self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
         self.blog_url = kwargs.get( 'blog_url', None )
@@ -190,6 +209,7 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key= kwargs.get( 'aws_access_key', None )
@@ -209,6 +229,8 @@ class Configuration( object ):
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
+        self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
+        self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
@@ -248,6 +270,7 @@ class Configuration( object ):
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
         self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
+        self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-118bfc78' )
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
@@ -259,8 +282,7 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
-        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
-        # Experimental: This will not be enabled by default and will hide 
+        # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
@@ -272,11 +294,15 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+        # PLUGINS:
+        self.plugin_frameworks = []
+        # visualization framework
+        self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):
         """
-        Sentry URL with private key removed for use in client side scripts, 
+        Sentry URL with private key removed for use in client side scripts,
         sentry server will need to be configured to accept events
         """
         if self.sentry_dsn:
@@ -346,6 +372,7 @@ class Configuration( object ):
                     self.nginx_upload_store, \
                     './static/genetrack/plots', \
                     self.whoosh_index_dir, \
+                    self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
@@ -409,8 +436,8 @@ def configure_logging( config ):
     """
     # Get root logger
     root = logging.getLogger()
-    # PasteScript will have already configured the logger if the 
-    # 'loggers' section was found in the config file, otherwise we do 
+    # PasteScript will have already configured the logger if the
+    # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
     if not config.global_conf_parser.has_section( "loggers" ):
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )

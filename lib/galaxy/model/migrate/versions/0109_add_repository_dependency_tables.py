@@ -19,7 +19,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 RepositoryDependency_table = Table( "repository_dependency", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -34,8 +34,9 @@ RepositoryRepositoryDependencyAssociation_table = Table( "repository_repository_
     Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
     Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         RepositoryDependency_table.create()
@@ -46,7 +47,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating repository_repository_dependency_association table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         RepositoryRepositoryDependencyAssociation_table.drop()

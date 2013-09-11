@@ -154,7 +154,6 @@ function make_popup_menus( parent ) {
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
-                // why do we need the DOM (mixed with jq)?
                 link_dom = link.get(0),
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
@@ -178,18 +177,31 @@ function make_popup_menus( parent ) {
                         } else if ( target === "_top" ) {
                             window.top.location = href;
                             
-                        //??...wot?
+                        // Http request target is a window named demolocal on the local box
                         } else if ( target === "demo" ) {
-                            // Http request target is a window named
-                            // demolocal on the local box
                             if ( f === undefined || f.closed ) {
                                 f = window.open( href,target );
                                 f.creator = self;
                             }
                             
-                        // relocate this panel
+                        // this panel or other, valid panels
                         } else {
-                            window.location = href;
+                            // it may be that the button and menu href are not in the same frame:
+                            //  allow certain frame names to be used as a target
+                            var other_valid_targets = [
+                                'galaxy_main'
+                                // following are blocked until needed
+                                //'galaxy_tools',
+                                //'galaxy_history'
+                            ];
+                            if( ( target && ( target in window )
+                            &&  ( other_valid_targets.indexOf( target ) !== -1 ) ) ){
+                                window[ target ].location = href;
+
+                            // relocate this panel
+                            } else {
+                                window.location = href;
+                            }
                         }
                     }
                 };
@@ -400,7 +412,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live("click", function() {
+    $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -670,6 +682,7 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+
     // Tooltips
     // if ( $.fn.tipsy ) {
     //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
@@ -677,7 +690,11 @@ $(document).ready( function() {
     //     $(".tooltip").tipsy( { gravity: 's' } );
     // }
     if ( $.fn.tooltip ) {
-        $(".tooltip").tooltip( { placement: 'top' } );
+        // Put tooltips below items in panel header so that they do not overlap masthead.
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
+        
+        // Default tooltip location to be above item.
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();
@@ -704,10 +721,5 @@ $(document).ready( function() {
         }
         return anchor;
     });
-
-    // Auto Focus on first item on form
-    if ( $("*:focus").html() == null ) {
-        $(":input:not([type=hidden]):visible:enabled:first").focus();
-    }
 
 });

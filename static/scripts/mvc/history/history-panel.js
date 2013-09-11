@@ -95,7 +95,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         // set up url templates
         //TODO: prob. better to put this in class scope (as the handlebars templates), but...
-        //  they're added to GalaxyPaths on page load (after this file is loaded)
+        //  they're added to galaxy_config on page load (after this file is loaded)
         if( !attributes.urlTemplates ){         throw( this + ' needs urlTemplates on initialize' ); }
         if( !attributes.urlTemplates.history ){ throw( this + ' needs urlTemplates.history on initialize' ); }
         if( !attributes.urlTemplates.hda ){     throw( this + ' needs urlTemplates.hda on initialize' ); }
@@ -112,6 +112,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.hdaViews = {};
         /** map web controller urls for history related actions */
         this.urls = {};
+    },
+
+    // refresh function
+    refresh : function() {
+        // refresh
+        // TODO: refresh content without reloading frame
+        window.location = window.location;
     },
 
     _setUpEventHandlers : function(){
@@ -264,7 +271,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
-        newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
+        newRender.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
@@ -478,7 +485,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });

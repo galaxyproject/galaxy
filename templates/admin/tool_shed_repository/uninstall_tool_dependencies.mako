@@ -1,22 +1,10 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 
 <% import os %>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get repository updates</a>
-        %if repository.tool_dependencies:
-            <% tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in repository.tool_dependencies ] %>
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
-        %endif
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
-    </div>
-</ul>
+${render_galaxy_repository_actions( repository )}
 
 %if message:
     ${render_msg( message, status )}
@@ -51,15 +39,15 @@
                                                             tool_dependency.tool_shed_repository.owner,
                                                             tool_dependency.tool_shed_repository.name,
                                                             tool_dependency.tool_shed_repository.installed_changeset_revision )
+                            if not os.path.exists( install_dir ):
+                                install_dir = "This dependency's installation directory does not exist, click <b>Uninstall</b> to reset for installation."
                         %>
-                        %if os.path.exists( install_dir ):
-                            <tr>
-                                <td>${tool_dependency.name}</td>
-                                <td>${tool_dependency.version}</td>
-                                <td>${tool_dependency.type}</td>
-                                <td>${install_dir}</td>
-                            </tr>
-                        %endif
+                        <tr>
+                            <td>${tool_dependency.name}</td>
+                            <td>${tool_dependency.version}</td>
+                            <td>${tool_dependency.type}</td>
+                            <td>${install_dir}</td>
+                        </tr>
                     %endfor
                 </table>
                 <div style="clear: both"></div>

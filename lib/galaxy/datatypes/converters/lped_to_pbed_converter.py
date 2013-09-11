@@ -29,7 +29,7 @@ def timenow():
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
 def getMissval(inped=''):
-   """ 
+   """
    read some lines...ugly hack - try to guess missing value
    should be N or 0 but might be . or -
    """
@@ -43,18 +43,18 @@ def getMissval(inped=''):
         try:
           l = f.readline()
         except:
-          break 
+          break
         ll = l.split()[6:] # ignore pedigree stuff
         for c in ll:
             if commonmissvals.get(c,None):
-               missval = c 
+               missval = c
                f.close()
                return missval
-   if not missval: 
+   if not missval:
        missval = 'N' # punt
-   close(f) 
+   close(f)
    return missval
-   
+
 def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):
     """
     """
@@ -104,7 +104,7 @@ def main():
     f.write("</div></body></html>")
     f.close()
 
-  
+
 
 if __name__ == "__main__":
    main()

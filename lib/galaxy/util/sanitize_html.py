@@ -50,13 +50,13 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
     bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
     elements_no_end_tag = ['area', 'base', 'basefont', 'br', 'col', 'frame', 'hr',
       'img', 'input', 'isindex', 'link', 'meta', 'param']
-    
+
     def __init__(self, encoding, type):
         self.encoding = encoding
         self.type = type
         ## if _debug: sys.stderr.write('entering BaseHTMLProcessor, encoding=%s\n' % self.encoding)
         sgmllib.SGMLParser.__init__(self)
-        
+
     def reset(self):
         self.pieces = []
         sgmllib.SGMLParser.reset(self)
@@ -78,7 +78,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
     def feed(self, data):
         data = re.compile(r'<!((?!DOCTYPE|--|\[))', re.IGNORECASE).sub(r'&lt;!\1', data)
         #data = re.sub(r'<(\S+?)\s*?/>', self._shorttag_replace, data) # bug [ 1399464 ] Bad regexp for _shorttag_replace
-        data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data) 
+        data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data)
         data = data.replace('&#39;', "'")
         data = data.replace('&#34;', '"')
         if self.encoding and type(data) == type(u''):
@@ -141,7 +141,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
             self.pieces.append('&#%s;' % hex(ord(_cp1252[value]))[1:])
         else:
             self.pieces.append('&#%(ref)s;' % locals())
-        
+
     def handle_entityref(self, ref):
         # called for each entity reference, e.g. for '&copy;', ref will be 'copy'
         # Reconstruct the original entity reference.
@@ -156,12 +156,12 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         # Store the original text verbatim.
         ## if _debug: sys.stderr.write('_BaseHTMLProcessor, handle_text, text=%s\n' % text)
         self.pieces.append(text)
-        
+
     def handle_comment(self, text):
         # called for each HTML comment, e.g. <!-- insert Javascript code here -->
         # Reconstruct the original comment.
         self.pieces.append('<!--%(text)s-->' % locals())
-        
+
     def handle_pi(self, text):
         # called for each processing instruction, e.g. <?instruction>
         # Reconstruct original processing instruction.
@@ -173,7 +173,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         #     "http://www.w3.org/TR/html4/loose.dtd">
         # Reconstruct original DOCTYPE
         self.pieces.append('<!%(text)s>' % locals())
-        
+
     _new_declname_match = re.compile(r'[a-zA-Z][-_.a-zA-Z0-9:]*\s*').match
     def _scan_name(self, i, declstartpos):
         rawdata = self.rawdata
@@ -283,7 +283,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
     # svgtiny - foreignObject + linearGradient + radialGradient + stop
     svg_elements = ['a', 'animate', 'animateColor', 'animateMotion',
       'animateTransform', 'circle', 'defs', 'desc', 'ellipse', 'foreignObject',
-      'font-face', 'font-face-name', 'font-face-src', 'g', 'glyph', 'hkern', 
+      'font-face', 'font-face-name', 'font-face-src', 'g', 'glyph', 'hkern',
       'linearGradient', 'line', 'marker', 'metadata', 'missing-glyph', 'mpath',
       'path', 'polygon', 'polyline', 'radialGradient', 'rect', 'set', 'stop',
       'svg', 'switch', 'text', 'title', 'tspan', 'use']
@@ -329,7 +329,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
         self.unacceptablestack = 0
         self.mathmlOK = 0
         self.svgOK = 0
-        
+
     def unknown_starttag(self, tag, attrs):
         acceptable_attributes = self.acceptable_attributes
         keymap = {}
@@ -383,7 +383,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
                 ## clean_value = self.sanitize_style(value)
                 ## if clean_value: clean_attrs.append((key,clean_value))
         _BaseHTMLProcessor.unknown_starttag(self, tag, clean_attrs)
-        
+
     def unknown_endtag(self, tag):
         if not tag in self.acceptable_elements:
             if tag in self.unacceptable_elements_with_end_tag:

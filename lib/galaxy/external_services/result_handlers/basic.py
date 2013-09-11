@@ -7,9 +7,9 @@ log = logging.getLogger( __name__ )
 
 class ExternalServiceActionResultHandler( object ):
     """ Basic Class for External Service Actions Result Handlers"""
-    
+
     type = 'display'
-    
+
     @classmethod
     def from_elem( cls, elem, parent ):
         result_type = elem.get( 'type', None )
@@ -25,9 +25,9 @@ class ExternalServiceActionResultHandler( object ):
 
 class ExternalServiceActionURLRedirectResultHandler( ExternalServiceActionResultHandler ):
     """ Basic Class for External Service Actions Result Handlers"""
-    
+
     type = 'web_redirect'
-    
+
     @classmethod
     def from_elem( cls, elem, parent ):
         result_type = elem.get( 'type', None )
@@ -40,18 +40,18 @@ class ExternalServiceActionURLRedirectResultHandler( ExternalServiceActionResult
 
 class ExternalServiceActionJSONResultHandler( ExternalServiceActionResultHandler ):
     """Class for External Service Actions JQuery Result Handler"""
-    
+
     type = 'json_display'
-    
+
     def handle_result( self, result, param_dict, trans ):
         rval = from_json_string( result.content )
         return trans.fill_template( '/external_services/generic_json.mako', result = rval, param_dict = param_dict, action=self.parent )
 
 class ExternalServiceActionJQueryGridResultHandler( ExternalServiceActionResultHandler ):
     """Class for External Service Actions JQuery Result Handler"""
-    
+
     type = 'jquery_grid'
-    
+
     def handle_result( self, result, param_dict, trans ):
         rval = from_json_string( result.content )
         return trans.fill_template( '/external_services/generic_jquery_grid.mako', result = rval, param_dict = param_dict, action=self.parent )

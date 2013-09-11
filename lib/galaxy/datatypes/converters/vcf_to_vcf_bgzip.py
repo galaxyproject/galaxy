@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Uses pysam to bgzip a vcf file as-is. 
+Uses pysam to bgzip a vcf file as-is.
 Headers, which are important, are kept.
 Original ordering, which may be specifically needed  by tools or external display applications, is also maintained.
 
@@ -17,8 +17,8 @@ def main():
     parser = optparse.OptionParser()
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
-    
+
     ctabix.tabix_compress(input_fname, output_fname, force=True)
-    
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     main()

@@ -270,7 +270,7 @@ class WebApplication( base.WebApplication ):
 
     def add_ui_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseUIController
@@ -294,7 +294,7 @@ class WebApplication( base.WebApplication ):
 
     def add_api_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseAPIController
@@ -341,6 +341,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+            
+        
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -348,6 +350,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # If an error message is set here, it's sent back using
             # trans.show_error in the response -- in expose_api.
             self.error_message = self._authenticate_api( session_cookie )
+        elif self.app.name == "reports":
+            self.galaxy_session = None
         else:
             #This is a web request, get or create session.
             self._ensure_valid_session( session_cookie )
@@ -367,9 +371,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             client_locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
             for locale in client_locales:
                 try:
-                    locales.append( Locale.parse( locale.split( ';' )[0], sep='-' ).language )
-                except UnknownLocaleError:
-                    pass
+                    locales.append( Locale.parse( locale.split( ';' )[0].strip(), sep='-' ).language )
+                except Exception, e:
+                    log.debug( "Error parsing locale '%s'. %s: %s", locale, type( e ), e )
         if not locales:
             # Default to English
             locales = 'en'
@@ -822,9 +826,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             history = self.galaxy_session.current_history
         if not history and util.string_as_bool( create ):
             history = self.new_history()
-        else:
-            # Perhaps a bot is running a tool without having logged in to get a history
-            log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
         return history
 
     def set_history( self, history ):
@@ -834,6 +835,39 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
 
     history = property( get_history, set_history )
+
+    def get_or_create_default_history( self ):
+        """
+        Gets or creates a default history and associates it with the current
+        session.
+        """
+
+        # There must be a user to fetch a default history.
+        if not self.galaxy_session.user:
+            return self.new_history()
+
+        # Look for default history that (a) has default name + is not deleted and
+        # (b) has no datasets. If suitable history found, use it; otherwise, create
+        # new history.
+        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by(
+                                user=self.galaxy_session.user,
+                                name=self.app.model.History.default_name,
+                                deleted=False )
+        default_history = None
+        for history in unnamed_histories:
+            if len( history.datasets ) == 0:
+                # Found suitable default history.
+                default_history = history
+                break
+
+        # Set or create hsitory.
+        if default_history:
+            history = default_history
+            self.set_history( history )
+        else:
+            history = self.new_history()
+
+        return history
 
     def new_history( self, name=None ):
         """
@@ -963,10 +997,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
 
-    def fill_template_mako( self, filename, **kwargs ):
-        template = self.webapp.mako_template_lookup.get_template( filename )
+    def fill_template_mako( self, filename, template_lookup=None, **kwargs ):
+        template_lookup = template_lookup or self.webapp.mako_template_lookup
+        template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
-        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
+
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util,
+                     request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )

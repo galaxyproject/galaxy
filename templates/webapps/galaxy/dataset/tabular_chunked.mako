@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-
+<%namespace file="/dataset/display.mako" import="render_deleted_data_message" />
 
 <%def name="title()">Dataset Display</%def>
 
@@ -19,7 +19,7 @@
 
         require(['mvc/data'], function(data) {
             data.createTabularDatasetChunkedView(
-                _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.get_api_value() ) )}, 
+                _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.to_dict() ) )}, 
                         {
                             url_viz: "${h.url_for( controller='/visualization')}",
                             chunk_url: "${h.url_for( controller='/dataset', action='display',
@@ -37,3 +37,5 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
 </%def>
+
+${ render_deleted_data_message( dataset ) }

@@ -29,7 +29,7 @@ class CommunityWebApplication( galaxy.web.framework.WebApplication ):
 
 def add_ui_controllers( webapp, app ):
     """
-    Search for controllers in the 'galaxy.webapps.controllers' module and add 
+    Search for controllers in the 'galaxy.webapps.controllers' module and add
     them to the webapp.
     """
     from galaxy.web.base.controller import BaseUIController
@@ -77,19 +77,20 @@ def app_factory( global_conf, **kwargs ):
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
     webapp.mapper.resource( 'repository',
-                                'repositories',
-                                controller='repositories',
-                                collection={ 'get_repository_revision_install_info' : 'GET',
-                                             'get_ordered_installable_revisions' : 'GET' },
-                                name_prefix='repository_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository', collection_name='repositories' ) )
+                            'repositories',
+                            controller='repositories',
+                            collection={ 'get_repository_revision_install_info' : 'GET',
+                                         'get_ordered_installable_revisions' : 'GET' },
+                            name_prefix='repository_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository', collection_name='repositories' ) )
     webapp.mapper.resource( 'repository_revision',
-                                'repository_revisions',
-                                controller='repository_revisions',
-                                name_prefix='repository_revision_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
+                            'repository_revisions',
+                            member={ 'export' : 'POST' },
+                            controller='repository_revisions',
+                            name_prefix='repository_revision_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
@@ -124,7 +125,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
-    # The recursive middleware allows for including requests in other 
+    # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
@@ -161,8 +162,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
         # Not in interactive debug mode, just use the regular error middleware
-        from paste.exceptions import errormiddleware
-        app = errormiddleware.ErrorMiddleware( app, conf )
+        import galaxy.web.framework.middleware.error
+        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
@@ -176,7 +177,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = hg.Hg( app, conf )
     log.debug( "Enabling hg middleware" )
     return app
-    
+
 def wrap_in_static( app, global_conf, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -198,7 +199,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
     # URL mapper becomes the root webapp
     return urlmap
-    
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error

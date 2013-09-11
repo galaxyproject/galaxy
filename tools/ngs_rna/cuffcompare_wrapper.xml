@@ -4,6 +4,7 @@
     <requirements>
         <requirement type="package">cufflinks</requirement>
     </requirements>
+    <version_command>cuffcompare 2>&amp;1 | head -n 1</version_command>
     <command interpreter="python">
         cuffcompare_wrapper.py 
             

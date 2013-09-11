@@ -24,6 +24,11 @@ import wchartype
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
 
+CHUNK_SIZE = 65536 #64k
+
+DATABASE_MAX_STRING_SIZE = 32768
+DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
+
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
 DEFAULT_ENCODING = 'utf-8'
@@ -32,6 +37,9 @@ BINARY_CHARS = [ NULL_CHAR ]
 
 from inflection import Inflector, English
 inflector = Inflector(English)
+
+pkg_resources.require( "simplejson" )
+import simplejson
 
 def is_multi_byte( chars ):
     for char in chars:
@@ -90,19 +98,19 @@ def synchronized(func):
 
 def file_iter(fname, sep=None):
     """
-    This generator iterates over a file and yields its lines 
-    splitted via the C{sep} parameter. Skips empty lines and lines starting with 
+    This generator iterates over a file and yields its lines
+    splitted via the C{sep} parameter. Skips empty lines and lines starting with
     the C{#} character.
-    
+
     >>> lines = [ line for line in file_iter(__file__) ]
-    >>> len(lines) !=  0 
+    >>> len(lines) !=  0
     True
     """
     for line in file(fname):
         if line and line[0] != '#':
             yield line.split(sep)
 
-def file_reader(fp, chunk_size=65536):
+def file_reader( fp, chunk_size=CHUNK_SIZE ):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
     while 1:
         data = fp.read(chunk_size)
@@ -114,7 +122,7 @@ def file_reader(fp, chunk_size=65536):
 def unique_id(KEY_SIZE=128):
     """
     Generates an unique id
-    
+
     >>> ids = [ unique_id() for i in range(1000) ]
     >>> len(set(ids))
     1000
@@ -132,8 +140,60 @@ def parse_xml(fname):
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:
-        return ElementTree.tostring( pretty_print_xml( elem ) )
-    return ElementTree.tostring( elem )
+        elem = pretty_print_xml( elem )
+    try:
+        return ElementTree.tostring( elem )
+    except TypeError, e:
+        #assume this is a comment
+        if hasattr( elem, 'text' ):
+            return "<!-- %s -->\n" % ( elem.text )
+        else:
+            raise e
+
+def xml_element_compare( elem1, elem2 ):
+    if not isinstance( elem1, dict ):
+        elem1 = xml_element_to_dict( elem1 )
+    if not isinstance( elem2, dict ):
+        elem2 = xml_element_to_dict( elem2 )
+    return elem1 == elem2
+
+def xml_element_list_compare( elem_list1, elem_list2 ):
+    return [ xml_element_to_dict( elem ) for elem in elem_list1  ] == [ xml_element_to_dict( elem ) for elem in elem_list2  ]
+
+def xml_element_to_dict( elem ):
+    rval = {}
+    if elem.attrib:
+        rval[ elem.tag ] = {}
+    else:
+        rval[ elem.tag ] = None
+
+    sub_elems = list( elem )
+    if sub_elems:
+        sub_elem_dict = dict()
+        for sub_sub_elem_dict in map( xml_element_to_dict, sub_elems ):
+            for key, value in sub_sub_elem_dict.iteritems():
+                if key not in sub_elem_dict:
+                    sub_elem_dict[ key ] = []
+                sub_elem_dict[ key ].append( value )
+        for key, value in sub_elem_dict.iteritems():
+            if len( value ) == 1:
+                rval[ elem.tag ][ k ] = value[0]
+            else:
+                rval[ elem.tag ][ k ] = value
+    if elem.attrib:
+        for key, value in elem.attrib.iteritems():
+            rval[ elem.tag ][ "@%s" % key ] = value
+
+    if elem.text:
+        text = elem.text.strip()
+        if text and sub_elems or elem.attrib:
+            rval[ elem.tag ][ '#text' ] = text
+        else:
+            rval[ elem.tag ] = text
+
+    return rval
+
+
 
 def pretty_print_xml( elem, level=0 ):
     pad = '    '
@@ -151,6 +211,60 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
+
+def get_file_size( value, default=None ):
+    try:
+        #try built-in
+        return os.path.getsize( value )
+    except:
+        try:
+            #try built-in one name attribute
+            return os.path.getsize( value.name )
+        except:
+            try:
+                #try tell() of end of object
+                offset = value.tell()
+                value.seek( 0, 2 )
+                rval = value.tell()
+                value.seek( offset )
+                return rval
+            except:
+                #return default value
+                return default
+
+def shrink_stream_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    rval = ''
+    if get_file_size( value ) > size:
+        start = value.tell()
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            elif end_on_size_error:
+                value.seek( -size, 2 )
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        rval = value.read( left_index ) + join_by
+        value.seek( -right_index, 2 )
+        rval += value.read( right_index )
+    else:
+        while True:
+            data = value.read( CHUNK_SIZE )
+            if not data:
+                break
+            rval += data
+    return rval
 
 def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
     if len( value ) > size:
@@ -171,12 +285,17 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
         value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
     return value
 
+def pretty_print_json(json_data, is_json_string=False):
+    if is_json_string:
+        json_data = simplejson.loads(json_data)
+    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
+
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
-mapped_chars = { '>' :'__gt__', 
-                 '<' :'__lt__', 
+mapped_chars = { '>' :'__gt__',
+                 '<' :'__lt__',
                  "'" :'__sq__',
                  '"' :'__dq__',
                  '[' :'__ob__',
@@ -228,7 +347,6 @@ def sanitize_param(value):
     elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
-        print value
         raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
 
 valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
@@ -253,13 +371,13 @@ def sanitize_for_filename( text, default=None ):
 
 class Params( object ):
     """
-    Stores and 'sanitizes' parameters. Alphanumeric characters and the  
+    Stores and 'sanitizes' parameters. Alphanumeric characters and the
     non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
-    Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__} 
+    Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__}
     (see L{mapped_chars}). All other characters are replaced with C{X}.
-    
+
     Operates on string or list values only (HTTP parameters).
-    
+
     >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#!' ]  }
     >>> par = Params(values)
     >>> par.status
@@ -273,14 +391,14 @@ class Params( object ):
     >>> par.flatten()          # flattening to a list
     [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
     """
-    
+
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
     NEVER_SANITIZE = ['file_data', 'url_paste', 'URL', 'filesystem_paths']
-    
+
     def __init__( self, params, sanitize=True ):
         if sanitize:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed. 
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
                     self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
@@ -302,11 +420,11 @@ class Params( object ):
 
     def __getattr__(self, name):
         """This is here to ensure that we get None for non existing parameters"""
-        return None 
-    
+        return None
+
     def get(self, key, default):
         return self.__dict__.get(key, default)
-    
+
     def __str__(self):
         return '%s' % self.__dict__
 
@@ -326,7 +444,7 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
-    return docutils.core.publish_string(s, 
+    return docutils.core.publish_string(s,
                 writer=docutils.writers.html4css1.Writer(),
                 settings_overrides={"embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream()})
 
@@ -346,7 +464,7 @@ def xml_text(root, name=None):
         return text.strip()
     # No luck, return empty string
     return ''
-    
+
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
@@ -421,19 +539,20 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     """
     Returns a unicode string or None
     """
+
     if isinstance( value, unicode ):
         return value
     try:
-        return unicode( value, encoding, error )
+        return unicode( str( value ), encoding, error )
     except:
         return default
 
 def object_to_string( obj ):
     return binascii.hexlify( pickle.dumps( obj, 2 ) )
-    
+
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
-        
+
 def get_ucsc_by_build(build):
     sites = []
     for site in ucsc_build_sites:
@@ -752,7 +871,7 @@ def move_merge( source, target ):
         for name in os.listdir( source ):
             move_merge( os.path.join( source, name ), os.path.join( target, name ) )
     else:
-        return shutil.move( source, target ) 
+        return shutil.move( source, target )
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 

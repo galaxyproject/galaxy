@@ -26,7 +26,6 @@ log = logging.getLogger(__name__)
 
 PKEY_PREFIX = 'gxy_pkey'
 DEFAULT_KEYPAIR = 'cloudman_keypair'
-DEFAULT_AMI = 'ami-da58aab3'
 
 
 class CloudController(BaseUIController):
@@ -35,8 +34,12 @@ class CloudController(BaseUIController):
         BaseUIController.__init__(self, app)
 
     @web.expose
-    def index(self, trans, share_string=None):
-        return trans.fill_template("cloud/index.mako", default_keypair = DEFAULT_KEYPAIR, share_string=share_string)
+    def index(self, trans, share_string=None, ami=None, bucket_default = None):
+        return trans.fill_template("cloud/index.mako",
+                                    default_keypair = DEFAULT_KEYPAIR,
+                                    share_string=share_string,
+                                    ami=ami,
+                                    bucket_default=bucket_default)
 
     @web.expose
     def get_account_info(self, trans, key_id, secret, **kwargs):
@@ -92,7 +95,7 @@ class CloudController(BaseUIController):
         return to_json_string(account_info)
 
     @web.expose
-    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, zone=None, **kwargs):
+    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, ami=None, zone=None, bucket_default=None, **kwargs):
         ec2_error = None
         try:
             # Create security group & key pair used when starting an instance
@@ -113,11 +116,19 @@ class CloudController(BaseUIController):
                 user_provided_data['password'] = password
             if share_string:
                 user_provided_data['share_string'] = share_string
+            if bucket_default:
+                user_provided_data['bucket_default']  = bucket_default
+
+            if not ami:
+                ami = trans.app.config.cloudlaunch_default_ami
+
             rs = run_instance(ec2_conn=ec2_conn,
+                      image_id = ami,
                       user_provided_data=user_provided_data,
                       key_name=kp_name,
                       security_groups=[sg_name],
-                      placement=zone)
+                      placement=zone
+                      )
             if rs:
                 instance = rs.instances[0]
                 ct = 0
@@ -266,7 +277,7 @@ def create_key_pair(ec2_conn, key_name=DEFAULT_KEYPAIR):
         return None, None
     return kp.name, kp.material
 
-def run_instance(ec2_conn, user_provided_data, image_id=DEFAULT_AMI,
+def run_instance(ec2_conn, user_provided_data, image_id=None,
                  kernel_id=None, ramdisk_id=None, key_name=DEFAULT_KEYPAIR,
                  placement=None, security_groups=['CloudMan']):
     """ Start an instance. If instance start was OK, return the ResultSet object

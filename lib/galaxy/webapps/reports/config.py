@@ -10,7 +10,7 @@ def resolve_path( path, root ):
     if not( os.path.isabs( path ) ):
         path = os.path.join( root, path )
     return path
-      
+
 class ConfigurationError( Exception ):
     pass
 
@@ -21,7 +21,7 @@ class Configuration( object ):
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
-        self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_engine_options = get_database_engine_options( kwargs )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -35,6 +35,10 @@ class Configuration( object ):
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.brand = kwargs.get( 'brand', None )
+        # Configuration for the message box directly below the masthead.
+        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_content = kwargs.get( 'message_box_content', None )
+        self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
@@ -98,7 +102,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -106,9 +110,9 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
-    
-    
+
+

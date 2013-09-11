@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tool_dependency>
+    <package name="bzlib" version="1.0.6">
+        <repository name="package_bzlib_1_0_1420" owner="user1" prior_installation_required="True" />
+    </package>
+    <package name="boost" version="1.53.0">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">file://__PATH__</action>
+
+                <!-- populate the environment variables from the dependend repos -->
+                <action type="set_environment_for_install">
+                    <repository name="package_bzlib_1_0_1420" owner="user1">
+                        <package name="bzlib" version="1.0.6" />
+                    </repository>
+                </action>
+				<action type="move_directory_files">
+					<source_directory>.</source_directory>
+					<destination_directory>$INSTALL_DIR</destination_directory>
+				</action>
+                <action type="set_environment">
+                    <environment_variable action="set_to" name="BOOST_ROOT_DIR">$INSTALL_DIR/boost</environment_variable>
+                    <environment_variable action="append_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/boost/lib/</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>Compiling boost requires a C++ compiler (typically gcc). You can access the boost root directory through the $BOOST_ROOT_DIR system variable. All modules will be build.</readme>
+    </package>
+</tool_dependency>

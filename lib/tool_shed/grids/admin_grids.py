@@ -81,8 +81,8 @@ class UserGrid( grids.Grid ):
                      key="email",
                      visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -168,8 +168,8 @@ class RoleGrid( grids.Grid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -241,8 +241,8 @@ class GroupGrid( grids.Grid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -306,7 +306,7 @@ class AdminRepositoryGrid( RepositoryGrid ):
                 RepositoryGrid.DeprecatedColumn( "Deprecated", key="deprecated", attach_popup=False ),
                 # Columns that are valid for filtering but are not visible.
                 DeletedColumn( "Deleted", key="deleted", attach_popup=False ) ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -421,7 +421,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         DeprecatedColumn( "Deprecated", attach_popup=False ),
         MaliciousColumn( "Malicious", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,

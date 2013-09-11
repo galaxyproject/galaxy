@@ -16,9 +16,9 @@ def test():
     # mkdir( base_path )
     for name, version, sub in [ ( "dep1", "1.0", "env.sh" ), ( "dep1", "2.0", "bin" ), ( "dep2", "1.0", None ) ]:
         if sub == "bin":
-            p = os.path.join( base_path, name, version, "bin" ) 
+            p = os.path.join( base_path, name, version, "bin" )
         else:
-            p = os.path.join( base_path, name, version ) 
+            p = os.path.join( base_path, name, version )
         try:
             makedirs( p )
         except:

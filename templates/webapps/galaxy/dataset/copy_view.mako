@@ -1,9 +1,13 @@
 <%inherit file="/base.mako"/>
+<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
+
 <%def name="title()">Copy History Items</%def>
 
 <%def name="javascripts()">
 
     ${parent.javascripts()}
+
+    ${handle_refresh_frames}
     
     <script type="text/javascript">
         $(function() {
@@ -13,14 +17,6 @@
                 $("#multiple-destination").show();
             });
         });
-        %if 'history' in refresh_frames:
-            if ( parent.frames && parent.frames.galaxy_history ) {
-                parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
-                if ( parent.force_right_panel ) {
-                    parent.force_right_panel( 'show' );
-                }
-            }
-        %endif
     </script>
     
 </%def>

@@ -62,16 +62,16 @@ class ExternalServiceType( object ):
         self.visible = visible
         root.clear()
     def parse( self, root ):
-        # Get the name 
+        # Get the name
         self.name = root.get( "name" )
-        if not self.name: 
+        if not self.name:
             raise Exception, "Missing external_service_type 'name'"
-        # Get the UNIQUE id for the tool 
+        # Get the UNIQUE id for the tool
         self.id = root.get( "id" )
-        if not self.id: 
+        if not self.id:
             raise Exception, "Missing external_service_type 'id'"
         self.config_version = root.get( "version" )
-        if not self.config_version: 
+        if not self.config_version:
             self.config_version = '1.0.0'
         self.description = util.xml_text(root, "description")
         self.version = util.xml_text( root.find( "version" ) )

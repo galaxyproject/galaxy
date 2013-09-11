@@ -13,7 +13,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 Run_table = Table( "run", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -33,7 +33,8 @@ SampleRunAssociation_table = Table( "sample_run_association", metadata,
     Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True, nullable=False ),
     Column( "run_id", Integer, ForeignKey( "run.id" ), index=True, nullable=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -49,7 +50,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating SampleRunAssociation table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:

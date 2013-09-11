@@ -123,6 +123,9 @@
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
+        %if job and job.command_line and trans.user_is_admin():
+            <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
+        %endif
 </table>
 <br />
 
@@ -153,7 +156,9 @@
     <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
 
     % for dep in inherit_chain:
-    <div style="font-size: 36px; text-align: center;">&uarr;</div>
-    <div class="inherit">${dep[0].name | h}<br/>${dep[1]}</div>
+        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+        <div class="inherit">
+            '${dep[0].name | h}' in ${dep[1]}<br/>
+        </div>
     % endfor
 

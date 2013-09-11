@@ -47,7 +47,17 @@ function SpaceGhost(){
 }
 utils.inherits( SpaceGhost, Casper );
 
-//console.debug( 'CasperError:' + CasperError );
+/** String representation
+ *  @returns {String}
+ */
+SpaceGhost.prototype.toString = function(){
+    var currentUrl = '';
+    try {
+        currentUrl = this.getCurrentUrl();
+    } catch( err ){}
+    return 'SpaceGhost(' + currentUrl + ')';
+};
+
 
 // ------------------------------------------------------------------- included libs
 //??: can we require underscore, etc. from the ../../static/scripts/lib?
@@ -157,8 +167,13 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         //htmlOnError     : { defaultsTo: false, flag: 'error-html',   help: 'output page html on a page error' }
         //htmlOnFail      : { defaultsTo: false, flag: 'fail-html',   help: 'output page html on a test failure' },
         //screenOnFail    : { defaultsTo: false, flag: 'fail-screen',   help: 'capture a screenshot on a test failure' }
-        logNamespace    : { defaultsTo: false,  flag: 'log-namespace', help: 'filter log messages to this namespace' }
+        logNamespace    : { defaultsTo: false,  flag: 'log-namespace', help: 'filter log messages to this namespace' },
+
+        adminUser       : { defaultsTo: null,   flag: 'admin', help: 'JSON string with email and password of admin' }
     };
+
+    // no switches/hardcoded options:
+    this.options.adminPassword = 'testuser';
 
     // --url parameter required (the url of the server to test with)
     if( !this.cli.has( 'url' ) ){
@@ -235,6 +250,13 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     if( this.cli.has( CLI_OPTIONS.logNamespace.flag ) ){
         this.options.logNamespace = this.cli.get( CLI_OPTIONS.logNamespace.flag );
         this._setLogNamespaceFilter( this.options.logNamespace );
+    }
+
+    /** email and password JSON string for admin user */
+    this.options.adminUser = CLI_OPTIONS.adminUser.defaultsTo;
+    if( this.cli.has( CLI_OPTIONS.adminUser.flag ) ){
+        this.options.adminUser = JSON.parse( this.cli.get( CLI_OPTIONS.adminUser.flag ) );
+        this.warning( 'Using admin user from CLI: ' + this.jsonStr( this.options.adminUser ) );
     }
 
 };
@@ -613,13 +635,6 @@ SpaceGhost.prototype.withHistoryPanel = function withHistoryPanel( then ){
     return this.withFrame( this.data.selectors.frames.history, then );
 };
 
-/** Version of Casper#withFrame for the tool iframe.
- *  @param {Function} then  function called when in the frame
- */
-SpaceGhost.prototype.withToolPanel = function withToolPanel( then ){
-    return this.withFrame( this.data.selectors.frames.tools, then );
-};
-
 /** Version of Casper#withFrame for the main iframe.
  *  @param {Function} then  function called when in the frame
  */
@@ -663,15 +678,6 @@ SpaceGhost.prototype.jumpToFrame = function jumpToFrame( frame, fn ){
  */
 SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
     return this.jumpToFrame( this.data.selectors.frames.history, fn );
-};
-
-/** Jumps into tools frame, exectutes fn, and jumps back to original frame.
- *  @param {Selector} frame the selector for the frame to jump to
- *  @param {Function} fn    function called when in the frame
- *  @returns {Any} the return value of fn
- */
-SpaceGhost.prototype.jumpToTools = function jumpToTools( fn ){
-    return this.jumpToFrame( this.data.selectors.frames.tools, fn );
 };
 
 /** Jumps into main frame, exectutes fn, and jumps back to original frame.
@@ -1002,6 +1008,7 @@ SpaceGhost.prototype.out = function( msg, namespace ){
     }
 };
 
+// ------------------------------------------------------------------- debugging
 /** JSON formatter
  */
 SpaceGhost.prototype.jsonStr = function( obj ){
@@ -1036,17 +1043,7 @@ SpaceGhost.prototype.lastError = function(){
     return this.errors[( this.errors.length - 1 )];
 };
 
-/** String representation
- *  @returns {String}
- */
-SpaceGhost.prototype.toString = function(){
-    var currentUrl = '';
-    try {
-        currentUrl = this.getCurrentUrl();
-    } catch( err ){}
-    return 'SpaceGhost(' + currentUrl + ')';
-};
-
+// ------------------------------------------------------------------- file system
 /** Load and parse a JSON file into an object.
  *  @param {String} filepath     filepath relative to the current scriptDir
  *  @returns {Object} the object parsed
@@ -1078,6 +1075,34 @@ SpaceGhost.prototype.writeHTMLFile = function writeHTMLFile( filepath, selector,
     return fs.write( filepath, this.getHTML( selector, outer ), 'w' );
 };
 
+/** Read and search a file for the given regex.
+ *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @param {Regex} searchFor     regex to search for
+ *  @returns {Object} search results
+ */
+SpaceGhost.prototype.searchFile = function searchFile( filepath, regex ){
+    //precondition: filepath is relative to script dir
+    filepath = this.options.scriptDir + filepath;
+    var read = fs.read( filepath );
+    return read.match( regex );
+};
+
+/** Read a configuration setting from the universe_wsgi.ini file.
+ *  @param {String} iniKey     the setting key to find
+ *  @returns {String} value from file for iniKey (or null if not found or commented out)
+ */
+SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
+    var iniFilepath = '../../universe_wsgi.ini',
+        regex = new RegExp( '^([#]*)\\\s*' + iniKey + '\\\s*=\\\s*(.*)$', 'm' ),
+        match = this.searchFile( iniFilepath, regex );
+    this.debug( 'regex: ' + regex );
+    // if nothing found or found and first group (the ini comment char) is not empty
+    if( match === null || match[1] || !match[2] ){
+        return null;
+    }
+    return match[2];
+};
+
 
 // =================================================================== TEST DATA
 /** General use selectors, labels, and text. Kept here to allow a centralized location.
@@ -1100,11 +1125,11 @@ SpaceGhost.prototype.data = {
 
         frames : {
             main    : 'galaxy_main',
-            tools   : 'galaxy_tools',
             history : 'galaxy_history'
         },
 
         masthead : {
+            adminLink : '#masthead a[href="/admin"]',
             userMenu : {
                 userEmail       : 'a #user-email',
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'

@@ -20,20 +20,19 @@ def main():
     parser.add_option( '-P', '--preset', dest='preset' )
     (options, args) = parser.parse_args()
     input_fname, index_fname, out_fname = args
-    
+
     # Create index.
     if options.preset:
         # Preset type.
-        ctabix.tabix_index(filename=index_fname, preset=options.preset, keep_original=True, 
+        ctabix.tabix_index(filename=index_fname, preset=options.preset, keep_original=True,
                            already_compressed=True, index_filename=out_fname)
     else:
         # For interval files; column indices are 0-based.
-        ctabix.tabix_index(filename=index_fname, seq_col=(options.chrom_col - 1), 
-                           start_col=(options.start_col - 1), end_col=(options.end_col - 1), 
+        ctabix.tabix_index(filename=index_fname, seq_col=(options.chrom_col - 1),
+                           start_col=(options.start_col - 1), end_col=(options.end_col - 1),
                            keep_original=True, already_compressed=True, index_filename=out_fname)
     if os.path.getsize(index_fname) == 0:
         sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
-    
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     main()
-    

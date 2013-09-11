@@ -312,12 +312,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
-        tc.submit( 'create_user_button' )
+        self.submit_form( '1', 'create_user_button', email=email, password=password, confirm=password, username=username, redirect=redirect )
         previously_created = False
         username_taken = False
         invalid_username = False
@@ -353,7 +348,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Twill sets hidden form fields to read-only by default. We need to write to this field.
         form = tc.browser.get_form( 'select_files_to_delete' )
         form.find_control( "selected_files_to_delete" ).readonly = False
-        tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
+        tc.fv( "2", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
@@ -379,7 +374,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        strings_displayed.append( installed_repository.installed_changeset_revision )
+        strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
@@ -458,15 +453,15 @@ class ShedTwillTestCase( TwillTestCase ):
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
         strings_displayed = []
         strings_not_displayed = []
-        for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
+        for input_elem_name in [ 'repo_name', 'description', 'long_description', 'repository_type' ]:
             if input_elem_name in kwd:
-                tc.fv( "1", input_elem_name, kwd[ input_elem_name ] )
+                tc.fv( "edit_repository", input_elem_name, kwd[ input_elem_name ] )
                 strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         strings_displayed = []
         for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            tc.fv( "1", input_elem_name, original_information[ input_elem_name ] )
+            tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
@@ -509,10 +504,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
             self.visit_galaxy_url( "/user/login?use_panels=False" )
-            tc.fv( '1', 'email', email )
-            tc.fv( '1', 'redirect', redirect )
-            tc.fv( '1', 'password', password )
-            tc.submit( 'login_button' )
+            self.submit_form( '1', 'login_button', email=email, redirect=redirect, password=password )
         
     def galaxy_logout( self ):
         self.home()
@@ -585,6 +577,12 @@ class ShedTwillTestCase( TwillTestCase ):
             return datatypes_count.group( 1 )
         return None
         
+    def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path to an installed repository's env.sh file.'''
+        env_sh_path = os.path.join( self.get_tool_dependency_path( tool_dependency_name, tool_dependency_version, repository ),
+                                    'env.sh' )
+        return env_sh_path
+    
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
@@ -602,6 +600,15 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+    
+    def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path for an installed tool dependency.'''
+        return os.path.join( self.galaxy_tool_dependency_dir,
+                             tool_dependency_name,
+                             tool_dependency_version,
+                             repository.owner,
+                             repository.name,
+                             repository.installed_changeset_revision )
         
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
@@ -977,6 +984,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
         
+    def repair_installed_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
+        self.visit_galaxy_url( url )
+        self.submit_form( 'repair_repository', 'repair_repository_button' )
+    
     def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
         strings_displayed = []
         strings_not_displayed = []
@@ -1032,10 +1045,27 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def set_skip_tool_tsts_flag( self, repository, flag_value, reason, changeset_revision=None ):
+        '''
+        NOTE: As with certain other methods in this test suite, the form can't easily be filled out, so we're emulating the
+        form's expected behavior with url parameters, in particular the checkbox behavior.
+        '''
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
+        self.display_manage_repository_page( repository, changeset_revision=changeset_revision )
+        params = 'skip_tool_tests=true&%s' % ( urllib.urlencode( dict( changeset_revision=changeset_revision,
+                                                                       id=self.security.encode_id( repository.id ),
+                                                                       skip_tool_tests=str( flag_value ), 
+                                                                       skip_tool_tests_comment=reason, 
+                                                                       skip_tool_tests_button='Save' ) ) )
+        url = '/repository/manage_repository?%s' % params
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed=[ 'Tools in this revision', 'automated test framework' ] )
+        
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
-        
+    
     def undelete_repository( self, repository ):
         repository_id = self.security.encode_id( repository.id )
         url = '/admin/browse_repositories?operation=Undelete&id=%s' % repository_id
@@ -1110,6 +1140,41 @@ class ShedTwillTestCase( TwillTestCase ):
         #            time.sleep( 1 )
         #            continue
         
+    def upload_url( self, 
+                    repository, 
+                    url, 
+                    filepath,
+                    valid_tools_only,
+                    uncompress_file,
+                    remove_repo_files_not_in_tar,
+                    commit_message,
+                    strings_displayed=[], 
+                    strings_not_displayed=[] ):
+        removed_message = 'files were removed from the repository'
+        if remove_repo_files_not_in_tar:
+            if not self.repository_is_new( repository ):
+                if removed_message not in strings_displayed:
+                    strings_displayed.append( removed_message )
+        else:
+            if removed_message not in strings_not_displayed:
+                strings_not_displayed.append( removed_message )
+        self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
+        if valid_tools_only:
+            strings_displayed.extend( [ 'has been successfully', 'uploaded to the repository.' ] )
+        tc.fv( "1", "url", url )
+        if uncompress_file:
+            tc.fv( 1, 'uncompress_file', 'Yes' )
+        else:
+            tc.fv( 1, 'uncompress_file', 'No' )
+        if not self.repository_is_new( repository ):
+            if remove_repo_files_not_in_tar:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'Yes' )
+            else:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'No' )
+        tc.fv( 1, 'commit_message', commit_message )
+        tc.submit( "upload_button" )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )

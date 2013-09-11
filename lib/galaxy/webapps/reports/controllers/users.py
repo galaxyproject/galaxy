@@ -1,9 +1,10 @@
-from datetime import *
+from datetime import datetime, date, timedelta
 from time import strftime
 import calendar, operator
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController, web
 import galaxy.model
-from galaxy.model.orm import *
+from galaxy import util
+from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
@@ -26,7 +27,7 @@ class Users( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         users = []
         for row in q.execute():
-            users.append( ( row.date.strftime( "%Y-%m" ), 
+            users.append( ( row.date.strftime( "%Y-%m" ),
                             row.num_users,
                             row.date.strftime( "%B" ),
                             row.date.strftime( "%Y" ) ) )
@@ -54,14 +55,14 @@ class Users( BaseUIController ):
         users = []
         for row in q.execute():
             users.append( ( row.date.strftime( "%Y-%m-%d" ),
-                            row.date.strftime( "%d" ), 
-                            row.num_users, 
+                            row.date.strftime( "%d" ),
+                            row.num_users,
                             row.date.strftime( "%A" ) ) )
-        return trans.fill_template( '/webapps/reports/registered_users_specified_month.mako', 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    month=month, 
-                                    users=users, 
+        return trans.fill_template( '/webapps/reports/registered_users_specified_month.mako',
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    month=month,
+                                    users=users,
                                     message=message )
     @web.expose
     def specified_date( self, trans, **kwd ):
@@ -84,13 +85,13 @@ class Users( BaseUIController ):
         users = []
         for row in q.execute():
             users.append( ( row.email ) )
-        return trans.fill_template( '/webapps/reports/registered_users_specified_date.mako', 
-                                    specified_date=start_date, 
-                                    day_label=day_label, 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    day_of_month=day_of_month, 
-                                    users=users, 
+        return trans.fill_template( '/webapps/reports/registered_users_specified_date.mako',
+                                    specified_date=start_date,
+                                    day_label=day_label,
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    day_of_month=day_of_month,
+                                    users=users,
                                     message=message )
     @web.expose
     def last_access_date( self, trans, **kwd ):

@@ -4,7 +4,8 @@ import os
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.model.item_attrs import APIItem
+from galaxy.model.item_attrs import Dictifiable
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -18,9 +19,9 @@ class APIKeys( object ):
     pass
 
 
-class User( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'email' )
-    api_element_visible_keys = ( 'id', 'email', 'username' )
+class User( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'email' )
+    dict_element_visible_keys = ( 'id', 'email', 'username' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -60,20 +61,20 @@ class User( object, APIItem ):
         return 0
 
 
-class Group( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+class Group( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name' )
 
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
 
 
-class Role( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
+class Role( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
-    types = Bunch( 
+    types = Bunch(
         PRIVATE = 'private',
         SYSTEM = 'system',
         USER = 'user',
@@ -108,15 +109,15 @@ class GroupRoleAssociation( object ):
 
 class GalaxySession( object ):
 
-    def __init__( self, 
-                  id=None, 
-                  user=None, 
-                  remote_host=None, 
-                  remote_addr=None, 
-                  referer=None, 
-                  current_history=None, 
-                  session_key=None, 
-                  is_valid=False, 
+    def __init__( self,
+                  id=None,
+                  user=None,
+                  remote_host=None,
+                  remote_addr=None,
+                  referer=None,
+                  current_history=None,
+                  session_key=None,
+                  is_valid=False,
                   prev_session_id=None ):
         self.id = id
         self.user = user
@@ -129,19 +130,21 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 
-class Repository( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+class Repository( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
+                                 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
 
-    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, deleted=None, email_alerts=None,
-                  times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False, deleted=None,
+                  email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
+        self.type = type
         self.description = description
         self.long_description = long_description
         self.user_id = user_id
@@ -151,27 +154,36 @@ class Repository( object, APIItem ):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
 
-    def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
+    def can_change_type( self, app ):
+        # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
+        # the default type.
+        if self.is_new( app ):
+            return True
+        if self.times_downloaded == 0:
+            return True
+        if self.type == rt_util.UNRESTRICTED:
+            return True
+        return False
 
-    def get_api_value( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
+    def can_change_type_to( self, app, new_type_label ):
+        if self.can_change_type( app ):
+            new_type = app.repository_types_registry.get_class_by_label( new_type_label )
+            if new_type.is_valid_for_type( app, self ):
+                return True
+        return False
+
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( Repository, self ).to_dict( view=view, value_mapper=value_mapper )
         if 'user_id' in rval:
             rval[ 'owner' ] = self.user.username
         return rval
+
+    def get_changesets_for_setting_metadata( self, app ):
+        type_class = self.get_type_class( app )
+        return type_class.get_changesets_for_setting_metadata( app, self )
+
+    def get_type_class( self, app ):
+        return app.repository_types_registry.get_class_by_label( self.type )
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
@@ -216,16 +228,17 @@ class Repository( object, APIItem ):
         fp.close()
 
 
-class RepositoryMetadata( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
-                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
-                                 'do_not_test', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes', 'includes_tools',
-                                 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
+class RepositoryMetadata( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
+                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'time_last_tested' )
+    dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
+                                 'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
+                                 'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
-    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
-                  missing_test_components=None, tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_results=None,
-                  has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False, includes_workflows=False ):
+    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False,
+                  missing_test_components=None, tools_functionally_correct=False, do_not_test=False, test_install_error=False, time_last_tested=None,
+                  tool_test_results=None, has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
+                  includes_workflows=False ):
         self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
@@ -236,6 +249,7 @@ class RepositoryMetadata( object, APIItem ):
         self.missing_test_components = missing_test_components
         self.tools_functionally_correct = tools_functionally_correct
         self.do_not_test = do_not_test
+        self.test_install_error = test_install_error
         self.time_last_tested = time_last_tested
         self.tool_test_results = tool_test_results
         self.has_repository_dependencies = has_repository_dependencies
@@ -253,30 +267,24 @@ class RepositoryMetadata( object, APIItem ):
                     return True
         return False
 
+
+class SkipToolTest( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
+    dict_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
+
+    def __init__( self, id=None, repository_metadata_id=None, initial_changeset_revision=None, comment=None ):
+        self.id = id
+        self.repository_metadata_id = repository_metadata_id
+        self.initial_changeset_revision = initial_changeset_revision
+        self.comment = comment
+
     def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
-
-    def get_api_value( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
 
-class RepositoryReview( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
+class RepositoryReview( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes' )
 
     def __init__( self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False ):
@@ -286,9 +294,9 @@ class RepositoryReview( object, APIItem ):
         self.rating = rating
         self.deleted = deleted
 
-class ComponentReview( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
-    api_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
+class ComponentReview( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
 
     def __init__( self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False ):
@@ -328,9 +336,9 @@ class RepositoryRatingAssociation( ItemRatingAssociation ):
         self.repository = repository
 
 
-class Category( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
+class Category( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
 
     def __init__( self, name=None, description=None, deleted=False ):
         self.name = name

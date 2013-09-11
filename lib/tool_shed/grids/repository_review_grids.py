@@ -1,14 +1,19 @@
-import os, logging
+import logging
+import os
 from galaxy.webapps.tool_shed import model
 from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, or_
+from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import patch
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -49,7 +54,7 @@ class ComponentGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
@@ -126,7 +131,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 if review.approved:
                     rval += '%s<br/>' % review.approved
             return rval
-            
+
     title = "All reviewed repositories"
     model_class = model.Repository
     template='/webapps/tool_shed/repository_review/grid.mako'
@@ -145,12 +150,12 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
         RatingColumn( "Rating", attach_popup=False ),
         ApprovedColumn( "Approved", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -184,7 +189,7 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                                 attach_popup=False,
                                                 key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -222,7 +227,7 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
                                                    attach_popup=False,
                                                    key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -259,7 +264,7 @@ class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
         RepositoriesWithReviewsGrid.RatingColumn( "Rating", attach_popup=False ),
         RepositoriesWithReviewsGrid.ApprovedColumn( "Approved", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -342,7 +347,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     # Override these
     default_filter = {}
     global_actions = []
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -351,7 +356,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         user_id = trans.security.decode_id( kwd[ 'id' ] )
@@ -374,12 +379,12 @@ class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
         RepositoriesWithReviewsGrid.ReviewersColumn( "Reviewers", attach_popup=False ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -415,7 +420,7 @@ class RepositoriesWithNoToolTestsGrid( RepositoriesWithoutReviewsGrid ):
                                                    attach_popup=False,
                                                    key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,

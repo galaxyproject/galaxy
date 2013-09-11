@@ -1,15 +1,14 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
 templates['template-hda-downloadLinks'] = template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
-helpers = helpers || Handlebars.helpers; data = data || {};
+  this.compilerInfo = [4,'>= 1.0.0'];
+helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
   var stack1, stack2, functionType="function", escapeExpression=this.escapeExpression, self=this, blockHelperMissing=helpers.blockHelperMissing;
 
 function program1(depth0,data) {
   
   var buffer = "", stack1, stack2, options;
-  buffer += "\n"
-    + "\n<div popupmenu=\"dataset-";
+  buffer += "\n<div popupmenu=\"dataset-";
   if (stack1 = helpers.id) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.id; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
@@ -42,7 +41,7 @@ function program1(depth0,data) {
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\" class=\"icon-button disk tooltip\"></a>\n</div>\n";
+  buffer += "\" class=\"icon-button disk\"></a>\n</div>\n";
   return buffer;
   }
 function program2(depth0,data) {
@@ -95,7 +94,7 @@ function program9(depth0,data) {
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\" class=\"icon-button disk tooltip\"></a>\n";
+  buffer += "\" class=\"icon-button disk\"></a>\n";
   return buffer;
   }
 

@@ -9,6 +9,7 @@ from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
+from tool_shed.util import encoding_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -44,7 +45,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.ToolShedRepository.table.c.name ) \
                                     .all()
             for tool_shed_repository in query:
-                tool_shed_repository_dict = tool_shed_repository.get_api_value( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                tool_shed_repository_dict = tool_shed_repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
                 tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                                   action='show',
                                                                   id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -83,9 +84,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
         :param name (required): the name of the Repository
@@ -179,6 +180,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
+        if install_tool_dependencies:
+            if trans.app.config.tool_dependency_dir is None:
+                no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set the value of your 'tool_dependency_dir' "
+                no_tool_dependency_dir_message += "setting in your Galaxy configuration file (universe_wsgi.ini) and restart your Galaxy server."
+                raise HTTPBadRequest( detail=no_tool_dependency_dir_message )
         new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         if shed_tool_conf:
@@ -211,13 +217,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                   tool_path=tool_path,
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
-        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
             repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=True )
-        if message and len( repo_info_dicts ) == 1:
-            # We're attempting to install a single repository that has already been installed into this Galaxy instance.
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
         if created_or_updated_tool_shed_repositories:
             # Build the dictionary of information necessary for installing the repositories.
             installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
@@ -244,29 +245,31 @@ class ToolShedRepositoriesController( BaseAPIController ):
             # order the list of tsr_ids to ensure all repositories install in the required order.
             tsr_ids = [ trans.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
             ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys )
+                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
             for index, tsr_id in enumerate( ordered_tsr_ids ):
                 tool_shed_repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
-                repo_info_dict = ordered_repo_info_dicts[ index ]
-                tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
-                repository_util.install_tool_shed_repository( trans,
-                                                              tool_shed_repository,
-                                                              repo_info_dict,
-                                                              tool_panel_section_key,
-                                                              shed_tool_conf,
-                                                              tool_path,
-                                                              install_tool_dependencies,
-                                                              reinstalling=False )
-                tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
-                tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                                  action='show',
-                                                                  id=trans.security.encode_id( tool_shed_repository.id ) )
-                installed_tool_shed_repositories.append( tool_shed_repository_dict )
+                if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
+                                                    trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+
+                    repo_info_dict = ordered_repo_info_dicts[ index ]
+                    tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
+                    repository_util.install_tool_shed_repository( trans,
+                                                                  tool_shed_repository,
+                                                                  repo_info_dict,
+                                                                  tool_panel_section_key,
+                                                                  shed_tool_conf,
+                                                                  tool_path,
+                                                                  install_tool_dependencies,
+                                                                  reinstalling=False )
+                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                    tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                                      action='show',
+                                                                      id=trans.security.encode_id( tool_shed_repository.id ) )
+                    installed_tool_shed_repositories.append( tool_shed_repository_dict )
         else:
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return dict( status='error', error=message )
+            # We're attempting to install more than 1 repository, and all of them have already been installed.
+            return dict( status='error', error='All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
         return installed_tool_shed_repositories
 
@@ -276,12 +279,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install_repository_revisions
         Install one or more specified repository revisions from one or more specified tool sheds into Galaxy.  The received parameters
         must be ordered lists so that positional values in tool_shed_urls, names, owners and changeset_revisions are associated.
-        
+
         It's questionable whether this method is needed as the above method for installing a single repository can probably cover all
         desired scenarios.  We'll keep this one around just in case...
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
@@ -356,4 +359,56 @@ class ToolShedRepositoriesController( BaseAPIController ):
             elif isinstance( installed_tool_shed_repositories, list ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
-    
+
+    @web.expose_api
+    def repair_repository_revision( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/repair_repository_revision
+        Repair a specified repository revision previously installed into Galaxy.
+
+        :param key: the current Galaxy admin user's API key
+
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        """
+        api_key = kwd.get( 'key', None )
+        # Get the information about the repository to be installed from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        changeset_revision = payload.get( 'changeset_revision', '' )
+        if not changeset_revision:
+            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+        tool_shed_repositories = []
+        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
+        repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+        ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
+        ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
+        if ordered_tsr_ids and ordered_repo_info_dicts:
+            repositories_for_repair = []
+            for index, tsr_id in enumerate( ordered_tsr_ids ):
+                repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                repo_info_dict = ordered_repo_info_dicts[ index ]
+                # TODO: handle errors in repair_dict.
+                repair_dict = repository_util.repair_tool_shed_repository( trans,
+                                                                           repository,
+                                                                           encoding_util.tool_shed_encode( repo_info_dict ) )
+                repository_dict = repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
+                repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                        action='show',
+                                                        id=trans.security.encode_id( repository.id ) )
+                if repair_dict:
+                    errors = repair_dict.get( repository.name, [] )
+                    repository_dict[ 'errors_attempting_repair' ] = '  '.join( errors )
+                tool_shed_repositories.append( repository_dict )
+        # Display the list of repaired repositories.
+        return tool_shed_repositories

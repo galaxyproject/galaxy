@@ -4,6 +4,7 @@ Support for running a tool in Galaxy via an internal job management system
 
 import copy
 import datetime
+import galaxy
 import logging
 import os
 import pwd
@@ -14,28 +15,26 @@ import subprocess
 import sys
 import threading
 import traceback
-
-import galaxy
-from galaxy import util, model
-from galaxy.util.bunch import Bunch
+from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.util.json import from_json_string
-from galaxy.util.expressions import ExpressionContext
-from galaxy.jobs.actions.post import ActionBox
 from galaxy.exceptions import ObjectInvalid
+from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
+from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
+
+DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
+DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
 
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
 # This interface is currently experimental, is only used by the upload tool,
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-
-DATABASE_MAX_STRING_SIZE = 32768
-DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 class Sleeper( object ):
     """
@@ -679,18 +678,24 @@ class JobWrapper( object ):
 
         # These can be passed on the command line if wanted as $__user_*__
         if job.history and job.history.user:
+            user = job.history.user
             user_id = '%d' % job.history.user.id
             user_email = str(job.history.user.email)
             user_name = str(job.history.user.username)
         else:
+            user = None
             user_id = 'Anonymous'
             user_email = 'Anonymous'
             user_name = 'Anonymous'
+        incoming['__user__'] = user
         incoming['__user_id__'] = incoming['userId'] = user_id
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
@@ -917,7 +922,6 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
@@ -950,9 +954,7 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset,
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.app.config.set_metadata_externally or \
-                     ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
-                       and self.app.config.retry_metadata_internally ):
+                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
                         dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
                     elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
                         dataset._state = model.Dataset.states.FAILED_METADATA
@@ -1174,8 +1176,8 @@ class JobWrapper( object ):
             # the job has an error, and the job is ok otherwise.
             else:
                 # TODO: Add in the tool and job id:
-                log.debug( "Tool did not define exit code or stdio handling; "
-                         + "checking stderr for success" )
+                # log.debug( "Tool did not define exit code or stdio handling; "
+                #          + "checking stderr for success" )
                 if stderr:
                     success = False
                 else:
@@ -1223,8 +1225,7 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
@@ -1573,6 +1574,12 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        for config_filename in config_filenames:
+            config_contents = open(config_filename, "r").read()
+            for k, v in fnames.iteritems():
+                config_contents = config_contents.replace(k, v)
+            open(config_filename, "w").write(config_contents)
+
         # FIXME: Build the param file (might return None, DEPRECATED)
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line

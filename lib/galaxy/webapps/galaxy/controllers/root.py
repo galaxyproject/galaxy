@@ -1,31 +1,33 @@
 """
 Contains the main interface in the Universe class
 """
+import cgi
 import os
 import urllib
-import cgi
 
 from paste.httpexceptions import HTTPNotFound
 
-from galaxy.web.base.controller import BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin
+from galaxy import web
+from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy import util, web
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
+from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.util.json import to_json_string
-#from galaxy.model.orm import *
+
+from galaxy.util.debugging import SimpleProfiler
 
 import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     """Controller class that maps to the url root of Galaxy (i.e. '/')."""
-    
+
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
         """Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
-    
+
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
         """Called on the root url to display the main Galaxy page.
@@ -35,29 +37,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                     workflow_id=workflow_id,
                                     m_c=m_c, m_a=m_a,
                                     params=kwd )
-        
+
     ## ---- Tool related -----------------------------------------------------
-    @web.expose
-    def tool_menu( self, trans ):
-        """Renders the tool panel of the Galaxy UI.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
-        toolbox = self.get_toolbox()
-        ## Get most recently used tools.
-        # recent_tools = []
-        # if trans.user:
-        #     for row in trans.sa_session.query( self.app.model.Job.tool_id ) \
-        #                                 .filter( self.app.model.Job.user == trans.user ) \
-        #                                 .order_by( self.app.model.Job.create_time.desc() ):
-        #         tool_id = row[0]
-        #         a_tool = toolbox.get_tool( tool_id )
-        #         if a_tool and not a_tool.hidden and a_tool not in recent_tools:
-        #             recent_tools.append( a_tool )
-        #             ## TODO: make number of recently used tools a user preference.
-        #             if len( recent_tools ) == 5:
-        #                 break
-        return trans.fill_template( '/root/tool_menu.mako', toolbox=toolbox )
 
     @web.json
     def tool_search( self, trans, **kwd ):
@@ -67,7 +48,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         Data are returned in JSON format.
         """
         query = kwd.get( 'query', '' )
-        tags = util.listify( kwd.get( 'tags[]', [] ) )
+        tags = listify( kwd.get( 'tags[]', [] ) )
         trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
         results = []
         if tags:
@@ -115,8 +96,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         trans.response.set_content_type('text/xml')
         return trans.fill_template_mako( "root/history_as_xml.mako",
                                           history=history,
-                                          show_deleted=util.string_as_bool( show_deleted ),
-                                          show_hidden=util.string_as_bool( show_hidden ) )
+                                          show_deleted=string_as_bool( show_deleted ),
+                                          show_hidden=string_as_bool( show_hidden ) )
 
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
@@ -126,13 +107,13 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         """
         if as_xml:
             return self.history_as_xml( trans,
-                show_deleted=util.string_as_bool( show_deleted ), show_hidden=util.string_as_bool( show_hidden ) )
+                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
 
         # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = util.string_as_bool_or_none( show_deleted )
+        show_deleted = string_as_bool_or_none( show_deleted )
         show_purged  = show_deleted
-        show_hidden  = util.string_as_bool_or_none( show_hidden )
-        params = util.Params( kwd )
+        show_hidden  = string_as_bool_or_none( show_hidden )
+        params = Params( kwd )
         message = params.get( 'message', '' )
         #TODO: ugh...
         message = message if message != 'None' else ''
@@ -199,7 +180,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
             try:
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:
                 return "Dataset id '%s' is invalid" % str( id )
         if data:
@@ -315,7 +296,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     def history_import( self, trans, id=None, confirm=False, **kwd ):
         #TODO: unused?
         #TODO: unencoded id
-        msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
         if not id:
@@ -439,7 +419,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 if not history:
                     # If we haven't retrieved a history, use the current one
                     history = trans.get_history()
-                p = util.Params( kwd )
+                p = Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     in_roles = p.get( k + '_in', [] )
@@ -467,7 +447,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             old_data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             new_data = old_data.copy()
             ## new_data.parent = None
-            ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
             history.add_dataset(new_data)
             trans.sa_session.add( new_data )
@@ -475,6 +454,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] )
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
+
+    @web.expose
+    def welcome( self, trans ):
+        welcome_url = trans.app.config.welcome_url
+        return trans.response.send_redirect( url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):
@@ -511,7 +495,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             rval[ k ] = kwd[k]
             try:
                 if rval[ k ] in [ 'true', 'True', 'false', 'False' ]:
-                    rval[ k ] = util.string_as_bool( rval[ k ] )
+                    rval[ k ] = string_as_bool( rval[ k ] )
                 rval[ k ] = float( rval[ k ] )
                 rval[ k ] = int( rval[ k ] )
             except:

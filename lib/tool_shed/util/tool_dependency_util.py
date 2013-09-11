@@ -5,10 +5,8 @@ from galaxy import eggs
 from galaxy import util
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
-
-eggs.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree import ElementInclude
+import tool_shed.repository_types.util as rt_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -67,13 +65,10 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
+    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
-    ElementInclude.include( root )
     fabric_version_checked = False
     for elem in root:
         tool_dependency_type = elem.tag
@@ -121,7 +116,7 @@ def generate_message_for_invalid_tool_dependencies( metadata_dict ):
                     message = '%s  ' % str( error )
     return message
 
-def generate_message_for_orphan_tool_dependencies( metadata_dict ):
+def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict ):
     """
     The introduction of the support for orphan tool dependency definitions in tool shed repositories has resulted in the inability
     to define an improperly configured tool dependency definition / tool config requirements tag combination as an invalid tool
@@ -133,29 +128,69 @@ def generate_message_for_orphan_tool_dependencies( metadata_dict ):
     if metadata_dict:
         orphan_tool_dependencies = metadata_dict.get( 'orphan_tool_dependencies', None )
         if orphan_tool_dependencies:
-            if 'tools' not in metadata_dict and 'invalid_tools' not in metadata_dict:
-                message += "This repository contains no tools, so these tool dependencies are considered orphans within this repository.<br/>"
-            for td_key, requirements_dict in orphan_tool_dependencies.items():
-                if td_key == 'set_environment':
-                    # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
-                    message += "The settings for <b>name</b> and <b>type</b> from a contained tool configuration file's <b>requirement</b> tag "
-                    message += "does not match the information for the following tool dependency definitions in the <b>tool_dependencies.xml</b> "
-                    message += "file, so these tool dependencies are considered orphans within this repository.<br/>"
-                    for env_requirements_dict in requirements_dict:
-                        name = env_requirements_dict[ 'name' ]
-                        type = env_requirements_dict[ 'type' ]
-                        message += "<b>* name:</b> %s, <b>type:</b> %s<br/>" % ( str( name ), str( type ) )
-                else:
-                    # "R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
-                    message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration file's "
-                    message += "<b>requirement</b> tag does not match the information for the following tool dependency definitions in the "
-                    message += "<b>tool_dependencies.xml</b> file, so these tool dependencies are considered orphans within this repository.<br/>"
-                    name = requirements_dict[ 'name' ]
-                    type = requirements_dict[ 'type' ]
-                    version = requirements_dict[ 'version' ]
-                    message += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % ( str( name ), str( type ), str( version ) )
-                message += "<br/>"
+            if 'tools' in metadata_dict or 'invalid_tools' in metadata_dict:
+                for td_key, requirements_dict in orphan_tool_dependencies.items():
+                    if td_key == 'set_environment':
+                        # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
+                        message += "The settings for <b>name</b> and <b>type</b> from a contained tool configuration file's <b>requirement</b> tag "
+                        message += "does not match the information for the following tool dependency definitions in the <b>tool_dependencies.xml</b> "
+                        message += "file, so these tool dependencies have no relationship with any tools within this repository.<br/>"
+                        for env_requirements_dict in requirements_dict:
+                            name = env_requirements_dict[ 'name' ]
+                            type = env_requirements_dict[ 'type' ]
+                            message += "<b>* name:</b> %s, <b>type:</b> %s<br/>" % ( str( name ), str( type ) )
+                    else:
+                        # "R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
+                        message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration file's "
+                        message += "<b>requirement</b> tag does not match the information for the following tool dependency definitions in the "
+                        message += "<b>tool_dependencies.xml</b> file, so these tool dependencies have no relationship with any tools within "
+                        message += "this repository.<br/>"
+                        name = requirements_dict[ 'name' ]
+                        type = requirements_dict[ 'type' ]
+                        version = requirements_dict[ 'version' ]
+                        message += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % ( str( name ), str( type ), str( version ) )
+                    message += "<br/>"
     return message
+
+def generate_message_for_repository_type_change( trans, repository ):
+    message = ''
+    if repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
+        tool_dependency_definition_type_class = trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
+        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
+        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % tool_dependency_definition_type_class.label
+    return message
+                
+                
+def get_download_url_for_platform( url_templates, platform_info_dict ):
+    '''
+    Compare the dict returned by get_platform_info() with the values specified in the url_template element. Return
+    true if and only if all defined attributes match the corresponding dict entries. If an entry is not
+    defined in the url_template element, it is assumed to be irrelevant at this stage. For example,
+    <url_template os="darwin">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</url_template>
+    where the OS must be 'darwin', but the architecture is filled in later using string.Template.
+    '''
+    os_ok = False
+    architecture_ok = False
+    for url_template in url_templates:
+        os_name = url_template.get( 'os', None )
+        architecture = url_template.get( 'architecture', None )
+        if os_name:
+            if os_name.lower() == platform_info_dict[ 'os' ]:
+                os_ok = True
+            else:
+                os_ok = False
+        else:
+            os_ok = True
+        if architecture:
+            if architecture.lower() == platform_info_dict[ 'architecture' ]:
+                architecture_ok = True
+            else:
+                architecture_ok = False
+        else:
+            architecture_ok = True
+        if os_ok and architecture_ok:
+            return url_template
+    return None
 
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
     if all_tool_dependencies:
@@ -203,6 +238,14 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
         missing_tool_dependencies = None
     return tool_dependencies, missing_tool_dependencies
 
+def get_platform_info_dict():
+    '''Return a dict with information about the current platform.'''
+    platform_dict = {}
+    sysname, nodename, release, version, machine = os.uname()
+    platform_dict[ 'os' ] = sysname.lower()
+    platform_dict[ 'architecture' ] = machine.lower()
+    return platform_dict
+
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
@@ -226,9 +269,16 @@ def get_tool_dependency_by_name_version_type_repository( app, repository, name, 
 
 def get_tool_dependency_ids( as_string=False, **kwd ):
     tool_dependency_id = kwd.get( 'tool_dependency_id', None )
-    tool_dependency_ids = util.listify( kwd.get( 'tool_dependency_ids', None ) )
-    if not tool_dependency_ids:
-        tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
+    if 'tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'tool_dependency_ids' ] )
+    elif 'id' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'id' ] )
+    elif 'inst_td_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'inst_td_ids' ] )
+    elif 'uninstalled_tool_dependency_ids' in kwd:
+        tool_dependency_ids = util.listify( kwd[ 'uninstalled_tool_dependency_ids' ] )
+    else:
+        tool_dependency_ids = []
     if tool_dependency_id and tool_dependency_id not in tool_dependency_ids:
         tool_dependency_ids.append( tool_dependency_id )
     if as_string:
@@ -300,15 +350,17 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                             get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
                         if required_repository_installed_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
-                            required_repository_installed_tool_dependencies = add_installation_directories_to_tool_dependencies( trans=trans,
-                                                                                                                                 tool_dependencies=required_repository_installed_tool_dependencies )
+                            required_repository_installed_tool_dependencies = \
+                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                   tool_dependencies=required_repository_installed_tool_dependencies )
                             for td_key, td_dict in required_repository_installed_tool_dependencies.items():
                                 if td_key not in repository_installed_tool_dependencies:
                                     repository_installed_tool_dependencies[ td_key ] = td_dict
                         if required_repository_missing_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
-                            required_repository_missing_tool_dependencies = add_installation_directories_to_tool_dependencies( trans=trans,
-                                                                                                                               tool_dependencies=required_repository_missing_tool_dependencies )
+                            required_repository_missing_tool_dependencies = \
+                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                   tool_dependencies=required_repository_missing_tool_dependencies )
                             for td_key, td_dict in required_repository_missing_tool_dependencies.items():
                                 if td_key not in repository_missing_tool_dependencies:
                                     repository_missing_tool_dependencies[ td_key ] = td_dict
@@ -318,14 +370,15 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
         missing_tool_dependencies = repository_missing_tool_dependencies
     return installed_tool_dependencies, missing_tool_dependencies
 
-def remove_tool_dependency( trans, tool_dependency ):
-    dependency_install_dir = tool_dependency.installation_directory( trans.app )
+def remove_tool_dependency( app, tool_dependency ):
+    sa_session = app.model.context.current
+    dependency_install_dir = tool_dependency.installation_directory( app )
     removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
-        tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
+        tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
-        trans.sa_session.add( tool_dependency )
-        trans.sa_session.flush()
+        sa_session.add( tool_dependency )
+        sa_session.flush()
     return removed, error_message
 
 def remove_tool_dependency_installation_directory( dependency_install_dir ):
@@ -343,3 +396,12 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
+
+def set_tool_dependency_attributes( trans, tool_dependency, status, error_message, remove_from_disk=False ):
+    if remove_from_disk:
+        installation_directory = tool_dependency.installation_directory( trans.app )
+        removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
+    tool_dependency.error_message = error_message
+    tool_dependency.status = status
+    trans.sa_session.add( tool_dependency )
+    trans.sa_session.flush()

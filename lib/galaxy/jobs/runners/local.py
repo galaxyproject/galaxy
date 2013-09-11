@@ -12,6 +12,7 @@ from time import sleep
 
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 
 log = logging.getLogger( __name__ )
 
@@ -25,11 +26,18 @@ class LocalJobRunner( BaseJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
 
+        #create a local copy of os.environ to use as env for subprocess.Popen
+        self._environ = os.environ.copy()
+
         # put lib into the PYTHONPATH for subprocesses
-        if 'PYTHONPATH' in os.environ:
-            os.environ['PYTHONPATH'] = '%s:%s' % ( os.environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
+        if 'PYTHONPATH' in self._environ:
+            self._environ['PYTHONPATH'] = '%s:%s' % ( self._environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
         else:
-            os.environ['PYTHONPATH'] = os.path.abspath( 'lib' )
+            self._environ['PYTHONPATH'] = os.path.abspath( 'lib' )
+
+        #Set TEMP if a valid temp value is not already set
+        if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
+            self._environ[ 'TEMP' ] = tempfile.gettempdir()
 
         super( LocalJobRunner, self ).__init__( app, nworkers )
         self._init_worker_threads()
@@ -40,7 +48,7 @@ class LocalJobRunner( BaseJobRunner ):
             return
 
         stderr = stdout = ''
-        exit_code = 0 
+        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
@@ -51,12 +59,12 @@ class LocalJobRunner( BaseJobRunner ):
             log.debug( '(%s) executing: %s' % ( job_id, command_line ) )
             stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
             stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
-            proc = subprocess.Popen( args = command_line, 
-                                     shell = True, 
-                                     cwd = job_wrapper.working_directory, 
+            proc = subprocess.Popen( args = command_line,
+                                     shell = True,
+                                     cwd = job_wrapper.working_directory,
                                      stdout = stdout_file,
                                      stderr = stderr_file,
-                                     env = os.environ,
+                                     env = self._environ,
                                      preexec_fn = os.setpgrp )
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state( model.Job.states.RUNNING )
@@ -78,32 +86,16 @@ class LocalJobRunner( BaseJobRunner ):
             exit_code = proc.wait()
             stdout_file.seek( 0 )
             stderr_file.seek( 0 )
-            stdout = stdout_file.read( 32768 )
-            stderr = stderr_file.read( 32768 )
+            stdout = shrink_stream_by_size( stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            stderr = shrink_stream_by_size( stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
-        except Exception, exc:
+        except Exception:
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
-            external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
-                                                                            set_extension = True,
-                                                                            tmp_dir = job_wrapper.working_directory,
-                                                                            kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
-            external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
-                                         shell = True, 
-                                         env = os.environ,
-                                         preexec_fn = os.setpgrp )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
-            external_metadata_proc.wait()
-            log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
-    
+        self._handle_metadata_externally( job_wrapper )
         # Finish the job!
         try:
             job_wrapper.finish( stdout, stderr, exit_code )

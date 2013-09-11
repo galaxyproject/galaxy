@@ -10,8 +10,7 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 # Sharing visualizations.
 
@@ -20,7 +19,7 @@ VisualizationUserShareAssociation_table = Table( "visualization_user_share_assoc
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
-    
+
 # Tagging visualizations.
 
 VisualizationTagAssociation_table = Table( "visualization_tag_association", metadata,
@@ -39,54 +38,49 @@ VisualizationAnnotationAssociation_table = Table( "visualization_annotation_asso
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=False ) )
-    
-Visualiation_table = Table( "visualization", metadata, autoload=True )
-    
-def upgrade():
+
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.reflect()
 
+    Visualiation_table = Table( "visualization", metadata, autoload=True )
     # Create visualization_user_share_association table.
     try:
         VisualizationUserShareAssociation_table.create()
     except Exception, e:
         print "Creating visualization_user_share_association table failed: %s" % str( e )
         log.debug( "Creating visualization_user_share_association table failed: %s" % str( e ) )
-        
+
     # Get default boolean value 'false' so that columns can be initialized.
     if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         default_false = "0"
-    elif migrate_engine.name == 'postgres':
+    elif migrate_engine.name == 'postgresql':
         default_false = "false"
-        
+
     # Add columns & create indices for supporting sharing to visualization table.
     deleted_column = Column( "deleted", Boolean, default=False, index=True )
     importable_column = Column( "importable", Boolean, default=False, index=True )
-    slug_column = Column( "slug", TEXT, index=True )
+    slug_column = Column( "slug", TEXT )
     published_column = Column( "published", Boolean, index=True )
-    
+
     try:
         # Add column.
-        deleted_column.create( Visualiation_table )
+        deleted_column.create( Visualiation_table, index_name = "ix_visualization_deleted")
         assert deleted_column is Visualiation_table.c.deleted
-        
+
         # Fill column with default value.
         cmd = "UPDATE visualization SET deleted = %s" % default_false
         db_session.execute( cmd )
     except Exception, e:
         print "Adding deleted column to visualization table failed: %s" % str( e )
         log.debug( "Adding deleted column to visualization table failed: %s" % str( e ) )
-        
-    try:
-        i = Index( "ix_visualization_deleted", Visualiation_table.c.deleted )
-        i.create()
-    except Exception, e:
-        print "Adding index 'ix_visualization_deleted' failed: %s" % str( e )
-        log.debug( "Adding index 'ix_visualization_deleted' failed: %s" % str( e ) )
-        
+
     try:
         # Add column.
-        importable_column.create( Visualiation_table )
+        importable_column.create( Visualiation_table, index_name='ix_visualization_importable')
         assert importable_column is Visualiation_table.c.importable
 
         # Fill column with default value.
@@ -95,21 +89,14 @@ def upgrade():
     except Exception, e:
         print "Adding importable column to visualization table failed: %s" % str( e )
         log.debug( "Adding importable column to visualization table failed: %s" % str( e ) )
-        
-    i = Index( "ix_visualization_importable", Visualiation_table.c.importable )
-    try:
-        i.create()
-    except Exception, e:
-        print "Adding index 'ix_visualization_importable' failed: %s" % str( e )
-        log.debug( "Adding index 'ix_visualization_importable' failed: %s" % str( e ) )
-        
+
     try:
         slug_column.create( Visualiation_table )
         assert slug_column is Visualiation_table.c.slug
     except Exception, e:
         print "Adding slug column to visualization table failed: %s" % str( e )
         log.debug( "Adding slug column to visualization table failed: %s" % str( e ) )
-                
+
     try:
         if migrate_engine.name == 'mysql':
             # Have to create index manually.
@@ -121,10 +108,10 @@ def upgrade():
     except Exception, e:
         print "Adding index 'ix_visualization_slug' failed: %s" % str( e )
         log.debug( "Adding index 'ix_visualization_slug' failed: %s" % str( e ) )
-        
+
     try:
         # Add column.
-        published_column.create( Visualiation_table )
+        published_column.create( Visualiation_table, index_name='ix_visualization_published')
         assert published_column is Visualiation_table.c.published
 
         # Fill column with default value.
@@ -133,21 +120,14 @@ def upgrade():
     except Exception, e:
         print "Adding published column to visualization table failed: %s" % str( e )
         log.debug( "Adding published column to visualization table failed: %s" % str( e ) )
-        
-    i = Index( "ix_visualization_published", Visualiation_table.c.published )
-    try:
-        i.create()
-    except Exception, e:
-        print "Adding index 'ix_visualization_published' failed: %s" % str( e )
-        log.debug( "Adding index 'ix_visualization_published' failed: %s" % str( e ) )
-        
+
     # Create visualization_tag_association table.
     try:
         VisualizationTagAssociation_table.create()
     except Exception, e:
         print str(e)
         log.debug( "Creating visualization_tag_association table failed: %s" % str( e ) )
-        
+
     # Create visualization_annotation_association table.
     try:
         VisualizationAnnotationAssociation_table.create()
@@ -167,10 +147,12 @@ def upgrade():
     except Exception, e:
        print "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e )
        log.debug( "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e ) )
-                       
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
-        
+
+    Visualiation_table = Table( "visualization", metadata, autoload=True )
     # Drop visualization_user_share_association table.
     try:
         VisualizationUserShareAssociation_table.drop()
@@ -202,7 +184,7 @@ def downgrade():
     except Exception, e:
         print "Dropping published column from visualization table failed: %s" % str( e )
         log.debug( "Dropping published column from visualization table failed: %s" % str( e ) )
-        
+
     # Drop visualization_tag_association table.
     try:
         VisualizationTagAssociation_table.drop()

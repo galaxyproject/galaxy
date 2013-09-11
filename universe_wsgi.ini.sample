@@ -40,6 +40,9 @@ use_threadpool = True
 # Number of threads in the web server thread pool.
 #threadpool_workers = 10
 
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
+
 # ---- Filters --------------------------------------------------------------
 
 # Filters sit between Galaxy and the HTTP server.
@@ -171,6 +174,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
+# Visualizations config directory: where to look for individual visualization plugins.
+# The path is relative to the Galaxy root dir. To use an absolute path begin the path
+# with '/'.
+#visualizations_plugins_directory = config/plugins/visualizations
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -194,6 +202,41 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # when a job is run) is encouraged.  By default, both are checked to avoid
 # breaking existing tools.
 #collect_outputs_from = new_file_path,job_working_directory
+
+# -- Data Storage (Object Store)
+
+# Object store backend module (valid options are: disk, s3, swift, irods,
+# distributed, hierarchical)
+#object_store = disk
+
+# Credentials used by certain (s3, swift) object store backends
+#os_access_key = <your cloud object store access key>
+#os_secret_key = <your cloud object store secret key>
+#os_bucket_name = <name of an existing object store bucket or container>
+
+# If using 'swift' object store, you must specify the following connection
+# properties
+#os_host = swift.rc.nectar.org.au
+#os_port = 8888
+#os_is_secure = False
+#os_conn_path = /
+
+# Reduced redundancy can be used only with the 's3' object store
+#os_use_reduced_redundancy = False
+
+# Path to cache directory for object store backends that utilize a cache (s3,
+# swift, irods)
+#object_store_cache_path = database/files/
+
+# Size (in GB) that the cache used by object store should be limited to.
+# If the value is not specified, the cache size will be limited only by the
+# file system size.
+#object_store_cache_size = 100
+
+# Configuration file for the distributed object store, if object_store =
+# distributed.  See the sample at distributed_object_store_conf.xml.sample
+#distributed_object_store_config_file = None
+
 
 # -- Mail and notification
 
@@ -264,8 +307,17 @@ nglims_config_file = tool-data/nglims.yaml
 
 # -- UI Localization
 
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
+
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
+
+# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
+# an absolute or relative URL.
+#welcome_url = /static/welcome.html
 
 # The URL linked by the "Galaxy/brand" text.
 #logo_url = /
@@ -307,9 +359,10 @@ static_robots_txt = %(here)s/static/robots.txt
 # Note that this requires java > 1.4 for executing yuicompressor.jar
 #pack_scripts = False
 
-# Enable Cloud Launch
+# Cloud Launch
 
 #enable_cloud_launch = False
+#cloudlaunch_default_ami = ami-118bfc78
 
 # -- Advanced proxy features
 
@@ -506,28 +559,6 @@ use_interactive = True
 
 # -- Beta features
 
-# Object store mode (valid options are: disk, s3, swift, distributed, hierarchical)
-#object_store = disk
-#os_access_key = <your cloud object store access key>
-#os_secret_key = <your cloud object store secret key>
-#os_bucket_name = <name of an existing object store bucket or container>
-# If using 'swift' object store, you must specify the following connection properties
-#os_host = swift.rc.nectar.org.au
-#os_port = 8888
-#os_is_secure = False
-#os_conn_path = /
-# Reduced redundancy can be used only with the 's3' object store
-#os_use_reduced_redundancy = False
-# Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the
-# file system size. The file system location of the cache is considered the
-# configuration of the ``file_path`` directive defined above.
-#object_store_cache_size = 100
-
-# Configuration file for the distributed object store, if object_store =
-# distributed.  See the sample at distributed_object_store_conf.xml.sample
-#distributed_object_store_config_file = None
-
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -624,12 +655,6 @@ use_interactive = True
 # it can "recover" them when it starts).  This is not safe to use if you are
 # running more than one Galaxy server using the same database.
 #enable_job_recovery = True
-
-# Setting metadata on job outputs to in a separate process (or if using a
-# cluster, on the cluster).  Thanks to Python's Global Interpreter Lock and the
-# hefty expense that setting metadata incurs, your Galaxy process may become
-# unresponsive when this operation occurs internally.
-#set_metadata_externally = False
 
 # Although it is fairly reliable, setting metadata can occasionally fail.  In
 # these instances, you can choose to retry setting it internally or leave it in

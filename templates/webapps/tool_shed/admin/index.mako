@@ -1,7 +1,7 @@
 <%inherit file="/webapps/tool_shed/base_panels.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="stylesheets()">   
+<%def name="stylesheets()">
     ## Include "base.css" for styling tool menu and forms (details)
     ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
 
@@ -12,6 +12,12 @@
         body { margin: 0; padding: 0; overflow: hidden; }
         #left {
             background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
+        }
+        .unified-panel-body {
+            overflow: auto;
+        }
+        .toolMenu {
+            margin-left: 10px;
         }
     </style>
 </%def>
@@ -40,7 +46,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body" style="padding: 10px; overflow: auto;">
+    <div class="unified-panel-body">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">
@@ -60,49 +66,8 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata' )}">Browse metadata</a>
                         </div>
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='admin' )}">Browse invalid tools</a>
-                        </div>
                     </div>
                 </div>
-                %if can_review_repositories:
-                    <div class="toolSectionPad"></div>
-                    <div class="toolSectionTitle">
-                        Reviewing Repositories
-                    </div>
-                    <div class="toolSectionBody">
-                        <div class="toolSectionBg">
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_ready_for_review' )}">Repositories ready for review</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">All repositories with no reviews</a>
-                            </div>
-                            %if trans.user.repository_reviews:
-                                <div class="toolTitle">
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_reviewed_by_me' )}">Repositories reviewed by me</a>
-                                </div>
-                            %endif
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_reviews' )}">All reviewed repositories</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="toolSectionPad"></div>
-                    <div class="toolSectionTitle">
-                        Reviewing Repositories With Tools
-                    </div>
-                    <div class="toolSectionBody">
-                        <div class="toolSectionBg">
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_invalid_tests' )}">Repositories missing tests or data</a>
-                            </div>
-                        </div>
-                    </div>
-                %endif
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
                     Categories

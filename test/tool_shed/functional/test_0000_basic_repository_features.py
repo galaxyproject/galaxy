@@ -99,7 +99,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                                             tool_metadata_strings_displayed=tool_metadata_strings_displayed,
                                                             tool_page_strings_displayed=tool_page_strings_displayed )
         self.check_repository_metadata( repository, tip_only=False )
-        self.browse_repository( repository, strings_displayed=[ 'Browse %s revision' % repository.name, '(repository tip)' ] )
+        self.browse_repository( repository, strings_displayed=[ "Repository '%s' revision" % repository.name, '(repository tip)' ] )
         self.display_repository_clone_page( common.test_user_1_name, 
                                             repository_name, 
                                             strings_displayed=[ 'Uploaded filtering 1.1.0', latest_changeset_revision ] )
@@ -118,14 +118,17 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         self.set_repository_deprecated( repository, 
-                                        strings_displayed=[ 'has been marked as deprecated', 'Mark as not deprecated' ] )
+                                        strings_displayed=[ 'has been marked as deprecated' ] )
+        strings_displayed = [ 'This repository has been marked as deprecated', 'Mark repository as not deprecated' ]
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'This repository has been marked as deprecated' ],
+                                             strings_displayed=strings_displayed,
                                              strings_not_displayed=[ 'Upload files', 'Reset all repository metadata' ] )
         self.browse_repository( repository, strings_not_displayed=[ 'Upload files' ] )
         self.set_repository_deprecated( repository, 
-                                        strings_displayed=[ 'has been marked as not deprecated', 'Mark as deprecated' ],
+                                        strings_displayed=[ 'has been marked as not deprecated' ],
                                         set_deprecated=False )
+        strings_displayed = [ 'Mark repository as deprecated', 'Upload files', 'Reset all repository metadata' ]
+        self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         
     def test_0045_display_repository_tip_file( self ):
         '''Display the contents of filtering.xml in the repository tip revision'''
@@ -339,8 +342,16 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         changeset_revision = self.get_repository_tip( repository )
         repository_id = self.security.encode_id( repository.id )
+        changelog_tuples = self.get_repository_changelog_tuples( repository )
+        revision_number = -1
+        revision_hash = '000000000000'
+        for numeric_changeset, changeset_hash in changelog_tuples:
+            if str( changeset_hash ) == str( changeset_revision ):
+                revision_number = numeric_changeset
+                revision_hash = changeset_hash
+                break 
         # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
         # unicode decoding error message. 
-        strings_displayed = [ 'Changeset %s' % changeset_revision, 'filtering_0000', 'user1', 'repos', 'added:',
-                              'Error&nbsp;decoding&nbsp;string:', "codec&nbsp;can't&nbsp;decode&nbsp;byte" ]
+        strings_displayed = [ 'Changeset %d:%s' % ( revision_number, revision_hash ), 'filtering_0000', 'user1', 'repos', 'added:',
+                              '+These&nbsp;characters&nbsp;should&nbsp;not' ]
         self.load_changeset_in_tool_shed( repository_id, changeset_revision, strings_displayed=strings_displayed )

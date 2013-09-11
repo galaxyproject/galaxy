@@ -197,7 +197,7 @@ def topsort_levels(pairlist):
             successors[first] = [second]
 
     answer = []
-    
+
     while 1:
         # Suck up everything without a predecessor.
         levparents = [x for x in numpreds.keys() if numpreds[x] == 0]
@@ -210,10 +210,10 @@ def topsort_levels(pairlist):
                 for levparentsucc in successors[levparent]:
                     numpreds[levparentsucc] -= 1
                 del successors[levparent]
-        
-    if numpreds: 
-        # Everything in num_parents has at least one child -> 
+
+    if numpreds:
+        # Everything in num_parents has at least one child ->
         # there's a cycle.
         raise CycleError( answer, numpreds, successors )
-        
+
     return answer

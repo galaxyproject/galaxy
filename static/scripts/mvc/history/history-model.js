@@ -51,7 +51,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
         if( initialHdas && _.isArray( initialHdas ) ){
-            this.hdas.reset( initialHdas );
+            this.hdas.add( initialHdas );
             this.checkForUpdates();
             //TODO: don't call if force_history_refresh
             if( this.hdas.length > 0 ){
@@ -279,8 +279,12 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         history.log( this + ': fetching display application data' );
         jQuery.ajax( 'history/get_display_application_links', {
             data : data,
-            success : function( data, status, xhr ){
-                history.hdas.set( data );
+            success : function( displayAppList, status, xhr ){
+                //history.hdas.set( data, { merge: true } ); // doesn't work - clears all other attributes
+                _.each( displayAppList, function( displayAppData ){
+                    var hda = history.hdas.get( displayAppData.id );
+                    if( hda ){ hda.set( displayAppData ); }
+                });
             },
             error : function( xhr, status, error ){
                 if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){

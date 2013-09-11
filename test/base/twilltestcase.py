@@ -255,6 +255,13 @@ class TwillTestCase( unittest.TestCase ):
 
     def get_latest_history( self ):
         return self.json_from_url( '/api/histories' )[ 0 ]
+    
+    def find_hda_by_dataset_name( self, name, history=None ):
+        if history is None:
+            history = self.get_history_from_api()
+        for hda in history:
+            if hda[ 'name' ] == name:
+                return hda
 
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
@@ -1061,10 +1068,8 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
-            tc.fv( '1', 'email', email )
-            tc.fv( '1', 'redirect', redirect )
-            tc.fv( '1', 'password', password )
-            tc.submit( 'login_button' )
+            self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
+
     def logout( self ):
         self.home()
         self.visit_page( "user/logout" )
@@ -1164,18 +1169,21 @@ class TwillTestCase( unittest.TestCase ):
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
         controls = {}
+        formcontrols = []
         hc_prefix = '<HiddenControl('
         for i, control in enumerate( f.controls ):
-           print "control %d: %s" % ( i, str( control ) )
+            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
+        for i, control in enumerate( f.controls ):
            if not hc_prefix in str( control ):
               try:
                 #check if a repeat element needs to be added
-                if control.name not in kwd and control.name.endswith( '_add' ):
-                    #control name doesn't exist, could be repeat
-                    repeat_startswith = control.name[0:-4]
-                    if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
-                        tc.submit( control.name )
-                        return self.submit_form( form_no=form_no, button=button, **kwd )
+                if control.name is not None:
+                    if control.name not in kwd and control.name.endswith( '_add' ):
+                        #control name doesn't exist, could be repeat
+                        repeat_startswith = control.name[0:-4]
+                        if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                            tc.submit( control.name )
+                            return self.submit_form( form_no=form_no, button=button, **kwd )
                 # Check for refresh_on_change attribute, submit a change if required
                 if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
                     changed = False
@@ -1183,12 +1191,7 @@ class TwillTestCase( unittest.TestCase ):
                     # This loop gets the filename/label for the selected values.
                     item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
                     for value in kwd[ control.name ]:
-                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
-                        if len( value ) > 30 and control.is_of_kind( 'singlelist' ):
-                            field_value = '%s..%s' % ( elem[:17], elem[-11:] )
-                        else:
-                            field_value = value
-                        if field_value not in control.value and True not in [ field_value in item_label for item_label in item_labels ]:
+                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
                             changed = True
                             break
                     if changed:
@@ -1196,11 +1199,7 @@ class TwillTestCase( unittest.TestCase ):
                         control.clear()
                         # kwd[control.name] should be a singlelist
                         for elem in kwd[ control.name ]:
-                            if len( elem ) > 30 and control.is_of_kind( 'singlelist' ):
-                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
-                            else:
-                                elem_name = elem
-                            tc.fv( f.name, control.name, str( elem_name ) )
+                            tc.fv( f.name, control.name, str( elem ) )
                         # Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
@@ -1209,7 +1208,9 @@ class TwillTestCase( unittest.TestCase ):
                         tc.submit( '___refresh_grouping___' )
                         return self.submit_form( form_no=form_no, button=button, **kwd )
               except Exception, e:
-                log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
+                log.exception( "In submit_form, continuing, but caught exception." )
+                for formcontrol in formcontrols:
+                    log.debug( formcontrol )
                 continue
               controls[ control.name ] = control
         # No refresh_on_change attribute found in current form, so process as usual
@@ -1249,15 +1250,25 @@ class TwillTestCase( unittest.TestCase ):
                         for elem in control_value:
                             try:
                                 tc.fv( f.name, control.name, str( elem ) )
-                            except Exception, e2:
-                                print "Attempting to set control '", control.name, "' to value '", elem, "' threw exception: ", e2
-                                # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
-                                if len( elem ) > 30:
-                                    elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
-                                else:
-                                    elem_name = elem
-                                tc.fv( f.name, control.name, str( elem_name ) )
+                            except Exception:
+                                try:
+                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                                    if len( elem ) > 30:
+                                        elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                                        tc.fv( f.name, control.name, str( elem_name ) )
+                                        pass
+                                    else:
+                                        raise
+                                except Exception:
+                                    raise
+                            except Exception:
+                                for formcontrol in formcontrols:
+                                    log.debug( formcontrol )
+                                log.exception( "Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name )
+                                pass
                 except Exception, exc:
+                    for formcontrol in formcontrols:
+                        log.debug( formcontrol )
                     errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
                     errmsg += "control: %s\n" % str( control )
                     errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
@@ -1267,6 +1278,7 @@ class TwillTestCase( unittest.TestCase ):
                 # Add conditions for other control types here when necessary.
                 pass
         tc.submit( button )
+
     def refresh_form( self, control_name, value, form_no=0, **kwd ):
         """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
         # control_name is the name of the form field that requires refresh_on_change, and value is
@@ -1361,12 +1373,7 @@ class TwillTestCase( unittest.TestCase ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
-        tc.submit( 'create_user_button' )
+        self.submit_form( 1, 'create_user_button', email=email, redirect=redirect, password=password, confirm=password, username=username )
         previously_created = False
         username_taken = False
         invalid_username = False
@@ -1389,6 +1396,7 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
+
     def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
         self.home()

@@ -46,18 +46,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.expanded = attributes.expanded || false;
 
         // re-rendering on any model changes
-        this.model.bind( 'change', function( event, changed ){
-            // find out if more has changed than just the display applications
-            //TODO: need a better handler for these sorts of partial rendering cases
-            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
-            if( nonDisplayAppChanges.length ){
-                // if it's more, render everything
+        this.model.bind( 'change', function( model, options ){
+            // if more than the display apps have changed: render everything
+            var nonDisplayAppChanges = _.omit( this.model.changedAttributes(), 'display_apps', 'display_types' );
+            if( _.keys( nonDisplayAppChanges ).length ){
                 this.render();
 
-            // if it's just the display links, and it's already expanded
+            // if just the display links, and it's already expanded: render the links only
             } else {
                 if( this.expanded ){
-                    // render the links only
                     this._render_displayApps();
                 }
             }
@@ -177,7 +174,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
-        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -235,9 +232,27 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             displayBtnData.enabled = false;
             displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
+        // disable if still uploading
+        } else if( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD ){
+            displayBtnData.enabled = false;
+            displayBtnData.title = _l( 'This dataset must finish uploading before it can be viewed' );
+
         } else {
             displayBtnData.title = _l( 'View data' );
+            
+            // default link for dataset
             displayBtnData.href  = this.urls.display;
+            
+            // add frame manager option onclick event
+            var self = this;
+            displayBtnData.on_click = function(){
+                Galaxy.frame_manager.frame_new({
+                    title   : "Data Viewer",
+                    type    : "url",
+                    location: "center",
+                    content : self.urls.display
+                });
+            };
         }
 
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
@@ -290,7 +305,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             _.extend( this.model.toJSON(), { urls: this.urls } )
         );
         //this.log( this + '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
-        return $( downloadLinkHTML );
+        return $( downloadLinkHTML.trim() );
     },
     
     /** Render icon-button to show the input and output (stdout/err) for the job that created this hda.

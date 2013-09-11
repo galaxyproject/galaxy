@@ -43,7 +43,7 @@ def __main__():
     except:
         sys.stdout.write( 'Could not determine Samtools version\n' )
 
-    tmp_dir = tempfile.mkdtemp()
+    tmp_dir = tempfile.mkdtemp( dir='.' )
 
     try:
         # exit if input file empty

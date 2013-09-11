@@ -68,7 +68,7 @@ class RemoteUser( object ):
                         an email address) was provided by the upstream (proxy) server.  Since tool
                         shed usernames are email addresses, a default mail domain must be set.</[>
                         <p>The variable <code>remote_user_maildomain</code> must be set before you
-                        can access this tool shed.  Contact your local tool shed administrator.  
+                        can access this tool shed.  Contact your local tool shed administrator.
                     """
                     return self.error( start_response, title, message )
             return self.app( environ, start_response )

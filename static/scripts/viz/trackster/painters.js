@@ -133,65 +133,13 @@ Painter.prototype.default_prefs = {};
  */
 Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
-/**
- * SummaryTreePainter, a histogram showing number of intervals in a region
- */
-var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
-    Painter.call(this, data, view_start, view_end, prefs, mode);
-};
-
-SummaryTreePainter.prototype.default_prefs = { show_counts: false };
-
-SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
-    var view_start = this.view_start,
-        points = this.data.data,
-        max = (this.prefs.histogram_max ? this.prefs.histogram_max : this.data.max),
-        // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
-        // start. However, height of each rectangle is relative to required_height; hence, the
-        // max rectangle is required_height.
-        base_y = height,
-        delta_x_px = Math.ceil(this.data.delta * w_scale);
-    ctx.save();
-    
-    for (var i = 0, len = points.length; i < len; i++) {
-        var x = Math.floor( (points[i][0] - view_start) * w_scale );
-        var y = points[i][1];
-        
-        if (!y) { continue; }
-        var y_px = y / max * height;
-        if (y !== 0 && y_px < 1) { y_px = 1; }
-
-        ctx.fillStyle = this.prefs.block_color;
-        ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
-        
-        // Draw number count if it can fit the number with some padding, otherwise things clump up
-        var text_padding_req_x = 4;
-        if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-            ctx.fillStyle = this.prefs.label_color;
-            ctx.textAlign = "center";
-            ctx.fillText(y, x + (delta_x_px/2), 10);
-        }
-    }
-    
-    ctx.restore();
-};
-
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
-    var i, len;
     if ( this.prefs.min_value === undefined ) {
-        var min_value = Infinity;
-        for (i = 0, len = this.data.length; i < len; i++) {
-            min_value = Math.min( min_value, this.data[i][1] );
-        }
-        this.prefs.min_value = min_value;
+        this.prefs.min_value = _.min( _.map(this.data, function(d) { return d[1]; }) ) || 0;
     }
     if ( this.prefs.max_value === undefined ) {
-        var max_value = -Infinity;
-        for (i = 0, len = this.data.length; i < len; i++) {
-            max_value = Math.max( max_value, this.data[i][1] );
-        }
-        this.prefs.max_value = max_value;
+        this.prefs.max_value = _.max( _.map(this.data, function(d) { return d[1]; }) ) || 0;
     }
 };
 
@@ -227,15 +175,17 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         delta_x_px = 10;
     }
     
-    // Extract RGB from preference color.
-    var pref_color = parseInt( this.prefs.color.slice(1), 16 ),
+    // Painter color can be in either block_color (FeatureTrack) or color pref (LineTrack).
+    var painter_color = this.prefs.block_color || this.prefs.color,
+        // Extract RGB from preference color.
+        pref_color = parseInt( painter_color.slice(1), 16 ),
         pref_r = (pref_color & 0xff0000) >> 16,
         pref_g = (pref_color & 0x00ff00) >> 8,
         pref_b = pref_color & 0x0000ff;
     
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
-        ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
+        ctx.fillStyle = ctx.strokeStyle = painter_color;
         // -0.5 to offset drawing between bases.
         x_scaled = Math.round((data[i][0] - view_start - 0.5) * w_scale);
         y = data[i][1];
@@ -304,7 +254,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 ctx.fillRect(x_scaled, height_px - 3, overflow_x, 3);
             }
         }
-        ctx.fillStyle = this.prefs.color;
+        ctx.fillStyle = painter_color;
     }
     if (mode === "Filled") {
         if (in_path) {
@@ -1588,6 +1538,8 @@ extend(VariantPainter.prototype, Painter.prototype, {
      * as a left_offset may be present.
      */
     draw: function(ctx, width, height, w_scale) {
+        ctx.save();
+
         var locus_data,
             pos,
             id,
@@ -1618,7 +1570,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
             ctx.fillStyle = '#F3F3F3';
             ctx.globalAlpha = 1;
             ctx.fillRect(0, this.prefs.summary_height - this.divider_height, width, this.divider_height);
-        }   
+        }
 
         // Draw variants.
         ctx.textAlign = "center";
@@ -1630,12 +1582,18 @@ extend(VariantPainter.prototype, Painter.prototype, {
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
 
+            // Only draw locus data if it's in viewing region.
+            if (pos < this.view_start || pos > this.view_end) {
+                continue;
+            }
+
             // Compute start for drawing variants marker, text.            
             draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
             char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
             
             //  Draw summary.
             ctx.fillStyle = '#999999';
+            ctx.globalAlpha = 1;
             // Draw background for summary.
             ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
             draw_y_start = this.prefs.summary_height;
@@ -1672,7 +1630,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 else { // Heterozygous for variant.
                     variant = (genotype[0] !== '0' ? genotype[0] : genotype[1]);
                     variant = alt[ parseInt(variant, 10) - 1 ];
-                    ctx.globalAlpha = 0.4;
+                    ctx.globalAlpha = 0.5;
                 }
 
                 // If there's a variant, draw it.
@@ -1687,12 +1645,13 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 }
             }
         }
+
+        ctx.restore();
     }
 });
 
 return {
     Scaler: Scaler,
-    SummaryTreePainter: SummaryTreePainter,
     LinePainter: LinePainter,
     LinkedFeaturePainter: LinkedFeaturePainter,
     ReadPainter: ReadPainter,

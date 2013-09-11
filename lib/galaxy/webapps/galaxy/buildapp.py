@@ -2,22 +2,26 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import logging, atexit
-import os, os.path
-import sys, warnings
-
-from galaxy.util import asbool
+import sys
+import os
+import os.path
+import atexit
+import warnings
+import glob
 
 from paste import httpexceptions
 import pkg_resources
 
-log = logging.getLogger( __name__ )
-
-from galaxy import util
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
+from galaxy import util
+from galaxy.util import asbool
+
+import logging
+log = logging.getLogger( __name__ )
+
 
 class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
     pass
@@ -51,17 +55,20 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
+
     # allow for subdirectories in extra_files_path
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
-    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param', controller='dataset', action='display_application', dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None )
+    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
+        controller='dataset', action='display_application', dataset_id=None, user_id=None,
+        app_name = None, link_name = None, app_action = None, action_param = None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
-    
+
     # Add the web API
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
     # The /folders section is experimental at this point:
@@ -76,13 +83,13 @@ def app_factory( global_conf, **kwargs ):
                                 'contents',
                                 controller='library_contents',
                                 name_prefix='library_',
-                                path_prefix='/api/libraries/:library_id', 
+                                path_prefix='/api/libraries/:library_id',
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )
     webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
                                 name_prefix='history_',
-                                path_prefix='/api/histories/:history_id', 
+                                path_prefix='/api/histories/:history_id',
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
     webapp.mapper.connect("history_contents_display",
                               "/api/histories/:history_id/contents/:history_content_id/display",
@@ -115,6 +122,10 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
+    _add_item_extended_metadata_controller( webapp,
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
     _add_item_annotation_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -124,6 +135,10 @@ def app_factory( global_conf, **kwargs ):
     _add_item_annotation_controller( webapp,
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
+
+    _add_item_provenance_controller( webapp,
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
@@ -142,7 +157,11 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
-    webapp.mapper.resource( 'search', 'search', path_prefix='/api' )    
+    webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
+
+    # visualizations registry generic template renderer
+    webapp.add_route( '/visualization/show/:visualization_name',
+        controller='visualization', action='render', visualization_name=None )
 
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
@@ -152,12 +171,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
-                                'tool_shed_repositories',
-                                controller='tool_shed_repositories',
-                                name_prefix='tool_shed_repository_',
-                                path_prefix='/api',
-                                new={ 'install_repository_revision' : 'POST' },
-                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+                            'tool_shed_repositories',
+                            member={ 'repair_repository_revision' : 'POST' },
+                            controller='tool_shed_repositories',
+                            name_prefix='tool_shed_repository_',
+                            path_prefix='/api',
+                            new={ 'install_repository_revision' : 'POST' },
+                            parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
@@ -169,7 +189,7 @@ def app_factory( global_conf, **kwargs ):
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, **kwargs )
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=app.config.plugin_frameworks, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
         pack_scripts()
     # Close any pooled database connections before forking
@@ -221,15 +241,25 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
         conditions=dict(method=["GET"]))
 
 
+def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sextended_metadata" % name_prefix
+    name = "%sextended_metadata" % name_prefix
+    webapp.mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
 def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix
     name = "%sannotation" % name_prefix
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
+def _add_item_provenance_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sprovenance" % name_prefix
+    name = "%sprovenance" % name_prefix
+    webapp.mapper.resource(name, "provenance", path_prefix=path_prefix, controller=controller)
+
+
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """
-    Based on the configuration wrap `app` in a set of common and useful 
+    Based on the configuration wrap `app` in a set of common and useful
     middleware.
     """
     # Merge the global and local configurations
@@ -250,7 +280,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
         log.debug( "Enabling 'remote user' middleware" )
-    # The recursive middleware allows for including requests in other 
+    # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
@@ -304,8 +334,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = RequestIDMiddleware( app )
     log.debug( "Enabling 'Request ID' middleware" )
     return app
-    
-def wrap_in_static( app, global_conf, **local_conf ):
+
+def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap = URLMap()
@@ -325,9 +355,19 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
     urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
+
+    # wrap any static dirs for plugins
+    plugin_frameworks = plugin_frameworks or []
+    for static_serving_framework in ( framework for framework in plugin_frameworks if framework.serves_static ):
+        # invert control to each plugin for finding their own static dirs
+        for plugin_url, plugin_static_path in static_serving_framework.get_static_urls_and_paths():
+            plugin_url = '/plugins/' + plugin_url
+            urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
+            log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
+
     # URL mapper becomes the root webapp
     return urlmap
-    
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error

@@ -520,7 +520,7 @@
     animation: false
   , placement: 'top'
   , selector: false
-  , template: '<div class="bs-tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+  , template: '<div class="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
   , trigger: 'hover'
   , title: ''
   , delay: 0

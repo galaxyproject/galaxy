@@ -4,7 +4,11 @@
 <%def name="title()">Galaxy</%def>
 
 <%def name="javascripts()">
-    ${parent.javascripts()}
+${parent.javascripts()}
+
+<!-- quota meter -->
+${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 </%def>
 
 <%def name="get_user_json()">
@@ -12,7 +16,7 @@
     """Bootstrapping user API JSON"""
     #TODO: move into common location (poss. BaseController)
     if trans.user:
-        user_dict = trans.user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+        user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
         user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
     else:
@@ -35,10 +39,6 @@ ${h.to_json_string( user_dict )}
 
 <%def name="late_javascripts()">
 ${parent.late_javascripts()}
-
-<!-- quota meter -->
-${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 <script type="text/javascript">
 
     // start a Galaxy namespace for objects created
@@ -61,7 +61,7 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     <div style="position: relative; right: -50%; float: left;">
     <div style="display: block; position: relative; right: 50%;">
 
-    <ul class="nav" border="0" cellspacing="0">
+    <ul class="nav navbar-nav" border="0" cellspacing="0">
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
@@ -117,8 +117,8 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
-    
+    ${tab( "workflow", _("Workflow"), "javascript:Galaxy.frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+
     ## 'Shared Items' or Libraries tab.
     <%
         menu_options = [ 
@@ -142,13 +142,15 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
         tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
     %>
 
+
+                                    
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' ) ],
-                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
+                         [_('New Track Browser'), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
+                         [_('Saved Visualizations'), "javascript:Galaxy.frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
                        ]
-        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.
@@ -227,7 +229,7 @@ ${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title">
+    <div class="navbar-brand">
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy

@@ -107,7 +107,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -115,7 +115,7 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )

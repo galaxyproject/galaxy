@@ -29,7 +29,7 @@ def timenow():
 
 
 def rgConv(inpedfilepath,outhtmlname,outfilepath):
-  """convert linkage ped/map to fbat"""  
+  """convert linkage ped/map to fbat"""
   recode={'A':'1','C':'2','G':'3','T':'4','N':'0','0':'0','1':'1','2':'2','3':'3','4':'4'}
   basename = os.path.split(inpedfilepath)[-1] # get basename
   inmap = '%s.map' % inpedfilepath
@@ -104,7 +104,7 @@ def main():
     f.write("</div></body></html>")
     f.close()
 
-  
+
 
 if __name__ == "__main__":
    main()

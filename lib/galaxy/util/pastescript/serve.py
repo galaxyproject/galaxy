@@ -11,9 +11,9 @@
 #   http://www.mems-exchange.org/software/qp/
 #   From lib/site.py
 
-# Galaxy originally used PasteScript and PasteDeploy for application 
-# loading, to maintain compatibility we've internalized some of that 
-# code here, stripping out uneeded functionality. 
+# Galaxy originally used PasteScript and PasteDeploy for application
+# loading, to maintain compatibility we've internalized some of that
+# code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
 import ConfigParser
@@ -167,7 +167,7 @@ class Command(object):
 
     def run(self, args):
         self.parse_args(args)
-        
+
         # Setup defaults:
         for name, default in [('verbose', 0),
                               ('quiet', 0),
@@ -243,7 +243,7 @@ class Command(object):
     ########################################
     ## Utility methods
     ########################################
-        
+
     def pad(self, s, length, dir='left'):
         if len(s) >= length:
             return s
@@ -260,7 +260,7 @@ class Command(object):
                         overwrite=False):
         """
         Create a standard ``OptionParser`` instance.
-        
+
         Typically used like::
 
             class MyCommand(Command):
@@ -484,7 +484,7 @@ class ServeCommand(Command):
     _monitor_environ_key = 'PASTE_MONITOR_SHOULD_RUN'
 
     possible_subcommands = ('start', 'stop', 'restart', 'status')
-    
+
     def command(self):
         if self.options.stop_daemon:
             return self.stop_daemon()
@@ -639,7 +639,7 @@ class ServeCommand(Command):
             self.logging_file_config(log_fn)
 
         server = loadserver(server_spec, name=server_name, relative_to=base, global_conf=vars)
-        
+
         app = loadapp( app_spec, name=app_name, relative_to=base, global_conf=vars)
 
         if self.verbose > 0:
@@ -850,7 +850,7 @@ class ServeCommand(Command):
             os.initgroups(user, gid)
         else:
             os.setgroups([e.gr_gid for e in grp.getgrall()
-                          if user in e.gr_mem] + [gid]) 
+                          if user in e.gr_mem] + [gid])
         if gid:
             os.setgid(gid)
         if uid:

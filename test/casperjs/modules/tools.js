@@ -87,7 +87,7 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
     uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
 
     // click the upload tool
-    spaceghost.thenOpen( spaceghost.baseUrl ).withToolPanel( function(){
+    spaceghost.thenOpen( spaceghost.baseUrl, function(){
         // we can apprently click a tool label without expanding the tool container for it
         this.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
         this.jumpToMain( function(){
@@ -118,7 +118,6 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
                 });
             },
             function timeoutWaitingForUploadRefreshes( urlsStillWaitingOn ){
-                this.capture( 'upload-error.png' )
                 throw new this.GalaxyError( 'Upload Error: '
                     + 'timeout waiting for upload "' + filepath + '" refreshes: ' + urlsStillWaitingOn );
             },
@@ -178,7 +177,6 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
             // capture any other messages on the page
             var otherInfo = spaceghost.elementInfoOrNull( this.data.selectors.messages.all ),
                 message   = ( otherInfo && otherInfo.text )?( otherInfo.text ):( '' );
-            this.capture( 'upload-error.png' )
             throw new this.GalaxyError( 'Upload Error: no success message uploading "' + filepath + '": ' + message );
         }
     });
@@ -191,7 +189,6 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
         if( hdaElement === null ){
             var hdaContainer = this.historypanel.data.selectors.hdaContainer;
             this.warning( 'Upload Error: ' + hdaContainer + ':\n' + this.getHTML( hdaContainer ) );
-            this.capture( 'upload-error.png' )
             throw new this.GalaxyError( 'Upload Error: uploaded file HDA not found: ' + uploadInfo.filename );
         }
         this.debug( 'uploaded HDA element: ' + this.jsonStr( this.quickInfo( hdaElement ) ) );
@@ -206,7 +203,6 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
 
             }, function timeoutFn( newHdaInfo ){
                 this.warning( 'timeout waiting for upload:\n' + this.jsonStr( this.quickInfo( newHdaInfo ) ) );
-                this.capture( 'upload-error.png' )
                 throw new spaceghost.GalaxyError( 'Upload Error: timeout waiting for ok state: '
                     + '"' + uploadInfo.filepath + '" (waited ' + timeoutAfterMs + ' ms)' );
 

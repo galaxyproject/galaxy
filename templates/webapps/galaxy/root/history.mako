@@ -4,50 +4,7 @@
     ${_('Galaxy History')}
 </%def>
 
-## ---------------------------------------------------------------------------------------------------------------------
-<%def name="create_localization_json( strings_to_localize )">
-    ## converts strings_to_localize (a list of strings) into a JSON dictionary of { string : localized string }
-${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_localize ]) ) }
-## ?? add: if string != _(string)
-</%def>
-
-<%def name="get_page_localized_strings()">
-    ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
-    ##! change on per page basis
-    <%
-        strings_to_localize = [
-            # not needed?: "Galaxy History",
-            'refresh',
-            'collapse all',
-            'hide deleted',
-            'hide hidden',
-            'You are currently viewing a deleted history!',
-            "Your history is empty. Click 'Get Data' on the left pane to start",
-            
-            # from history_common.mako
-            'Download',
-            'Display Data',
-            'View data',
-            'Edit attributes',
-            'Delete',
-            'Job is waiting to run',
-            'View Details',
-            'Job is currently running',
-            #'Run this job again',
-            'Metadata is being Auto-Detected.',
-            'No data: ',
-            'format: ',
-            'database: ',
-            #TODO localized data.dbkey??
-            'Info: ',
-            #TODO localized display_app.display_name??
-            # _( link_app.name )
-            # localized peek...ugh
-            'Error: unknown dataset state',
-        ]
-        return strings_to_localize
-    %>
-</%def>
+<%namespace file="/utils/localization.mako" import="localize_js_strings" />
 
 ## ---------------------------------------------------------------------------------------------------------------------
 ## all the possible history urls (primarily from web controllers at this point)
@@ -156,6 +113,7 @@ ${h.js(
     "libs/jquery/jstorage",
     "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
     "mvc/base-mvc",
+    "utils/localization"
 )}
 
 ${h.templates(
@@ -180,6 +138,37 @@ ${h.js(
     "mvc/dataset/hda-model", "mvc/dataset/hda-base", "mvc/dataset/hda-edit",
     "mvc/history/history-model", "mvc/history/history-panel"
 )}
+
+${localize_js_strings([
+    # not needed?: "Galaxy History",
+    'refresh',
+    'collapse all',
+    'hide deleted',
+    'hide hidden',
+    'You are currently viewing a deleted history!',
+    "Your history is empty. Click 'Get Data' on the left pane to start",
+
+    # from history_common.mako
+    'Download',
+    'Display Data',
+    'View data',
+    'Edit attributes',
+    'Delete',
+    'Job is waiting to run',
+    'View Details',
+    'Job is currently running',
+    #'Run this job again',
+    'Metadata is being Auto-Detected.',
+    'No data: ',
+    'format: ',
+    'database: ',
+    #TODO localized data.dbkey??
+    'Info: ',
+    #TODO localized display_app.display_name??
+    # _( link_app.name )
+    # localized peek...ugh
+    'Error: unknown dataset state',
+])}
     
 <script type="text/javascript">
 function galaxyPageSetUp(){
@@ -191,23 +180,14 @@ function galaxyPageSetUp(){
         top.Galaxy.mainWindow       = top.Galaxy.mainWindow     || top.frames.galaxy_main;
         top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
         top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
-
-        //modals
-        top.Galaxy.show_modal       = top.show_modal;
-        top.Galaxy.hide_modal       = top.hide_modal;
     }
 
-    top.Galaxy.localization     = GalaxyLocalization;
     window.Galaxy = top.Galaxy;
 }
 
-// set js localizable strings
-GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
-
-// add needed controller urls to GalaxyPaths
-if( !galaxy_paths ){ galaxy_paths = top.galaxy_paths || new GalaxyPaths(); }
-galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
-galaxy_paths.set( 'history', ${get_history_url_templates()} );
+// add needed controller urls to galaxy_config
+galaxy_config['hda'] = ${get_hda_url_templates()};
+galaxy_config['history'] = ${get_history_url_templates()};
 
 $(function(){
     galaxyPageSetUp();
@@ -247,7 +227,7 @@ $(function(){
     var history = new History( historyJson, hdaJson, ( debugging )?( console ):( null ) );
     var historyPanel = new HistoryPanel({
             model           : history,
-            urlTemplates    : galaxy_paths.attributes,
+            urlTemplates    : galaxy_config,
             logger          : ( debugging )?( console ):( null ),
             // is page sending in show settings? if so override history's
             show_deleted    : page_show_deleted,
@@ -360,13 +340,6 @@ $(function(){
         }
         #quota-message {
             margin: 0px;
-        }
-
-        #history-subtitle-area {
-        }
-        #history-size {
-        }
-        #history-secondary-links {
         }
 
         #history-secondary-links #history-refresh {

@@ -99,27 +99,28 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
                               "Galaxy's filtering tool",
                               'user1', 
                               self.url.replace( 'http://', '' ), 
-                              installed_repository.installed_changeset_revision ]
+                              str( installed_repository.installed_changeset_revision ) ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         
     def test_0030_install_filtering_repository_again( self ):
-        '''Attempt to install the already installed filtering repository, and check for the resulting error message.'''
+        '''Attempt to install the already installed filtering repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        post_submit_strings_displayed = [ installed_repository.name,
-                                          installed_repository.owner,
-                                          installed_repository.installed_changeset_revision,
-                                          'was previously installed',
-                                          'to manage the repository' ]
+        # The page displayed after installation is the ajaxian "Montior installing tool shed repositories" page.  Since the filter
+        # repository was already installed, nothing will be in the process of being installed, so the grid will display 'No Items'.
+        post_submit_strings_displayed = [ 'No Items' ]
         self.install_repository( 'filtering_0000', 
                                  common.test_user_1_name, 
                                  'Test 0000 Basic Repository Features 1',
                                  post_submit_strings_displayed=post_submit_strings_displayed )
         strings_displayed = [ 'filtering_0000',
-                              'user1',
-                              installed_repository.installed_changeset_revision ]
+                              "Galaxy's filtering tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
+                              str( installed_repository.installed_changeset_revision ) ]
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
 
     def test_0035_verify_installed_repository_metadata( self ):

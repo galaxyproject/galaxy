@@ -32,10 +32,16 @@ cd %s
 %s
 """
 
+default_query_classad = dict(
+    universe = 'vanilla',
+    getenv = 'true',
+    notification = 'NEVER',
+)
+
 class CondorJobState( AsynchronousJobState ):
     def __init__( self, **kwargs ):
         """
-        Encapsulates state related to a job that is being run via the DRM and 
+        Encapsulates state related to a job that is being run via the DRM and
         that we need to monitor.
         """
         super( CondorJobState, self ).__init__( **kwargs )
@@ -71,6 +77,10 @@ class CondorJobRunner( AsynchronousJobRunner ):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         galaxy_id_tag = job_wrapper.get_id_tag()
 
+        # get destination params
+        query_params = default_query_classad.copy()
+        query_params.update( job_destination.params )
+
         # define job attributes
         cjs = CondorJobState( files_dir=self.app.config.cluster_files_directory, job_wrapper=job_wrapper )
         cjs.user_log = os.path.join( self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag )
@@ -78,13 +88,12 @@ class CondorJobRunner( AsynchronousJobRunner ):
         submit_file = os.path.join( self.app.config.cluster_files_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag )
         executable = cjs.job_file
         submit_desc = [ ]
-        submit_desc.append( 'universe = vanilla' )
-        submit_desc.append( 'getenv = true' )
+        for k, v in query_params.items():
+            submit_desc.append( '%s = %s' % ( k, v ) )
         submit_desc.append( 'executable = ' + executable )
         submit_desc.append( 'output = ' + cjs.output_file )
         submit_desc.append( 'error = ' + cjs.error_file )
         submit_desc.append( 'log = ' + cjs.user_log )
-        submit_desc.append( 'notification = NEVER' )
         submit_desc.append( 'queue' )
 
         script = drm_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
@@ -138,14 +147,15 @@ class CondorJobRunner( AsynchronousJobRunner ):
             # TODO Add extra except for OSError?
             s_out = str(e)
 
-        os.unlink( submit_file )
-
         if external_job_id is None:
             log.debug( "condor_submit failed for job %s: %s" % (job_wrapper.get_id_tag(), s_out) )
             if self.app.config.cleanup_job == "always":
+                os.unlink( submit_file )
                 cjs.cleanup()
             job_wrapper.fail( "condor_submit failed", exception=True )
             return
+
+        os.unlink( submit_file )
 
         log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
 
@@ -217,7 +227,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             new_watched.append( cjs )
         # Replace the watch list with the updated version
         self.watched = new_watched
-        
+
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
         try:
@@ -232,15 +242,16 @@ class CondorJobRunner( AsynchronousJobRunner ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
+        galaxy_id_tag = job_wrapper.get_id_tag()
         if job_id is None:
             self.put( job_wrapper )
             return
-        cjs = CondorJobState()
+        cjs = CondorJobState( job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory )
         cjs.job_id = str( job_id )
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join( self.app.config.cluster_files_directory, '%s.condor.log' % galaxy_id_tag )
+        cjs.user_log = os.path.join( self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag )
         cjs.register_cleanup_file_attribute( 'user_log' )
         self.__old_state_paths( cjs )
         if job.state == model.Job.states.RUNNING:
@@ -252,14 +263,14 @@ class CondorJobRunner( AsynchronousJobRunner ):
             cjs.running = False
             self.monitor_queue.put( cjs )
 
-    def __old_state_paths( self, cjs, job ):
+    def __old_state_paths( self, cjs ):
         """For recovery of jobs started prior to standardizing the naming of
         files in the AsychronousJobState object
         """
         if cjs.job_wrapper is not None:
-            user_log = "%s/%s.condor.log" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-            if not os.path.exists( cjs.job_file ) and os.path.exists( job_file ):
-                cjs.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-                cjs.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
-                cjs.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
+            user_log = "%s/%s.condor.log" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+            if not os.path.exists( cjs.user_log ) and os.path.exists( user_log ):
+                cjs.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+                cjs.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
+                cjs.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, cjs.job_wrapper.job_id)
                 cjs.user_log = user_log

@@ -5,6 +5,7 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
+from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
@@ -230,7 +231,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
-        
+
         # Determine the job's PBS destination (server/queue) and options from the job destination definition
         pbs_queue_name = None
         pbs_server_name = self.default_pbs_server
@@ -266,7 +267,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         ecfile = "%s/%s.ec" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
 
         output_fnames = job_wrapper.get_output_fnames()
-        
+
         # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
@@ -328,7 +329,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
             return
 
         # submit
-        # The job tag includes the job and the task identifier 
+        # The job tag includes the job and the task identifier
         # (if a TaskWrapper was passed in):
         galaxy_job_id = job_wrapper.get_id_tag()
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
@@ -368,7 +369,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         job_state.old_state = 'N'
         job_state.running = False
         job_state.job_destination = job_destination
-        
+
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put( job_state )
 
@@ -449,7 +450,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
             new_watched.append( pbs_job_state )
         # Replace the watch list with the updated version
         self.watched = new_watched
-        
+
     def check_all_jobs( self ):
         """
         Returns a list of servers that failed to be contacted and a dict
@@ -522,16 +523,16 @@ class PBSJobRunner( AsynchronousJobRunner ):
             ofh = file(ofile, "r")
             efh = file(efile, "r")
             ecfh = file(ecfile, "r")
-            stdout = ofh.read( 32768 )
-            stderr = efh.read( 32768 )
-            # This should be an 8-bit exit code, but read ahead anyway: 
+            stdout = shrink_stream_by_size( ofh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            stderr = shrink_stream_by_size( efh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            # This should be an 8-bit exit code, but read ahead anyway:
             exit_code_str = ecfh.read(32)
         except:
             stdout = ''
             stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'
             # By default, the exit code is 0, which usually indicates success
             # (although clearly some error happened).
-            exit_code_str = "" 
+            exit_code_str = ""
 
         # Translate the exit code string to an integer; use 0 on failure.
         try:
@@ -587,8 +588,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
     def stop_job( self, job ):
         """Attempts to delete a job from the PBS queue"""
-        job_tag = ( "(%s/%s)" 
-                  % ( job.get_id_tag(), job.get_job_runner_external_id() ) )
+        job_id = job.get_job_runner_external_id().encode('utf-8')
+        job_tag = "(%s/%s)" % ( job.get_id_tag(), job_id )
         log.debug( "%s Stopping PBS job" % job_tag )
 
         # Declare the connection handle c so that it can be cleaned up:
@@ -598,21 +599,21 @@ class PBSJobRunner( AsynchronousJobRunner ):
             pbs_server_name = self.__get_pbs_server( job.destination_params )
             if pbs_server_name is None:
                 log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
-                         % job_tag ) 
+                         % job_tag )
                 return
             c = pbs.pbs_connect( pbs_server_name )
             if c <= 0:
                 log.debug("(%s) Connection to PBS server for job delete failed"
-                         % job_tag ) 
+                         % job_tag )
                 return
-            pbs.pbs_deljob( c, job.get_job_runner_external_id(), '' )
-            log.debug( "%s Removed from PBS queue before job completion" 
+            pbs.pbs_deljob( c, job_id, '' )
+            log.debug( "%s Removed from PBS queue before job completion"
                      % job_tag )
         except:
             e = traceback.format_exc()
-            log.debug( "%s Unable to stop job: %s" % ( job_tag, e ) ) 
+            log.debug( "%s Unable to stop job: %s" % ( job_tag, e ) )
         finally:
-            # Cleanup: disconnect from the server. 
+            # Cleanup: disconnect from the server.
             if ( None != c ):
                 pbs.pbs_disconnect( c )
 

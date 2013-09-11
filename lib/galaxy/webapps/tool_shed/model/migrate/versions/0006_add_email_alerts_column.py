@@ -19,11 +19,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
     Repository_table = Table( "repository", metadata, autoload=True )
@@ -35,8 +35,9 @@ def upgrade():
     except Exception, e:
         print "Adding email_alerts column to the repository table failed: %s" % str( e )
         log.debug( "Adding email_alerts column to the repository table failed: %s" % str( e ) )
-    
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop email_alerts column from repository table.
     Repository_table = Table( "repository", metadata, autoload=True )

@@ -8,12 +8,12 @@ class VariantCall( object ):
     header_startswith = None
     required_header_fields = None
     required_header_length = None
-    
+
     @classmethod
     def get_class_by_format( cls, format ):
         assert format in VCF_FORMATS, 'Unknown format type specified: %s' % format
         return VCF_FORMATS[ format ]
-    
+
     def __init__( self, vcf_line, metadata, sample_names ):
         raise Exception( 'Abstract Method' )
 
@@ -22,7 +22,7 @@ class VariantCall33( VariantCall ):
     header_startswith = '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO'
     required_header_fields = header_startswith.split( '\t' )
     required_header_length = len( required_header_fields )
-    
+
     def __init__( self, vcf_line, metadata, sample_names ):
         # Raw line is needed for indexing file.
         self.raw_line = vcf_line
@@ -31,7 +31,7 @@ class VariantCall33( VariantCall ):
         self.sample_names = sample_names
         self.format = None
         self.sample_values = []
-        
+
         #parse line
         self.fields = self.line.split( '\t' )
         if sample_names:
@@ -71,7 +71,7 @@ class Reader( object ):
         self.metadata_len = 0
         self.sample_names = []
         self.vcf_class = None
-        
+
         # Read file metadata.
         while True:
             line = self.vcf_file.readline()

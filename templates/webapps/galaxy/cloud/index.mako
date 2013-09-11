@@ -178,36 +178,41 @@
               <div id="launchFormContainer" class="toolForm">
                     <form id="cloudlaunch_form" action="${h.url_for( controller='/cloudlaunch', action='launch_instance')}" method="post">
 
-                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret Key ID, and Secret Key.  Galaxy will use
-                    these to present appropriate options for launching your cluster.   Note that using this form to
-                    launch computational resources in the Amazon Cloud will result in   costs to the account indicated
-                    above.  See <a href="http://aws.amazon.com/ec2/pricing/">Amazon's pricing</a> for more information.
-                    options for launching your cluster.</p> </p>
+                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret
+                    Key ID, and Secret Key.  Galaxy will use these to present
+                    appropriate options for launching your cluster.  Note that
+                    using this form to launch computational resources in the
+                    Amazon Cloud will result in costs to the account indicated
+                    above.
+                    See <a href="http://aws.amazon.com/ec2/pricing/">Amazon's
+                    pricing</a> for more information.</p>
 
                     <div class="form-row">
                         <label for="id_key_id">Key ID</label>
-                        <input type="text" size="30" maxlength="20" name="key_id" id="id_key_id" value=""/><br/>
+                        <input type="text" size="30" maxlength="20" name="key_id" id="id_key_id" value="" tabindex="1"/><br/>
                         <div class="toolParamHelp">
-                            This is the text string that uniquely identifies your account, found in the 
+                            This is the text string that uniquely identifies your account, found in the
                             <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security Credentials section of the AWS Console</a>.
                         </div>
                     </div>
 
                     <div class="form-row">
                         <label for="id_secret">Secret Key</label>
-                        <input type="text" size="50" maxlength="40" name="secret" id="id_secret" value=""/><br/>
+                        <input type="text" size="50" maxlength="40" name="secret" id="id_secret" value="" tabindex="2"/><br/>
                         <div class="toolParamHelp">
                             This is your AWS Secret Key, also found in the <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security
 Credentials section of the AWS Console</a>.  </div>
                     </div>
 
                     <div id="hidden_options">
+                        %if not share_string:
                         <div id='existing_instance_wrapper' style="display:none;" class="form-row">
                                 <label for="id_existing_instance">Instances in your account</label>
-                                <select name="existing_instance" id="id_existing_instance">
+                                <select name="existing_instance" id="id_existing_instance" style="min-width: 228px">
                                 </select>
                                 <input id='id_zone' type='hidden' name='zone' value=''/>
                         </div>
+                        %endif
                         <div id='cluster_name_wrapper' class="form-row">
                             <label for="id_cluster_name">Cluster Name</label>
                             <input type="text" size="40" class="text-and-autocomplete-select" name="cluster_name" id="id_cluster_name"/><br/>
@@ -229,7 +234,7 @@ Credentials section of the AWS Console</a>.  </div>
 
                         <div class="form-row">
                             <label for="id_keypair">Key Pair</label>
-                            <select name="keypair" id="id_keypair">
+                            <select name="keypair" id="id_keypair" style="min-width: 228px">
                                 <option name="Create" value="cloudman_keypair">cloudman_keypair</option>
                             </select>
                         </div>
@@ -242,6 +247,14 @@ Credentials section of the AWS Console</a>.  </div>
                             <label for="id_share_string">Instance Share String (optional)</label>
                             <input type="text" size="120" name="share_string" id="id_share_string"/><br/>
                         </div>
+                        %endif
+
+                        %if ami:
+                            <input type='hidden' name='ami' value='${ami}'/>
+                        %endif
+
+                        %if bucket_default:
+                            <input type='hidden' name='bucket_default' value='${bucket_default}'/>
                         %endif
 
                         <div class="form-row">
