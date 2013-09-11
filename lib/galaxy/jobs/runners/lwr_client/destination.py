@@ -1,6 +1,8 @@
 
 from re import match
 
+SUBMIT_PREFIX = "submit_"
+
 
 def url_to_destination_params(url):
     """Convert a legacy runner URL to a job destination
@@ -42,3 +44,16 @@ def url_to_destination_params(url):
                         "private_token": private_token}
 
     return destination_args
+
+
+def submit_params(destination_params):
+    """
+
+    >>> destination_params = {"private_token": "12345", "submit_native_specification": "-q batch"}
+    >>> result = submit_params(destination_params)
+    >>> result.items()
+    [('native_specification', '-q batch')]
+    """
+    return dict([(key[len(SUBMIT_PREFIX):], value)
+                  for key, value in (destination_params or {}).iteritems()
+                  if key.startswith(SUBMIT_PREFIX)])

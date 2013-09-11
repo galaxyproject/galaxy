@@ -286,6 +286,8 @@ class FileStager(object):
 
 
 def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files):
+    """
+    """
     action_mapper = FileActionMapper(client)
     download_failure_exceptions = []
     if job_completed_normally:
@@ -313,6 +315,16 @@ def finish_job(client, cleanup_job, job_completed_normally, working_directory, w
     return failed
 
 
+def submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory):
+    """
+    """
+    file_stager = FileStager(client, tool, command_line, config_files, input_files, output_files, working_directory)
+    rebuilt_command_line = file_stager.get_rewritten_command_line()
+    job_id = file_stager.job_id
+    client.launch(rebuilt_command_line)
+    return job_id
+
+
 def _read(path):
     """
     Utility method to quickly read small files (config files and tool
@@ -324,4 +336,4 @@ def _read(path):
     finally:
         input.close()
 
-__all__ = [FileStager, finish_job]
+__all__ = [submit_job, finish_job]

@@ -6,6 +6,7 @@ from simplejson import dumps
 from time import sleep
 
 from .destination import url_to_destination_params
+from .destination import submit_params
 
 CACHE_WAIT_SECONDS = 3
 MAX_RETRY_COUNT = 5
@@ -69,10 +70,15 @@ class Client(object):
         self.remote_host = destination_params.get("url")
         self.default_file_action = destination_params.get("default_file_action", "transfer")
         self.action_config_path = destination_params.get("file_action_config", None)
+        self.destination_params = destination_params
         assert self.remote_host != None, "Failed to determine url for LWR client."
         self.private_key = destination_params.get("private_token", None)
         self.job_id = job_id
         self.client_manager = client_manager
+
+    @property
+    def _submit_params(self):
+        return submit_params(self.destination_params)
 
     def __build_url(self, command, args):
         if self.private_key:
@@ -197,7 +203,7 @@ class Client(object):
                             "output_type": output_type},
                            output_path=output_path)
 
-    def launch(self, command_line, submit_params=None):
+    def launch(self, command_line):
         """
         Run or queue up the execution of the supplied
         `command_line` on the remote server.
@@ -208,6 +214,7 @@ class Client(object):
             Command to execute.
         """
         launch_params = dict(command_line=command_line, job_id=self.job_id)
+        submit_params = self._submit_params
         if submit_params:
             launch_params['params'] = dumps(submit_params)
         return self._raw_execute("launch", launch_params)

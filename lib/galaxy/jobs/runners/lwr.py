@@ -9,8 +9,9 @@ import errno
 from time import sleep
 import os
 
-from .lwr_client import FileStager, ClientManager, url_to_destination_params
+from .lwr_client import ClientManager, url_to_destination_params
 from .lwr_client import finish_job as lwr_finish_job
+from .lwr_client import submit_job as lwr_submit_job
 
 log = logging.getLogger( __name__ )
 
@@ -81,10 +82,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             input_files = job_wrapper.get_input_fnames()
             working_directory = job_wrapper.working_directory
             tool = job_wrapper.tool
-            file_stager = FileStager(client, tool, command_line, job_wrapper.extra_filenames, input_files, output_files, working_directory)
-            rebuilt_command_line = file_stager.get_rewritten_command_line()
-            job_id = file_stager.job_id
-            client.launch( rebuilt_command_line )
+            config_files = job_wrapper.extra_filenames
+            job_id = lwr_submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )
         except:

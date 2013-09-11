@@ -50,8 +50,9 @@
             <param id="url">https://windowshost.examle.com:8913/</param>
             <!-- If set, private_token must match token remote LWR server configured with. -->
             <param id="private_token">123456789changeme</param>
-            <!-- Uncomment the following statement to disable file staging (e.g. if there
-                 is a shared file system between Galaxy and the LWR server). -->
+            <!-- Uncomment the following statement to disable file staging (e.g.
+                 if there is a shared file system between Galaxy and the LWR 
+                 server). -->
             <!-- <param id="default_file_action">none</param> -->
         </destination>
         <destination id="ssh_torque" runner="cli">
