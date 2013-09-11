@@ -3421,7 +3421,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             return data.dataset_type === "bigwig";
         }
         // All other modes--Dense, Squish, Pack--require data + details.
-        else if (data.extra_info === "no_detail") {
+        else if (data.dataset_type === "bigwig" || 
+                 data.extra_info === "no_detail") {
             return false;
         }
         else {
