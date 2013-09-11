@@ -1146,7 +1146,6 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 .panel-info-message{background-image:url(info_small.png);background-color:#a6e4f7}
 #masthead{position:absolute;top:0;left:0;width:100%;min-width:900px;padding:0}#masthead .nav{z-index:15001}
 #masthead .nav>li>a{cursor:pointer;text-decoration:none}#masthead .nav>li>a:hover{color:gold}
-#masthead .dropdown-menu{z-index:15002}
 #masthead li.dropdown>a:hover .caret{border-top-color:gold;border-bottom-color:gold}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}
 #masthead .navbar-brand a{color:white;text-decoration:none}
@@ -1191,8 +1190,8 @@ select,input,textarea{font:inherit}
 textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:1.428571429;border:1px solid #aaa;padding:3px}
 .search-query{display:inline-block;padding:4px;font-size:12px;line-height:1.428571429;color:#555;border:1px solid #aaa;padding-left:14px !important;padding-right:14px !important;margin-bottom:0;-webkit-border-radius:14px;-moz-border-radius:14px;border-radius:14px;max-width:auto}
 .search-query:focus{border-color:rgba(24,132,218,0.8);-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(82,168,236,0.6);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(82,168,236,0.6);outline:0;outline:thin dotted \9;}
-.search-spinner{position:absolute;display:none;right:5px;top:8px}
-#search-clear-btn{position:absolute;right:5px;top:8px;display:block;font-size:1.4em;text-decoration:none;color:#888;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}#search-clear-btn:before{content:"\f057"}
+.search-spinner{position:absolute;display:none;right:6px;top:9px}
+#search-clear-btn{position:absolute;right:6px;top:8px;display:block;font-size:1.4em;text-decoration:none;color:#888;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}#search-clear-btn:before{content:"\f057"}
 .errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:15px;margin-bottom:17px;border:1px solid transparent;border-radius:3px;min-height:36px;padding-left:52px;background-image:url(error_large.png);background-repeat:no-repeat;background-position:10px 10px}.errormessagelarge h4,.warningmessagelarge h4,.donemessagelarge h4,.infomessagelarge h4{margin-top:0;color:inherit}
 .errormessagelarge .alert-link,.warningmessagelarge .alert-link,.donemessagelarge .alert-link,.infomessagelarge .alert-link{font-weight:bold}
 .errormessagelarge>p,.warningmessagelarge>p,.donemessagelarge>p,.infomessagelarge>p,.errormessagelarge>ul,.warningmessagelarge>ul,.donemessagelarge>ul,.infomessagelarge>ul{margin-bottom:0}
