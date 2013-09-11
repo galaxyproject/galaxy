@@ -117,7 +117,7 @@ ${parent.late_javascripts()}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), "javascript:frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+    ${tab( "workflow", _("Workflow"), "javascript:Galaxy.frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
 
     ## 'Shared Items' or Libraries tab.
     <%
@@ -147,10 +147,10 @@ ${parent.late_javascripts()}
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
-                         [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
+                         [_('New Track Browser'), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
+                         [_('Saved Visualizations'), "javascript:Galaxy.frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.

@@ -3,16 +3,13 @@
 */
 
 // dependencies
-define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
+define(["utils/galaxy.css", "galaxy.master", "libs/backbone/backbone-relational"], function(css, mod_master) {
 
 // frame manager
 var GalaxyFrameManager = Backbone.View.extend(
 {
     // base element
-    el: '#everything',
-    
-    // master head
-    el_header : '#masthead',
+    el_main: '#everything',
     
     // defaults inputs
     options:
@@ -70,9 +67,41 @@ var GalaxyFrameManager = Backbone.View.extend(
     // frame active/disabled
     active: false,
     
+    // button active
+    button_active: null,
+    
+    // button load
+    button_load  : null,
+    
     // initialize
     initialize : function(options)
     {
+        // add to master menu
+        var self = this;
+        
+        // add activate icon
+        this.button_active = new mod_master.GalaxyMasterIcon (
+        {
+            icon        : 'fa-icon-th',
+            tooltip     : 'Enable/Disable Scratchbook',
+            on_click    : function(e) { self.event_panel_active(e) }
+        });
+        
+        // add to master
+        Galaxy.master.append(this.button_active);
+
+        // add load icon
+        this.button_load = new mod_master.GalaxyMasterIcon (
+        {
+            icon        : 'fa-icon-eye-open',
+            tooltip     : 'Show/Hide Scratchbook',
+            on_click    : function(e) { self.event_panel_load(e) },
+            with_number : true
+        });
+
+        // add to master
+        Galaxy.master.append(this.button_load);
+
         // load required css files
         css.load_file("static/style/galaxy.frame.css");
         
@@ -89,8 +118,8 @@ var GalaxyFrameManager = Backbone.View.extend(
         // load menu buttons
         $(this.el).append(this.frame_template_menu());
         
-        // load load button
-        $(this.el_header).append(this.frame_template_header());
+        // load to main frame
+        $(this.el_main).append($(this.el));
         
         //
         // define shadow frame
@@ -117,19 +146,13 @@ var GalaxyFrameManager = Backbone.View.extend(
         
         // initialize panel
         this.panel_refresh();
-        
-        // link events
-        this.event_initialize();
-
-        // add
-        $(".galaxy-frame-active").tooltip({title: "Enable/Disable Scratchbook"});
-        $(".galaxy-frame-load").tooltip({title: "Show/Hide Scratchbook"});
-
+       
         // catch window resize event
         var self = this;
         $(window).resize(function ()
         {
-            self.panel_refresh();
+            if (self.visible)
+                self.panel_refresh();
         });
         
         // catch window close
@@ -138,12 +161,6 @@ var GalaxyFrameManager = Backbone.View.extend(
             if (self.frame_counter > 0)
                 return "You opened " + self.frame_counter + " frame(s) which will be lost.";
         };
-    },
-    
-    // check for mobile devices
-    is_mobile: function()
-    {
-        return navigator.userAgent.match(/mobile|(iPad)|(iPhone)|(iPod)|(android)|(webOS)/i);
     },
     
     /*
@@ -159,42 +176,22 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // events
-    event_initialize: function()
+    events:
     {
-        /*if (!this.is_mobile())
-        {*/
-            this.events = {
-                // global page events
-                'mousemove'                                 : 'event_frame_mouse_move',
-                'mouseup'                                   : 'event_frame_mouse_up',
-                'mouseleave'                                : 'event_frame_mouse_up',
-                'mousewheel'                                : 'event_panel_scroll',
-                'DOMMouseScroll'                            : 'event_panel_scroll',
+        // global frame events
+        'mousemove'                                 : 'event_frame_mouse_move',
+        'mouseup'                                   : 'event_frame_mouse_up',
+        'mouseleave'                                : 'event_frame_mouse_up',
+        'mousewheel'                                : 'event_panel_scroll',
+        'DOMMouseScroll'                            : 'event_panel_scroll',
                 
-                // events fixed to elements
-                'mousedown .galaxy-frame'                   : 'event_frame_mouse_down',
-                'mousedown .galaxy-frame-active'            : 'event_panel_active',
-                'mousedown .galaxy-frame-load'              : 'event_panel_load',
-                'mousedown .galaxy-frame-background'        : 'event_panel_load',
-                'mousedown .galaxy-frame-scroll-up'         : 'event_panel_scroll_up',
-                'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down',
-                'mousedown .f-close'                        : 'event_frame_close',
-                'mousedown .f-pin'                          : 'event_frame_lock'
-            };
-        /*} else {
-            this.events = {
-                'touchstart'                            : 'event_frame_mouse_down',
-                'touchstart .f-close'                   : 'event_frame_close',
-                'touchstart .f-pin'                     : 'event_frame_lock',
-                'touchmove'                             : 'event_frame_mouse_move',
-                'touchend'                              : 'event_frame_mouse_up',
-                'touchleave'                            : 'event_mouse_up',
-                'touchstart .galaxy-frame-load'         : 'event_frame_load'
-            };
-        };*/
-        
-        // delegate
-        this.delegateEvents(this.events);
+        // events fixed to elements
+        'mousedown .galaxy-frame'                   : 'event_frame_mouse_down',
+        'mousedown .galaxy-frame-background'        : 'event_panel_load',
+        'mousedown .galaxy-frame-scroll-up'         : 'event_panel_scroll_up',
+        'mousedown .galaxy-frame-scroll-down'       : 'event_panel_scroll_down',
+        'mousedown .f-close'                        : 'event_frame_close',
+        'mousedown .f-pin'                          : 'event_frame_lock'
     },
 
     // drag start
@@ -390,7 +387,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             frame.grid_lock = false;
             
             // remove class
-            $(frame.id).find('.f-pin').removeClass('f-toggle');
+            $(frame.id).find('.f-pin').removeClass('galaxy-toggle');
             $(frame.id).find('.f-header').removeClass('f-not-allowed');
             $(frame.id).find('.f-title').removeClass('f-not-allowed');
             $(frame.id).find('.f-resize').show();
@@ -400,7 +397,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             frame.grid_lock = true;
             
             // add class
-            $(frame.id).find('.f-pin').addClass('f-toggle');
+            $(frame.id).find('.f-pin').addClass('galaxy-toggle');
             $(frame.id).find('.f-header').addClass('f-not-allowed');
             $(frame.id).find('.f-title').addClass('f-not-allowed');
             $(frame.id).find('.f-resize').hide();
@@ -414,9 +411,6 @@ var GalaxyFrameManager = Backbone.View.extend(
         // check
         if (this.event.type !== null)
             return;
-        
-        // prevent
-        e.preventDefault();
 
         // load panel
         this.panel_show_hide();
@@ -428,9 +422,6 @@ var GalaxyFrameManager = Backbone.View.extend(
         // check
         if (this.event.type !== null)
             return;
-        
-        // prevent
-        e.preventDefault();
 
         // load panel
         this.panel_active_disable();
@@ -640,13 +631,13 @@ var GalaxyFrameManager = Backbone.View.extend(
     menu_refresh: function()
     {
         // update on screen counter
-        $(".galaxy-frame-load .number").text(this.frame_counter);
-    
+        this.button_load.number(this.frame_counter);
+        
         // check
         if(this.frame_counter == 0)
-            $(".galaxy-frame-load").hide();
+            this.button_load.hide();
         else
-            $(".galaxy-frame-load").show();
+            this.button_load.show();
             
         // scroll up possible?
         if (this.top == this.options.top_min)
@@ -733,8 +724,8 @@ var GalaxyFrameManager = Backbone.View.extend(
             $(".galaxy-frame").fadeOut('fast');
             
             // add class
-            $(".galaxy-frame-load .icon").addClass("fa-icon-eye-close");
-            $(".galaxy-frame-load .icon").removeClass("fa-icon-eye-open");
+            this.button_load.icon("fa-icon-eye-close");
+            this.button_load.untoggle();
             
             // hide background
             $(".galaxy-frame-background").hide();
@@ -749,8 +740,8 @@ var GalaxyFrameManager = Backbone.View.extend(
             $(".galaxy-frame").fadeIn('fast');
             
             // add class
-            $(".galaxy-frame-load .icon").addClass("fa-icon-eye-open");
-            $(".galaxy-frame-load .icon").removeClass("fa-icon-eye-close");
+            this.button_load.icon("fa-icon-eye-open");
+            this.button_load.toggle();
             
             // hide shadow
             $(this.galaxy_frame_shadow.id).hide();
@@ -758,8 +749,8 @@ var GalaxyFrameManager = Backbone.View.extend(
             // show background
             $(".galaxy-frame-background").show();
             
-            // show menu
-            this.menu_refresh();
+            // show panel
+            this.panel_refresh();
         }
     },
     
@@ -771,19 +762,19 @@ var GalaxyFrameManager = Backbone.View.extend(
         {
             // disable
             this.active = false;
-            
-            // untoggle
-            $(".galaxy-frame-active .icon").removeClass("f-toggle");
 
+            // toggle
+            this.button_active.untoggle();
+    
             // hide panel
             if (this.visible)
                 this.panel_show_hide();
         } else {
             // activate
             this.active = true;
-            
-            // toggle
-            $(".galaxy-frame-active .icon").addClass("f-toggle");
+        
+            // untoggle
+            this.button_active.toggle();
         }
     },
     
@@ -1053,41 +1044,29 @@ var GalaxyFrameManager = Backbone.View.extend(
             content = '<iframe scrolling="auto" class="f-iframe"  src="' + content + '"></iframe>';
         
         // load template
-        return  '<div id="' + id + '" class="galaxy-frame f-corner">' +
-                    '<div class="f-header f-corner">' +
+        return  '<div id="' + id + '" class="galaxy-frame galaxy-corner">' +
+                    '<div class="f-header galaxy-corner">' +
                         '<span class="f-title">' + title + '</span>' +
                         '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
                         '<span class="f-icon f-close fa-icon-trash"></span>' +            
                     '</div>' +
-                    '<div class="f-content f-corner">' + content +
+                    '<div class="f-content galaxy-corner">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
-                    '<span class="f-resize f-icon f-corner fa-icon-resize-full"></span>' +
+                    '<span class="f-resize f-icon galaxy-corner fa-icon-resize-full"></span>' +
                 '</div>';
     },
     
     // fill shadow template
     frame_template_shadow: function(id)
     {
-        return '<div id="' + id + '" class="galaxy-frame-shadow f-corner"></div>';
+        return '<div id="' + id + '" class="galaxy-frame-shadow galaxy-corner"></div>';
     },
     
     // fill background template in order to cover underlying iframes
     frame_template_background: function()
     {
         return '<div class="galaxy-frame-background"></div>';
-    },
-    
-    // fill load button template
-    frame_template_header: function()
-    {
-        return  '<div class="galaxy-frame-load f-corner">' +
-                   '<div class="number f-corner">0</div>' +
-                   '<div class="icon fa-icon-2x"></div>' +
-                '</div>' +
-                '<div class="galaxy-frame-active f-corner" style="position: absolute; top: 8px;">' +
-                   '<div class="icon fa-icon-2x fa-icon-th"></div>' +
-                '</div>';
     },
     
     // fill menu button template

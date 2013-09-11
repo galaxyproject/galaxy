@@ -1,21 +1,33 @@
 /*
-    galaxy-frames generic styles
+    galaxy generic styles
 */
 
-.f-corner
+.bs-tooltip
+{
+    z-index: 34010;
+}
+
+.galaxy-corner
 {
     -moz-border-radius: 4px;
     border-radius: 4px;
 }
 
-.f-toggle
+.galaxy-corner-soft
+{
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+}
+
+.galaxy-toggle
 {
     color: #BCC800;
 }
 
-.bs-tooltip
+.galaxy-shadow
 {
-    z-index: 34010;
+    -webkit-box-shadow: 1px 1px 4px rgba(0,0,0,0.16);
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.16);
 }
 
 /*
@@ -77,42 +89,6 @@
 .galaxy-frame-scroll-down
 {
     bottom          : 20px;
-}
-
-/*
-    panel active button
-*/
-.galaxy-frame-active
-{
-    z-index         : 34010; 
-    position        : absolute;
-    top             : 8px;
-    right           : 120px;
-    cursor          : pointer;
-    color           : #D0D0D0;
-}
-
-/*
-    panel load button
-*/
-.galaxy-frame-load
-{
-    z-index         : 34010; 
-    position        : absolute;
-    top             : 6px;
-    right           : 170px;
-    cursor          : pointer;
-    color           : #BCC800;
-}
-
-.galaxy-frame-load .number
-{
-    position        : absolute;
-    font-weight     : bold;
-    font-size       : 12px;
-    font-family     : Verdana, Arial;
-    top             : 8px;
-    left            : 26px;
 }
 
 /*

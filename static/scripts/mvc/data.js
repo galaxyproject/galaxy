@@ -433,7 +433,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
                                         dataset_params.id = vis_id;
                                         
                                         // add widget
-                                        parent.frame_manager.frame_new(
+                                        parent.Galaxy.frame_manager.frame_new(
                                         {
                                             title    : "Trackster",
                                             type     : "url",
@@ -450,7 +450,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
                             var url = vis_url + "/trackster?" + $.param(dataset_params);
 
                             // add widget
-                            parent.frame_manager.frame_new(
+                            parent.Galaxy.frame_manager.frame_new(
                             {
                                 title    : "Trackster",
                                 type     : "url",

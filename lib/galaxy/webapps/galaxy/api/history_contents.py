@@ -6,7 +6,9 @@ from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.datatypes import sniff
 
+import os
 import logging
 log = logging.getLogger( __name__ )
 
@@ -160,42 +162,118 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :param  history_id: encoded id string of the new HDA's History
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
-            'from_ld_id':   the encoded id of the LibraryDataset to copy
-
+            copy from library:
+            'source'    = 'library'
+            'content'   = [the encoded id from the library dataset]
+            
+            copy from url:
+            'source'    = 'url'
+            'content'   = [the url of the dataset]
+            
+            copy from file:
+            'source'    = 'upload'
+            'content'   = [the uploaded file content]
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
+        
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
-        from_ld_id = payload.get( 'from_ld_id', None )
+        
+        # check parameters
+        source  = payload.get('source', None)
+        content = payload.get('content', None)
+        if source not in ['library', 'url', 'upload']:
+            trans.response.status = 400
+            return "history_contents:create() : Please define the source ['library', 'url' or 'upload'] and the content."
+        
+        # retrieve history
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
-            #TODO: no way to tell if it failed bc of perms or other (all MessageExceptions)
+            # no way to tell if it failed bc of perms or other (all MessageExceptions)
             trans.response.status = 500
             return str( e )
 
-        if from_ld_id:
+        # copy from library dataset
+        if source == 'library':
+        
+            # get library data set
             try:
-                ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
+                ld = self.get_library_dataset( trans, content, check_ownership=False, check_accessible=False )
                 assert type( ld ) is trans.app.model.LibraryDataset, (
-                    "Library content id ( %s ) is not a dataset" % from_ld_id )
-
+                    "Library content id ( %s ) is not a dataset" % content )
             except AssertionError, e:
                 trans.response.status = 400
                 return str( e )
-
             except Exception, e:
                 return str( e )
 
+            # insert into history
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.to_dict()
 
+        # copy from upload
+        if source == 'upload':
+
+            # get upload specific features
+            dbkey = payload.get('dbkey', None)
+            extension = payload.get('extension', None)
+            space_to_tabs = payload.get('space_to_tabs', False)
+        
+            # check for filename
+            if content.filename is None:
+                trans.response.status = 400
+                return "history_contents:create() : The contents parameter needs to contain the uploaded file content."
+            
+            # create a dataset
+            dataset = trans.app.model.Dataset()
+            trans.sa_session.add(dataset)
+            trans.sa_session.flush()
+            
+            # get file destination
+            file_destination = dataset.get_file_name()
+
+            # save file locally
+            fn = os.path.basename(content.filename)
+            open(file_destination, 'wb').write(content.file.read())
+            
+            # log
+            log.info ('The file "' + fn + '" was uploaded successfully.')
+            
+            # replace separation with tabs
+            if space_to_tabs:
+                log.info ('Replacing spaces with tabs.')
+                sniff.convert_newlines_sep2tabs(file_destination)
+            
+            # guess extension
+            if extension is None:
+                log.info ('Guessing extension.')
+                extension = sniff.guess_ext(file_destination)
+    
+            # create hda
+            hda = trans.app.model.HistoryDatasetAssociation(dataset = dataset, name = content.filename,
+                    extension = extension, dbkey = dbkey, history = history, sa_session = trans.sa_session)
+    
+            # add status ok
+            hda.state = hda.states.OK
+            
+            # add dataset to history
+            history.add_dataset(hda, genome_build = dbkey)
+            permissions = trans.app.security_agent.history_get_default_permissions( history )
+            trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
+            
+            # add to session
+            trans.sa_session.add(hda)
+            trans.sa_session.flush()
+
+            # get name
+            return hda.to_dict()
         else:
-            # TODO: implement other "upload" methods here.
+            # other options
             trans.response.status = 501
-            return "Not implemented."
+            return
 
     @web.expose_api
     def update( self, trans, history_id, id, payload, **kwd ):

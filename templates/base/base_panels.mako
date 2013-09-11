@@ -101,9 +101,13 @@
             }
         });
         
-        ## frame manager
-        var frame_manager = null;
-        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(galaxy_config); });
+        ## load galaxy js-modules
+        require(['galaxy.master', 'galaxy.frame', 'galaxy.upload'], function(master, frame, upload)
+        {
+            Galaxy.master = new master.GalaxyMaster();
+            Galaxy.frame_manager = new frame.GalaxyFrameManager();
+            ##Galaxy.upload = new upload.GalaxyUpload();
+        });
     </script>
 </%def>
 

@@ -114,6 +114,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.urls = {};
     },
 
+    // refresh function
+    refresh : function() {
+        // refresh
+        // TODO: refresh content without reloading frame
+        window.location = window.location;
+    },
+
     _setUpEventHandlers : function(){
         // ---- model
         // don't need to re-render entire model on all changes, just render disk size when it changes

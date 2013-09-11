@@ -1,0 +1,97 @@
+/*
+    upload box
+*/
+
+.galaxy-upload-button
+{
+    z-index         : 34010; 
+    position        : absolute;
+    top             : 8px;
+    right           : 210px;
+    cursor          : pointer;
+    color           : #D0D0D0;
+}
+
+.galaxy-upload-box
+{
+    margin          : -5px;
+    width           : 100%;
+    height          : 200px;
+    max-height      : 200px;
+    border          : 1px dashed #D0D0D0;
+    font-weight     : bold;
+    line-height     : 16px;
+    color           : #5C5858;
+    padding         : 10px 0px 0px 0px;
+    text-align      : center;
+    font-size       : 12px;
+    cursor          : pointer;
+    overflow        : scroll;
+}
+
+.galaxy-upload-highlight
+{
+    border          : 1px dashed #5C5858;
+    color           : #5C5858;
+}
+
+.galaxy-upload-file 
+{
+    position        : relative;
+    margin          : 5px 20px 5px 20px;
+    border          : 1px solid #D0D0D0;
+}
+
+.galaxy-upload-file .title
+{
+    font-weight     : normal;
+    font-size       : 12px;
+    color           : #5C5858;
+    margin          : 3px 130px 0px 5px;
+    text-align      : left;
+    overflow        : hidden;
+}
+
+.galaxy-upload-file .progress-frame
+{
+    border          : 0px;
+    margin          : 0px 5px 3px 5px;
+    height          : 7px;
+    background      : #D0D0D0;
+}
+
+.galaxy-upload-file .progress
+{
+    background       : #CCFFCC;
+    height           : 100%;
+    width            : 0%;
+}
+
+.galaxy-upload-file .failed
+{
+    background       : #FFCCCC;
+}
+
+.galaxy-upload-file .error
+{
+    font-weight     : normal;
+    font-size       : 10px;
+    color           : #5C5858;
+    text-align      : left;
+    overflow        : hidden;
+    margin          : 0px 5px 0px 5px;
+}
+
+.galaxy-upload-file .info
+{
+    position        : absolute;
+    top             : 4px;
+    right           : 5px;
+    font-weight     : normal;
+    font-size       : 10px;
+    color           : #5C5858;
+    text-align      : right;
+    overflow        : hidden;
+    max-width       : 100px;
+    max-height      : 12px;
+}

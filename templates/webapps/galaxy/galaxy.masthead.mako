@@ -33,9 +33,12 @@ ${h.to_json_string( user_dict )}
         if (window != window.top)
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
         
-        ## frame manager
-        var frame_manager = null;
-        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(galaxy_config); });
+        ## load galaxy js-modules
+        require(['galaxy.master', 'galaxy.frame'], function(master, frame)
+        {
+            Galaxy.master = new master.GalaxyMaster();
+            Galaxy.frame_manager = new frame.GalaxyFrameManager();
+        });
     </script>
 
     ## start main tag
@@ -102,7 +105,7 @@ ${h.to_json_string( user_dict )}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), "javascript:frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+    ${tab( "workflow", _("Workflow"), "javascript:Galaxy.frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
 
     ## 'Shared Items' or Libraries tab.
     <%
@@ -132,10 +135,10 @@ ${h.to_json_string( user_dict )}
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
-                         [_('Saved Visualizations'), "javascript:frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
+                         [_('New Track Browser'), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
+                         [_('Saved Visualizations'), "javascript:Galaxy.frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
     %>
 
     ## Cloud menu.

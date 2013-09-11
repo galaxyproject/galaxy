@@ -289,7 +289,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
                     return function(){// add widget
-                        parent.frame_manager.frame_new(
+                        Galaxy.frame_manager.frame_new(
                         {
                             title    : "Visualization",
                             type     : "url",
@@ -611,7 +611,7 @@ HDAEditView.templates = {
 function create_scatterplot_action_fn( url, params ){
     action = function() {
         // add widget
-        parent.frame_manager.frame_new(
+        Galaxy.frame_manager.frame_new(
         {
             title      : "Scatterplot",
             type       : "url",
@@ -667,7 +667,7 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
                                     parent.hide_modal();
 
                                     // add widget
-                                    parent.frame_manager.frame_new(
+                                    Galaxy.frame_manager.frame_new(
                                     {
                                         title    : "Trackster",
                                         type     : "url",
@@ -682,7 +682,7 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
                         parent.hide_modal();
 
                         // add widget
-                        parent.frame_manager.frame_new(
+                        Galaxy.frame_manager.frame_new(
                         {
                             title    : "Trackster",
                             type     : "url",
