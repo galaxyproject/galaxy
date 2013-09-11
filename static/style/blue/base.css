@@ -1113,15 +1113,6 @@ ul.icons{list-style-type:none;text-indent:-0.75em}ul.icons li [class^="fa-icon-"
 .clear:before,.clear:after{content:" ";display:table;}
 .clear:after{clear:both}
 body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;margin:0;padding:0;width:100%;height:100%}
-img{border:0}
-.nav-tabs a{text-decoration:none}
-h1,h2,h3,h4{color:#000;margin:0.5em 0;font-weight:bold}
-h1{font-size:24px}
-h2{font-size:18px;line-height:2.1428571435}h2 small{font-size:14px}
-h3{font-size:14px;line-height:1.428571429}h3 small{font-size:12px}
-h1:first-child,h2:first-child,h3:first-child,h4:first-child{margin-top:0px}
-table{border-collapse:collapse}
-th{text-align:left}
 #background{position:absolute;background:#fff;z-index:-1;top:0;left:0;margin:0;padding:0;width:100%;height:100%}
 #messagebox{position:absolute;top:34px;left:0;width:100%;height:30px !important;overflow:hidden;border-bottom:solid #999 1px;font-size:90%}
 #left,#left-border,#center,#right-border,#right{position:absolute;top:34px;bottom:0px;overflow:hidden;background:#fff}

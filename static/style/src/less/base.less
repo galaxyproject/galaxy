@@ -4,9 +4,6 @@
 // Galaxy specific variables 
 @import "galaxy_variables.less";
 
-// override some classes from bootstrap
-// @import "galaxy_bootstrap_overrides.less";
-
 @white: #fff;
 @black: #000;
 
@@ -50,61 +47,6 @@ body  {
         height: 100%;
     }
 
-}
-
-
-img {
-    border: 0;
-}
-
-/*
-a, a:link, a:visited, a:active {
-    text-decoration: underline;
-    color: @link_text;
-}
-*/
-
-// Overrides for links that shouldn't be underlined
-.nav-tabs a {
-    text-decoration: none;
-}
-
-h1, h2, h3, h4 {
-    color: @header-text-color;
-    margin: 0.5em 0;
-    font-weight: bold;
-}
-
-h1 {
-    font-size: 24px;
-}
-
-h2 {
-    font-size: 18px;
-    line-height: @line-height-base * 1.5;
-    small {
-        font-size: 14px;
-    }
-}
-
-h3 { 
-    font-size: 14px;
-    line-height: @line-height-base;
-    small {
-        font-size: 12px;
-    }
-}
-
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {
-    margin-top: 0px;
-}
-
-table {
-    border-collapse: collapse;
-}
-
-th {
-    text-align: left;
 }
 
 // ==== Panel layout styles ====
