@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
+define(["libs/backbone/backbone-relational"], function() {
 
 // frame manager
 var GalaxyModal = Backbone.View.extend(
@@ -21,6 +21,40 @@ var GalaxyModal = Backbone.View.extend(
     // initialize
     initialize : function(options)
     {        
+        // create
+        if (options)
+        {
+            this.create(options);
+            
+            // hide
+            $(this.el).hide();
+        }
+    },
+
+    // adds and displays a new frame/window
+    show: function(options)
+    {
+        // create
+        if (options)
+            this.create(options);
+    
+        // fade out
+        this.$el.fadeIn('fast');
+    },
+    
+    // hide modal
+    hide: function()
+    {
+        // fade out
+        this.$el.fadeOut('fast');
+    },
+    
+    // destroy modal
+    create: function (options)
+    {
+        // remove element
+        this.$el.remove();
+        
         // read in defaults
         if (!options)
             options = this.options;
@@ -48,47 +82,6 @@ var GalaxyModal = Backbone.View.extend(
         } else
             // default close button
             footer.append($('<button></button>').text('Close').click(function() { self.hide() })).append(" ");
-            
-        // hide
-        $(this.el).hide();
-    },
-
-    /*
-        EVENT HANDLING
-    */
-    
-    // event
-    events:
-    {
-        'mousedown .dialog'     : 'event_default',
-        'mousedown .background' : 'hide'
-    },
-    
-    // drag
-    event_default: function (e)
-    {
-        e.preventDefault();
-    },
-    
-    // adds and displays a new frame/window
-    show: function()
-    {
-        // fade out
-        this.$el.fadeIn('fast');
-    },
-    
-    // hide modal
-    hide: function()
-    {
-        // fade out
-        this.$el.fadeOut('fast');
-    },
-    
-    // destroy modal
-    destroy: function ()
-    {
-        // remove element
-        this.$el.remove();
     },
     
     /*

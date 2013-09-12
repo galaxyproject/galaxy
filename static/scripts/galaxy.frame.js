@@ -37,7 +37,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         top_min: 40,
         
         // maximum number of frames
-        frame_max: 10
+        frame_max: 9
     },
     
     // number of columns
@@ -800,7 +800,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         }
 
         // check for number of frames
-        if (this.frame_counter > this.options.frame_max)
+        if (this.frame_counter >= this.options.frame_max)
         {
             alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");   
             return;   

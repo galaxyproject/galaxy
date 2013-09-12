@@ -2,11 +2,6 @@
     galaxy generic styles
 */
 
-.bs-tooltip
-{
-    z-index: 34010;
-}
-
 .galaxy-corner
 {
     -moz-border-radius: 4px;
@@ -92,42 +87,6 @@
 }
 
 /*
-    panel active button
-*/
-.galaxy-frame-active
-{
-    z-index         : 34010; 
-    position        : absolute;
-    top             : 2px;
-    right           : 120px;
-    cursor          : pointer;
-    color           : #D0D0D0;
-}
-
-/*
-    panel load button
-*/
-.galaxy-frame-load
-{
-    z-index         : 34010; 
-    position        : absolute;
-    top             : 6px;
-    right           : 170px;
-    cursor          : pointer;
-    color           : #BCC800;
-}
-
-.galaxy-frame-load .number
-{
-    position        : absolute;
-    font-weight     : bold;
-    font-size       : 12px;
-    font-family     : Verdana, Arial;
-    top             : 8px;
-    left            : 26px;
-}
-
-/*
     frame components
 */
 .galaxy-frame .f-content
@@ -175,7 +134,7 @@
 .galaxy-frame .f-title
 {
     position        : absolute;
-    top             : 4px;
+    top             : 2px;
     left            : 16px;
     right           : 16px;
     font-size       : 12px;
@@ -202,13 +161,13 @@
 .galaxy-frame .f-close
 {
     right           : 5px;
-    top             : 4px;
+    top             : 1px;
 }
 
 .galaxy-frame .f-pin
 {
     left            : 6px;
-    top             : 4px;
+    top             : 1px;
 }
 
 .galaxy-frame .f-resize

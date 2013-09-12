@@ -3,20 +3,17 @@
 */
 
 // dependencies
-define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
+define(["libs/backbone/backbone-relational"], function() {
 
 // master
 var GalaxyMaster = Backbone.View.extend(
 {
     // base element
-    el_master: '.masthead-inner',
+    el_master: '#masthead',
     
     // initialize
     initialize : function(options)
     {
-        // load required css files
-        css.load_file("static/style/galaxy.master.css");
-        
         // define this element
         this.setElement($(this.template()));
         
@@ -49,7 +46,7 @@ var GalaxyMaster = Backbone.View.extend(
     // fill regular modal template
     template: function()
     {
-        return  '<div id="galaxy-master" class="galaxy-master"></div>';
+        return  '<div class="iconbar"></div>';
     }
 });
 
@@ -113,13 +110,13 @@ var GalaxyMasterIcon = Backbone.View.extend(
     // toggle
     toggle: function()
     {
-        $(this.el).addClass('galaxy-toggle');
+        $(this.el).addClass('toggle');
     },
     
     // untoggle
     untoggle: function()
     {
-        $(this.el).removeClass('galaxy-toggle');
+        $(this.el).removeClass('toggle');
     },
     
     // set/get number
@@ -131,10 +128,10 @@ var GalaxyMasterIcon = Backbone.View.extend(
     // fill template icon
     template: function (options)
     {
-        var tmpl =  '<div id=' + options.id + ' class="galaxy-icon galaxy-corner">' +
+        var tmpl =  '<div id=' + options.id + ' class="symbol">' +
                         '<div class="icon fa-icon-2x ' + options.icon + '"></div>';
         if (options.with_number)
-            tmpl+=      '<div class="number galaxy-corner"></div>';
+            tmpl+=      '<div class="number"></div>';
         tmpl +=     '</div>';
         
         // return template

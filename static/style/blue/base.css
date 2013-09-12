@@ -1145,11 +1145,14 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 .panel-warning-message{background-image:url(warn_small.png);background-color:#fce1ba}
 .panel-done-message{background-image:url(ok_small.png);background-color:#aff1af}
 .panel-info-message{background-image:url(info_small.png);background-color:#a6e4f7}
-#masthead{position:absolute;top:0;left:0;width:100%;min-width:900px;padding:0}#masthead .nav{z-index:15001}
+#masthead{position:absolute;top:0;left:0;width:100%;min-width:920px;padding:0}#masthead .nav{z-index:15001}
 #masthead .nav>li>a{cursor:pointer;text-decoration:none}#masthead .nav>li>a:hover{color:gold}
 #masthead li.dropdown>a:hover .caret{border-top-color:gold;border-bottom-color:gold}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}
 #masthead .navbar-brand a{color:white;text-decoration:none}
+#masthead .iconbar{position:absolute;top:2px;right:110px;cursor:pointer;color:#ccc;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 8px}
+#masthead .iconbar .symbol .number{font-weight:bold;font-size:12px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-18px}
+#masthead .iconbar .toggle{color:#BCC800}
 .quota-meter-container{position:absolute;top:0;right:0;height:32px}
 .quota-meter{position:absolute;top:8px;right:8px;height:16px;width:100px;background-color:#f5f5f5}
 .quota-meter-bar{position:absolute;top:0;left:0;height:16px;background-color:#00f}
