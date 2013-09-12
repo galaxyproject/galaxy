@@ -159,6 +159,10 @@ def app_factory( global_conf, **kwargs ):
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
 
+    # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
+    webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
+        controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
+
     # visualizations registry generic template renderer
     webapp.add_route( '/visualization/show/:visualization_name',
         controller='visualization', action='render', visualization_name=None )
