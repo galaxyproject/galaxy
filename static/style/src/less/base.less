@@ -15,6 +15,9 @@
     min-width: 256px;
 }
 
+// load galaxy frame styles
+@import "frame.less";
+
 // Mixins
 
 .unselectable {
@@ -196,7 +199,7 @@ body  {
     &.hidden:before {
         content:'\f054';
     }
-    z-index: 10000;
+    z-index: 201;
     display: block;
     position: fixed;
     left: 0;
@@ -375,7 +378,7 @@ div.unified-panel-body {
         top                 : 2px;
         right               : 110px;
         cursor              : pointer;
-        color               : @navbar-default-toggle-icon-bar-bg;
+        color               : @gray-light;
         overflow            : hidden;
 
         .symbol
@@ -396,7 +399,7 @@ div.unified-panel-body {
         
         .toggle
         {
-            color           : #BCC800;;
+            color           : #BCC800;
         }
     }
 }

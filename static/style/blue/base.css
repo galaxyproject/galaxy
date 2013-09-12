@@ -1107,6 +1107,23 @@ ul.icons{list-style-type:none;text-indent:-0.75em}ul.icons li [class^="fa-icon-"
 .select2-display-none{display:none}
 .select2-measure-scrollbar{position:absolute;top:-10000px;left:-10000px;width:100px;height:100px;overflow:scroll}
 @media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (min-resolution:144dpi){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice .select2-arrow b{background-image:url('../images/select2x2.png') !important;background-repeat:no-repeat !important;background-size:60px 40px !important} .select2-search input{background-position:100% -21px !important}}.select2-container{min-width:256px}
+.galaxy-frame{}.galaxy-frame .corner{-moz-border-radius:5px;border-radius:5px}
+.galaxy-frame .toggle{color:#BCC800}
+.galaxy-frame .frame-background{z-index:1000;position:absolute;display:none;top:0px;left:0px;height:100%;width:100%;opacity:0.6;background:#000;overflow:auto}
+.galaxy-frame .frame-shadow{z-index:1001;position:absolute;display:none;top:0px;left:0px;opacity:0.5;background:#2c3143;border:1px solid #888}
+.galaxy-frame .frame-menu{z-index:1005;position:absolute;cursor:pointer;color:#BCC800;right:10px}
+.galaxy-frame .frame-scroll-up{top:50px}
+.galaxy-frame .frame-scroll-down{bottom:20px}
+.galaxy-frame .frame{z-index:1002;overflow:hidden;position:absolute;background:#fff;border:1px solid #888;-webkit-box-shadow:0 0 5px rgba(0,0,0,0.3);}.galaxy-frame .frame .f-content{position:absolute;overflow:hidden;background:#fff;border:none;top:24px;bottom:3px;left:3px;right:3px}
+.galaxy-frame .frame .f-cover{position:absolute;display:none;top:0px;left:0px;height:100%;width:100%;opacity:0.0;background:#fff}
+.galaxy-frame .frame .f-iframe{border:none;width:100%;height:100%}
+.galaxy-frame .frame .f-header{height:17px;margin:2px;cursor:pointer;border:1px solid #000;background:#2c3143;color:#fff;font-weight:bold}
+.galaxy-frame .frame .f-title{position:absolute;top:2px;left:16px;right:16px;font-size:12px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;text-align:center}
+.galaxy-frame .frame .f-icon{position:absolute;cursor:pointer;font-style:normal}
+.galaxy-frame .frame .f-not-allowed{cursor:not-allowed}
+.galaxy-frame .frame .f-close{right:5px;top:1px}
+.galaxy-frame .frame .f-pin{left:6px;top:1px}
+.galaxy-frame .frame .f-resize{background:#fff;width:16px;height:16px;color:#2c3143;right:0px;bottom:0px;text-align:center;line-height:16px;border:0px}
 .unselectable{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none}
 .parent-width{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;width:100%;*width:90%}
 .clear:before,.clear:after{content:" ";display:table;}
@@ -1128,7 +1145,7 @@ body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;ma
 .unified-panel-footer{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;position:absolute;bottom:0;height:25px;line-height:25px;width:100%;z-index:1000;border-top:solid #999 1px;background:#eee;color:#555}.unified-panel-footer a{color:#555}
 .unified-panel-footer .drag{position:absolute;top:0;right:0;padding:0 5px;text-align:center;height:25px;width:20px;background-image:url(../images/visualization/draggable_horizontal.png);background-repeat:no-repeat;background-position:50% 50%;cursor:w-resize}
 #right>.unified-panel-footer .drag{left:0}
-.panel-collapse{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;position:absolute;width:100%;z-index:1000;background:#eee;color:#555;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat;font-size:1.3333333333333333em;z-index:10000;display:block;position:fixed;left:0;top:inherit;bottom:0;padding:0 5px;text-align:center;height:25px;line-height:25px;width:20px;background:none;border-right:solid #999 1px;border-top:solid #999 1px;background:#eee}.panel-collapse a{color:#555}
+.panel-collapse{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;position:absolute;width:100%;z-index:1000;background:#eee;color:#555;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat;font-size:1.3333333333333333em;z-index:201;display:block;position:fixed;left:0;top:inherit;bottom:0;padding:0 5px;text-align:center;height:25px;line-height:25px;width:20px;background:none;border-right:solid #999 1px;border-top:solid #999 1px;background:#eee}.panel-collapse a{color:#555}
 .panel-collapse .drag{position:absolute;top:0;right:0;padding:0 5px;text-align:center;height:25px;width:20px;background-image:url(../images/visualization/draggable_horizontal.png);background-repeat:no-repeat;background-position:50% 50%;cursor:w-resize}
 .panel-collapse:before{content:'\f053'}
 .panel-collapse.hidden:before{content:'\f054'}
@@ -1150,7 +1167,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 #masthead li.dropdown>a:hover .caret{border-top-color:gold;border-bottom-color:gold}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}
 #masthead .navbar-brand a{color:white;text-decoration:none}
-#masthead .iconbar{position:absolute;top:2px;right:110px;cursor:pointer;color:#ccc;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 8px}
+#masthead .iconbar{position:absolute;top:2px;right:110px;cursor:pointer;color:#999;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 8px}
 #masthead .iconbar .symbol .number{font-weight:bold;font-size:12px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-18px}
 #masthead .iconbar .toggle{color:#BCC800}
 .quota-meter-container{position:absolute;top:0;right:0;height:32px}
