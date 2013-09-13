@@ -13,7 +13,7 @@ require(
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
     'libs/jquery/jquery-ui',
-    'libs/jquery/jquery-ui-combobox',
+    'libs/jquery/select2',
     'libs/farbtastic',
     'libs/jquery/jquery.form',
     'libs/jquery/jquery.rating',
@@ -127,11 +127,7 @@ var TracksterView = Backbone.View.extend(
 
                 // change focus
                 $("#new-title").focus();
-                $("select[name='dbkey']").combobox(
-                {
-                    appendTo: $("#overlay"),
-                    size: 40
-                });
+                $("select[name='dbkey']").select2();
 
                 // to support the large number of options for dbkey, enable scrolling in overlay.
                 $("#overlay").css("overflow", "auto");
