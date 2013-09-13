@@ -35,8 +35,7 @@
     ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
             "galaxy.autocom_tagging" )}
 
-    ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/jquery/jquery-ui-combobox",
-    	"libs/require", "libs/farbtastic" )}
+    ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/require", "libs/farbtastic" )}
 
     <script type="text/javascript">
         
