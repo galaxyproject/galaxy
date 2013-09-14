@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.css", "galaxy.modal", "galaxy.master", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(css, mod_modal, mod_master) {
+define(["galaxy.modal", "galaxy.master", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -20,9 +20,6 @@ var GalaxyUpload = Backbone.View.extend(
     // initialize
     initialize : function()
     {
-        // load required css files
-        css.load_file("static/style/galaxy.upload.css");
-                
         // add activate icon
         var self = this;
         this.button_show = new mod_master.GalaxyMasterIcon (
@@ -47,13 +44,13 @@ var GalaxyUpload = Backbone.View.extend(
     // mouse over
     event_mouseover : function (e)
     {
-        $('#galaxy-upload-box').addClass('galaxy-upload-highlight');
+        $('#galaxy-upload-box').addClass('highlight');
     },
     
     // mouse left
     event_mouseleave : function (e)
     {
-        $('#galaxy-upload-box').removeClass('galaxy-upload-highlight');
+        $('#galaxy-upload-box').removeClass('highlight');
     },
 
     // start
@@ -110,7 +107,7 @@ var GalaxyUpload = Backbone.View.extend(
         var el = $('#galaxy-upload-file-' + index);
         
         // update progress frame
-        el.find('.progress-frame').addClass("failed");
+        el.find('.progress-frame').addClass('failed');
         
         // update error message
         el.find('.error').html("<strong>Failed:</strong> " + message);
@@ -141,10 +138,14 @@ var GalaxyUpload = Backbone.View.extend(
         if (!this.modal)
         {
             // make modal
+            var self = this;
             this.modal = new mod_modal.GalaxyModal(
             {
                 title   : 'Upload files from your local drive',
-                body    : this.template()
+                body    : this.template(),
+                buttons : {
+                    'Close' : function() {self.modal.hide()}
+                }
             });
         
             // get current history
@@ -198,16 +199,16 @@ var GalaxyUpload = Backbone.View.extend(
     // load html template
     template: function()
     {
-        return  '<form id="galaxy-upload-box" class="galaxy-upload-box galaxy-corner"></form>';
+        return  '<form id="galaxy-upload-box" class="galaxy-upload-box"></form>';
     },
     
     // load html template
     template_file: function(id)
     {
-        return  '<div id="' + id.substr(1) + '" class="galaxy-upload-file galaxy-corner-soft galaxy-shadow">' +
+        return  '<div id="' + id.substr(1) + '" class="file corner-soft shadow">' +
                     '<div class="title"></div>' +
                     '<div class="error"></div>' +
-                    '<div class="progress-frame galaxy-corner-soft">' +
+                    '<div class="progress-frame corner-soft">' +
                         '<div class="progress"></div>' +
                     '</div>' +
                     '<div class="info"></div>' +

@@ -68,7 +68,7 @@ var GalaxyModal = Backbone.View.extend(
         $(this.el_main).append($(this.el));
         
         // link elements
-        var footer = (this.$el).find('.footer');
+        var footer = (this.$el).find('.buttons');
 
         // append buttons
         var self = this;
@@ -91,15 +91,17 @@ var GalaxyModal = Backbone.View.extend(
     // fill regular modal template
     template: function(title, body)
     {
-        return  '<div class="modal">' +
-                    '<div class="modal-backdrop"></div>' +
-                    '<div class="modal-dialog galaxy-corner">' +
+        return  '<div class="modal in">' +
+                    '<div class="modal-backdrop in" style="z-index: -1;"></div>' +
+                    '<div class="modal-dialog">' +
                         '<div class="modal-content">' +
-                            '<div class="header">' +
+                            '<div class="modal-header">' +
                                 '<span><h3 class="title">' + title + '</h3></span>' +
                             '</div>' +
-                            '<div class="body">' + body + '</div>' +
-                            '<div class="footer"></div>' +
+                            '<div class="modal-body style="min-width: 540px; max-height: 445px;">' + body + '</div>' +
+                            '<div class="modal-footer">' +
+                                '<div class="buttons" style="float: right;"></div>' +
+                            '</div>' +
                         '</div' +
                     '</div>' +
                 '</div>';
