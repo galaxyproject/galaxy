@@ -393,7 +393,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
-                                install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                                install_environment.add_env_shell_file_paths( action_dict[ 'command' ] )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
