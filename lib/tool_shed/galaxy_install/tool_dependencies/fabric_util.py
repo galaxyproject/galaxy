@@ -164,6 +164,54 @@ def install_virtualenv( app, venv_dir ):
             shutil.move( full_path_to_dir, venv_dir )
     return True
 
+
+class InstallEnvironment( object ):
+    """
+    Object describing the environment built up as part of the process of building
+    and installing a package.
+    """
+
+    def __init__( self ):
+        self.env_shell_file_paths = []
+
+    def build_command( self, command, action_type='shell_command' ):
+        """
+        Build command line for execution from simple command, but
+        configuring environment described by this object.
+        """
+        env_cmds = self.environment_commands(action_type)
+        return '\n'.join(env_cmds + [command])
+
+    def environment_commands(self, action_type):
+        """
+        Build a list of commands used to construct the environment described by
+        this object.
+        """
+        cmds = []
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    cmds.append( env_setting.strip( '\n' ) )
+            else:
+                log.debug( 'Invalid file %s specified, ignoring %s action.', env_shell_file_path, action_type )
+        return cmds
+
+    def environment_dict(self, action_type='template_command'):
+        env_vars = dict()
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    env_string = env_setting.split( ';' )[ 0 ]
+                    env_name, env_path = env_string.split( '=' )
+                    env_vars[ env_name ] = env_path
+            else:
+                log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+        return env_vars
+
+    def add_env_shell_file_paths(self, paths):
+        self.env_shell_file_paths.extend(paths)
+
+
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     sa_session = app.model.context.current
@@ -171,7 +219,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
-    env_shell_file_paths = []
+    install_environment = InstallEnvironment()
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
@@ -286,13 +334,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # Currently the only action supported in this category is "environment_variable".
                             # Build a command line from the prior_installation_required, in case an environment variable is referenced
                             # in the set_environment action.
-                            cmds = []
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        cmds.append( env_setting.strip( '\n' ) )
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
+                            cmds = install_environment.environment_commands( 'set_environment' )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
@@ -305,7 +347,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # Currently the only action supported in this category is a list of paths to one or more tool dependency env.sh files,
                             # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
                             # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
-                            env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
+                            install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                         elif action_type == 'setup_virtualenv':
                             # TODO: maybe should be configurable
                             venv_src_directory = os.path.abspath( os.path.join( app.config.tool_dependency_dir, '__virtualenv_src' ) )
@@ -351,27 +393,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
-                                cmd = ''
-                                for env_shell_file_path in env_shell_file_paths:
-                                    if os.path.exists( env_shell_file_path ):
-                                        for env_setting in open( env_shell_file_path ):
-                                            cmd += '%s\n' % env_setting
-                                    else:
-                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
-                                cmd += action_dict[ 'command' ]
+                                install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
                         elif action_type == 'template_command':
                             env_vars = dict()
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        env_string = env_setting.split( ';' )[ 0 ]
-                                        env_name, env_path = env_string.split( '=' )
-                                        env_vars[ env_name ] = env_path
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+                            env_vars = install_environment.environment_dict()
                             env_vars.update( td_common_util.get_env_var_values( install_dir ) )
                             language = action_dict[ 'language' ]
                             with settings( warn_only=True, **env_vars ):
