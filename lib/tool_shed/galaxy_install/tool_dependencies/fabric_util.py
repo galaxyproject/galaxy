@@ -418,7 +418,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 else:
                                     pre_cmd = './configure prefix=$INSTALL_DIR %s && make && make install' % configure_opts
 
-                                cmd = install_environment.build_command( common_util.evaluate_template( pre_cmd, install_dir ) )
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( pre_cmd, install_dir ) )
                                 log.warning(cmd)
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
