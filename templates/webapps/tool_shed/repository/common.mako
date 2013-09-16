@@ -439,7 +439,10 @@
 </%def>
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( failed_test.id ) %>
+    <% 
+        from tool_shed.util.shed_util_common import to_html_string
+        encoded_id = trans.security.encode_id( failed_test.id ) 
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
@@ -450,8 +453,8 @@
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
-                <tr><td><b>Stderr:</b> <br/>${failed_test.stderr | h}</td></tr>
-                <tr><td><b>Traceback:</b> <br/>${failed_test.traceback | h}</td></tr>
+                <tr><td><b>Stderr:</b> <br/>${ to_html_string( failed_test.stderr ) }</td></tr>
+                <tr><td><b>Traceback:</b> <br/>${ to_html_string( failed_test.traceback ) }</td></tr>
             </table>
         </td>
     </tr>
