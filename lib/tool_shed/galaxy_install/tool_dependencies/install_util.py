@@ -602,6 +602,26 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             # lxml==2.3.0</action>
             ## Manually specify contents of requirements.txt file to create dynamically.
             action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
+        elif action_type == 'setup_r_environment':
+            # setup an R environment
+            # <action type="setup_r_environment" name="package_r_3_0_1" owner="bgruening">
+            #   <r_package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</r_package>
+            # </action>
+            
+            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
+
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+            if all_env_shell_file_paths:
+                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            r_packages = list()
+            for env_elem in action_elem:
+                if env_elem.tag == 'r_package':
+                    r_packages.append( env_elem.text.strip() )
+
+            if r_packages:
+                action_dict[ 'r_packages' ] = r_packages
+            else:
+                continue
         elif action_type == 'chmod':
             # Change the read, write, and execute bits on a file.
             # <action type="chmod">
