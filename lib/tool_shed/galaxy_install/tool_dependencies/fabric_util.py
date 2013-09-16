@@ -309,7 +309,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     #   <r_base  name="package_r_3_0_1" owner="bgruening" />
                     # </action>
                     # allow downloading and installing an R package
-                    # <r_package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</r_package>
+                    # <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
                     if action_dict.get( 'env_shell_file_paths', False ):
                         install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                     else:
@@ -319,7 +319,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     for url in action_dict[ 'r_packages' ]:
                         filename = url.split( '/' )[ -1 ]
                         tarball_names.append( filename )
-                        common_util.url_download( work_dir, filename, url, extract=False )
+                        td_common_util.url_download( work_dir, filename, url, extract=False )
                     dir = os.path.curdir
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                     with lcd( current_dir ):
@@ -328,12 +328,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
                                     Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % (tarball_name)
 
-                                cmd = install_environment.build_command( common_util.evaluate_template( cmd, install_dir ) )
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
-
-
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
