@@ -602,6 +602,11 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             # lxml==2.3.0</action>
             ## Manually specify contents of requirements.txt file to create dynamically.
             action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
+        elif action_type == 'autoconf':
+            # Handle configure, make and make install allow providing configuration options
+            if action_elem.text:
+                configure_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
+                action_dict[ 'configure_opts' ] = configure_opts
         elif action_type == 'chmod':
             # Change the read, write, and execute bits on a file.
             # <action type="chmod">

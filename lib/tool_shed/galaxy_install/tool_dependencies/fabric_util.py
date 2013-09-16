@@ -409,6 +409,20 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                     if return_code:
                                         return
+                        elif action_type == 'autoconf':
+                            # Handle configure, make and make install allow providing configuration options
+                            with settings( warn_only=True ):
+                                configure_opts = action_dict.get( 'configure_opts', '' )
+                                if 'prefix=' in configure_opts:
+                                    pre_cmd = './configure %s && make && make install' % configure_opts
+                                else:
+                                    pre_cmd = './configure prefix=$INSTALL_DIR %s && make && make install' % configure_opts
+
+                                cmd = install_environment.build_command( common_util.evaluate_template( pre_cmd, install_dir ) )
+                                log.warning(cmd)
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
