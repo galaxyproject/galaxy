@@ -308,13 +308,15 @@ class InputCachingClient(Client):
             cache_required = self.cache_required(input_path)
             if cache_required:
                 self.client_manager.queue_transfer(self, input_path)
-            while True:
+            while not event_holder.failed:
                 available = self.file_available(input_path)
                 if available['ready']:
                     token = available['token']
                     args["cache_token"] = token
                     return self._raw_execute(action, args)
                 event_holder.event.wait(30)
+            if event_holder.failed:
+                raise Exception("Failed to transfer file %s" % input_path)
 
     @parseJson()
     def cache_required(self, path):

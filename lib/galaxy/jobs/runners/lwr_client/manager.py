@@ -27,7 +27,6 @@ class ClientManager(object):
         cache = kwds.get('cache', None)
         if cache is None:
             cache = _environ_default_int('LWR_CACHE_TRANSFERS')
-
         if cache:
             log.info("Setting LWR client class to caching variant.")
             self.client_class = InputCachingClient
@@ -43,15 +42,22 @@ class ClientManager(object):
             transfer_info = self.transfer_queue.get()
             try:
                 self.__perform_transfer(transfer_info)
-            except:
+            except BaseException as e:
+                log.warn("Transfer failed.")
+                log.exception(e)
                 pass
             self.transfer_queue.task_done()
 
     def __perform_transfer(self, transfer_info):
         (client, path) = transfer_info
         event_holder = self.event_manager.acquire_event(path, force_clear=True)
-        client.cache_insert(path)
-        event_holder.event.set()
+        failed = True
+        try:
+            client.cache_insert(path)
+            failed = False
+        finally:
+            event_holder.failed = failed
+            event_holder.release()
 
     def __init_transfer_threads(self, num_transfer_threads):
         self.num_transfer_threads = num_transfer_threads
