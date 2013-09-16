@@ -420,4 +420,3 @@ def __shellquote(s):
 def evaluate_template( text, install_dir ):
     """ Substitute variables defined in XML blocks from dependencies file."""
     return Template( text ).safe_substitute( get_env_var_values( install_dir ) )
-
