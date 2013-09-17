@@ -1362,6 +1362,7 @@ div.permissionContainer{padding-left:20px}
 .text-content th,.text-content td{border-bottom:1px solid #ddd;border-right:1px solid #ccc}
 .text-content th,.text-content td{padding:.8em}
 .icon-button{width:16px;height:16px;display:block;float:left;margin-left:2px;text-indent:20px;background-repeat:no-repeat;background-position:0px 0px;padding:0}
+.fa-icon-button{text-align:center;text-decoration:none;display:inline-block;cursor:pointer;width:16px;height:16px;line-height:8px}.fa-icon-button:hover{color:maroon;-webkit-transition:color .25s linear;transition:color .25s linear}
 .editable-text{cursor:pointer}
 .editable-text:hover{cursor:text;border:dotted #999999 1px}
 .icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
