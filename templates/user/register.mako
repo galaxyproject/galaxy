@@ -107,6 +107,9 @@
                 <input type="submit" name="create_user_button" value="Submit"/>
             </div>
         </form>
+        <div style="color: red; margin: 30px 0 10px 12px;">
+            WARNING: Only one account per user is allowed. Creating multiple accounts will be detected and may result in termination of all related accounts. Please note that any violation of the <a style="color: red;" href="/static/terms.html"  target="_blank">Terms and Conditions for use of this service</a> is cause for permanent suspension and data deletion.       
+        </div>
     </div>
 
 </%def>
