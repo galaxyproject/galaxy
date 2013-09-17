@@ -1186,7 +1186,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, url )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
     except Exception, e:
-        log.exception( "Error attemtping to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
+        log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
     return tool_shed_status_dict
 
