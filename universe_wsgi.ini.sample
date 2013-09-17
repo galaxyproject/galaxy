@@ -26,12 +26,13 @@
 use = egg:Paste#http
 
 # The port on which to listen.
-#port = 8080
+port = 8080
 
 # The address on which to listen.  By default, only listen to localhost (Galaxy
 # will not be accessible over the network).  Use '0.0.0.0' to listen on all
 # available network interfaces.
 #host = 127.0.0.1
+host = 0.0.0.0
 
 # Use a threadpool for the web server instead of creating a thread for each
 # request.
