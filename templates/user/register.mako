@@ -108,7 +108,7 @@
             </div>
         </form>
         <div class="alert alert-danger" style="margin: 30px 12px 12px 12px;">
-            WARNING: Only one account per user is allowed. Creating multiple accounts will be detected and may result in termination of all related accounts. Please note that any violation of the <a href="${trans.app.config.get('terms_url', None)}">Terms and Conditions for use of this service</a> is cause for permanent suspension and data deletion.       
+            Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.       
         </div>
     </div>
 
