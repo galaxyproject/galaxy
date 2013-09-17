@@ -332,6 +332,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+
+                            # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
+                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            if return_code:
+                                return
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
