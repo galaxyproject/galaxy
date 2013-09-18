@@ -22,6 +22,8 @@ from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 
+from galaxy.web.base import pluginframework
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -123,8 +125,11 @@ class UniverseApplication( object ):
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = VisualizationsRegistry.from_config(
-            self.config.visualizations_plugins_directory, self.config )
+        self.visualizations_registry = None
+        if self.config.visualizations_plugins_directory:
+            self.visualizations_registry = VisualizationsRegistry( self,
+                directories_setting=self.config.visualizations_plugins_directory,
+                template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )

@@ -294,9 +294,7 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # PLUGINS:
-        self.plugin_frameworks = []
-        # visualization framework
+        # visualization plugin framework
         self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property

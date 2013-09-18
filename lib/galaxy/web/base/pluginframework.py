@@ -1,38 +1,315 @@
 """
 Base class for plugins - frameworks or systems that may:
+ * add code at startup
+ * allow hooks to be called
+and base class for plugins that:
  * serve static content
  * serve templated html
  * have some configuration at startup
 """
 
 import os.path
-import glob
 import sys
+import imp
 
 import pkg_resources
 pkg_resources.require( 'MarkupSafe' )
 pkg_resources.require( 'Mako' )
 import mako
 
-from galaxy.util import listify
+from galaxy import util
+from galaxy.util import odict
+from galaxy.util import bunch
 
 import logging
 log = logging.getLogger( __name__ )
 
 # ============================================================================= exceptions
-class PluginFrameworkException( Exception ):
+class PluginManagerException( Exception ):
     """Base exception for plugin frameworks.
     """
     pass
-class PluginFrameworkConfigException( PluginFrameworkException ):
+class PluginManagerConfigException( PluginManagerException ):
     """Exception for plugin framework configuration errors.
     """
     pass
-class PluginFrameworkStaticException( PluginFrameworkException ):
+
+
+# ============================================================================= base
+class PluginManager( object ):
+    """
+    Plugins represents an section of code that is not tracked in the
+    Galaxy repository, allowing the addition of custom code to a Galaxy
+    installation without changing the code base.
+
+    A PluginManager discovers and manages these plugins.
+
+    This is an non-abstract class but it's usefulness is limited and is meant
+    to be inherited.
+    """
+
+    def __init__( self, app, directories_setting=None, skip_bad_plugins=True, **kwargs ):
+        """
+        Set up the manager and load all plugins.
+
+        :type   app:    UniverseApplication
+        :param  app:    the application (and it's configuration) using this manager
+        :type   directories_setting: string (default: None)
+        :param  directories_setting: the filesystem path (or paths)
+            to search for plugins. Can be CSV string of paths. Will be treated as
+            absolute if a path starts with '/', relative otherwise.
+        :type   skip_bad_plugins:    boolean (default: True)
+        :param  skip_bad_plugins:    whether to skip plugins that cause
+            exceptions when loaded or to raise that exception
+        """
+        log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
+        self.directories = []
+        self.skip_bad_plugins = skip_bad_plugins
+        self.plugins = odict.odict()
+
+        self.directories = self.parse_directories_setting( app.config.root, directories_setting )
+        #log.debug( '\t directories: %s', self.directories )
+
+        self.load_configuration()
+        self.load_plugins()
+
+    def parse_directories_setting( self, galaxy_root, directories_setting ):
+        """
+        Parse the ``directories_setting`` into a list of relative or absolute
+        filesystem paths that will be searched to discover plugins.
+
+        :type   galaxy_root:    string
+        :param  galaxy_root:    the root path of this galaxy installation
+        :type   directories_setting: string (default: None)
+        :param  directories_setting: the filesystem path (or paths)
+            to search for plugins. Can be CSV string of paths. Will be treated as
+            absolute if a path starts with '/', relative otherwise.
+        :rtype:                 list of strings
+        :returns:               list of filesystem paths
+        """
+        directories = []
+        if not directories_setting:
+            return directories
+
+        for directory in util.listify( directories_setting ):
+            directory = directory.strip()
+            if directory.startswith( '/' ):
+                directory = os.path.join( galaxy_root, directory )
+            if not os.path.exists( directory ):
+                log.warn( '%s, directory not found: %s', self, directory )
+                continue
+            directories.append( directory )
+        return directories
+
+    def load_configuration( self ):
+        """
+        Override to load some framework/plugin specifc configuration.
+        """
+        # Abstract method
+        return True
+
+    def load_plugins( self ):
+        """
+        Search ``self.directories`` for potential plugins, load them, and cache
+        in ``self.plugins``.
+        :rtype:                 odict
+        :returns:               ``self.plugins``
+        """
+        for plugin_path in self.find_plugins():
+            try:
+                plugin = self.load_plugin( plugin_path )
+                if not plugin:
+                    log.warn( '%s, plugin load failed: %s. Skipping...', self, plugin_path )
+                #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
+                #TODO: overwriting may be desired
+                elif plugin.name in self.plugins:
+                    log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
+                else:
+                    self.plugins[ plugin.name ] = plugin
+                    log.info( '%s, loaded plugin: %s', self, plugin.name )
+
+            except Exception, exc:
+                if not self.skip_bad_plugins:
+                    raise
+                log.exception( 'Plugin loading raised exception: %s. Skipping...', plugin_path )
+
+        return self.plugins
+
+    def find_plugins( self ):
+        """
+        Return the directory paths of plugins within ``self.directories``.
+
+        Paths are considered a plugin path if they pass ``self.is_plugin``.
+        :rtype:                 string generator
+        :returns:               paths of valid plugins
+        """
+        # due to the ordering of listdir, there is an implicit plugin loading order here
+        # could instead explicitly list on/off in master config file
+        for directory in self.directories:
+            for plugin_dir in os.listdir( directory ):
+                plugin_path = os.path.join( directory, plugin_dir )
+                if self.is_plugin( plugin_path ):
+                    yield plugin_path
+
+    def is_plugin( self, plugin_path ):
+        """
+        Determines whether the given filesystem path contains a plugin.
+
+        In this base class, all sub-directories are considered plugins.
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the
+            potential plugin
+        :rtype:                 bool
+        :returns:               True if the path contains a plugin
+        """
+        if not os.path.isdir( plugin_path ):
+            return False
+        return True
+
+    def load_plugin( self, plugin_path ):
+        """
+        Create, load, and/or initialize the plugin and return it.
+
+        Plugin bunches are decorated with:
+            * name : the plugin name
+            * path : the plugin path
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the plugin
+        :rtype:                 ``util.bunch.Bunch``
+        :returns:               the loaded plugin object
+        """
+        plugin = bunch.Bunch(
+            #TODO: need a better way to define plugin names
+            #   pro: filesystem name ensures uniqueness
+            #   con: rel. inflexible
+            name = os.path.split( plugin_path )[1],
+            path = plugin_path
+        )
+        return plugin
+
+
+# ============================================================================= plugin managers using hooks
+class HookPluginManager( PluginManager ):
+    """
+    A hook plugin is a directory containing python modules or packages that:
+        * allow creating, including, and running custom code at specific 'hook'
+            points/events
+        * are not tracked in the Galaxy repository and allow adding custom code
+            to a Galaxy installation
+
+    A HookPluginManager imports the plugin code needed and calls the plugin's
+    hook functions at the specified time.
+    """
+    #: the python file that will be imported - hook functions should be contained here
+    loading_point_filename = 'plugin.py'
+    hook_fn_prefix  = 'hook_'
+
+    def is_plugin( self, plugin_path ):
+        """
+        Determines whether the given filesystem path contains a hookable plugin.
+
+        All sub-directories that contain ``loading_point_filename`` are considered
+        plugins.
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the
+            potential plugin
+        :rtype:                 bool
+        :returns:               True if the path contains a plugin
+        """
+        if not super( HookPluginManager, self ).is_plugin( plugin_path ):
+            return False
+        #TODO: possibly switch to <plugin.name>.py or __init__.py
+        if self.loading_point_filename not in os.listdir( plugin_path ):
+            return False
+        return True
+
+    def load_plugin( self, plugin_path ):
+        """
+        Import the plugin ``loading_point_filename`` and attach to the plugin bunch.
+
+        Plugin bunches are decorated with:
+            * name : the plugin name
+            * path : the plugin path
+            * module : the plugin code
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the plugin
+        :rtype:                 ``util.bunch.Bunch``
+        :returns:               the loaded plugin object
+        """
+        plugin = super( HookPluginManager, self ).load_plugin( plugin_path )
+
+        loading_point_name = self.loading_point_filename[:-3]
+        plugin[ 'module' ] = self.import_plugin_module( loading_point_name, plugin )
+        return plugin
+
+    def import_plugin_module( self, loading_point_name, plugin, import_as=None ):
+        """
+        Import the plugin code and cache the module in the plugin object.
+
+        :type   loading_point_name: string
+        :param  loading_point_name: name of the python file to import (w/o extension)
+        :type   plugin:             ``util.bunch.Bunch``
+        :param  plugin:             the plugin containing the template to render
+        :type   import_as:          string
+        :param  import_as:          namespace to use for imported module
+            This will be prepended with the ``__name__`` of this file.
+            Defaults to ``plugin.name``
+        :rtype:                     ``util.bunch.Bunch``
+        :returns:                   the loaded plugin object
+        """
+        # add this name to import_as (w/ default to plugin.name) to prevent namespace pollution in sys.modules
+        import_as = '%s.%s' %( __name__, ( import_as or plugin.name ) )
+        module_file, pathname, description = imp.find_module( loading_point_name, [ plugin.path ] )
+        try:
+            #TODO: hate this hack but only way to get package imports inside the plugin to work?
+            sys.path.append( plugin.path )
+            # sys.modules will now have import_as in it's list
+            module = imp.load_module( import_as, module_file, pathname, description )
+        finally:
+            module_file.close()
+            if plugin.path in sys.path:
+                sys.path.remove( plugin.path )
+        return module
+
+    def run_hook( self, hook_name, *args, **kwargs ):
+        """
+        Search all plugins for a function named ``hook_fn_prefix`` + ``hook_name``
+        and run it passing in args and kwargs.
+
+        :type   hook_name:  string
+        :param  hook_name:  name (suffix) of the hook to run
+        :rtype:             2-tuple containing (list, dict)
+        :returns:           (possibly modified) args, kwargs
+        """
+        #TODO: is hook prefix necessary?
+        #TODO: could be made more efficient if cached by hook_name in the manager on load_plugin
+        #   (low maint. overhead since no dynamic loading/unloading of plugins)
+        hook_fn_name = ''.join([ self.hook_fn_prefix, hook_name ])
+        for plugin_name, plugin in self.plugins.items():
+            hook_fn = getattr( plugin.module, hook_fn_name, None )
+
+            if hook_fn and hasattr( hook_fn, '__call__' ):
+                try:
+                    #log.debug( 'calling %s from %s(%s)', hook_fn.func_name, plugin.name, plugin.module )
+                    hook_fn( *args, **kwargs )
+                except Exception, exc:
+                    # fail gracefully and continue with other plugins
+                    log.exception( 'Hook function "%s" failed for plugin "%s"', hook_name, plugin.name )
+
+        # may have been altered by hook fns, return in order to act like filter
+        return args, kwargs
+
+
+# ============================================================================= exceptions
+class PluginManagerStaticException( PluginManagerException ):
     """Exception for plugin framework static directory set up errors.
     """
     pass
-class PluginFrameworkTemplateException( PluginFrameworkException ):
+class PluginManagerTemplateException( PluginManagerException ):
     """Exception for plugin framework template directory
     and template rendering errors.
     """
@@ -40,117 +317,138 @@ class PluginFrameworkTemplateException( PluginFrameworkException ):
 
 
 # ============================================================================= base
-class PluginFramework( object ):
+class PageServingPluginManager( PluginManager ):
     """
-    Plugins are files/directories living outside the Galaxy ``lib`` directory
-    that serve static files (css, js, images, etc.), use and serve mako templates,
-    and have some configuration to control the rendering.
+    Page serving plugins are files/directories that:
+        * are not tracked in the Galaxy repository and allow adding custom code
+            to a Galaxy installation
+        * serve static files (css, js, images, etc.),
+        * render templates
 
-    A plugin framework sets up all the above components.
+    A PageServingPluginManager sets up all the above components.
     """
-    #: does the class need a config file(s) to be parsed?
-    has_config             = True
+    #TODO: I'm unclear of the utility of this class - it prob. will only have one subclass (vis reg). Fold into?
+
     #: does the class need static files served?
     serves_static          = True
     #: does the class need template files served?
     serves_templates       = True
-    #TODO: allow plugin mako inheritance from existing ``/templates`` files
-    #uses_galaxy_templates  = True
-    #TODO: possibly better as instance var (or a combo)
-    #: the directories in ``plugin_directory`` with basenames listed here will
-    #:  be ignored for config, static, and templates
-    non_plugin_directories = []
+    #: default number of templates to search for plugin template lookup
+    DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
+    #: default encoding of plugin templates
+    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
 
-    # ------------------------------------------------------------------------- setup
-    @classmethod
-    def from_config( cls, config_plugin_directory, config ):
+    def __init__( self, app, base_url, template_cache_dir=None, **kwargs ):
         """
-        Set up the framework based on data from some config object by:
-        * constructing it's absolute plugin_directory filepath
-        * getting a template_cache
-        * and appending itself to the config object's ``plugin_frameworks`` list
+        Set up the manager and load all plugins.
 
-        .. note::
-            precondition: config obj should have attributes:
-                root, template_cache, and (list) plugin_frameworks
+        :type   app:        UniverseApplication
+        :param  app:        the application (and it's configuration) using this manager
+        :type   base_url:   string
+        :param  base_url:   url to prefix all plugin urls with
+        :type   template_cache_dir: string
+        :param  template_cache_dir: filesytem path to the directory where cached
+            templates are kept
         """
-        # currently called from (base) app.py - defined here to allow override if needed
-        if not config_plugin_directory:
-            return None
-        try:
-            # create the plugin path and if plugin dir begins with '/' assume absolute path
-            full_plugin_filepath = os.path.join( config.root, config_plugin_directory )
-            if config_plugin_directory.startswith( os.path.sep ):
-                full_plugin_filepath = config_plugin_directory
-            if not os.path.exists( full_plugin_filepath ):
-                raise PluginFrameworkException( 'Plugin path not found: %s' %( full_plugin_filepath ) )
+        self.base_url = base_url
+        self.template_cache_dir = template_cache_dir
 
-            template_cache = config.template_cache if cls.serves_static else None
-            plugin = cls( full_plugin_filepath, template_cache )
+        super( PageServingPluginManager, self ).__init__( app, **kwargs )
 
-            config.plugin_frameworks.append( plugin )
-            return plugin
-
-        except PluginFrameworkException, plugin_exc:
-            log.exception( "Error loading framework %s. Skipping...", cls.__class__.__name__ )
-            return None
-
-    def __str__( self ):
-        return '%s(%s)' %( self.__class__.__name__, self.plugin_directories )
-
-    def __init__( self, plugin_directories, name=None, template_cache_dir=None, debug=False, assert_exists=True ):
+    def is_plugin( self, plugin_path ):
         """
-        :type   plugin_directories:   string or list
-        :param  plugin_directories:   the base directory where plugin code is kept
-        :type   name:                 (optional) string (default: None)
-        :param  name:                 the name of this plugin
-            (that will appear in url pathing, etc.)
-        :type   template_cache_dir:   (optional) string (default: None)
-        :param  template_cache_dir:   the cache directory to store compiled mako
-        :type   assert_exists:        (optional) bool (default: False)
-        :param  assert_exists:        If True, each configured plugin directory must exist.
+        Determines whether the given filesystem path contains a plugin.
+
+        If the manager ``serves_templates`` and a sub-directory contains another
+        sub-directory named 'templates' it's considered valid.
+        If the manager ``serves_static`` and a sub-directory contains another
+        sub-directory named 'static' it's considered valid.
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the
+            potential plugin
+        :rtype:                 bool
+        :returns:               True if the path contains a plugin
         """
-        self.plugin_directories = listify( plugin_directories )
-        if assert_exists:
-            for plugin_directory in self.plugin_directories:
-                if not os.path.isdir( plugin_directory ):
-                    raise PluginFrameworkException( 'Framework plugin directory not found: %s, %s'
-                                                    % ( self.__class__.__name__, plugin_directory ) )
-
-        #TODO: or pass in from config
-        self.name = name or os.path.basename( self.plugin_directories[0] )
-
-        if self.has_config:
-            self.load_configuration()
-        # set_up_static_urls will be called during the static middleware creation (if serves_static)
-        if self.serves_templates:
-            self.set_up_templates( template_cache_dir )
-
-    def get_plugin_directories( self ):
-        """
-        Return the plugin directory paths for this plugin.
-
-        Gets any directories within ``plugin_directory`` that are directories
-        themselves and whose ``basename`` is not in ``plugin_directory``.
-        """
-        # could instead explicitly list on/off in master config file
-        for plugin_directory in self.plugin_directories:
-            for plugin_path in glob.glob( os.path.join( plugin_directory, '*' ) ):
-                if not os.path.isdir( plugin_path ):
-                    continue
-
-                if os.path.basename( plugin_path ) in self.non_plugin_directories:
-                    continue
-
-                yield plugin_path
-
-    # ------------------------------------------------------------------------- config
-    def load_configuration( self ):
-        """
-        Override to load some framework/plugin specifc configuration.
-        """
-        # Abstract method
+        if not os.path.isdir( plugin_path ):
+            return False
+        #TODO: this is not reliable and forces the inclusion of empty dirs in some situations
+        if self.serves_templates and not 'templates' in os.listdir( plugin_path ):
+            return False
+        if self.serves_static and not 'static' in os.listdir( plugin_path ):
+            return False
         return True
+
+    def load_plugin( self, plugin_path ):
+        """
+        Create the plugin and decorate with static and/or template paths and urls.
+
+        Plugin bunches are decorated with:
+            * name : the plugin name
+            * path : the plugin path
+            * base_url : a url to the plugin
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the plugin
+        :rtype:                 ``util.bunch.Bunch``
+        :returns:               the loaded plugin object
+        """
+        plugin = super( PageServingPluginManager, self ).load_plugin( plugin_path )
+        #TODO: urlencode?
+        plugin[ 'base_url' ]  = '/'.join([ self.base_url, plugin.name ])
+        plugin = self._set_up_static_plugin( plugin )
+        plugin = self._set_up_template_plugin( plugin )
+
+        return plugin
+
+    def _set_up_static_plugin( self, plugin ):
+        """
+        Decorate the plugin with paths and urls needed to serve static content.
+
+        Plugin bunches are decorated with:
+            * serves_static : whether this plugin will serve static content
+
+        If the plugin path contains a 'static' sub-dir, the following are added:
+            * static_path   : the filesystem path to the static content
+            * static_url    : the url to use when serving static content
+
+        :type   plugin: ``util.bunch.Bunch``
+        :param  plugin: the plugin to decorate
+        :rtype:         ``util.bunch.Bunch``
+        :returns:       the loaded plugin object
+        """
+        plugin[ 'serves_static' ] = False
+        static_path = os.path.join( plugin.path, 'static' )
+        if self.serves_static and os.path.isdir( static_path ):
+            plugin.serves_static = True
+            plugin[ 'static_path' ] = static_path
+            plugin[ 'static_url' ] = '/'.join([ plugin.base_url, 'static' ])
+        return plugin
+
+    def _set_up_template_plugin( self, plugin ):
+        """
+        Decorate the plugin with paths needed to fill templates.
+
+        Plugin bunches are decorated with:
+            * serves_templates :    whether this plugin will use templates
+
+        If the plugin path contains a 'static' sub-dir, the following are added:
+            * template_path   : the filesystem path to the template sub-dir
+            * template_lookup : the (currently Mako) TemplateLookup used to search
+                for templates
+
+        :type   plugin: ``util.bunch.Bunch``
+        :param  plugin: the plugin to decorate
+        :rtype:         ``util.bunch.Bunch``
+        :returns:       the loaded plugin object
+        """
+        plugin[ 'serves_templates' ] = False
+        template_path = os.path.join( plugin.path, 'templates' )
+        if self.serves_templates and os.path.isdir( template_path ):
+            plugin.serves_templates = True
+            plugin[ 'template_path' ] = template_path
+            plugin[ 'template_lookup' ] = self.build_plugin_template_lookup( plugin )
+        return plugin
 
     # ------------------------------------------------------------------------- serving static files
     def get_static_urls_and_paths( self ):
@@ -160,81 +458,63 @@ class PluginFramework( object ):
         same files.
 
         Meant to be passed to a Static url map.
+
+        :rtype:         list of 2-tuples
+        :returns:       all urls and paths for each plugin serving static content
         """
-        url_and_paths = []
         # called during the static middleware creation (buildapp.py, wrap_in_static)
-
-        # NOTE: this only searches for static dirs two levels deep (i.e. <plugin_directory>/<plugin-name>/static)
-        for plugin_path in self.get_plugin_directories():
-            # that path is a plugin, search for subdirs named static in THAT dir
-            plugin_static_path = os.path.join( plugin_path, 'static' )
-            if not os.path.isdir( plugin_static_path ):
-                continue
-
-            # build a url for that static subdir and create a Static urlmap entry for it
-            plugin_name = os.path.splitext( os.path.basename( plugin_path ) )[0]
-            plugin_url = self.name + '/' + plugin_name + '/static'
-            url_and_paths.append( ( plugin_url, plugin_static_path ) )
-
-        return url_and_paths
+        urls_and_paths = []
+        for plugin in self.plugins.values():
+            if plugin.serves_static:
+                urls_and_paths.append( ( plugin.static_url, plugin.static_path ) )
+        return urls_and_paths
 
     # ------------------------------------------------------------------------- templates
-    def set_up_templates( self, template_cache_dir ):
+    def build_plugin_template_lookup( self, plugin ):
         """
-        Add a ``template_lookup`` attribute to the framework that can be passed
-        to the mako renderer to find templates.
-        """
-        if not template_cache_dir:
-            raise PluginFrameworkTemplateException( 'Plugins that serve templates require a template_cache_dir' )
-        self.template_lookup = self._create_mako_template_lookup( template_cache_dir, self._get_template_paths() )
-        return self.template_lookup
+        Builds the object that searches for templates (cached or not) when rendering.
 
-    def _get_template_paths( self ):
+        :type   plugin: ``util.bunch.Bunch``
+        :param  plugin: the plugin containing the templates
+        :rtype:         ``Mako.lookup.TemplateLookup``
+        :returns:       template lookup for this plugin
         """
-        Get the paths that will be searched for templates.
-        """
-        return self.plugin_directories
+        if not plugin.serves_templates:
+            return None
+        template_lookup = self._create_mako_template_lookup( self.template_cache_dir, plugin.template_path )
+        return template_lookup
 
-    def _create_mako_template_lookup( self, cache_dir, paths, collection_size=500, output_encoding='utf-8' ):
+    def _create_mako_template_lookup( self, cache_dir, paths,
+            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
         """
         Create a ``TemplateLookup`` with defaults.
+
+        :rtype:         ``Mako.lookup.TemplateLookup``
+        :returns:       all urls and paths for each plugin serving static content
         """
+        #TODO: possible to add galaxy/templates into the lookup here?
         return mako.lookup.TemplateLookup(
             directories      = paths,
             module_directory = cache_dir,
             collection_size  = collection_size,
             output_encoding  = output_encoding )
 
-    #TODO: do we want to remove trans and app from the plugin template context?
-    def fill_template( self, trans, template_filename, **kwargs ):
+    def fill_template( self, trans, plugin, template_filename, **kwargs ):
         """
-        Pass control over to trans and render the ``template_filename``.
+        Pass control over to trans and render ``template_filename``.
+
+        :type   trans:              ``galaxy.web.framework.GalaxyWebTransaction``
+        :param  trans:              transaction doing the rendering
+        :type   plugin:             ``util.bunch.Bunch``
+        :param  plugin:             the plugin containing the template to render
+        :type   template_filename:  string
+        :param  template_filename:  the path of the template to render relative to
+            ``plugin.template_path``
+        :returns:       rendered template
         """
         # defined here to be overridden
-        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
+        return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )
 
-    def fill_template_with_plugin_imports( self, trans, template_filename, **kwargs ):
-        """
-        Returns a rendered plugin template but allows importing modules from inside
-        the plugin directory within the template.
-
-        ..example:: I.e. given this layout for a plugin:
-        bler/
-            template/
-                bler.mako
-            static/
-            conifg/
-            my_script.py
-        this version of `fill_template` allows `bler.mako` to call `import my_script`.
-        """
-        try:
-            plugin_path = os.path.dirname( os.path.dirname( template_filename ) )
-            sys.path.append( plugin_path )
-            filled_template = self.fill_template( trans, template_filename, **kwargs )
-
-        finally:
-            sys.path.remove( plugin_path )
-
-        return filled_template
-
-    #TODO: could add plugin template helpers here
+    #TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
+    #TODO: add template helpers specific to the plugins
+    #TODO: some sort of url_for for these plugins

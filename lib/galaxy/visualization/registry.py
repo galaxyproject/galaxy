@@ -39,9 +39,10 @@ user_pref for ordering/ex/inclusion of particular visualizations
 """
 
 # ------------------------------------------------------------------- the registry
-class VisualizationsRegistry( pluginframework.PluginFramework ):
+class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
     """
     Main responsibilities are:
+        - discovering visualization plugins in the filesystem
         - testing if an object has a visualization that can be applied to it
         - generating a link to controllers.visualization.render with
             the appropriate params
@@ -58,31 +59,79 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
         'sweepster',
         'phyloviz'
     ]
-    #: directories under plugin_directory that aren't plugins
-    non_plugin_directories = []
 
-    def __init__( self, registry_filepath, template_cache_dir ):
-        super( VisualizationsRegistry, self ).__init__( registry_filepath, 'visualizations', template_cache_dir )
+    def __str__( self ):
+        return self.__class__.__name__
 
+    def __init__( self, app, **kwargs ):
+        self.config_parser = VisualizationsConfigParser()
+        super( VisualizationsRegistry, self ).__init__( app, 'visualizations', **kwargs )
         # what to use to parse query strings into resources/vars for the template
         self.resource_parser = ResourceParser()
         log.debug( '%s loaded', str( self ) )
 
-    def load_configuration( self ):
+    def is_plugin( self, plugin_path ):
         """
-        Builds the registry by parsing the `config/*.xml` files for every plugin
-        in ``get_plugin_directories`` and stores the results in ``self.listings``.
+        Determines whether the given filesystem path contains a plugin.
 
-        ..note::
-            This could be used to re-load a new configuration without restarting
-            the instance.
+        In this base class, all sub-directories are considered plugins.
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the
+            potential plugin
+        :rtype:                 bool
+        :returns:               True if the path contains a plugin
         """
-        try:
-            self.listings = VisualizationsConfigParser.parse( self.get_plugin_directories() )
+        # plugin_path must be a directory, have a config dir
+        if not os.path.isdir( plugin_path ):
+            return False
+        if not 'config' in os.listdir( plugin_path ):
+            return False
+        expected_config_filename = '%s.xml' %( os.path.split( plugin_path )[1] )
+        if not os.path.isfile( os.path.join( plugin_path, 'config', expected_config_filename ) ):
+            return False
+        return True
 
-        except Exception, exc:
-            log.exception( 'Error parsing visualizations plugins %s', self.plugin_directories )
-            raise
+    def load_plugin( self, plugin_path ):
+        """
+        Create the visualization plugin object, parse its configuration file,
+        and return it.
+
+        Plugin bunches are decorated with:
+            * config_file : the path to this visualization's config file
+            * config :      the parsed configuration for this visualization
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the plugin
+        :rtype:                 ``util.bunch.Bunch``
+        :returns:               the loaded plugin object
+        """
+        #TODO: possibly move this after the config parsing to allow config to override?
+        plugin = super( VisualizationsRegistry, self ).load_plugin( plugin_path )
+
+        # config file is required, otherwise skip this visualization
+        plugin[ 'config_file' ] = os.path.join( plugin_path, 'config', ( plugin.name + '.xml' ) )
+        config = self.config_parser.parse_file( plugin.config_file )
+        if not config:
+            return None
+        plugin[ 'config' ] = config
+
+        return plugin
+
+    # -- getting resources for visualization templates from link query strings --
+    # -- building links to visualizations from objects --
+    def get_visualizations( self, trans, target_object ):
+        """
+        Get the names of visualizations usable on the `target_object` and
+        the urls to call in order to render the visualizations.
+        """
+        #TODO:?? a list of objects? YAGNI?
+        applicable_visualizations = []
+        for vis_name in self.plugins:
+            url_data = self.get_visualization( trans, vis_name, target_object )
+            if url_data:
+                applicable_visualizations.append( url_data )
+        return applicable_visualizations
 
     def get_visualization( self, trans, visualization_name, target_object ):
         """
@@ -90,12 +139,11 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        # a little weird to pass trans because this registry is part of the trans.app
-        listing_data = self.listings.get( visualization_name, None )
-        if not listing_data:
+        visualization = self.plugins.get( visualization_name, None )
+        if not visualization:
             return None
 
-        data_sources = listing_data[ 'data_sources' ]
+        data_sources = visualization.config[ 'data_sources' ]
         for data_source in data_sources:
             # currently a model class is required
             model_class = data_source[ 'model_class' ]
@@ -109,11 +157,11 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
 
             param_data = data_source[ 'to_params' ]
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
-            link_text = listing_data.get( 'link_text', None )
+            link_text = visualization.config.get( 'link_text', None )
             if not link_text:
                 # default to visualization name, titlecase, and replace underscores
                 link_text = visualization_name.title().replace( '_', ' ' )
-            render_location = listing_data.get( 'render_location' )
+            render_location = visualization.config.get( 'render_location' )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
                 'href'  : url,
@@ -123,25 +171,12 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
 
         return None
 
-    # -- building links to visualizations from objects --
-    def get_visualizations( self, trans, target_object ):
-        """
-        Get the names of visualizations usable on the `target_object` and
-        the urls to call in order to render the visualizations.
-        """
-        #TODO:?? a list of objects? YAGNI?
-        applicable_visualizations = []
-        for vis_name in self.listings:
-            url_data = self.get_visualization( trans, vis_name, target_object )
-            if url_data:
-                applicable_visualizations.append( url_data )
-        return applicable_visualizations
-
     def is_object_applicable( self, trans, target_object, data_source_tests ):
         """
         Run a visualization's data_source tests to find out if
         it be applied to the target_object.
         """
+        #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
             test_type   = test[ 'type' ]
             result_type = test[ 'result_type' ]
@@ -164,7 +199,6 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
             if test_fn( target_object, test_result ):
                 #log.debug( 'test passed' )
                 return True
-
         return False
 
     def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
@@ -219,9 +253,9 @@ class VisualizationsRegistry( pluginframework.PluginFramework ):
 
         Both `params` and `param_modifiers` default to an empty dictionary.
         """
-        visualization = self.listings.get( visualization_name )
-        expected_params = visualization.get( 'params', {} )
-        param_modifiers = visualization.get( 'param_modifiers', {} )
+        visualization = self.plugins.get( visualization_name )
+        expected_params = visualization.config.get( 'params', {} )
+        param_modifiers = visualization.config.get( 'param_modifiers', {} )
         return ( expected_params, param_modifiers )
 
     def query_dict_to_resources( self, trans, controller, visualization_name, query_dict ):
@@ -259,13 +293,6 @@ class VisualizationsConfigParser( object ):
     """
     VALID_RENDER_LOCATIONS = [ 'galaxy_main', '_top', '_blank' ]
 
-    @classmethod
-    def parse( cls, plugin_directories, debug=False ):
-        """
-        Static class interface.
-        """
-        return cls( debug ).parse_plugins( plugin_directories )
-
     def __init__( self, debug=False ):
         self.debug = debug
 
@@ -274,58 +301,19 @@ class VisualizationsConfigParser( object ):
         self.param_parser = ParamParser()
         self.param_modifier_parser = ParamModifierParser()
 
-    def parse_plugins( self, plugin_directories ):
-        """
-        Parses the config files for each plugin sub-dir in `base_path`.
-
-        :param plugin_directories: a list of paths to enabled plugins.
-
-        :returns: registry data in dictionary form
-        """
-        returned = {}
-        for plugin_path in plugin_directories:
-            returned.update( self.parse_plugin( plugin_path ) )
-        return returned
-
-    def parse_plugin( self, plugin_path ):
-        """
-        Parses any XML files in ``<plugin_path>/config``.
-
-        If an error occurs while parsing a visualizations entry, it is skipped.
-        :returns: registry data in dictionary form
-        ..note::
-            assumes config files are in a 'config' sub-dir of each plugin
-        """
-        returned = {}
-
-        plugin_config_path = os.path.join( plugin_path, 'config' )
-        if not os.path.isdir( plugin_config_path ):
-            return returned
-
-        for xml_filepath in glob.glob( os.path.join( plugin_config_path, '*.xml' ) ):
-            try:
-                visualization_name, visualization = self.parse_file( xml_filepath )
-            # skip vis' with parsing errors - don't shutdown the startup
-            except ParsingException, parse_exc:
-                log.error( 'Skipped visualization config "%s" due to parsing errors: %s',
-                    xml_filepath, str( parse_exc ), exc_info=self.debug )
-
-            if visualization:
-                returned[ visualization_name ] = visualization
-                log.debug( 'Visualization config loaded for: %s', visualization_name )
-
-        return returned
-
     def parse_file( self, xml_filepath ):
         """
         Parse the given XML file for visualizations data.
         :returns: tuple of ( `visualization_name`, `visualization` )
         """
-        xml_tree = galaxy.util.parse_xml( xml_filepath )
-        visualization_conf = xml_tree.getroot()
-        visualization_name = visualization_conf.get( 'name' )
-        visualization = self.parse_visualization( visualization_conf )
-        return visualization_name, visualization
+        try:
+            xml_tree = galaxy.util.parse_xml( xml_filepath )
+            visualization = self.parse_visualization( xml_tree.getroot() )
+            return visualization
+        # skip vis' with parsing errors - don't shutdown the startup
+        except ParsingException, parse_exc:
+            log.exception( 'Skipped visualization config "%s" due to parsing errors', xml_filepath )
+            return None
 
     def parse_visualization( self, xml_tree ):
         """
