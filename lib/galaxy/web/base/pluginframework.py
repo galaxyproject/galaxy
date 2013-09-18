@@ -280,28 +280,65 @@ class HookPluginManager( PluginManager ):
         Search all plugins for a function named ``hook_fn_prefix`` + ``hook_name``
         and run it passing in args and kwargs.
 
+        Return values from each hook are returned in a dictionary keyed with the
+        plugin names.
+
         :type   hook_name:  string
         :param  hook_name:  name (suffix) of the hook to run
-        :rtype:             2-tuple containing (list, dict)
-        :returns:           (possibly modified) args, kwargs
+        :rtype:             dictionary
+        :returns:           where keys are plugin.names and
+            values return values from the hooks
         """
         #TODO: is hook prefix necessary?
         #TODO: could be made more efficient if cached by hook_name in the manager on load_plugin
         #   (low maint. overhead since no dynamic loading/unloading of plugins)
         hook_fn_name = ''.join([ self.hook_fn_prefix, hook_name ])
+        returned = {}
         for plugin_name, plugin in self.plugins.items():
             hook_fn = getattr( plugin.module, hook_fn_name, None )
 
             if hook_fn and hasattr( hook_fn, '__call__' ):
                 try:
                     #log.debug( 'calling %s from %s(%s)', hook_fn.func_name, plugin.name, plugin.module )
-                    hook_fn( *args, **kwargs )
+                    fn_returned = hook_fn( *args, **kwargs )
+                    returned[ plugin.name ] = fn_returned
                 except Exception, exc:
                     # fail gracefully and continue with other plugins
                     log.exception( 'Hook function "%s" failed for plugin "%s"', hook_name, plugin.name )
 
-        # may have been altered by hook fns, return in order to act like filter
-        return args, kwargs
+        # not sure of utility of this - seems better to be fire-and-forget pub-sub
+        return returned
+
+    def filter_hook( self, hook_name, hook_arg, *args, **kwargs ):
+        """
+        Search all plugins for a function named ``hook_fn_prefix`` + ``hook_name``
+        and run the first with ``hook_arg`` and every function after with the
+        return value of the previous.
+
+        ..note:
+            This makes plugin load order very important.
+
+        :type   hook_name:  string
+        :param  hook_name:  name (suffix) of the hook to run
+        :type   hook_arg:   any
+        :param  hook_arg:   the arg to be passed between hook functions
+        :rtype:             any
+        :returns:           the modified hook_arg
+        """
+        hook_fn_name = ''.join([ self.hook_fn_prefix, hook_name ])
+        for plugin_name, plugin in self.plugins.items():
+            hook_fn = getattr( plugin.module, hook_fn_name, None )
+
+            if hook_fn and hasattr( hook_fn, '__call__' ):
+                try:
+                    hook_arg = hook_fn( hook_arg, *args, **kwargs )
+
+                except Exception, exc:
+                    # fail gracefully and continue with other plugins
+                    log.exception( 'Filter hook function "%s" failed for plugin "%s"', hook_name, plugin.name )
+
+        # may have been altered by hook fns, return
+        return hook_arg
 
 
 # ============================================================================= exceptions
@@ -370,12 +407,12 @@ class PageServingPluginManager( PluginManager ):
         :rtype:                 bool
         :returns:               True if the path contains a plugin
         """
-        if not os.path.isdir( plugin_path ):
+        if not super( PageServingPluginManager, self ).is_plugin( plugin_path ):
             return False
-        #TODO: this is not reliable and forces the inclusion of empty dirs in some situations
-        if self.serves_templates and not 'templates' in os.listdir( plugin_path ):
-            return False
-        if self.serves_static and not 'static' in os.listdir( plugin_path ):
+        # reject only if we don't have either
+        listdir = os.listdir( plugin_path )
+        if( ( 'templates' not in listdir )
+        and ( 'static'    not in listdir ) ):
             return False
         return True
 
