@@ -93,7 +93,7 @@ class PluginManager( object ):
 
         for directory in util.listify( directories_setting ):
             directory = directory.strip()
-            if directory.startswith( '/' ):
+            if not directory.startswith( '/' ):
                 directory = os.path.join( galaxy_root, directory )
             if not os.path.exists( directory ):
                 log.warn( '%s, directory not found: %s', self, directory )
