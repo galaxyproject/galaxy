@@ -45,7 +45,6 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
         self.assertEqual( plugin_mgr.base_url, 'test' )
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3' ] )
-        self.assertFalse( plugin_mgr.plugins.get( 'not_a_plugin', False ) )
 
         plugin1 = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin1.name, 'plugin1' )

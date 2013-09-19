@@ -82,8 +82,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         :rtype:                 bool
         :returns:               True if the path contains a plugin
         """
-        # plugin_path must be a directory, have a config dir
+        # plugin_path must be a directory, have a config dir, and a config file matching the plugin dir name
         if not os.path.isdir( plugin_path ):
+            # super won't work here - different criteria
             return False
         if not 'config' in os.listdir( plugin_path ):
             return False
@@ -112,6 +113,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # config file is required, otherwise skip this visualization
         plugin[ 'config_file' ] = os.path.join( plugin_path, 'config', ( plugin.name + '.xml' ) )
         config = self.config_parser.parse_file( plugin.config_file )
+            
         if not config:
             return None
         plugin[ 'config' ] = config

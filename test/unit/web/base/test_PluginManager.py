@@ -36,7 +36,6 @@ class PluginManager_TestCase( unittest.TestCase ):
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].path, os.path.join( expected_plugins_path, 'plugin2' ) )
-        self.assertFalse( plugin_mgr.plugins.get( 'file1', False ) )
 
         mock_app_dir.remove()
 
@@ -60,7 +59,6 @@ class PluginManager_TestCase( unittest.TestCase ):
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].path, os.path.join( expected_plugins_path, 'plugin2' ) )
-        self.assertFalse( plugin_mgr.plugins.get( 'file1', False ) )
 
     def test_multiple_dirs( self ):
         """should search in multiple directories"""
@@ -94,8 +92,6 @@ class PluginManager_TestCase( unittest.TestCase ):
         self.assertEqual( plugin_mgr.plugins[ 'plugin3' ].path, os.path.join( expected_plugins_abs_path, 'plugin3' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin4' ].name, 'plugin4' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin4' ].path, os.path.join( expected_plugins_abs_path, 'plugin4' ) )
-        self.assertFalse( plugin_mgr.plugins.get( 'file1', False ) )
-        self.assertFalse( plugin_mgr.plugins.get( 'file2', False ) )
 
 
 if __name__ == '__main__':

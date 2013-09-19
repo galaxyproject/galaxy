@@ -88,7 +88,6 @@ class HookPluginManager_TestCase( unittest.TestCase ):
 
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
-        self.assertFalse( plugin_mgr.plugins.get( 'not_a_plugin', False ) )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -247,7 +246,6 @@ class HookPluginManager_TestCase( unittest.TestCase ):
         self.assertEqual( result, 'check one two' )
 
         mock_app_dir.remove()
-
 
 
 if __name__ == '__main__':
