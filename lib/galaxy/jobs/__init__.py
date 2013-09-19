@@ -680,20 +680,8 @@ class JobWrapper( object ):
             out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
 
         # These can be passed on the command line if wanted as $__user_*__
-        if job.history and job.history.user:
-            user = job.history.user
-            user_id = '%d' % job.history.user.id
-            user_email = str(job.history.user.email)
-            user_name = str(job.history.user.username)
-        else:
-            user = None
-            user_id = 'Anonymous'
-            user_email = 'Anonymous'
-            user_name = 'Anonymous'
-        incoming['__user__'] = user
-        incoming['__user_id__'] = incoming['userId'] = user_id
-        incoming['__user_email__'] = incoming['userEmail'] = user_email
-        incoming['__user_name__'] = user_name
+        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming,
                                                  inp_data, out_data,

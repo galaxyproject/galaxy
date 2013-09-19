@@ -18,6 +18,7 @@ import pexpect
 import simplejson
 import socket
 import time
+from string import Template
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -158,6 +159,47 @@ class User( object, Dictifiable ):
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
+    @staticmethod
+    def user_template_environment( user ):
+        """
+
+        >>> env = User.user_template_environment(None)
+        >>> env['__user_email__']
+        'Anonymous'
+        >>> env['__user_id__']
+        'Anonymous'
+        >>> user = User('foo@example.com')
+        >>> user.id = 6
+        >>> user.username = 'foo2'
+        >>> env = User.user_template_environment(user)
+        >>> env['__user_id__']
+        '6'
+        >>> env['__user_name__']
+        'foo2'
+        """
+        if user:
+            user_id = '%d' % user.id
+            user_email = str( user.email )
+            user_name = str( user.username )
+        else:
+            user = None
+            user_id = 'Anonymous'
+            user_email = 'Anonymous'
+            user_name = 'Anonymous'
+        environment = {}
+        environment[ '__user__' ] = user
+        environment[ '__user_id__' ] = environment[ 'userId' ] = user_id
+        environment[ '__user_email__' ] = environment[ 'userEmail' ] = user_email
+        environment[ '__user_name__' ] = user_name
+        return environment
+
+    @staticmethod
+    def expand_user_properties( user, in_string ):
+        """
+        """
+        environment = User.user_template_environment( user )
+        return Template( in_string ).safe_substitute( environment )
 
 
 class Job( object, Dictifiable ):
