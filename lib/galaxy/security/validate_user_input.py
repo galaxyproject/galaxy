@@ -2,18 +2,31 @@ import re
 
 VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )
+#  Basic regular expression to check email validity.
+VALID_EMAIL_RE = re.compile( "[^@]+@[^@]+\.[^@]+" )
 FILL_CHAR = '-'
 
 def validate_email( trans, email, user=None, check_dup=True ):
+    """
+    Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
+    """
     message = ''
+    #  Load the blacklist file location from the configuration file.
+    blacklist_file = trans.app.config.blacklist_file
+    if blacklist_file is not None:
+        email_blacklist = [ line.rstrip() for line in file( blacklist_file ).readlines() ]
     if user and user.email == email:
         return message
-    if len( email ) == 0 or "@" not in email or "." not in email:
-        message = "Enter a real email address"
+    if not( VALID_EMAIL_RE.match( email ) ):
+        message = "Please enter your real email address."
     elif len( email ) > 255:
-        message = "Email address exceeds maximum allowable length"
+        message = "Email address exceeds maximum allowable length."
     elif check_dup and trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
-        message = "User with that email already exists"
+        message = "User with that email already exists."
+        #  If the blacklist is not empty filter out the disposable domains.
+    elif email_blacklist is not None:
+        if email.split('@')[1] in email_blacklist:
+            message = "Please enter your permanent email address."
     return message
 
 def validate_publicname( trans, publicname, user=None ):

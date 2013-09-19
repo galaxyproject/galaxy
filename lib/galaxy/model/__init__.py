@@ -78,6 +78,8 @@ class User( object, Dictifiable ):
         self.external = False
         self.deleted = False
         self.purged = False
+        self.active = False
+        self.activation_token = None
         self.username = None
         # Relationships
         self.histories = []

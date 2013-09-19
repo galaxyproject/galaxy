@@ -8,6 +8,7 @@ import os
 import socket
 import string
 import random
+import urllib
 from galaxy import web
 from galaxy import util, model
 from galaxy.model.orm import and_
@@ -17,6 +18,8 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import CheckboxField, build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
+from datetime import datetime, timedelta
+from galaxy.util import hash_util
 
 log = logging.getLogger( __name__ )
 
@@ -147,7 +150,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if trans.user:
                 if user_openid.user and user_openid.user.id != trans.user.id:
                     message = "The OpenID <strong>%s</strong> is already associated with another Galaxy account, <strong>%s</strong>.  Please disassociate it from that account before attempting to associate it with a new account." % ( display_identifier, user_openid.user.email )
-                    status = "error"
+                if not trans.user.active and trans.app.config.user_activation_on: # Account activation is ON and the user is INACTIVE.
+                    if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
+                        if self.is_outside_grace_period( trans, trans.user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                            message = self.resend_verification_email( trans, trans.user.email )
+                        else: # User is within the grace period, let him log in.
+                            pass
+                    else: # Grace period is off. Login is disabled and user will have the activation email resent.
+                        message = self.resend_verification_email( trans, trans.user.email )                    
                 elif not user_openid.user or user_openid.user == trans.user:
                     if openid_provider_obj.id:
                         user_openid.provider = openid_provider_obj.id
@@ -282,7 +292,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             subscribe_checked = CheckboxField.is_checked( subscribe )
             error = ''
             if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-                error = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+                error = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             else:
                 # Check email and password validity
                 error = self.__validate( trans, params, email, password, confirm, username )
@@ -465,9 +475,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     openid_providers=trans.app.openid_providers,
                                     form_input_auto_focus=True,
                                     active_view="user" )
+
     def __validate_login( self, trans, **kwd ):
+        """
+        Function validates numerous cases that might happen during the login time.
+        """
         message = kwd.get( 'message', '' )
-        status = kwd.get( 'status', 'done' )
+        status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
@@ -475,26 +489,68 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         if not user:
             message = "No such user (please note that login is case sensitive)"
-            status = 'error'
         elif user.deleted:
-            message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
-            status = 'error'
+            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+            if trans.app.config.admin_email is not None:
+                message += 'Contact: %s' %  trans.app.config.admin_email
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            status = 'error'
+            if trans.app.config.admin_email is not None:
+                message += 'Contact: %s' %  trans.app.config.admin_email
         elif not user.check_password( password ):
             message = "Invalid password"
-            status = 'error'
-        else:
-            trans.handle_user_login( user )
-            if trans.webapp.name == 'galaxy':
-                trans.log_event( "User logged in" )
-                message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                    ( user.email, redirect, url_for( '/' ) )
-                if trans.app.config.require_login:
-                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( controller="root", action="welcome" )
-            success = True
+        elif trans.app.config.user_activation_on and not user.active: # activation is ON and the user is INACTIVE
+            if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
+                if self.is_outside_grace_period( trans, user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                    message = self.resend_verification_email( trans, email )
+                else: # User is within the grace period, let him log in.
+                    message, success, status = self.proceed_login( trans, user, redirect )
+            else: # Grace period is off. Login is disabled and user will have the activation email resent.
+                message = self.resend_verification_email( trans, email )
+        else: # activation is OFF
+            message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )
+
+    def proceed_login ( self, trans, user, redirect ):
+        """
+        Function processes user login. It is called in case all the login requirements are valid.
+        """
+        trans.handle_user_login( user )
+        if trans.webapp.name == 'galaxy':
+            trans.log_event( "User logged in" )
+            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                ( user.email, redirect, url_for( '/' ) )
+            if trans.app.config.require_login:
+                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( controller="root", action="welcome" )
+        success = True
+        status = 'done'
+        return message, success, status
+
+    def resend_verification_email( self, trans, email ):
+        """
+        Function resends the verification email in case user wants to log in with an inactive account.
+        """
+        is_activation_sent  = self.send_verification_email( trans, email )
+        if is_activation_sent:
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address %s.<br>' % email
+        else:
+            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.'
+            if trans.app.config.admin_email is not None:
+                message += 'Contact: %s' %  trans.app.config.admin_email
+        return message
+
+    def is_outside_grace_period ( self, trans, create_time ):
+        """
+        Function checks whether the user is outside the config-defined grace period for inactive accounts. 
+        """
+        #  Activation is forced and the user is not active yet. Check the grace period.
+        activation_grace_period = trans.app.config.activation_grace_period
+        #  Default value is 3 hours.
+        if activation_grace_period == None:
+            activation_grace_period = 3
+        delta = timedelta( hours = int( activation_grace_period ) )
+        time_difference = datetime.utcnow() - create_time
+        return ( time_difference > delta or activation_grace_period == 0 )
 
     @web.expose
     def logout( self, trans, logout_all=False ):
@@ -533,7 +589,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            message = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+            message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
+            if trans.app.config.admin_email is not None:
+                message += 'Contact: %s' %  trans.app.config.admin_email
             status = 'error'
         else:
             if not refresh_frames:
@@ -606,6 +664,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         user = trans.app.model.User( email=email )
         user.set_password_cleartext( password )
         user.username = username
+        if trans.app.config.user_activation_on: # Do not set the active flag in case activation is OFF.
+            user.active = False
         trans.sa_session.add( user )
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role( user )
@@ -633,7 +693,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
-                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
+                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
                 else:
                     body = 'Join Mailing list.\n'
                     to = trans.app.config.mailing_join_addr
@@ -659,9 +719,86 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
             success = False
         else:
-            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
-            success = True
+            is_activation_sent = self.send_verification_email( trans, email )
+            if is_activation_sent:
+                message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                success = True
+            else:
+                message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                if trans.app.config.admin_email is not None:
+                    message += 'Contact: %s' %  trans.app.config.admin_email
+                success = False
         return ( message, status, user, success )
+
+    def send_verification_email( self, trans, email ):
+        """
+        Send the verification email containing the activation link to the user's email.
+        """
+        activation_link = self.prepare_activation_link( trans, email )
+
+        body =  ("Hi %s,\n\n"
+                "Please click the activation link below in order to activate your account.\n\n"
+                "Activation link: %s \n\n"
+                "Your Galaxy Team" % ( email, activation_link ))
+        to = email
+        frm = trans.app.config.admin_email
+        subject = 'How to activate your Galaxy account'
+        try:
+            util.send_mail( frm, to, subject, body, trans.app.config )
+            return True
+        except:
+            return False
+
+    def prepare_activation_link( self, trans, email ):
+        """
+        Prepares the account activation link for the user.
+        """
+        activation_token = self.get_activation_token( trans, email )
+        host = trans.request.host.split( ':' )[ 0 ]
+        if host == 'localhost':
+            host = socket.getfqdn()
+        activation_link = str( trans.request.host ) + url_for( controller='user', action='activate' ) + "?activation_token=" + str( activation_token ) + "&email=" + urllib.quote( email )
+        return activation_link
+
+    def get_activation_token ( self, trans, email ):
+        """
+        Checks for the activation token. Creates new activation token and stores it in the database if none found.
+        """
+        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+        activation_token = user.activation_token
+        if activation_token == None:
+            activation_token =  hash_util.new_secure_hash( str( random.getrandbits( 256 ) ) )
+            user.activation_token = activation_token
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+        return activation_token
+
+    @web.expose
+    def activate( self, trans, **kwd ):
+        """
+        Function checks whether token fits the user and then activates the user's account.    
+        """
+        params = util.Params( kwd, sanitize=False )
+        email = urllib.unquote( params.get( 'email', None ) )
+        activation_token = params.get( 'activation_token', None )
+
+        if email == None or activation_token == None:
+            #  We don't have the email or activation_token, show error.
+            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
+        else:
+            #  Find the user
+            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+            if user.activation_token == activation_token:
+                user.activation_token = None
+                user.active = True
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                return trans.show_ok_message( "Your account has been successfully activated!<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+            else:
+                #  Tokens don't match. Activation is denied.
+                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+        return
+
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         params = util.Params( kwd )
         if user and user.values:
@@ -885,7 +1022,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact an administrator." )
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
@@ -1042,7 +1179,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         phone = util.restore_text( params.get( 'phone', ''  ) )
         ok = True
         if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
         if params.get( 'new_address_button', False ):
             if not short_desc:
                 ok = False

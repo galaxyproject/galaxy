@@ -4,6 +4,9 @@
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible = app.config.message_box_visible
+    self.show_inactivity_warning = False
+    if trans.user:
+        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on is True) and ( app.config.inactivity_box_content is not None ) )
     self.overlay_visible=False
     self.active_view=None
     self.body_class=""
@@ -26,11 +29,19 @@
             right: 0 !important;
         %endif
     }
-    %if self.message_box_visible:
+## This is some dirty hack happening
+    %if self.message_box_visible or self.show_inactivity_warning:
         #left, #left-border, #center, #right-border, #right
         {
             top: 64px;
         }
+    %endif
+    %if self.message_box_visible and self.show_inactivity_warning:
+        #left, #left-border, #center, #right-border, #right
+        {
+            top: 94px;
+        }
+        #inactivebox{top:64px;}
     %endif
     </style>
 </%def>
@@ -300,11 +311,16 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
                 %if self.message_box_visible and app.config.message_box_content:
+            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
                         ${app.config.message_box_content}
-                %endif
             </div>
+                %endif
+                %if self.show_inactivity_warning:
+                    <div id="inactivebox" class="panel-warning-message">
+                    ${app.config.inactivity_box_content}
+                    </div>
+                %endif
             ${self.overlay(visible=self.overlay_visible)}
             %if self.has_left_panel:
                 <div id="left">
