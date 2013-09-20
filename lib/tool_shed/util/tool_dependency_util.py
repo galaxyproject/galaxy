@@ -258,6 +258,14 @@ def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
                                     app.model.ToolDependency.table.c.type == type ) ) \
                      .first()
 
+def get_tool_dependency_by_name_version_type( app, name, version, type ):
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.ToolDependency ) \
+                     .filter( and_( app.model.ToolDependency.table.c.name == name,
+                                    app.model.ToolDependency.table.c.version == version,
+                                    app.model.ToolDependency.table.c.type == type ) ) \
+                     .first()
+
 def get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolDependency ) \

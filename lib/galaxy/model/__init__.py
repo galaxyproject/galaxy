@@ -25,7 +25,7 @@ import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 from galaxy.security import get_permitted_actions
-from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
+from galaxy.util import asbool, is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.framework.helpers import to_unicode
@@ -34,6 +34,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         WorkflowMappingField)
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -3463,7 +3464,28 @@ class ToolShedRepository( object ):
     @property
     def has_repository_dependencies( self ):
         if self.metadata:
-            return 'repository_dependencies' in self.metadata
+            repository_dependencies_dict = self.metadata.get( 'repository_dependencies', {} )
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+            for rd_tup in repository_dependencies:
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if not asbool( only_if_compiling_contained_td ):
+                    return True
+        return False
+
+    @property
+    def has_repository_dependencies_only_if_compiling_contained_td( self ):
+        if self.metadata:
+            repository_dependencies_dict = self.metadata.get( 'repository_dependencies', {} )
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+            for rd_tup in repository_dependencies:
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if not asbool( only_if_compiling_contained_td ):
+                    return False
+            return True
         return False
 
     @property
@@ -3695,10 +3717,14 @@ class ToolShedRepository( object ):
 
     @property
     def tuples_of_repository_dependencies_needed_for_compiling_td( self ):
-        """Return this repository's repository dependencies that are necessary only for compiling this repository's tool dependencies."""
+        """
+        Return tuples defining this repository's repository dependencies that are necessary only for compiling this repository's tool
+        dependencies.
+        """
         rd_tups_of_repositories_needed_for_compiling_td = []
-        if self.has_repository_dependencies:
-            rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+        if self.metadata:
+            repository_dependencies = self.metadata.get( 'repository_dependencies', None )
+            rd_tups = repository_dependencies[ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 6: 
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup

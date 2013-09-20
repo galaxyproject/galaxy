@@ -1343,32 +1343,36 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
         def has_galaxy_utilities( repository_metadata ):
-            includes_data_managers = False
-            includes_datatypes = False
-            includes_tools = False
-            includes_tools_for_display_in_tool_panel = False
-            has_repository_dependencies = False
-            includes_tool_dependencies = False
-            includes_workflows = False
+            has_galaxy_utilities_dict = dict( includes_data_managers=False,
+                                              includes_datatypes=False,
+                                              includes_tools=False,
+                                              includes_tools_for_display_in_tool_panel=False,
+                                              has_repository_dependencies=False,
+                                              has_repository_dependencies_only_if_compiling_contained_td=False,
+                                              includes_tool_dependencies=False,
+                                              includes_workflows=False )
             if repository_metadata:
                 includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'data_manager' in metadata:
-                        includes_data_managers = True
+                        has_galaxy_utilities_dict[ 'includes_data_managers' ] = True
                     if 'datatypes' in metadata:
-                        includes_datatypes = True
+                        has_galaxy_utilities_dict[ 'includes_datatypes' ] = True
                     if 'tools' in metadata:
-                        includes_tools = True
+                        has_galaxy_utilities_dict[ 'includes_tools' ] = True
                     if 'tool_dependencies' in metadata:
-                        includes_tool_dependencies = True
-                    if 'repository_dependencies' in metadata:
-                        has_repository_dependencies = True
+                        has_galaxy_utilities_dict[ 'includes_tool_dependencies' ] = True
+                    repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+                    repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                    has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+                        suc.get_repository_dependency_types( repository_dependencies )
+                    has_galaxy_utilities_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+                    has_galaxy_utilities_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = \
+                        has_repository_dependencies_only_if_compiling_contained_td
                     if 'workflows' in metadata:
-                        includes_workflows = True
-            return includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows
-        message = kwd.get( 'message', ''  )
-        status = kwd.get( 'status', 'done' )
+                        has_galaxy_utilities_dict[ 'includes_workflows' ] = True
+            return has_galaxy_utilities_dict
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -1376,8 +1380,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
-        includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
-            has_galaxy_utilities( repository_metadata )
+        has_galaxy_utilities_dict = has_galaxy_utilities( repository_metadata )
+        includes_data_managers = has_galaxy_utilities_dict[ 'includes_data_managers' ]
+        includes_datatypes = has_galaxy_utilities_dict[ 'includes_datatypes' ]
+        includes_tools = has_galaxy_utilities_dict[ 'includes_tools' ]
+        includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict[ 'includes_tools_for_display_in_tool_panel' ]
+        includes_tool_dependencies = has_galaxy_utilities_dict[ 'includes_tool_dependencies' ]
+        has_repository_dependencies = has_galaxy_utilities_dict[ 'has_repository_dependencies' ]
+        has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ]
+        includes_workflows = has_galaxy_utilities_dict[ 'includes_workflows' ]
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Default to the received changeset revision and ctx_rev.
@@ -1392,6 +1403,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                             includes_tool_dependencies=includes_tool_dependencies,
                             has_repository_dependencies=has_repository_dependencies,
+                            has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
                             includes_workflows=includes_workflows )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
@@ -1407,6 +1419,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 for changeset in repo.changelog:
                     includes_tools = False
                     has_repository_dependencies = False
+                    has_repository_dependencies_only_if_compiling_contained_td = False
                     changeset_hash = str( repo.changectx( changeset ) )
                     ctx = suc.get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
@@ -1414,8 +1427,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                            trans.security.encode_id( repository.id ),
                                                                                                            changeset_hash )
                         if update_to_repository_metadata:
-                            includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
-                                has_galaxy_utilities( update_to_repository_metadata )
+                            has_galaxy_utilities_dict = has_galaxy_utilities( repository_metadata )
+                            includes_data_managers = has_galaxy_utilities_dict[ 'includes_data_managers' ]
+                            includes_datatypes = has_galaxy_utilities_dict[ 'includes_datatypes' ]
+                            includes_tools = has_galaxy_utilities_dict[ 'includes_tools' ]
+                            includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict[ 'includes_tools_for_display_in_tool_panel' ]
+                            includes_tool_dependencies = has_galaxy_utilities_dict[ 'includes_tool_dependencies' ]
+                            has_repository_dependencies = has_galaxy_utilities_dict[ 'has_repository_dependencies' ]
+                            has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ]
+                            includes_workflows = has_galaxy_utilities_dict[ 'includes_workflows' ]
                             # We found a RepositoryMetadata record.
                             if changeset_hash == repository.tip( trans.app ):
                                 # The current ctx is the repository tip, so use it.
@@ -1435,6 +1455,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 update_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
                 update_dict[ 'includes_workflows' ] = includes_workflows
                 update_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+                update_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = has_repository_dependencies_only_if_compiling_contained_td
                 update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
         update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
         return encoding_util.tool_shed_encode( update_dict )
@@ -1611,14 +1632,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         includes_tools = False
         includes_tools_for_display_in_tool_panel = False
         has_repository_dependencies = False
+        has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
             repository_id, changeset_revision = tup
-            repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, cur_has_repository_dependencies = \
+            repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, \
+                cur_has_repository_dependencies, cur_has_repository_dependencies_only_if_compiling_contained_td = \
                 repository_util.get_repo_info_dict( trans, repository_id, changeset_revision )
             if cur_has_repository_dependencies and not has_repository_dependencies:
                 has_repository_dependencies = True
+            if cur_has_repository_dependencies_only_if_compiling_contained_td and not has_repository_dependencies_only_if_compiling_contained_td:
+                has_repository_dependencies_only_if_compiling_contained_td = True
             if cur_includes_tools and not includes_tools:
                 includes_tools = True
             if cur_includes_tool_dependencies and not includes_tool_dependencies:
@@ -1629,6 +1654,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return dict( includes_tools=includes_tools,
                      includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                      has_repository_dependencies=has_repository_dependencies,
+                     has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
                      includes_tool_dependencies=includes_tool_dependencies,
                      repo_info_dicts=repo_info_dicts )
 
@@ -1708,7 +1734,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         tool_version_dicts = []
         for changeset in repo.changelog:
             current_changeset_revision = str( repo.changectx( changeset ) )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), current_changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                     trans.security.encode_id( repository.id ),
+                                                                                     current_changeset_revision )
             if repository_metadata and repository_metadata.tool_versions:
                 tool_version_dicts.append( repository_metadata.tool_versions )
                 if current_changeset_revision == changeset_revision:
@@ -1766,22 +1794,30 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 includes_workflows = True
             readme_files_dict = readme_util.build_readme_files_dict( metadata )
         # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
+        has_repository_dependencies = False
+        has_repository_dependencies_only_if_compiling_contained_td = False
+        includes_tool_dependencies = False
         for name, repo_info_tuple in repo_info_dict.items():
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-                suc.get_repo_info_tuple_contents( repo_info_tuple )
-            if repository_dependencies:
-                has_repository_dependencies = True
-            else:
-                has_repository_dependencies = False
-            if tool_dependencies:
-                includes_tool_dependencies = True
-            else:
-                includes_tool_dependencies = False
+            if not has_repository_dependencies or not has_repository_dependencies_only_if_compiling_contained_td or not includes_tool_dependencies:
+                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tuple )
+                for rd_key, rd_tups in repository_dependencies.items():
+                    if rd_key in [ 'root_key', 'description' ]:
+                        continue
+                    curr_has_repository_dependencies, curr_has_repository_dependencies_only_if_compiling_contained_td = \
+                        suc.get_repository_dependency_types( rd_tups )
+                    if curr_has_repository_dependencies and not has_repository_dependencies:
+                        has_repository_dependencies = True
+                    if curr_has_repository_dependencies_only_if_compiling_contained_td and not has_repository_dependencies_only_if_compiling_contained_td:
+                        has_repository_dependencies_only_if_compiling_contained_td = True
+                if tool_dependencies and not includes_tool_dependencies:
+                    includes_tool_dependencies = True
         return dict( includes_data_managers=includes_data_managers,
                      includes_datatypes=includes_datatypes,
                      includes_tools=includes_tools,
                      includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                      has_repository_dependencies=has_repository_dependencies,
+                     has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
                      includes_tool_dependencies=includes_tool_dependencies,
                      includes_workflows=includes_workflows,
                      readme_files_dict=readme_files_dict,
@@ -2434,7 +2470,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     try:
                         commands.remove( repo.ui, repo, selected_file, force=True )
                     except Exception, e:
-                        log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
+                        log.debug( "Error removing the following file using the mercurial API:\n %s" % str( selected_file ) )
+                        log.debug( "The error was: %s" % str( e ))
+                        log.debug( "Attempting to remove the file using a different approach." )
                         relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                         repo.dirstate.remove( relative_selected_file )
                         repo.dirstate.write()
