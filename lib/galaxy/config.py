@@ -135,9 +135,7 @@ class Configuration( object ):
         self.admin_email = kwargs.get( 'admin_email', None )
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_visible = kwargs.get( 'inactivity_box_visible', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
-        self.inactivity_box_class = kwargs.get( 'inactivity_box_class', None )
         #  Get the disposable email domains blacklist file
         self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
         self.smtp_server = kwargs.get( 'smtp_server', None )
