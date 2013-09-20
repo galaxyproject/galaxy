@@ -235,8 +235,15 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # get file destination
             file_destination = dataset.get_file_name()
 
-            # save file locally
+            # check if the directory exists
+            dn = os.path.dirname(file_destination)
+            if not os.path.exists(dn):
+                os.makedirs(dn)
+    
+            # get file and directory names
             fn = os.path.basename(content.filename)
+    
+            # save file locally
             open(file_destination, 'wb').write(content.file.read())
             
             # log
