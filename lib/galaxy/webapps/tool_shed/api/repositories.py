@@ -73,6 +73,7 @@ class RepositoriesController( BaseAPIController ):
             "changeset_revision": "3a08cc21466f",
             "downloadable": true,
             "has_repository_dependencies": false,
+            "has_repository_dependencies_only_if_compiling_contained_td": false,
             "id": "f9cad7b01a472135",
             "includes_datatypes": false,
             "includes_tool_dependencies": false,
@@ -125,7 +126,8 @@ class RepositoriesController( BaseAPIController ):
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
                 # Get the repo_info_dict for installing the repository.
-                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies = \
+                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+                    has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
                     repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:

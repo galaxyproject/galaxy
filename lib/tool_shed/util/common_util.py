@@ -1,9 +1,12 @@
+import logging
 import os
 import urllib2
 from galaxy.util import json
 from galaxy.util.odict import odict
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
+
+log = logging.getLogger( __name__ )
 
 REPOSITORY_OWNER = 'devteam'
 

@@ -812,7 +812,7 @@ class AdminToolshed( AdminGalaxy ):
         status = kwd.get( 'status', 'done' )
         shed_tool_conf = kwd.get( 'shed_tool_conf', None )
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        # Handle repository dependencies.
+        # Handle repository dependencies, which do not include those that are required only for compiling a dependent repository's tool dependencies.
         has_repository_dependencies = util.string_as_bool( kwd.get( 'has_repository_dependencies', False ) )
         install_repository_dependencies = kwd.get( 'install_repository_dependencies', '' )
         # Every repository will be installed into the same tool panel section or all will be installed outside of any sections.
@@ -1061,7 +1061,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                               repository_clone_url,
                                                                               metadata,
                                                                               trans.model.ToolShedRepository.installation_status.NEW,
-                                                                              tool_shed_repository.installed_changeset_revision,
+                                                                              tool_shed_repository.changeset_revision,
                                                                               tool_shed_repository.owner,
                                                                               tool_shed_repository.dist_to_shed )
         ctx_rev = suc.get_ctx_rev( trans.app,
@@ -1320,7 +1320,6 @@ class AdminToolshed( AdminGalaxy ):
         missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
         repository_name = dependencies_for_repository_dict.get( 'name', None )
         repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
-
         if installed_repository_dependencies or missing_repository_dependencies:
             has_repository_dependencies = True
         else:

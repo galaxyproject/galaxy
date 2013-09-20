@@ -139,6 +139,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     # repository dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed.
                     if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
                         if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
+                                                                      trans.model.ToolShedRepository.installation_status.NEW,
                                                                       trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
                             # The current tool shed repository is not currently installed, so we can update it's record in the database.
                             can_update = True
