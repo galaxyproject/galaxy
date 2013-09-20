@@ -1,5 +1,5 @@
 /*
-    galaxy upload v1.0
+    galaxy upload
 */
 
 // dependencies
@@ -14,12 +14,20 @@ var GalaxyUpload = Backbone.View.extend(
     // button
     button_show : null,
     
-    // file counter
-    file_counter: 0,
+    // upload mod
+    uploadbox: null,
     
     // initialize
     initialize : function()
     {
+        // wait for galaxy history panel (workaround due to the use of iframes)
+        if (!Galaxy.currHistoryPanel)
+        {
+            var self = this;
+            window.setTimeout(function() { self.initialize() }, 500)
+            return;
+        }
+        
         // add activate icon
         var self = this;
         this.button_show = new mod_master.GalaxyMasterIcon (
@@ -37,87 +45,252 @@ var GalaxyUpload = Backbone.View.extend(
     // events
     events :
     {
-        'mouseover'      : 'event_mouseover',
-        'mouseleave'     : 'event_mouseleave'
+        'mouseover'         : 'event_mouseover',
+        'mouseleave'        : 'event_mouseleave'
     },
     
     // mouse over
     event_mouseover : function (e)
     {
-        $('#galaxy-upload-box').addClass('highlight');
     },
     
     // mouse left
     event_mouseleave : function (e)
     {
-        $('#galaxy-upload-box').removeClass('highlight');
     },
 
     // start
-    event_start : function(index, file, message)
+    event_announce : function(index, file, message)
     {
-        // make id
-        var id = '#galaxy-upload-file-' + index;
+        // hide info
+        this.uploadbox.info().hide();
         
-        // add tag
-        $('#galaxy-upload-box').append(this.template_file(id));
+        // make id
+        var id = '#upload-' + index;
+        
+        // add upload item
+        $(this.el).append(this.template_file(id));
+        
+        // scroll to bottom
+        $(this.el).scrollTop($(this.el).prop('scrollHeight'));
+        
+        // access upload item
+        var it = this.get_upload_item(index);
+        
+        // fade in
+        it.fadeIn();
         
         // update title
-        $('#galaxy-upload-file-' + index).find('.title').html(file.name);
+        it.find('.title').html(file.name);
         
+        // configure select field
+        it.find('#extension').select2(
+        {
+            placeholder: 'Auto-detect',
+            width: 'copy',
+            ajax: {
+                url: "http://www.weighttraining.com/sm/search",
+                dataType: 'jsonp',
+                quietMillis: 100,
+                data: function(term, page)
+                {
+                    return {
+                        types: ["exercise"],
+                        limit: -1,
+                        term: term
+                    };
+                },
+                results: function(data, page)
+                {
+                    return { results: data.results.exercise }
+                }
+            },
+            formatResult: function(exercise)
+            {
+                return "<div class='select2-user-result'>" + exercise.term + "</div>";
+            },
+            formatSelection: function(exercise)
+            {
+                return exercise.term;
+            },
+            initSelection : function (element, callback)
+            {
+                var elementText = $(element).attr('data-init-text');
+                callback({"term":elementText});
+            }
+        });
+        
+        // add functionality to remove button
+        var self = this;
+        it.find('.remove').on('click', function() { self.event_remove (index) });
+    
         // initialize progress
         this.event_progress(index, file, 0);
         
-        // update counter
-        this.file_counter++;
-        this.refresh();
+        // update button status
+        this.modal.enable('Upload');
+        this.modal.enable('Reset');
+    },
+    
+    // start
+    event_initialize : function(index, file, message)
+    {
+        // update on screen counter
+        this.button_show.number(message);
+    
+        // get element
+        var it = this.get_upload_item(index);
+        
+        // read in configuration
+        var data = {
+            source          : "upload",
+            space_to_tabs   : it.find('#space_to_tabs').is(':checked'),
+            extension       : it.find('#extension').val()
+        }
+        
+        // return additional data to be send with file
+        return data;
     },
     
     // progress
     event_progress : function(index, file, message)
     {
-        // get progress bar
-        var el = $('#galaxy-upload-file-' + index);
+        // get element
+        var it = this.get_upload_item(index);
         
         // get value
         var percentage = parseInt(message);
         
         // update progress
-        el.find('.progress').css({ width : percentage + '%' });
+        it.find('.progress-bar').css({ width : percentage + '%' });
         
         // update info
-        el.find('.info').html(percentage + '% of ' + this.size_to_string (file.size));
+        it.find('.info').html(percentage + '% of ' + this.size_to_string (file.size));
     },
     
     // end
     event_success : function(index, file, message)
-    {
+    {        
+        // get element
+        var it = this.get_upload_item(index);
+        
+        // update progress frame
+        it.addClass('panel-success');
+        it.removeClass('panel-default');
+        
         // update galaxy history
         Galaxy.currHistoryPanel.refresh();
         
-        // update counter
-        this.file_counter--;
-        this.refresh();
+        // make sure progress is shown correctly
+        this.event_progress(index, file, 100);
+        
+        // update on screen counter
+        this.button_show.number('');
     },
     
     // end
     event_error : function(index, file, message)
     {
-        // get file box
-        var el = $('#galaxy-upload-file-' + index);
+        // get element
+        var it = this.get_upload_item(index);
         
         // update progress frame
-        el.find('.progress-frame').addClass('failed');
+        it.addClass('panel-danger');
+        it.removeClass('panel-default');
         
-        // update error message
-        el.find('.error').html("<strong>Failed:</strong> " + message);
-
-        // update progress
+        // remove progress bar
+        it.find('.progress').remove();
+        
+        // write error message
+        it.find('.error').html('<strong>Failed:</strong> ' + message);
+        
+        // make sure progress is shown correctly
         this.event_progress(index, file, 0);
         
-        // update counter
-        this.file_counter--;
-        this.refresh();
+        // update on screen counter
+        this.button_show.number('');
+    },
+    
+    // start upload process
+    event_upload : function()
+    {
+        // hide configuration
+        $(this.el).find('.panel-body').hide();
+        
+        // switch icon
+        $(this.el).find('.remove').each(function()
+        {
+            $(this).removeClass('fa-icon-trash');
+            $(this).addClass('fa-icon-caret-down');
+        });
+        
+        // update button status
+        this.modal.disable('Upload');
+        
+        // configure url
+        var current_history = Galaxy.currHistoryPanel.model.get('id');
+        this.uploadbox.configure({url : galaxy_config.root + "api/histories/" + current_history + "/contents"});
+        
+        // initiate upload procedure in plugin
+        this.uploadbox.upload();
+    },
+    
+    // remove all
+    event_reset : function()
+    {
+        // remove from screen
+        var panels = $(this.el).find('.panel');
+        var self = this;
+        panels.fadeOut({complete: function()
+        {
+            // remove panels
+            panels.remove();
+                    
+            // show on screen info
+            self.uploadbox.info().fadeIn();
+        }});
+        
+        // update button status
+        this.modal.disable('Upload');
+        this.modal.disable('Reset');
+        
+        // remove from queue
+        this.uploadbox.reset();
+    },
+    
+    // remove item from upload list
+    event_remove : function(index)
+    {
+        // remove
+        var self = this;
+        var it = this.get_upload_item(index);
+        
+        // fade out and update button status
+        it.fadeOut({complete: function()
+        {
+            // remove from screen
+            it.remove();
+        
+            // remove from queue
+            self.uploadbox.remove(index);
+        
+            // update reset button
+            if ($(self.el).find('.panel').length > 0)
+                self.modal.enable('Reset');
+            else {
+                // disable reset button
+                self.modal.disable('Reset');
+                
+                // show on screen info
+                self.uploadbox.info().fadeIn();
+            }
+            
+            // update upload button
+            if (self.uploadbox.length() > 0)
+                self.modal.enable('Upload');
+            else
+                self.modal.disable('Upload');
+        }});
     },
     
     // show/hide upload frame
@@ -125,14 +298,6 @@ var GalaxyUpload = Backbone.View.extend(
     {
         // prevent default
         e.preventDefault();
-        
-        // wait for galaxy history panel (workaround due to the use of iframes)
-        if (!Galaxy.currHistoryPanel)
-        {
-            var self = this;
-            window.setTimeout(function() { self.event_show(e) }, 200)
-            return;
-        }
         
         // create modal
         if (!this.modal)
@@ -142,44 +307,45 @@ var GalaxyUpload = Backbone.View.extend(
             this.modal = new mod_modal.GalaxyModal(
             {
                 title   : 'Upload files from your local drive',
-                body    : this.template(),
+                body    : this.template('upload-box'),
                 buttons : {
-                    'Close' : function() {self.modal.hide()}
+                    'Select' : function() {self.uploadbox.select()},
+                    'Upload' : function() {self.event_upload()},
+                    'Reset'  : function() {self.event_reset()},
+                    'Close'  : function() {self.modal.hide()}
                 }
             });
         
-            // get current history
-            var current_history = Galaxy.currHistoryPanel.model.get('id');
-        
+            // set element
+            this.setElement('#upload-box');
+            
             // file upload
             var self = this;
-            $('#galaxy-upload-box').uploadbox(
+            this.uploadbox = this.$el.uploadbox(
             {
-                url             : galaxy_config.root + "api/histories/" + current_history + "/contents",
                 dragover        : self.event_mouseover,
                 dragleave       : self.event_mouseleave,
-                start           : function(index, file, message) { self.event_start(index, file, message) },
+                announce        : function(index, file, message) { self.event_announce(index, file, message) },
+                initialize      : function(index, file, message) { return self.event_initialize(index, file, message) },
                 success         : function(index, file, message) { self.event_success(index, file, message) },
                 progress        : function(index, file, message) { self.event_progress(index, file, message) },
                 error           : function(index, file, message) { self.event_error(index, file, message) },
-                data            : {source : "upload"}
             });
             
-            // set element
-            this.setElement('#galaxy-upload-box');
+            // update button status
+            this.modal.disable('Upload');
+            this.modal.disable('Reset');
         }
-        
+                
         // show modal
         this.modal.show();
     },
 
-    // update counter
-    refresh: function ()
+    // get upload item
+    get_upload_item: function(index)
     {
-        if (this.file_counter > 0)
-            this.button_show.number(this.file_counter);
-        else
-            this.button_show.number('');
+        // get element
+        return $(this.el).find('#upload-' + index);
     },
 
     // to string
@@ -197,21 +363,32 @@ var GalaxyUpload = Backbone.View.extend(
     },
 
     // load html template
-    template: function()
+    template: function(id)
     {
-        return  '<form id="galaxy-upload-box" class="galaxy-upload-box"></form>';
+        return  '<div id="' + id + '" class="upload-box"></div>';
     },
     
     // load html template
     template_file: function(id)
     {
-        return  '<div id="' + id.substr(1) + '" class="file corner-soft shadow">' +
-                    '<div class="title"></div>' +
-                    '<div class="error"></div>' +
-                    '<div class="progress-frame corner-soft">' +
-                        '<div class="progress"></div>' +
+        return  '<div id="' + id.substr(1) + '" class="panel panel-default">' +
+                    '<div class="panel-heading">' +
+                        '<h5 class="title"></h5>' +
+                        '<h5 class="info"></h5>' +
+                        '<div class="remove fa-icon-trash"></div>' +
                     '</div>' +
-                    '<div class="info"></div>' +
+                    '<div class="panel-body">' +
+                        '<div class="menu">' +
+                            //'<input id="extension" type="hidden" width="10px"/>&nbsp;' +
+                            '<span><input id="space_to_tabs" type="checkbox">Convert spaces to tabs</input></span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="panel-footer">' +
+                        '<div class="progress">' +
+                            '<div class="progress-bar progress-bar-success"></div>' +
+                        '</div>' +
+                        '<h6 class="error"></h6>' +
+                    '</div>' +
                 '</div>';
     }
 });
