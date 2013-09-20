@@ -168,16 +168,17 @@ $.extend( Modal.prototype, {
             this.$overlay.show();
             this.$dialog.show();
             this.$overlay.addClass("in");
-            // Fix min-width so that modal cannot shrink considerably if 
-            // new content is loaded.
+            // Fix min-width so that modal cannot shrink considerably if new content is loaded.
             this.$body.css( "min-width", this.$body.width() );
-            // Set max-height so that modal does not exceed window size.
-            // FIXME: this could perhaps be handled better using a container for the modal 
-            // header-body-footer and setting max-height for the container.
+            // Set max-height so that modal does not exceed window size and is in middle of page.
+            // TODO: this could perhaps be handled better using CSS.
             this.$body.css( "max-height", 
-                            // 2* to provide buffer between bottom of modal and bottom of page.
-                            $(window).height() - 2 * this.$dialog.offset().top - 
-                            this.$footer.outerHeight() - this.$header.outerHeight());
+                            $(window).height() - 
+                            this.$footer.outerHeight() - 
+                            this.$header.outerHeight() -
+                            parseInt( this.$dialog.css( "padding-top" ), 10 ) - 
+                            parseInt( this.$dialog.css( "padding-bottom" ), 10 ) 
+                            );
         }
         // Callback on init
         if ( callback ) {
