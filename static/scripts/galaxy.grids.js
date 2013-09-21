@@ -472,7 +472,7 @@ function update_grid(maintain_page_links) {
         go_to_URL();
         return;
     }
-    
+
     // If there's an operation, do POST; otherwise, do GET.
     var method = (grid.get('operation') ? "POST" : "GET" );
     $('.loading-elt-overlay').show(); // Show overlay to indicate loading and prevent user actions.

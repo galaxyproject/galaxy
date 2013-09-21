@@ -77,13 +77,25 @@ var GalaxyModal = Backbone.View.extend(
             // link functions
             $.each(options.buttons, function(name, value)
             {
-                 footer.append($('<button></button>').text(name).click(value)).append(" ");
+                 footer.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
             });
         } else
             // default close button
             footer.append($('<button></button>').text('Close').click(function() { self.hide() })).append(" ");
     },
     
+    // enable buttons
+    enable: function(name)
+    {
+        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', false);
+    },
+
+    // disable buttons
+    disable: function(name)
+    {
+        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', true);
+    },
+        
     /*
         HTML TEMPLATES
     */

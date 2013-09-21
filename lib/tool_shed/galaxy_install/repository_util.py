@@ -234,10 +234,10 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
         else:
             includes_tools = False
         includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-        if 'repository_dependencies' in metadata:
-            has_repository_dependencies = True
-        else:
-            has_repository_dependencies = False
+        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+        repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+            suc.get_repository_dependency_types( repository_dependencies )
         if 'tool_dependencies' in metadata:
             includes_tool_dependencies = True
         else:
@@ -246,6 +246,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
         # Here's where we may have to handle enhancements to the callers. See above comment.
         includes_tools = False
         has_repository_dependencies = False
+        has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
@@ -259,7 +260,8 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
                                             repository_metadata=repository_metadata,
                                             tool_dependencies=None,
                                             repository_dependencies=None )
-    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies
+    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_components_for_installation( encoded_tsr_id, encoded_tsr_ids, repo_info_dicts, tool_panel_section_keys ):
     """
@@ -311,6 +313,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
             includes_tool_dependencies = update_dict.get( 'includes_tool_dependencies', False )
             includes_workflows = update_dict.get( 'includes_workflows', False )
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
+            has_repository_dependencies_only_if_compiling_contained_td = update_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
             changeset_revision = update_dict.get( 'changeset_revision', None )
             ctx_rev = update_dict.get( 'ctx_rev', None )
         changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
@@ -320,6 +323,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
         changeset_revision_dict[ 'includes_workflows' ] = includes_workflows
         changeset_revision_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+        changeset_revision_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = has_repository_dependencies_only_if_compiling_contained_td
         changeset_revision_dict[ 'changeset_revision' ] = changeset_revision
         changeset_revision_dict[ 'ctx_rev' ] = ctx_rev
     except Exception, e:
@@ -331,6 +335,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_tool_dependencies' ] = False
         changeset_revision_dict[ 'includes_workflows' ] = False
         changeset_revision_dict[ 'has_repository_dependencies' ] = False
+        changeset_revision_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = False
         changeset_revision_dict[ 'changeset_revision' ] = None
         changeset_revision_dict[ 'ctx_rev' ] = None
     return changeset_revision_dict

@@ -868,6 +868,31 @@ def get_repository_by_name_and_owner( app, name, owner ):
                          .first()
     return None
 
+def get_repository_dependency_types( repository_dependencies ):
+    """
+    Inspect the received list of repository_dependencies tuples and return boolean values for has_repository_dependencies and
+    has_repository_dependencies_only_if_compiling_contained_td.
+    """
+    # Set has_repository_dependencies, which will be True only if at least one repository_dependency is defined with the value of
+    # only_if_compiling_contained_td as False.
+    has_repository_dependencies = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if not asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies = True
+            break
+    # Set has_repository_dependencies_only_if_compiling_contained_td, which will be True only if at least one repository_dependency is
+    # defined with the value of only_if_compiling_contained_td as True.
+    has_repository_dependencies_only_if_compiling_contained_td = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies_only_if_compiling_contained_td = True
+            break
+    return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
+
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
@@ -1389,14 +1414,23 @@ def remove_dir( dir ):
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
-    Handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
-    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
-    that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
+    Find out if a repository is already installed into Galaxy - there are several scenarios where this is necessary.  For example, this method
+    will handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
+    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one that was
+    previously installed.  We'll look in the database instead of on disk since the repository may be currently uninstalled.
     """
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-    # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
+    # See if we can locate the repository using the value of changeset_revision.
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+                                                                                                     tool_shed,
+                                                                                                     repository_name,
+                                                                                                     repository_owner,
+                                                                                                     changeset_revision )
+    if tool_shed_repository:
+        return tool_shed_repository, changeset_revision
+    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
@@ -1410,14 +1444,14 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                                              repository_name,
                                                                                                              repository_owner,
                                                                                                              previous_changeset_revision )
-            if tool_shed_repository and tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.NEW ]:
+            if tool_shed_repository:
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
 def reset_previously_installed_repository( trans, repository ):
     """
     Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a
-    status of INSTALLED, so all atributes will be set to the default (NEW( state.  This will enable the repository to be freshly installed.
+    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
     """
     repository.deleted = False
     repository.tool_shed_status = None

@@ -280,13 +280,16 @@ def compare_workflows( trans, ancestor_workflows, current_workflows ):
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     """Create or update a repository_metadatqa record in the tool shed."""
     has_repository_dependencies = False
+    has_repository_dependencies_only_if_compiling_contained_td = False
     includes_datatypes = False
     includes_tools = False
     includes_tool_dependencies = False
     includes_workflows = False
     if metadata_dict:
-        if 'repository_dependencies' in metadata_dict:
-            has_repository_dependencies = True
+        repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+        repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+            suc.get_repository_dependency_types( repository_dependencies )
         if 'datatypes' in metadata_dict:
             includes_datatypes = True
         if 'tools' in metadata_dict:
@@ -295,7 +298,11 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
             includes_tool_dependencies = True
         if 'workflows' in metadata_dict:
             includes_workflows = True
-    downloadable = has_repository_dependencies or includes_datatypes or includes_tools or includes_tool_dependencies or includes_workflows
+    if has_repository_dependencies or has_repository_dependencies_only_if_compiling_contained_td or includes_datatypes or \
+        includes_tools or includes_tool_dependencies or includes_workflows:
+        downloadable = True
+    else:
+        downloadable = False
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         # A repository metadata record already exists with the received changeset_revision, so we don't need to check the skip_tool_test table.
@@ -1851,10 +1858,13 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     repository_metadata.includes_datatypes = True
                 else:
                     repository_metadata.includes_datatypes = False
-                if 'repository_dependencies' in metadata_dict:
-                    repository_metadata.has_repository_dependencies = True
-                else:
-                    repository_metadata.has_repository_dependencies = False
+                # We don't store information about the special type of repository dependency that is needed only for compiling a tool dependency
+                # defined for the dependent repository.
+                repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+                repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+                    suc.get_repository_dependency_types( repository_dependencies )
+                repository_metadata.has_repository_dependencies = has_repository_dependencies
                 if 'tool_dependencies' in metadata_dict:
                     repository_metadata.includes_tool_dependencies = True
                 else:

@@ -198,6 +198,7 @@ class DiskObjectStore(ObjectStore):
         super(DiskObjectStore, self).__init__(config, file_path=file_path, extra_dirs=extra_dirs)
         self.file_path = file_path or config.file_path
         self.config = config
+        self.check_old_style = config.object_store_check_old_style
         self.extra_dirs['job_work'] = config.job_working_directory
         self.extra_dirs['temp'] = config.new_file_path
         if extra_dirs is not None:
@@ -264,14 +265,13 @@ class DiskObjectStore(ObjectStore):
         return os.path.abspath(path)
 
     def exists(self, obj, **kwargs):
-        path = self._construct_path(obj, old_style=True, **kwargs)
-        # For backward compatibility, check root path first; otherwise, construct
-        # and check hashed path
-        if os.path.exists(path):
-            return True
-        else:
-            path = self._construct_path(obj, **kwargs)
-            return os.path.exists(path)
+        if self.check_old_style:
+            path = self._construct_path(obj, old_style=True, **kwargs)
+            # For backward compatibility, check root path first; otherwise, construct
+            # and check hashed path
+            if os.path.exists(path):
+                return True
+        return os.path.exists(self._construct_path(obj, **kwargs))
 
     def create(self, obj, **kwargs):
         if not self.exists(obj, **kwargs):
@@ -320,13 +320,13 @@ class DiskObjectStore(ObjectStore):
         return content
 
     def get_filename(self, obj, **kwargs):
-        path = self._construct_path(obj, old_style=True, **kwargs)
-        # For backward compatibility, check root path first; otherwise, construct
-        # and return hashed path
-        if os.path.exists(path):
-            return path
-        else:
-            return self._construct_path(obj, **kwargs)
+        if self.check_old_style:
+            path = self._construct_path(obj, old_style=True, **kwargs)
+            # For backward compatibility, check root path first; otherwise, construct
+            # and return hashed path
+            if os.path.exists(path):
+                return path
+        return self._construct_path(obj, **kwargs)
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """ `create` parameter is not used in this implementation """
