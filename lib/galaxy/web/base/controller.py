@@ -587,8 +587,10 @@ class UsesHistoryDatasetAssociationMixin:
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-
-        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        if not can_access_hda:
+            return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
         # ---- return here if deleted AND purged OR can't access
@@ -633,6 +635,18 @@ class UsesHistoryDatasetAssociationMixin:
                 hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
+
+    def get_inaccessible_hda_dict( self, trans, hda ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'state'     : hda.state,
+            'deleted'   : hda.deleted,
+            'visible'   : hda.visible,
+            'accessible': False
+        })
 
     def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
         return trans.security.encode_dict_ids({
