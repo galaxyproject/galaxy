@@ -1683,7 +1683,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
             rval += child.get_disk_usage( user )
         return rval
 
-    def to_dict( self, view='collection' ):
+    def to_dict( self, view='collection', expose_dataset_path=False ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -1716,6 +1716,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
+                # only when explicitly set: fetching filepaths can be expensive
+                if not expose_dataset_path:
+                    continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
             elif val == None and hasattr( hda.datatype, name ):
