@@ -19,11 +19,10 @@
         progress        : function() {},
         success         : function() {},
         error           : function(index, file, message) { alert(message); },
+        complete        : function() {},
         error_browser   : "Your browser does not support drag-and-drop file uploads.",
         error_filesize  : "This file is too large (>250MB). Please use an FTP client to upload it.",
-        error_default   : "Please make sure the file is available.",
-        text_default    : "Drag&drop files into this box or click 'Select' to select files!",
-        text_degrade    : "Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+."
+        error_default   : "Please make sure the file is available."
     }
 
     // options
@@ -32,7 +31,7 @@
     // file queue
     var queue = {};
   
-    // counter for file being currently processed
+    // queue index counter
     var queue_index = 0;
   
     // queue length
@@ -50,21 +49,11 @@
         // parse options
         opts = $.extend({}, default_opts, options);
   
-        // compatibility
-        var mode = window.File && window.FileReader && window.FormData && window.XMLHttpRequest;
-  
         // element
         el = this;
   
         // append upload button
         el.append('<input id="uploadbox_input" type="file" style="display: none" multiple>');
-        el.append('<div id="uploadbox_info"></div>');
-  
-        // set info text
-        if (mode)
-            el.find('#uploadbox_info').html(opts.text_default);
-        else
-            el.find('#uploadbox_info').html(opts.text_degrade);
   
         // attach events
         el.on('drop', drop);
@@ -120,11 +109,15 @@
         // respond to an upload request
         function add(files)
         {
+            // only allow adding file if current batch is complete
+            if (queue_status)
+                return;
+  
             // add new files to queue
             for (var i = 0; i < files.length; i++)
             {
                 // new identifier
-                var index = String(++queue_index);
+                var index = String(queue_index++);
   
                 // add to queue
                 queue[index] = files[i];
@@ -153,6 +146,15 @@
         // process an upload, recursive
         function process()
         {
+            // validate
+            if (queue_length == 0)
+            {
+                queue_status = false;
+                opts.complete();
+                return;
+            } else
+                queue_status = true;
+  
             // get an identifier from the queue
             var index = -1;
             for (var key in queue)
@@ -161,10 +163,6 @@
                 break;
             }
   
-            // validate
-            if (queue_length == 0)
-                return;
-  
             // get current file from queue
             var file = queue[index];
   
@@ -172,7 +170,7 @@
             remove(index)
   
             // start
-            var data = opts.initialize(index, file, length);
+            var data = opts.initialize(index, file);
   
             // add file to queue
             try
@@ -312,12 +310,6 @@
                 process();
         }
   
-        // current queue length
-        function length()
-        {
-            return queue_length;
-        }
-  
         // set options
         function configure(options)
         {
@@ -328,21 +320,20 @@
             return opts;
         }
   
-        // visibility of on screen information
-        function info()
+        // verify browser compatibility
+        function compatible()
         {
-            return el.find('#uploadbox_info');
+            return window.File && window.FileReader && window.FormData && window.XMLHttpRequest;
         }
   
         // export functions
         return {
-            'select'    : select,
-            'remove'    : remove,
-            'upload'    : upload,
-            'reset'     : reset,
-            'length'    : length,
-            'configure' : configure,
-            'info'      : info
+            'select'        : select,
+            'remove'        : remove,
+            'upload'        : upload,
+            'reset'         : reset,
+            'configure'     : configure,
+            'compatible'    : compatible
         };
     }
 })(jQuery);
