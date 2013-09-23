@@ -84,6 +84,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             tool = job_wrapper.tool
             config_files = job_wrapper.extra_filenames
             job_id = lwr_submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory)
+            log.info("lwr job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )
         except:

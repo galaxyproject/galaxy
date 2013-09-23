@@ -115,6 +115,10 @@ class TransferTracker(object):
             # just transfer.
             action = ('transfer', )
         else:
+            if not exists(path):
+                message = "handle_tranfer called on non-existent file - [%s]" % path
+                log.warn(message)
+                raise Exception(message)
             action = self.__action(path, type)
 
         if action[0] in ['transfer', 'copy']:
@@ -229,7 +233,12 @@ class FileStager(object):
 
     def __upload_input_file(self, input_file):
         if self.job_inputs.path_referenced(input_file):
-            self.transfer_tracker.handle_transfer(input_file, 'input')
+            if exists(input_file):
+                self.transfer_tracker.handle_transfer(input_file, 'input')
+            else:
+                message = "LWR: __upload_input_file called on empty or missing dataset." + \
+                          " So such file: [%s]" % input_file
+                log.debug(message)
 
     def __upload_input_extra_files(self, input_file):
         # TODO: Determine if this is object store safe and what needs to be
