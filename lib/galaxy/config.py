@@ -136,8 +136,16 @@ class Configuration( object ):
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
-        #  Get the disposable email domains blacklist file
-        self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
+        #  Get the disposable email domains blacklist file and its contents
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
+        if self.blacklist_location is not None:
+            self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
+            try:
+               with open(self.blacklist_file) as blacklist:
+                   self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
+            except IOError:
+                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )                 
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )

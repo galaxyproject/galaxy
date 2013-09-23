@@ -94,7 +94,7 @@ class JobHandlerQueue( object ):
                                              | ( model.Job.state == model.Job.states.RUNNING ) \
                                              | ( model.Job.state == model.Job.states.QUEUED ) ) \
                                            & ( model.Job.handler == self.app.config.server_name ) \
-                                           & or_( ( model.Job.user_id == None ),( model.User.active == True ) ) ).all()
+                                           & or_( ( model.Job.user_id is None ),( model.User.active is True ) ) ).all()
         else:
             jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                               .filter( ( ( model.Job.state == model.Job.states.NEW ) \
@@ -175,23 +175,23 @@ class JobHandlerQueue( object ):
                     .join(model.Dataset) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
                                  or_((model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA),
-                                     (model.HistoryDatasetAssociation.deleted == True ),
+                                     (model.HistoryDatasetAssociation.deleted is True ),
                                      (model.Dataset.state != model.Dataset.states.OK ),
-                                     (model.Dataset.deleted == True)))).subquery()
+                                     (model.Dataset.deleted is True)))).subquery()
             ldda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
                     .join(model.JobToInputLibraryDatasetAssociation) \
                     .join(model.LibraryDatasetDatasetAssociation) \
                     .join(model.Dataset) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
                                  or_((model.LibraryDatasetDatasetAssociation._state != None),
-                                     (model.LibraryDatasetDatasetAssociation.deleted == True),
+                                     (model.LibraryDatasetDatasetAssociation.deleted is True),
                                      (model.Dataset.state != model.Dataset.states.OK),
-                                     (model.Dataset.deleted == True)))).subquery()
+                                     (model.Dataset.deleted is True)))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                         .outerjoin( model.User ) \
                         .filter(and_((model.Job.state == model.Job.states.NEW),
-                                    or_((model.Job.user_id == None),(model.User.active == True)),
+                                    or_((model.Job.user_id is None),(model.User.active is True)),
                                      (model.Job.handler == self.app.config.server_name),
                                      ~model.Job.table.c.id.in_(hda_not_ready),
                                      ~model.Job.table.c.id.in_(ldda_not_ready))) \

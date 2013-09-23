@@ -546,7 +546,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         #  Activation is forced and the user is not active yet. Check the grace period.
         activation_grace_period = trans.app.config.activation_grace_period
         #  Default value is 3 hours.
-        if activation_grace_period == None:
+        if activation_grace_period is None:
             activation_grace_period = 3
         delta = timedelta( hours = int( activation_grace_period ) )
         time_difference = datetime.utcnow() - create_time
@@ -766,7 +766,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         """
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         activation_token = user.activation_token
-        if activation_token == None:
+        if activation_token is None:
             activation_token =  hash_util.new_secure_hash( str( random.getrandbits( 256 ) ) )
             user.activation_token = activation_token
             trans.sa_session.add( user )
@@ -782,7 +782,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         email = urllib.unquote( params.get( 'email', None ) )
         activation_token = params.get( 'activation_token', None )
 
-        if email == None or activation_token == None:
+        if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
             return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
         else:
