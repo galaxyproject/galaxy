@@ -1245,9 +1245,10 @@ input[type="submit"].disabled,button.disabled,input[type="submit"][disabled],but
 .errormessage .alert-link,.warningmessage .alert-link,.donemessage .alert-link,.infomessage .alert-link,.errormessagesmall .alert-link,.warningmessagesmall .alert-link,.donemessagesmall .alert-link,.infomessagesmall .alert-link{font-weight:bold}
 .errormessage>p,.warningmessage>p,.donemessage>p,.infomessage>p,.errormessagesmall>p,.warningmessagesmall>p,.donemessagesmall>p,.infomessagesmall>p,.errormessage>ul,.warningmessage>ul,.donemessage>ul,.infomessage>ul,.errormessagesmall>ul,.warningmessagesmall>ul,.donemessagesmall>ul,.infomessagesmall>ul{margin-bottom:0}
 .errormessage>p+p,.warningmessage>p+p,.donemessage>p+p,.infomessage>p+p,.errormessagesmall>p+p,.warningmessagesmall>p+p,.donemessagesmall>p+p,.infomessagesmall>p+p{margin-top:5px}
-.errormessage{background-color:#f9c7c5;border-color:#dd1c15;color:#7e2a27}.errormessage hr{border-top-color:#c61913}
-.errormessage .alert-link{color:#571d1b}
-.warningmessage,.warningmessagesmall{background-image:url(warn_small.png)}
+.errormessage,.errormessagesmall{background-color:#f9c7c5;border-color:#dd1c15;color:#7e2a27}.errormessage hr,.errormessagesmall hr{border-top-color:#c61913}
+.errormessage .alert-link,.errormessagesmall .alert-link{color:#571d1b}
+.warningmessage,.warningmessagesmall{background-color:#fce1ba;border-color:#e28709;color:#80571e;background-image:url(warn_small.png)}.warningmessage hr,.warningmessagesmall hr{border-top-color:#c97908}
+.warningmessage .alert-link,.warningmessagesmall .alert-link{color:#573b14}
 .donemessage,.donemessagesmall{background-color:#aff1af;border-color:#20b420;color:#295f29;background-image:url(ok_small.png)}.donemessage hr,.donemessagesmall hr{border-top-color:#1c9e1c}
 .donemessage .alert-link,.donemessagesmall .alert-link{color:#193b19}
 .infomessage,.infomessagesmall{background-color:#a6e4f7;border-color:#1197c0;color:#1f5566;background-image:url(info_small.png)}.infomessage hr,.infomessagesmall hr{border-top-color:#0f85a8}
