@@ -209,6 +209,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # distributed, hierarchical)
 #object_store = disk
 
+# *Extremely* old Galaxy instances created datasets at the root of the
+# `file_path` defined above.  If your Galaxy instance has datasets at the root
+# (instead of in directories composed by hashing the dataset id), you should
+# enable this option to allow Galaxy to find them.
+#object_store_check_old_style = False
+
 # Credentials used by certain (s3, swift) object store backends
 #os_access_key = <your cloud object store access key>
 #os_secret_key = <your cloud object store secret key>

@@ -193,7 +193,8 @@ def app_factory( global_conf, **kwargs ):
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=app.config.plugin_frameworks, **kwargs )
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
+        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
         pack_scripts()
     # Close any pooled database connections before forking
@@ -362,12 +363,13 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
 
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
-    for static_serving_framework in ( framework for framework in plugin_frameworks if framework.serves_static ):
-        # invert control to each plugin for finding their own static dirs
-        for plugin_url, plugin_static_path in static_serving_framework.get_static_urls_and_paths():
-            plugin_url = '/plugins/' + plugin_url
-            urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
-            log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
+    for framework in plugin_frameworks:
+        if framework and framework.serves_static:
+            # invert control to each plugin for finding their own static dirs
+            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
+                plugin_url = '/plugins/' + plugin_url
+                urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
+                log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
 
     # URL mapper becomes the root webapp
     return urlmap

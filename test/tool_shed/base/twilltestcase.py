@@ -114,7 +114,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #                           version=section_version )
         # This dict is appended to tool_panel_section_metadata[ tool_guid ]
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
-        assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
+        assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
     def check_installed_repository_tool_dependencies( self, 

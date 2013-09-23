@@ -1,4 +1,3 @@
-
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -180,7 +179,7 @@
             ${repository_type | h}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
-                    This repository's type cannot be changed because it's contents are valid only for it's current type or it has been cloned.
+                    This repository's type cannot be changed because its contents are valid only for its current type or it has been cloned.
                 </div>
             %endif
         %else:
@@ -439,7 +438,10 @@
 </%def>
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( failed_test.id ) %>
+    <% 
+        from tool_shed.util.shed_util_common import to_html_string
+        encoded_id = trans.security.encode_id( failed_test.id ) 
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
@@ -450,8 +452,8 @@
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
-                <tr><td><b>Stderr:</b> <br/>${failed_test.stderr | h}</td></tr>
-                <tr><td><b>Traceback:</b> <br/>${failed_test.traceback | h}</td></tr>
+                <tr><td><b>Stderr:</b> <br/>${ to_html_string( failed_test.stderr ) }</td></tr>
+                <tr><td><b>Traceback:</b> <br/>${ to_html_string( failed_test.traceback ) }</td></tr>
             </table>
         </td>
     </tr>

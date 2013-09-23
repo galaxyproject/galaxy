@@ -394,7 +394,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                         if not binary_installed:
                                             print 'Binary installation did not occur, so proceeding with install and compile recipe.'
                                             # Make sure to reset for installation if attempt at binary installation resulted in an error.
-                                            if tool_dependency.status != app.model.ToolDependency.installation_status.NEW:
+                                            if tool_dependency.status != app.model.ToolDependency.installation_status.NEVER_INSTALLED:
                                                 removed, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
                                             install_via_fabric( app, 
                                                                 tool_dependency, 

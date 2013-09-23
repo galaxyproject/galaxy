@@ -32,7 +32,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Create return value.
         try:
-            return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
+            return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster)
         except Exception, exc:
             log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
             trans.response.status = 500
@@ -86,6 +86,17 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         for k, v in payload.iteritems():
             if k.startswith("files_"):
                 inputs[k] = v
+        
+        #for inputs that are coming from the Library, copy them into the history
+        input_patch = {}
+        for k, v in inputs.iteritems():
+            if  isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(v['id']) )
+                if trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset ):
+                    input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
+
+        for k, v in input_patch.iteritems():
+            inputs[k] = v
 
         # HACK: add run button so that tool.handle_input will run tool.
         inputs['runtool_btn'] = 'Execute'

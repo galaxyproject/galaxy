@@ -209,6 +209,7 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
         self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
@@ -294,9 +295,7 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # PLUGINS:
-        self.plugin_frameworks = []
-        # visualization framework
+        # visualization plugin framework
         self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property
