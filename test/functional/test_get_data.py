@@ -22,7 +22,7 @@ class UploadData( TwillTestCase ):
         """
         # in order to remove a lot of boiler plate - and not have cascading errors
         history = get_latest_history_for_user( user )
-        self.delete_current_history()
+        self.delete_history( id=self.security.encode_id( history.id ) )
         self.is_history_empty()
         return get_latest_history_for_user( user )
 
