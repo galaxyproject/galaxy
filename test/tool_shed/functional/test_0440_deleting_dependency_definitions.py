@@ -74,7 +74,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
                                          description='Description of Deleted Dependency Definitions category for test 0440' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'column_maker_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>column_maker_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=column_repository_name, 
                                                     description=column_repository_description, 
                                                     long_description=column_repository_long_description, 
@@ -99,7 +99,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'convert_chars_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>convert_chars_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=convert_repository_name, 
                                                     description=convert_repository_description, 
                                                     long_description=convert_repository_long_description, 
@@ -182,7 +182,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_package_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_package_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_package_repository_name, 
                                                     description=bwa_package_repository_description, 
                                                     long_description=bwa_package_repository_long_description, 
@@ -208,7 +208,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_base_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_base_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_base_repository_name, 
                                                     description=bwa_base_repository_description, 
                                                     long_description=bwa_base_repository_long_description, 
@@ -291,7 +291,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_tool_dependency_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_tool_dependency_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_tool_dependency_repository_name, 
                                                     description=bwa_tool_dependency_repository_description, 
                                                     long_description=bwa_tool_dependency_repository_long_description, 

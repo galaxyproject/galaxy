@@ -63,7 +63,7 @@ class Configuration( object ):
         elif 'tool_config_files' in kwargs:
             tcf = kwargs[ 'tool_config_files' ]
         else:
-            tcf = 'tool_conf.xml'
+            tcf = 'tool_conf.xml,shed_tool_conf.xml'
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )

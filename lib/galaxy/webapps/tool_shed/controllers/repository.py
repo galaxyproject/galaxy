@@ -973,9 +973,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         flush_needed = True
                 if flush_needed:
                     trans.sa_session.flush()
-                message = "Repository '%s' has been created." % repository.name
+                message = "Repository <b>%s</b> has been created." % str( repository.name )
                 trans.response.send_redirect( web.url_for( controller='repository',
-                                                           action='view_repository',
+                                                           action='manage_repository',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans )
