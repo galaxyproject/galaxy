@@ -251,7 +251,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             var self = this;
             displayBtnData.on_click = function(){
                 Galaxy.frame_manager.frame_new({
-                    title   : "Data Viewer",
+                    title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
                     location: "center",
                     content : self.urls.display

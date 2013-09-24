@@ -163,22 +163,7 @@ var GalaxyUpload = Backbone.View.extend(
     
     // success
     event_success : function(index, file, message)
-    {        
-        // get element
-        var it = this.get_upload_item(index);
-        
-        // update progress frame
-        it.addClass('panel-success');
-        it.removeClass('panel-default');
-        
-        // update icon
-        var sy = it.find('.symbol');
-        sy.addClass(this.state.done);
-        
-        // remove spin
-        sy.removeClass('fa-icon-spin');
-        sy.removeClass('fa-icon-spinner');
-        
+    {                
         // update galaxy history
         Galaxy.currHistoryPanel.refresh();
         
@@ -194,32 +179,26 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update on screen info
         this.update_screen();
+        
+        // get element
+        var it = this.get_upload_item(index);
+        
+        // update progress frame
+        it.addClass('panel-success');
+        it.removeClass('panel-default');
+        
+        // update icon
+        var sy = it.find('.symbol');
+        sy.removeClass('fa-icon-spin');
+        sy.removeClass('fa-icon-spinner');
+        
+        // set status
+        sy.addClass(this.state.done);
     },
     
     // error
     event_error : function(index, file, message)
     {
-        // get element
-        var it = this.get_upload_item(index);
-        
-        // update progress frame
-        it.addClass('panel-danger');
-        it.removeClass('panel-default');
-        
-        // update icon
-        var sy = it.find('.symbol');
-        sy.addClass(this.state.done);
-        
-        // remove spin
-        sy.removeClass('fa-icon-spin');
-        sy.removeClass('fa-icon-spinner');
-        
-        // remove progress bar
-        it.find('.progress').remove();
-        
-        // write error message
-        it.find('.error').html('<strong>Failed:</strong> ' + message);
-        
         // make sure progress is shown correctly
         this.event_progress(index, file, 0);
         
@@ -232,6 +211,27 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update on screen info
         this.update_screen();
+        
+        // get element
+        var it = this.get_upload_item(index);
+        
+        // update progress frame
+        it.addClass('panel-danger');
+        it.removeClass('panel-default');
+        
+        // remove progress bar
+        it.find('.progress').remove();
+        
+        // write error message
+        it.find('.error').html('<strong>Failed:</strong> ' + message);
+        
+        // update icon
+        var sy = it.find('.symbol');
+        sy.removeClass('fa-icon-spin');
+        sy.removeClass('fa-icon-spinner');
+        
+        // set status
+        sy.addClass(this.state.done);
     },
     
     // start upload process
@@ -241,13 +241,6 @@ var GalaxyUpload = Backbone.View.extend(
         if (this.counter.announce == 0 || this.counter.running > 0)
             return;
             
-        // update running
-        this.counter.running = this.counter.announce;
-        this.update_screen();
-    
-        // hide configuration
-        $(this.el).find('.panel-body').hide();
-        
         // switch icons for new uploads
         var self = this;
         $(this.el).find('.symbol').each(function()
@@ -259,6 +252,13 @@ var GalaxyUpload = Backbone.View.extend(
                 $(this).addClass('fa-icon-spin');
             }
         });
+        
+        // hide configuration
+        $(this.el).find('.panel-body').hide();
+        
+        // update running
+        this.counter.running = this.counter.announce;
+        this.update_screen();
                 
         // configure url
         var current_history = Galaxy.currHistoryPanel.model.get('id');
