@@ -107,9 +107,11 @@
                 <input type="submit" name="create_user_button" value="Submit"/>
             </div>
         </form>
+        %if registration_warning_message:
         <div class="alert alert-danger" style="margin: 30px 12px 12px 12px;">
-            Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.       
+            ${registration_warning_message}           
         </div>
+        %endif
     </div>
 
 </%def>

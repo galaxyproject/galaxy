@@ -136,6 +136,7 @@ class Configuration( object ):
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None

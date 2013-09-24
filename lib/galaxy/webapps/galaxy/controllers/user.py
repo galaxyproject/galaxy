@@ -640,6 +640,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user_type_fd_id_select_field = None
             user_type_form_definition = None
             widgets = []
+        #  Warning message that is shown on the registration page.
+        registration_warning_message = trans.app.config.registration_warning_message
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
@@ -652,6 +654,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     redirect=redirect,
                                     redirect_url=redirect_url,
                                     refresh_frames=refresh_frames,
+                                    registration_warning_message=registration_warning_message,
                                     message=message,
                                     status=status )
 
