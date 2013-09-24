@@ -24,6 +24,12 @@ var GalaxyUpload = Backbone.View.extend(
         'ab1'   : 'ab1'
     },
     
+    // states
+    state : {
+        init  : 'fa-icon-trash',
+        done  : 'fa-icon-caret-down'
+    },
+    
     // counter
     counter : {
         // stats
@@ -80,7 +86,7 @@ var GalaxyUpload = Backbone.View.extend(
     event_mouseleave : function (e)
     {
     },
-
+    
     // start
     event_announce : function(index, file, message)
     {
@@ -107,7 +113,7 @@ var GalaxyUpload = Backbone.View.extend(
         
         // add functionality to remove button
         var self = this;
-        it.find('.remove').on('click', function() { self.event_remove (index) });
+        it.find('.symbol').on('click', function() { self.event_remove (index) });
     
         // initialize progress
         this.event_progress(index, file, 0);
@@ -155,7 +161,7 @@ var GalaxyUpload = Backbone.View.extend(
         it.find('.info').html(percentage + '% of ' + this.size_to_string (file.size));
     },
     
-    // end
+    // success
     event_success : function(index, file, message)
     {        
         // get element
@@ -164,6 +170,14 @@ var GalaxyUpload = Backbone.View.extend(
         // update progress frame
         it.addClass('panel-success');
         it.removeClass('panel-default');
+        
+        // update icon
+        var sy = it.find('.symbol');
+        sy.addClass(this.state.done);
+        
+        // remove spin
+        sy.removeClass('fa-icon-spin');
+        sy.removeClass('fa-icon-spinner');
         
         // update galaxy history
         Galaxy.currHistoryPanel.refresh();
@@ -182,7 +196,7 @@ var GalaxyUpload = Backbone.View.extend(
         this.update_screen();
     },
     
-    // end
+    // error
     event_error : function(index, file, message)
     {
         // get element
@@ -191,6 +205,14 @@ var GalaxyUpload = Backbone.View.extend(
         // update progress frame
         it.addClass('panel-danger');
         it.removeClass('panel-default');
+        
+        // update icon
+        var sy = it.find('.symbol');
+        sy.addClass(this.state.done);
+        
+        // remove spin
+        sy.removeClass('fa-icon-spin');
+        sy.removeClass('fa-icon-spinner');
         
         // remove progress bar
         it.find('.progress').remove();
@@ -226,11 +248,16 @@ var GalaxyUpload = Backbone.View.extend(
         // hide configuration
         $(this.el).find('.panel-body').hide();
         
-        // switch icon
-        $(this.el).find('.remove').each(function()
+        // switch icons for new uploads
+        var self = this;
+        $(this.el).find('.symbol').each(function()
         {
-            $(this).removeClass('fa-icon-trash');
-            $(this).addClass('fa-icon-caret-down');
+            if($(this).hasClass(self.state.init))
+            {
+                $(this).removeClass(self.state.init);
+                $(this).addClass('fa-icon-spinner');
+                $(this).addClass('fa-icon-spin');
+            }
         });
                 
         // configure url
@@ -273,12 +300,13 @@ var GalaxyUpload = Backbone.View.extend(
     // remove item from upload list
     event_remove : function(index)
     {
-        // only remove from queue if paused
-        if (this.counter.running == 0)
+        // get item
+        var it = this.get_upload_item(index);
+        var sy = it.find('.symbol');
+                
+        // only remove from queue if not in processing line
+        if (sy.hasClass(this.state.init) || sy.hasClass(this.state.done))
         {
-            // get item
-            var it = this.get_upload_item(index);
-        
             // reduce counter
             if (it.hasClass('panel-default'))
                 this.counter.announce--;
@@ -428,7 +456,7 @@ var GalaxyUpload = Backbone.View.extend(
                         '<div class="panel-heading">' +
                             '<h5 class="title"></h5>' +
                             '<h5 class="info"></h5>' +
-                            '<div class="remove fa-icon-trash"></div>' +
+                            '<div class="symbol ' + this.state.init + '"></div>' +
                         '</div>' +
                         '<div class="panel-body">' +
                             '<div class="menu">' +

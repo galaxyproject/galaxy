@@ -65,6 +65,9 @@
         {
             // add files to queue
             add(e.target.files);
+            
+            // reset
+            $(this).val('');
         });
 
         // drop event
@@ -323,7 +326,7 @@
         // verify browser compatibility
         function compatible()
         {
-            return window.File && window.FileReader && window.FormData && window.XMLHttpRequest;
+            return window.File && window.FileReader && window.FormData && window.XMLHttpRequest && window.FileList;
         }
   
         // export functions
