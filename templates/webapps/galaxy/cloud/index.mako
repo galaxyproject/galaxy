@@ -80,6 +80,8 @@
                 secret_el = $("#id_secret");
                 key_el = $("#id_key_id");
                 if (secret_el.val().length === 40 && key_el.val().length === 20){
+                    //Clear errors
+                    $('.errormessage').remove()
                     //Submit these to get_account_info, unhide fields, and update as appropriate
                     $.ajax({type: "POST",
                             url: ACCOUNT_URL,
@@ -106,6 +108,12 @@
                                         kplist.append($('<option/>').val(keypair).text(keypair));
                                     });
                                     $('#hidden_options').show('fast');
+                                },
+                            error: function(jqXHR, textStatus, errorThrown){
+                                 //Show error message
+                                 $('#launchFormContainer').prepend('<div class="errormessage">' + errorThrown + " : " + jqXHR.responseText + '</div>');
+                                 //Hide the options form
+                                 $('#hidden_options').hide('fast');
                                 }
                             });
                 }
