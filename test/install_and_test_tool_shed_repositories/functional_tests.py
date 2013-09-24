@@ -254,6 +254,49 @@ def execute_uninstall_method( app, deactivate_only=False ):
     success = result.wasSuccessful()
     return success
 
+def extract_log_data( test_result, from_tool_test=True ):
+    '''Extract any useful data from the test_result.failures and test_result.errors attributes.'''
+    for failure in test_result.failures + test_result.errors:
+        # Record the twill test identifier and information about the tool, so the repository owner can discover which test is failing.
+        test_id = str( failure[0] )
+        if not from_tool_test:
+            tool_id = None
+            tool_version = None
+        else:
+            tool_id, tool_version = get_tool_info_from_test_id( test_id )
+        test_status = dict( test_id=test_id, tool_id=tool_id, tool_version=tool_version )
+        log_output = failure[1].replace( '\\n', '\n' )
+        # Remove debug output that the reviewer or owner doesn't need.
+        log_output = re.sub( r'control \d+:.+', r'', log_output )
+        log_output = re.sub( r'\n+', r'\n', log_output )
+        appending_to = 'output'
+        tmp_output = {}
+        output = {}
+        # Iterate through the functional test output and extract only the important data. Captured logging and stdout are not recorded.
+        for line in log_output.split( '\n' ):
+            if line.startswith( 'Traceback' ):
+                appending_to = 'traceback'
+            elif '>> end captured' in line or '>> end tool' in line:
+                continue
+            elif 'request returned None from get_history' in line:
+                continue
+            elif '>> begin captured logging <<' in line:
+                appending_to = 'logging'
+                continue
+            elif '>> begin captured stdout <<' in line:
+                appending_to = 'stdout'
+                continue
+            elif '>> begin captured stderr <<' in line or '>> begin tool stderr <<' in line:
+                appending_to = 'stderr'
+                continue
+            if appending_to not in tmp_output:
+                tmp_output[ appending_to ] = []
+            tmp_output[ appending_to ].append( line )
+        for output_type in [ 'stderr', 'traceback' ]:
+            if output_type in tmp_output:
+                test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
+        return test_status
+
 def get_api_url( base, parts=[], params=None, key=None ):
     if 'api' in parts and parts.index( 'api' ) != 0:
         parts.pop( parts.index( 'api' ) )
@@ -1054,43 +1097,7 @@ def main():
                                               params )
                         log.debug( 'Revision %s of repository %s installed and passed functional tests.', changeset_revision, name )
                     else:
-                        # If the functional tests fail, log the output and update the failed changeset revision's metadata record in the tool shed via the API.
-                        for failure in result.failures + result.errors:
-                            # Record the twill test identifier and information about the tool, so the repository owner can discover which test is failing.
-                            test_id = str( failure[0] )
-                            tool_id, tool_version = get_tool_info_from_test_id( test_id )
-                            test_status = dict( test_id=test_id, tool_id=tool_id, tool_version=tool_version )
-                            log_output = failure[1].replace( '\\n', '\n' )
-                            # Remove debug output that the reviewer or owner doesn't need.
-                            log_output = re.sub( r'control \d+:.+', r'', log_output )
-                            log_output = re.sub( r'\n+', r'\n', log_output )
-                            appending_to = 'output'
-                            tmp_output = {}
-                            output = {}
-                            # Iterate through the functional test output and extract only the important data. Captured logging and stdout are not recorded.
-                            for line in log_output.split( '\n' ):
-                                if line.startswith( 'Traceback' ):
-                                    appending_to = 'traceback'
-                                elif '>> end captured' in line or '>> end tool' in line:
-                                    continue
-                                elif 'request returned None from get_history' in line:
-                                    continue
-                                elif '>> begin captured logging <<' in line:
-                                    appending_to = 'logging'
-                                    continue
-                                elif '>> begin captured stdout <<' in line:
-                                    appending_to = 'stdout'
-                                    continue
-                                elif '>> begin captured stderr <<' in line or '>> begin tool stderr <<' in line:
-                                    appending_to = 'stderr'
-                                    continue
-                                if appending_to not in tmp_output:
-                                    tmp_output[ appending_to ] = []
-                                tmp_output[ appending_to ].append( line )
-                            for output_type in [ 'stderr', 'traceback' ]:
-                                if output_type in tmp_output:
-                                    test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
-                            repository_status[ 'failed_tests' ].append( test_status )
+                        repository_status[ 'failed_tests' ] = extract_log_data( result, from_tool_test=True )
                         # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome
                         # of the tests, and updates tool_test_results with the relevant log data.
                         # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
@@ -1129,7 +1136,7 @@ def main():
                                     name=repository.name,
                                     owner=repository.owner,
                                     changeset_revision=repository.changeset_revision,
-                                    error_message=repository.error_message )
+                                    error_message=extract_log_data( result, from_tool_test=False ) )
                 repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
                 params[ 'tools_functionally_correct' ] = False
                 params[ 'test_install_error' ] = True

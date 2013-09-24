@@ -307,6 +307,21 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.flush()
     return tool_shed_repository
 
+def extract_components_from_tuple( repository_components_tuple ):
+    '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
+    toolshed = repository_components_tuple[ 0 ]
+    name = repository_components_tuple[ 1 ]
+    owner = repository_components_tuple[ 2 ]
+    changeset_revision = repository_components_tuple[ 3 ]
+    components_list = [ toolshed, name, owner, changeset_revision ]
+    if len( repository_components_tuple ) == 5:
+        toolshed, name, owner, changeset_revision, prior_installation_required = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_components_tuple ) == 6:
+        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
+    return components_list
+
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_tool_shed( app, repository.tool_shed )
