@@ -24,6 +24,7 @@ from galaxy import web
 from galaxy import model
 from galaxy import security
 from galaxy import util
+from galaxy import objectstore
 
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
@@ -601,7 +602,10 @@ class UsesHistoryDatasetAssociationMixin:
             return trans.security.encode_dict_ids( hda_dict )
 
         if expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
+            try:
+                hda_dict[ 'file_name' ] = hda.file_name
+            except objectstore.ObjectNotFound, onf:
+                log.exception( 'objectstore.ObjectNotFound, HDA %s: %s', hda.id, onf )
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
