@@ -725,7 +725,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
             success = False
         else:
-            if trans.webapp.name == 'galaxy':
+            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                 is_activation_sent = self.send_verification_email( trans, email )
                 if is_activation_sent:
                     message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
@@ -735,6 +735,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     if trans.app.config.admin_email is not None:
                         message += 'Contact: %s' %  trans.app.config.admin_email
                     success = False
+            else: # User activation is OFF, proceed without sending the activation email.
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                success = True
         return ( message, status, user, success )
 
     def send_verification_email( self, trans, email ):
