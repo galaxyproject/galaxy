@@ -1896,7 +1896,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     changeset_revisions.append( changeset_revision )
             add_tool_versions( trans, encoded_id, repository_metadata, changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:
-        message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip( trans.app ) )
+        message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % str( repository.tip( trans.app ) )
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
