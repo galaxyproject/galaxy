@@ -515,6 +515,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         """
         Function processes user login. It is called in case all the login requirements are valid.
         """
+        message = ''
         trans.handle_user_login( user )
         if trans.webapp.name == 'galaxy':
             trans.log_event( "User logged in" )
@@ -662,6 +663,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
+        message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = trans.app.model.User( email=email )
@@ -673,6 +675,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role( user )
         error = ''
+        success = True
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
@@ -722,7 +725,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
             success = False
         else:
-            if trans.app.config.user_activation_on:
+            if trans.webapp.name == 'galaxy':
                 is_activation_sent = self.send_verification_email( trans, email )
                 if is_activation_sent:
                     message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
@@ -732,9 +735,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     if trans.app.config.admin_email is not None:
                         message += 'Contact: %s' %  trans.app.config.admin_email
                     success = False
-            else: # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
-                success = True
         return ( message, status, user, success )
 
     def send_verification_email( self, trans, email ):
