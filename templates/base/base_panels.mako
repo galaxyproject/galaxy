@@ -6,7 +6,7 @@
     self.message_box_visible = app.config.message_box_visible
     self.show_inactivity_warning = False
     if trans.user:
-        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on is True) and ( app.config.inactivity_box_content is not None ) )
+        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) )
     self.overlay_visible=False
     self.active_view=None
     self.body_class=""
