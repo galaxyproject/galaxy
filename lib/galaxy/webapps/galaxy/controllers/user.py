@@ -637,12 +637,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
             widgets = self.__get_widgets( trans, user_type_form_definition, user=None, **kwd )
+            #  Warning message that is shown on the registration page.
+            registration_warning_message = trans.app.config.registration_warning_message
         else:
             user_type_fd_id_select_field = None
             user_type_form_definition = None
             widgets = []
-        #  Warning message that is shown on the registration page.
-        registration_warning_message = trans.app.config.registration_warning_message
+            registration_warning_message = None
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
