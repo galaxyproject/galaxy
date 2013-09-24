@@ -352,19 +352,20 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     for key, val in repository_dependencies.items():
                         if key in [ 'root_key', 'description' ]:
                             continue
-                        try:
-                            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                                container_util.get_components_from_key( key )
-                            components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
-                        except ValueError:
-                            # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required and only_if_compiling_contained_td
-                            # to False in the caller.
-                            toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
-                            components_list = [ toolshed, name, owner, changeset_revision ]
-                            only_if_compiling_contained_td = 'False'
+                        repository_components_tuple = container_util.get_components_from_key( key )
+                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
                         # Skip listing a repository dependency if it is required only to compile a tool dependency defined for the dependent repository since
                         # in this case, the repository dependency is really a dependency of the dependent repository's contained tool dependency, and only if
                         # that tool dependency requires compilation.
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        prior_installation_required = 'False'
+                        only_if_compiling_contained_td = 'False'
+                        if len( components_list ) == 4:
+                            prior_installation_required = 'False'
+                            only_if_compiling_contained_td = 'False'
+                        elif len( components_list ) == 5:
+                            prior_installation_required = components_list[ 4 ]
+                            only_if_compiling_contained_td = 'False'
                         if not util.asbool( only_if_compiling_contained_td ):
                             if components_list not in required_repository_tups:
                                 required_repository_tups.append( components_list )
