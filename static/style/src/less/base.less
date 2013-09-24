@@ -80,6 +80,17 @@ body  {
     font-size: 90%;
 }
 
+#inactivebox {
+    position:absolute; 
+    top: @navbar-height + @layout_top_padding + 1;
+    left:0; 
+    width:100%; 
+    height: @panel_header_height !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
+
 @layout_top_padding: 0px;
 @border-default-color_padding: 0px;
 
@@ -324,7 +335,7 @@ div.unified-panel-body {
     top:0; 
     left:0; 
     width:100%;
-    min-width:980px;
+    min-width:990px;
     padding: 0;
 
     .nav {
@@ -387,7 +398,7 @@ div.unified-panel-body {
         .symbol
         {
             float           : left;
-            margin          : 0px 8px;
+            margin          : 0px 10px;
         }
 
         .symbol .number
@@ -759,28 +770,23 @@ input[type="submit"], button {
     background-position: 5px 5px;
 }
 
-.errormessage {
+.errormessage, .errormessagesmall {
     .alert-danger();
 }
 
 .warningmessage, .warningmessagesmall {
+    .alert-warning();
     background-image: url(warn_small.png);
-    //border-color: @warn_message_border;
-    //background-color: @warn_message_bg;
 }
 
 .donemessage, .donemessagesmall {
     .alert-success();
     background-image: url(ok_small.png);
-    // border-color: @done_message_border;
-    // background-color: @done_message_bg;
 }
 
 .infomessage, .infomessagesmall {
     .alert-info();
     background-image: url(info_small.png);
-    //border-color: @info_message_border;
-    //background-color: @info_message_bg;
 }
 
 .errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {

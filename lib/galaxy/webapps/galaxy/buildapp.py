@@ -51,6 +51,8 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
+    # Force /activate to go to the controller
+    webapp.add_route( '/activate', controller='user', action='activate' )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
@@ -176,7 +178,10 @@ def app_factory( global_conf, **kwargs ):
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
-                            member={ 'repair_repository_revision' : 'POST' },
+                            member={ 'repair_repository_revision' : 'POST',
+                                     'exported_workflows' : 'GET',
+                                     'import_workflow' : 'POST',
+                                     'import_workflows' : 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',

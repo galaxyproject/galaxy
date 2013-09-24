@@ -166,6 +166,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     success: function() {
                         // FIXME: setting model attribute causes re-rendering, which is unnecessary.
                         //self.$el.remove();
+
                         self.model.set({ deleted: true });
                     }
                 });

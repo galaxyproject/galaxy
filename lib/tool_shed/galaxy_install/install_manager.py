@@ -160,8 +160,15 @@ class InstallManager( object ):
             if rd_key in [ 'root_key', 'description' ]:
                 continue
             for rd_tup in rd_tups:
-                rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
-                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if len( rd_tup ) == 4:
+                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = \
+                        common_util.parse_repository_dependency_tuple( rd_tup )
+                elif len( rd_tup ) == 5:
+                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
+                        common_util.parse_repository_dependency_tuple( rd_tup )
+                elif len( rd_tup ) == 6:
+                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, only_if_compiling_contained_td = \
+                        common_util.parse_repository_dependency_tuple( rd_tup )
                 # TODO: Make sure the repository description is applied to the new repository record during installation.
                 tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name, rd_owner, rd_changeset_revision, description=None )
                 if tool_shed_repository:

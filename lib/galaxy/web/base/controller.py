@@ -583,7 +583,8 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.to_dict( view='element' )
+        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
+        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
@@ -599,7 +600,7 @@ class UsesHistoryDatasetAssociationMixin:
             #TODO: to_dict should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+        if expose_dataset_path:
             hda_dict[ 'file_name' ] = hda.file_name
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
