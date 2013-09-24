@@ -2130,7 +2130,7 @@ var LineTrackTile = function(track, region, w_scale, canvas, data) {
 };
 LineTrackTile.prototype.predisplay_actions = function() {};
 
-var FeatureTrackTile = function(track, region, w_scale, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
+var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, message, all_slotted, feature_mapper) {
     // Attribute init.
     Tile.call(this, track, region, w_scale, canvas, data);
     this.mode = mode;
@@ -3252,7 +3252,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             var tile_data = get_tile_data(),
                 tracks_data = tile_data,
                 seq_data;
-
+            
             // If sequence data is available, subset to get only data in region.
             if (view.reference_track) {
                 seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
@@ -3420,12 +3420,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Returns true if data can be subsetted.
+     * Returns true if entry can be subsetted.
      */
-    can_subset: function(data) {
+    can_subset: function(entry) {
         // Do not subset entries with a message or data with no detail.
-        if (data.dataset_type === 'bigwig' || data.message || data.extra_info === "no_detail")  {
+        if (entry.message || entry.extra_info === "no_detail")  {
             return false;
+        }
+        // Subset only if data is single-bp resolution.
+        else if (entry.dataset_type === 'bigwig') {
+            return (entry.data[1][0] - entry.data[0][0] === 1);
         }
 
         return true;
@@ -3767,7 +3771,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
     },
 
-    can_subset: function(data) { return true; },
+    can_subset: function(entry) { return true; },
 
     /**
      * Draw ReferenceTrack tile.
@@ -4210,7 +4214,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(track, region, w_scale, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
+        return new FeatureTrackTile(track, region, w_scale, canvas, result.data, mode, result.message, all_slotted, feature_mapper);        
     }
 });
 

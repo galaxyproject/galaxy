@@ -713,6 +713,11 @@ var GenomeRegion = Backbone.RelationalModel.extend({
 
         // Keep a copy of region's string value for fast lookup.
         this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
+
+        // Set str_val on attribute change.
+        this.on('change', function() {
+            this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');            
+        }, this);
     },
     
     copy: function() {

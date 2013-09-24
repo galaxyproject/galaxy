@@ -181,15 +181,21 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         pref_color = parseInt( painter_color.slice(1), 16 ),
         pref_r = (pref_color & 0xff0000) >> 16,
         pref_g = (pref_color & 0x00ff00) >> 8,
-        pref_b = pref_color & 0x0000ff;
+        pref_b = pref_color & 0x0000ff,
+        top_overflow = false, 
+        bot_overflow = false;
+        
     
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
+        // Reset attributes for next point.
         ctx.fillStyle = ctx.strokeStyle = painter_color;
-        // -0.5 to offset drawing between bases.
-        x_scaled = Math.round((data[i][0] - view_start - 0.5) * w_scale);
+        top_overflow = bot_overflow = false;
+
+        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
         y = data[i][1];
-        var top_overflow = false, bot_overflow = false;
+
+        // Process Y (scaler) value.
         if (y === null) {
             if (in_path && mode === "Filled") {
                 ctx.lineTo(x_scaled, height_px);
@@ -197,14 +203,18 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             in_path = false;
             continue;
         }
+
+        // Bound Y value by min, max.
         if (y < min_value) {
             bot_overflow = true;
             y = min_value;
-        } else if (y > max_value) {
+        } 
+        else if (y > max_value) {
             top_overflow = true;
             y = max_value;
         }
     
+        // Draw point.
         if (mode === "Histogram") {
             // y becomes the bar height in pixels, which is the negated for canvas coords
             y = Math.round( y / vertical_range * height_px );
@@ -220,7 +230,9 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             ctx.fillStyle = "rgb(" + new_r + "," + new_g + "," + new_b + ")";
             ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
         } 
-        else {
+        else { // mode is Coverage/Line or Filled.
+
+            // Scale Y value.
             y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
             if (in_path) {
                 ctx.lineTo(x_scaled, y);
@@ -233,9 +245,14 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 } 
                 else {
                     ctx.moveTo(x_scaled, y);
+                    // Use this approach (note: same as for filled) to draw line from 0 to 
+                    // first data point.
+                    //ctx.moveTo(x_scaled, height_px);
+                    //ctx.lineTo(x_scaled, y);
                 }
             }
         }
+
         // Draw lines at boundaries if overflowing min or max
         ctx.fillStyle = this.prefs.overflow_color;
         if (top_overflow || bot_overflow) {
