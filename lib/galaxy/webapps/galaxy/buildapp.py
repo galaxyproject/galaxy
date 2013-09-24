@@ -176,7 +176,10 @@ def app_factory( global_conf, **kwargs ):
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
-                            member={ 'repair_repository_revision' : 'POST' },
+                            member={ 'repair_repository_revision' : 'POST',
+                                     'exported_workflows' : 'GET',
+                                     'import_workflow' : 'POST',
+                                     'import_workflows' : 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
