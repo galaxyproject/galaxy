@@ -416,7 +416,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_id = kwd.get( 'id', None )
             if repository_id:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                kwd[ 'user_id' ] = trans.security.encode_id( repository.user.id )
+                user_id = trans.security.encode_id( repository.user.id )
+                kwd[ 'user_id' ] = user_id
             else:
                 # The user selected a repository revision which results in a refresh_on_change.
                 selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change( trans, **kwd )
