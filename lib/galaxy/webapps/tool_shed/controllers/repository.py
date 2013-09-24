@@ -38,7 +38,7 @@ import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
-eggs.require('mercurial')
+eggs.require( 'mercurial' )
 
 from mercurial import commands
 from mercurial import hg
@@ -1594,7 +1594,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
-                    return readme_util.build_readme_files_dict( repository_metadata.metadata )
+                    return readme_util.build_readme_files_dict( trans, repository, changeset_revision, repository_metadata.metadata )
         return {}
 
     @web.json
@@ -1793,7 +1793,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         break
             if 'workflows' in metadata:
                 includes_workflows = True
-            readme_files_dict = readme_util.build_readme_files_dict( metadata )
+            readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
         # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False

@@ -20,10 +20,10 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
 from xml.etree import ElementTree as XmlET
-from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'mercurial' )
+from galaxy import eggs
+eggs.require( 'mercurial' )
+
 from mercurial import cmdutil
 from mercurial import commands
 from mercurial import hg

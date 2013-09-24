@@ -22,9 +22,8 @@ from tool_shed.util import tool_util
 from xml.etree import ElementTree as XmlET
 
 from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui

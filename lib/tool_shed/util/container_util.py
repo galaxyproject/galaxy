@@ -788,7 +788,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             # Readme files container.
             if metadata:
                 if 'readme_files' not in exclude and 'readme_files' in metadata:
-                    readme_files_dict = readme_util.build_readme_files_dict( metadata )
+                    readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
                     folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
             if 'repository_dependencies' not in exclude:

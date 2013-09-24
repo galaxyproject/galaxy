@@ -23,9 +23,8 @@ from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -1531,7 +1530,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
-                readme_files_dict = readme_util.build_readme_files_dict( repository.metadata, tool_path )
+                readme_files_dict = readme_util.build_readme_files_dict( trans, repository, repository.changeset_revision, repository.metadata, tool_path )
         else:
             readme_files_dict = None
         # Handle repository dependencies.

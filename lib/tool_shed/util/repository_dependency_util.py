@@ -12,9 +12,8 @@ from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui

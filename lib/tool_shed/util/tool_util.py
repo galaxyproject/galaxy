@@ -18,9 +18,8 @@ from galaxy.tools.actions.upload import UploadToolAction
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
