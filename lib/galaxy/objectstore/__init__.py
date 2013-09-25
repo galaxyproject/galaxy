@@ -209,9 +209,6 @@ class DiskObjectStore(ObjectStore):
                     self.extra_dirs[e.tag] = e.get('path')
         if extra_dirs is not None:
             self.extra_dirs.update( extra_dirs )
-        print "DISK OBJECT STORE:"
-        print self.file_path
-        print self.extra_dirs
 
     def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         """Class method that returns the absolute path for the file corresponding
@@ -613,7 +610,6 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
         store = config.object_store
 
     if store == 'disk':
-        print "BUILDING DISK OBJECT STORE"
         return DiskObjectStore(config=config, config_xml=config_xml)
     elif store == 's3' or store == 'swift':
         from galaxy.objectstore.s3 import S3ObjectStore
