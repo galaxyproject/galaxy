@@ -29,7 +29,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     try:
         egg = dialect_to_egg[ dialect ]
         try:
-            pkg_resources.require( egg )
+            eggs.require( egg )
             log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
         except:
             # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
