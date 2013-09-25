@@ -94,7 +94,7 @@
             sort_key: '${sort_key}',
             show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
             cur_page: ${cur_page_num},
-            // persistant page="all"
+            // persistent page="all"
             //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
             num_pages: ${num_pages}
         });

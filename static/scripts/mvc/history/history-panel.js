@@ -85,7 +85,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @config {Object} urlTemplates.history nested object containing url templates for this view
      *  @config {Object} urlTemplates.hda nested object containing url templates for HDAViews
      *  @throws 'needs urlTemplates' if urlTemplates.history or urlTemplates.hda aren't present
-     *  @see PersistantStorage
+     *  @see PersistentStorage
      *  @see Backbone.View#initialize
      */
     initialize : function( attributes ){
@@ -172,15 +172,15 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {Object} initiallyExpanded
      *  @param {Boolean} show_deleted whether to show deleted HDAs (overrides stored)
      *  @param {Boolean} show_hidden
-     *  @see PersistantStorage
+     *  @see PersistentStorage
      */
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
         //this.log( '_setUpWebStorage, initiallyExpanded:', initiallyExpanded,
         //    'show_deleted:', show_deleted, 'show_hidden', show_hidden );
 
-        // data that needs to be persistant over page refreshes
+        // data that needs to be persistent over page refreshes
         //  (note the key function which uses the history id as well)
-        this.storage = new PersistantStorage( 'HistoryView.' + this.model.get( 'id' ), {
+        this.storage = new PersistentStorage( 'HistoryView.' + this.model.get( 'id' ), {
             //TODOL initiallyExpanded only works on first load right now
             expandedHdas : {},
             show_deleted : false,
@@ -430,7 +430,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistant storage
+     *      (1) storing the new value in the persistent storage
      *      (2) re-rendering the history
      * @returns {Boolean} new show_deleted setting
      */
@@ -441,7 +441,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistant storage
+     *      (1) storing the new value in the persistent storage
      *      (2) re-rendering the history
      * @returns {Boolean} new show_hidden setting
      */
