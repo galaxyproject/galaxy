@@ -121,12 +121,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for exported_workflow_dict in exported_workflows:
             workflow_name = exported_workflow_dict[ 'workflow_name' ]
             workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
-        if status == 'error':
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
-        else:
-            imported_workflow_dicts.append( workflow.to_dict( view='element' ) )
+            if status == 'error':
+                log.error( message, exc_info=True )
+                trans.response.status = 500
+                return message
+            else:
+                imported_workflow_dicts.append( workflow.to_dict( view='element' ) )
         return imported_workflow_dicts
 
     @web.expose_api
