@@ -589,7 +589,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         original_repository_metadata = repository.metadata
     else:
         original_repository_metadata = None
-    readme_file_names = get_readme_file_names( repository.name )
+    readme_file_names = readme_util.get_readme_file_names( str( repository.name ) )
     if app.name == 'galaxy':
         # Shed related tool panel configs are only relevant to Galaxy.
         metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
@@ -1045,16 +1045,6 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     if parent_id is None:
         # The tool did not change through all of the changeset revisions.
         return old_id
-
-def get_readme_file_names( repository_name ):
-    """Creates a list of valid filenames."""
-    readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = map( lambda f: '%s.txt' % f, readme_files )
-    valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
-    valid_filenames.extend( readme_files )
-    valid_filenames.append( '%s.txt' % repository_name )
-    valid_filenames.append( '%s.rst' % repository_name )
-    return valid_filenames
 
 def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
     if resetting_all_metadata_on_repository:

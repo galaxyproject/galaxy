@@ -1,16 +1,17 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
+from galaxy import eggs
 from galaxy import web
 from galaxy import util
 from galaxy.web.base.controller import BaseAPIController
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
 
-from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui 
 
 log = logging.getLogger( __name__ )
 

@@ -573,27 +573,23 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
 def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readme files' ):
     """Return a folder hierarchy containing readme text files."""
     if readme_files_dict:
-        multiple_readme_files = len( readme_files_dict ) > 1
         readme_id = 0
         folder_id += 1
         readme_files_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
-        if multiple_readme_files:
-            folder_id += 1
-            readme_files_folder = Folder( id=folder_id, key='readme_files', label=label, parent=readme_files_root_folder )
-            readme_files_root_folder.folders.append( readme_files_folder )
+        folder_id += 1
+        readme_files_folder = Folder( id=folder_id, key='readme_files', label=label, parent=readme_files_root_folder )
+        multiple_readme_files = len( readme_files_dict ) > 1
+        readme_files_root_folder.folders.append( readme_files_folder )
         for readme_file_name, readme_file_text in readme_files_dict.items():
             readme_id += 1
             readme = ReadMe( id=readme_id, name=readme_file_name, text=readme_file_text )
             if multiple_readme_files:
                 folder_id += 1
-                folder = Folder( id=folder_id, key=readme.name, label=readme.name, parent=readme_files_folder )
+                folder = Folder( id=folder_id, key=readme_file_name, label=readme_file_name, parent=readme_files_folder )
                 folder.readme_files.append( readme )
                 readme_files_folder.folders.append( folder )
             else:
-                folder_id += 1
-                readme_files_folder = Folder( id=folder_id, key='readme_files', label=readme.name, parent=readme_files_root_folder )
                 readme_files_folder.readme_files.append( readme )
-                readme_files_root_folder.folders.append( readme_files_folder )
     else:
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
