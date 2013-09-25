@@ -242,6 +242,9 @@ class Configuration( object ):
         self.os_is_secure = string_as_bool( kwargs.get( 'os_is_secure', True ) )
         self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
+        self.object_store_config_file = kwargs.get( 'object_store_config_file', None )
+        if self.object_store_config_file is not None:
+            self.object_store_config_file = resolve_path( self.object_store_config_file, self.root )
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )

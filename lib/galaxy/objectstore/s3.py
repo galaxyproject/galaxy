@@ -33,7 +33,7 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
-    def __init__(self, config):
+    def __init__(self, config, config_xml=None):
         super(S3ObjectStore, self).__init__()
         self.config = config
         self.staging_path = self.config.file_path
