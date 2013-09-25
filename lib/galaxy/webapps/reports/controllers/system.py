@@ -40,7 +40,8 @@ class System( BaseUIController ):
                                     userless_histories_days=userless_histories_days,
                                     deleted_histories_days=deleted_histories_days,
                                     deleted_datasets_days=deleted_datasets_days,
-                                    message=message )
+                                    message=message,
+                                    nice_size=nice_size )
     def userless_histories( self, trans, **kwd ):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
         params = util.Params( kwd )
