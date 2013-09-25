@@ -199,8 +199,8 @@ $.extend( Node.prototype, {
                         .css( { display: 'none' } )
                         .appendTo( "body" )
                         .append(
-                            $("<div class='buttons'></div>").append(
-                                $("<img/>").attr("src", galaxy_config.root + 'static/images/delete_icon.png').click( function() {
+                            $("<div class='button'></div>").append(
+                                $("<div/>").addClass("fa-icon-button fa-icon-remove").click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         if (x) {
                                             x.destroy();
@@ -859,12 +859,9 @@ function prebuild_node( type, title_text, tool_id ) {
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<img/>").attr("src", galaxy_config.root + 'static/images/delete_icon.png').click( function( e ) {
+    buttons.append( $("<div>").addClass("fa-icon-button fa-icon-remove").click( function( e ) {
         node.destroy();
-    } ).hover( 
-        function() { $(this).attr( "src", galaxy_config.root + "static/images/delete_icon_dark.png" ); },
-        function() { $(this).attr( "src", galaxy_config.root + "static/images/delete_icon.png" ); }
-    ) );
+    }));
     // Place inside container
     f.appendTo( "#canvas-container" );
     // Position in container

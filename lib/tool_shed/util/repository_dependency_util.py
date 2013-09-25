@@ -12,9 +12,8 @@ from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -36,12 +35,9 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                     if key in [ 'root_key', 'description' ]:
                         continue
                     d_repository = None
-                    try:
-                        d_toolshed, d_name, d_owner, d_changeset_revision, d_prior_installation_required, d_only_if_compiling_contained_td = \
-                            container_util.get_components_from_key( key )
-                    except ValueError:
-                        # For backward compatibility to the 12/20/12 Galaxy release.
-                        d_toolshed, d_name, d_owner, d_changeset_revision = container_util.get_components_from_key( key )
+                    repository_components_tuple = container_util.get_components_from_key( key )
+                    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                    d_toolshed, d_name, d_owner, d_changeset_revision = components_list[ 0:4 ]
                     for tsr in tool_shed_repositories:
                         # Get the the tool_shed_repository defined by name, owner and changeset_revision.  This is the repository that will be
                         # dependent upon each of the tool shed repositories contained in val.  We'll need to check tool_shed_repository.tool_shed
@@ -139,6 +135,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     # repository dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed.
                     if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
                         if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
+                                                                      trans.model.ToolShedRepository.installation_status.NEW,
                                                                       trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
                             # The current tool shed repository is not currently installed, so we can update it's record in the database.
                             can_update = True
@@ -436,22 +433,22 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                         # We have the updated changset revision.
                         updated_key_rd_dicts.append( new_key_rd_dict )
                     else:
-                        try:
-                            toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required, rd_only_if_compiling_contained_td = \
-                                container_util.get_components_from_key( key )
-                        except ValueError:
-                            # For backward compatibility to the 12/20/12 Galaxy release.
-                            toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
+                        repository_components_tuple = container_util.get_components_from_key( key )
+                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                        toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        if len( components_list ) == 4:
+                            prior_installation_required = 'False'
+                            rd_only_if_compiling_contained_td = 'False'
+                        elif len( components_list ) == 5:
+                            rd_only_if_compiling_contained_td = 'False'
                         message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
                             ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
                         log.debug( message )
             else:
-                try:
-                    toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                        container_util.get_components_from_key( key )
-                except ValueError:
-                    # For backward compatibility to the 12/20/12 Galaxy release.
-                    toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
+                repository_components_tuple = container_util.get_components_from_key( key )
+                components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                 message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
                     ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
                 log.debug( message )

@@ -63,7 +63,7 @@ class Configuration( object ):
         elif 'tool_config_files' in kwargs:
             tcf = kwargs[ 'tool_config_files' ]
         else:
-            tcf = 'tool_conf.xml'
+            tcf = 'tool_conf.xml,shed_tool_conf.xml'
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
@@ -132,6 +132,21 @@ class Configuration( object ):
         self.admin_users = kwargs.get( "admin_users", "" )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
+        self.admin_email = kwargs.get( 'admin_email', None )
+        self.user_activation_on = kwargs.get( 'user_activation_on', None )
+        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        #  Get the disposable email domains blacklist file and its contents
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
+        if self.blacklist_location is not None:
+            self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
+            try:
+               with open(self.blacklist_file) as blacklist:
+                   self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
+            except IOError:
+                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )                 
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
@@ -209,6 +224,7 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
         self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
@@ -294,9 +310,7 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # PLUGINS:
-        self.plugin_frameworks = []
-        # visualization framework
+        # visualization plugin framework
         self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property

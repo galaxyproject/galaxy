@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.css", "libs/backbone/backbone-relational"], function(css) {
+define(["libs/backbone/backbone-relational"], function() {
 
 // frame manager
 var GalaxyModal = Backbone.View.extend(
@@ -21,6 +21,40 @@ var GalaxyModal = Backbone.View.extend(
     // initialize
     initialize : function(options)
     {        
+        // create
+        if (options)
+        {
+            this.create(options);
+            
+            // hide
+            $(this.el).hide();
+        }
+    },
+
+    // adds and displays a new frame/window
+    show: function(options)
+    {
+        // create
+        if (options)
+            this.create(options);
+    
+        // fade out
+        this.$el.fadeIn('fast');
+    },
+    
+    // hide modal
+    hide: function()
+    {
+        // fade out
+        this.$el.fadeOut('fast');
+    },
+    
+    // destroy modal
+    create: function (options)
+    {
+        // remove element
+        this.$el.remove();
+        
         // read in defaults
         if (!options)
             options = this.options;
@@ -34,7 +68,7 @@ var GalaxyModal = Backbone.View.extend(
         $(this.el_main).append($(this.el));
         
         // link elements
-        var footer = (this.$el).find('.footer');
+        var footer = (this.$el).find('.buttons');
 
         // append buttons
         var self = this;
@@ -43,54 +77,25 @@ var GalaxyModal = Backbone.View.extend(
             // link functions
             $.each(options.buttons, function(name, value)
             {
-                 footer.append($('<button></button>').text(name).click(value)).append(" ");
+                 footer.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
             });
         } else
             // default close button
             footer.append($('<button></button>').text('Close').click(function() { self.hide() })).append(" ");
-            
-        // hide
-        $(this.el).hide();
+    },
+    
+    // enable buttons
+    enable: function(name)
+    {
+        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', false);
     },
 
-    /*
-        EVENT HANDLING
-    */
-    
-    // event
-    events:
+    // disable buttons
+    disable: function(name)
     {
-        'mousedown .dialog'     : 'event_default',
-        'mousedown .background' : 'hide'
+        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', true);
     },
-    
-    // drag
-    event_default: function (e)
-    {
-        e.preventDefault();
-    },
-    
-    // adds and displays a new frame/window
-    show: function()
-    {
-        // fade out
-        this.$el.fadeIn('fast');
-    },
-    
-    // hide modal
-    hide: function()
-    {
-        // fade out
-        this.$el.fadeOut('fast');
-    },
-    
-    // destroy modal
-    destroy: function ()
-    {
-        // remove element
-        this.$el.remove();
-    },
-    
+        
     /*
         HTML TEMPLATES
     */
@@ -98,15 +103,17 @@ var GalaxyModal = Backbone.View.extend(
     // fill regular modal template
     template: function(title, body)
     {
-        return  '<div class="modal">' +
-                    '<div class="modal-backdrop"></div>' +
-                    '<div class="modal-dialog galaxy-corner">' +
+        return  '<div class="modal in">' +
+                    '<div class="modal-backdrop in" style="z-index: -1;"></div>' +
+                    '<div class="modal-dialog">' +
                         '<div class="modal-content">' +
-                            '<div class="header">' +
+                            '<div class="modal-header">' +
                                 '<span><h3 class="title">' + title + '</h3></span>' +
                             '</div>' +
-                            '<div class="body">' + body + '</div>' +
-                            '<div class="footer"></div>' +
+                            '<div class="modal-body style="min-width: 540px; max-height: 445px;">' + body + '</div>' +
+                            '<div class="modal-footer">' +
+                                '<div class="buttons" style="float: right;"></div>' +
+                            '</div>' +
                         '</div' +
                     '</div>' +
                 '</div>';

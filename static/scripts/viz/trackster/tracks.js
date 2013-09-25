@@ -1508,11 +1508,8 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // -- Drawing code --
         
-        // Calculate resolution in both pixels/base and bases/pixel.
-        // TODO: require minimum difference in new resolution to update? This 
-        // would help alleviate issues when window is being resized.
-        this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
-        this.resolution_px_b = 1 / this.resolution_b_px;
+        // Resolution is a pixel density.
+        this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
         
         // Overview
         var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
@@ -2110,12 +2107,12 @@ extend(DrawableConfig.prototype, {
 /**
  * Tiles drawn by tracks.
  */
-var Tile = function(track, region, resolution, canvas, data) {
+var Tile = function(track, region, w_scale, canvas, data) {
     this.track = track;
     this.region = region;
     this.low = region.get('start');
     this.high = region.get('end');
-    this.resolution = resolution;
+    this.w_scale = w_scale;
     // Wrap element in div for background and explicitly set height. Use canvas
     // height attribute because canvas may not have height if it is not in document yet.
     this.html_elt = $("<div class='track-tile'/>").append(canvas).height( $(canvas).attr("height") );
@@ -2128,14 +2125,14 @@ var Tile = function(track, region, resolution, canvas, data) {
  */
 Tile.prototype.predisplay_actions = function() {};
 
-var LineTrackTile = function(track, region, resolution, canvas, data) {
-    Tile.call(this, track, region, resolution, canvas, data);
+var LineTrackTile = function(track, region, w_scale, canvas, data) {
+    Tile.call(this, track, region, w_scale, canvas, data);
 };
 LineTrackTile.prototype.predisplay_actions = function() {};
 
-var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
+var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, message, all_slotted, feature_mapper) {
     // Attribute init.
-    Tile.call(this, track, region, resolution, canvas, data);
+    Tile.call(this, track, region, w_scale, canvas, data);
     this.mode = mode;
     this.all_slotted = all_slotted;
     this.feature_mapper = feature_mapper;
@@ -2170,7 +2167,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
         more_down_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
-            track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
+            track.data_manager.get_more_data(tile_region, track.mode, 1 / tile.w_scale, {}, track.data_manager.DEEP_DATA_REQ);
             $(".tooltip").hide();
             track.request_draw();
         }).dblclick(function(e) {
@@ -2181,7 +2178,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
         more_across_icon.click(function() {
             // Mark tile as stale, request more data, and redraw track.
             tile.stale = true;
-            track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
+            track.data_manager.get_more_data(tile_region, track.mode, 1 / tile.w_scale, {}, track.data_manager.BROAD_DATA_REQ);
             $(".tooltip").hide();
             track.request_draw();
         }).dblclick(function(e) {
@@ -2834,7 +2831,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             css_class: "exclamation",
             on_click_fn: function(track) {
                 $(".tooltip").remove();
-                // HACKish: is it always reasonble to use view to get w_scale/current resolution?
                 track.slotters[ track.view.resolution_px_b ].max_rows *= 2;
                 track.request_draw({ clear_tile_cache: true });
             },
@@ -3012,14 +3008,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             range = high - low,
             width = this.view.container.width(),
             w_scale = this.view.resolution_px_b,
-            resolution = this.view.resolution_b_px;
+            resolution = 1 / w_scale;
 
         // For overview, adjust high, low, resolution, and w_scale.
         if (this.is_overview) {
             low = this.view.max_low;
             high = this.view.max_high;
-            resolution = ( view.max_high - view.max_low ) / width;
-            w_scale = 1 / resolution;
+            w_scale = width / (view.max_high - view.max_low);
+            resolution = 1 / w_scale;
         }
         
         this.before_draw();
@@ -3039,14 +3035,22 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var 
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
+            tile_low,
             tile_region,
             tile_promise,
             tile_promises = [],
             tiles = [];
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
-            tile_region = this._get_tile_bounds(tile_index, resolution);
-            tile_promise = this.draw_helper(tile_region, resolution, w_scale, options);
+            // Get tile region.
+            tile_low = Math.floor(tile_index * TILE_SIZE * resolution)
+            tile_region = new visualization.GenomeRegion({
+                chrom: this.view.chrom,
+                start: tile_low,
+                // Tile high cannot be larger than view.max_high, which the chromosome length.
+                end: Math.min( tile_low + Math.ceil( TILE_SIZE * resolution ), this.view.max_high )
+            });
+            tile_promise = this.draw_helper(tile_region, w_scale, options);
             tile_promises.push(tile_promise);
             $.when(tile_promise).then(function(tile) {
                 tiles.push(tile);
@@ -3130,7 +3134,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             _.each(tiles, function(tile) {
                 if (!(tile instanceof LineTrackTile)) {
                     tile.html_elt.remove();
-                    track.draw_helper(tile.region, tile.resolution, w_scale, { force: true, mode: 'Coverage' });
+                    track.draw_helper(tile.region, w_scale, { force: true, mode: 'Coverage' });
                 }
             });
 
@@ -3187,7 +3191,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * -force: force a redraw rather than use cached tiles (default: false)
      * -data_fetch: fetch data if necessary (default: true)
      */
-    draw_helper: function(region, resolution, w_scale, options) {
+    draw_helper: function(region, w_scale, options) {
         // Init options if necessary to avoid having to check if options defined.
         if (!options) { options = {}; }
 
@@ -3195,6 +3199,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Fetch data as long as data_fetch option is not set to false.
             data_fetch = !( options.data_fetch === false ),
             mode = options.mode || this.mode,
+            resolution = 1 / w_scale,
 
             // Useful vars.
             track = this,
@@ -3247,7 +3252,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             var tile_data = get_tile_data(),
                 tracks_data = tile_data,
                 seq_data;
-
+            
             // If sequence data is available, subset to get only data in region.
             if (view.reference_track) {
                 seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
@@ -3289,7 +3294,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 ctx.globalCompositeOperation = "source-over";
             }
             _.each(drawables, function(d, i) {
-                tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], resolution, region, w_scale, seq_data);
+                tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], region, w_scale, seq_data);
             });
 
             // Don't cache, show if no tile.
@@ -3315,12 +3320,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Draw line (bigwig) data onto tile.
      */
-    _draw_line_track_tile: function(result, ctx, mode, resolution, region, w_scale) {
+    _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
         var canvas = ctx.canvas,
             painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
-        return new LineTrackTile(this, region, resolution, canvas, result.data);
+        return new LineTrackTile(this, region, w_scale, canvas, result.data);
     },
 
     /**
@@ -3328,12 +3333,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * @param result result from server
      * @param ctx canvas context to draw on
      * @param mode mode to draw in
-     * @param resolution view resolution
      * @param region region to draw on tile
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {},
+    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {},
 
     /**
      * Show track tile and perform associated actions. Showing tile may actually move
@@ -3384,21 +3388,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Returns a genome region that corresponds to a tile at a particular resolution
-     */
-    _get_tile_bounds: function(tile_index, resolution) {
-        var tile_low = Math.floor( tile_index * TILE_SIZE * resolution ),
-            tile_length = Math.ceil( TILE_SIZE * resolution ),
-            // Tile high cannot be larger than view.max_high, which the chromosome length.
-            tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
-        return new visualization.GenomeRegion({
-            chrom: this.view.chrom,
-            start: tile_low,
-            end: tile_high
-        });
-    },
-    
-    /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
     tool_region_and_parameters_str: function(region) {
@@ -3431,12 +3420,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Returns true if data can be subsetted.
+     * Returns true if entry can be subsetted.
      */
-    can_subset: function(data) {
+    can_subset: function(entry) {
         // Do not subset entries with a message or data with no detail.
-        if (data.dataset_type === 'bigwig' || data.message || data.extra_info === "no_detail")  {
+        if (entry.message || entry.extra_info === "no_detail")  {
             return false;
+        }
+        // Subset only if data is single-bp resolution.
+        else if (entry.dataset_type === 'bigwig') {
+            return (entry.data[1][0] - entry.data[0][0] === 1);
         }
 
         return true;
@@ -3715,7 +3708,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < tiles.length; i++) {
             var tile = tiles[i];
             if (tile.html_elt.find("canvas").height() !== max_height) {
-                this.draw_helper(tile.region, tile.resolution, w_scale, { force: true, height: max_height } );
+                this.draw_helper(tile.region, w_scale, { force: true, height: max_height } );
                 tile.html_elt.remove();
             }
         }
@@ -3767,10 +3760,10 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Retrieves data and draws tile if reference data can be displayed.
      */
-    draw_helper: function(region, resolution, w_scale, options) {
+    draw_helper: function(region, w_scale, options) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
              this.tiles_div.show();
-            return TiledTrack.prototype.draw_helper.call(this, region, resolution, w_scale, options);
+            return TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
         }
         else {
              this.tiles_div.hide();
@@ -3778,12 +3771,12 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
     },
 
-    can_subset: function(data) { return true; },
+    can_subset: function(entry) { return true; },
 
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(data, ctx, mode, resolution, region, w_scale) {
+    draw_tile: function(data, ctx, mode, region, w_scale) {
         // Try to subset data.
         var subset = this.data_manager.subset_entry(data, region),
             seq_data = subset.data;
@@ -3796,7 +3789,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             ctx.fillStyle = this.view.get_base_color(seq_data[c]);
             ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
-        return new Tile(this, region, resolution, canvas, subset);
+        return new Tile(this, region, w_scale, canvas, subset);
     }
 });
 
@@ -3841,12 +3834,12 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw track tile.
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
-        return this._draw_line_track_tile(result, ctx, mode, resolution, region, w_scale);
+    draw_tile: function(result, ctx, mode, region, w_scale) {
+        return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
     },
 
     /**
-     * Subset line tracks only if resolution is single-base pair.
+     * Subset data only if data is at single-base pair resolution.
      */
     can_subset: function(entry) { 
         return (entry.data[1][0] - entry.data[0][0] === 1);
@@ -3894,13 +3887,13 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     /**
      * Draw tile.
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
+    draw_tile: function(result, ctx, mode, region, w_scale) {
         // Paint onto canvas.
         var canvas = ctx.canvas,
             painter = new painters.DiagonalHeatmapPainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
-        return new Tile(this, region, resolution, canvas, result.data);
+        return new Tile(this, region, w_scale, canvas, result.data);
     }
 });
 
@@ -3998,7 +3991,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
-                    track.draw_helper(tile.index, tile.resolution, w_scale, { more_tile_data: { force: true, max: global_max } } );
+                    track.draw_helper(tile.index, w_scale, { more_tile_data: { force: true, max: global_max } } );
                 }
             }
         }
@@ -4153,12 +4146,11 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param result result from server
      * @param cxt canvas context to draw on
      * @param mode mode to draw in
-     * @param resolution view resolution
      * @param region region to draw on tile
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {
         var track = this,
             canvas = ctx.canvas,
             tile_low = region.get('start'),
@@ -4167,7 +4159,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // If data is line track data, draw line track tile.
         if (result.dataset_type === 'bigwig') {
-            return this._draw_line_track_tile(result, ctx, mode, resolution, region, w_scale);
+            return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
         }
 
         // Handle row-by-row tracks
@@ -4222,7 +4214,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(track, region, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
+        return new FeatureTrackTile(track, region, w_scale, canvas, result.data, mode, result.message, all_slotted, feature_mapper);        
     }
 });
 
@@ -4263,17 +4255,17 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Draw tile.
      */
-    draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
+    draw_tile: function(result, ctx, mode, region, w_scale) {
         // Data could be coverage data or variant data.
         if (result.dataset_type === 'bigwig') {
-            return this._draw_line_track_tile(result, ctx, "Histogram", resolution, region, w_scale);
+            return this._draw_line_track_tile(result, ctx, "Histogram", region, w_scale);
         }
         else { // result.dataset_type === 'variant'
             var view = this.view,
                 painter = new (this.painter)(result.data, region.get('start'), region.get('end'), this.prefs, mode,
                                              function(b) { return view.get_base_color(b); });
             painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
-            return new Tile(this, region, resolution, ctx.canvas, result.data);
+            return new Tile(this, region, w_scale, ctx.canvas, result.data);
         }
     },
 

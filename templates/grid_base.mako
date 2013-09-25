@@ -84,10 +84,9 @@
         /** Returns true if string denotes true. */
         var is_true = function(s) { return _.indexOf(['True', 'true', 't'], s) !== -1; };
 
-
         // Create grid.
         var grid = new Grid({
-            url_base: '${trans.request.path_url}',
+            url_base: location.pathname,
             async: is_true('${grid.use_async}'),
             async_ops: async_ops,
             categorical_filters: categorical_filters,
@@ -95,6 +94,8 @@
             sort_key: '${sort_key}',
             show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
             cur_page: ${cur_page_num},
+            // persistant page="all"
+            //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
             num_pages: ${num_pages}
         });
 

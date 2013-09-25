@@ -20,10 +20,10 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
 from xml.etree import ElementTree as XmlET
-from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'mercurial' )
+from galaxy import eggs
+eggs.require( 'mercurial' )
+
 from mercurial import cmdutil
 from mercurial import commands
 from mercurial import hg
@@ -306,6 +306,21 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
+
+def extract_components_from_tuple( repository_components_tuple ):
+    '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
+    toolshed = repository_components_tuple[ 0 ]
+    name = repository_components_tuple[ 1 ]
+    owner = repository_components_tuple[ 2 ]
+    changeset_revision = repository_components_tuple[ 3 ]
+    components_list = [ toolshed, name, owner, changeset_revision ]
+    if len( repository_components_tuple ) == 5:
+        toolshed, name, owner, changeset_revision, prior_installation_required = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_components_tuple ) == 6:
+        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
+    return components_list
 
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
@@ -868,6 +883,31 @@ def get_repository_by_name_and_owner( app, name, owner ):
                          .first()
     return None
 
+def get_repository_dependency_types( repository_dependencies ):
+    """
+    Inspect the received list of repository_dependencies tuples and return boolean values for has_repository_dependencies and
+    has_repository_dependencies_only_if_compiling_contained_td.
+    """
+    # Set has_repository_dependencies, which will be True only if at least one repository_dependency is defined with the value of
+    # only_if_compiling_contained_td as False.
+    has_repository_dependencies = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if not asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies = True
+            break
+    # Set has_repository_dependencies_only_if_compiling_contained_td, which will be True only if at least one repository_dependency is
+    # defined with the value of only_if_compiling_contained_td as True.
+    has_repository_dependencies_only_if_compiling_contained_td = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies_only_if_compiling_contained_td = True
+            break
+    return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
+
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
@@ -1186,7 +1226,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, url )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
     except Exception, e:
-        log.exception( "Error attemtping to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
+        log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
     return tool_shed_status_dict
 
@@ -1389,14 +1429,23 @@ def remove_dir( dir ):
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
-    Handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
-    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
-    that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
+    Find out if a repository is already installed into Galaxy - there are several scenarios where this is necessary.  For example, this method
+    will handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
+    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one that was
+    previously installed.  We'll look in the database instead of on disk since the repository may be currently uninstalled.
     """
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-    # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
+    # See if we can locate the repository using the value of changeset_revision.
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+                                                                                                     tool_shed,
+                                                                                                     repository_name,
+                                                                                                     repository_owner,
+                                                                                                     changeset_revision )
+    if tool_shed_repository:
+        return tool_shed_repository, changeset_revision
+    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
@@ -1410,14 +1459,14 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                                              repository_name,
                                                                                                              repository_owner,
                                                                                                              previous_changeset_revision )
-            if tool_shed_repository and tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.NEW ]:
+            if tool_shed_repository:
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
 def reset_previously_installed_repository( trans, repository ):
     """
     Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a
-    status of INSTALLED, so all atributes will be set to the default (NEW( state.  This will enable the repository to be freshly installed.
+    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
     """
     repository.deleted = False
     repository.tool_shed_status = None

@@ -172,8 +172,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     });
     this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
 
-    this.test.comment( 'updating using a nonsense key should fail with an error' );
-    var err = {};
+    this.test.comment( 'updating using a nonsense key should fail silently' );
+    var err = null;
     try {
         returned = this.api.histories.update( newFirstHistory.id, {
             konamiCode : 'uuddlrlrba'
@@ -182,8 +182,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         err = error;
         //this.debug( this.jsonStr( err ) );
     }
-    this.test.assert( !!err.message, "Error occurred: " + err.message );
-    this.test.assert( err.status === 400, "Error status is 400: " + err.status );
+    this.test.assert( err === null, "No error occurred: " + this.jsonStr( err ) );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
     err = {};

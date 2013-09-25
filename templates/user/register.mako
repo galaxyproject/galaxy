@@ -107,6 +107,11 @@
                 <input type="submit" name="create_user_button" value="Submit"/>
             </div>
         </form>
+        %if registration_warning_message:
+        <div class="alert alert-danger" style="margin: 30px 12px 12px 12px;">
+            ${registration_warning_message}           
+        </div>
+        %endif
     </div>
 
 </%def>

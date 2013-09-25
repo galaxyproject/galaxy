@@ -358,66 +358,26 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
-        """Import a workflow contained in an installed tool shed repository into the Galaxy instance."""
+        """Import a workflow contained in an installed tool shed repository into Galaxy."""
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )
-        repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-        changeset_revision = repository.changeset_revision
-        metadata = repository.metadata
-        workflows = metadata.get( 'workflows', [] )
-        tools_metadata = metadata.get( 'tools', [] )
-        workflow_dict = None
-        for workflow_data_tuple in workflows:
-            # The value of workflow_data_tuple is ( relative_path_to_workflow_file, exported_workflow_dict ).
-            relative_path_to_workflow_file, exported_workflow_dict = workflow_data_tuple
-            if exported_workflow_dict[ 'name' ] == workflow_name:
-                # If the exported workflow is available on disk, import it.
-                if os.path.exists( relative_path_to_workflow_file ):
-                    workflow_file = open( relative_path_to_workflow_file, 'rb' )
-                    workflow_data = workflow_file.read()
-                    workflow_file.close()
-                    workflow_dict = json.from_json_string( workflow_data )
+            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+            if repository:
+                workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
+                if workflow:
+                    workflow_name = encoding_util.tool_shed_encode( str( workflow.name ) )
                 else:
-                    # Use the current exported_workflow_dict.
-                    workflow_dict = exported_workflow_dict
-                break
-        if workflow_dict:
-            # Create workflow if possible.
-            workflow, missing_tool_tups = workflow_util.get_workflow_from_dict( trans=trans,
-                                                                                workflow_dict=workflow_dict,
-                                                                                tools_metadata=tools_metadata,
-                                                                                repository_id=repository_id,
-                                                                                changeset_revision=changeset_revision )
-            # Save the workflow in the Galaxy database.
-            # Pass workflow_dict along to create annotation at this point
-            stored_workflow = workflow_util.save_workflow( trans, workflow, workflow_dict )
-            # Use the latest version of the saved workflow.
-            workflow = stored_workflow.latest_workflow
-            if workflow_name:
-                workflow.name = workflow_name
-            # Provide user feedback and show workflow list.
-            if workflow.has_errors:
-                message += "Imported, but some steps in this workflow have validation errors. "
-                status = "error"
-            if workflow.has_cycles:
-                message += "Imported, but this workflow contains cycles.  "
-                status = "error"
+                    message += 'Unable to locate a workflow named <b>%s</b> within the installed tool shed repository named <b>%s</b>' % \
+                        ( str( workflow_name ), str( repository.name ) )
+                    status = 'error'
             else:
-                message += "Workflow <b>%s</b> imported successfully.  " % workflow.name
-            if missing_tool_tups:
-                # TODO: rework this since it is used in the tool shed, but shoudn't be used in Galaxy.
-                name_and_id_str = ''
-                for missing_tool_tup in missing_tool_tups:
-                    tool_id, tool_name, other = missing_tool_tup
-                    name_and_id_str += 'name: %s, id: %s' % ( str( tool_id ), str( tool_name ) )
-                log.debug( "The following tools required by this workflow are missing from this Galaxy instance: %s" % name_and_id_str )
+                message = 'Invalid repository id <b>%s</b> received.' % str( repository_id )
+                status = 'error'
         else:
-            message += 'The workflow named %s is not included in the metadata for revision %s of repository %s' % \
-                ( str( workflow_name ), str( changeset_revision ), str( repository.name ) )
+            message = 'The value of workflow_name is required, but was not received.'
             status = 'error'
-        workflow_name = encoding_util.tool_shed_encode( workflow.name ),
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='view_workflow',
                                                           workflow_name=workflow_name,
@@ -812,7 +772,7 @@ class AdminToolshed( AdminGalaxy ):
         status = kwd.get( 'status', 'done' )
         shed_tool_conf = kwd.get( 'shed_tool_conf', None )
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        # Handle repository dependencies.
+        # Handle repository dependencies, which do not include those that are required only for compiling a dependent repository's tool dependencies.
         has_repository_dependencies = util.string_as_bool( kwd.get( 'has_repository_dependencies', False ) )
         install_repository_dependencies = kwd.get( 'install_repository_dependencies', '' )
         # Every repository will be installed into the same tool panel section or all will be installed outside of any sections.
@@ -1061,7 +1021,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                               repository_clone_url,
                                                                               metadata,
                                                                               trans.model.ToolShedRepository.installation_status.NEW,
-                                                                              tool_shed_repository.installed_changeset_revision,
+                                                                              tool_shed_repository.changeset_revision,
                                                                               tool_shed_repository.owner,
                                                                               tool_shed_repository.dist_to_shed )
         ctx_rev = suc.get_ctx_rev( trans.app,
@@ -1320,7 +1280,6 @@ class AdminToolshed( AdminGalaxy ):
         missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
         repository_name = dependencies_for_repository_dict.get( 'name', None )
         repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
-
         if installed_repository_dependencies or missing_repository_dependencies:
             has_repository_dependencies = True
         else:

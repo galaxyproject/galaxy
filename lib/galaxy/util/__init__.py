@@ -444,9 +444,9 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
-    return docutils.core.publish_string(s,
+    return unicodify( docutils.core.publish_string( s,
                 writer=docutils.writers.html4css1.Writer(),
-                settings_overrides={"embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream()})
+                settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
 
 def xml_text(root, name=None):
     """Returns the text inside an element"""

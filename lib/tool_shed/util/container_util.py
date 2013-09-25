@@ -788,7 +788,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             # Readme files container.
             if metadata:
                 if 'readme_files' not in exclude and 'readme_files' in metadata:
-                    readme_files_dict = readme_util.build_readme_files_dict( metadata )
+                    readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
                     folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
             if 'repository_dependencies' not in exclude:
@@ -855,7 +855,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     folder_id, data_managers_root_folder = build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
                     containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
         except Exception, e:
-            log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
+            log.exception( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
         finally:
             lock.release()
     return containers_dict
@@ -1325,29 +1325,31 @@ def get_components_from_key( key ):
     repository_name = items[ 1 ]
     repository_owner = items[ 2 ]
     changeset_revision = items[ 3 ]
-    if len( items ) >= 5:
-        try:
-            prior_installation_required = items[ 4 ]
-        except:
-            prior_installation_required = 'False'
-        try:
-            only_if_compiling_contained_td = items[ 5 ]
-        except:
-            only_if_compiling_contained_td = 'False'
+    if len( items ) == 5:
+        prior_installation_required = items[ 4 ]
+        return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required
+    elif len( items ) == 6:
+        prior_installation_required = items[ 4 ]
+        only_if_compiling_contained_td = items[ 5 ]
         return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
     else:
         # For backward compatibility to the 12/20/12 Galaxy release we have to return the following, and callers must handle exceptions.
         return toolshed_base_url, repository_name, repository_owner, changeset_revision
 
 def handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, rd_key, rd_value, folder_id, repository_dependency_id, folder_keys ):
-    try:
-        toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-            get_components_from_key( rd_key )
-    except ValueError:
-        # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required and only_if_compiling_contained_td to 'False'.
-        toolshed, repository_name, repository_owner, changeset_revision = get_components_from_key( rd_key )
+    repository_components_tuple = get_components_from_key( rd_key )
+    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+    toolshed, repository_name, repository_owner, changeset_revision = components_list[ 0:4 ]
+    # For backward compatibility to the 12/20/12 Galaxy release.
+    if len( components_list ) == 4:
         prior_installation_required = 'False'
         only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 5:
+        prior_installation_required = components_list[ 4 ]
+        only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 6:
+        prior_installation_required = components_list[ 4 ]
+        only_if_compiling_contained_td = components_list[ 5 ]
     folder = get_folder( repository_dependencies_folder, rd_key )
     label = generate_repository_dependencies_folder_label_from_key( repository_name,
                                                                     repository_owner,
@@ -1416,14 +1418,19 @@ def is_subfolder_of( folder, repository_dependency ):
     return False
 
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, key ):
-    try:
-        toolshed_base_url, key_name, key_owner, key_changeset_revision, key_prior_installation_required, key_only_if_compiling_contained_td = \
-            get_components_from_key( key )
-    except ValueError:
-        # For backward compatibility to the 12/20/12 Galaxy release, default key_prior_installation_required to False.
-        toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
+    repository_components_tuple = get_components_from_key( key )
+    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+    toolshed, key_name, key_owner, key_changeset_revision = components_list[ 0:4 ]
+    # For backward compatibility to the 12/20/12 Galaxy release.
+    if len( components_list ) == 4:
         key_prior_installation_required = 'False'
         key_only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 5:
+        key_prior_installation_required = components_list[ 4 ]
+        key_only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 6:
+        key_prior_installation_required = components_list[ 4 ]
+        key_only_if_compiling_contained_td = components_list[ 5 ]
     if repository_name == key_name and \
         repository_owner == key_owner and \
         changeset_revision == key_changeset_revision and \

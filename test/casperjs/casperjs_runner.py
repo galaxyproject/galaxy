@@ -176,7 +176,14 @@ class CasperJSTestCase( unittest.TestCase ):
             err_string = ( "%s\n%s" %( get_msg( last_error ),
                 self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
 
-        # if we couldn't parse json from what's returned on the error, raise a vanilla exc
+        # if we couldn't parse json from what's returned on the error, dump stdout
+        except ValueError, val_err:
+            if str( val_err ) == 'No JSON object could be decoded':
+                log.debug( '(error parsing returned JSON from casperjs, dumping stdout...)\n:%s', stdout_output )
+            else:
+                raise
+
+        # otherwise, raise a vanilla exc
         except Exception, exc:
             log.debug( '(failed to parse error returned from %s: %s)', _PATH_TO_HEADLESS, str( exc ) )
             return HeadlessJSJavascriptError(

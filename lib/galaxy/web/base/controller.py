@@ -24,6 +24,7 @@ from galaxy import web
 from galaxy import model
 from galaxy import security
 from galaxy import util
+from galaxy import objectstore
 
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
@@ -583,12 +584,15 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.to_dict( view='element' )
+        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
+        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-
-        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        if not can_access_hda:
+            return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
         # ---- return here if deleted AND purged OR can't access
@@ -597,8 +601,11 @@ class UsesHistoryDatasetAssociationMixin:
             #TODO: to_dict should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
+        if expose_dataset_path:
+            try:
+                hda_dict[ 'file_name' ] = hda.file_name
+            except objectstore.ObjectNotFound, onf:
+                log.exception( 'objectstore.ObjectNotFound, HDA %s: %s', hda.id, onf )
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
@@ -633,6 +640,18 @@ class UsesHistoryDatasetAssociationMixin:
                 hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
+
+    def get_inaccessible_hda_dict( self, trans, hda ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'state'     : hda.state,
+            'deleted'   : hda.deleted,
+            'visible'   : hda.visible,
+            'accessible': False
+        })
 
     def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
         return trans.security.encode_dict_ids({
