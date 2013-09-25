@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import threading
+import logging
 from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string
@@ -19,6 +20,8 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy.util.odict import odict
+
+log = logging.getLogger( __name__ )
 
 
 class InstallManager( object ):
@@ -160,15 +163,8 @@ class InstallManager( object ):
             if rd_key in [ 'root_key', 'description' ]:
                 continue
             for rd_tup in rd_tups:
-                if len( rd_tup ) == 4:
-                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = \
-                        common_util.parse_repository_dependency_tuple( rd_tup )
-                elif len( rd_tup ) == 5:
-                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
-                        common_util.parse_repository_dependency_tuple( rd_tup )
-                elif len( rd_tup ) == 6:
-                    rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, only_if_compiling_contained_td = \
-                        common_util.parse_repository_dependency_tuple( rd_tup )
+                parsed_rd_tup = common_util.parse_repository_dependency_tuple( rd_tup )
+                rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = parsed_rd_tup[ 0:4 ]
                 # TODO: Make sure the repository description is applied to the new repository record during installation.
                 tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name, rd_owner, rd_changeset_revision, description=None )
                 if tool_shed_repository:
