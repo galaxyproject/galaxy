@@ -497,9 +497,8 @@ class DistributedObjectStore(ObjectStore):
                 self.weighted_backend_ids.append(id)
         self.original_weighted_backend_ids = self.weighted_backend_ids
 
-
     def shutdown(self):
-        super(NestedObjectStore, self).shutdown()
+        super(DistributedObjectStore, self).shutdown()
         if self.sleeper is not None:
             self.sleeper.wake()
 
