@@ -381,9 +381,8 @@ class NestedObjectStore(ObjectStore):
         self.backends = {}
 
     def shutdown(self):
-        [b.shutdown() for b in self.backends.values()]
-        if self.sleeper is not None:
-            self.sleeper.wake()
+        for store in self.backends.values():
+            store.shutdown()
         super(NestedObjectStore, self).shutdown()
 
     def exists(self, obj, **kwargs):
@@ -452,11 +451,8 @@ class DistributedObjectStore(ObjectStore):
         self.original_weighted_backend_ids = []
         self.max_percent_full = {}
         self.global_max_percent_full = 0.0
-
         random.seed()
-
         self.__parse_distributed_config(config, config_xml)
-
         self.sleeper = None
         if fsmon and ( self.global_max_percent_full or filter( lambda x: x != 0.0, self.max_percent_full.values() ) ):
             self.sleeper = Sleeper()
@@ -500,6 +496,12 @@ class DistributedObjectStore(ObjectStore):
                 # choose a backend from that sequence at creation
                 self.weighted_backend_ids.append(id)
         self.original_weighted_backend_ids = self.weighted_backend_ids
+
+
+    def shutdown(self):
+        super(NestedObjectStore, self).shutdown()
+        if self.sleeper is not None:
+            self.sleeper.wake()
 
     def __filesystem_monitor(self):
         while self.running:
@@ -570,10 +572,6 @@ class HierarchicalObjectStore(NestedObjectStore):
         for b in config_xml.find('backends'):
             self.backends[int(b.get('order'))] = build_object_store_from_config(config, fsmon=fsmon, config_xml=b)
 
-    def shutdown(self):
-        for store in self.backends.values():
-            store.shutdown()
-        super(HierarchicalObjectStore, self).shutdown()
 
     def exists(self, obj, **kwargs):
         """
