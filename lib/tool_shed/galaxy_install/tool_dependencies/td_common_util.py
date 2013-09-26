@@ -264,11 +264,13 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             in_actions_group = True
             # Record the number of <actions> elements so we can filter out any <action> elements that precede <actions> elements.
             actions_elem_count = len( elem.findall( 'actions' ) )
-            # Record the number of <actions> elements that have architecture and os specified, in order to filter out any platform-independent
-            # <actions> elements that come before platform-specific <actions> elements. This call to elem.findall is filtered by tags that have
-            # both the os and architecture specified.  For more details, see http://docs.python.org/2/library/xml.etree.elementtree.html Section
-            # 19.7.2.1.
-            platform_actions_element_count = len( elem.findall( 'actions[@architecture][@os]' ) )
+            # Record the number of <actions> elements that have both architecture and os specified, in order to filter out any 
+            # platform-independent <actions> elements that come before platform-specific <actions> elements.
+            platform_actions_elements = []
+            for actions_elem in elem.findall( 'actions' ):
+                if actions_elem.get( 'architecture' ) is not None and actions_elem.get( 'os' ) is not None:
+                    platform_actions_elements.append( actions_elem )
+            platform_actions_element_count = len( platform_actions_elements )
             platform_actions_elements_processed = 0
             actions_elems_processed = 0
             # The tag sets that will go into the after_install_actions list are <action> tags instead of <actions> tags.  These will be processed
