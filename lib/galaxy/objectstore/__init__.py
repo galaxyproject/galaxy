@@ -432,7 +432,7 @@ class NestedObjectStore(ObjectStore):
             return default
 
 
-class DistributedObjectStore(ObjectStore):
+class DistributedObjectStore(NestedObjectStore):
     """
     ObjectStore that defers to a list of backends, for getting objects the
     first store where the object exists is used, objects are created in a
