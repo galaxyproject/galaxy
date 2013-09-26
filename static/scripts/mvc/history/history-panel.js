@@ -212,6 +212,14 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.log( this + ' (init\'d) storage:', this.storage.get() );
     },
 
+    clearWebStorage : function(){
+        for( var key in sessionStorage ){
+            if( key.indexOf( 'HistoryView.' ) === 0 ){
+                sessionStorage.removeItem( key );
+            }
+        }
+    },
+
     /** Add an hda to this history's collection
      *  @param {HistoryDatasetAssociation} hda hda to add to the collection
      */
