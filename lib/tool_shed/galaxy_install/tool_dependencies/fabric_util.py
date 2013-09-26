@@ -11,10 +11,9 @@ from contextlib import contextmanager
 from galaxy.util.template import fill_template
 from galaxy import eggs
 
-import pkg_resources
-
-pkg_resources.require('ssh' )
-pkg_resources.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
+eggs.require( 'Fabric' )
 
 from fabric.api import env
 from fabric.api import lcd
