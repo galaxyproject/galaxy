@@ -425,7 +425,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rd-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">${datatype.extension | h}</${cell_type}>
         <${cell_type}>${datatype.type | h}</${cell_type}>
         <${cell_type}>${datatype.mimetype | h}</${cell_type}>
@@ -440,15 +440,15 @@
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
     <% 
         from tool_shed.util.shed_util_common import to_html_string
-        encoded_id = trans.security.encode_id( failed_test.id ) 
+        encoded_id = trans.security.encode_id( failed_test.id )
     %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rft-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="failed_test_table" class="tool_test_results">
+            <table id="test_environment">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
@@ -475,7 +475,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-ridm-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.index | h}</${cell_type}>
         <${cell_type}>${data_manager.error | h}</${cell_type}>
     </tr>
@@ -493,7 +493,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rird-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             ${ invalid_repository_dependency.error | h }
         </td>
@@ -510,7 +510,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rit-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             %if trans.webapp.name == 'tool_shed' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
                 <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">
@@ -545,7 +545,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-ritd-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="invalid_td_table">
                 <tr><td>${ invalid_tool_dependency.error | h }</td></tr>
@@ -559,14 +559,16 @@
 </%def>
 
 <%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( missing_test_component.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( missing_test_component.id )
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rmtc-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="missing_table" class="tool_test_results">
+            <table id="test_environment">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${missing_test_component.tool_version | h}</td></tr>
                 <tr><td><b>Tool guid:</b> ${missing_test_component.tool_guid | h}</td></tr>
@@ -587,27 +589,17 @@
         encoded_id = trans.security.encode_id( readme.id )
         render_rst = readme.name.endswith( '.rst' )
     %>
-    <style type="text/css">
-        #readme_table{ table-layout:fixed;
-                       width:100%;
-                       overflow-wrap:normal;
-                       overflow:hidden;
-                       border:0px; 
-                       word-break:keep-all;
-                       word-wrap:break-word;
-                       line-break:strict; }
-    </style>
     <tr class="datasetRow"
         %if parent is not None:
-            parent="${parent}"
+            parent="${parent}" 
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="readme_table">
+            <table id="readme_files">
                 %if render_rst:
                     <tr><td>${ rst_to_html( readme.text ) }</td></tr>
                 %else:
-                    <tr><td>${readme.name}<br/>${ to_html_string( readme.text ) }</td></tr>
+                    <tr><td>${ to_html_string( readme.text ) }</td></tr>
                 %endif
             </table>
         </td>
@@ -652,7 +644,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rrd-${encoded_id}">
         %if trans.webapp.name == 'galaxy':
             <${cell_type} style="padding-left: ${pad+20}px;">
                 %if row_is_header:
@@ -684,28 +676,31 @@
     %>
 </%def>
 
-<%def name="render_tool_test_results_css()">
+<%def name="render_table_wrap_style( table_id )">
     <style type="text/css">
-        table.tool_test_results{ table-layout:fixed;
-                                 width:100%;
-                                 overflow-wrap:normal;
-                                 overflow:hidden;
-                                 border:0px; 
-                                 word-break:keep-all;
-                                 word-wrap:break-word;
-                                 line-break:strict; }
+        table.${table_id}{ table-layout:fixed;
+                           width:100%;
+                           overflow-wrap:normal;
+                           overflow:hidden;
+                           border:0px; 
+                           word-break:keep-all;
+                           word-wrap:break-word;
+                           line-break:strict; }
     </style>
 </%def>
 
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( installation_error.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( installation_error.id )
+    %>
+    ${render_table_wrap_style( "td_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rtdie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table" class="tool_test_results">
+            <table id="td_install_error_table">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -726,14 +721,17 @@
 </%def>
 
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
-    <% encoded_id = trans.security.encode_id( installation_error.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( installation_error.id )
+    %>
+    ${render_table_wrap_style( "rd_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rrie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table" class="tool_test_results">
+            <table id="rd_install_error_table">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
@@ -757,14 +755,16 @@
 </%def>
 
 <%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( not_tested.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( not_tested.id )
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rnt-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="not_tested_table" class="tool_test_results">
+            <table id="test_environment">
                 <tr><td>${not_tested.reason | h}</td></tr>
             </table>
         </td>
@@ -776,14 +776,16 @@
 </%def>
 
 <%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False )">
-    <% encoded_id = trans.security.encode_id( passed_test.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( passed_test.id )
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rpt-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="passed_tests_table" class="tool_test_results">
+            <table id="test_environment">
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
@@ -808,7 +810,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rt-${encoded_id}">
         %if row_is_header:
             <th style="padding-left: ${pad+20}px;">${tool.name | h}</th>
         %else:
@@ -857,7 +859,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rtd-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${tool_dependency.name | h}
@@ -917,9 +919,9 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rte-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table class="grid" id="readme_table">
+            <table class="grid" id="test_environment">
                 <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
                 <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
                 <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
@@ -950,7 +952,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rvdm-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
         <${cell_type}>${data_manager.version | h}</${cell_type}>
         <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
@@ -981,7 +983,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rw-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${workflow.workflow_name | h}
@@ -1045,6 +1047,8 @@
                 return str( self.count )
     %>
     %if readme_files_root_folder:
+        ${render_table_wrap_style( "readme_files" )}
+        <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
             <div class="toolFormBody">
@@ -1127,14 +1131,14 @@
                 %if valid_data_managers_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_data_managers">
                         ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if invalid_data_managers_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_data_managers">
                         ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
@@ -1156,16 +1160,20 @@
         </div>
     %endif
     %if tool_test_results_root_folder:
-        ${render_tool_test_results_css()}
+        ##${render_table_wrap_style( "failed_test_table" )}
+        ##${render_table_wrap_style( "missing_table" )}
+        ##${render_table_wrap_style( "not_tested_table" )}
+        ##${render_table_wrap_style( "passed_tests_table" )}
+        ${render_table_wrap_style( "test_environment" )}
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Automated tool test results</div>
             <div class="toolFormBody">
-                    <p/>
-                    <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">
-                        ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-                    </table>
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">
+                    ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
             </div>
         </div>
     %endif
