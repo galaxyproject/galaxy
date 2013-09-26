@@ -179,7 +179,7 @@ class JobConfiguration( object ):
         if tools is not None:
             for tool in self.__findall_with_required(tools, 'tool'):
                 # There can be multiple definitions with identical ids, but different params
-                id = tool.get('id')
+                id = tool.get('id').lower()
                 if id not in self.tools:
                     self.tools[id] = list()
                 self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
