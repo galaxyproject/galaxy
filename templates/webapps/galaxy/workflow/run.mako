@@ -72,11 +72,12 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            // The destroy on the following line is temporary and prevents
-            // select2 use on Input Dataset Steps, but allows elsewhere.  We
-            // need a new widget to better handle pairwise matching.
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').select2("destroy").each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
+                // The destroy on the following line is temporary and prevents
+                // select2 use on Input Dataset Steps, but allows elsewhere.  We
+                // need a new widget to better handle pairwise matching.
+                select.select2("destroy");
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.
                 select.closest('.form-row').children('label').append(
