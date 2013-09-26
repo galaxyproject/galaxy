@@ -154,7 +154,7 @@ $.extend( Modal.prototype, {
         // Body
         var body = options.body;
         if ( body == "progress" ) {
-            body = $("<div class='progress progress-striped active'><div class='bar' style='width: 100%'></div></div>"); 
+            body = $("<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>"); 
         }
         this.$body.html( body );
     },
