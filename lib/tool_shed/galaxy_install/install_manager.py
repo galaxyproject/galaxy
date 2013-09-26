@@ -86,6 +86,9 @@ class InstallManager( object ):
                         plural = 's'
                         file_names = ', '.join( self.proprietary_tool_confs )
                     if missing_tool_configs_dict:
+                        for proprietary_tool_conf in self.proprietary_tool_confs:
+                            # Create a backup of the tool configuration in the un-migrated state.
+                            shutil.copy( proprietary_tool_conf, '%s-pre-stage-%04d' % ( proprietary_tool_conf, latest_migration_script_number ) )
                         for repository_elem in root:
                             # Make sure we have a valid repository tag.
                             if self.__is_valid_repository_tag( repository_elem ):
@@ -203,7 +206,7 @@ class InstallManager( object ):
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )
-                tree.write( tmp_filename )
+                tree.write( tmp_filename, encoding='utf-8', xml_declaration=True )
                 fh.close()
                 shutil.move( tmp_filename, os.path.abspath( proprietary_tool_conf ) )
                 os.chmod( proprietary_tool_conf, 0644 )
