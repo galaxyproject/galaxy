@@ -52,7 +52,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         o payload's relevant params:
           - folder_id: This is the parent folder's id (required)
         """
-        log.debug( "FoldersController.create: enter" )
+#         log.debug( "FoldersController.create: enter" )
         # TODO: Create a single point of exit if possible. For now we only
         # exit at the end and on exceptions.
         if 'folder_id' not in payload:
@@ -90,7 +90,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                                    name = v.name,
                                    url = url_for( 'folder', id=encoded_id ) ) )
         else:
-            log.debug( "Error creating folder; setting output and status" )
+#             log.debug( "Error creating folder; setting output and status" )
             trans.response.status = status
             rval = output
         return rval
