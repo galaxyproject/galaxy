@@ -183,7 +183,7 @@
         <div class="page-container" style="padding: 10px;">
         <div id="loading_indicator"></div>
             <h2>Launch a Galaxy Cloud Instance</h2>
-              <div id="launchFormContainer" class="toolForm">
+              <div id="launchFormContainer">
                     <form id="cloudlaunch_form" action="${h.url_for( controller='/cloudlaunch', action='launch_instance')}" method="post">
 
                     <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret
