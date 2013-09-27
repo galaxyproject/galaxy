@@ -387,6 +387,14 @@ class PostJobAction( object ):
         self.workflow_step = workflow_step
 
 
+class StoredWorkflowAnnotationAssociation( object ):
+    pass
+
+
+class WorkflowStepAnnotationAssociation( object ):
+    pass
+
+
 class Workflow( object ):
 
     def __init__( self ):
