@@ -57,6 +57,14 @@ body  {
 
 // ==== Panel layout styles ====
 
+@panel-message-height: 30px;
+
+@layout_top_padding: 0px;
+@border-default-color_padding: 0px;
+
+@panel_header_height: 30px;
+@panel_footer_height: 25px;
+
 #background {
     position: absolute;
     background: #fff;
@@ -74,7 +82,7 @@ body  {
     top: @navbar-height + @layout_top_padding + 1;
     left:0; 
     width:100%; 
-    height: @panel_header_height !important;
+    height: @panel-message-height !important;
     overflow: hidden; 
     border-bottom: solid #999 1px;
     font-size: 90%;
@@ -85,17 +93,11 @@ body  {
     top: @navbar-height + @layout_top_padding + 1;
     left:0; 
     width:100%; 
-    height: @panel_header_height !important;
+    height: @panel-message-height !important;
     overflow: hidden; 
     border-bottom: solid #999 1px;
     font-size: 90%;
 }
-
-@layout_top_padding: 0px;
-@border-default-color_padding: 0px;
-
-@panel_header_height: 30px;
-@panel_footer_height: 25px;
 
 // Panels
 
@@ -132,6 +134,23 @@ body  {
     right: 0px; 
     z-index: 200;
     border-left: solid @layout-border-color 1px;
+}
+
+// If the message box or inactivity box is visible
+body.has-message-box, body.has-inactivity-box {
+    #left, #left-border, #center, #right-border, #right {
+        top: @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
+}
+
+// If both are visible
+body.has-message-box.has-inactivity-box {
+    #left, #left-border, #center, #right-border, #right {
+        top: 2 * @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
+    #inactivebox {
+        top: @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
 }
 
 .subnavbar {
@@ -299,8 +318,8 @@ div.unified-panel-body {
 
 .panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
 {
-    height: 24px;
-    line-height: 24px;
+    height: @panel-message-height;
+    line-height: @panel-message-height;
     padding: 0px;
     padding-left: 26px;
     background-color: @state-danger-bg;
@@ -731,7 +750,7 @@ input[type="submit"], button {
     padding-left: 52px;
     background-image: url(error_large.png);
     background-repeat: no-repeat;
-    background-position: 10px 10px;
+    background-position: 10px 8px;
 }
 
 .errormessagelarge {

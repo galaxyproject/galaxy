@@ -7,6 +7,7 @@
     self.show_inactivity_warning = False
     if trans.webapp.name == 'galaxy' and trans.user:
         self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) )
+    self.show_inactivity_warning = True
     self.overlay_visible=False
     self.active_view=None
     self.body_class=""
@@ -294,7 +295,15 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="full-content ${self.body_class}">
+    <%
+    body_class = self.body_class
+    if self.message_box_visible:
+        body_class += " has-message-box"
+    if self.show_inactivity_warning:
+        body_class += " has-inactivity-box"
+    %>
+
+    <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">
@@ -312,16 +321,14 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-                %if self.message_box_visible and app.config.message_box_content:
             <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                        ${app.config.message_box_content}
+                ${app.config.message_box_content}
             </div>
-                %endif
-                %if self.show_inactivity_warning:
-                    <div id="inactivebox" class="panel-warning-message">
+            %if self.show_inactivity_warning:
+                <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content}
-                    </div>
-                %endif
+                </div>
+            %endif
             ${self.overlay(visible=self.overlay_visible)}
             %if self.has_left_panel:
                 <div id="left">
