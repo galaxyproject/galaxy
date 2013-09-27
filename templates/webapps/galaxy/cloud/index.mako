@@ -118,10 +118,10 @@
                             });
                 }
             });
-            $('#loading_indicator').ajaxStart(function(){
-                $(this).show('fast');
+            $(document).ajaxStart(function(){
+                $('#loading_indicator').show('fast');
             }).ajaxStop(function(){
-                $(this).hide('fast');
+                $('#loading_indicator').hide('fast');
             });
             $('form').ajaxForm({
                     type: 'POST',
