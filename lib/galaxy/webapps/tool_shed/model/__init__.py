@@ -378,6 +378,15 @@ class ItemTagAssociation( object ):
         self.user_value = None
 
 
+class PostJobAction( object ):
+
+    def __init__( self, action_type, workflow_step, output_name = None, action_arguments = None):
+        self.action_type = action_type
+        self.output_name = output_name
+        self.action_arguments = action_arguments
+        self.workflow_step = workflow_step
+
+
 class Workflow( object ):
 
     def __init__( self ):

@@ -395,7 +395,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
             new_step_annotation.annotation = annotation
             new_step_annotation.user = trans.user
-            step.annotations.append(new_step_annotation)
+            step.annotations.append( new_step_annotation )
         # Unpack and add post-job actions.
         post_job_actions = step_dict.get( 'post_job_actions', {} )
         for name, pja_dict in post_job_actions.items():
