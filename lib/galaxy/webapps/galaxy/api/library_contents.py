@@ -36,8 +36,15 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             * url:  the url to get detailed information on the library item
         """
         rval = []
+        params = util.Params( kwd, sanitize=False )
+        # Recursive search is on by default.
+        load_recursively = params.get( 'load_recursively', None )
+        if load_recursively is not None and load_recursively.lower() == "false":
+                load_recursively = False
+        else:
+            load_recursively = True  
         current_user_roles = trans.get_current_user_roles()
-        def traverse( folder ):
+        def traverse( folder, load_recursively ):
             admin = trans.user_is_admin()
             rval = []
             for subfolder in folder.active_folders:
@@ -47,7 +54,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                     subfolder.api_path = folder.api_path + '/' + subfolder.name
                     subfolder.api_type = 'folder'
                     rval.append( subfolder )
-                    rval.extend( traverse( subfolder ) )
+                    if load_recursively:
+                        rval.extend( traverse( subfolder, load_recursively ) )
             for ld in folder.datasets:
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset(
@@ -55,12 +63,14 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 if (admin or can_access) and not ld.deleted:
                     log.debug( "type(folder): %s" % type( folder ) )
                     log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
-                    #log.debug( "attributes of folder: %s" % str(dir(folder)) )
+                    log.debug( "attributes of folder: %s" % str(dir(folder)) )
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
                     rval.append( ld )
             return rval
         try:
+            if library_id[0] == 'F':
+                library_id = library_id[1:]
             decoded_library_id = trans.security.decode_id( library_id )
         except TypeError:
             trans.response.status = 400
@@ -80,14 +90,17 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                            url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
         log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
         library.root_folder.api_path = ''
-        for content in traverse( library.root_folder ):
-            encoded_id = trans.security.encode_id( content.id )
-            if content.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
-            rval.append( dict( id = encoded_id,
-                               type = content.api_type,
-                               name = content.api_path,
-                               url = url_for( 'library_content', library_id=library_id, id=encoded_id, ) ) )
+        if load_recursively:
+            for content in traverse( library.root_folder, load_recursively ):
+                encoded_id = trans.security.encode_id( content.id )
+                if content.api_type == 'folder':
+                    encoded_id = 'F' + encoded_id
+                rval.append( dict( id = encoded_id,
+                                   type = content.api_type,
+                                   name = content.api_path,
+                                   url = url_for( 'library_content', library_id=library_id, id=encoded_id, ) ) )
+        else: # We don't load recursively, we need to pass different value to traverse.
+            pass
         return rval
 
     @web.expose_api
