@@ -29,20 +29,6 @@
             right: 0 !important;
         %endif
     }
-## This is some dirty hack happening
-    %if self.message_box_visible or self.show_inactivity_warning:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
-    %if self.message_box_visible and self.show_inactivity_warning:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 94px;
-        }
-        #inactivebox{top:64px;}
-    %endif
     </style>
 </%def>
 
