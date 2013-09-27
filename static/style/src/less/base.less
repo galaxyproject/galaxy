@@ -671,9 +671,14 @@ textarea, input[type="text"], input[type="password"] {
     padding: 3px;
 }
 
+// Always style buttons and submits as bootstrap buttons
 input[type="submit"], button {
     .btn();
     .btn-default();
+    // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
+    &.btn-primary {
+        .btn-primary();
+    }
 }
 
 .search-query {
