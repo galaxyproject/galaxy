@@ -261,7 +261,8 @@
         <div id="top-modal-dialog" class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <span><h4 class='title'>${title}</h4></span>
+                    <button type='button' class='close' style="display: none;">&times;</button>
+                    <h4 class='title'>${title}</h4>
                 </div>
                 <div class="modal-body">${content}</div>
                 <div class="modal-footer">
