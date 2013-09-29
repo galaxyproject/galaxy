@@ -29,6 +29,8 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
+        elif value.startswith( '\\x' ):
+            return binascii.unhexlify( value[2:] )
         else:
             return value
     except Exception, ex:
