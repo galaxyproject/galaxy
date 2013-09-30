@@ -103,6 +103,12 @@ var GalaxyModal = Backbone.View.extend(
     disable: function(name) {
         $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', true);
     },
+    
+    // returns scroll top for body element
+    scrollTop: function()
+    {
+        return $(this.el).find('.modal-body').scrollTop();
+    },
         
     /*
         HTML TEMPLATES

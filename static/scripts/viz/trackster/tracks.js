@@ -2020,11 +2020,10 @@ extend(DrawableConfig.prototype, {
                             var tip = $(this).siblings(".tooltip").addClass( "in" );
                             tip.css( { 
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height) 
+                                // top: $(this).position().top + $(this.height)
                                 left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
+                                top: $(this).position().top + Galaxy.modal.scrollTop() - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
                                 } ).show();
-                                
                             // Click management: 
                             
                             // Keep showing tip if clicking in tip.
