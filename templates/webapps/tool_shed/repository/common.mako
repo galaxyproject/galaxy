@@ -276,7 +276,8 @@
                     else:
                         folder_label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder_label
                 elif folder.invalid_tools:
-                    folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
+                    if trans.webapp.name == 'tool_shed':
+                        folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
