@@ -1062,7 +1062,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                         '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
                         '<span class="f-icon f-close fa-icon-trash"></span>' +            
                     '</div>' +
-                    '<div class="f-content corner">' + content +
+                    '<div class="f-content">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
                     '<span class="f-resize f-icon corner fa-icon-resize-full"></span>' +

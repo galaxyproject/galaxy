@@ -9,7 +9,7 @@ define(["galaxy.modal", "galaxy.master", "utils/galaxy.uploadbox", "libs/backbon
 var GalaxyUpload = Backbone.View.extend(
 {
     // own modal
-    modal   : null,
+    modal : null,
     
     // button
     button_show : null,
@@ -346,7 +346,8 @@ var GalaxyUpload = Backbone.View.extend(
                     'Upload' : function() {self.event_upload()},
                     'Reset'  : function() {self.event_reset()},
                     'Close'  : function() {self.modal.hide()}
-                }
+                },
+                height : '250px'
             });
         
             // set element
@@ -369,7 +370,7 @@ var GalaxyUpload = Backbone.View.extend(
             // setup info
             this.update_screen();
         }
-                
+        
         // show modal
         this.modal.show();
     },
@@ -411,7 +412,7 @@ var GalaxyUpload = Backbone.View.extend(
                 message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
         } else {
             if (this.counter.running == 0)
-                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click "Upload" to proceed.';
+                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Upload\' to proceed.';
             else
                 message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
         }

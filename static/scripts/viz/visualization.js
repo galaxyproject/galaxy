@@ -20,11 +20,13 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         data: filters,
         error: function() { alert( "Grid failed" ); },
         success: function(table_html) {
-            show_modal(
-                "Select datasets for new tracks",
-                table_html, {
+            Galaxy.modal.show({
+                title   : "Select datasets for new tracks",
+                body    : table_html,
+                buttons :
+                {
                     "Cancel": function() {
-                        hide_modal();
+                        Galaxy.modal.hide();
                     },
                     "Add": function() {
                        var requests = [];
@@ -55,10 +57,10 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                                                );
                             success_fn(track_defs);
                         });
-                        hide_modal();
+                        Galaxy.modal.hide();
                     }
                }
-            );
+            });
         }
     });
 };
