@@ -4278,7 +4278,6 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return this.summary_draw_height;
         }
         else {
-            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
             // HACK: sample_names is not be defined when dataset definition is fetched before
             // dataset is complete (as is done when running tools). In that case, fall back on 
             // # of samples in data. This can be fixed by re-requesting dataset definition
@@ -4295,6 +4294,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 }
             }
             
+            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
             return dummy_painter.get_required_height(num_samples);
         }
     },
@@ -4304,6 +4304,8 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     predraw_init: function() {
         var deferreds = [ Track.prototype.predraw_init.call(this) ];
+        // FIXME: updating dataset metadata is only needed for visual analysis. Can
+        // this be moved somewhere else?
         if (!this.dataset.get_metadata('sample_names')) {
             deferreds.push(this.dataset.fetch());
         }
@@ -4322,7 +4324,8 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         });
 
         // Add summary/sample labels if needed and not already included.
-        if ( line_track_tiles.length === 0 && this.prefs.show_labels) {
+        var sample_names = this.dataset.get_metadata('sample_names');
+        if (line_track_tiles.length === 0 && this.prefs.show_labels && sample_names) {
             var font_size;
 
             // Add and/or style labels.
@@ -4340,7 +4343,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 
                 // Show sample labels.
                 if (this.prefs.show_sample_data) {
-                    var samples_div_html = this.dataset.get('metadata').get('sample_names').join('<br/>');
+                    var samples_div_html = sample_names.join('<br/>');
 
                     this.tiles_div.prepend( 
                         $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({

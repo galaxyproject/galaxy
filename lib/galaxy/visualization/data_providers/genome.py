@@ -690,33 +690,38 @@ class VcfDataProvider( GenomeDataProvider ):
             allele_counts = [ 0 for i in range ( alt.count( ',' ) + 1 ) ]
             sample_gts = []
 
-            # Process and pack samples' genotype and count alleles across samples.
-            alleles_seen = {}
-            has_alleles = False
-
-            for i, sample in enumerate( samples_data ):
-                # Parse and count alleles.
-                genotype = sample.split( ':' )[ 0 ]
+            if samples_data:
+                # Process and pack samples' genotype and count alleles across samples.
+                alleles_seen = {}
                 has_alleles = False
-                alleles_seen.clear()
-                for allele in genotype_re.split( genotype ):
-                    try:
-                        # This may throw a ValueError if allele is missing.
-                        allele = int( allele )
 
-                        # Only count allele if it hasn't been seen yet.
-                        if allele != 0 and allele not in alleles_seen:
-                            allele_counts[ allele - 1 ] += 1
-                            alleles_seen[ allele ] = True
-                            has_alleles = True
-                    except ValueError:
-                        pass
+                for i, sample in enumerate( samples_data ):
+                    # Parse and count alleles.
+                    genotype = sample.split( ':' )[ 0 ]
+                    has_alleles = False
+                    alleles_seen.clear()
+                    for allele in genotype_re.split( genotype ):
+                        try:
+                            # This may throw a ValueError if allele is missing.
+                            allele = int( allele )
 
-                # If no alleles, use empty string as proxy.
-                if not has_alleles:
-                    genotype = ''
+                            # Only count allele if it hasn't been seen yet.
+                            if allele != 0 and allele not in alleles_seen:
+                                allele_counts[ allele - 1 ] += 1
+                                alleles_seen[ allele ] = True
+                                has_alleles = True
+                        except ValueError:
+                            pass
 
-                sample_gts.append( genotype )
+                    # If no alleles, use empty string as proxy.
+                    if not has_alleles:
+                        genotype = ''
+
+                    sample_gts.append( genotype )
+            else:
+                # No samples, so set allele count and sample genotype manually.
+                allele_counts = [ 1 ]
+                sample_gts = [ '1/1' ]
             
             # Add locus data.
             locus_data = [

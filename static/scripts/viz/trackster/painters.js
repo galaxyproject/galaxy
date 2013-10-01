@@ -408,7 +408,6 @@ extend(FeaturePainter.prototype, {
      * Abstract function for drawing an individual feature.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
-        console.log("WARNING: Unimplemented function.");
         return [0, 0];
     }
 });
@@ -1542,8 +1541,12 @@ extend(VariantPainter.prototype, Painter.prototype, {
      * Returns required height to draw a particular number of samples in a given mode.
      */
     get_required_height: function(num_samples) {
+        // FIXME: for single-sample data, height should be summary_height when zoomed out and
+        // row_height when zoomed in.
         var height = this.prefs.summary_height;
-        if (this.prefs.show_sample_data) {
+
+        // If showing sample data, height is summary + divider + samples.
+        if (num_samples > 1 && this.prefs.show_sample_data) {
             height += this.divider_height + num_samples * this.get_row_height();
         }
         return height;
@@ -1573,6 +1576,8 @@ extend(VariantPainter.prototype, Painter.prototype, {
             genotype,
             // Always draw variants at least 1 pixel wide.
             base_px = Math.max(1, Math.floor(w_scale)),
+            // Determine number of samples.
+            num_samples = (this.data.length ? this.data[0][7].split(',').length : 0),
             row_height = (this.mode === 'Squish' ? SQUISH_TRACK_HEIGHT : PACK_TRACK_HEIGHT),
             // If zoomed out, fill the whole row with feature to make it easier to read;
             // when zoomed in, use feature height so that there are gaps in sample rows.
@@ -1580,10 +1585,19 @@ extend(VariantPainter.prototype, Painter.prototype, {
                               row_height :
                               (this.mode === 'Squish' ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT)
                              ),
+            draw_summary = true,
             j;
 
+        // If there's a single sample, update drawing variables.
+        if (num_samples === 1) {
+            row_height = feature_height = 
+                (w_scale < ctx.canvas.manager.char_width_px ? this.prefs.summary_height : row_height);
+            // No summary when there's a single sample.
+            draw_summary = false;
+        }
+
         // Draw divider between summary and samples.
-        if (this.prefs.show_sample_data) {
+        if (this.prefs.show_sample_data && draw_summary) {
             ctx.fillStyle = '#F3F3F3';
             ctx.globalAlpha = 1;
             ctx.fillRect(0, this.prefs.summary_height - this.divider_height, width, this.divider_height);
@@ -1608,26 +1622,28 @@ extend(VariantPainter.prototype, Painter.prototype, {
             draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
             char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
             
-            //  Draw summary.
-            ctx.fillStyle = '#999999';
-            ctx.globalAlpha = 1;
-            // Draw background for summary.
-            ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
-            draw_y_start = this.prefs.summary_height;
-            // Draw allele fractions onto summary.
-            for (j = 0; j < alt.length; j++) {
-                ctx.fillStyle = this.base_color_fn(alt[j]);
-                allele_frac = allele_counts / sample_gts.length;
-                draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
-                ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
-                draw_y_start -= draw_height;
+            // Draw summary.
+            if (draw_summary) {
+                ctx.fillStyle = '#999999';
+                ctx.globalAlpha = 1;
+                // Draw background for summary.
+                ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
+                draw_y_start = this.prefs.summary_height;
+                // Draw allele fractions onto summary.
+                for (j = 0; j < alt.length; j++) {
+                    ctx.fillStyle = this.base_color_fn(alt[j]);
+                    allele_frac = allele_counts / sample_gts.length;
+                    draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
+                    ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
+                    draw_y_start -= draw_height;
+                }
             }
 
             // Done drawing if not showing samples data.
             if (!this.prefs.show_sample_data) { continue; }
 
-            // Draw sample genotypes.
-            draw_y_start = this.prefs.summary_height + this.divider_height;
+            // Draw sample genotype(s).
+            draw_y_start = (draw_summary ? this.prefs.summary_height + this.divider_height : 0);
             for (j = 0; j < sample_gts.length; j++, draw_y_start += row_height) {
                 genotype = (sample_gts[j] ? sample_gts[j].split(/\/|\|/) : ['0', '0']);
                 
