@@ -753,6 +753,7 @@ button.close{padding:0;cursor:pointer;background:transparent;border:0;-webkit-ap
 .affix{position:fixed}
 .navbar-fixed-top .navbar-brand{font-family:Verdana;font-weight:bold;font-size:160%}
 pre{overflow:auto;word-wrap:normal;white-space:pre}
+.btn{white-space:normal}
 .dropdown-menu{max-width:auto}
 input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
 .modal-dialog{width:690px}
@@ -1219,7 +1220,7 @@ select{padding:2px;font-size:12px;line-height:1.428571429}
 select,input,textarea{font:inherit}
 .form-row select,.form-row textarea,.form-row input[type="text"],.form-row input[type="file"],.form-row input[type="password"]{max-width:90%}
 textarea,input[type="text"],input[type="password"]{font-size:12px;line-height:1.428571429;border:1px solid #aaa;padding:3px}
-input[type="submit"],button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}input[type="submit"]:focus,button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
+input[type="submit"],button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;white-space:normal;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}input[type="submit"]:focus,button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
 input[type="submit"]:hover,button:hover,input[type="submit"]:focus,button:focus{color:#333;text-decoration:none}
 input[type="submit"]:active,button:active,input[type="submit"].active,button.active{outline:0;background-image:none;-webkit-box-shadow:inset 0 3px 5px rgba(0,0,0,0.125);box-shadow:inset 0 3px 5px rgba(0,0,0,0.125)}
 input[type="submit"].disabled,button.disabled,input[type="submit"][disabled],button[disabled],fieldset[disabled] input[type="submit"],fieldset[disabled] button{cursor:not-allowed;pointer-events:none;opacity:.65;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none}
@@ -1323,7 +1324,7 @@ ul.manage-table-actions li{display:block;float:left;margin-left:0.5em}
 .state-fg-ok{color:#66AA66}
 .state-fg-error{color:#AA6666}
 .state-fg-deleted{color:#3399FF}
-button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
+button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;white-space:normal;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
 button:hover,button:focus{color:#333;text-decoration:none}
 button:active,button.active{outline:0;background-image:none;-webkit-box-shadow:inset 0 3px 5px rgba(0,0,0,0.125);box-shadow:inset 0 3px 5px rgba(0,0,0,0.125)}
 button.disabled,button[disabled],fieldset[disabled] button{cursor:not-allowed;pointer-events:none;opacity:.65;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none}
@@ -1333,7 +1334,7 @@ button [class^="fa-icon-"].fa-icon-spin.icon-large,button [class*=" fa-icon-"].f
 button:hover,button:focus,button:active,button.active,.open .dropdown-togglebutton{color:#333;background-color:#dedede;border-color:#a1a1a1}
 button:active,button.active,.open .dropdown-togglebutton{background-image:none}
 button.disabled,button[disabled],fieldset[disabled] button,button.disabled:hover,button[disabled]:hover,fieldset[disabled] button:hover,button.disabled:focus,button[disabled]:focus,fieldset[disabled] button:focus,button.disabled:active,button[disabled]:active,fieldset[disabled] button:active,button.disabled.active,button[disabled].active,fieldset[disabled] button.active{background-color:#f2f2f2;border-color:#bfbfbf}
-.action-button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}.action-button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
+.action-button{display:inline-block;padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;cursor:pointer;border:1px solid transparent;border-radius:3px;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;white-space:normal;color:#333;background-color:#f2f2f2;border-color:#bfbfbf}.action-button:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
 .action-button:hover,.action-button:focus{color:#333;text-decoration:none}
 .action-button:active,.action-button.active{outline:0;background-image:none;-webkit-box-shadow:inset 0 3px 5px rgba(0,0,0,0.125);box-shadow:inset 0 3px 5px rgba(0,0,0,0.125)}
 .action-button.disabled,.action-button[disabled],fieldset[disabled] .action-button{cursor:not-allowed;pointer-events:none;opacity:.65;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none}
@@ -1346,7 +1347,7 @@ button.disabled,button[disabled],fieldset[disabled] button,button.disabled:hover
 a.action-button{color:#333;text-decoration:none}
 .action-button>img{vertical-align:middle}
 .action-button:active{outline:0;background-image:none;-webkit-box-shadow:inset 0 3px 5px rgba(0,0,0,0.125);box-shadow:inset 0 3px 5px rgba(0,0,0,0.125)}
-.menubutton{padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;border:1px solid transparent;border-radius:3px;white-space:nowrap;user-select:none;color:#333;background-color:#f2f2f2;border-color:#bfbfbf;display:inline-block;cursor:pointer;position:relative;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none}.menubutton:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
+.menubutton{padding:4px 10px;margin-bottom:0;font-size:12px;font-weight:normal;line-height:1.428571429;text-align:center;vertical-align:middle;border:1px solid transparent;border-radius:3px;white-space:nowrap;user-select:none;white-space:normal;color:#333;background-color:#f2f2f2;border-color:#bfbfbf;display:inline-block;cursor:pointer;position:relative;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none}.menubutton:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px}
 .menubutton:hover,.menubutton:focus{color:#333;text-decoration:none}
 .menubutton:active,.menubutton.active{outline:0;background-image:none;-webkit-box-shadow:inset 0 3px 5px rgba(0,0,0,0.125);box-shadow:inset 0 3px 5px rgba(0,0,0,0.125)}
 .menubutton.disabled,.menubutton[disabled],fieldset[disabled] .menubutton{cursor:not-allowed;pointer-events:none;opacity:.65;filter:alpha(opacity=65);-webkit-box-shadow:none;box-shadow:none}
@@ -1361,7 +1362,7 @@ a.action-button{color:#333;text-decoration:none}
 .menubutton a{text-decoration:none}
 .menubutton .label,.menubutton>label{position:relative;display:inline-block;border-right:none;text-decoration:none;text-align:left;max-height:2.857142858;line-height:1.428571429;overflow:hidden;text-overflow:ellipsis}
 .menubutton.popup .label{border-right:solid #bfbfbf 1px;padding-right:6px}
-.menubutton.popup,.menubutton.popup.split{padding-right:18px}.menubutton.popup:after,.menubutton.popup.split:after{margin-top:6px;position:absolute;right:6px;display:inline-block;width:0;height:0;margin-left:2px;vertical-align:middle;border-top:4px solid #000;border-right:4px solid transparent;border-left:4px solid transparent;border-bottom:0 dotted;content:""}.btn-default .menubutton.popup:after,.btn-default .menubutton.popup.split:after{border-top-color:#333}
+.menubutton.popup,.menubutton.popup.split{padding-right:18px}.menubutton.popup:after,.menubutton.popup.split:after{top:45%;position:absolute;right:6px;display:inline-block;width:0;height:0;margin-left:2px;vertical-align:middle;border-top:4px solid #000;border-right:4px solid transparent;border-left:4px solid transparent;border-bottom:0 dotted;content:""}.btn-default .menubutton.popup:after,.btn-default .menubutton.popup.split:after{border-top-color:#333}
 .btn-primary .menubutton.popup:after,.btn-primary .menubutton.popup.split:after,.btn-success .menubutton.popup:after,.btn-success .menubutton.popup.split:after,.btn-warning .menubutton.popup:after,.btn-warning .menubutton.popup.split:after,.btn-danger .menubutton.popup:after,.btn-danger .menubutton.popup.split:after,.btn-info .menubutton.popup:after,.btn-info .menubutton.popup.split:after{border-top-color:#fff}
 div.popmenu-wrapper{position:absolute;top:100%;z-index:20000}div.popmenu-wrapper ul.dropdown-menu{display:block;position:relative;float:none}
 ul.dropdown-menu a{text-decoration:none}
