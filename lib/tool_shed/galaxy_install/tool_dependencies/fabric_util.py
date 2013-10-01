@@ -272,7 +272,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
                         if action_type == 'make_directory':
-                            td_common_util.make_directory( full_path=action_dict[ 'full_path' ] )
+                            if os.path.isabs( action_dict[ 'full_path' ] ):
+                                full_path = action_dict[ 'full_path' ]
+                            else:
+                                full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+                            td_common_util.make_directory( full_path=full_path )
                         elif action_type == 'move_directory_files':
                             td_common_util.move_directory_files( current_dir=current_dir,
                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),

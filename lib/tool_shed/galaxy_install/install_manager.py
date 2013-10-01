@@ -133,7 +133,7 @@ class InstallManager( object ):
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
         relative_clone_dir = os.path.join( self.tool_shed, 'repos', owner, name, changeset_revision )
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
-        if not self.__isinstalled( clone_dir ):
+        if not self.__iscloned( clone_dir ):
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
@@ -478,7 +478,15 @@ class InstallManager( object ):
                                            tool_shed_repository.name,
                                            tool_shed_repository.installed_changeset_revision )
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
-        if self.__isinstalled( clone_dir ):
+        cloned_ok = self.__iscloned( clone_dir )
+        is_installed = False
+        # Any of the following states should count as installed in this context.
+        if tool_shed_repository.status in [ self.app.model.ToolShedRepository.installation_status.INSTALLED,
+                                            self.app.model.ToolShedRepository.installation_status.ERROR,
+                                            self.app.model.ToolShedRepository.installation_status.UNINSTALLED,
+                                            self.app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            is_installed = True
+        if cloned_ok and is_installed:
             print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
         else:
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
@@ -489,9 +497,10 @@ class InstallManager( object ):
                                        tool_shed_repository.name,
                                        tool_shed_repository.owner,
                                        tool_shed_repository.installed_changeset_revision )
-            suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
-            cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
-            if cloned_ok:
+            if not cloned_ok:
+                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
+                cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
+            if cloned_ok and not is_installed:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                  repository_clone_url=repository_clone_url,
                                                  relative_install_dir=relative_install_dir,
@@ -592,7 +601,7 @@ class InstallManager( object ):
             return True
         return False
 
-    def __isinstalled( self, clone_dir ):
+    def __iscloned( self, clone_dir ):
         full_path = os.path.abspath( clone_dir )
         if os.path.exists( full_path ):
             for root, dirs, files in os.walk( full_path ):

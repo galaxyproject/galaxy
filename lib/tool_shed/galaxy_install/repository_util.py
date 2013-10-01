@@ -352,6 +352,10 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
                                                                                                updating_installed_repository=False,
                                                                                                persist=True )
     tool_shed_repository.metadata = metadata_dict
+    # Update the tool_shed_repository.tool_shed_status column in the database.
+    tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( trans.app, tool_shed_repository )
+    if tool_shed_status_dict:
+        tool_shed_repository.tool_shed_status = tool_shed_status_dict
     trans.sa_session.add( tool_shed_repository )
     trans.sa_session.flush()
     if 'tool_dependencies' in metadata_dict and not reinstalling:
