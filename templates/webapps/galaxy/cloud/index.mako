@@ -13,40 +13,8 @@
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging" )}
     <style type="text/css">
-    #new_history_p{
-        line-height:2.5em;
-        margin:0em 0em .5em 0em;
-    }
-    #new_history_cbx{
-        margin-right:.5em;
-    }
-    #new_history_input{
-        display:none;
-        line-height:1em;
-    }
-    #ec_button_container{
-        float:right;
-    }
     #hidden_options{
         display:none;
-    }
-    div.toolForm{
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    div.toolFormTitle{
-        cursor:pointer;
-    }
-    .title_ul_text{
-        text-decoration:underline;
-    }
-    .step-annotation {
-        margin-top: 0.25em;
-        font-weight: normal;
-        font-size: 97%;
-    }
-    .workflow-annotation {
-        margin-bottom: 1em;
     }
     #loading_indicator{
             position:fixed;
@@ -285,7 +253,7 @@ Credentials section of the AWS Console</a>.  </div>
                         </div>
                     </form>
                 </div>
-                <div id="responsePanel" class="toolForm" style="display:none;">
+                <div id="responsePanel" style="display:none;">
                         <div id="launchPending">Launch Pending, please be patient.</div>
                         <div id="launchSuccess" style="display:none;">
                             <div id="keypairInfo" style="display:none;margin-bottom:20px;">
