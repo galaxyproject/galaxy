@@ -771,7 +771,7 @@ class AdminToolshed( AdminGalaxy ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         shed_tool_conf = kwd.get( 'shed_tool_conf', None )
-        tool_shed_url = kwd[ 'tool_shed_url' ]
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
         # Handle repository dependencies, which do not include those that are required only for compiling a dependent repository's tool dependencies.
         has_repository_dependencies = util.string_as_bool( kwd.get( 'has_repository_dependencies', False ) )
         install_repository_dependencies = kwd.get( 'install_repository_dependencies', '' )
@@ -785,7 +785,9 @@ class AdminToolshed( AdminGalaxy ):
         includes_tools_for_display_in_tool_panel = util.string_as_bool( kwd.get( 'includes_tools_for_display_in_tool_panel', False ) )
         includes_tool_dependencies = util.string_as_bool( kwd.get( 'includes_tool_dependencies', False ) )
         install_tool_dependencies = kwd.get( 'install_tool_dependencies', '' )
-        encoded_repo_info_dicts = util.listify( kwd.get( 'encoded_repo_info_dicts', None ) )
+        encoded_repo_info_dicts = kwd.get( 'encoded_repo_info_dicts', '' )
+        if encoded_repo_info_dicts:
+            encoded_repo_info_dicts = encoded_repo_info_dicts.split( encoding_util.encoding_sep )
         if not encoded_repo_info_dicts:
             # The request originated in the tool shed via a tool search.
             repository_ids = kwd.get( 'repository_ids', None )
@@ -941,6 +943,8 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
+        encoded_repo_info_dicts = encoding_util.encoding_sep.join( encoded_repo_info_dicts )
+        tool_shed_url = kwd[ 'tool_shed_url' ]
         if includes_tools_for_display_in_tool_panel:
             return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
@@ -955,7 +959,7 @@ class AdminToolshed( AdminGalaxy ):
                                         shed_tool_conf=shed_tool_conf,
                                         shed_tool_conf_select_field=shed_tool_conf_select_field,
                                         tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=kwd[ 'tool_shed_url' ],
+                                        tool_shed_url=tool_shed_url,
                                         message=message,
                                         status=status )
         else:
@@ -974,7 +978,7 @@ class AdminToolshed( AdminGalaxy ):
                                         shed_tool_conf=shed_tool_conf,
                                         shed_tool_conf_select_field=shed_tool_conf_select_field,
                                         tool_panel_section_select_field=tool_panel_section_select_field,
-                                        tool_shed_url=kwd[ 'tool_shed_url' ],
+                                        tool_shed_url=tool_shed_url,
                                         message=message,
                                         status=status )
 

@@ -285,11 +285,11 @@ Drawable.prototype.action_icons_def = [
         title: "Edit settings",
         css_class: "settings-icon",
         on_click_fn: function(drawable) {
-            var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+            var cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
                 ok_fn = function() { 
-                    drawable.config.update_from_form( $(".dialog-box") );
-                    hide_modal(); 
-                    $(window).unbind("keypress.check_enter_esc"); 
+                    drawable.config.update_from_form( $(Galaxy.modal.el) );
+                    Galaxy.modal.hide();
+                    $(window).unbind("keypress.check_enter_esc");
                 },
                 check_enter_esc = function(e) {
                     if ((e.keyCode || e.which) === 27) { // Escape key
@@ -299,11 +299,10 @@ Drawable.prototype.action_icons_def = [
                     }
                 };
 
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);        
-            show_modal("Configure", drawable.config.build_form(), {
-                "Cancel": cancel_fn,
-                "OK": ok_fn
-            });
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);
+            
+            // show dialog
+            Galaxy.modal.show({title: "Configure", body: drawable.config.build_form(), buttons : {'Cancel' : cancel_fn, 'Ok' : ok_fn } });
         }
     },
     // Remove.
@@ -1761,9 +1760,7 @@ var TracksterToolView = Backbone.View.extend({
             null,
             // Success callback.
             function(track_data) {
-                show_modal(tool.get('name') + " is Running", 
-                            tool.get('name') + " is running on the complete dataset. Tool outputs are in dataset's history.", 
-                            { "Close" : hide_modal } );
+                Galaxy.modal.show({title: tool.get('name') + " is Running", body: tool.get('name') + " is running on the complete dataset. Tool outputs are in dataset's history.", buttons : {'Close' : function() { Galaxy.modal.hide(); } } });
             }
         );
     },
@@ -2023,11 +2020,10 @@ extend(DrawableConfig.prototype, {
                             var tip = $(this).siblings(".tooltip").addClass( "in" );
                             tip.css( { 
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height) 
+                                // top: $(this).position().top + $(this.height)
                                 left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
+                                top: $(this).position().top + Galaxy.modal.scrollTop() - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
                                 } ).show();
-                                
                             // Click management: 
                             
                             // Keep showing tip if clicking in tip.
@@ -2431,7 +2427,7 @@ extend(Track.prototype, Drawable.prototype, {
                     '<option value="both">current viewing area and bookmarks</option>' +
                     '</select>',
                     html = _.template(template, { track: track });
-                var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+                var cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
                     ok_fn = function() {
                         var regions_to_use = $('select[name="regions"] option:selected').val(),
                             regions,
@@ -2458,7 +2454,7 @@ extend(Track.prototype, Drawable.prototype, {
                             regions = [ view_region ].concat(bookmarked_regions);
                         }
 
-                        hide_modal();
+                        Galaxy.modal.hide();
 
                         // Go to visualization.
                         window.location.href = 
@@ -2476,12 +2472,9 @@ extend(Track.prototype, Drawable.prototype, {
                             ok_fn();
                         }
                     };
-
-                show_modal("Visualize tool parameter space and output from different parameter settings?", html, {
-                    "No": cancel_fn,
-                    "Yes": ok_fn
-                });
                 
+                // show dialog
+                Galaxy.modal.show({title: "Visualize tool parameter space and output from different parameter settings?", body: html, buttons : {'No' : cancel_fn, 'Yes' : ok_fn } });
             }
         },
         // Remove track.
@@ -2689,7 +2682,7 @@ extend(Track.prototype, Drawable.prototype, {
                     // Add links to (a) show error and (b) try again.
                     track.tiles_div.append(
                         $("<a href='javascript:void(0);'></a>").text("View error").click(function() {
-                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                            Galaxy.modal.show({title: "Trackster Error", body: "<pre>" + result.message + "</pre>", buttons : {'Close' : function() { Galaxy.modal.hide(); } } });
                         })
                     );
                     track.tiles_div.append( $('<span/>').text(' ') );
@@ -2951,17 +2944,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             track.action_icons.tools_icon.hide();
             track.action_icons.param_space_viz_icon.hide();
         }
-                        
-        //
-        // List chrom/contigs with data option.
-        //
-        /*
-        if (track.valid_chroms) {
-            track_dropdown["List chrom/contigs with data"] = function() {
-                show_modal("Chrom/contigs with data", "<p>" + track.valid_chroms.join("<br/>") + "</p>", { "Close": function() { hide_modal(); } });
-            };
-        }
-        */
     },
 
     /**

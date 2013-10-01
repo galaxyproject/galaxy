@@ -125,15 +125,22 @@ var Modal = function( options ) {
     this.$body = this.$dialog.find( ".modal-body" );
     this.$footer = this.$dialog.find( ".modal-footer" );
     this.$backdrop = options.backdrop;
+    // Close button
+    this.$header.find( ".close" ).on( "click", $.proxy( this.hide, this ) );
 }
 $.extend( Modal.prototype, {
     setContent: function( options ) {
+        this.$header.hide();
         // Title
         if ( options.title ) {
             this.$header.find( ".title" ).html( options.title );
             this.$header.show();
+        }
+        if ( options.closeButton ) {
+            this.$header.find( ".close" ).show();
+            this.$header.show();
         } else {
-            this.$header.hide();
+            this.$header.find( ".close" ).hide();
         }
         // Buttons
         this.$footer.hide();
@@ -223,8 +230,8 @@ function show_in_overlay( options ) {
         hide_modal();
         $("#overlay-background").unbind( "click.overlay" );
     });
-    show_modal( null, $( "<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-17px;top:-15px;src='" + galaxy_config.root + "static/images/closebox.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
-    $("#close_button").bind( "click", function() { hide_modal(); } );
+    modal.setContent( { closeButton: true, title: "&nbsp;", body: $( "<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) } );
+    modal.show( { backdrop: true } );
 }
 
 function user_changed( user_email, is_admin ) {

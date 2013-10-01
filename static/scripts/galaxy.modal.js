@@ -1,5 +1,5 @@
 /*
-    galaxy modal v1.0
+    galaxy modal
 */
 
 // dependencies
@@ -9,91 +9,105 @@ define(["libs/backbone/backbone-relational"], function() {
 var GalaxyModal = Backbone.View.extend(
 {
     // base element
-    el_main: '#everything',
+    elMain: '#everything',
     
     // defaults inputs
-    options:
-    {
+    optionsDefaults: {
         title   : "galaxy-modal",
         body    : "No content available."
     },
     
     // initialize
-    initialize : function(options)
-    {        
+    initialize : function(options) {
         // create
         if (options)
-        {
             this.create(options);
-            
-            // hide
-            $(this.el).hide();
-        }
     },
 
     // adds and displays a new frame/window
-    show: function(options)
-    {
+    show: function(options) {
         // create
-        if (options)
-            this.create(options);
-    
-        // fade out
-        this.$el.fadeIn('fast');
+        this.initialize(options);
+
+        // fix height
+        var body = (this.$el).find('.modal-body');
+        body.css('max-height', $(document).height() / 2);
+        
+        // show
+        if (this.visible)
+            this.$el.show();
+        else
+            this.$el.fadeIn('fast');
+        
+        // set visibility flag
+        this.visible = true;
     },
     
     // hide modal
-    hide: function()
-    {
+    hide: function(){
         // fade out
         this.$el.fadeOut('fast');
+
+        // set visibility flag
+        this.visible = false;
     },
     
-    // destroy modal
-    create: function (options)
-    {
-        // remove element
-        this.$el.remove();
+    // create
+    create: function(options) {
+        // configure options
+        options = _.defaults(options, this.optionsDefault);
+
+        // check for progress bar request
+        if (options.body == 'progress')
+            options.body = '<div class="progress progress-striped active"><div class="progress-bar progress-bar-info" style="width:100%"></div></div>';
+
+        // remove former element
+        if (this.$el)
+            this.$el.remove();
         
-        // read in defaults
-        if (!options)
-            options = this.options;
-        else
-            options = _.defaults(options, this.options);
-
-        // create element
-        this.setElement(this.template(options.title, options.body));
-
-        // append template
-        $(this.el_main).append($(this.el));
+        // create new element
+        this.setElement(this.template(options.title));
         
         // link elements
-        var footer = (this.$el).find('.buttons');
-
+        var body = (this.$el).find('.modal-body');
+        var footer  = (this.$el).find('.modal-footer');
+        var buttons = (this.$el).find('.buttons');
+        
+        // append body
+        body.append($(options.body));
+        
+        // fix height if available
+        if (options.height)
+            body.css('height', options.height);
+        
         // append buttons
-        var self = this;
-        if (options.buttons)
-        {
+        if (options.buttons) {
             // link functions
-            $.each(options.buttons, function(name, value)
-            {
-                 footer.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
+            $.each(options.buttons, function(name, value) {
+                 buttons.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
             });
         } else
-            // default close button
-            footer.append($('<button></button>').text('Close').click(function() { self.hide() })).append(" ");
+            // hide footer
+            footer.hide();
+        
+        // append to main element
+        $(this.elMain).append($(this.el));
     },
     
     // enable buttons
-    enable: function(name)
-    {
+    enable: function(name) {
         $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', false);
     },
 
     // disable buttons
-    disable: function(name)
-    {
+    disable: function(name) {
         $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', true);
+    },
+    
+    // returns scroll top for body element
+    scrollTop: function()
+    {
+        return $(this.el).find('.modal-body').scrollTop();
     },
         
     /*
@@ -101,8 +115,7 @@ var GalaxyModal = Backbone.View.extend(
     */
     
     // fill regular modal template
-    template: function(title, body)
-    {
+    template: function(title) {
         return  '<div class="modal in">' +
                     '<div class="modal-backdrop in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
@@ -110,7 +123,7 @@ var GalaxyModal = Backbone.View.extend(
                             '<div class="modal-header">' +
                                 '<span><h3 class="title">' + title + '</h3></span>' +
                             '</div>' +
-                            '<div class="modal-body style="min-width: 540px; max-height: 445px;">' + body + '</div>' +
+                            '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +
                             '</div>' +

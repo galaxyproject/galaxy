@@ -389,13 +389,14 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             workflow.has_errors = True
         # Stick this in the step temporarily.
         step.temp_input_connections = step_dict[ 'input_connections' ]
-        annotation = step_dict.get( 'annotation', '')
-        if annotation:
-            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-            new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
-            new_step_annotation.annotation = annotation
-            new_step_annotation.user = trans.user
-            step.annotations.append(new_step_annotation)
+        if trans.webapp.name == 'galaxy':
+            annotation = step_dict.get( 'annotation', '')
+            if annotation:
+                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+                new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
+                new_step_annotation.annotation = annotation
+                new_step_annotation.user = trans.user
+                step.annotations.append( new_step_annotation )
         # Unpack and add post-job actions.
         post_job_actions = step_dict.get( 'post_job_actions', {} )
         for name, pja_dict in post_job_actions.items():

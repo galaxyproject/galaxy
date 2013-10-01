@@ -118,37 +118,39 @@
                             });
                 }
             });
-            $('#loading_indicator').ajaxStart(function(){
-                $(this).show('fast');
+            $(document).ajaxStart(function(){
+                $('#loading_indicator').show('fast');
             }).ajaxStop(function(){
-                $(this).hide('fast');
+                $('#loading_indicator').hide('fast');
             });
             $('form').ajaxForm({
                     type: 'POST',
                     dataType: 'json',
                     beforeSubmit: function(data, form){
-                        if ($('#id_password').val() != $('#id_password_confirm').val()){
-                            //Passwords don't match.
-                            form.prepend('<div class="errormessage">Passwords do not match</div>');
-                            return false;
-                        }else{
-                            //Clear errors
-                            $('.errormessage').remove()
-                            //Hide the form, show pending box with spinner.
-                            $('#launchFormContainer').hide('fast');
-                            $('#responsePanel').show('fast');
-                        }
-                        //Dig up zone info for selected cluster, set hidden input.
-                        //This is not necessary to present to the user though the interface may prove useful.
+                        // Dig up zone info for selected cluster, set hidden input.
+                        // This is not necessary to present to the user though the interface may prove useful.
                         var ei_val = _.find(data, function(f_obj){return f_obj.name === 'existing_instance'});
                         if( ei_val && (ei_val.value !== "New Cluster")){
                             var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.name === ei_val.value});
                             var zdata = _.find(data, function(f_obj){return f_obj.name === 'zone'});
                             zdata.value = cluster.zone;
+                        }else if($('#id_cluster_name').val() === ''){
+                            // If we're not using an existing cluster, this must be set.
+                            form.prepend('<div class="errormessage">You must specify a cluster name</div>');
+                            return false;
                         }
+                        if ($('#id_password').val() != $('#id_password_confirm').val()){
+                            //Passwords don't match.
+                            form.prepend('<div class="errormessage">Passwords do not match</div>');
+                            return false;
+                        }
+                        // Lastly, clear errors and flip to the response panel.
+                        $('.errormessage').remove()
+                        $('#launchFormContainer').hide('fast');
+                        $('#responsePanel').show('fast');
                     },
                     success: function(data){
-                        //Success Message, link to key download if required, link to server itself.
+                        // Success Message, link to key download if required, link to server itself.
                         $('#launchPending').hide('fast');
                         //Set appropriate fields (dns, key, ami) and then display.
                         if(data.kp_material_tag){
@@ -183,7 +185,7 @@
         <div class="page-container" style="padding: 10px;">
         <div id="loading_indicator"></div>
             <h2>Launch a Galaxy Cloud Instance</h2>
-              <div id="launchFormContainer" class="toolForm">
+              <div id="launchFormContainer">
                     <form id="cloudlaunch_form" action="${h.url_for( controller='/cloudlaunch', action='launch_instance')}" method="post">
 
                     <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret

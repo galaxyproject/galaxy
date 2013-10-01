@@ -29,20 +29,6 @@
             right: 0 !important;
         %endif
     }
-## This is some dirty hack happening
-    %if self.message_box_visible or self.show_inactivity_warning:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
-    %if self.message_box_visible and self.show_inactivity_warning:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 94px;
-        }
-        #inactivebox{top:64px;}
-    %endif
     </style>
 </%def>
 
@@ -261,7 +247,8 @@
         <div id="top-modal-dialog" class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <span><h4 class='title'>${title}</h4></span>
+                    <button type='button' class='close' style="display: none;">&times;</button>
+                    <h4 class='title'>${title}</h4>
                 </div>
                 <div class="modal-body">${content}</div>
                 <div class="modal-footer">
@@ -293,7 +280,15 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="full-content ${self.body_class}">
+    <%
+    body_class = self.body_class
+    if self.message_box_visible:
+        body_class += " has-message-box"
+    if self.show_inactivity_warning:
+        body_class += " has-inactivity-box"
+    %>
+
+    <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">
@@ -311,16 +306,14 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-                %if self.message_box_visible and app.config.message_box_content:
             <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                        ${app.config.message_box_content}
+                ${app.config.message_box_content}
             </div>
-                %endif
-                %if self.show_inactivity_warning:
-                    <div id="inactivebox" class="panel-warning-message">
+            %if self.show_inactivity_warning:
+                <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content}
-                    </div>
-                %endif
+                </div>
+            %endif
             ${self.overlay(visible=self.overlay_visible)}
             %if self.has_left_panel:
                 <div id="left">
