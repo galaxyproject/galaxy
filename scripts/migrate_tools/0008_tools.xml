@@ -15,16 +15,16 @@
     <repository owner="devteam" changeset_revision="4a32700dcaa2" name="ctd_batch" description="Galaxy wrappers for the tool CTD: analysis of chemicals, diseases, or genes">
         <tool id="ctdBatch_1" version="1.0.0" file="ctd.xml" />
     </repository>
-    <repository owner="devteam" changeset_revision="9d35cf35634e" name="cuffcompare" description="Galaxy wrappers for the Cuffcompare tool.">
+    <repository owner="devteam" changeset_revision="9a3f7a890da6" name="cuffcompare" description="Galaxy wrappers for the Cuffcompare tool.">
         <tool id="cuffcompare" version="0.0.5" file="cuffcompare_wrapper.xml" />
     </repository>
     <repository owner="devteam" changeset_revision="0dabb2ed6eb1" name="cuffdiff" description="Galaxy wrappers for the Cuffdiff tool.">
         <tool id="cuffdiff" version="0.0.6" file="cuffdiff_wrapper.xml" />
     </repository>
-    <repository owner="devteam" changeset_revision="b50aacc8ae49" name="cufflinks" description="Galaxy wrappers for the Cufflinks tool.">
+    <repository owner="devteam" changeset_revision="b01956f26c36" name="cufflinks" description="Galaxy wrappers for the Cufflinks tool.">
         <tool id="cufflinks" version="0.0.6" file="cufflinks_wrapper.xml" />
     </repository>
-    <repository owner="devteam" changeset_revision="dbbd37e013aa" name="cuffmerge" description="Galaxy wrappers for the Cuffmerge tool.">
+    <repository owner="devteam" changeset_revision="fdc55fd74f78" name="cuffmerge" description="Galaxy wrappers for the Cuffmerge tool.">
         <tool id="cuffmerge" version="0.0.5" file="cuffmerge_wrapper.xml" />
     </repository>
     <repository owner="devteam" changeset_revision="f16000dc644b" name="delete_overlapping_indels" description="Galaxy wrappers for the tool Delete Overlapping Indels: from a chromosome indels file">
