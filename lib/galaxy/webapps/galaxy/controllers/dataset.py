@@ -708,7 +708,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
         except:
             redirect_url = kwd['redirect_url'] # not all will need custom text
-        redirect_url = redirect_url.encode( 'utf-8' )
         current_user_roles = trans.get_current_user_roles()
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
