@@ -491,12 +491,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             message = "No such user (please note that login is case sensitive)"
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
-            if trans.app.config.admin_email is not None:
-                message += 'Contact: %s' %  trans.app.config.admin_email
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            if trans.app.config.admin_email is not None:
-                message += 'Contact: %s' %  trans.app.config.admin_email
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
         elif not user.check_password( password ):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active: # activation is ON and the user is INACTIVE
@@ -536,8 +536,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address %s.<br>' % email
         else:
             message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.'
-            if trans.app.config.admin_email is not None:
-                message += 'Contact: %s' %  trans.app.config.admin_email
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
         return message
 
     def is_outside_grace_period ( self, trans, create_time ):
@@ -591,8 +591,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
-            if trans.app.config.admin_email is not None:
-                message += 'Contact: %s' %  trans.app.config.admin_email
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
             status = 'error'
         else:
             if not refresh_frames:
@@ -733,8 +733,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                    if trans.app.config.admin_email is not None:
-                        message += 'Contact: %s' %  trans.app.config.admin_email
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' %  trans.app.config.error_email_to
                     success = False
             else: # User activation is OFF, proceed without sending the activation email.
                 message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
@@ -752,7 +752,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 "Activation link: %s \n\n"
                 "Your Galaxy Team" % ( email, activation_link ))
         to = email
-        frm = trans.app.config.admin_email
+        frm = trans.app.config.activation_email
         subject = 'How to activate your Galaxy account'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
