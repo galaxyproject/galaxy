@@ -710,8 +710,16 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                         fp = open( relative_path, 'rb' )
                         workflow_text = fp.read()
                         fp.close()
-                        exported_workflow_dict = json.from_json_string( workflow_text )
-                        if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                        if workflow_text:
+                            valid_exported_galaxy_workflow = True
+                            try:
+                                exported_workflow_dict = json.from_json_string( workflow_text )
+                            except Exception, e:
+                                log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s" \
+                                               % str( relative_path ), str( e ) )
+                                valid_exported_galaxy_workflow = False
+                        if valid_exported_galaxy_workflow and \
+                            'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     # Handle any data manager entries
     metadata_dict = generate_data_manager_metadata( app,
