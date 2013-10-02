@@ -416,49 +416,54 @@ var TabularButtonTracksterView = Backbone.View.extend(
                 error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
                 success: function(table_html) {
                     var parent = window.parent;
-
-                    parent.show_modal( ( "View Data in a New or Saved Visualization" ), "", {
-                        "Cancel": function() {
-                            parent.hide_modal();
-                        },
-                        "View in saved visualization": function() {
-                            // Show new modal with saved visualizations.
-                            parent.show_modal( ( "Add Data to Saved Visualization" ), table_html, {
-                                "Cancel": function() {
-                                    parent.hide_modal();
-                                },
-                                "Add to visualization": function() {
-                                    $(parent.document).find('input[name=id]:checked').each(function() {
-                                        var vis_id = $(this).val();
-                                        dataset_params.id = vis_id;
+                    parent.Galaxy.modal.show({
+                        title   : "View Data in a New or Saved Visualization",
+                        buttons :{
+                            "Cancel": function(){
+                                parent.Galaxy.modal.hide();
+                            },
+                            "View in saved visualization": function(){
+                                // Show new modal with saved visualizations.
+                                parent.Galaxy.modal.show(
+                                {
+                                    title: "Add Data to Saved Visualization",
+                                    body: table_html,
+                                    buttons :{
+                                        "Cancel": function(){
+                                            parent.Galaxy.modal.hide();
+                                        },
+                                        "Add to visualization": function(){
+                                            $(parent.document).find('input[name=id]:checked').each(function(){
+                                                // hide
+                                                parent.Galaxy.modal.hide();
+                                                
+                                                var vis_id = $(this).val();
+                                                dataset_params.id = vis_id;
                                         
-                                        // add widget
-                                        parent.Galaxy.frame_manager.frame_new(
-                                        {
-                                            title    : "Trackster",
-                                            type     : "url",
-                                            content  : vis_url + "/trackster?" + $.param(dataset_params)
-                                        });
+                                                // add widget
+                                                parent.Galaxy.frame_manager.frame_new({
+                                                    title    : "Trackster",
+                                                    type     : "url",
+                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            },
+                            "View in new visualization": function(){
+                                // hide
+                                parent.Galaxy.modal.hide();
+                                
+                                var url = vis_url + "/trackster?" + $.param(dataset_params);
 
-                                        // hide
-                                        parent.hide_modal();
-                                    });
-                                }
-                            });
-                        },
-                        "View in new visualization": function() {
-                            var url = vis_url + "/trackster?" + $.param(dataset_params);
-
-                            // add widget
-                            parent.Galaxy.frame_manager.frame_new(
-                            {
-                                title    : "Trackster",
-                                type     : "url",
-                                content  : url
-                            });
-
-                            // hide
-                            parent.hide_modal();
+                                // add widget
+                                parent.Galaxy.frame_manager.frame_new({
+                                    title    : "Trackster",
+                                    type     : "url",
+                                    content  : url
+                                });
+                            }
                         }
                     });
                 }
