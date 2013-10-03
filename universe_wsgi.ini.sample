@@ -299,7 +299,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
-#inactivity_box_content = Your account has not been activated yet. Please activate your account by verifying your email address. For now you can access everything at Galaxy but your jobs won't run.
+#inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
 
 # -- Display sites
