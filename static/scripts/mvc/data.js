@@ -179,17 +179,17 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     // -- Helper functions. --
 
     _renderCell: function(cell_contents, index, colspan) {
+        var $cell = $('<td>').text(cell_contents);
         var column_types = this.model.get_metadata('column_types');
         if (colspan !== undefined) {
-            return $('<td>').attr('colspan', colspan).addClass('stringalign').text(cell_contents);
+            $cell.attr('colspan', colspan).addClass('stringalign');
+        } else if (index < column_types.length) {
+            if (column_types[index] === 'str' || column_types === 'list') {
+                /* Left align all str columns, right align the rest */
+                $cell.addClass('stringalign');
+            }
         }
-        else if (column_types[index] === 'str' || column_types === 'list') {
-            /* Left align all str columns, right align the rest */
-            return $('<td>').addClass('stringalign').text(cell_contents);
-        }
-        else {
-            return $('<td>').text(cell_contents);
-        }
+        return $cell;
     },
 
     _renderRow: function(line) {
