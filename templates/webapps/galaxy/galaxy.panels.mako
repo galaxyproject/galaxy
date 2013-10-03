@@ -152,38 +152,6 @@
     </script>
 </%def>
 
-<%def name="overlay( title='', content='', visible=False )">
-    <%def name="title()"></%def>
-    <%def name="content()"></%def>
-
-    <%
-    if visible:
-        display = "style='display: block;'"
-        overlay_class = "in"
-    else:
-        display = "style='display: none;'"
-        overlay_class = ""
-    %>
-
-    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
-        <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
-        <div id="top-modal-dialog" class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type='button' class='close' style="display: none;">&times;</button>
-                    <h4 class='title'>${title}</h4>
-                </div>
-                <div class="modal-body">${content}</div>
-                <div class="modal-footer">
-                    <div class="buttons" style="float: right;"></div>
-                    <div class="extra_buttons" style=""></div>
-                    <div style="clear: both;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</%def>
-
 ## document
 <html>
     <head>
@@ -214,7 +182,6 @@
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
             %endif
-            ${self.overlay()}
             ## left panel
             %if self.galaxy_config['left_panel']:
                 <div id="left">

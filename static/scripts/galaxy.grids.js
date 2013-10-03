@@ -255,7 +255,8 @@ function init_grid_elements() {
     });
     
     // Initialize ratings.
-    $('.community_rating_star').rating({});
+    if ($('.community_rating_star').length !== 0)
+        $('.community_rating_star').rating({});
     
     // Initialize item menu operations.
     make_popup_menus();

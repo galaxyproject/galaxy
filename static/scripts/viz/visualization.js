@@ -20,47 +20,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         data: filters,
         error: function() { alert( "Grid failed" ); },
         success: function(table_html) {
-            show_modal(
-                "Select datasets for new tracks",
-                table_html,
-                {
-                    "Cancel": function() {
-                        hide_modal();
-                    },
-                    "Add": function() {
-                       var requests = [];
-                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                            var data = {
-                                    data_type: 'track_config',
-                                   'hda_ldda': 'hda'
-                                },
-                                id = $(this).val();
-                                if ($(this).attr("name") !== "id") {
-                                    data.hda_ldda = 'ldda';
-                                }
-                                requests[requests.length] = $.ajax({
-                                   url: add_track_async_url + "/" + id,
-                                    data: data,
-                                    dataType: "json"
-                                });
-                        });
-                        // To preserve order, wait until there are definitions for all tracks and then add 
-                        // them sequentially.
-                        $.when.apply($, requests).then(function() {
-                            // jQuery always returns an Array for arguments, so need to look at first element
-                            // to determine whether multiple requests were made and consequently how to 
-                            // map arguments to track definitions.
-                            var track_defs = (arguments[0] instanceof Array ?  
-                                               $.map(arguments, function(arg) { return arg[0]; }) :
-                                               [ arguments[0] ]
-                                               );
-                            success_fn(track_defs);
-                        });
-                        hide_modal();
-                    }
-               }
-            );
-            /*Galaxy.modal.show({
+            Galaxy.modal.show({
                 title   : "Select datasets for new tracks",
                 body    : table_html,
                 buttons :
@@ -100,7 +60,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                         Galaxy.modal.hide();
                     }
                }
-            });*/
+            });
         }
     });
 };
