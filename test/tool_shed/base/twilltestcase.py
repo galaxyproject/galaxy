@@ -723,7 +723,6 @@ class ShedTwillTestCase( TwillTestCase ):
                             post_submit_strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        tc.fv( "user_access", "allow_push", '-Select one' )
         for username in usernames:
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
