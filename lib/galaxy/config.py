@@ -133,7 +133,7 @@ class Configuration( object ):
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.activation_email = kwargs.get( 'activation_email', None )
-        self.user_activation_on = kwargs.get( 'user_activation_on', None )
+        self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )

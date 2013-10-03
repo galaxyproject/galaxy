@@ -670,8 +670,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         user = trans.app.model.User( email=email )
         user.set_password_cleartext( password )
         user.username = username
-        if trans.app.config.user_activation_on: # Do not set the active flag in case activation is OFF.
+        if trans.app.config.user_activation_on: 
             user.active = False
+        else:
+            user.active = True # Activation is off, every new user is active by default.
         trans.sa_session.add( user )
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role( user )
