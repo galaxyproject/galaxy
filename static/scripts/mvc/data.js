@@ -183,7 +183,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var column_types = this.model.get_metadata('column_types');
         if (colspan !== undefined) {
             $cell.attr('colspan', colspan).addClass('stringalign');
-        } else if (index < column_types.length) {
+        } else if (column_types !== undefined && index < column_types.length) {
             if (column_types[index] === 'str' || column_types === 'list') {
                 /* Left align all str columns, right align the rest */
                 $cell.addClass('stringalign');
