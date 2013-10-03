@@ -2351,7 +2351,7 @@ class StoredWorkflow( object, Dictifiable):
             self.tags.append(new_swta)
 
     def to_dict( self, view='collection', value_mapper = None  ):
-        rval = super( StoredWorkflow, self ).to_dict(self, view=view, value_mapper = value_mapper)
+        rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper = value_mapper )
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -3912,7 +3912,7 @@ class ToolVersion( object, Dictifiable ):
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
     def to_dict( self, view='element' ):
-        rval = super( ToolVersion, self ).to_dict( self, view )
+        rval = super( ToolVersion, self ).to_dict( view=view )
         rval['tool_name'] = self.tool_id
         for a in self.parent_tool_association:
             rval['parent_tool_id'] = a.parent_id
