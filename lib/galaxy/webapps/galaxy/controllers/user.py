@@ -749,13 +749,16 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         """
         activation_link = self.prepare_activation_link( trans, email )
 
-        body =  ("Hi %s,\n\n"
-                "Please click the activation link below in order to activate your account.\n\n"
-                "Activation link: %s \n\n"
-                "Your Galaxy Team" % ( email, activation_link ))
+        body =  ("Hello %s,\n\n"
+                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
+                "%s \n\n"
+                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (https://main.g2.bx.psu.edu/static/terms.html). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: galaxy-bugs@bx.psu.edu\n"
+                "More about Galaxy can be found on our wiki: galaxyproject.org\n\n"
+                "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link ))
         to = email
-        frm = trans.app.config.activation_email
-        subject = 'How to activate your Galaxy account'
+        frm = trans.app.config.admin_email
+        subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
             return True
@@ -767,9 +770,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         Prepares the account activation link for the user.
         """
         activation_token = self.get_activation_token( trans, email )
-        host = trans.request.host.split( ':' )[ 0 ]
-        if host == 'localhost':
-            host = socket.getfqdn()
         activation_link = str( trans.request.host ) + url_for( controller='user', action='activate' ) + "?activation_token=" + str( activation_token ) + "&email=" + urllib.quote( email )
         return activation_link
 
