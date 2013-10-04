@@ -11,6 +11,7 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
 import traceback
 import types
 import urllib
@@ -1333,19 +1334,16 @@ class Tool( object, Dictifiable ):
         help_header = ""
         help_footer = ""
         if self.help is not None:
-            # Handle tool help image display for tools that are contained in repositories that are in the tool shed or installed into Galaxy.
-            # When tool config files use the special string $PATH_TO_IMAGES, the following code will replace that string with the path on disk.
-            if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
-                if self.app.name == 'galaxy':
-                    repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
-                    if repository:
-                        path_to_images = '/tool_runner/static/images/%s' % self.repository_id
-                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
-                elif self.app.name == 'tool_shed':
-                    repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
-                    if repository:
-                        path_to_images = '/repository/static/images/%s' % self.repository_id
-                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+            if self.repository_id and self.help.text.find( '.. image:: ' ) >= 0:
+                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
+                lock = threading.Lock()
+                lock.acquire( True )
+                try:
+                    self.help.text = shed_util_common.set_image_paths( self.app, self.repository_id, self.help.text )
+                except Exception, e:
+                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
+                finally:
+                    lock.release()
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:

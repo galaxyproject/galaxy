@@ -1072,13 +1072,15 @@ def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 
-def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision ):
-    """Get a specified metadata record for a specified repository."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                           .first()
-
+def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
+    """Get a specified metadata record for a specified repository in the tool shed."""
+    if metadata_only:
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        if repository_metadata and repository_metadata.metadata:
+            return repository_metadata.metadata
+        return None
+    return suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []

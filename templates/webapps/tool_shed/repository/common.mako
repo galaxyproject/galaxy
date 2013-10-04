@@ -584,12 +584,7 @@
 </%def>
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
-    <%
-        from tool_shed.util.shed_util_common import to_html_string
-        from galaxy.util import rst_to_html
-        encoded_id = trans.security.encode_id( readme.id )
-        render_rst = readme.name.endswith( '.rst' )
-    %>
+    <% encoded_id = trans.security.encode_id( readme.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}" 
@@ -597,11 +592,7 @@
         id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="readme_files">
-                %if render_rst:
-                    <tr><td>${ rst_to_html( readme.text ) }</td></tr>
-                %else:
-                    <tr><td>${ to_html_string( readme.text ) }</td></tr>
-                %endif
+                <tr><td>${ readme.text }</td></tr>
             </table>
         </td>
     </tr>

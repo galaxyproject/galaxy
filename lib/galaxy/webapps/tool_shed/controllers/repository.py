@@ -666,7 +666,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Update repository files for browsing.
         suc.update_repository( repo )
         changeset_revision = repository.tip( trans.app )
-        metadata = self.get_metadata( trans, id, changeset_revision )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
@@ -897,7 +897,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, id )
-        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                              id,
+                                                                                              repository.tip( trans.app ),
+                                                                                              metadata_only=True )
         if trans.user and trans.user.email:
             return trans.fill_template( "/webapps/tool_shed/repository/contact_owner.mako",
                                         repository=repository,
@@ -1015,6 +1018,27 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                    status=status ) )
 
     @web.expose
+    def display_image_in_repository( self, trans, **kwd ):
+        """
+        Open an image file that is contained in repository or that is referenced by a URL for display.  The image can be defined in
+        either a README.rst file contained in the repository or the help section of a Galaxy tool config that is contained in the repository.
+        The following image definitions are all supported.  The former $PATH_TO_IMAGES is no longer required, and is now ignored.
+        .. image:: https://raw.github.com/galaxy/some_image.png 
+        .. image:: $PATH_TO_IMAGES/some_image.png
+        .. image:: /static/images/some_image.gif
+        .. image:: some_image.jpg
+        .. image:: /deep/some_image.png
+        """
+        repository_id = kwd.get( 'repository_id', None )
+        relative_path_to_image_file = kwd.get( 'image_file', None )
+        if repository_id and relative_path_to_image_file:
+            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name )
+            path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
+            return open( path_to_file, 'r' )
+        return None
+
+    @web.expose
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
@@ -1023,7 +1047,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if message:
             status = 'error'
         tool_state = tool_util.new_state( trans, tool, invalid=False )
-        metadata = self.get_metadata( trans, repository_id, changeset_revision )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                              repository_id,
+                                                                                              changeset_revision,
+                                                                                              metadata_only=True )
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
@@ -1050,22 +1077,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                           changeset_revision=changeset_revision,
                                                           message=message,
                                                           status='error' ) )
-
-    @web.expose
-    def display_tool_help_image_in_repository( self, trans, **kwd ):
-        repository_id = kwd.get( 'repository_id', None )
-        image_file = kwd.get( 'image_file', None )
-        if repository_id and image_file:
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name )
-            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
-            if os.path.exists( default_path ):
-                return open( default_path, 'r' )
-            else:
-                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
-                if os.path.exists( path_to_file ):
-                    return open( path_to_file, 'r' )
-        return None
 
     @web.expose
     def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
@@ -1570,12 +1581,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     description='Functional test results for repositories owned by %s.' % user.username,
                                     pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
                                     items=functional_test_results )
-
-    def get_metadata( self, trans, repository_id, changeset_revision ):
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-        if repository_metadata and repository_metadata.metadata:
-            return repository_metadata.metadata
-        return None
 
     @web.json
     def get_readme_files( self, trans, **kwd ):
@@ -2409,7 +2414,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
-        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                              id,
+                                                                                              repository.tip( trans.app ),
+                                                                                              metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako',
                                     repository=repository,
@@ -2806,7 +2814,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
-        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                              id,
+                                                                                              repository.tip( trans.app ),
+                                                                                              metadata_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/view_changelog.mako',
                                     repository=repository,
                                     metadata=metadata,
@@ -2839,7 +2850,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( suc.to_html_string( diff ) )
-        metadata = self.get_metadata( trans, id, ctx_str )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, ctx_str, metadata_only=True )
         # For rendering the prev button.
         if ctx_parent:
             ctx_parent_rev = ctx_parent.rev()
