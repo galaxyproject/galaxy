@@ -1033,9 +1033,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         relative_path_to_image_file = kwd.get( 'image_file', None )
         if repository_id and relative_path_to_image_file:
             repository = suc.get_repository_in_tool_shed( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name )
-            path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
-            return open( path_to_file, 'r' )
+            if repository:
+                repo_files_dir = repository.repo_path( trans.app )
+                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
+                if os.path.exists( path_to_file ):
+                    return open( path_to_file, 'r' )
         return None
 
     @web.expose

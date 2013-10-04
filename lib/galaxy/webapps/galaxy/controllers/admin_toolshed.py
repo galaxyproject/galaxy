@@ -301,9 +301,11 @@ class AdminToolshed( AdminGalaxy ):
         relative_path_to_image_file = kwd.get( 'image_file', None )
         if repository_id and relative_path_to_image_file:
             repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-            repo_files_dir = repository.repo_files_directory( trans.app )
-            path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
-            return open( path_to_file, 'r' )
+            if repository:
+                repo_files_dir = repository.repo_files_directory( trans.app )
+                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
+                if os.path.exists( path_to_file ):
+                    return open( path_to_file, 'r' )
         return None
 
     @web.expose
