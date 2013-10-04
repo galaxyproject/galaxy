@@ -202,7 +202,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         trans.response.set_content_type( 'text/plain' )
         exit_code = ""
         try:
-            job = _get_job_for_dataset( dataset_id )
+            job = self._get_job_for_dataset( dataset_id )
             exit_code = job.exit_code
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
@@ -613,7 +613,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             return trans.show_error_message( "The specified dataset does not exist." )
 
         # Rate dataset.
-        dataset_rating = self.rate_item( rate_item, trans.get_user(), dataset, rating )
+        dataset_rating = self.rate_item( trans.sa_session, trans.get_user(), dataset, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, dataset )
 
