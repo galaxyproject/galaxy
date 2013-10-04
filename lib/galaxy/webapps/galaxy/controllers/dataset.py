@@ -561,19 +561,15 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def imp( self, trans, dataset_id=None, **kwd ):
         """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
-        msg = ""
-
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-
         # Error checking.
         if not dataset_id:
             return trans.show_error_message( "You must specify a dataset to import. You can %s." % referer_message, use_panels=True )
-
         # Do import.
         cur_history = trans.get_history( create=True )
         status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ], imported=True )
@@ -613,7 +609,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             return trans.show_error_message( "The specified dataset does not exist." )
 
         # Rate dataset.
-        dataset_rating = self.rate_item( trans.sa_session, trans.get_user(), dataset, rating )
+        self.rate_item( trans.sa_session, trans.get_user(), dataset, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, dataset )
 
@@ -706,7 +702,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
         except:
             redirect_url = kwd['redirect_url'] # not all will need custom text
-        current_user_roles = trans.get_current_user_roles()
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
         if self._can_access_dataset( trans, data ):
@@ -807,7 +802,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         id = None
         try:
             id = trans.app.security.decode_id( dataset_id )
-            history = trans.get_history()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda, 'Invalid HDA: %s' % id
             # Walk up parent datasets to find the containing history
@@ -854,7 +848,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             hda.mark_undeleted()
             trans.sa_session.flush()
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
-        except Exception, e:
+        except Exception:
             msg = 'HDA undeletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
             log.exception( msg )
             trans.log_event( msg )
@@ -925,7 +919,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                 except:
                     log.exception( 'Unable to purge dataset (%s) on purge of HDA (%s):' % ( hda.dataset.id, hda.id ) )
             trans.sa_session.flush()
-        except Exception, e:
+        except Exception:
             msg = 'HDA purge failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
             log.exception( msg )
             trans.log_event( msg )
@@ -1036,7 +1030,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
-        params = util.Params( kwd )
         user = trans.get_user()
         if source_history is not None:
             history = self.get_history(trans, source_history)
