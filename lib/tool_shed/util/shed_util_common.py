@@ -1519,7 +1519,9 @@ def set_image_paths( app, encoded_repository_id, text ):
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
         # We used to require $PATH_TO_IMAGES, but we now eliminate it if it's used.
         text = text.replace( '$PATH_TO_IMAGES', '' )
-        # We can eliminate the default setting of /static/images since the routs will properly display images contained in that directory.
+        # Eliminate the invalid setting of ./static/images since the routes will properly display images contained in that directory.
+        text = text.replace( './static/images', '' )
+        # Eliminate the default setting of /static/images since the routes will properly display images contained in that directory.
         text = text.replace( '/static/images', '' )
         # Use regex to instantiate routes into the defined image paths.
         for match in re.findall( '.. image:: (?!http)/?(.+)', text ):
