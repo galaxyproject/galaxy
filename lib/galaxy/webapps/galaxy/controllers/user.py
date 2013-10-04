@@ -757,7 +757,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
                 "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
         to = email
-        frm = "Galaxy Project <" + str (trans.app.config.activation_email) + ">"
+        frm = trans.app.config.activation_email
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )

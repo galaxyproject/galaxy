@@ -273,10 +273,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #error_email_to = None
 
 # Activation email is used as a sender ('from' field) for the account activation mail.
+# We recommend using string in the following format: Galaxy Project <galaxy-no-reply@example.com>
 #activation_email = None
-
-# URL of the terms and conditions of the service. Used in activation emails.
-#terms_url = https://main.g2.bx.psu.edu/static/terms.html
 
 # URL of the support resource for the galaxy instance. Used in activation emails.
 #instance_resource_url = http://wiki.galaxyproject.org/
@@ -379,7 +377,7 @@ nglims_config_file = tool-data/nglims.yaml
 #citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
-# as on the user registration and login forms.
+# as on the user registration and login forms and in the activation emails.
 #terms_url = None
 
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
