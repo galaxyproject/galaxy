@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import threading
+import logging
 from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string
@@ -19,6 +20,8 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy.util.odict import odict
+
+log = logging.getLogger( __name__ )
 
 
 class InstallManager( object ):
@@ -71,7 +74,7 @@ class InstallManager( object ):
                                                                                                            latest_migration_script_number )
                 else:
                     # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
-                    # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
+                    # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                     # the database.
                     tool_shed_accessible = True
                     missing_tool_configs_dict = odict()
@@ -83,6 +86,9 @@ class InstallManager( object ):
                         plural = 's'
                         file_names = ', '.join( self.proprietary_tool_confs )
                     if missing_tool_configs_dict:
+                        for proprietary_tool_conf in self.proprietary_tool_confs:
+                            # Create a backup of the tool configuration in the un-migrated state.
+                            shutil.copy( proprietary_tool_conf, '%s-pre-stage-%04d' % ( proprietary_tool_conf, latest_migration_script_number ) )
                         for repository_elem in root:
                             # Make sure we have a valid repository tag.
                             if self.__is_valid_repository_tag( repository_elem ):
@@ -127,7 +133,7 @@ class InstallManager( object ):
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
         relative_clone_dir = os.path.join( self.tool_shed, 'repos', owner, name, changeset_revision )
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
-        if not self.__isinstalled( clone_dir ):
+        if not self.__iscloned( clone_dir ):
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
@@ -160,8 +166,8 @@ class InstallManager( object ):
             if rd_key in [ 'root_key', 'description' ]:
                 continue
             for rd_tup in rd_tups:
-                rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required = \
-                    common_util.parse_repository_dependency_tuple( rd_tup )
+                parsed_rd_tup = common_util.parse_repository_dependency_tuple( rd_tup )
+                rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = parsed_rd_tup[ 0:4 ]
                 # TODO: Make sure the repository description is applied to the new repository record during installation.
                 tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name, rd_owner, rd_changeset_revision, description=None )
                 if tool_shed_repository:
@@ -200,7 +206,7 @@ class InstallManager( object ):
                 tmp_filename = fh.name
                 fh.close()
                 fh = open( tmp_filename, 'wb' )
-                tree.write( tmp_filename )
+                tree.write( tmp_filename, encoding='utf-8', xml_declaration=True )
                 fh.close()
                 shutil.move( tmp_filename, os.path.abspath( proprietary_tool_conf ) )
                 os.chmod( proprietary_tool_conf, 0644 )
@@ -249,7 +255,7 @@ class InstallManager( object ):
                         found = True
                         break
             if found:
-                break      
+                break
         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
         tool = self.toolbox.load_tool( full_path )
         return suc.generate_tool_guid( repository_clone_url, tool )
@@ -270,7 +276,8 @@ class InstallManager( object ):
                 continue
             for rd_tup in rd_tups:
                 prior_install_ids = []
-                tool_shed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( rd_tup )
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
                 if util.asbool( prior_installation_required ):
                     for tsr in tool_shed_repositories:
                         if tsr.name == name and tsr.owner == owner and tsr.changeset_revision == changeset_revision:
@@ -471,7 +478,15 @@ class InstallManager( object ):
                                            tool_shed_repository.name,
                                            tool_shed_repository.installed_changeset_revision )
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
-        if self.__isinstalled( clone_dir ):
+        cloned_ok = self.__iscloned( clone_dir )
+        is_installed = False
+        # Any of the following states should count as installed in this context.
+        if tool_shed_repository.status in [ self.app.model.ToolShedRepository.installation_status.INSTALLED,
+                                            self.app.model.ToolShedRepository.installation_status.ERROR,
+                                            self.app.model.ToolShedRepository.installation_status.UNINSTALLED,
+                                            self.app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            is_installed = True
+        if cloned_ok and is_installed:
             print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
         else:
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
@@ -482,9 +497,10 @@ class InstallManager( object ):
                                        tool_shed_repository.name,
                                        tool_shed_repository.owner,
                                        tool_shed_repository.installed_changeset_revision )
-            suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
-            cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
-            if cloned_ok:
+            if not cloned_ok:
+                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
+                cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
+            if cloned_ok and not is_installed:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                  repository_clone_url=repository_clone_url,
                                                  relative_install_dir=relative_install_dir,
@@ -585,7 +601,7 @@ class InstallManager( object ):
             return True
         return False
 
-    def __isinstalled( self, clone_dir ):
+    def __iscloned( self, clone_dir ):
         full_path = os.path.abspath( clone_dir )
         if os.path.exists( full_path ):
             for root, dirs, files in os.walk( full_path ):

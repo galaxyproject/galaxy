@@ -66,7 +66,10 @@ $.fn.makeAbsolute = function(rebase) {
 };
 
 /**
- *  Sets up popupmenu rendering and binds options functions to the appropriate links
+ * Sets up popupmenu rendering and binds options functions to the appropriate links.
+ * initial_options is a dict with text describing the option pointing to either (a) a 
+ * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the 
+ * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
 function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
@@ -92,7 +95,9 @@ function make_popupmenu(button_element, initial_options) {
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    menu_element.append( $("<li></li>").append( $("<a href='#'></a>").html(k).click(v) ) );
+                    // Action can be either an anonymous function and a mapped dict.
+                    var action = v.action || v;
+                    menu_element.append( $("<li></li>").append( $("<a>").attr("href", v.url).html(k).click(action) ) );
                 } else {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
@@ -164,43 +169,20 @@ function make_popup_menus( parent ) {
                 options[ link.text() ] = null;
                 
             } else {
-                options[ link.text() ] = function() {
+                options[ link.text() ] = {
+                    url: href,
+                    action: function() {
 
-                    // if theres confirm text, send the dialog
-                    if ( !confirmtext || confirm( confirmtext ) ) {
-                        var f;
-                        // relocate the center panel
-                        if ( target === "_parent" ) {
-                            window.parent.location = href;
-                            
-                        // relocate the entire window
-                        } else if ( target === "_top" ) {
-                            window.top.location = href;
-                            
-                        // Http request target is a window named demolocal on the local box
-                        } else if ( target === "demo" ) {
-                            if ( f === undefined || f.closed ) {
-                                f = window.open( href,target );
-                                f.creator = self;
+                        // if theres confirm text, send the dialog
+                        if ( !confirmtext || confirm( confirmtext ) ) {
+                            // link.click() doesn't use target for some reason, 
+                            // so manually do it here. 
+                            if (target) {
+                                window.open(href, target);
                             }
-                            
-                        // this panel or other, valid panels
-                        } else {
-                            // it may be that the button and menu href are not in the same frame:
-                            //  allow certain frame names to be used as a target
-                            var other_valid_targets = [
-                                'galaxy_main'
-                                // following are blocked until needed
-                                //'galaxy_tools',
-                                //'galaxy_history'
-                            ];
-                            if( ( target && ( target in window )
-                            &&  ( other_valid_targets.indexOf( target ) !== -1 ) ) ){
-                                window[ target ].location = href;
-
-                            // relocate this panel
-                            } else {
-                                window.location = href;
+                            // For all other links, do the default action.
+                            else {
+                                link.click();
                             }
                         }
                     }
@@ -682,6 +664,7 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+
     // Tooltips
     // if ( $.fn.tipsy ) {
     //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
@@ -690,10 +673,10 @@ $(document).ready( function() {
     // }
     if ( $.fn.tooltip ) {
         // Put tooltips below items in panel header so that they do not overlap masthead.
-        $(".unified-panel-header .tooltip").tooltip( { placement: 'bottom' } );
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
         
         // Default tooltip location to be above item.
-        $(".tooltip").tooltip( { placement: 'top' } );
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();

@@ -24,9 +24,9 @@ class HgController( BaseUIController ):
             hgwebapp = hgwebdir( hgweb_config )
             return hgwebapp
         wsgi_app = wsgiapplication( make_web_app )
-        if hg_version >= '2.2.3' and cmd == 'pushkey':                
+        if hg_version >= '2.2.3' and cmd == 'pushkey':
             # When doing an "hg push" from the command line, the following commands, in order, will be retrieved from environ, depending
-            # upon the mercurial version being used.  In mercurial version 2.2.3, section 15.2. Command changes includes a new feature: 
+            # upon the mercurial version being used.  In mercurial version 2.2.3, section 15.2. Command changes includes a new feature:
             # pushkey: add hooks for pushkey/listkeys (see http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.2.3_.282012-07-01.29).
             # We require version 2.2.3 since the pushkey hook was added in that version.
             # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey

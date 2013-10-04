@@ -10,6 +10,7 @@ from galaxy.web.base.controller import BaseAPIController
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import workflow_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -33,6 +34,102 @@ class ToolShedRepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repositories."""
 
     @web.expose_api
+    def exported_workflows( self, trans, id, **kwd ):
+        """
+        GET /api/tool_shed_repositories/{encoded_tool_shed_repository_id}/exported_workflows
+
+        Display a list of dictionaries containing information about this tool shed repository's exported workflows.
+        
+        :param id: the encoded id of the ToolShedRepository object
+        """
+        # Example URL: http://localhost:8763/api/tool_shed_repositories/f2db41e1fa331b3e/exported_workflows
+        # Since exported workflows are dictionaries with very few attributes that differentiate them from each other, we'll build the
+        # list based on the following dictionary of those few attributes.
+        exported_workflows = []
+        repository = suc.get_tool_shed_repository_by_id( trans, id )
+        metadata = repository.metadata
+        if metadata:
+            exported_workflow_tups = metadata.get( 'workflows', [] )
+        else:
+            exported_workflow_tups = []
+        for index, exported_workflow_tup in enumerate( exported_workflow_tups ):
+            # The exported_workflow_tup looks like ( relative_path, exported_workflow_dict ), where the value of relative_path is the location
+            # on disk (relative to the root of the installed repository) where the exported_workflow_dict file (.ga file) is located.
+            exported_workflow_dict = exported_workflow_tup[ 1 ]
+            annotation = exported_workflow_dict.get( 'annotation', '' )
+            format_version = exported_workflow_dict.get( 'format-version', '' )
+            workflow_name = exported_workflow_dict.get( 'name', '' )
+            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+            display_dict = dict( index=index, annotation=annotation, format_version=format_version, workflow_name=workflow_name )
+            exported_workflows.append( display_dict )
+        return exported_workflows
+
+    @web.expose_api
+    def import_workflow( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/import_workflow
+
+        Import the specified exported workflow contained in the specified installed tool shed repository into Galaxy.
+        
+        :param key: the API key of the Galaxy user with which the imported workflow will be associated.
+        :param id: the encoded id of the ToolShedRepository object
+        
+        The following parameters are included in the payload.
+        :param index: the index location of the workflow tuple in the list of exported workflows stored in the metadata for the specified repository
+        """
+        api_key = kwd.get( 'key', None )
+        if api_key is None:
+            raise HTTPBadRequest( detail="Missing required parameter 'key' whose value is the API key for the Galaxy user importing the specified workflow." )
+        tool_shed_repository_id = kwd.get( 'id', '' )
+        if not tool_shed_repository_id:
+            raise HTTPBadRequest( detail="Missing required parameter 'id'." )
+        index = payload.get( 'index', None )
+        if index is None:
+            raise HTTPBadRequest( detail="Missing required parameter 'index'." )
+        repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
+        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+        exported_workflow = exported_workflows[ int( index ) ]
+        workflow_name = exported_workflow[ 'workflow_name' ]
+        workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
+        if status == 'error':
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+        else:
+            return workflow.to_dict( view='element' )
+
+    @web.expose_api
+    def import_workflows( self, trans, **kwd ):
+        """
+        POST /api/tool_shed_repositories/import_workflow
+
+        Import all of the exported workflows contained in the specified installed tool shed repository into Galaxy.
+        
+        :param key: the API key of the Galaxy user with which the imported workflows will be associated.
+        :param id: the encoded id of the ToolShedRepository object
+        """
+        api_key = kwd.get( 'key', None )
+        if api_key is None:
+            raise HTTPBadRequest( detail="Missing required parameter 'key' whose value is the API key for the Galaxy user importing the specified workflow." )
+        tool_shed_repository_id = kwd.get( 'id', '' )
+        if not tool_shed_repository_id:
+            raise HTTPBadRequest( detail="Missing required parameter 'id'." )
+        repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
+        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        imported_workflow_dicts = []
+        for exported_workflow_dict in exported_workflows:
+            workflow_name = exported_workflow_dict[ 'workflow_name' ]
+            workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
+            if status == 'error':
+                log.error( message, exc_info=True )
+                trans.response.status = 500
+                return message
+            else:
+                imported_workflow_dicts.append( workflow.to_dict( view='element' ) )
+        return imported_workflow_dicts
+
+    @web.expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/tool_shed_repositories
@@ -45,7 +142,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.ToolShedRepository.table.c.name ) \
                                     .all()
             for tool_shed_repository in query:
-                tool_shed_repository_dict = tool_shed_repository.dictify( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                tool_shed_repository_dict = tool_shed_repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
                 tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                                   action='show',
                                                                   id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -58,35 +155,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
             return message
 
     @web.expose_api
-    def show( self, trans, id, **kwd ):
-        """
-        GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
-        Display a dictionary containing information about a specified tool_shed_repository.
-
-        :param id: the encoded id of the ToolShedRepository object
-        """
-        # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        try:
-            tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, id )
-            tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
-            tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                              action='show',
-                                                              id=trans.security.encode_id( tool_shed_repository.id ) )
-            return tool_shed_repository_dict
-        except Exception, e:
-            message = "Error in tool_shed_repositories API in index: " + str( e )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
-
-    @web.expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
         :param name (required): the name of the Repository
@@ -279,12 +354,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install_repository_revisions
         Install one or more specified repository revisions from one or more specified tool sheds into Galaxy.  The received parameters
         must be ordered lists so that positional values in tool_shed_urls, names, owners and changeset_revisions are associated.
-        
+
         It's questionable whether this method is needed as the above method for installing a single repository can probably cover all
         desired scenarios.  We'll keep this one around just in case...
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
@@ -365,9 +440,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         POST /api/tool_shed_repositories/repair_repository_revision
         Repair a specified repository revision previously installed into Galaxy.
-        
+
         :param key: the current Galaxy admin user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
@@ -402,7 +477,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repair_dict = repository_util.repair_tool_shed_repository( trans,
                                                                            repository,
                                                                            encoding_util.tool_shed_encode( repo_info_dict ) )
-                repository_dict = repository.dictify( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -412,3 +487,25 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 tool_shed_repositories.append( repository_dict )
         # Display the list of repaired repositories.
         return tool_shed_repositories
+
+    @web.expose_api
+    def show( self, trans, id, **kwd ):
+        """
+        GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
+        Display a dictionary containing information about a specified tool_shed_repository.
+
+        :param id: the encoded id of the ToolShedRepository object
+        """
+        # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
+        try:
+            tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, id )
+            tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+            tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                              action='show',
+                                                              id=trans.security.encode_id( tool_shed_repository.id ) )
+            return tool_shed_repository_dict
+        except Exception, e:
+            message = "Error in tool_shed_repositories API in index: " + str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message

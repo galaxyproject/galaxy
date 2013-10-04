@@ -42,7 +42,7 @@ class TraceLoggerProxy(ConnectionProxy):
         start = time.clock()
         rval = execute(cursor, statement, parameters, context)
         duration = time.clock() - start
-        self.trace_logger.log( "sqlalchemy_query", 
-            message="Query executed", statement=statement, parameters=parameters, 
-            executemany=executemany, duration=duration ) 
+        self.trace_logger.log( "sqlalchemy_query",
+            message="Query executed", statement=statement, parameters=parameters,
+            executemany=executemany, duration=duration )
         return rval

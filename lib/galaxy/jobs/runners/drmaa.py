@@ -109,7 +109,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
-        
+
         # get configured job destination
         job_destination = job_wrapper.job_destination
 
@@ -166,7 +166,17 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
-            external_job_id = self.ds.runJob(jt)
+            # TODO: create a queue for retrying submission indefinitely
+            # TODO: configurable max tries and sleep
+            trynum = 0
+            external_job_id = None
+            while external_job_id is None and trynum < 5:
+                try:
+                    external_job_id = self.ds.runJob(jt)
+                except drmaa.InternalException, e:
+                    trynum += 1
+                    log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
+                    time.sleep( 5 )
         else:
             job_wrapper.change_ownership_for_run()
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
@@ -182,7 +192,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         ajs.job_id = external_job_id
         ajs.old_state = 'new'
         ajs.job_destination = job_destination
-        
+
         # delete the job template
         self.ds.deleteJobTemplate( jt )
 
@@ -202,16 +212,9 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.jobStatus( external_job_id )
-            # InternalException was reported to be necessary on some DRMs, but
-            # this could cause failures to be detected as completion!  Please
-            # report if you experience problems with this.
-            except ( drmaa.InvalidJobException, drmaa.InternalException ), e:
-                # we should only get here if an orphaned job was put into the queue at app startup
-                log.info( "(%s/%s) job left DRM queue with following message: %s" % ( galaxy_id_tag, external_job_id, e ) )
-                self.work_queue.put( ( self.finish_job, ajs ) )
-                continue
-            except drmaa.DrmCommunicationException, e:
-                log.warning( "(%s/%s) unable to communicate with DRM: %s" % ( galaxy_id_tag, external_job_id, e ))
+            # TODO: probably need to keep track of InvalidJobException count and remove after it exceeds some configurable
+            except ( drmaa.DrmCommunicationException, drmaa.InternalException, drmaa.InvalidJobException ), e:
+                log.warning( "(%s/%s) job check resulted in %s: %s", galaxy_id_tag, external_job_id, e.__class__.name, e )
                 new_watched.append( ajs )
                 continue
             except Exception, e:
@@ -226,7 +229,13 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
-            if state in ( drmaa.JobState.DONE, drmaa.JobState.FAILED ):
+            if state == drmaa.JobState.FAILED:
+                if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    ajs.stop_job = False
+                    ajs.fail_message = "The cluster DRM system terminated this job"
+                    self.work_queue.put( ( self.fail_job, ajs ) )
+                continue
+            if state == drmaa.JobState.DONE:
                 if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
                     self.work_queue.put( ( self.finish_job, ajs ) )
                 continue
@@ -234,7 +243,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             new_watched.append( ajs )
         # Replace the watch list with the updated version
         self.watched = new_watched
-        
+
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
         try:
@@ -320,7 +329,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             raise RuntimeError("External_runjob failed (exit code %s)\nChild process reported error:\n%s" % (str(exitcode), stderrdata))
         if not stdoutdata.strip():
             raise RuntimeError("External_runjob did return the job id: %s" % (stdoutdata))
-        
+
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
         jobId = stdoutdata

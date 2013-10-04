@@ -54,7 +54,7 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                           strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                           strings_not_displayed=[] )
         # Visit the manage repository page for package_bwa_0_5_9_0100.
-        self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'will not be', 'to this repository' ] )
 
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''

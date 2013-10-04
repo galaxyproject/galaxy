@@ -282,14 +282,14 @@ class Data( object ):
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream

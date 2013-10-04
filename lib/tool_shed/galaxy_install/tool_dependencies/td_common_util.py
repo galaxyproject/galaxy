@@ -12,10 +12,124 @@ from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
+
+class CompressedFile( object ):
+    
+    def __init__( self, file_path, mode='r' ):
+        if istar( file_path ):
+            self.file_type = 'tar'
+        elif iszip( file_path ) and not isjar( file_path ):
+            self.file_type = 'zip'
+        self.file_name = os.path.splitext( os.path.basename( file_path ) )[ 0 ]
+        if self.file_name.endswith( '.tar' ):
+            self.file_name = os.path.splitext( self.file_name )[ 0 ]
+        self.type = self.file_type
+        method = 'open_%s' % self.file_type
+        if hasattr( self, method ):
+            self.archive = getattr( self, method )( file_path, mode )
+        else:
+            raise NameError( 'File type %s specified, no open method found.' % self.file_type )
+        
+    def extract( self, path ):
+        '''Determine the path to which the archive should be extracted.'''
+        contents = self.getmembers()
+        extraction_path = path
+        if len( contents ) == 1:
+            # The archive contains a single file, return the extraction path.
+            if self.isfile( contents[ 0 ] ):
+                extraction_path = os.path.join( path, self.file_name )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( extraction_path )
+        else:
+            # Sort filenames within the archive by length, because if the shortest path entry in the archive is a directory,
+            # and the next entry has the directory prepended, then everything following that entry must be within that directory.
+            # For example, consider tarball for BWA 0.5.9:
+            # bwa-0.5.9.tar.bz2:
+            #                     bwa-0.5.9/
+            #                     bwa-0.5.9/bwt.c
+            #                     bwa-0.5.9/bwt.h
+            #                     bwa-0.5.9/Makefile
+            #                     bwa-0.5.9/bwt_gen/
+            #                     bwa-0.5.9/bwt_gen/Makefile
+            #                     bwa-0.5.9/bwt_gen/bwt_gen.c
+            #                     bwa-0.5.9/bwt_gen/bwt_gen.h
+            # When sorted by length, one sees a directory at the root of the tarball, and all other tarball contents as
+            # children of that directory.
+            filenames = sorted( [ self.getname( item ) for item in contents ], cmp=lambda a,b: cmp( len( a ), len( b ) ) )
+            parent_name = filenames[ 0 ]
+            parent = self.getmember( parent_name )
+            first_child = filenames[ 1 ]
+            if first_child.startswith( parent_name ) and parent is not None and self.isdir( parent ):
+                if self.getname( parent ) == self.file_name:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.file_name )
+                else:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.getname( parent ) )
+            else:
+                extraction_path = os.path.join( path, self.file_name )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( os.path.join( extraction_path ) )
+        return os.path.abspath( extraction_path )
+    
+    def getmembers_tar( self ):
+        return self.archive.getmembers()
+    
+    def getmembers_zip( self ):
+        return self.archive.infolist()
+    
+    def getname_tar( self, item ):
+        return item.name
+    
+    def getname_zip( self, item ):
+        return item.filename
+    
+    def getmember( self, name ):
+        for member in self.getmembers():
+            if self.getname( member ) == name:
+                return member
+    
+    def getmembers( self ):
+        return getattr( self, 'getmembers_%s' % self.type )()
+        
+    def getname( self, member ):
+        return getattr( self, 'getname_%s' % self.type )( member )
+    
+    def isdir( self, member ):
+        return getattr( self, 'isdir_%s' % self.type )( member )
+    
+    def isdir_tar( self, member ):
+        return member.isdir()
+    
+    def isdir_zip( self, member ):
+        if member.filename.endswith( os.sep ):
+            return True
+        return False
+
+    def isfile( self, member ):
+        if not self.isdir( member ):
+            return True
+        return False
+    
+    def open_tar( self, filepath, mode ):
+        return tarfile.open( filepath, mode )
+
+    def open_zip( self, filepath, mode ):
+        return zipfile.ZipFile( filepath, mode )
+
 def clean_tool_shed_url( base_url ):
     if base_url:
-        protocol, base = base_url.split( '://' )
-        return base.rstrip( '/' )
+        if base_url.find( '://' ) > -1:
+            try:
+                protocol, base = base_url.split( '://' )
+            except ValueError, e:
+                # The received base_url must be an invalid url.
+                log.debug( "Returning unchanged invalid base_url from td_common_util.clean_tool_shed_url: %s" % str( base_url ) )
+                return base_url
+            return base.rstrip( '/' )
+        return base_url.rstrip( '/' )
     return base_url
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
@@ -84,30 +198,6 @@ def download_binary( url, work_dir ):
     downloaded_filename = os.path.split( url )[ -1 ]
     dir = url_download( work_dir, downloaded_filename, url, extract=False )
     return downloaded_filename
-
-def extract_tar( file_name, file_path ):
-    if isgzip( file_name ) or isbz2( file_name ):
-        # Open for reading with transparent compression.
-        tar = tarfile.open( file_name, 'r:*', errorlevel=0 )
-    else:
-        tar = tarfile.open( file_name, errorlevel=0 )
-    tar.extractall( path=file_path )
-    tar.close()
-
-def extract_zip( archive_path, extraction_path ):
-    # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
-    if not zipfile_ok( archive_path ):
-        return False
-    zip_archive = zipfile.ZipFile( archive_path, 'r' )
-    for name in zip_archive.namelist():
-        uncompressed_path = os.path.join( extraction_path, name )
-        if uncompressed_path.endswith( '/' ):
-            if not os.path.isdir( uncompressed_path ):
-                os.makedirs( uncompressed_path )
-        else:
-            file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
-    zip_archive.close()
-    return True
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()
@@ -225,25 +315,119 @@ def move_directory_files( current_dir, source_dir, destination_dir ):
         destination_file = os.path.join( destination_directory, file_name )
         shutil.move( source_file, destination_file )
 
-def move_file( current_dir, source, destination_dir ):
+def move_file( current_dir, source, destination, rename_to=None ):
     source_file = os.path.abspath( os.path.join( current_dir, source ) )
-    destination_directory = os.path.join( destination_dir )
-    if not os.path.isdir( destination_directory ):
+    if rename_to is not None:
+        destination_file = rename_to
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, destination_file )
+    else:
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, source_file )
+    if not os.path.exists( destination_directory ):
         os.makedirs( destination_directory )
-    shutil.move( source_file, destination_directory )
+    shutil.move( source_file, destination_path )
 
-def tar_extraction_directory( file_path, file_name ):
-    """Try to return the correct extraction directory."""
-    file_name = file_name.strip()
-    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.tar', '.zip' ]
-    for extension in extensions:
-        if file_name.find( extension ) > 0:
-            dir_name = file_name[ :-len( extension ) ]
-            if os.path.exists( os.path.abspath( os.path.join( file_path, dir_name ) ) ):
-                return dir_name
-    if os.path.exists( os.path.abspath( os.path.join( file_path, file_name ) ) ):
-        return os.path.abspath( file_path )
-    raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+def parse_package_elem( package_elem, platform_info_dict=None, include_after_install_actions=True ):
+    """
+    Parse a <package> element within a tool dependency definition and return a list of action tuples.  This method is called when setting
+    metadata on a repository that includes a tool_dependencies.xml file or when installing a repository that includes a tool_dependencies.xml
+    file.  If installing, platform_info_dict must be a valid dictionary and include_after_install_actions must be True.
+    """
+    # The actions_elem_tuples list contains <actions> tag sets (possibly inside of an <actions_group> tag set) to be processed in the order
+    # they are defined in the tool_dependencies.xml file.
+    actions_elem_tuples = []
+    # The tag sets that will go into the actions_elem_list are those that install a compiled binary if the architecture and operating system
+    # match it's defined attributes.  If compiled binary is not installed, the first <actions> tag set [following those that have the os and
+    # architecture attributes] that does not have os or architecture attributes will be processed.  This tag set must contain the recipe for
+    # downloading and compiling source.
+    actions_elem_list = []
+    for elem in package_elem:
+        if elem.tag == 'actions':
+            # We have an <actions> tag that should not be matched against a specific combination of architecture and operating system.
+            in_actions_group = False
+            actions_elem_tuples.append( ( in_actions_group, elem ) )
+        elif elem.tag == 'actions_group':
+            # We have an actions_group element, and its child <actions> elements should therefore be compared with the current operating system
+            # and processor architecture.
+            in_actions_group = True
+            # Record the number of <actions> elements so we can filter out any <action> elements that precede <actions> elements.
+            actions_elem_count = len( elem.findall( 'actions' ) )
+            # Record the number of <actions> elements that have both architecture and os specified, in order to filter out any 
+            # platform-independent <actions> elements that come before platform-specific <actions> elements.
+            platform_actions_elements = []
+            for actions_elem in elem.findall( 'actions' ):
+                if actions_elem.get( 'architecture' ) is not None and actions_elem.get( 'os' ) is not None:
+                    platform_actions_elements.append( actions_elem )
+            platform_actions_element_count = len( platform_actions_elements )
+            platform_actions_elements_processed = 0
+            actions_elems_processed = 0
+            # The tag sets that will go into the after_install_actions list are <action> tags instead of <actions> tags.  These will be processed
+            # only if they are at the very end of the <actions_group> tag set (after all <actions> tag sets). See below for details.
+            after_install_actions = []
+            # Inspect the <actions_group> element and build the actions_elem_list and the after_install_actions list.
+            for child_element in elem:
+                if child_element.tag == 'actions':
+                    actions_elems_processed += 1
+                    system = child_element.get( 'os' )
+                    architecture = child_element.get( 'architecture' )
+                    # Skip <actions> tags that have only one of architecture or os specified, in order for the count in
+                    # platform_actions_elements_processed to remain accurate.
+                    if ( system and not architecture ) or ( architecture and not system ):
+                        log.debug( 'Error: Both architecture and os attributes must be specified in an <actions> tag.' )
+                        continue
+                    # Since we are inside an <actions_group> tag set, compare it with our current platform information and filter the <actions>
+                    # tag sets that don't match. Require both the os and architecture attributes to be defined in order to find a match.
+                    if system and architecture:
+                        platform_actions_elements_processed += 1
+                        # If either the os or architecture do not match the platform, this <actions> tag will not be considered a match. Skip
+                        # it and proceed with checking the next one.
+                        if platform_info_dict:
+                            if platform_info_dict[ 'os' ] != system or platform_info_dict[ 'architecture' ] != architecture:
+                                continue
+                        else:
+                            # We must not be installing a repository into Galaxy, so determining if we can install a binary is not necessary.
+                            continue
+                    else:
+                        # <actions> tags without both os and architecture attributes are only allowed to be specified after platform-specific
+                        # <actions> tags. If we find a platform-independent <actions> tag before all platform-specific <actions> tags have been
+                        # processed.
+                        if platform_actions_elements_processed < platform_actions_element_count:
+                            message = 'Error: <actions> tags without os and architecture attributes are only allowed after all <actions> tags with '
+                            message += 'os and architecture attributes have been defined. Skipping the <actions> tag set with no os or architecture '
+                            message += 'attributes that has been defined between two <actions> tag sets that have these attributes defined.  '
+                            log.debug( message )
+                            continue
+                    # If we reach this point, it means one of two things: 1) The system and architecture attributes are not defined in this
+                    # <actions> tag, or 2) The system and architecture attributes are defined, and they are an exact match for the current
+                    # platform. Append the child element to the list of elements to process.
+                    actions_elem_list.append( child_element )
+                elif child_element.tag == 'action':
+                    # Any <action> tags within an <actions_group> tag set must come after all <actions> tags. 
+                    if actions_elems_processed == actions_elem_count:
+                        # If all <actions> elements have been processed, then this <action> element can be appended to the list of actions to
+                        # execute within this group.
+                        after_install_actions.append( child_element )
+                    else:
+                        # If any <actions> elements remain to be processed, then log a message stating that <action> elements are not allowed
+                        # to precede any <actions> elements within an <actions_group> tag set.
+                        message = 'Error: <action> tags are only allowed at the end of an <actions_group> tag set after all <actions> tags.  '
+                        message += 'Skipping <%s> element with type %s.' % ( child_element.tag, child_element.get( 'type' ) )
+                        log.debug( message )
+                        continue
+            if platform_info_dict is None and not include_after_install_actions:
+                # We must be setting metadata on a repository.
+                actions_elem_tuples.append( ( in_actions_group, actions_elem_list[ 0 ] ) )
+            elif platform_info_dict is not None and include_after_install_actions:
+                # We must be installing a repository.
+                if after_install_actions:
+                    actions_elem_list.extend( after_install_actions )
+                actions_elem_tuples.append( ( in_actions_group, actions_elem_list ) )
+        else:
+            # Skip any element that is not <actions> or <actions_group> - this will skip comments, <repository> tags and <readme> tags.
+            in_actions_group = False
+            continue
+    return actions_elem_tuples
 
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
@@ -266,36 +450,18 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
         if dst:
             dst.close()
     if extract:
-        if istar( file_path ):
-            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
-            extract_tar( file_path, install_dir )
-            dir = tar_extraction_directory( install_dir, downloaded_file_name )
-        elif isjar( file_path ):
-            dir = os.path.curdir
-        elif iszip( file_path ):
-            # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
-            zip_archive_extracted = extract_zip( file_path, install_dir )
-            dir = zip_extraction_directory( install_dir, downloaded_file_name )
+        if istar( file_path ) or iszip( file_path ):
+            archive = CompressedFile( file_path )
+            extraction_path = archive.extract( install_dir )
         else:
-            dir = os.path.abspath( install_dir )
+            extraction_path = os.path.abspath( install_dir )
     else:
-        dir = os.path.abspath( install_dir )
-    return dir
-
-def zip_extraction_directory( file_path, file_name ):
-    """Try to return the correct extraction directory."""
-    files = [ filename for filename in os.listdir( file_path ) if not filename.endswith( '.zip' ) ]
-    if len( files ) > 1:
-        return os.path.abspath( file_path )
-    elif len( files ) == 1:
-        # If there is only on file it should be a directory.
-        if os.path.isdir( os.path.join( file_path, files[ 0 ] ) ):
-            return os.path.abspath( os.path.join( file_path, files[ 0 ] ) )
-    raise ValueError( 'Could not find directory for the extracted file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+        extraction_path = os.path.abspath( install_dir )
+    return extraction_path
 
 def zipfile_ok( path_to_archive ):
     """
-    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 
+    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction,
     because ZipFile.extractall() has some potential security holes.  See python zipfile documentation for more details.
     """
     basename = os.path.realpath( os.path.dirname( path_to_archive ) )

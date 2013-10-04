@@ -53,8 +53,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                     can_access = trans.app.security_agent.can_access_dataset(
                         current_user_roles, ld.library_dataset_dataset_association.dataset )
                 if (admin or can_access) and not ld.deleted:
-                    log.debug( "type(folder): %s" % type( folder ) )
-                    log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
+                    #log.debug( "type(folder): %s" % type( folder ) )
+                    #log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
                     #log.debug( "attributes of folder: %s" % str(dir(folder)) )
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
@@ -72,13 +72,13 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
-        log.debug( "Root folder type: %s" % type( library.root_folder ) )
+        #log.debug( "Root folder type: %s" % type( library.root_folder ) )
         encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
         rval.append( dict( id = encoded_id,
                            type = 'folder',
                            name = '/',
                            url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
-        log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
+        #log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
             encoded_id = trans.security.encode_id( content.id )
@@ -105,7 +105,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :rtype:     dict
         :returns:   detailed library item information
         .. seealso::
-            :func:`galaxy.model.LibraryDataset.dictify` and
+            :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
         class_name, content_id = self.__decode_library_content_id( trans, id )
@@ -113,7 +113,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
         else:
             content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
-        return self.encode_all_ids( trans, content.dictify( view='element' ) )
+        return self.encode_all_ids( trans, content.to_dict( view='element' ) )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
@@ -129,7 +129,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :param  library_id: encoded id string of the library that contains this item
         :type   payload:    dict
         :param  payload:    dictionary structure containing:
-        
+
             * folder_id:    the parent folder of the new item
             * create_type:  the type of item to create ('file' or 'folder')
             * from_hda_id:  (optional) the id of an accessible HDA to copy into the
@@ -172,7 +172,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if create_type == 'file' and from_hda_id:
             return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
 
-        #check for extended metadata, store it and pop it out of the param 
+        #check for extended metadata, store it and pop it out of the param
         #otherwise sanitize_param will have a fit
         ex_meta_payload = None
         if 'extended_metadata' in payload:
@@ -266,7 +266,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
-            ldda_dict = ldda.dictify()
+            ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
 
         except Exception, exc:

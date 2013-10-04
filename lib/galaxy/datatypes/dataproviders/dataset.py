@@ -6,18 +6,17 @@ Dataproviders that use either:
         (e.g. parsing genomic regions from their source)
 """
 
-from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( 'bx-python' )
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
-
-import exceptions
 import base
 import line
 import column
 import external
+
+from galaxy import eggs
+eggs.require( 'bx-python' )
+from bx import seq as bx_seq
+from bx import wiggle as bx_wig
+from bx import bbi as bx_bbi
 
 _TODO = """
 use bx as much as possible
@@ -146,10 +145,10 @@ class DatasetDataProvider( base.DataProvider ):
         :returns: list of column indeces for the named columns.
         """
         region_column_names = ( 'chromCol', 'startCol', 'endCol' )
-        region_indeces = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
-        if check and not all( map( lambda i: i != None, indeces ) ):
-            raise ValueError( "Could not determine proper column indeces for chrom, start, end: %s" %( str( indeces ) ) )
-        return region_indeces
+        region_indices = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
+        if check and not all( map( lambda i: i != None, region_indices) ):
+            raise ValueError( "Could not determine proper column indices for chrom, start, end: %s" %( str( region_indices ) ) )
+        return region_indices
 
 
 class ConvertedDatasetDataProvider( DatasetDataProvider ):

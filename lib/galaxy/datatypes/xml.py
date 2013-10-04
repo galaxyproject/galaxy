@@ -25,7 +25,7 @@ class GenericXml( data.Text ):
     def sniff( self, filename ):
         """
         Determines whether the file is XML or not
-        
+
         >>> fname = get_test_fname( 'megablast_xml_parser_test1.blastxml' )
         >>> GenericXml().sniff( fname )
         True
@@ -37,7 +37,7 @@ class GenericXml( data.Text ):
         handle = open(filename)
         line = handle.readline()
         handle.close()
-        
+
         #TODO - Is there a more robust way to do this?
         return line.startswith('<?xml ')
 

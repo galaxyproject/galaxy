@@ -41,7 +41,7 @@ default_query_classad = dict(
 class CondorJobState( AsynchronousJobState ):
     def __init__( self, **kwargs ):
         """
-        Encapsulates state related to a job that is being run via the DRM and 
+        Encapsulates state related to a job that is being run via the DRM and
         that we need to monitor.
         """
         super( CondorJobState, self ).__init__( **kwargs )
@@ -227,7 +227,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             new_watched.append( cjs )
         # Replace the watch list with the updated version
         self.watched = new_watched
-        
+
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
         try:

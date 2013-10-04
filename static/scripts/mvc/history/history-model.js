@@ -49,6 +49,8 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         /** HDACollection of the HDAs contained in this history. */
         this.hdas = new HDACollection();
 
+        this.updateTimeoutId = null;
+
         // if we've got hdas passed in the constructor, load them and set up updates if needed
         if( initialHdas && _.isArray( initialHdas ) ){
             this.hdas.add( initialHdas );
@@ -63,11 +65,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         //  then: refresh the panel
         this.hdas.bind( 'state:ready', function( hda, newState, oldState ){
             if( hda.get( 'force_history_refresh' ) ){
-                //TODO: could poll jobs here...
-                var history = this;
-                setTimeout( function(){
-                    history.stateUpdater();
-                }, History.UPDATE_DELAY );
+                this.updateAfterDelay();
             }
         }, this );
 
@@ -87,13 +85,21 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         });
     },
 
+    updateAfterDelay : function(){
+        var history = this;
+        this.updateTimeoutId = setTimeout( function(){
+            history.stateUpdater();
+        }, History.UPDATE_DELAY );
+        return this.updateTimeoutId;
+    },
+
     // get the history's state from it's cummulative ds states, delay + update if needed
     // events: ready
     checkForUpdates : function(){
         // get overall History state from collection, run updater if History has running/queued hdas
         // boiling it down on the client to running/not
         if( this.hdas.running().length ){
-            this.stateUpdater();
+            this.updateAfterDelay();
 
         } else {
             this.trigger( 'ready' );
@@ -105,6 +111,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     //  set up to run this again in some interval of time
     // events: ready
     stateUpdater : function(){
+        //TODO: we need to get states from one location: history_contents (right now it's both history and contents)
         var history = this,
             oldState = this.get( 'state' ),
             // state ids is a map of every possible hda state, each containing a list of ids for hdas in that state
@@ -133,19 +140,28 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
             // send the changed ids (if any) to dataset collection to have them fetch their own model changes
             if( changedIds.length ){
-                history.fetchHdaUpdates( changedIds );
+                history.fetchHdaUpdates( changedIds )
+                    .done( function(){
+                        furtherUpdatesOrReady( history );
+                    });
+            } else {
+                furtherUpdatesOrReady( history );
             }
 
-            // set up to keep pulling if this history in run/queue state
-            if( ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
-            ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
-                setTimeout( function(){
-                    history.stateUpdater();
-                }, History.UPDATE_DELAY );
+            function furtherUpdatesOrReady( history ){
+                var timeout;
+                // set up to keep pulling if this history in run/queue state
+                if( ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
+                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
+                //||  ( history.hdas.running() ) ){
+                    timeout = history.updateAfterDelay();
 
-            // otherwise, we're now in a 'ready' state (no hdas running)
-            } else {
-                history.trigger( 'ready' );
+                // otherwise, we're now in a 'ready' state (no hdas running)
+                } else {
+                    this.updateTimeoutId = null;
+                    history.trigger( 'ready' );
+                }
+                return timeout;
             }
 
         }).error( function( xhr, status, error ){
@@ -176,8 +192,8 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
      */
     fetchHdaUpdates : function( hdaIds ){
         //TODO:?? move to collection? still need proper url
-        var history = this;
-        jQuery.ajax({
+        var history = this,
+            xhr = jQuery.ajax({
             url     : this.url() + '/contents?' + jQuery.param({ ids : hdaIds.join(',') }),
 
             /**
@@ -218,6 +234,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                 history.updateHdas( hdaDataList );
             }
         });
+        return xhr;
     },
 
     /** Update the models in the hdas collection from the data given.

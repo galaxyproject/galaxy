@@ -37,7 +37,7 @@ class ManagedIndexer():
         if not os.path.exists( self.workingdir ):
             os.makedirs( self.workingdir )
         self.logfile = open( os.path.join( self.workingdir, 'ManagedIndexer.log' ), 'w+' )
-        
+
     def run_indexer( self, indexer ):
         self.fapath = self.fasta
         self.fafile = os.path.basename( self.fapath )
@@ -59,13 +59,13 @@ class ManagedIndexer():
                     self._log( 'Indexer %s completed successfully.' % indexer )
                     self._flush_files()
                     exit(0)
-                
+
     def _check_link( self ):
         self._log( 'Checking symlink to %s' % self.fafile )
         if not os.path.exists( self.fafile ):
             self._log( 'Symlink not found, creating' )
             os.symlink( os.path.relpath( self.fapath ), self.fafile )
-    
+
     def _do_rsync( self, idxpath ):
         self._log( 'Trying rsync at %s/%s%s' % ( self.rsync_url, self.genome, idxpath ) )
         result = subprocess.call( shlex.split( 'rsync %s %s/%s%s .' % ( self.rsync_opts, self.rsync_url, self.genome, idxpath ) ), stderr=self.logfile )
@@ -74,16 +74,16 @@ class ManagedIndexer():
         else:
             self._log( 'Rsync succeeded.' )
         return result
-    
+
     def _flush_files( self ):
         simplejson.dump( self.locations, self.outfile )
         self.outfile.close()
         self.logfile.close()
-    
+
     def _log( self, stuff ):
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S %z')
         self.logfile.write( "[%s] %s\n" % (timestamp, stuff) )
-        
+
     def _bwa( self ):
         result = self._do_rsync( '/bwa_index/' )
         if result == 0:
@@ -103,7 +103,7 @@ class ManagedIndexer():
             else:
                 self._log( 'BWA (base) exited with code %s' % result )
                 return False
-    
+
     def _bwa_cs( self ):
         if not os.path.exists( os.path.join( self.workingdir, 'cs' ) ):
             os.makedirs( 'cs' )
@@ -130,8 +130,8 @@ class ManagedIndexer():
         temptar.close()
         shutil.rmtree( 'cs' )
         return True
-        
-    
+
+
     def _bowtie( self ):
         result = self._do_rsync( '/bowtie_index/' )
         if result == 0:
@@ -148,7 +148,7 @@ class ManagedIndexer():
             else:
                 self._log( 'Bowtie (base) exited with code %s' % result )
                 return False
-            
+
     def _bowtie_cs( self ):
         indexdir = os.path.join( os.getcwd(), 'cs' )
         if not ( os.path.exists( indexdir ) ):
@@ -168,10 +168,10 @@ class ManagedIndexer():
         temptar = tarfile.open( 'cs.tar', 'w' )
         temptar.add( 'cs' )
         temptar.close()
-        shutil.rmtree( 'cs' )    
+        shutil.rmtree( 'cs' )
         return True
 
-    
+
     def _bowtie2( self ):
         result = self._do_rsync( '/bowtie2_index/' )
         if result == 0:
@@ -188,7 +188,7 @@ class ManagedIndexer():
         else:
             self._log( 'Bowtie2 exited with code %s' % result )
             return False
-    
+
     def _twobit( self ):
         """Index reference files using 2bit for random access.
         """
@@ -208,7 +208,7 @@ class ManagedIndexer():
             else:
                 self._log( 'faToTwoBit exited with code %s' % result )
                 return False
-    
+
     def _perm( self ):
         result = self._do_rsync( '/perm_index/' )
         self._check_link()
@@ -276,7 +276,7 @@ class ManagedIndexer():
         self.locations[ 'nt' ].append( self.fafile )
         os.remove( self.fafile )
         return True
-    
+
     def _sam( self ):
         local_ref = self.fafile
         local_file = os.path.splitext( self.fafile )[ 0 ]
@@ -305,14 +305,14 @@ class WithChDir():
         os.chdir( self.working )
     def __exit__( self, *args ):
         os.chdir( self.previous )
-        
-    
+
+
 if __name__ == "__main__":
     # Parse command line.
     parser = optparse.OptionParser()
-    (options, args) = parser.parse_args()    
+    (options, args) = parser.parse_args()
     indexer, infile, outfile, working_dir, rsync_url, tooldata = args
-    
+
     # Create archive.
     idxobj = ManagedIndexer( outfile, infile, working_dir, rsync_url, tooldata )
     returncode = idxobj.run_indexer( indexer )

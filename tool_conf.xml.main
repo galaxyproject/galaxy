@@ -1,11 +1,11 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
 <toolbox>
-  <section name="Get Data" id="getext">
-    <tool file="data_source/upload.xml"/>
+  <section id="getext" name="Get Data">
+    <tool file="data_source/upload.xml" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
     <tool file="data_source/bx_browser.xml" />
-    <tool file="data_source/ebi_sra.xml"/>
+    <tool file="data_source/ebi_sra.xml" />
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/gramene_mart.xml" />
     <tool file="data_source/flymine.xml" />
@@ -22,18 +22,18 @@
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
     <tool file="genomespace/genomespace_importer.xml" />
   </section>
-  <section name="Send Data" id="send">
+  <section id="send" name="Send Data">
     <tool file="data_destination/epigraph.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
   </section>
-  <section name="ENCODE Tools" id="EncodeTools">
+  <section id="EncodeTools" name="ENCODE Tools">
     <tool file="encode/gencode_partition.xml" />
     <tool file="encode/random_intervals.xml" />
   </section>
-  <section name="Lift-Over" id="liftOver">
+  <section id="liftOver" name="Lift-Over">
     <tool file="extract/liftOver_wrapper.xml" />
   </section>
-  <section name="Text Manipulation" id="textutil">
+  <section id="textutil" name="Text Manipulation">
     <tool file="filters/fixedValueColumn.xml" />
     <tool file="stats/column_maker.xml" />
     <tool file="filters/catWrapper.xml" />
@@ -52,7 +52,7 @@
     <tool file="filters/wc_gnu.xml" />
     <tool file="filters/secure_hash_message_digest.xml" />
   </section>
-  <section name="Convert Formats" id="convert">
+  <section id="convert" name="Convert Formats">
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed.xml" />
@@ -60,64 +60,60 @@
     <tool file="maf/maf_to_interval.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
-    <tool file="fastq/fastq_to_fasta.xml" />
     <tool file="filters/sff_extractor.xml" />
     <tool file="filters/wig_to_bigwig.xml" />
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
-  <section name="FASTA manipulation" id="fasta_manipulation">
+  <section id="fasta_manipulation" name="FASTA manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
     <tool file="fasta_tools/fasta_filter_by_length.xml" />
     <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
-    <tool file="fastx_toolkit/fasta_formatter.xml" />
-    <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
-    <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
-  <section name="Filter and Sort" id="filter">
+  <section id="filter" name="Filter and Sort">
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
     <tool file="stats/dna_filtering.xml" />
-    <label text="GFF" id="gff" />
+    <label id="gff" text="GFF" />
         <tool file="filters/gff/extract_GFF_Features.xml" />
         <tool file="filters/gff/gff_filter_by_attribute.xml" />
         <tool file="filters/gff/gff_filter_by_feature_count.xml" />
         <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
   </section>
-  <section name="Join, Subtract and Group" id="group">
+  <section id="group" name="Join, Subtract and Group">
     <tool file="filters/joiner.xml" />
-    <tool file="filters/compare.xml"/>
-    <tool file="new_operations/subtract_query.xml"/>
+    <tool file="filters/compare.xml" />
+    <tool file="new_operations/subtract_query.xml" />
     <tool file="stats/grouping.xml" />
-    <tool file="new_operations/column_join.xml"/>
+    <tool file="new_operations/column_join.xml" />
   </section>
-  <section name="Extract Features" id="features">
+  <section id="features" name="Extract Features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
   </section>
-  <section name="Fetch Sequences" id="fetchSeq">
+  <section id="fetchSeq" name="Fetch Sequences">
     <tool file="extract/extract_genomic_dna.xml" />
   </section>
-  <section name="Fetch Alignments" id="fetchAlign">
+  <section id="fetchAlign" name="Fetch Alignments">
     <tool file="maf/interval2maf_pairwise.xml" />
     <tool file="maf/interval2maf.xml" />
     <tool file="maf/interval_maf_to_merged_fasta.xml" />
-    <tool file="maf/genebed_maf_to_fasta.xml"/>
-    <tool file="maf/maf_stats.xml"/>
-    <tool file="maf/maf_thread_for_species.xml"/>
-    <tool file="maf/maf_limit_to_species.xml"/>
-    <tool file="maf/maf_limit_size.xml"/>
-    <tool file="maf/maf_by_block_number.xml"/>
-    <tool file="maf/maf_filter.xml"/>
-    <tool file="maf/maf_reverse_complement.xml"/>
+    <tool file="maf/genebed_maf_to_fasta.xml" />
+    <tool file="maf/maf_stats.xml" />
+    <tool file="maf/maf_thread_for_species.xml" />
+    <tool file="maf/maf_limit_to_species.xml" />
+    <tool file="maf/maf_limit_size.xml" />
+    <tool file="maf/maf_by_block_number.xml" />
+    <tool file="maf/maf_filter.xml" />
+    <tool file="maf/maf_reverse_complement.xml" />
   </section>
-  <section name="Get Genomic Scores" id="scores">
+  <section id="scores" name="Get Genomic Scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
-  <section name="Operate on Genomic Intervals" id="bxops">
+  <section id="bxops" name="Operate on Genomic Intervals">
     <tool file="new_operations/intersect.xml" />
     <tool file="new_operations/subtract.xml" />
     <tool file="new_operations/merge.xml" />
@@ -131,7 +127,7 @@
     <tool file="new_operations/flanking_features.xml" />
     <tool file="annotation_profiler/annotation_profiler.xml" />
   </section>
-  <section name="Statistics" id="stats">
+  <section id="stats" name="Statistics">
     <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" />
     <tool file="stats/cor.xml" />
@@ -139,56 +135,53 @@
     <tool file="stats/lda_analy.xml" />
     <tool file="stats/plot_from_lda.xml" />
   </section>
-  <section name="Graph/Display Data" id="plots">
+  <section id="plots" name="Graph/Display Data">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
-    <tool file="plotting/xy_plot.xml" />
     <tool file="plotting/boxplot.xml" />
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <tool file="mutation/visualize.xml" />
   </section>
-  <section name="Regional Variation" id="regVar">
+  <section id="regVar" name="Regional Variation">
     <tool file="regVariation/windowSplitter.xml" />
     <tool file="regVariation/featureCounter.xml" />
     <tool file="regVariation/WeightedAverage.xml" />
     <tool file="regVariation/quality_filter.xml" />
     <tool file="regVariation/maf_cpg_filter.xml" />
     <tool file="regVariation/getIndels_2way.xml" />
-    <tool file="regVariation/getIndels_3way.xml" />
     <tool file="regVariation/getIndelRates_3way.xml" />
     <tool file="regVariation/substitutions.xml" />
     <tool file="regVariation/substitution_rates.xml" />
     <tool file="regVariation/microsats_alignment_level.xml" />
     <tool file="regVariation/microsats_mutability.xml" />
   </section>
-  <section name="Multiple regression" id="multReg">
+  <section id="multReg" name="Multiple regression">
     <tool file="regVariation/linear_regression.xml" />
     <tool file="regVariation/logistic_regression_vif.xml" />
     <tool file="regVariation/best_regression_subsets.xml" />
     <tool file="regVariation/rcve.xml" />
     <tool file="regVariation/partialR_square.xml" />
   </section>
-  <section name="Multivariate Analysis" id="multVar">
+  <section id="multVar" name="Multivariate Analysis">
     <tool file="multivariate_stats/pca.xml" />
     <tool file="multivariate_stats/cca.xml" />
     <tool file="multivariate_stats/kpca.xml" />
     <tool file="multivariate_stats/kcca.xml" />
   </section>
- <section name="Evolution" id="hyphy">
+ <section id="hyphy" name="Evolution">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <!-- <tool file="hyphy/hyphy_dnds_wrapper.xml" />  -->
-    <tool file="evolution/mutate_snp_codon.xml" />
  </section>
- <section name="Motif Tools" id="motifs">
+ <section id="motifs" name="Motif Tools">
     <tool file="rgenetics/rgWebLogo3.xml" />
  </section>
- <section name="Multiple Alignments" id="clustal">
+ <section id="clustal" name="Multiple Alignments">
     <tool file="rgenetics/rgClustalw.xml" />
  </section>
- <section name="Metagenomic analyses" id="tax_manipulation">
+ <section id="tax_manipulation" name="Metagenomic analyses">
     <tool file="taxonomy/gi2taxonomy.xml" />
     <tool file="taxonomy/t2t_report.xml" />
     <tool file="taxonomy/t2ps_wrapper.xml" />
@@ -196,173 +189,108 @@
     <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
-  <section name="Phenotype Association" id="hgv">
+  <section id="hgv" name="Phenotype Association">
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
     <tool file="phenotype_association/sift.xml" />
     <tool file="phenotype_association/linkToGProfile.xml" />
-    <tool file="phenotype_association/linkToDavid.xml"/>
-    <tool file="phenotype_association/ctd.xml" />
-    <tool file="phenotype_association/funDo.xml" />
+    <tool file="phenotype_association/linkToDavid.xml" />
     <tool file="phenotype_association/snpFreq.xml" />
     <tool file="phenotype_association/ldtools.xml" />
     <tool file="phenotype_association/pass.xml" />
     <tool file="phenotype_association/gpass.xml" />
     <tool file="phenotype_association/beam.xml" />
     <tool file="phenotype_association/lps.xml" />
-    <tool file="phenotype_association/hilbertvis.xml" />
     <tool file="phenotype_association/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
-    <tool file="phenotype_association/dividePgSnpAlleles.xml" />
   </section>
-  <label text="NGS Toolbox Beta" id="ngs" />
-  <section name="NGS: QC and manipulation" id="cshl_library_information">
-    <label text="Illumina data" id="illumina" />
+  <label id="ngs" text="NGS Toolbox Beta" />
+  <section id="cshl_library_information" name="NGS: QC and manipulation">
+    <label id="illumina" text="Illumina data" />
         <tool file="fastq/fastq_groomer.xml" />
         <tool file="fastq/fastq_paired_end_splitter.xml" />
         <tool file="fastq/fastq_paired_end_joiner.xml" />
         <tool file="fastq/fastq_stats.xml" />
-    <label text="Roche-454 data" id="454" />
+    <label id="454" text="Roche-454 data" />
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
         <tool file="fastq/fastq_combiner.xml" />
-    <label text="AB-SOLiD data" id="solid" />
+    <label id="solid" text="AB-SOLiD data" />
         <tool file="next_gen_conversion/solid2fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
-    <label text="Generic FASTQ manipulation" id="generic_fastq" />
+    <label id="generic_fastq" text="Generic FASTQ manipulation" />
         <tool file="fastq/fastq_filter.xml" />
         <tool file="fastq/fastq_trimmer.xml" />
         <tool file="fastq/fastq_trimmer_by_quality.xml" />
         <tool file="fastq/fastq_masker_by_quality.xml" />
         <tool file="fastq/fastq_manipulation.xml" />
-        <tool file="fastq/fastq_to_fasta.xml" />
         <tool file="fastq/fastq_to_tabular.xml" />
         <tool file="fastq/tabular_to_fastq.xml" />
-    <label text="FASTX-Toolkit for FASTQ data" id="fastx_toolkit_fastq" />
-        <tool file="fastx_toolkit/fastq_quality_converter.xml" />
-        <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
-        <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
-        <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-        <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-        <tool file="fastx_toolkit/fastq_quality_filter.xml" />
-        <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-        <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
-        <tool file="fastx_toolkit/fastx_barcode_splitter.xml" />
-        <tool file="fastx_toolkit/fastx_clipper.xml" />
-        <tool file="fastx_toolkit/fastx_collapser.xml" />
-        <tool file="fastx_toolkit/fastx_renamer.xml" />
-        <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
-        <tool file="fastx_toolkit/fastx_trimmer.xml" />
-    <label text="FASTQ QC" id="fastq_qc" />
+    <label id="fastx_toolkit_fastq" text="FASTX-Toolkit for FASTQ data" />
+    <label id="fastq_qc" text="FASTQ QC" />
         <tool file="rgenetics/rgFastQC.xml" />
   </section>
-  <section name="NGS: Mapping" id="ngs_mapping">
-    <label text="Illumina" id="illumina"/>
+  <section id="ngs_mapping" name="NGS: Mapping">
+    <label id="illumina" text="Illumina" />
     <tool file="sr_mapping/bowtie2_wrapper.xml" />
-    <label text="Roche-454" id="roche_454"/>
+    <label id="roche_454" text="Roche-454" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
-    <label text="AB-SOLiD" id="ab_solid"/>
+    <label id="ab_solid" text="AB-SOLiD" />
   </section>
-  <section name="NGS: SAM Tools" id="samtools">
-   <tool file="samtools/sam_bitwise_flag_filter.xml" />
-   <tool file="samtools/sam2interval.xml" />
-   <tool file="samtools/sam_to_bam.xml" />
-   <tool file="samtools/bam_to_sam.xml" />
-   <tool file="samtools/sam_merge.xml" />
-   <tool file="samtools/samtools_mpileup.xml" />
-   <tool file="samtools/sam_pileup.xml" />
-   <tool file="samtools/pileup_parser.xml" />
-   <tool file="samtools/pileup_interval.xml" />
-   <tool file="samtools/samtools_flagstat.xml" />
-   <tool file="samtools/samtools_rmdup.xml" />
-   <tool file="samtools/samtools_slice_bam.xml" />
+  <section id="samtools" name="NGS: SAM Tools">
   </section>
-  <section name="NGS: GATK Tools (beta)" id="gatk">
-    <label text="Alignment Utilities" id="gatk_bam_utilities"/>
+  <section id="gatk" name="NGS: GATK Tools (beta)">
+    <label id="gatk_bam_utilities" text="Alignment Utilities" />
     <tool file="gatk/depth_of_coverage.xml" />
     <tool file="gatk/print_reads.xml" />
     
-    <label text="Realignment" id="gatk_realignment" />
+    <label id="gatk_realignment" text="Realignment" />
     <tool file="gatk/realigner_target_creator.xml" />
     <tool file="gatk/indel_realigner.xml" />
     
-    <label text="Base Recalibration" id="gatk_recalibration" />
+    <label id="gatk_recalibration" text="Base Recalibration" />
     <tool file="gatk/count_covariates.xml" />
     <tool file="gatk/table_recalibration.xml" />
     <tool file="gatk/analyze_covariates.xml" />
     
-    <label text="Genotyping" id="gatk_genotyping" />
+    <label id="gatk_genotyping" text="Genotyping" />
     <tool file="gatk/unified_genotyper.xml" />
     
-    <label text="Annotation" id="gatk_annotation" />
+    <label id="gatk_annotation" text="Annotation" />
     <tool file="gatk/variant_annotator.xml" />
     
-    <label text="Filtration" id="gatk_filtration" />
+    <label id="gatk_filtration" text="Filtration" />
     <tool file="gatk/variant_filtration.xml" />
     <tool file="gatk/variant_select.xml" />
     
-    <label text="Variant Quality Score Recalibration" id="gatk_variant_quality_score_recalibration" />
+    <label id="gatk_variant_quality_score_recalibration" text="Variant Quality Score Recalibration" />
     <tool file="gatk/variant_recalibrator.xml" />
     <tool file="gatk/variant_apply_recalibration.xml" />
     
-    <label text="Variant Utilities" id="gatk_variant_utilities"/>
+    <label id="gatk_variant_utilities" text="Variant Utilities" />
     <tool file="gatk/variants_validate.xml" />
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
   </section>
-  <section name="NGS: Indel Analysis" id="indel_analysis">
+  <section id="indel_analysis" name="NGS: Indel Analysis">
     <tool file="indels/sam_indel_filter.xml" />
-    <tool file="indels/indel_sam2interval.xml" />
     <tool file="indels/indel_analysis.xml" />
   </section>
-  <section name="NGS: Peak Calling" id="peak_calling">
+  <section id="peak_calling" name="NGS: Peak Calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="peak_calling/sicer_wrapper.xml" />
    <tool file="genetrack/genetrack_indexer.xml" />
    <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>
-  <section name="NGS: RNA Analysis" id="ngs-rna-tools">
-   <label text="RNA-seq" id="rna_seq" />
+  <section id="ngs-rna-tools" name="NGS: RNA Analysis">
+   <label id="rna_seq" text="RNA-seq" />
       <tool file="ngs_rna/tophat_wrapper.xml" />
       <tool file="ngs_rna/tophat2_wrapper.xml" />
-      <tool file="ngs_rna/cufflinks_wrapper.xml" />
-      <tool file="ngs_rna/cuffcompare_wrapper.xml" />
- 	    <tool file="ngs_rna/cuffmerge_wrapper.xml" />
-      <tool file="ngs_rna/cuffdiff_wrapper.xml" />
       <tool file="ngs_rna/express_wrapper.xml" />
-   <label text="Filtering" id="filtering" />
+   <label id="filtering" text="Filtering" />
       <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
-  </section>
-  <label text="RGENETICS" id="rgenetics" />
-  <section name="SNP/WGA: Data; Filters" id="rgdat">
-  <label text="Data: Import and upload" id="rgimport" />
-    <tool file="data_source/upload.xml"/>
-    <tool file="data_source/access_libraries.xml" />
-    <tool file="data_source/hapmapmart.xml" />
-  <label text="Data: Filter and Clean" id="rgfilter" />
-    <tool file="rgenetics/rgClean.xml"/>
-    <tool file="rgenetics/rgPedSub.xml"/>
-    <tool file="rgenetics/rgLDIndep.xml"/>
-  <label text="Simulate" id="rgsim" />
-    <tool file="rgenetics/rgfakePhe.xml"/>
-    <tool file="rgenetics/rgfakePed.xml"/>
-  </section>
-  <section name="SNP/WGA: QC; LD; Plots" id="rgqcplot">
-  <label text="QC; Eigenstrat" id="rgvisual" />
-    <tool file="rgenetics/rgQC.xml"/>
-    <tool file="rgenetics/rgEigPCA.xml"/>
-  <label text="LD; Manhattan/QQ; GRR" id="rgld" />
-    <tool file="rgenetics/rgHaploView.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
-    <tool file="rgenetics/rgGRR.xml"/>
-  </section>
-  <section name="SNP/WGA: Statistical Models" id="rgmodel">
-    <tool file="rgenetics/rgCaCo.xml"/>
-    <tool file="rgenetics/rgTDT.xml"/>
-    <tool file="rgenetics/rgGLM.xml"/>
-    <tool file="rgenetics/rgManQQ.xml"/>
   </section>
 </toolbox>

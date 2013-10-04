@@ -114,7 +114,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #                           version=section_version )
         # This dict is appended to tool_panel_section_metadata[ tool_guid ]
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
-        assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
+        assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
     def check_installed_repository_tool_dependencies( self, 
@@ -374,7 +374,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        strings_displayed.append( installed_repository.installed_changeset_revision )
+        strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
@@ -723,7 +723,6 @@ class ShedTwillTestCase( TwillTestCase ):
                             post_submit_strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        tc.fv( "user_access", "allow_push", '-Select one' )
         for username in usernames:
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )

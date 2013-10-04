@@ -8,6 +8,7 @@ import os
 import socket
 import string
 import random
+import urllib
 from galaxy import web
 from galaxy import util, model
 from galaxy.model.orm import and_
@@ -17,6 +18,8 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import CheckboxField, build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
+from datetime import datetime, timedelta
+from galaxy.util import hash_util
 
 log = logging.getLogger( __name__ )
 
@@ -47,7 +50,7 @@ class UserOpenIDGrid( grids.Grid ):
 class User( BaseUIController, UsesFormDefinitionsMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
-    
+
     @web.expose
     def index( self, trans, cntrller, **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
@@ -147,7 +150,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if trans.user:
                 if user_openid.user and user_openid.user.id != trans.user.id:
                     message = "The OpenID <strong>%s</strong> is already associated with another Galaxy account, <strong>%s</strong>.  Please disassociate it from that account before attempting to associate it with a new account." % ( display_identifier, user_openid.user.email )
-                    status = "error"
+                if not trans.user.active and trans.app.config.user_activation_on: # Account activation is ON and the user is INACTIVE.
+                    if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
+                        if self.is_outside_grace_period( trans, trans.user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                            message = self.resend_verification_email( trans, trans.user.email )
+                        else: # User is within the grace period, let him log in.
+                            pass
+                    else: # Grace period is off. Login is disabled and user will have the activation email resent.
+                        message = self.resend_verification_email( trans, trans.user.email )                    
                 elif not user_openid.user or user_openid.user == trans.user:
                     if openid_provider_obj.id:
                         user_openid.provider = openid_provider_obj.id
@@ -282,7 +292,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             subscribe_checked = CheckboxField.is_checked( subscribe )
             error = ''
             if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-                error = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+                error = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             else:
                 # Check email and password validity
                 error = self.__validate( trans, params, email, password, confirm, username )
@@ -326,7 +336,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                                        use_panels=use_panels,
                                                                        redirect=redirect,
                                                                        message=message,
-                                                                       status='info' ) ) 
+                                                                       status='info' ) )
                 else:
                     message = error
                     status = 'error'
@@ -465,9 +475,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     openid_providers=trans.app.openid_providers,
                                     form_input_auto_focus=True,
                                     active_view="user" )
+
     def __validate_login( self, trans, **kwd ):
+        """
+        Function validates numerous cases that might happen during the login time.
+        """
         message = kwd.get( 'message', '' )
-        status = kwd.get( 'status', 'done' )
+        status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
@@ -475,26 +489,69 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         if not user:
             message = "No such user (please note that login is case sensitive)"
-            status = 'error'
         elif user.deleted:
-            message = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
-            status = 'error'
+            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            status = 'error'
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
         elif not user.check_password( password ):
             message = "Invalid password"
-            status = 'error'
-        else:
-            trans.handle_user_login( user )
-            if trans.webapp.name == 'galaxy':
-                trans.log_event( "User logged in" )
-                message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                    ( user.email, redirect, url_for( '/' ) )
-                if trans.app.config.require_login:
-                    message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( controller="root", action="welcome" )
-            success = True
+        elif trans.app.config.user_activation_on and not user.active: # activation is ON and the user is INACTIVE
+            if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
+                if self.is_outside_grace_period( trans, user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                    message = self.resend_verification_email( trans, email )
+                else: # User is within the grace period, let him log in.
+                    message, success, status = self.proceed_login( trans, user, redirect )
+            else: # Grace period is off. Login is disabled and user will have the activation email resent.
+                message = self.resend_verification_email( trans, email )
+        else: # activation is OFF
+            message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )
+
+    def proceed_login ( self, trans, user, redirect ):
+        """
+        Function processes user login. It is called in case all the login requirements are valid.
+        """
+        message = ''
+        trans.handle_user_login( user )
+        if trans.webapp.name == 'galaxy':
+            trans.log_event( "User logged in" )
+            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                ( user.email, redirect, url_for( '/' ) )
+            if trans.app.config.require_login:
+                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( controller="root", action="welcome" )
+        success = True
+        status = 'done'
+        return message, success, status
+
+    def resend_verification_email( self, trans, email ):
+        """
+        Function resends the verification email in case user wants to log in with an inactive account.
+        """
+        is_activation_sent  = self.send_verification_email( trans, email )
+        if is_activation_sent:
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address %s.<br>' % email
+        else:
+            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.'
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
+        return message
+
+    def is_outside_grace_period ( self, trans, create_time ):
+        """
+        Function checks whether the user is outside the config-defined grace period for inactive accounts. 
+        """
+        #  Activation is forced and the user is not active yet. Check the grace period.
+        activation_grace_period = trans.app.config.activation_grace_period
+        #  Default value is 3 hours.
+        if activation_grace_period is None:
+            activation_grace_period = 3
+        delta = timedelta( hours = int( activation_grace_period ) )
+        time_difference = datetime.utcnow() - create_time
+        return ( time_difference > delta or activation_grace_period == 0 )
 
     @web.expose
     def logout( self, trans, logout_all=False ):
@@ -533,7 +590,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            message = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+            message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' %  trans.app.config.error_email_to
             status = 'error'
         else:
             if not refresh_frames:
@@ -578,10 +637,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
             widgets = self.__get_widgets( trans, user_type_form_definition, user=None, **kwd )
+            #  Warning message that is shown on the registration page.
+            registration_warning_message = trans.app.config.registration_warning_message
         else:
             user_type_fd_id_select_field = None
             user_type_form_definition = None
             widgets = []
+            registration_warning_message = None
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
@@ -594,6 +656,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     redirect=redirect,
                                     redirect_url=redirect_url,
                                     refresh_frames=refresh_frames,
+                                    registration_warning_message=registration_warning_message,
                                     message=message,
                                     status=status )
 
@@ -601,15 +664,21 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
+        message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = trans.app.model.User( email=email )
         user.set_password_cleartext( password )
         user.username = username
+        if trans.app.config.user_activation_on: 
+            user.active = False
+        else:
+            user.active = True # Activation is off, every new user is active by default.
         trans.sa_session.add( user )
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role( user )
         error = ''
+        success = True
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
@@ -633,7 +702,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
-                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance."
+                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
                 else:
                     body = 'Join Mailing list.\n'
                     to = trans.app.config.mailing_join_addr
@@ -659,9 +728,90 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
             success = False
         else:
-            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
-            success = True
+            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                is_activation_sent = self.send_verification_email( trans, email )
+                if is_activation_sent:
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                    success = True
+                else:
+                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' %  trans.app.config.error_email_to
+                    success = False
+            else: # User activation is OFF, proceed without sending the activation email.
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                success = True
         return ( message, status, user, success )
+
+    def send_verification_email( self, trans, email ):
+        """
+        Send the verification email containing the activation link to the user's email.
+        """
+        activation_link = self.prepare_activation_link( trans, email )
+
+        body =  ("Hello %s,\n\n"
+                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
+                "%s \n\n"
+                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
+                "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
+        to = email
+        frm = trans.app.config.activation_email
+        subject = 'Galaxy Account Activation'
+        try:
+            util.send_mail( frm, to, subject, body, trans.app.config )
+            return True
+        except:
+            return False
+
+    def prepare_activation_link( self, trans, email ):
+        """
+        Prepares the account activation link for the user.
+        """
+        activation_token = self.get_activation_token( trans, email )
+        activation_link = str( trans.request.host ) + url_for( controller='user', action='activate' ) + "?activation_token=" + str( activation_token ) + "&email=" + urllib.quote( email )
+        return activation_link
+
+    def get_activation_token ( self, trans, email ):
+        """
+        Checks for the activation token. Creates new activation token and stores it in the database if none found.
+        """
+        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+        activation_token = user.activation_token
+        if activation_token is None:
+            activation_token =  hash_util.new_secure_hash( str( random.getrandbits( 256 ) ) )
+            user.activation_token = activation_token
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+        return activation_token
+
+    @web.expose
+    def activate( self, trans, **kwd ):
+        """
+        Function checks whether token fits the user and then activates the user's account.    
+        """
+        params = util.Params( kwd, sanitize=False )
+        email = urllib.unquote( params.get( 'email', None ) )
+        activation_token = params.get( 'activation_token', None )
+
+        if email is None or activation_token is None:
+            #  We don't have the email or activation_token, show error.
+            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
+        else:
+            #  Find the user
+            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+            if user.activation_token == activation_token:
+                user.activation_token = None
+                user.active = True
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                return trans.show_ok_message( "Your account has been successfully activated!<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+            else:
+                #  Tokens don't match. Activation is denied.
+                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+        return
+
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         params = util.Params( kwd )
         if user and user.values:
@@ -678,8 +828,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if user_type_form_definition:
             if user:
                 if user.values:
-                    widgets = user_type_form_definition.get_widgets( user=user, 
-                                                                     contents=user.values.content, 
+                    widgets = user_type_form_definition.get_widgets( user=user,
+                                                                     contents=user.values.content,
                                                                      **kwd )
                 else:
                     widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
@@ -811,7 +961,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
         elif user and params.get( 'change_password_button', False ):
-            # Editing password.  Do not sanitize passwords, so get from kwd 
+            # Editing password.  Do not sanitize passwords, so get from kwd
             # and not params (which were sanitized).
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
@@ -846,7 +996,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in [ 'none' ]:
-                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )   
+                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
@@ -885,7 +1035,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact an administrator." )
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
@@ -943,7 +1093,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             message = validate_publicname( trans, username )
         if not message:
             if trans.webapp.name == 'galaxy':
-                if self.get_all_forms( trans, 
+                if self.get_all_forms( trans,
                                        filter=dict( deleted=False ),
                                        form_type=trans.app.model.FormDefinition.types.USER_INFO ):
                     user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -975,30 +1125,30 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         status=status )
         else:
             # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permitted actions." )   
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
     @web.expose
     @web.require_login( "to get most recently used tool" )
     @web.json_pretty
     def get_most_recently_used_tool_async( self, trans ):
         """ Returns information about the most recently used tool. """
-        
+
         # Get most recently used tool.
         query = trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
                                         filter( self.app.model.History.user==trans.user ). \
                                         order_by( self.app.model.Job.create_time.desc() ).limit(1)
         tool_id = query[0][0] # Get first element in first row of query.
         tool = self.get_toolbox().get_tool( tool_id )
-        
+
         # Return tool info.
-        tool_info = { 
-            "id" : tool.id, 
+        tool_info = {
+            "id" : tool.id,
             "link" : url_for( controller='tool_runner', tool_id=tool.id ),
             "target" : tool.target,
             "name" : tool.name, ## TODO: translate this using _()
             "minsizehint" : tool.uihints.get( 'minwidth', -1 ),
             "description" : tool.description
         }
-        return tool_info          
+        return tool_info
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
@@ -1012,7 +1162,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 addresses = [address for address in trans.user.addresses if address.deleted]
             else:
                 addresses = [address for address in trans.user.addresses if not address.deleted]
-            return trans.fill_template( 'user/address.mako', 
+            return trans.fill_template( 'user/address.mako',
                                         addresses=addresses,
                                         show_filter=show_filter,
                                         message=message,
@@ -1042,7 +1192,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         phone = util.restore_text( params.get( 'phone', ''  ) )
         ok = True
         if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
         if params.get( 'new_address_button', False ):
             if not short_desc:
                 ok = False
@@ -1072,11 +1222,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 user_address = trans.model.UserAddress( user=user,
                                                         desc=short_desc,
                                                         name=name,
-                                                        institution=institution, 
+                                                        institution=institution,
                                                         address=address,
                                                         city=city,
                                                         state=state,
-                                                        postal_code=postal_code, 
+                                                        postal_code=postal_code,
                                                         country=country,
                                                         phone=phone )
                 trans.sa_session.add( user_address )
@@ -1118,7 +1268,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         address_id = params.get( 'address_id', None )
         if not address_id:
             return trans.show_error_message( "No address id received for editing." )
-        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )     
+        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         if params.get( 'edit_address_button', False  ):
             short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
             name = util.restore_text( params.get( 'name', ''  ) )
@@ -1232,12 +1382,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         """ Log a user action asynchronously. If user is not logged in, do nothing. """
         if trans.user:
             trans.log_action( trans.get_user(), action, context, params )
-    
+
     @web.expose
     @web.require_login()
     def dbkeys( self, trans, **kwds ):
         """ Handle custom builds. """
-        
+
         #
         # Process arguments and add/delete build.
         #
@@ -1262,18 +1412,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             # Add new custom build.
             name = kwds.get('name', '')
             key = kwds.get('key', '')
-            
+
             # Look for build's chrom info in len_file and len_text.
             len_file = kwds.get( 'len_file', None )
             if getattr( len_file, "file", None ): # Check if it's a FieldStorage object
                 len_text = len_file.file.read()
             else:
                 len_text = kwds.get( 'len_text', None )
-            
+
             if not len_text:
                 # Using FASTA from history.
                 dataset_id = kwds.get('dataset_id', '')
-                
+
             if not name or not key or not ( len_text or dataset_id ):
                 message = "You must specify values for all the fields."
             elif key in dbkeys:
@@ -1317,18 +1467,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         # TODO: use database table to save builds.
         user.preferences['dbkeys'] = to_json_string(dbkeys)
         trans.sa_session.flush()
-        
+
         #
         # Display custom builds page.
         #
-        
+
         # Add chrom/contig count to dbkeys dict.
         updated = False
         for key, attributes in dbkeys.items():
             if 'count' in attributes:
                 # Already have count, so do nothing.
                 continue
-                
+
             # Get len file.
             fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
@@ -1338,7 +1488,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if len_dataset.state == trans.app.model.Job.states.ERROR:
                 # Can't use len dataset.
                 continue
-                
+
             # Get chrom count file.
             chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
             if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
@@ -1349,12 +1499,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
                 attributes[ 'count' ] = chrom_count
                 updated = True
-        
+
         if updated:
             user.preferences['dbkeys'] = to_json_string(dbkeys)
             trans.sa_session.flush()
-            
-        
+
+
         # Potential genome data for custom builds is limited to fasta datasets in current history for now.
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                         .filter_by( history=trans.history, extension="fasta", deleted=False ) \
@@ -1367,7 +1517,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     installed_len_files=self.installed_len_files,
                                     lines_skipped=lines_skipped,
                                     fasta_hdas=fasta_hdas,
-                                    use_panels=kwds.get( 'use_panels', False ) )          
+                                    use_panels=kwds.get( 'use_panels', False ) )
     @web.expose
     @web.require_login()
     def api_keys( self, trans, cntrller, **kwd ):

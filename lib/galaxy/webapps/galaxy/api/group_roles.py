@@ -82,7 +82,7 @@ class GroupRolesAPIController( BaseAPIController ):
                 if gra.role == role:
                     item = dict( id = role_id,
                                    name = role.name,
-                                   url = url_for( 'group_role', group_id=group_id, id=role_id) ) 
+                                   url = url_for( 'group_role', group_id=group_id, id=role_id) )
             if not item:
                 gra = trans.app.model.GroupRoleAssociation( group, role )
                 # Add GroupRoleAssociation
@@ -90,7 +90,7 @@ class GroupRolesAPIController( BaseAPIController ):
                 trans.sa_session.flush()
                 item = dict( id = role_id,
                              name = role.name,
-                             url = url_for( 'group_role', group_id=group_id, id=role_id) ) 
+                             url = url_for( 'group_role', group_id=group_id, id=role_id) )
         except Exception, e:
             item = "Error in group_role API Adding role %s to group %s" % (role.name,group.name)
             log.error(item + ": %s" % str(e))
@@ -115,7 +115,7 @@ class GroupRolesAPIController( BaseAPIController ):
                     trans.sa_session.flush()
                     item = dict( id = role_id,
                                  name = role.name,
-                                 url = url_for( 'group_role', group_id=group_id, id=role_id) ) 
+                                 url = url_for( 'group_role', group_id=group_id, id=role_id) )
             if not item:
                 item = "role %s not in group %s" % (role.name,group.name)
         except Exception, e:

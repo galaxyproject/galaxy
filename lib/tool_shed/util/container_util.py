@@ -64,13 +64,15 @@ class Folder( object ):
                 self.repository_dependencies.remove( contained_repository_dependency )
 
     def to_repository_dependency( self, repository_dependency_id ):
-        toolshed, name, owner, changeset_revision, prior_installation_required = common_util.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
+        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
         return RepositoryDependency( id=repository_dependency_id,
                                      toolshed=toolshed,
                                      repository_name=name,
                                      repository_owner=owner,
                                      changeset_revision=changeset_revision,
-                                     prior_installation_required=asbool( prior_installation_required ) )
+                                     prior_installation_required=asbool( prior_installation_required ),
+                                     only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ) )
 
 
 class DataManager( object ):
@@ -120,13 +122,15 @@ class InvalidDataManager( object ):
 class InvalidRepositoryDependency( object ):
     """Invalid repository dependency definition object"""
 
-    def __init__( self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, prior_installation_required=False, error=None ):
+    def __init__( self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, prior_installation_required=False,
+                  only_if_compiling_contained_td=False, error=None ):
         self.id = id
         self.toolshed = toolshed
         self.repository_name = repository_name
         self.repository_owner = repository_owner
         self.changeset_revision = changeset_revision
         self.prior_installation_required = prior_installation_required
+        self.only_if_compiling_contained_td = only_if_compiling_contained_td
         self.error = error
 
 
@@ -194,19 +198,25 @@ class RepositoryDependency( object ):
     """Repository dependency object"""
 
     def __init__( self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, prior_installation_required=False,
-                  installation_status=None, tool_shed_repository_id=None ):
+                  only_if_compiling_contained_td=False, installation_status=None, tool_shed_repository_id=None ):
         self.id = id
         self.toolshed = toolshed
         self.repository_name = repository_name
         self.repository_owner = repository_owner
         self.changeset_revision = changeset_revision
         self.prior_installation_required = prior_installation_required
+        self.only_if_compiling_contained_td = only_if_compiling_contained_td
         self.installation_status = installation_status
         self.tool_shed_repository_id = tool_shed_repository_id
 
     @property
     def listify( self ):
-        return [ self.toolshed, self.repository_name, self.repository_owner, self.changeset_revision, asbool( str( self.prior_installation_required ) ) ]
+        return [ self.toolshed,
+                self.repository_name,
+                self.repository_owner,
+                self.changeset_revision,
+                self.prior_installation_required,
+                self.only_if_compiling_contained_td ]
 
 
 class RepositoryInstallationError( object ):
@@ -376,12 +386,12 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
                              subclass='subclass' )
         folder.datatypes.append( datatype )
         for datatypes_dict in datatypes:
-            # {"converters": 
-            #    [{"target_datatype": "gff", 
-            #      "tool_config": "bed_to_gff_converter.xml", 
-            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}], 
-            # "display_in_upload": "true", 
-            # "dtype": "galaxy.datatypes.interval:Bed", 
+            # {"converters":
+            #    [{"target_datatype": "gff",
+            #      "tool_config": "bed_to_gff_converter.xml",
+            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}],
+            # "display_in_upload": "true",
+            # "dtype": "galaxy.datatypes.interval:Bed",
             # "extension": "bed"}
             # TODO: converters and display_app information is not currently rendered.  Should it be?
             # Handle defined converters, if any.
@@ -463,9 +473,14 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
         for invalid_repository_dependency in invalid_repository_dependencies:
             folder_id += 1
             invalid_repository_dependency_id += 1
-            toolshed, name, owner, changeset_revision, prior_installation_required, error = \
+            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = \
                 common_util.parse_repository_dependency_tuple( invalid_repository_dependency, contains_error=True )
-            key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision, prior_installation_required )
+            key = generate_repository_dependencies_key_for_repository( toolshed,
+                                                                       name,
+                                                                       owner,
+                                                                       changeset_revision,
+                                                                       prior_installation_required,
+                                                                       only_if_compiling_contained_td )
             label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, changeset_revision, owner )
             folder = Folder( id=folder_id,
                              key=key,
@@ -477,6 +492,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
                                                repository_owner=owner,
                                                changeset_revision=changeset_revision,
                                                prior_installation_required=asbool( prior_installation_required ),
+                                               only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ),
                                                error=error )
             folder.invalid_repository_dependencies.append( ird )
             invalid_repository_dependencies_folder.folders.append( folder )
@@ -557,27 +573,23 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
 def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readme files' ):
     """Return a folder hierarchy containing readme text files."""
     if readme_files_dict:
-        multiple_readme_files = len( readme_files_dict ) > 1
         readme_id = 0
         folder_id += 1
         readme_files_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
-        if multiple_readme_files:
-            folder_id += 1
-            readme_files_folder = Folder( id=folder_id, key='readme_files', label=label, parent=readme_files_root_folder )
-            readme_files_root_folder.folders.append( readme_files_folder )
+        folder_id += 1
+        readme_files_folder = Folder( id=folder_id, key='readme_files', label=label, parent=readme_files_root_folder )
+        multiple_readme_files = len( readme_files_dict ) > 1
+        readme_files_root_folder.folders.append( readme_files_folder )
         for readme_file_name, readme_file_text in readme_files_dict.items():
             readme_id += 1
             readme = ReadMe( id=readme_id, name=readme_file_name, text=readme_file_text )
             if multiple_readme_files:
                 folder_id += 1
-                folder = Folder( id=folder_id, key=readme.name, label=readme.name, parent=readme_files_folder )
+                folder = Folder( id=folder_id, key=readme_file_name, label=readme_file_name, parent=readme_files_folder )
                 folder.readme_files.append( readme )
                 readme_files_folder.folders.append( folder )
             else:
-                folder_id += 1
-                readme_files_folder = Folder( id=folder_id, key='readme_files', label=readme.name, parent=readme_files_root_folder )
                 readme_files_folder.readme_files.append( readme )
-                readme_files_root_folder.folders.append( readme_files_folder )
     else:
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
@@ -772,7 +784,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             # Readme files container.
             if metadata:
                 if 'readme_files' not in exclude and 'readme_files' in metadata:
-                    readme_files_dict = readme_util.build_readme_files_dict( metadata )
+                    readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
                     folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
             if 'repository_dependencies' not in exclude:
@@ -839,7 +851,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     folder_id, data_managers_root_folder = build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
                     containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
         except Exception, e:
-            log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
+            log.exception( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
         finally:
             lock.release()
     return containers_dict
@@ -968,7 +980,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               tool_dependency_id=None,
                                               is_orphan='Orphan' )
         folder.tool_dependencies.append( tool_dependency )
-        is_orphan_description = "these dependencies may not be required by tools in this repository"
+        not_used_by_local_tools_description = "these dependencies may not be required by tools in this repository"
         for dependency_key, requirements_dict in tool_dependencies.items():
             tool_dependency_id += 1
             if dependency_key in [ 'set_environment' ]:
@@ -979,7 +991,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                         # TODO: handle this is Galaxy
                         is_orphan = False
                     if is_orphan:
-                        folder.description = is_orphan_description
+                        folder.description = not_used_by_local_tools_description
                     name = set_environment_dict.get( 'name', None )
                     type = set_environment_dict[ 'type' ]
                     repository_id = set_environment_dict.get( 'repository_id', None )
@@ -1002,10 +1014,9 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                 if trans.webapp.name == 'tool_shed':
                     is_orphan = requirements_dict.get( 'is_orphan', False )
                 else:
-                    # TODO: handle this is Galaxy
                     is_orphan = False
                 if is_orphan:
-                    folder.description = is_orphan_description
+                    folder.description = not_used_by_local_tools_description
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
                 type = requirements_dict[ 'type' ]
@@ -1112,15 +1123,15 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             tool_dependency_errors = installation_error_dicts.get( 'tool_dependencies', [] )
             if current_repository_errors or repository_dependency_errors or tool_dependency_errors:
                 folder_id += 1
-                installation_error_base_folder = Folder( id=folder_id, 
-                                                         key='installation_errors', 
-                                                         label='Installation errors', 
+                installation_error_base_folder = Folder( id=folder_id,
+                                                         key='installation_errors',
+                                                         label='Installation errors',
                                                          parent=test_results_folder )
                 if current_repository_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='current_repository_errors', 
-                                        label='This repository', 
+                    subfolder = Folder( id=folder_id,
+                                        key='current_repository_errors',
+                                        label='This repository',
                                         parent=installation_error_base_folder )
                     repository_error_id = 0
                     for repository_error_dict in current_repository_errors:
@@ -1135,9 +1146,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                     installation_error_base_folder.folders.append( subfolder )
                 if repository_dependency_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='repository_dependency_errors', 
-                                        label='Repository dependencies', 
+                    subfolder = Folder( id=folder_id,
+                                        key='repository_dependency_errors',
+                                        label='Repository dependencies',
                                         parent=installation_error_base_folder )
                     repository_error_id = 0
                     for repository_error_dict in repository_dependency_errors:
@@ -1152,9 +1163,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                     installation_error_base_folder.folders.append( subfolder )
                 if tool_dependency_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id, 
-                                        key='tool_dependency_errors', 
-                                        label='Tool dependencies', 
+                    subfolder = Folder( id=folder_id,
+                                        key='tool_dependency_errors',
+                                        label='Tool dependencies',
                                         parent=installation_error_base_folder )
                     tool_dependency_error_id = 0
                     for tool_dependency_error_dict in tool_dependency_errors:
@@ -1230,12 +1241,13 @@ def cast_empty_repository_dependency_folders( folder, repository_dependency_id )
         return cast_empty_repository_dependency_folders( sub_folder, repository_dependency_id )
     return folder, repository_dependency_id
 
-def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, prior_installation_required, key ):
+def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, prior_installation_required,
+                                                            only_if_compiling_contained_td, key ):
     """Return a repository dependency label based on the repository dependency key."""
-    if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, key ):
+    if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, key ):
         label = 'Repository dependencies'
     else:
-        if prior_installation_required:
+        if asbool( prior_installation_required ):
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""
@@ -1243,9 +1255,10 @@ def generate_repository_dependencies_folder_label_from_key( repository_name, rep
             ( repository_name, changeset_revision, repository_owner, prior_installation_required_str )
     return label
 
-def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required ):
-    # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
-    return '%s%s%s%s%s%s%s%s%s' % ( str( toolshed_base_url ).rstrip( '/' ),
+def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required,
+                                                         only_if_compiling_contained_td ):
+    """Assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported."""
+    return '%s%s%s%s%s%s%s%s%s%s%s' % ( str( toolshed_base_url ).rstrip( '/' ),
                                   STRSEP,
                                   str( repository_name ),
                                   STRSEP,
@@ -1253,7 +1266,9 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
                                   STRSEP,
                                   str( changeset_revision ),
                                   STRSEP,
-                                  str( prior_installation_required ) )
+                                  str( prior_installation_required ),
+                                  STRSEP,
+                                  str( only_if_compiling_contained_td ) )
 
 def generate_tool_dependencies_key( name, version, type ):
     return '%s%s%s%s%s' % ( str( name ), STRSEP, str( version ), STRSEP, str( type ) )
@@ -1266,22 +1281,27 @@ def get_folder( folder, key ):
     return None
 
 def get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency ):
-    """
-    Parse a repository dependency and return components necessary for proper display in Galaxy on the Manage repository page.
-    """
+    """Parse a repository dependency and return components necessary for proper display in Galaxy on the Manage repository page."""
+    # Default prior_installation_required and only_if_compiling_contained_td to False.
+    prior_installation_required = 'False'
+    only_if_compiling_contained_td = 'False'
     if len( repository_dependency ) == 6:
         # Metadata should have been reset on this installed repository, but it wasn't.
         tool_shed_repository_id = repository_dependency[ 4 ]
         installation_status = repository_dependency[ 5 ]
         tool_shed, name, owner, changeset_revision = repository_dependency[ 0:4 ]
-        # Default prior_installation_required to False.
-        prior_installation_required = False
-        repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required ]
+        repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
     elif len( repository_dependency ) == 7:
-        # We have a repository dependency tuple that includes a prior_installation_required value.
+        # We have a repository dependency tuple that includes a prior_installation_required value but not a only_if_compiling_contained_td value.
         tool_shed_repository_id = repository_dependency[ 5 ]
         installation_status = repository_dependency[ 6 ]
-        repository_dependency = repository_dependency[ 0:5 ]
+        tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency[ 0:5 ]
+        repository_dependency = [ tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
+    elif len( repository_dependency ) == 8:
+        # We have a repository dependency tuple that includes both a prior_installation_required value and a only_if_compiling_contained_td value.
+        tool_shed_repository_id = repository_dependency[ 6 ]
+        installation_status = repository_dependency[ 7 ]
+        repository_dependency = repository_dependency[ 0:6 ]
     else:
         tool_shed_repository_id = None
         installation_status = 'unknown'
@@ -1295,31 +1315,43 @@ def get_components_from_repository_dependency_for_installed_repository( trans, r
     return tool_shed_repository_id, installation_status, repository_dependency
 
 def get_components_from_key( key ):
-    # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
+    """Assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported."""
     items = key.split( STRSEP )
     toolshed_base_url = items[ 0 ]
     repository_name = items[ 1 ]
     repository_owner = items[ 2 ]
     changeset_revision = items[ 3 ]
     if len( items ) == 5:
-        prior_installation_required = asbool( str( items[ 4 ] ) )
+        prior_installation_required = items[ 4 ]
         return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required
+    elif len( items ) == 6:
+        prior_installation_required = items[ 4 ]
+        only_if_compiling_contained_td = items[ 5 ]
+        return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
     else:
         # For backward compatibility to the 12/20/12 Galaxy release we have to return the following, and callers must handle exceptions.
         return toolshed_base_url, repository_name, repository_owner, changeset_revision
 
 def handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, rd_key, rd_value, folder_id, repository_dependency_id, folder_keys ):
-    try:
-        toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = get_components_from_key( rd_key )
-    except ValueError:
-        # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
-        toolshed, repository_name, repository_owner, changeset_revision = get_components_from_key( rd_key )
-        prior_installation_required = False
+    repository_components_tuple = get_components_from_key( rd_key )
+    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+    toolshed, repository_name, repository_owner, changeset_revision = components_list[ 0:4 ]
+    # For backward compatibility to the 12/20/12 Galaxy release.
+    if len( components_list ) == 4:
+        prior_installation_required = 'False'
+        only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 5:
+        prior_installation_required = components_list[ 4 ]
+        only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 6:
+        prior_installation_required = components_list[ 4 ]
+        only_if_compiling_contained_td = components_list[ 5 ]
     folder = get_folder( repository_dependencies_folder, rd_key )
     label = generate_repository_dependencies_folder_label_from_key( repository_name,
                                                                     repository_owner,
                                                                     changeset_revision,
                                                                     prior_installation_required,
+                                                                    only_if_compiling_contained_td,
                                                                     repository_dependencies_folder.key )
     if folder:
         if rd_key not in folder_keys:
@@ -1351,7 +1383,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
             installation_status = None
         can_create_dependency = not is_subfolder_of( sub_folder, repository_dependency )
         if can_create_dependency:
-            toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
+            toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )
             repository_dependency_id += 1
             repository_dependency = RepositoryDependency( id=repository_dependency_id,
@@ -1360,6 +1392,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
                                                           repository_owner=repository_owner,
                                                           changeset_revision=changeset_revision,
                                                           prior_installation_required=asbool( prior_installation_required ),
+                                                          only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ),
                                                           installation_status=installation_status,
                                                           tool_shed_repository_id=tool_shed_repository_id )
             # Insert the repository_dependency into the folder.
@@ -1367,25 +1400,40 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
     return repository_dependencies_folder, folder_id, repository_dependency_id
 
 def is_subfolder_of( folder, repository_dependency ):
-    toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = \
+    toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
         common_util.parse_repository_dependency_tuple( repository_dependency )
-    key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision, asbool( prior_installation_required ) )
+    key = generate_repository_dependencies_key_for_repository( toolshed,
+                                                               repository_name,
+                                                               repository_owner,
+                                                               changeset_revision,
+                                                               prior_installation_required,
+                                                               only_if_compiling_contained_td )
     for sub_folder in folder.folders:
         if key == sub_folder.key:
             return True
     return False
 
-def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, key ):
-    try:
-        toolshed_base_url, key_name, key_owner, key_changeset_revision, key_prior_installation_required = get_components_from_key( key )
-    except ValueError:
-        # For backward compatibility to the 12/20/12 Galaxy release, default key_prior_installation_required to False.
-        toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
-        key_prior_installation_required = False
-    return repository_name == key_name and \
+def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, key ):
+    repository_components_tuple = get_components_from_key( key )
+    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+    toolshed, key_name, key_owner, key_changeset_revision = components_list[ 0:4 ]
+    # For backward compatibility to the 12/20/12 Galaxy release.
+    if len( components_list ) == 4:
+        key_prior_installation_required = 'False'
+        key_only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 5:
+        key_prior_installation_required = components_list[ 4 ]
+        key_only_if_compiling_contained_td = 'False'
+    elif len( components_list ) == 6:
+        key_prior_installation_required = components_list[ 4 ]
+        key_only_if_compiling_contained_td = components_list[ 5 ]
+    if repository_name == key_name and \
         repository_owner == key_owner and \
         changeset_revision == key_changeset_revision and \
-        prior_installation_required == key_prior_installation_required
+        prior_installation_required == key_prior_installation_required and \
+        only_if_compiling_contained_td == key_only_if_compiling_contained_td:
+        return True
+    return False
 
 def populate_repository_dependencies_container( trans, repository_dependencies_folder, repository_dependencies, folder_id, repository_dependency_id ):
     folder_keys = repository_dependencies.keys()
@@ -1421,4 +1469,3 @@ def prune_repository_dependencies( folder ):
     for sub_folder in folder.folders:
         return prune_repository_dependencies( sub_folder )
     return folder
-    

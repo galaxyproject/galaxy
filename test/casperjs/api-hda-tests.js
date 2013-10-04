@@ -371,7 +371,7 @@ spaceghost.historypanel.waitForHdas().then( function(){
 
 
     // ------------------------------------------------------------------------------------------- ERRORS
-    this.test.comment( 'create should error with "not implemented" when the param "from_ld_id" is not used' );
+    this.test.comment( 'create should error with "Please define the source" when the param "from_ld_id" is not used' );
     var errored = false;
     try {
         // sending an empty object won't work
@@ -379,14 +379,13 @@ spaceghost.historypanel.waitForHdas().then( function(){
 
     } catch( err ){
         errored = true;
-        this.test.assert( err.message.indexOf( 'Not implemented' ) !== -1,
+        this.test.assert( err.message.indexOf( 'Please define the source' ) !== -1,
             'Error has the proper message: ' + err.message );
-        this.test.assert( err.status === 501, 'Error has the proper status code: ' + err.status );
+        this.test.assert( err.status === 400, 'Error has the proper status code: ' + err.status );
     }
     if( !errored ){
         this.test.fail( 'create without "from_ld_id" did not cause error' );
     }
-
 
     //var returned = this.api.hdas.update( lastHistory.id, hdaIndex[0].id, { deleted: true, blerp: 'blerp' });
     //var returned = this.api.hdas.update( lastHistory.id, { deleted: true, blerp: 'blerp' });

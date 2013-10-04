@@ -31,7 +31,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter_by(
                 user=trans.user, deleted=False).order_by(
                 desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
-            item = wf.dictify(value_mapper={'id':trans.security.encode_id})
+            item = wf.to_dict(value_mapper={'id':trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
@@ -39,7 +39,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == False ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.dictify(value_mapper={'id':trans.security.encode_id})
+            item = wf_sa.stored_workflow.to_dict(value_mapper={'id':trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
@@ -67,7 +67,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         except:
             trans.response.status = 400
             return "That workflow does not exist."
-        item = stored_workflow.dictify(view='element', value_mapper={'id':trans.security.encode_id})
+        item = stored_workflow.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for('workflow', id=workflow_id)
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
@@ -329,7 +329,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         # return list
         rval= [];
 
-        item = workflow.dictify(value_mapper={'id':trans.security.encode_id})
+        item = workflow.to_dict(value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
 
         rval.append(item);
@@ -453,6 +453,11 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
             ### ----------------------------------- ###
             ## RPARK EDIT ##
+
+            # TODO: This is duplicated from
+            # lib/galaxy/webapps/controllres/workflow.py -- refactor and
+            # eliminate copied code.
+
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
             annotation_str = ""

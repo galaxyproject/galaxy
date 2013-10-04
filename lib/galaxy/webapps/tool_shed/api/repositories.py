@@ -1,30 +1,19 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
+from galaxy import eggs
 from galaxy import web
 from galaxy import util
 from galaxy.web.base.controller import BaseAPIController
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
 
-from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui 
 
 log = logging.getLogger( __name__ )
-
-def default_repository_value_mapper( trans, repository ):
-    value_mapper={ 'id' : trans.security.encode_id( repository.id ),
-                   'user_id' : trans.security.encode_id( repository.user_id ) }
-    return value_mapper
-
-def default_repository_metadata_value_mapper( trans, repository_metadata ):
-    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
-                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
-    if repository_metadata.time_last_tested:
-        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
-    return value_mapper
 
 
 class RepositoriesController( BaseAPIController ):
@@ -34,10 +23,10 @@ class RepositoriesController( BaseAPIController ):
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
         """
         GET /api/repositories/get_ordered_installable_revisions
-        
+
         :param name: the name of the Repository
         :param owner: the owner of the Repository
-        
+
         Returns the ordered list of changeset revision hash strings that are associated with installable revisions.  As in the changelog, the
         list is ordered oldest to newest.
         """
@@ -60,60 +49,63 @@ class RepositoriesController( BaseAPIController ):
     def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
         """
         GET /api/repositories/get_repository_revision_install_info
-        
+
         :param name: the name of the Repository
         :param owner: the owner of the Repository
         :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository
-        
+
         Returns a list of the following dictionaries::
         - a dictionary defining the Repository.  For example:
         {
-            "deleted": false, 
-            "deprecated": false, 
-            "description": "add_column hello", 
-            "id": "f9cad7b01a472135", 
-            "long_description": "add_column hello", 
-            "name": "add_column", 
-            "owner": "test", 
-            "private": false, 
-            "times_downloaded": 6, 
-            "url": "/api/repositories/f9cad7b01a472135", 
+            "deleted": false,
+            "deprecated": false,
+            "description": "add_column hello",
+            "id": "f9cad7b01a472135",
+            "long_description": "add_column hello",
+            "name": "add_column",
+            "owner": "test",
+            "private": false,
+            "times_downloaded": 6,
+            "url": "/api/repositories/f9cad7b01a472135",
             "user_id": "f9cad7b01a472135"
         }
         - a dictionary defining the Repository revision (RepositoryMetadata).  For example:
         {
-            "changeset_revision": "3a08cc21466f", 
-            "downloadable": true, 
-            "has_repository_dependencies": false, 
-            "id": "f9cad7b01a472135", 
-            "includes_datatypes": false, 
-            "includes_tool_dependencies": false, 
+            "changeset_revision": "3a08cc21466f",
+            "downloadable": true,
+            "has_repository_dependencies": false,
+            "has_repository_dependencies_only_if_compiling_contained_td": false,
+            "id": "f9cad7b01a472135",
+            "includes_datatypes": false,
+            "includes_tool_dependencies": false,
             "includes_tools": true,
             "includes_tools_for_display_in_tool_panel": true,
-            "includes_workflows": false, 
-            "malicious": false, 
-            "repository_id": "f9cad7b01a472135", 
+            "includes_workflows": false,
+            "malicious": false,
+            "repository_id": "f9cad7b01a472135",
             "url": "/api/repository_revisions/f9cad7b01a472135"
         }
         - a dictionary including the additional information required to install the repository.  For example:
         {
             "add_column": [
-                "add_column hello", 
-                "http://test@localhost:9009/repos/test/add_column", 
-                "3a08cc21466f", 
-                "1", 
-                "test", 
-                {}, 
+                "add_column hello",
+                "http://test@localhost:9009/repos/test/add_column",
+                "3a08cc21466f",
+                "1",
+                "test",
+                {},
                 {}
             ]
         }
         """
+        repository_value_mapper = { 'id' : trans.security.encode_id,
+                                    'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories/get_repository_revision_install_info?name=add_column&owner=test&changeset_revision=3a08cc21466f
         try:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_id = trans.security.encode_id( repository.id )
-            repository_dict = repository.dictify( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.to_dict( view='element', value_mapper=repository_value_mapper )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=encoded_repository_id )
@@ -129,13 +121,14 @@ class RepositoriesController( BaseAPIController ):
                 changeset_revision = new_changeset_revision
             if repository_metadata:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-                repository_metadata_dict = repository_metadata.dictify( view='collection',
-                                                                              value_mapper=default_repository_metadata_value_mapper( trans, repository_metadata ) )
+                repository_metadata_dict = repository_metadata.to_dict( view='collection',
+                                                                              value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
                 # Get the repo_info_dict for installing the repository.
-                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies = \
+                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+                    has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
                     repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
@@ -155,6 +148,8 @@ class RepositoriesController( BaseAPIController ):
         GET /api/repositories
         Displays a collection (list) of repositories.
         """
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.string_as_bool( deleted )
@@ -164,7 +159,7 @@ class RepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.Repository.table.c.name ) \
                                     .all()
             for repository in query:
-                repository_dict = repository.dictify( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.to_dict( view='collection', value_mapper=value_mapper )
                 repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -181,13 +176,15 @@ class RepositoriesController( BaseAPIController ):
         """
         GET /api/repositories/{encoded_repository_id}
         Returns information about a repository in the Tool Shed.
-        
+
         :param id: the encoded id of the Repository object
         """
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
         try:
             repository = suc.get_repository_in_tool_shed( trans, id )
-            repository_dict = repository.dictify( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict = repository.to_dict( view='element', value_mapper=value_mapper )
             repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                     action='show',
                                                     id=trans.security.encode_id( repository.id ) )
@@ -197,3 +194,10 @@ class RepositoriesController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
+
+    def __get_value_mapper( self, trans, repository_metadata ):
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'repository_id' : trans.security.encode_id }
+        if repository_metadata.time_last_tested is not None:
+            value_mapper[ 'time_last_tested' ] = time_ago 
+        return value_mapper

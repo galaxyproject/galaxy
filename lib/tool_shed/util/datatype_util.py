@@ -58,7 +58,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 datatype_file_name_path, datatype_file_name = os.path.split( relative_path_to_datatype_file_name )
                 for elem in registration.findall( 'datatype' ):
-                    # Handle 'type' attribute which should be something like one of the following: 
+                    # Handle 'type' attribute which should be something like one of the following:
                     # type="gmap:GmapDB"
                     # type="galaxy.datatypes.gmap:GmapDB"
                     dtype = elem.get( 'type', None )

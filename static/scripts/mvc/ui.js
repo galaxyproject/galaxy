@@ -86,10 +86,6 @@ var IconButtonView = Backbone.View.extend(
         if(options.is_menu_button)
             buffer += ' menu-button';
         
-        // define tooltip
-        if(options.title)
-            buffer += ' tooltip';
-        
         // add icon class
         buffer += ' ' + options.icon_class;
     

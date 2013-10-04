@@ -1,9 +1,12 @@
+import logging
 import os
 import urllib2
 from galaxy.util import json
 from galaxy.util.odict import odict
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
+
+log = logging.getLogger( __name__ )
 
 REPOSITORY_OWNER = 'devteam'
 
@@ -46,7 +49,8 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                     if rd_key in [ 'root_key', 'description' ]:
                         continue
                     for rd_tup in rd_tups:
-                        tool_shed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( rd_tup )
+                        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                            parse_repository_dependency_tuple( rd_tup )
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
                                                                                      tool_shed,
                                                                                      name,
@@ -100,7 +104,7 @@ def get_non_shed_tool_panel_configs( app ):
         # <toolbox tool_path="../shed_tools">
         tree, error_message = xml_util.parse_xml( config_filename )
         if tree is None:
-            continue 
+            continue
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )
         if tool_path is None:
@@ -155,26 +159,26 @@ def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
     return None
 
 def parse_repository_dependency_tuple( repository_dependency_tuple, contains_error=False ):
+    # Default both prior_installation_required and only_if_compiling_contained_td to False in cases where metadata should be reset on the
+    # repository containing the repository_dependency definition.
+    prior_installation_required = 'False'
+    only_if_compiling_contained_td = 'False'
     if contains_error:
         if len( repository_dependency_tuple ) == 5:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
             tool_shed, name, owner, changeset_revision, error = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
         elif len( repository_dependency_tuple ) == 6:
             toolshed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return toolshed, name, owner, changeset_revision, prior_installation_required, error
+        elif len( repository_dependency_tuple ) == 7:
+            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = repository_dependency_tuple
+        return toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error
     else:
         if len( repository_dependency_tuple ) == 4:
-            # Metadata should have been reset on the repository containing this repository_dependency definition.
             tool_shed, name, owner, changeset_revision = repository_dependency_tuple
-            # Default prior_installation_required to False.
-            prior_installation_required = False
         elif len( repository_dependency_tuple ) == 5:
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
-        prior_installation_required = str( prior_installation_required )
-        return tool_shed, name, owner, changeset_revision, prior_installation_required
+        elif len( repository_dependency_tuple ) == 6:
+            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tuple
+        return tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
 
 def tool_shed_get( app, tool_shed_url, uri ):
     """Make contact with the tool shed via the uri provided."""

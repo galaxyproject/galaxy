@@ -128,7 +128,7 @@ class PopulatedDisplayApplicationLink( object ):
         self.data = data
         self.dataset_hash = dataset_hash
         self.user_hash = user_hash
-        self.trans = trans 
+        self.trans = trans
         self.ready, self.parameters = self.link.build_parameter_dict( self.data, self.dataset_hash, self.user_hash, trans, app_kwds )
     def display_ready( self ):
         return self.ready

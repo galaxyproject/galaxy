@@ -41,7 +41,7 @@ function program1(depth0,data) {
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\" class=\"icon-button disk tooltip\"></a>\n</div>\n";
+  buffer += "\" class=\"icon-button disk\"></a>\n</div>\n";
   return buffer;
   }
 function program2(depth0,data) {
@@ -94,7 +94,7 @@ function program9(depth0,data) {
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\" class=\"icon-button disk tooltip\"></a>\n";
+  buffer += "\" class=\"icon-button disk\"></a>\n";
   return buffer;
   }
 

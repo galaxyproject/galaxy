@@ -58,7 +58,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % datatypes_repository_name, 
-                              'Repository %s has been created' % "'%s'" % datatypes_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % datatypes_repository_name ]
         repository = self.get_or_create_repository( name=datatypes_repository_name, 
                                                     description=datatypes_repository_description, 
                                                     long_description=datatypes_repository_long_description, 
@@ -98,7 +98,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % tool_repository_name, 
-                              'Repository %s has been created' % "'%s'" % tool_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % tool_repository_name ]
         repository = self.get_or_create_repository( name=tool_repository_name, 
                                                     description=tool_repository_description, 
                                                     long_description=tool_repository_long_description, 

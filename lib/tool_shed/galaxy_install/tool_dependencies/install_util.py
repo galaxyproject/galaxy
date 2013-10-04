@@ -12,6 +12,7 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
+from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 from galaxy.util import asbool
@@ -98,13 +99,99 @@ def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
 
 def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
     """
-    Get all appropriate newer changeset revisions for the repository defined by 
+    Get all appropriate newer changeset revisions for the repository defined by
     the received tool_shed_url / name / owner combination.
     """
     url = suc.url_join( tool_shed_url,
                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
+
+def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository ):
+    tool_dependency = None
+    tool_shed = elem.attrib[ 'toolshed' ]
+    required_repository_name = elem.attrib[ 'name' ]
+    required_repository_owner = elem.attrib[ 'owner' ]
+    default_required_repository_changeset_revision = elem.attrib[ 'changeset_revision' ]
+    required_repository = get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app,
+                                                                                               tool_shed,
+                                                                                               required_repository_name,
+                                                                                               required_repository_owner,
+                                                                                               default_required_repository_changeset_revision )
+    tmp_filename = None
+    if required_repository:
+        required_repository_changeset_revision = required_repository.installed_changeset_revision
+        # Define the installation directory for the required tool dependency package in the required repository.
+        required_repository_package_install_dir = \
+            get_tool_dependency_install_dir( app=app,
+                                             repository_name=required_repository_name,
+                                             repository_owner=required_repository_owner,
+                                             repository_changeset_revision=required_repository_changeset_revision,
+                                             tool_dependency_type='package',
+                                             tool_dependency_name=package_name,
+                                             tool_dependency_version=package_version )
+        # Define the this dependent repository's tool dependency installation directory that will contain the env.sh file with a path to the
+        # required repository's installed tool dependency package.
+        dependent_install_dir = get_tool_dependency_install_dir( app=app,
+                                                                 repository_name=tool_shed_repository.name,
+                                                                 repository_owner=tool_shed_repository.owner,
+                                                                 repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                 tool_dependency_type='package',
+                                                                 tool_dependency_name=package_name,
+                                                                 tool_dependency_version=package_version )
+        # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
+        # We can get everything we need from the discovered installed required_repository.
+        if required_repository.status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED,
+                                           app.model.ToolShedRepository.installation_status.INSTALLED ]:
+            if not os.path.exists( required_repository_package_install_dir ):
+                print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
+            repo_files_dir = required_repository.repo_files_directory( app )
+            tool_dependencies_config = get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
+            if tool_dependencies_config:
+                config_to_use = tool_dependencies_config
+            else:
+                message = "Unable to locate required tool_dependencies.xml file for revision %s of installed repository %s owned by %s." % \
+                    ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
+                raise Exception( message )
+        else:
+            # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
+            # should be updated if it's not current.
+            text = get_updated_changeset_revisions_from_tool_shed( app=app,
+                                                                   tool_shed_url=tool_shed,
+                                                                   name=required_repository_name,
+                                                                   owner=required_repository_owner,
+                                                                   changeset_revision=required_repository_changeset_revision )
+            if text:
+                updated_changeset_revisions = listify( text )
+                # The list of changeset revisions is in reverse order, so the newest will be first.
+                required_repository_changeset_revision = updated_changeset_revisions[ 0 ]
+            # Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
+            tmp_filename = create_temporary_tool_dependencies_config( app,
+                                                                      tool_shed,
+                                                                      required_repository_name,
+                                                                      required_repository_owner,
+                                                                      required_repository_changeset_revision )
+            config_to_use = tmp_filename
+        tool_dependency, actions_dict = populate_actions_dict( app=app,
+                                                               dependent_install_dir=dependent_install_dir,
+                                                               required_install_dir=required_repository_package_install_dir,
+                                                               tool_shed_repository=tool_shed_repository,
+                                                               required_repository=required_repository,
+                                                               package_name=package_name,
+                                                               package_version=package_version,
+                                                               tool_dependencies_config=config_to_use )
+        if tmp_filename:
+            try:
+                os.remove( tmp_filename )
+            except:
+                pass
+        # Install and build the package via fabric.
+        install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
+    else:
+        message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
+            ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
+        raise Exception( message )
+    return tool_dependency
 
 def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem, required_repository ):
     """
@@ -161,7 +248,7 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                         # setting in the received tool_shed_repository's tool_dependencies.xml file and the required repository's
                         # tool_dependencies.xml file may include the use of the $ENV[] variable inheritance feature.  To handle this,
                         # we will replace the current "value" entries in each env_var_dict with the actual path taken from the env.sh
-                        # file generated for the installed required repository.  Each env_var_dict currently looks something like this: 
+                        # file generated for the installed required repository.  Each env_var_dict currently looks something like this:
                         # {'action': 'append_to', 'name': 'LD_LIBRARY_PATH', 'value': '$BOOST_ROOT_DIR/lib/'}
                         # We'll read the contents of the received required_repository's env.sh file and replace the 'value' entry of each env_var_dict
                         # with the associated value in the env.sh file.
@@ -203,7 +290,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     except Exception, e:
         log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-        tool_dependency.error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) ) 
+        tool_dependency.error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) )
         sa_session.add( tool_dependency )
         sa_session.flush()
     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
@@ -222,88 +309,9 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
         for package_elem in elem:
             if package_elem.tag == 'repository':
                 # We have a complex repository dependency definition.
-                tool_shed = package_elem.attrib[ 'toolshed' ]
-                required_repository_name = package_elem.attrib[ 'name' ]
-                required_repository_owner = package_elem.attrib[ 'owner' ]
-                default_required_repository_changeset_revision = package_elem.attrib[ 'changeset_revision' ]
-                required_repository = get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app,
-                                                                                                           tool_shed,
-                                                                                                           required_repository_name,
-                                                                                                           required_repository_owner,
-                                                                                                           default_required_repository_changeset_revision )
-                tmp_filename = None
-                if required_repository:
-                    required_repository_changeset_revision = required_repository.installed_changeset_revision
-                    # Define the installation directory for the required tool dependency package in the required repository.
-                    required_repository_package_install_dir = \
-                        get_tool_dependency_install_dir( app=app,
-                                                         repository_name=required_repository_name,
-                                                         repository_owner=required_repository_owner,
-                                                         repository_changeset_revision=required_repository_changeset_revision,
-                                                         tool_dependency_type='package',
-                                                         tool_dependency_name=package_name,
-                                                         tool_dependency_version=package_version )
-                    # Define the this dependent repository's tool dependency installation directory that will contain the env.sh file with a path to the
-                    # required repository's installed tool dependency package.
-                    dependent_install_dir = get_tool_dependency_install_dir( app=app,
-                                                                             repository_name=tool_shed_repository.name,
-                                                                             repository_owner=tool_shed_repository.owner,
-                                                                             repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                             tool_dependency_type='package',
-                                                                             tool_dependency_name=package_name,
-                                                                             tool_dependency_version=package_version )
-                    # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
-                    # We can get everything we need from the discovered installed required_repository.
-                    if required_repository.status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                       app.model.ToolShedRepository.installation_status.INSTALLED ]:                        
-                        if not os.path.exists( required_repository_package_install_dir ):
-                            print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
-                        repo_files_dir = required_repository.repo_files_directory( app )
-                        tool_dependencies_config = get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
-                        if tool_dependencies_config:
-                            config_to_use = tool_dependencies_config
-                        else:
-                            message = "Unable to locate required tool_dependencies.xml file for revision %s of installed repository %s owned by %s." % \
-                                ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
-                            raise Exception( message )
-                    else:
-                        # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
-                        # should be updated if it's not current.
-                        text = get_updated_changeset_revisions_from_tool_shed( app=app,
-                                                                               tool_shed_url=tool_shed,
-                                                                               name=required_repository_name,
-                                                                               owner=required_repository_owner,
-                                                                               changeset_revision=required_repository_changeset_revision )
-                        if text:
-                            updated_changeset_revisions = listify( text )
-                            # The list of changeset revisions is in reverse order, so the newest will be first.
-                            required_repository_changeset_revision = updated_changeset_revisions[ 0 ]
-                        # Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
-                        tmp_filename = create_temporary_tool_dependencies_config( app,
-                                                                                  tool_shed,
-                                                                                  required_repository_name,
-                                                                                  required_repository_owner,
-                                                                                  required_repository_changeset_revision )
-                        config_to_use = tmp_filename
-                    tool_dependency, actions_dict = populate_actions_dict( app=app,
-                                                                           dependent_install_dir=dependent_install_dir,
-                                                                           required_install_dir=required_repository_package_install_dir,
-                                                                           tool_shed_repository=tool_shed_repository,
-                                                                           required_repository=required_repository,
-                                                                           package_name=package_name,
-                                                                           package_version=package_version,
-                                                                           tool_dependencies_config=config_to_use )
-                    if tmp_filename:
-                        try:
-                            os.remove( tmp_filename )
-                        except:
-                            pass
-                    # Install and build the package via fabric.
-                    install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
-                else:
-                    message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
-                        ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
-                    raise Exception( message )
+                rd_tool_dependency = handle_complex_repository_dependency_for_package( app, package_elem, package_name, package_version, tool_shed_repository )
+                if rd_tool_dependency and rd_tool_dependency.status == app.model.ToolDependency.installation_status.ERROR:
+                    print "Error installing tool dependency for required repository: %s" % str( rd_tool_dependency.error_message )
             elif package_elem.tag == 'install':
                 # <install version="1.0">
                 # Get the installation directory for tool dependencies that will be installed for the received tool_shed_repository.
@@ -333,13 +341,91 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                                              type='package',
                                                                                              status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                                              set_status=True )
+                    # Get the information about the current platform in case the tool dependency definition includes tag sets for installing
+                    # compiled binaries.
+                    platform_info_dict = tool_dependency_util.get_platform_info_dict()
                     if package_install_version == '1.0':
                         # Handle tool dependency installation using a fabric method included in the Galaxy framework.
-                        for actions_elem in package_elem:
-                            install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=package_name )
-                            sa_session.refresh( tool_dependency )
-                            if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
-                                print package_name, 'version', package_version, 'installed in', install_dir
+                        actions_elem_tuples = td_common_util.parse_package_elem( package_elem,
+                                                                                 platform_info_dict=platform_info_dict,
+                                                                                 include_after_install_actions=True )
+                        # At this point we have a list of <actions> elems that are either defined within an <actions_group> tag set with <actions>
+                        # sub-elements that contains os and architecture attributes filtered by the platform into which the appropriate compiled
+                        # binary will be installed, or not defined within an <actions_group> tag set and not filtered.
+                        binary_installed = False
+                        for in_actions_group, actions_elems in actions_elem_tuples:
+                            if in_actions_group:
+                                # Platform matching is only performed inside <actions_group> tag sets, os and architecture attributes are otherwise
+                                # ignored.
+                                for actions_elem in actions_elems:
+                                    system = actions_elem.get( 'os' )
+                                    architecture = actions_elem.get( 'architecture' )
+                                    # If this <actions> element has the os and architecture attributes defined, then we only want to process until a
+                                    # successful installation is achieved.
+                                    if system and architecture:
+                                        # If an <actions> tag has been defined that matches our current platform, and the recipe specified within
+                                        # that <actions> tag has been successfully processed, skip any remaining platform-specific <actions> tags.
+                                        # We cannot break out of the look here because there may be <action> tags at the end of the <actions_group>
+                                        # tag set that must be processed.
+                                        if binary_installed:
+                                            continue
+                                        # No platform-specific <actions> recipe has yet resulted in a successful installation.
+                                        install_via_fabric( app, 
+                                                            tool_dependency, 
+                                                            install_dir, 
+                                                            package_name=package_name, 
+                                                            actions_elem=actions_elem, 
+                                                            action_elem=None )
+                                        sa_session.refresh( tool_dependency )
+                                        if tool_dependency.status == app.model.ToolDependency.installation_status.INSTALLED:
+                                            # If an <actions> tag was found that matches the current platform, and the install_via_fabric method 
+                                            # did not result in an error state, set binary_installed to True in order to skip any remaining 
+                                            # platform-specific <actions> tags.
+                                            binary_installed = True
+                                        else:
+                                            # Process the next matching <actions> tag, or any defined <actions> tags that do not contain platform
+                                            # dependent recipes.
+                                            print 'Error downloading binary for %s version %s: %s' % \
+                                                ( package_name, package_version, tool_dependency.error_message )
+                                    else:
+                                        # If no <actions> tags have been defined that match our current platform, or none of the matching
+                                        # <actions> tags resulted in a successful tool dependency status, proceed with one and only one
+                                        # <actions> tag that is not defined to be platform-specific.
+                                        if not binary_installed:
+                                            print 'Binary installation did not occur, so proceeding with install and compile recipe.'
+                                            # Make sure to reset for installation if attempt at binary installation resulted in an error.
+                                            if tool_dependency.status != app.model.ToolDependency.installation_status.NEVER_INSTALLED:
+                                                removed, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
+                                            install_via_fabric( app, 
+                                                                tool_dependency, 
+                                                                install_dir, 
+                                                                package_name=package_name, 
+                                                                actions_elem=actions_elem, 
+                                                                action_elem=None )
+                                    # Perform any final actions that have been defined within the actions_group tag set, but outside of 
+                                    # an <actions> tag, such as a set_environment entry, or a download_file or download_by_url command to
+                                    # retrieve extra data for this tool dependency. Only do this if the tool dependency is not in an error
+                                    # state, otherwise skip this action.
+                                    if actions_elem.tag == 'action' and tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+                                        install_via_fabric( app, 
+                                                            tool_dependency, 
+                                                            install_dir, 
+                                                            package_name=package_name, 
+                                                            actions_elem=None, 
+                                                            action_elem=actions_elem )
+                            else:
+                                # <actions> tags outside of an <actions_group> tag shall not check os or architecture, and if the attributes are
+                                # defined, they will be ignored. All <actions> tags outside of an <actions_group> tag set shall always be processed.
+                                # This is the default and original behavior of the install_package method.
+                                install_via_fabric( app, 
+                                                    tool_dependency, 
+                                                    install_dir, 
+                                                    package_name=package_name, 
+                                                    actions_elem=actions_elems, 
+                                                    action_elem=None )
+                                sa_session.refresh( tool_dependency )
+                                if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+                                    print package_name, 'version', package_version, 'installed in', install_dir
                     else:
                         raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
             elif package_elem.tag == 'readme':
@@ -356,14 +442,14 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
             #    print 'Installing tool dependencies via fabric script ', proprietary_fabfile_path
     return tool_dependency
 
-def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=None, proprietary_fabfile_path=None, **kwd ):
+def install_via_fabric( app, tool_dependency, install_dir, package_name=None, proprietary_fabfile_path=None, actions_elem=None, action_elem=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
-    sa_session = app.model.context.current
 
     def evaluate_template( text ):
         """ Substitute variables defined in XML blocks from dependencies file."""
         return Template( text ).safe_substitute( td_common_util.get_env_var_values( install_dir ) )
 
+    sa_session = app.model.context.current
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
     actions_dict = dict( install_dir=install_dir )
@@ -372,8 +458,21 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     actions = []
     all_env_shell_file_paths = []
     env_var_dicts = []
-    # Make sure to skip all comments, since they are now included in the XML tree.
-    for action_elem in actions_elem.findall( 'action' ):
+    if actions_elem is not None:
+        elems = actions_elem
+        if elems.get( 'os' ) is not None and elems.get( 'architecture' ) is not None:
+            is_binary_download = True
+        else:
+            is_binary_download = False
+    elif action_elem is not None:
+        # We were provided with a single <action> element to perform certain actions after a platform-specific tarball was downloaded.
+        elems = [ action_elem ]
+    else:
+        elems = []
+    for action_elem in elems:
+        # Make sure to skip all comments, since they are now included in the XML tree.
+        if action_elem.tag != 'action':
+            continue
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
         if action_type == 'download_binary':
@@ -420,6 +519,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 raise Exception( "Unsupported template language '%s' in tool dependency definition." % str( language ) )
         elif action_type == 'download_by_url':
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
+            if is_binary_download:
+                action_dict[ 'is_binary' ] = True
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
                 target_filename = action_elem.get( 'target_filename', None )
@@ -449,11 +550,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ 'directory' ] = action_elem.text
             else:
                 continue
-        elif action_type in [ 'move_directory_files', 'move_file' ]:
-            # <action type="move_file">
-            #     <source>misc/some_file</source>
-            #     <destination>$INSTALL_DIR/bin</destination>
-            # </action>
+        elif action_type == 'move_directory_files':
             # <action type="move_directory_files">
             #     <source_directory>bin</source_directory>
             #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
@@ -462,6 +559,14 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 move_elem_text = evaluate_template( move_elem.text )
                 if move_elem_text:
                     action_dict[ move_elem.tag ] = move_elem_text
+        elif action_type == 'move_file':
+            # <action type="move_file" rename_to="new_file_name">
+            #     <source>misc/some_file</source>
+            #     <destination>$INSTALL_DIR/bin</destination>
+            # </action>
+            action_dict[ 'source' ] = evaluate_template( action_elem.find( 'source' ).text )
+            action_dict[ 'destination' ] = evaluate_template( action_elem.find( 'destination' ).text )
+            action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
         elif action_type == 'set_environment':
             # <action type="set_environment">
             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
@@ -484,7 +589,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             #    </repository>
             # </action>
             # This action type allows for defining an environment that will properly compile a tool dependency.  Currently, tag set definitions like
-            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be 
+            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be
             # supported.  The above tag set will result in the installed and compiled numpy version 1.7.1 binary to be used when compiling the current
             # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
             for env_elem in action_elem:
@@ -574,7 +679,6 @@ def parse_env_shell_entry( action, name, value, line ):
         new_value = new_value.split( ';' )[ 0 ]
     return new_value
 
-        
 def populate_actions_dict( app, dependent_install_dir, required_install_dir, tool_shed_repository, required_repository, package_name, package_version, tool_dependencies_config ):
     """
     Populate an actions dictionary that can be sent to fabric_util.install_and_build_package.  This method handles the scenario where a tool_dependencies.xml
@@ -648,7 +752,7 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
     except Exception, e:
         return "Exception executing fabric script %s: %s.  " % ( str( proprietary_fabfile_path ), str( e ) )
     if returncode:
-        return message    
+        return message
     handle_environment_settings( app, tool_dependency, install_dir, cmd )
 
 def run_subprocess( app, cmd ):

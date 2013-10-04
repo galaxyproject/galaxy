@@ -13,7 +13,7 @@ require(
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
     'libs/jquery/jquery-ui',
-    'libs/jquery/jquery-ui-combobox',
+    'libs/jquery/select2',
     'libs/farbtastic',
     'libs/jquery/jquery.form',
     'libs/jquery/jquery.rating',
@@ -22,7 +22,6 @@ require(
 {
     // load css
     css.load_file("static/style/jquery.rating.css");
-    css.load_file("static/style/history.css");
     css.load_file("static/style/autocomplete_tagging.css");
     css.load_file("static/style/jquery-ui/smoothness/jquery-ui.css");
     css.load_file("static/style/library.css");
@@ -116,23 +115,22 @@ var TracksterView = Backbone.View.extend(
             success: function(response)
             {
                 // show dialog
-                show_modal("New Visualization", self.template_view_new(response),
-                {
-                    "Cancel": function() { window.location = galaxy_config.root + "visualization/list"; },
-                    "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); }
+                Galaxy.modal.show({
+                    title   : "New Visualization",
+                    body    : self.template_view_new(response),
+                    buttons : {
+                        "Cancel": function() { window.location = galaxy_config.root + "visualization/list"; },
+                        "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); Galaxy.modal.hide(); }
+                    }
                 });
-
+                
                 // select default
                 if (galaxy_config.app.default_dbkey)
                     $("#new-dbkey option[value='" + galaxy_config.app.default_dbkey + "']").attr("selected", true);
 
                 // change focus
                 $("#new-title").focus();
-                $("select[name='dbkey']").combobox(
-                {
-                    appendTo: $("#overlay"),
-                    size: 40
-                });
+                $("select[name='dbkey']").select2();
 
                 // to support the large number of options for dbkey, enable scrolling in overlay.
                 $("#overlay").css("overflow", "auto");
@@ -193,9 +191,6 @@ var TracksterView = Backbone.View.extend(
         
         // modify view setting
         view.editor = true;
-
-        // hide modal dialog
-        hide_modal();
     },
 
     // initialization for editor-specific functions.

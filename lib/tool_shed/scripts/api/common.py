@@ -20,7 +20,7 @@ def encode_id( config_id_secret, obj_id ):
     id_cipher = Blowfish.new( config_id_secret )
     # Convert to string
     s = str( obj_id )
-    # Pad to a multiple of 8 with leading "!" 
+    # Pad to a multiple of 8 with leading "!"
     s = ( "!" * ( 8 - len(s) % 8 ) ) + s
     # Encrypt
     return id_cipher.encrypt( s ).encode( 'hex' )

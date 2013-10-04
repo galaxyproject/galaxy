@@ -24,6 +24,7 @@ from galaxy import web
 from galaxy import model
 from galaxy import security
 from galaxy import util
+from galaxy import objectstore
 
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
@@ -32,7 +33,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
@@ -422,7 +423,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
-        history_dict = history.dictify( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
@@ -583,22 +584,28 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.dictify( view='element' )
+        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
+        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-
-        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        if not can_access_hda:
+            return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
-            #TODO: dictify should really go AFTER this - only summary data
+            #TODO: to_dict should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
+        if expose_dataset_path:
+            try:
+                hda_dict[ 'file_name' ] = hda.file_name
+            except objectstore.ObjectNotFound, onf:
+                log.exception( 'objectstore.ObjectNotFound, HDA %s: %s', hda.id, onf )
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
@@ -634,6 +641,18 @@ class UsesHistoryDatasetAssociationMixin:
 
         return trans.security.encode_dict_ids( hda_dict )
 
+    def get_inaccessible_hda_dict( self, trans, hda ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'state'     : hda.state,
+            'deleted'   : hda.deleted,
+            'visible'   : hda.visible,
+            'accessible': False
+        })
+
     def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
         return trans.security.encode_dict_ids({
             'id'        : hda.id,
@@ -663,7 +682,7 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        
+
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = hda.datatype.get_display_links( hda,
                 display_app, trans.app, trans.request.base )
@@ -920,7 +939,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             return query
         return query.all()
 
-    #TODO: move into model (dictify)
+    #TODO: move into model (to_dict)
     def get_visualization_summary_dict( self, visualization ):
         """
         Return a set of summary attributes for a visualization in dictionary form.
@@ -949,7 +968,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             'user_id'   : visualization.user.id,
             'dbkey'     : visualization.dbkey,
             'slug'      : visualization.slug,
-            # dictify only the latest revision (allow older to be fetched elsewhere)
+            # to_dict only the latest revision (allow older to be fetched elsewhere)
             'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
             'revisions' : [ r.id for r in visualization.revisions ],
         }
@@ -1123,13 +1142,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         tool = trans.app.toolbox.get_tool( job.tool_id )
         if not tool:
             return None
-            
+
         # Tool must have a Trackster configuration.
         if not tool.trackster_conf:
             return None
 
         # Get tool definition and add input values from job.
-        tool_dict = tool.dictify( trans, io_details=True )
+        tool_dict = tool.to_dict( trans, io_details=True )
         inputs_dict = tool_dict[ 'inputs' ]
         tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
@@ -1139,10 +1158,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                 name = t_input[ 'name' ]
                 if name in tool_param_values:
                     value = tool_param_values[ name ]
-                    if isinstance( value, DictifiableMixin ):
-                        value = value.dictify()
+                    if isinstance( value, Dictifiable ):
+                        value = value.to_dict()
                     t_input[ 'value' ] = value
-            
+
         return tool_dict
 
     def get_visualization_config( self, trans, visualization ):
@@ -1172,7 +1191,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                                                                                           source='data' )
                 return {
                     "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
+                    "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
                     "name": track_dict['name'],
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
@@ -1252,7 +1271,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return {
             "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "dataset": trans.security.encode_dict_ids( dataset.dictify() ),
+            "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": self.get_tool_def( trans, dataset ),
@@ -2328,16 +2347,16 @@ class UsesTagsMixin( object ):
 
 class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
     """ Mixin for getting and setting item extended metadata. """
-            
+
     def get_item_extended_metadata_obj( self, trans, item ):
         """
-        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object 
+        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object
         of the associated extended metadata
         """
         if item.extended_metadata:
             return item.extended_metadata
         return None
- 
+
     def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
         print "setting", extmeta_obj.data
         if item.__class__ == LibraryDatasetDatasetAssociation:

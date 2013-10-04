@@ -7,17 +7,19 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <h3 align="center">Jobs Per Month</h3>
-        <h4 align="center">Click Month to view the number of jobs for each day of that month</h4>
+        <h4 align="center">Jobs Per Month</h4>
+        <h5 align="center">Click Month to view details.</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
-                <tr><td colspan="4">There are no jobs</td></tr>
+                <tr><td colspan="4">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
                     <td>Month</td>
-                    <td>User Jobs</td>
-                    <td>Monitor Jobs</td>
-                    <td>Total</td>
+                    %if is_user_jobs_only:
+    					<td>User Jobs</td>
+					%else:
+	                    <td>User + Monitor Jobs</td>
+	                %endif
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:
@@ -26,10 +28,8 @@
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='jobs', action='specified_month_all', specified_date=job[0]+'-01' )}">${job[4]}&nbsp;${job[5]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='specified_month_all', specified_date=job[0]+'-01' )}">${job[2]} ${job[3]}</a></td>
                         <td>${job[1]}</td>
-                        <td>${job[2]}</td>
-                        <td>${job[3]}</td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

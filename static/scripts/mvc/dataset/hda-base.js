@@ -82,6 +82,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         this.$el.attr( 'id', 'historyItemContainer-' + id );
 
+        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
+        // handle that here by removing previous view's tooltips
+        this.$el.find("[title]").tooltip( "destroy" );
+
         /** web controller urls for functions relating to this hda.
          *      These are rendered from urlTemplates using the model data. */
         this.urls = this._renderUrls( this.urlTemplates, this.model.toJSON() );
@@ -174,7 +178,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
-        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -246,8 +250,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.on_click = function(){
-                parent.frame_manager.frame_new({
-                    title   : "Data Viewer",
+                Galaxy.frame_manager.frame_new({
+                    title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
                     location: "center",
                     content : self.urls.display

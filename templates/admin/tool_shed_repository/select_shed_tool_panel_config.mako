@@ -60,7 +60,14 @@
 </div>
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="select_shed_tool_panel_config" id="select_shed_tool_panel_config" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
+        <form name="select_shed_tool_panel_config" id="select_shed_tool_panel_config" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install' )}" method="post" >
+            <div class="form-row">
+                <input type="hidden" name="encoded_repo_info_dicts" value="${encoded_repo_info_dicts}" />
+                <input type="hidden" name="includes_tools" value="${includes_tools}" />
+                <input type="hidden" name="includes_tool_dependencies" value="${includes_tool_dependencies}" />
+                <input type="hidden" name="includes_tools_for_display_in_tool_panel" value="${includes_tools_for_display_in_tool_panel}" />
+                <input type="hidden" name="tool_shed_url" value="${tool_shed_url}" />
+            </div>
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:

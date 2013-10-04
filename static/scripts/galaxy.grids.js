@@ -255,7 +255,8 @@ function init_grid_elements() {
     });
     
     // Initialize ratings.
-    $('.community_rating_star').rating({});
+    if ($('.community_rating_star').length !== 0)
+        $('.community_rating_star').rating({});
     
     // Initialize item menu operations.
     make_popup_menus();
@@ -472,7 +473,7 @@ function update_grid(maintain_page_links) {
         go_to_URL();
         return;
     }
-    
+
     // If there's an operation, do POST; otherwise, do GET.
     var method = (grid.get('operation') ? "POST" : "GET" );
     $('.loading-elt-overlay').show(); // Show overlay to indicate loading and prevent user actions.

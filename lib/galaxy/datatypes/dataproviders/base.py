@@ -304,7 +304,7 @@ class MultiSourceDataProvider( DataProvider ):
                 self.source = self.validate_source( source )
             except exceptions.InvalidDataProviderSource, invalid_source:
                 continue
-            
+
             parent_gen = super( MultiSourceDataProvider, self ).__iter__()
             for datum in parent_gen:
                  yield datum

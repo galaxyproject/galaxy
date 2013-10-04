@@ -287,7 +287,7 @@
 
 <%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<div class='progress progress-striped progress-info active'><div class='bar' style='width: 100%;'></div></div>", self.overlay_visible )}
+                      "<div class='progress progress-striped progress-info active'><div class='progress-bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">
@@ -414,7 +414,7 @@
             ## Workflow name.
             <div id="workflow-name-area" class="form-row">
                 <label>Name:</label>
-                <span id="workflow-name" class="tooltip editable-text" title="Click to rename workflow">${h.to_unicode( stored.name ) | h}</span>
+                <span id="workflow-name" class="editable-text" title="Click to rename workflow">${h.to_unicode( stored.name ) | h}</span>
             </div>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
@@ -436,7 +436,7 @@
                 ## Annotation elt.
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
-                    <div id="workflow-annotation" class="tooltip editable-text" title="Click to edit annotation">
+                    <div id="workflow-annotation" class="editable-text" title="Click to edit annotation">
                     %if annotation:
                         ${h.to_unicode( annotation ) | h}
                     %else:

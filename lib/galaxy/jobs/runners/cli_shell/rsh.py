@@ -2,10 +2,11 @@
 Interface for remote shell commands (rsh, rcp) and derivatives that use the same syntax (ssh, scp)
 """
 
-import time
 import logging
-import tempfile
+import os
 import subprocess
+import tempfile
+import time
 
 from galaxy.util.bunch import Bunch
 from galaxy.jobs.runners.cli_shell import BaseShellExec

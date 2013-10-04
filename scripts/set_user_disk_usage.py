@@ -76,7 +76,7 @@ def quotacheck( sa_session, users, engine ):
     sa_session.refresh( user )
     current = user.get_disk_usage()
     print user.username, '<' + user.email + '>:',
-    if engine != 'postgres':
+    if engine not in ( 'postgres', 'postgresql' ):
         new = user.calculate_disk_usage()
         sa_session.refresh( user )
         # usage changed while calculating, do it again
@@ -94,7 +94,7 @@ def quotacheck( sa_session, users, engine ):
             print '+%s' % ( nice_size( new - current ) )
         else:
             print '-%s' % ( nice_size( current - new ) )
-        if not options.dryrun and engine != 'postgres':
+        if not options.dryrun and engine not in ( 'postgres', 'postgresql' ):
             user.set_disk_usage( new )
             sa_session.add( user )
             sa_session.flush()

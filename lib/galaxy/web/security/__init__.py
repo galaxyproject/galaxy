@@ -40,7 +40,7 @@ class SecurityHelper( object ):
     def encode_id( self, obj_id ):
         # Convert to string
         s = str( obj_id )
-        # Pad to a multiple of 8 with leading "!" 
+        # Pad to a multiple of 8 with leading "!"
         s = ( "!" * ( 8 - len(s) % 8 ) ) + s
         # Encrypt
         return self.id_cipher.encrypt( s ).encode( 'hex' )
@@ -61,7 +61,7 @@ class SecurityHelper( object ):
 
     def encode_guid( self, session_key ):
         # Session keys are strings
-        # Pad to a multiple of 8 with leading "!" 
+        # Pad to a multiple of 8 with leading "!"
         s = ( "!" * ( 8 - len( session_key ) % 8 ) ) + session_key
         # Encrypt
         return self.id_cipher.encrypt( s ).encode( 'hex' )

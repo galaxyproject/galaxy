@@ -36,7 +36,7 @@ def get_form_template(action_type, title, content, help, on_output = True ):
 class DefaultJobAction(object):
     name = "DefaultJobAction"
     verbose_name = "Default Job"
-    
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict = None):
         pass
@@ -56,7 +56,7 @@ class DefaultJobAction(object):
 class EmailAction(DefaultJobAction):
     name = "EmailAction"
     verbose_name = "Email Notification"
-    
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments and action.action_arguments.has_key('host'):
@@ -72,7 +72,7 @@ class EmailAction(DefaultJobAction):
             send_mail( frm, to, subject, body, app.config )
         except Exception, e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
-            
+
     @classmethod
     def get_config_form(cls, trans):
         form = """
@@ -116,7 +116,7 @@ class ChangeDatatypeAction(DefaultJobAction):
             """ % dt_list
             # Note the scrip + t hack above.  Is there a better way?
         return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
-    
+
     @classmethod
     def get_short_str(cls, pja):
         return "Set the datatype of output '%s' to '%s'" % (pja.output_name, pja.action_arguments['newtype'])
@@ -214,7 +214,7 @@ class RenameDatasetAction(DefaultJobAction):
             }
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
-    
+
     @classmethod
     def get_short_str(cls, pja):
         # Prevent renaming a dataset to the empty string.
@@ -227,7 +227,7 @@ class RenameDatasetAction(DefaultJobAction):
 class HideDatasetAction(DefaultJobAction):
     name = "HideDatasetAction"
     verbose_name = "Hide Dataset"
-    
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
@@ -263,7 +263,7 @@ class DeleteDatasetAction(DefaultJobAction):
                         <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
-    
+
     @classmethod
     def get_short_str(cls, pja):
         return "Delete this dataset after creation."
@@ -324,12 +324,12 @@ class ColumnSetAction(DefaultJobAction):
 class SetMetadataAction(DefaultJobAction):
     name = "SetMetadataAction"
     # DBTODO Setting of Metadata is currently broken and disabled.  It should not be used (yet).
-    
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for data in job.output_datasets:
             data.set_metadata( action.action_arguments['newtype'] )
-            
+
     @classmethod
     def get_config_form(cls, trans):
         #         dt_list = ""
@@ -360,10 +360,10 @@ class SetMetadataAction(DefaultJobAction):
 
 
 class ActionBox(object):
-    
+
     actions = { "RenameDatasetAction" : RenameDatasetAction,
                 "HideDatasetAction" : HideDatasetAction,
-                "ChangeDatatypeAction": ChangeDatatypeAction, 
+                "ChangeDatatypeAction": ChangeDatatypeAction,
                 "ColumnSetAction" : ColumnSetAction,
                 "EmailAction" : EmailAction,
                 # "SetMetadataAction" : SetMetadataAction,
@@ -400,7 +400,7 @@ class ActionBox(object):
                 # Not pja stuff.
                 pass
         return to_json_string(npd)
-            
+
     @classmethod
     def get_add_list(cls):
         addlist = "<select id='new_pja_list' name='new_pja_list'>"
@@ -408,14 +408,14 @@ class ActionBox(object):
             addlist += "<option value='%s'>%s</option>" % (ActionBox.actions[action].name, ActionBox.actions[action].verbose_name)
         addlist += "</select>"
         return addlist
-        
+
     @classmethod
     def get_forms(cls, trans):
         forms = ""
         for action in ActionBox.actions:
             forms += ActionBox.actions[action].get_config_form(trans)
         return forms
-    
+
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict = None):
         if ActionBox.actions.has_key(pja.action_type):

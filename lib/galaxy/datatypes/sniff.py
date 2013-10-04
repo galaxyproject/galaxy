@@ -1,12 +1,21 @@
 """
 File format detector
 """
-import logging, sys, os, csv, tempfile, shutil, re, zipfile, gzip
+import gzip
+import logging
+import os
+import re
 import registry
-from galaxy import util
-from galaxy.datatypes.checkers import *
+import shutil
+import sys
+import tempfile
+import zipfile
+
 from encodings import search_function as encodings_search_function
-from binary import Binary
+
+from galaxy import util
+from galaxy.datatypes.checkers import check_binary, check_html, is_gzip
+from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +142,7 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     if i is None:
         i = 0
     else:
-        i += 1        
+        i += 1
     if in_place:
         shutil.move( temp_name, fname )
         # Return number of lines in file.
@@ -318,7 +327,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         for hdr in headers:
             for char in hdr:
                 #old behavior had 'char' possibly having length > 1,
-                #need to determine when/if this occurs 
+                #need to determine when/if this occurs
                 is_binary = util.is_binary( char )
                 if is_binary:
                     break
@@ -405,5 +414,5 @@ class InappropriateDatasetContentError( Exception ):
     pass
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__])

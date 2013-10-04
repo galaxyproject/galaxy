@@ -12,10 +12,10 @@ from galaxy.model.orm import *
 log = logging.getLogger( __name__ )
 
 class PermissionsController( BaseAPIController ):
-    
+
     # Method not ideally named
     @web.expose_api
-    def create( self, trans, library_id, payload, **kwd ): 
+    def create( self, trans, library_id, payload, **kwd ):
         """
         POST /api/libraries/{encoded_library_id}/permissions
         Updates the library permissions.
@@ -47,6 +47,6 @@ class PermissionsController( BaseAPIController ):
         trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         message = "Permissions updated for library '%s'." % library.name
 
-        item = library.dictify( view='element' )
+        item = library.to_dict( view='element' )
         return item
 

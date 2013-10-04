@@ -11,10 +11,9 @@ from contextlib import contextmanager
 from galaxy.util.template import fill_template
 from galaxy import eggs
 
-import pkg_resources
-
-pkg_resources.require('ssh' )
-pkg_resources.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
+eggs.require( 'Fabric' )
 
 from fabric.api import env
 from fabric.api import lcd
@@ -63,44 +62,44 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
     """
     This method works with with a combination of three tool dependency definition tag sets, which are defined in the tool_dependencies.xml file in the
     order discussed here.  The example for this discussion is the tool_dependencies.xml file contained in the osra repository, which is available at:
-    
-    http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra 
-    
+
+    http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
+
     The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset revision XXX of the repository named
     package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been previously installed.
-    
+
     <tool_dependency>
         <package name="graphicsmagick" version="1.3.18">
             <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
         </package>
         ...
-    
+
     * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks something like this (we'll reference
     this file later in this discussion.
     ----
-    GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick; 
+    GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
     export GRAPHICSMAGICK_ROOT_DIR
     ----
-    
+
     The second tag set defines a specific package dependency that has been previously installed (guaranteed by the tag set discussed above) and compiled,
     where the compiled dependency is needed by the tool dependency currently being installed (osra version 2.0.0 in this case) and complied in order for
     it's installation and compilation to succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
     version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully compile.  When this tag set is handled,
     one of the effects is that the env.sh file associated with graphicsmagick version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment
     variables (e.g. PATH, PYTHONPATH, etc).
-    
+
     <!-- populate the environment variables from the dependent repositories -->
     <action type="set_environment_for_install">
         <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
             <package name="graphicsmagick" version="1.3.18" />
         </repository>
     </action>
-    
+
     The third tag set enables discovery of the same required package dependency discussed above for correctly compiling the osra version 2.0.0 package, but
     in this case the package can be discovered at tool execution time.  Using the $ENV[] option as shown in this example, the value of the environment
     variable named GRAPHICSMAGICK_ROOT_DIR (which was set in the environment using the second tag set described above) will be used to automatically alter
     the env.sh file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we discussed the env.sh file
-    for version 1.3.18 of the graphicsmagick package above. 
+    for version 1.3.18 of the graphicsmagick package above.
 
     <action type="set_environment">
         <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
@@ -112,7 +111,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
 
     The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy that looks something like this.  Notice
     that the path to the gmagick binary is included here since it expands the defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
-    
+
     ----
     LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
     export LD_LIBRARY_PATH
@@ -155,12 +154,10 @@ def install_virtualenv( app, venv_dir ):
     if not os.path.exists( venv_dir ):
         with make_tmp_dir() as work_dir:
             downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
-            downloaded_file_path = td_common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
-            if td_common_util.istar( downloaded_file_path ):
-                td_common_util.extract_tar( downloaded_file_path, work_dir )
-                dir = td_common_util.tar_extraction_directory( work_dir, downloaded_filename )
-            else:
-                log.error( "Failed to download virtualenv: Downloaded file '%s' is not a tar file", downloaded_filename )
+            try:
+                dir = td_common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
+            except:
+                log.error( "Failed to download virtualenv: td_common_util.url_download( '%s', '%s', '%s' ) threw an exception", work_dir, downloaded_filename, VIRTUALENV_URL )
                 return False
             full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
             shutil.move( full_path_to_dir, venv_dir )
@@ -217,13 +214,25 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
+                    is_binary = action_dict.get( 'is_binary', False )
+                    log.debug( 'Attempting to download via url: %s', url )
                     if 'target_filename' in action_dict:
-                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # Sometimes compressed archives extract their content to a folder other than the default defined file name.  Using this
                         # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
                     dir = td_common_util.url_download( work_dir, downloaded_filename, url, extract=True )
+                    if is_binary:
+                        log_file = os.path.join( install_dir, INSTALLATION_LOG )
+                        log.debug( 'log_file: %s' % log_file )
+                        if os.path.exists( log_file ):
+                            logfile = open( log_file, 'ab' )
+                        else:
+                            logfile = open( log_file, 'wb' )
+                        logfile.write( 'Successfully downloaded from url: %s\n' % action_dict[ 'url' ] )
+                        logfile.close()
+                    log.debug( 'Successfully downloaded from url: %s' % action_dict[ 'url' ] )
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
@@ -263,17 +272,20 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
                         if action_type == 'make_directory':
-                            td_common_util.make_directory( full_path=action_dict[ 'full_path' ] )
+                            if os.path.isabs( action_dict[ 'full_path' ] ):
+                                full_path = action_dict[ 'full_path' ]
+                            else:
+                                full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+                            td_common_util.make_directory( full_path=full_path )
                         elif action_type == 'move_directory_files':
                             td_common_util.move_directory_files( current_dir=current_dir,
                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),
                                                                  destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
                         elif action_type == 'move_file':
-                            # TODO: Remove this hack that resets current_dir so that the pre-compiled bwa binary can be found.
-                            # current_dir = '/Users/gvk/workspaces_2008/bwa/bwa-0.5.9'
                             td_common_util.move_file( current_dir=current_dir,
                                                       source=os.path.join( action_dict[ 'source' ] ),
-                                                      destination_dir=os.path.join( action_dict[ 'destination' ] ) )
+                                                      destination=os.path.join( action_dict[ 'destination' ] ),
+                                                      rename_to=action_dict[ 'rename_to' ] )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
                             # Build a command line from the prior_installation_required, in case an environment variable is referenced

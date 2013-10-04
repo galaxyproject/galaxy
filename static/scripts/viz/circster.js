@@ -3,7 +3,6 @@ define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visu
 /**
  * Utility class for working with SVG.
  */
-// TODO: make into a mixin.
 var SVGUtils = Backbone.Model.extend({
 
     /**
@@ -993,7 +992,7 @@ var Circster = Backbone.View.extend(
             icon_class: 'disk--arrow', title: 'Save', on_click: function()
             {
                 // show saving dialog box
-                show_modal("Saving...", "progress");
+                Galaxy.modal.show({title: "Saving...", body: "progress" });
      
                 // link configuration
                 var view = galaxy_config.app.viz_config;
@@ -1011,15 +1010,19 @@ var Circster = Backbone.View.extend(
                         'vis_json'  : JSON.stringify(view)
                     }
                 }).success(function(vis_info) {
-                    hide_modal();
+                    Galaxy.modal.hide();
                     view.vis_id = vis_info.vis_id;
                     view.has_changes = false;
             
                     // needed to set URL when first saving a visualization
                     window.history.pushState({}, "", vis_info.url + window.location.hash);
-                })
-                .error(function() {
-                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", { "Close" : hide_modal } );
+                }).error(function() {
+                    // show dialog
+                    Galaxy.modal.show({
+                        title   : "Could Not Save",
+                        body    : "Could not save visualization. Please try again later.",
+                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
+                    });
                 });
             }
         },{

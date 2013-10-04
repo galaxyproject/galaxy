@@ -14,7 +14,7 @@ from galaxy import util
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
 from galaxy.objectstore import ObjectStore, convert_bytes
-from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.exceptions import ObjectNotFound
 
 import multiprocessing
 from galaxy.objectstore.s3_multipart_upload import multipart_upload
@@ -33,7 +33,7 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
-    def __init__(self, config):
+    def __init__(self, config, config_xml=None):
         super(S3ObjectStore, self).__init__()
         self.config = config
         self.staging_path = self.config.file_path

@@ -1,4 +1,5 @@
 import logging
+import os
 import galaxy.tools
 import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
@@ -47,9 +48,9 @@ class RepoInputDataModule( InputDataModule ):
 
 
 class RepoToolModule( ToolModule ):
-    
+
     type = "tool"
-    
+
     def __init__( self, trans, repository_id, changeset_revision, tools_metadata, tool_id ):
         self.trans = trans
         self.tools_metadata = tools_metadata
@@ -151,7 +152,7 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
     def new( self, trans, type, tools_metadata=None, tool_id=None ):
         """Return module for type and (optional) tool_id initialized with new / default state."""
         assert type in self.module_types
-        return self.module_types[type].new( trans, tool_id )
+        return self.module_types[ type ].new( trans, tool_id )
 
     def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
         """Return module initialized from the data in dictionary `step_dict`."""
@@ -219,13 +220,11 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         tool_errors = module.type == 'tool' and not module.tool
         module_data_inputs = get_workflow_data_inputs( step, module )
         module_data_outputs = get_workflow_data_outputs( step, module, workflow.steps )
-        step_dict = {
-            'id' : step.order_index,
-            'data_inputs' : module_data_inputs,
-            'data_outputs' : module_data_outputs,
-            'position' : step.position,
-            'tool_errors' : tool_errors
-        }
+        step_dict = { 'id' : step.order_index,
+                      'data_inputs' : module_data_inputs,
+                      'data_outputs' : module_data_outputs,
+                      'position' : step.position,
+                      'tool_errors' : tool_errors }
         input_conn_dict = {}
         for conn in step.input_connections:
             input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.order_index, output_name=conn.output_name )
@@ -267,7 +266,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         if trans.webapp.name == 'tool_shed' and tool_unavailable:
             fill = "#EBBCB2"
         else:
-            fill = "#EBD9B2"    
+            fill = "#EBD9B2"
         boxes.append( svgfig.Rect( x - margin, y, x + width - margin, y + 30, fill=fill ).SVG() )
         box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * line_px + margin
         # Draw separator line.
@@ -351,7 +350,7 @@ def get_workflow_data_outputs( step, module, steps ):
             if not found:
                 # We're at the last step of the workflow.
                 data_outputs_dict[ 'name' ] = 'output'
-            data_outputs.append( data_outputs_dict )       
+            data_outputs.append( data_outputs_dict )
             return data_outputs
     return module.get_data_outputs()
 
@@ -390,19 +389,21 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
             workflow.has_errors = True
         # Stick this in the step temporarily.
         step.temp_input_connections = step_dict[ 'input_connections' ]
-        annotation = step_dict.get( 'annotation', '')
-        if annotation:
-            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-            new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
-            new_step_annotation.annotation = annotation
-            new_step_annotation.user = trans.user
-            step.annotations.append(new_step_annotation)
+        if trans.webapp.name == 'galaxy':
+            annotation = step_dict.get( 'annotation', '')
+            if annotation:
+                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+                new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
+                new_step_annotation.annotation = annotation
+                new_step_annotation.user = trans.user
+                step.annotations.append( new_step_annotation )
         # Unpack and add post-job actions.
         post_job_actions = step_dict.get( 'post_job_actions', {} )
         for name, pja_dict in post_job_actions.items():
             trans.model.PostJobAction( pja_dict[ 'action_type' ],
-                                 step, pja_dict[ 'output_name' ],
-                                 pja_dict[ 'action_arguments' ] )
+                                       step,
+                                       pja_dict[ 'output_name' ],
+                                       pja_dict[ 'action_arguments' ] )
         steps.append( step )
         steps_by_external_id[ step_dict[ 'id' ] ] = step
     # Second pass to deal with connections between steps.
@@ -432,6 +433,64 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 module_name = '%s' % missing_tool_name
                 break
     return module_name
+
+def import_workflow( trans, repository, workflow_name ):
+    """Import a workflow contained in an installed tool shed repository into Galaxy (this method is called only from Galaxy)."""
+    status = 'done'
+    message = ''
+    changeset_revision = repository.changeset_revision
+    metadata = repository.metadata
+    workflows = metadata.get( 'workflows', [] )
+    tools_metadata = metadata.get( 'tools', [] )
+    workflow_dict = None
+    for workflow_data_tuple in workflows:
+        # The value of workflow_data_tuple is ( relative_path_to_workflow_file, exported_workflow_dict ).
+        relative_path_to_workflow_file, exported_workflow_dict = workflow_data_tuple
+        if exported_workflow_dict[ 'name' ] == workflow_name:
+            # If the exported workflow is available on disk, import it.
+            if os.path.exists( relative_path_to_workflow_file ):
+                workflow_file = open( relative_path_to_workflow_file, 'rb' )
+                workflow_data = workflow_file.read()
+                workflow_file.close()
+                workflow_dict = json.from_json_string( workflow_data )
+            else:
+                # Use the current exported_workflow_dict.
+                workflow_dict = exported_workflow_dict
+            break
+    if workflow_dict:
+        # Create workflow if possible.
+        workflow, missing_tool_tups = get_workflow_from_dict( trans=trans,
+                                                              workflow_dict=workflow_dict,
+                                                              tools_metadata=tools_metadata,
+                                                              repository_id=repository.id,
+                                                              changeset_revision=changeset_revision )
+        # Save the workflow in the Galaxy database.  Pass workflow_dict along to create annotation at this point.
+        stored_workflow = save_workflow( trans, workflow, workflow_dict )
+        # Use the latest version of the saved workflow.
+        workflow = stored_workflow.latest_workflow
+        if workflow_name:
+            workflow.name = workflow_name
+        # Provide user feedback and show workflow list.
+        if workflow.has_errors:
+            message += "Imported, but some steps in this workflow have validation errors. "
+            status = "error"
+        if workflow.has_cycles:
+            message += "Imported, but this workflow contains cycles.  "
+            status = "error"
+        else:
+            message += "Workflow <b>%s</b> imported successfully.  " % workflow.name
+        if missing_tool_tups:
+            name_and_id_str = ''
+            for missing_tool_tup in missing_tool_tups:
+                tool_id, tool_name, other = missing_tool_tup
+                name_and_id_str += 'name: %s, id: %s' % ( str( tool_id ), str( tool_name ) )
+            message += "The following tools required by this workflow are missing from this Galaxy instance: %s.  " % name_and_id_str
+    else:
+        workflow = None
+        message += 'The workflow named %s is not included in the metadata for revision %s of repository %s' % \
+            ( str( workflow_name ), str( changeset_revision ), str( repository.name ) )
+        status = 'error'
+    return workflow, status, message
 
 def save_workflow( trans, workflow, workflow_dict = None):
     """Use the received in-memory Workflow object for saving to the Galaxy database."""

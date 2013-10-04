@@ -1,24 +1,23 @@
 import logging
-import mimetypes
 import os
 import string
-import sys
 import tempfile
 import urllib
 import zipfile
 
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy import util, datatypes, web, model
-from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy import datatypes, eggs, model, util, web
+from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector
-from galaxy.model.item_attrs import *
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.web.framework.helpers import to_unicode
 
-import pkg_resources;
-pkg_resources.require( "Paste" )
+eggs.require( "Paste" )
 import paste.httpexceptions
+
+log = logging.getLogger( __name__ )
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
@@ -40,7 +39,6 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-log = logging.getLogger( __name__ )
 
 error_report_template = """
 GALAXY TOOL ERROR REPORT
@@ -157,13 +155,13 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
-    
+
     def _can_access_dataset( self, trans, dataset_association, allow_admin=True, additional_roles=None ):
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
         return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( roles, dataset_association.dataset )
-    
+
     @web.expose
     def errors( self, trans, id ):
         try:
@@ -185,7 +183,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stdout = job.stdout
         except:
             stdout = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stdout 
+        return stdout
 
     @web.expose
     # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
@@ -197,18 +195,18 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stderr = job.stderr
         except:
             stderr = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stderr 
+        return stderr
 
     @web.expose
     def exit_code( self, trans, dataset_id=None, **kwargs ):
         trans.response.set_content_type( 'text/plain' )
         exit_code = ""
         try:
-            job = _get_job_for_dataset( dataset_id )
+            job = self._get_job_for_dataset( dataset_id )
             exit_code = job.exit_code
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
-        return exit_code 
+        return exit_code
     @web.expose
     def report_error( self, trans, id, email='', message="", **kwd ):
         smtp_server = trans.app.config.smtp_server
@@ -549,7 +547,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     #
 
                     target_histories = [ trans.get_history() ]
-                    
+
                     # Reverse HDAs so that they appear in the history in the order they are provided.
                     hda_ids.reverse()
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
@@ -563,19 +561,15 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def imp( self, trans, dataset_id=None, **kwd ):
         """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
-        msg = ""
-
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-
         # Error checking.
         if not dataset_id:
             return trans.show_error_message( "You must specify a dataset to import. You can %s." % referer_message, use_panels=True )
-
         # Do import.
         cur_history = trans.get_history( create=True )
         status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ], imported=True )
@@ -615,7 +609,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             return trans.show_error_message( "The specified dataset does not exist." )
 
         # Rate dataset.
-        dataset_rating = self.rate_item( rate_item, trans.get_user(), dataset, rating )
+        self.rate_item( trans.sa_session, trans.get_user(), dataset, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, dataset )
 
@@ -652,8 +646,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, dataset )
 
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, 
-                                                 truncated=truncated, user_item_rating = user_item_rating, 
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data,
+                                                 truncated=truncated, user_item_rating = user_item_rating,
                                                  ave_item_rating=ave_item_rating, num_ratings=num_ratings,
                                                  first_chunk=first_chunk )
         else:
@@ -705,10 +699,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
         try:
-              redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
+            redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
         except:
-              redirect_url = kwd['redirect_url'] # not all will need custom text
-        current_user_roles = trans.get_current_user_roles()
+            redirect_url = kwd['redirect_url'] # not all will need custom text
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
         if self._can_access_dataset( trans, data ):
@@ -809,7 +802,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         id = None
         try:
             id = trans.app.security.decode_id( dataset_id )
-            history = trans.get_history()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda, 'Invalid HDA: %s' % id
             # Walk up parent datasets to find the containing history
@@ -856,7 +848,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             hda.mark_undeleted()
             trans.sa_session.flush()
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
-        except Exception, e:
+        except Exception:
             msg = 'HDA undeletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
             log.exception( msg )
             trans.log_event( msg )
@@ -927,7 +919,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                 except:
                     log.exception( 'Unable to purge dataset (%s) on purge of HDA (%s):' % ( hda.dataset.id, hda.id ) )
             trans.sa_session.flush()
-        except Exception, e:
+        except Exception:
             msg = 'HDA purge failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
             log.exception( msg )
             trans.log_event( msg )
@@ -1038,7 +1030,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
-        params = util.Params( kwd )
         user = trans.get_user()
         if source_history is not None:
             history = self.get_history(trans, source_history)

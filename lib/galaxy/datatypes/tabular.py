@@ -621,7 +621,7 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-            
+
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )

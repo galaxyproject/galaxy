@@ -24,7 +24,7 @@ function InferTreeTopology(verbFlag)
     MESSAGE_LOGGING              = 0;
     ExecuteAFile (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def");
     InitializeDistances (0);
-        
+
     for (i = 0; i<ds.species; i=i+1)
     {
         for (j = i+1; j<ds.species; j = j+1)
@@ -35,7 +35,7 @@ function InferTreeTopology(verbFlag)
 
     MESSAGE_LOGGING              = 1;
     cladesMade                     = 1;
-    
+
 
     if (ds.species == 2)
     {
@@ -43,7 +43,7 @@ function InferTreeTopology(verbFlag)
         treeNodes = {{0,1,d1__},
                      {1,1,d1__},
                      {2,0,0}};
-                     
+
         cladesInfo = {{2,0}};
     }
     else
@@ -51,25 +51,25 @@ function InferTreeTopology(verbFlag)
         if (ds.species == 3)
         {
             /* generate least squares estimates here */
-            
+
             d1 = (distanceMatrix[0][1]+distanceMatrix[0][2]-distanceMatrix[1][2])/2;
             d2 = (distanceMatrix[0][1]-distanceMatrix[0][2]+distanceMatrix[1][2])/2;
             d3 = (distanceMatrix[1][2]+distanceMatrix[0][2]-distanceMatrix[0][1])/2;
-            
+
             treeNodes = {{0,1,d1__},
                          {1,1,d2__},
                          {2,1,d3__}
                          {3,0,0}};
-                         
-            cladesInfo = {{3,0}};        
+
+            cladesInfo = {{3,0}};
         }
         else
-        {    
+        {
             njm = (distanceMatrix > methodIndex)>=ds.species;
-                
+
             treeNodes         = {2*(ds.species+1),3};
             cladesInfo        = {ds.species-1,2};
-            
+
             for (i=Rows(treeNodes)-1; i>=0; i=i-1)
             {
                 treeNodes[i][0] = njm[i][0];
@@ -82,7 +82,7 @@ function InferTreeTopology(verbFlag)
                 cladesInfo[i][0] = njm[i][3];
                 cladesInfo[i][1] = njm[i][4];
             }
-            
+
             njm = 0;
         }
     }
@@ -101,7 +101,7 @@ function TreeMatrix2TreeString (doLengths)
     treeString*(Rows(treeNodes)*25);
 
     while (m)
-    {    
+    {
         if (m>p)
         {
             if (p)
@@ -121,21 +121,21 @@ function TreeMatrix2TreeString (doLengths)
                 {
                     treeString*")";
                 }
-            }    
+            }
             else
             {
                 treeString*",";
-            }    
+            }
         }
         if (n<ds.species)
         {
             GetString (nodeName, ds, n);
             if (doLengths != 1)
             {
-                treeString*nodeName;            
+                treeString*nodeName;
             }
             else
-            {    
+            {
                 treeString*taxonNameMap[nodeName];
             }
         }
@@ -154,7 +154,7 @@ function TreeMatrix2TreeString (doLengths)
     {
         treeString*")";
     }
-    
+
     treeString*0;
     return treeString;
 }
@@ -209,7 +209,7 @@ if (Abs(ps_file))
         }
     }
     baseWidth = 40*baseWidth;
-    
+
     fprintf (ps_file,  CLEAR_FILE, drawLetter, PSTreeString (givenTree, "STRING_SUPPLIED_LENGTHS",{{baseWidth,baseHeight}}));
 }
 """ % (filename)
@@ -226,7 +226,7 @@ isomorphicTreesBySequenceCount  = {};
 
 /*---------------------------------------------------------*/
 
-_currentGene   = 1; 
+_currentGene   = 1;
 _currentState = 0;
 geneSeqs      = "";
 geneSeqs      * 128;
@@ -288,9 +288,9 @@ function _processAGene (_geneID, nwk_file, ps_file)
     {
         fprintf                    (nwk_file, _geneID-1, "\\tNone \\tNone\\n");
         return 0;
-        
+
     }
-    
+
     DataSetFilter             filteredData = CreateFilter (ds,1);
 
     /* do sequence to branch map */
@@ -311,11 +311,11 @@ function _processAGene (_geneID, nwk_file, ps_file)
     InferTreeTopology         (0);
     baseTree                = TreeMatrix2TreeString (0);
     UseModel                 (USE_NO_MODEL);
-    
+
     Tree             baseTop    = baseTree;
-    
+
     /* standardize this top */
-    
+
     for (k=0; k<Abs(isomorphicTreesBySequenceCount[filteredData.species]); k=k+1)
     {
         testString      = (isomorphicTreesBySequenceCount[filteredData.species])[k];
@@ -334,7 +334,7 @@ function _processAGene (_geneID, nwk_file, ps_file)
         }
         (isomorphicTreesBySequenceCount[filteredData.species])[k] = baseTree;
     }
-    
+
     fprintf                    (nwk_file, _geneID-1, "\\t", baseTree, "\\t", TreeMatrix2TreeString (1), "\\n");
     if (Abs(ps_file))
     {
@@ -358,7 +358,7 @@ function _processAGene (_geneID, nwk_file, ps_file)
             }
         }
         baseWidth = 40*baseWidth;
-        
+
         fprintf (stdout, _geneID, ":", givenTree,"\\n");
         fprintf (ps_file, PSTreeString (givenTree, "STRING_SUPPLIED_LENGTHS",{{baseWidth,baseHeight}}));
     }
@@ -381,7 +381,7 @@ _linesIn = Columns (inLines);
 
 
 
-_currentGene   = 1; 
+_currentGene   = 1;
 
 _currentState = 0;
 
@@ -479,7 +479,7 @@ function _processAGene (_geneID)
 
         SelectTemplateModel        (filteredData);
 
-        
+
 
         SetDialogPrompt           ("Tree file");
 
@@ -487,17 +487,17 @@ function _processAGene (_geneID)
 
         fscanf                    (stdin, "String", resultFile);
 
-        
+
 
         /* do sequence to branch map */
 
-        
+
 
         validNames = {};
 
         taxonNameMap = {};
 
-        
+
 
         for (k=0; k<TipCount(givenTree); k=k+1)
 
@@ -507,7 +507,7 @@ function _processAGene (_geneID)
 
         }
 
-        
+
 
         for (k=0; k<BranchCount(givenTree); k=k+1)
 
@@ -519,11 +519,11 @@ function _processAGene (_geneID)
 
         }
 
-        
+
 
         storeValidNames = validNames;
 
-        fprintf         (resultFile,CLEAR_FILE,KEEP_OPEN,"Block\\tBranch\\tLength\\tLowerBound\\tUpperBound\\n"); 
+        fprintf         (resultFile,CLEAR_FILE,KEEP_OPEN,"Block\\tBranch\\tLength\\tLowerBound\\tUpperBound\\n");
 
     }
 
@@ -537,7 +537,7 @@ function _processAGene (_geneID)
 
     }
 
-    
+
 
     for (k=0; k<ds.species; k=k+1)
 
@@ -563,7 +563,7 @@ function _processAGene (_geneID)
 
         {
 
-            fprintf         (resultFile,"ERROR:", thisName, " could not be matched to any of the leaves in tree ", givenTree,"\\n"); 
+            fprintf         (resultFile,"ERROR:", thisName, " could not be matched to any of the leaves in tree ", givenTree,"\\n");
 
             return 0;
 
@@ -571,29 +571,29 @@ function _processAGene (_geneID)
 
     }
 
-    
+
 
     /* */
 
-    
+
 
     LikelihoodFunction lf = (filteredData,givenTree);
 
     Optimize                 (res,lf);
 
-    
+
 
     timer = Time(0)-timer;
 
-    
+
 
     branchNames   = BranchName   (givenTree,-1);
 
     branchLengths = BranchLength (givenTree,-1);
 
-    
 
-    
+
+
 
     for (k=0; k<Columns(branchNames)-1; k=k+1)
 
@@ -623,7 +623,7 @@ function _processAGene (_geneID)
 
     }
 
-    
+
 
     ttl = (branchLengths*(Transpose(branchLengths["1"])))[0];
 
@@ -684,7 +684,7 @@ for (k=0; k<ds.species; k=k+1)
     }
     else
     {
-        fprintf         (resultFile,CLEAR_FILE,"ERROR:", thisName, " could not be matched to any of the leaves in tree ", givenTree); 
+        fprintf         (resultFile,CLEAR_FILE,"ERROR:", thisName, " could not be matched to any of the leaves in tree ", givenTree);
         return 0;
     }
 }
@@ -700,7 +700,7 @@ timer = Time(0)-timer;
 branchNames   = BranchName   (givenTree,-1);
 branchLengths = BranchLength (givenTree,-1);
 
-fprintf         (resultFile,CLEAR_FILE,KEEP_OPEN,"Branch\\tLength\\tLowerBound\\tUpperBound\\n"); 
+fprintf         (resultFile,CLEAR_FILE,KEEP_OPEN,"Branch\\tLength\\tLowerBound\\tUpperBound\\n");
 
 for (k=0; k<Columns(branchNames)-1; k=k+1)
 {
@@ -753,7 +753,7 @@ function returnResultHeaders (dummy)
     for (_biterator = 0; _biterator < treeBranchCount; _biterator = _biterator + 1)
     {
         branchName = treeBranchNames[_biterator];
-        
+
         _analysisHeaders [Abs(_analysisHeaders)] = "length("+branchName+")";
         _analysisHeaders [Abs(_analysisHeaders)] = "dS("+branchName+")";
         _analysisHeaders [Abs(_analysisHeaders)] = "dN("+branchName+")";
@@ -777,7 +777,7 @@ function runAGeneFit (myID)
 
         ExecuteAFile             (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"MG94custom.mdl",
                                  _MG94stdinOverload);
-        
+
         Tree    codonTree           = treeString;
     }
     else
@@ -818,11 +818,11 @@ function runAGeneFit (myID)
         _returnMe ["length("+branchName+")"]         = (_cL["Total"])[_biterator];
         _returnMe ["dS("+branchName+")"]                 = (_cL["Syn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["S_sites"]);
         _returnMe ["dN("+branchName+")"]                 = (_cL["NonSyn"])[_biterator]*(_returnMe ["BP"]/_returnMe ["NS_sites"]);
-        
+
         ExecuteCommands ("_lom = _standardizeRatio(codonTree."+treeBranchNames[_biterator]+".nonSynRate,codonTree."+treeBranchNames[_biterator]+".synRate);");
         _returnMe ["omega("+branchName+")"]                 = _lom;
     }
-    
+
     return _returnMe;
 }
 
@@ -861,7 +861,7 @@ function runAGeneFit (myID)
 {
     fprintf (stdout, "[SimpleGlobalFitter.bf on GENE ", myID, "]\\n");
     taxonNameMap = {};
-    
+
     for (k=0; k<ds.species; k=k+1)
     {
         GetString         (thisName, ds,k);
@@ -872,7 +872,7 @@ function runAGeneFit (myID)
 
     DataSetFilter filteredData = CreateFilter (ds,1);
     _nucSites                    = filteredData.sites;
-    
+
     if (Abs(treeString))
     {
         givenTreeString = treeString;
@@ -897,7 +897,7 @@ function runAGeneFit (myID)
 
         ExecuteAFile             (HYPHY_BASE_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"MG94custom.mdl",
                                  _MG94stdinOverload);
-        
+
         Tree    codonTree           = givenTreeString;
     }
     else
@@ -962,14 +962,14 @@ SetDialogPrompt ("Multiple gene FASTA file");
 fscanf          (PROMPT_FOR_FILE, "Lines", inLines);
 fscanf            (stdin, "String",  modelSpecString);
 fscanf            (stdin, "String", _outPath);
- 
+
 ExecuteAFile    (_outputDriver);
 ExecuteAFile    (_coreAnalysis);
- 
+
 /*---------------------------------------------------------*/
 
 _linesIn     = Columns (inLines);
-_currentGene   = 1; 
+_currentGene   = 1;
  _currentState = 0;
 /* 0 - waiting for a non-empty line */
 /* 1 - reading files */
@@ -1018,9 +1018,9 @@ TabWriter = """
 function _prepareFileOutput (_outPath)
 {
     _outputFilePath = _outPath;
-    
+
     _returnHeaders     = returnResultHeaders(0);
-    
+
     fprintf (_outputFilePath, CLEAR_FILE, KEEP_OPEN, _returnHeaders[0]);
     for (_biterator = 1; _biterator < Abs(_returnHeaders); _biterator = _biterator + 1)
     {
@@ -1028,7 +1028,7 @@ function _prepareFileOutput (_outPath)
     }
 
 
-    
+
     fprintf (_outputFilePath,"\\n");
     return 0;
 }
@@ -1050,7 +1050,7 @@ function _processAGene (valid, _geneID)
     /*
     else
     {
-        fprintf (_outputFilePath, 
+        fprintf (_outputFilePath,
                 _geneID, ", Incorrect number of sequences\\n");
     }
     */
@@ -1069,95 +1069,95 @@ def get_dnds_config_filename(Fitter_filename, TabWriter_filename, genetic_code, 
     contents = """
 _genomeScreenOptions = {};
 
-/* all paths are either absolute or relative 
+/* all paths are either absolute or relative
 to the DATA READER */
 
-_genomeScreenOptions ["0"] = "%s"; 
-    /* which analysis to run on each gene; */    
-_genomeScreenOptions ["1"] = "%s"; 
-    /* what output to produce; */    
-_genomeScreenOptions ["2"] = "%s"; 
-    /* genetic code */    
-_genomeScreenOptions ["3"] = "%s"; 
+_genomeScreenOptions ["0"] = "%s";
+    /* which analysis to run on each gene; */
+_genomeScreenOptions ["1"] = "%s";
+    /* what output to produce; */
+_genomeScreenOptions ["2"] = "%s";
+    /* genetic code */
+_genomeScreenOptions ["3"] = "%s";
     /* tree file */
-_genomeScreenOptions ["4"] = "%s"; 
+_genomeScreenOptions ["4"] = "%s";
     /* alignment file */
-_genomeScreenOptions ["5"] = "%s"; 
+_genomeScreenOptions ["5"] = "%s";
     /* nucleotide bias string; can define any of the 203 models */
-_genomeScreenOptions ["6"] = "%s"; 
+_genomeScreenOptions ["6"] = "%s";
     /* output csv file */
-    
-ExecuteAFile ("%s", _genomeScreenOptions);    
+
+ExecuteAFile ("%s", _genomeScreenOptions);
 """ % (Fitter_filename, TabWriter_filename, genetic_code, tree_filename, input_filename, nuc_model, output_filename, FastaReader_filename )
     return get_filled_temp_filename(contents)
-    
-    
+
+
 def get_branch_lengths_config_filename(input_filename, nuc_model, model_options, base_freq, tree_filename, output_filename, BranchLengths_filename):
     contents = """
 _genomeScreenOptions = {};
 
-/* all paths are either absolute or relative 
+/* all paths are either absolute or relative
 to the NucDataBranchLengths.bf */
 
-_genomeScreenOptions ["0"] = "%s"; 
-    /* the file to analyze; */    
-_genomeScreenOptions ["1"] = "CUSTOM"; 
-    /* use an arbitrary nucleotide model */    
+_genomeScreenOptions ["0"] = "%s";
+    /* the file to analyze; */
+_genomeScreenOptions ["1"] = "CUSTOM";
+    /* use an arbitrary nucleotide model */
 _genomeScreenOptions ["2"] = "%s";
-    /* which model to use */ 
-_genomeScreenOptions ["3"] = "%s"; 
+    /* which model to use */
+_genomeScreenOptions ["3"] = "%s";
     /* model options */
-_genomeScreenOptions ["4"] = "Estimated"; 
+_genomeScreenOptions ["4"] = "Estimated";
     /* rate parameters */
-_genomeScreenOptions ["5"] = "%s"; 
+_genomeScreenOptions ["5"] = "%s";
     /* base frequencies */
-_genomeScreenOptions ["6"] = "%s"; 
-    /* the tree to use; */    
-_genomeScreenOptions ["7"] = "%s"; 
-    /* write .csv output to; */    
-    
-ExecuteAFile ("%s", _genomeScreenOptions);    
+_genomeScreenOptions ["6"] = "%s";
+    /* the tree to use; */
+_genomeScreenOptions ["7"] = "%s";
+    /* write .csv output to; */
+
+ExecuteAFile ("%s", _genomeScreenOptions);
 """ % (input_filename, nuc_model, model_options, base_freq, tree_filename, output_filename, BranchLengths_filename)
     return get_filled_temp_filename(contents)
-    
-    
+
+
 def get_nj_tree_config_filename(input_filename, distance_metric, output_filename1, output_filename2, NJ_tree_filename):
     contents = """
 _genomeScreenOptions = {};
 
-/* all paths are either absolute or relative 
+/* all paths are either absolute or relative
 to the BuildNJTree.bf */
 
-_genomeScreenOptions ["0"] = "%s"; 
-    /* the file to analyze; */    
-_genomeScreenOptions ["1"] = "%s"; 
-    /* pick which distance metric to use; TN93 is a good default */    
-_genomeScreenOptions ["2"] = "%s"; 
-    /* write Newick tree output to; */    
-_genomeScreenOptions ["3"] = "%s"; 
-    /* write a postscript tree file to this file; leave blank to not write a tree */    
-    
-ExecuteAFile ("%s", _genomeScreenOptions);    
+_genomeScreenOptions ["0"] = "%s";
+    /* the file to analyze; */
+_genomeScreenOptions ["1"] = "%s";
+    /* pick which distance metric to use; TN93 is a good default */
+_genomeScreenOptions ["2"] = "%s";
+    /* write Newick tree output to; */
+_genomeScreenOptions ["3"] = "%s";
+    /* write a postscript tree file to this file; leave blank to not write a tree */
+
+ExecuteAFile ("%s", _genomeScreenOptions);
 """ % (input_filename, distance_metric, output_filename1, output_filename2, NJ_tree_filename)
     return get_filled_temp_filename(contents)
-    
-    
+
+
 def get_nj_treeMF_config_filename(input_filename, output_filename1, output_filename2, distance_metric, NJ_tree_filename):
     contents = """
 _genomeScreenOptions = {};
 
-/* all paths are either absolute or relative 
+/* all paths are either absolute or relative
 to the BuildNJTreeMF.bf */
 
-_genomeScreenOptions ["0"] = "%s"; 
-    /* the multiple alignment file to analyze; */    
-_genomeScreenOptions ["1"] = "%s"; 
-    /* write Newick tree output to; */    
-_genomeScreenOptions ["2"] = "%s"; 
-    /* write a postscript tree file to this file; leave blank to not write a tree */    
-_genomeScreenOptions ["3"] = "%s"; 
-    /* pick which distance metric to use; TN93 is a good default */    
-    
-ExecuteAFile ("%s", _genomeScreenOptions);        
+_genomeScreenOptions ["0"] = "%s";
+    /* the multiple alignment file to analyze; */
+_genomeScreenOptions ["1"] = "%s";
+    /* write Newick tree output to; */
+_genomeScreenOptions ["2"] = "%s";
+    /* write a postscript tree file to this file; leave blank to not write a tree */
+_genomeScreenOptions ["3"] = "%s";
+    /* pick which distance metric to use; TN93 is a good default */
+
+ExecuteAFile ("%s", _genomeScreenOptions);
 """ % (input_filename, output_filename1, output_filename2, distance_metric, NJ_tree_filename)
     return get_filled_temp_filename(contents)

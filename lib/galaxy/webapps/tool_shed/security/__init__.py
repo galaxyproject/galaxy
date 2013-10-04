@@ -112,7 +112,7 @@ class CommunityRBACAgent( RBACAgent ):
         return [ permission for permission in item.actions if permission.action == action.action ]
     def get_private_user_role( self, user, auto_create=False ):
         role = self.sa_session.query( self.model.Role ) \
-                              .filter( and_( self.model.Role.table.c.name == user.email, 
+                              .filter( and_( self.model.Role.table.c.name == user.email,
                                              self.model.Role.table.c.type == self.model.Role.types.PRIVATE ) ) \
                               .first()
         if not role:
@@ -123,7 +123,7 @@ class CommunityRBACAgent( RBACAgent ):
         return role
     def get_repository_reviewer_role( self ):
         return self.sa_session.query( self.model.Role ) \
-                              .filter( and_( self.model.Role.table.c.name == 'Repository Reviewer', 
+                              .filter( and_( self.model.Role.table.c.name == 'Repository Reviewer',
                                              self.model.Role.table.c.type == self.model.Role.types.SYSTEM ) ) \
                               .first()
     def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
