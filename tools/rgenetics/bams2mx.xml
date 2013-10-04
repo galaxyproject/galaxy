@@ -27,7 +27,7 @@
       truevalue="true" falsevalue="false" checked="no" help="Controls counting of optical/pcr duplicates if flagged by upstream processing - leave alone unless you know what you are doing" />
     <param name="firstbamf" type="data" label="BAM file from your history to count reads overlapping BED regions" format="bam" />
     <repeat name="bamfiles" title="Additional BAM files from your history to count reads overlapping BED regions" min="10">
-        <param name="bamf" type="data" label="Additional BAM file from your history" format="bam" size="100"/>
+        <param name="bamf" type="data" label="Additional BAM file from your history" format="bam" size="100" optional="true"/>
     </repeat>
   </inputs>
   <outputs>

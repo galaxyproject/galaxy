@@ -682,11 +682,12 @@ edgeIt = function (Count_Matrix=c(),group=c(),out_edgeR=F,out_VOOM=F,out_DESeq2=
     # DESeq2
     require('DESeq2')
     library('RColorBrewer')
-    pdata = data.frame(Name=colnames(workCM),Rx=group,subjects=subjects,row.names=colnames(workCM))
     if (length(subjects) == 0)
         {
+        pdata = data.frame(Name=colnames(workCM),Rx=group,row.names=colnames(workCM))
         deSEQds = DESeqDataSetFromMatrix(countData = workCM,  colData = pdata, design = formula(~ Rx))
         } else {
+        pdata = data.frame(Name=colnames(workCM),Rx=group,subjects=subjects,row.names=colnames(workCM))
         deSEQds = DESeqDataSetFromMatrix(countData = workCM,  colData = pdata, design = formula(~ subjects + Rx))
         }
     #DESeq2 = DESeq(deSEQds,fitType='local',pAdjustMethod=fdrtype)

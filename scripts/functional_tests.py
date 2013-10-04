@@ -454,4 +454,5 @@ def main():
         return 1
 
 if __name__ == "__main__":
+    print '\n\n\n\n#### SGE_ROOT=', os.environ.get('SGE_ROOT','##### no SGE_ROOT!'),'\n\n\n'
     sys.exit( main() )

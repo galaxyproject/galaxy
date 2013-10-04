@@ -200,7 +200,7 @@ class DefaultToolAction( object ):
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
             data_name_sane = re.sub('[^a-zA-Z0-9_]+', '', data.name)
-            if trans.app.config.use_data_id_on_string:
+            if not trans.app.config.use_data_id_on_string:
                 # we want names in our on_strings not numbers
                 input_names.append(data_name_sane)
             else:

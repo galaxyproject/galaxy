@@ -296,6 +296,8 @@ if __name__ == "__main__":
     bcolname = [x.split(',')[2].replace("'",'').replace('"','') for x in bamdat]
     assert len(bamf) == len(baif) == len(bcolname), '##ERROR bams2mx: Count of bam/bai/cname not consistent - %d/%d/%d' % (len(bamf),len(baif),len(bcolname))
     for i,b in enumerate(bamf):
+        if b.lower() == "none":
+           continue
         assert os.path.isfile(b),'## Supplied input bam file "%s" not found' % b
         bn = os.path.basename(b)
         tf,tbam = tempfile.mkstemp(suffix='%s.bam' % bn,dir=opts.tmpdir)
