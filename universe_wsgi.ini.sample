@@ -275,6 +275,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Activation email is used as a sender ('from' field) for the account activation mail.
 #activation_email = None
 
+# URL of the terms and conditions of the service. Used in activation emails.
+#terms_url = https://main.g2.bx.psu.edu/static/terms.html
+
+# URL of the support resource for the galaxy instance. Used in activation emails.
+#instance_resource_url = http://wiki.galaxyproject.org/
+
 # E-mail domains blacklist is used for filtering out users that are using disposable email address
 # during the registration. If their address domain matches any domain in the BL they are refused the registration.
 #blacklist_file = config/disposable_email_blacklist.conf

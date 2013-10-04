@@ -752,12 +752,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         body =  ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
                 "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (https://main.g2.bx.psu.edu/static/terms.html). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: galaxy-bugs@bx.psu.edu\n"
-                "More about Galaxy can be found on our wiki: galaxyproject.org\n\n"
-                "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link ))
+                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
+                "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
         to = email
-        frm = trans.app.config.admin_email
+        frm = "Galaxy Project <" + str (trans.app.config.activation_email) + ">"
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
