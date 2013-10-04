@@ -95,15 +95,15 @@
         #end if
         
         ## view/sort and output file
-        | samtools view -Su - | samtools sort -o - - > $output;
+        | samtools view -Su - | samtools sort -o - - > $output
         
         ## rename unaligned sequence files
         #if $library.type == "paired" and $output_unaligned_reads_l and $output_unaligned_reads_r:
             #set left  = str($output_unaligned_reads_l).replace( '.dat', '.1.dat' )
             #set right = str($output_unaligned_reads_l).replace( '.dat', '.2.dat' )
         
-            mv $left $output_unaligned_reads_l;
-            mv $right $output_unaligned_reads_r;
+            ; mv $left $output_unaligned_reads_l;
+            mv $right $output_unaligned_reads_r
         #end if
     </command>
     
