@@ -98,22 +98,6 @@ class ToolRunner( BaseUIController ):
                                     **vars )
 
     @web.expose
-    def display_tool_help_image_in_repository( self, trans, **kwd ):
-        repository_id = kwd.get( 'repository_id', None )
-        image_file = kwd.get( 'image_file', None )
-        if repository_id and image_file:
-            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_files_directory( trans.app ) )
-            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
-            if os.path.exists( default_path ):
-                return open( default_path, 'r' )
-            else:
-                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
-                if os.path.exists( path_to_file ):
-                    return open( path_to_file, 'r' )
-        return None
-
-    @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):
         """
         Given a HistoryDatasetAssociation id, find the job and that created

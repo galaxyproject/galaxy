@@ -182,7 +182,6 @@
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
             %endif
-            
             ## left panel
             %if self.galaxy_config['left_panel']:
                 <div id="left">

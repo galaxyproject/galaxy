@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import string
 import tempfile
@@ -1503,6 +1504,30 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+
+def set_image_paths( app, encoded_repository_id, text ):
+    """
+    Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy as well as image
+    display in repository README files.  This method will determine the location of the image file and return the path to it that will enable
+    the caller to open the file.
+    """
+    if text:
+        if app.name == 'galaxy':
+            route_to_images = '/admin_toolshed/static/images/%s' % encoded_repository_id
+        else:
+            # We're in the tool shed.
+            route_to_images = '/repository/static/images/%s' % encoded_repository_id
+        # We used to require $PATH_TO_IMAGES, but we now eliminate it if it's used.
+        text = text.replace( '$PATH_TO_IMAGES', '' )
+        # Eliminate the invalid setting of ./static/images since the routes will properly display images contained in that directory.
+        text = text.replace( './static/images', '' )
+        # Eliminate the default setting of /static/images since the routes will properly display images contained in that directory.
+        text = text.replace( '/static/images', '' )
+        # Use regex to instantiate routes into the defined image paths.
+        for match in re.findall( '.. image:: (?!http)/?(.+)', text ):
+            text = text.replace( match, match.replace( '/', '%2F' ) )
+        text = re.sub( '.. image:: (?!http)/?(.+)', '.. image:: %s/\\1' % route_to_images, text )
+    return text
 
 def set_only_if_compiling_contained_td( repository, required_repository ):
     """Return True if the received required_repository is only needed to compile a tool dependency defined for the received repository."""

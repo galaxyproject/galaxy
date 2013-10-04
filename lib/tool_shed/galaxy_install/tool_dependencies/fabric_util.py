@@ -284,7 +284,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         elif action_type == 'move_file':
                             td_common_util.move_file( current_dir=current_dir,
                                                       source=os.path.join( action_dict[ 'source' ] ),
-                                                      destination_dir=os.path.join( action_dict[ 'destination' ] ) )
+                                                      destination=os.path.join( action_dict[ 'destination' ] ),
+                                                      rename_to=action_dict[ 'rename_to' ] )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
                             # Build a command line from the prior_installation_required, in case an environment variable is referenced

@@ -245,9 +245,13 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         if (this.$el.children().length === 0) {
             this.render();
         }
-        show_modal("Configure", drawable.config.build_form(), {
-            "Cancel": cancel_fn,
-            "OK": ok_fn
+        Galaxy.modal.show({
+            title: "Configure",
+            body: drawable.config.build_form(),
+            buttons: {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            }
         });
     },
 

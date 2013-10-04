@@ -132,8 +132,8 @@ class Configuration( object ):
         self.admin_users = kwargs.get( "admin_users", "" )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
-        self.admin_email = kwargs.get( 'admin_email', None )
-        self.user_activation_on = kwargs.get( 'user_activation_on', None )
+        self.activation_email = kwargs.get( 'activation_email', None )
+        self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
@@ -143,10 +143,10 @@ class Configuration( object ):
         if self.blacklist_location is not None:
             self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
             try:
-               with open(self.blacklist_file) as blacklist:
-                   self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
+                with open( self.blacklist_file ) as blacklist:
+                    self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
             except IOError:
-                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )                 
+                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )

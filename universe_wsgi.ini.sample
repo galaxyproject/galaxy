@@ -269,11 +269,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Datasets in an error state include a link to report the error.  Those reports
 # will be sent to this address.  Error reports are disabled if no address is set.
+# Also this email is shown as a contact to user in case of Galaxy misconfiguration and other events user may encounter.
 #error_email_to = None
 
-# Administrator's email is shown to user in case of Galaxy misconfiguration or a generic error. 
-# It is also used as a sender for the account activation mail.
-#admin_email = None
+# Activation email is used as a sender ('from' field) for the account activation mail.
+#activation_email = None
 
 # E-mail domains blacklist is used for filtering out users that are using disposable email address
 # during the registration. If their address domain matches any domain in the BL they are refused the registration.
@@ -299,7 +299,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
-#inactivity_box_content = Your account has not been activated yet. Please activate your account by verifying your email address. For now you can access everything at Galaxy but your jobs won't run.
+#inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
 
 # -- Display sites

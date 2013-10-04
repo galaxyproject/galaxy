@@ -63,7 +63,7 @@ ${parent.late_javascripts()}
 
     <ul class="nav navbar-nav" border="0" cellspacing="0">
     
-    <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
+    <%def name="tab( id, display, href, onclick=False, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
         ## that are options in the menu.
     
@@ -100,7 +100,11 @@ ${parent.late_javascripts()}
                                 ${menu_item[0]}
                             %elif len ( menu_item ) == 2:
                                 <% name, link = menu_item %>
-                                <a href="${link}">${name}</a>
+                                %if onclick:
+                                    <a href="${link}" onclick="Galaxy.frame_manager.frame_new({title: '${name}', type: 'url', content: '${link}'}); return false;">${name}</a>
+                                %else:
+                                    <a href="${link}">${name}</a>
+                                %endif
                             %else:
                                 <% name, link, target = menu_item %>
                                 <a target="${target}" href="${link}">${name}</a>
@@ -117,7 +121,7 @@ ${parent.late_javascripts()}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), "javascript:Galaxy.frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
 
     ## 'Shared Items' or Libraries tab.
     <%
@@ -147,10 +151,10 @@ ${parent.late_javascripts()}
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
-                         [_('Saved Visualizations'), "javascript:Galaxy.frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
+                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' )],
+                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' )]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list' ), menu_options=menu_options, onclick=True )
     %>
 
     ## Cloud menu.

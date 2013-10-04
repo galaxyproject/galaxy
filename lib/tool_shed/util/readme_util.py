@@ -1,7 +1,11 @@
 import logging
 import os
+import threading
+from mako.template import Template
 from galaxy import eggs
+from galaxy import web
 from galaxy.util import json
+from galaxy.util import rst_to_html
 from galaxy.util import unicodify
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
@@ -34,13 +38,39 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
                         full_path_to_readme_file = os.path.abspath( os.path.join( tool_path, relative_path_to_readme_file ) )
                     else:
                         full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
+                    text = None
                     try:
                         f = open( full_path_to_readme_file, 'r' )
                         text = unicodify( f.read() )
                         f.close()
-                        readme_files_dict[ readme_file_name ] = suc.size_string( text )
                     except Exception, e:
                         log.exception( "Error reading README file '%s' from disk: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
+                        text = None
+                    if text:
+                        text_of_reasonable_length = suc.size_string( text )
+                        if text_of_reasonable_length.find( '.. image:: ' ) >= 0:
+                            # Handle image display for README files that are contained in repositories in the tool shed or installed into Galaxy.
+                            lock = threading.Lock()
+                            lock.acquire( True )
+                            try:
+                                text_of_reasonable_length = suc.set_image_paths( trans.app,
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 text_of_reasonable_length )
+                            except Exception, e:
+                                log.exception( "Exception in build_readme_files_dict, so images may not be properly displayed:\n%s" % str( e ) )
+                            finally:
+                                lock.release()
+                        if readme_file_name.endswith( '.rst' ):
+                            text_of_reasonable_length = Template( rst_to_html( text_of_reasonable_length ),
+                                                                  input_encoding='utf-8',
+                                                                  output_encoding='utf-8',
+                                                                  default_filters=[ 'decode.utf8' ],
+                                                                  encoding_errors='replace' )
+                            text_of_reasonable_length = text_of_reasonable_length.render( static_path=web.url_for( '/static' ),
+                                                                                          host_url=web.url_for( '/', qualified=True ) )
+                        else:
+                            text_of_reasonable_length = suc.to_html_string( text_of_reasonable_length )
+                        readme_files_dict[ readme_file_name ] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
                     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )

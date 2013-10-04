@@ -710,8 +710,16 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                         fp = open( relative_path, 'rb' )
                         workflow_text = fp.read()
                         fp.close()
-                        exported_workflow_dict = json.from_json_string( workflow_text )
-                        if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                        if workflow_text:
+                            valid_exported_galaxy_workflow = True
+                            try:
+                                exported_workflow_dict = json.from_json_string( workflow_text )
+                            except Exception, e:
+                                log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s" \
+                                               % str( relative_path ), str( e ) )
+                                valid_exported_galaxy_workflow = False
+                        if valid_exported_galaxy_workflow and \
+                            'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     # Handle any data manager entries
     metadata_dict = generate_data_manager_metadata( app,
@@ -1064,13 +1072,15 @@ def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 
-def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision ):
-    """Get a specified metadata record for a specified repository."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                           .first()
-
+def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
+    """Get a specified metadata record for a specified repository in the tool shed."""
+    if metadata_only:
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        if repository_metadata and repository_metadata.metadata:
+            return repository_metadata.metadata
+        return None
+    return suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []

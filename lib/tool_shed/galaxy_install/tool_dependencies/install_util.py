@@ -464,7 +464,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             is_binary_download = True
         else:
             is_binary_download = False
-    elif action_elem:
+    elif action_elem is not None:
         # We were provided with a single <action> element to perform certain actions after a platform-specific tarball was downloaded.
         elems = [ action_elem ]
     else:
@@ -550,11 +550,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'directory' ] = action_elem.text
             else:
                 continue
-        elif action_type in [ 'move_directory_files', 'move_file' ]:
-            # <action type="move_file">
-            #     <source>misc/some_file</source>
-            #     <destination>$INSTALL_DIR/bin</destination>
-            # </action>
+        elif action_type == 'move_directory_files':
             # <action type="move_directory_files">
             #     <source_directory>bin</source_directory>
             #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
@@ -563,6 +559,14 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 move_elem_text = evaluate_template( move_elem.text )
                 if move_elem_text:
                     action_dict[ move_elem.tag ] = move_elem_text
+        elif action_type == 'move_file':
+            # <action type="move_file" rename_to="new_file_name">
+            #     <source>misc/some_file</source>
+            #     <destination>$INSTALL_DIR/bin</destination>
+            # </action>
+            action_dict[ 'source' ] = evaluate_template( action_elem.find( 'source' ).text )
+            action_dict[ 'destination' ] = evaluate_template( action_elem.find( 'destination' ).text )
+            action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
         elif action_type == 'set_environment':
             # <action type="set_environment">
             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
