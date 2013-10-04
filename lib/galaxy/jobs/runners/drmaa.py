@@ -166,7 +166,17 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
-            external_job_id = self.ds.runJob(jt)
+            # TODO: create a queue for retrying submission indefinitely
+            # TODO: configurable max tries and sleep
+            trynum = 0
+            external_job_id = None
+            while external_job_id is None and trynum < 5:
+                try:
+                    external_job_id = self.ds.runJob(jt)
+                except drmaa.InternalException, e:
+                    trynum += 1
+                    log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
+                    time.sleep( 5 )
         else:
             job_wrapper.change_ownership_for_run()
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
@@ -202,16 +212,9 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.jobStatus( external_job_id )
-            # InternalException was reported to be necessary on some DRMs, but
-            # this could cause failures to be detected as completion!  Please
-            # report if you experience problems with this.
-            except ( drmaa.InvalidJobException, drmaa.InternalException ), e:
-                # we should only get here if an orphaned job was put into the queue at app startup
-                log.info( "(%s/%s) job left DRM queue with following message: %s" % ( galaxy_id_tag, external_job_id, e ) )
-                self.work_queue.put( ( self.finish_job, ajs ) )
-                continue
-            except drmaa.DrmCommunicationException, e:
-                log.warning( "(%s/%s) unable to communicate with DRM: %s" % ( galaxy_id_tag, external_job_id, e ))
+            # TODO: probably need to keep track of InvalidJobException count and remove after it exceeds some configurable
+            except ( drmaa.DrmCommunicationException, drmaa.InternalException, drmaa.InvalidJobException ), e:
+                log.warning( "(%s/%s) job check resulted in %s: %s", galaxy_id_tag, external_job_id, e.__class__.name, e )
                 new_watched.append( ajs )
                 continue
             except Exception, e:
