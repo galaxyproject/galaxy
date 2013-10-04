@@ -1523,10 +1523,11 @@ def set_image_paths( app, encoded_repository_id, text ):
         text = text.replace( './static/images', '' )
         # Eliminate the default setting of /static/images since the routes will properly display images contained in that directory.
         text = text.replace( '/static/images', '' )
-        # Use regex to instantiate routes into the defined image paths.
+        # Use regex to instantiate routes into the defined image paths, but replace paths that start with neither http:// nor https://,
+        # which will allow for settings like .. images:: http_files/images/help.png
         for match in re.findall( '.. image:: (?!http)/?(.+)', text ):
             text = text.replace( match, match.replace( '/', '%2F' ) )
-        text = re.sub( '.. image:: (?!http)/?(.+)', '.. image:: %s/\\1' % route_to_images, text )
+        text = re.sub( r'\.\. image:: (?!https?://)/?(.+)', r'.. image:: %s/\1' % route_to_images, text )
     return text
 
 def set_only_if_compiling_contained_td( repository, required_repository ):

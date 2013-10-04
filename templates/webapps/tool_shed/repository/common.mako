@@ -584,10 +584,7 @@
 </%def>
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
-    <%
-        encoded_id = trans.security.encode_id( readme.id )
-        from galaxy.util import unicodify
-    %>
+    <% encoded_id = trans.security.encode_id( readme.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}" 
@@ -595,15 +592,7 @@
         id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="readme_files">
-                <tr>
-                    <td>
-                        % if readme.name.endswith( '.rst' ):
-                            ${ unicodify( readme.text ) }
-                        %else:
-                            ${ readme.text }
-                        %endif
-                    </td>
-                </tr>
+                <tr><td>${ readme.text }</td></tr>
             </table>
         </td>
     </tr>
@@ -689,6 +678,8 @@
                            word-break:keep-all;
                            word-wrap:break-word;
                            line-break:strict; }
+        ul{ list-style-type: disc;
+            padding-left: 20px; }
     </style>
 </%def>
 
@@ -1163,10 +1154,6 @@
         </div>
     %endif
     %if tool_test_results_root_folder:
-        ##${render_table_wrap_style( "failed_test_table" )}
-        ##${render_table_wrap_style( "missing_table" )}
-        ##${render_table_wrap_style( "not_tested_table" )}
-        ##${render_table_wrap_style( "passed_tests_table" )}
         ${render_table_wrap_style( "test_environment" )}
         <p/>
         <div class="toolForm">

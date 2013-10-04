@@ -68,6 +68,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
                                                                   encoding_errors='replace' )
                             text_of_reasonable_length = text_of_reasonable_length.render( static_path=web.url_for( '/static' ),
                                                                                           host_url=web.url_for( '/', qualified=True ) )
+                            text_of_reasonable_length = unicodify( text_of_reasonable_length )
                         else:
                             text_of_reasonable_length = suc.to_html_string( text_of_reasonable_length )
                         readme_files_dict[ readme_file_name ] = text_of_reasonable_length
