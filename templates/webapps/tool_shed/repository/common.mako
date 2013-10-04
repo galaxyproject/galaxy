@@ -584,7 +584,10 @@
 </%def>
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
-    <% encoded_id = trans.security.encode_id( readme.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( readme.id )
+        from galaxy.util import unicodify
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}" 
@@ -592,7 +595,15 @@
         id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table id="readme_files">
-                <tr><td>${ readme.text }</td></tr>
+                <tr>
+                    <td>
+                        % if readme.name.endswith( '.rst' ):
+                            ${ unicodify( readme.text ) }
+                        %else:
+                            ${ readme.text }
+                        %endif
+                    </td>
+                </tr>
             </table>
         </td>
     </tr>
