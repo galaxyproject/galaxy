@@ -17,6 +17,8 @@ from galaxy.web.framework.helpers import to_unicode
 eggs.require( "Paste" )
 import paste.httpexceptions
 
+log = logging.getLogger( __name__ )
+
 tmpd = tempfile.mkdtemp()
 comptypes=[]
 ziptype = '32'
@@ -37,7 +39,6 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-log = logging.getLogger( __name__ )
 
 error_report_template = """
 GALAXY TOOL ERROR REPORT
