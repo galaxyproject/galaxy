@@ -20,7 +20,7 @@ class CompressedFile( object ):
             self.file_type = 'tar'
         elif iszip( file_path ) and not isjar( file_path ):
             self.file_type = 'zip'
-        self.file_name = os.path.splitext( file_path )[ 0 ]
+        self.file_name = os.path.splitext( os.path.basename( file_path ) )[ 0 ]
         if self.file_name.endswith( '.tar' ):
             self.file_name = os.path.splitext( self.file_name )[ 0 ]
         self.type = self.file_type
@@ -31,11 +31,6 @@ class CompressedFile( object ):
             raise NameError( 'File type %s specified, no open method found.' % self.file_type )
         
     def extract( self, path ):
-        full_path = self.extraction_path( path )
-        self.archive.extractall( full_path )
-        return full_path
-        
-    def extraction_path( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
         extraction_path = path
@@ -43,6 +38,9 @@ class CompressedFile( object ):
             # The archive contains a single file, return the extraction path.
             if self.isfile( contents[ 0 ] ):
                 extraction_path = os.path.join( path, self.file_name )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( extraction_path )
         else:
             # Sort filenames within the archive by length, because if the shortest path entry in the archive is a directory,
             # and the next entry has the directory prepended, then everything following that entry must be within that directory.
@@ -63,11 +61,17 @@ class CompressedFile( object ):
             parent = self.getmember( parent_name )
             first_child = filenames[ 1 ]
             if first_child.startswith( parent_name ) and parent is not None and self.isdir( parent ):
-                extraction_path = os.path.join( path, self.getname( parent ) )
+                if self.getname( parent ) == self.file_name:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.file_name )
+                else:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.getname( parent ) )
             else:
                 extraction_path = os.path.join( path, self.file_name )
-        if not os.path.exists( extraction_path ):
-            os.makedirs( extraction_path )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( os.path.join( extraction_path ) )
         return os.path.abspath( extraction_path )
     
     def getmembers_tar( self ):
