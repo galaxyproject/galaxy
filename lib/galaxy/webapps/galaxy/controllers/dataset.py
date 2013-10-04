@@ -1,23 +1,20 @@
 import logging
-import mimetypes
 import os
 import string
-import sys
 import tempfile
 import urllib
 import zipfile
 
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy import util, datatypes, web, model
-from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy import datatypes, eggs, model, util, web
+from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector
-from galaxy.model.item_attrs import *
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.web.framework.helpers import to_unicode
 
-import pkg_resources;
-pkg_resources.require( "Paste" )
+eggs.require( "Paste" )
 import paste.httpexceptions
 
 tmpd = tempfile.mkdtemp()
