@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd `dirname $0`
-
+export GALAXY_RUN_ALL=1
 python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
