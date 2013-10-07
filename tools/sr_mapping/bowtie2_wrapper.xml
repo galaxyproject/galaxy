@@ -87,23 +87,22 @@
         ## read group information
         #if str($read_group.selection) == "yes":
             #if $read_group.rgid and $read_group.rglb and $read_group.rgpl and $read_group.rgsm:
-                --rg-id $read_group.rgid
-                --rg LB:$read_group.rglb
-                --rg PL:$read_group.rgpl
-                --rg SM:$read_group.rgsm
+                --rg-id "$read_group.rgid"
+                --rg "LB:$read_group.rglb"
+                --rg "PL:$read_group.rgpl"
+                --rg "SM:$read_group.rgsm"
             #end if
         #end if
         
         ## view/sort and output file
-        | samtools view -Su - | samtools sort -o - - > $output;
+        | samtools view -Su - | samtools sort -o - - > $output
         
         ## rename unaligned sequence files
         #if $library.type == "paired" and $output_unaligned_reads_l and $output_unaligned_reads_r:
             #set left  = str($output_unaligned_reads_l).replace( '.dat', '.1.dat' )
             #set right = str($output_unaligned_reads_l).replace( '.dat', '.2.dat' )
-        
-            mv $left $output_unaligned_reads_l;
-            mv $right $output_unaligned_reads_r;
+            ;mv $left $output_unaligned_reads_l;
+            mv $right $output_unaligned_reads_r
         #end if
     </command>
     
@@ -218,7 +217,7 @@
 
     <!-- define outputs -->
     <outputs>
-        <data format="fastqsanger" name="output_unaligned_reads_l" label="${on_string}_{jobtitle}_unaligL.fastq" >
+        <data format="fastqsanger" name="output_unaligned_reads_l" label="${on_string}_${jobtitle}_unaligL.fastq" >
             <filter>unaligned_file is True</filter>
             <actions>
                 <action type="format">
@@ -226,7 +225,7 @@
                 </action>
             </actions>
         </data>
-        <data format="fastqsanger" name="output_unaligned_reads_r" label="${on_string}_{jobtitle}_unaligR.fastq)">
+        <data format="fastqsanger" name="output_unaligned_reads_r" label="${on_string}_${jobtitle}_unaligR.fastq)">
             <filter>library['type'] == "paired" and unaligned_file is True</filter>
             <actions>
                 <action type="format">
@@ -234,7 +233,7 @@
                 </action>
             </actions>
         </data>
-        <data format="bam" name="output" label="${tool.name} on ${on_string}_{jobtitle}_aligned.bam">
+        <data format="bam" name="output" label="${tool.name} on ${on_string}_${jobtitle}_aligned.bam">
           <actions>
             <conditional name="reference_genome.source">
               <when value="indexed">
@@ -256,6 +255,17 @@
     </outputs>
 
     <tests>
+        <test>
+            <!-- basic test on single paired default run -->
+            <param name="type" value="single"/>
+            <param name="selection" value="no"/>
+            <param name="full" value="no"/>
+            <param name="unaligned_file" value="false"/>
+            <param name="source" value="history" />
+            <param name="input_1" value="bowtie2/phix_reads.fastq" ftype="fastqsanger"/>
+            <param name="own_file" value="bowtie2/phix_genome.fasta" />
+            <output name="output" file="bowtie2/phix_mapped.bam" />
+        </test>
     </tests>
 
     <help>
