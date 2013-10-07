@@ -39,7 +39,8 @@ ${render_galaxy_repository_actions( repository )}
                                                        trans.model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
-                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_uninstall = True
                 %>
                 <tr>
@@ -67,7 +68,7 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'uninstalled_tool_dependency_ids', 'checkAllUninstalled' );"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllUninstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
@@ -88,7 +89,7 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'inst_td_ids', 'checkAllInstalled' );"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllInstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
