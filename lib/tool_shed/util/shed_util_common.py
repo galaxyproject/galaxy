@@ -148,7 +148,8 @@ def build_tool_dependencies_select_field( trans, tool_shed_repository, name, mul
     """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
     for tool_dependency in tool_shed_repository.tool_dependencies:
-        if uninstalled and tool_dependency.status != trans.model.ToolDependency.installation_status.UNINSTALLED:
+        if uninstalled and tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
             continue
         option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
         option_value = trans.security.encode_id( tool_dependency.id )
