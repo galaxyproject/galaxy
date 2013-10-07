@@ -108,7 +108,14 @@ var TracksterUI = base.Base.extend({
                         buttons : { "Cancel": function() { Galaxy.modal.hide() } }
                     });
                 });
-            } }
+            } },
+            {
+                icon_class: 'cross-circle',
+                title: 'Close',
+                on_click: function() {
+                    window.location = galaxy_config.root + 'visualization';
+                }
+            }
         ], 
         { 
             tooltip_config: { placement: 'bottom' }
