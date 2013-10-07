@@ -35,7 +35,8 @@ ${render_galaxy_repository_actions( repository )}
                     else:
                         error_message = ''
                     if not can_install:
-                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                       trans.model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
                         if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
