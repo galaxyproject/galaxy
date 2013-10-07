@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <toolbox>
   <section name="Get Data" id="getext">
-    <tool file="rlGAT/rlGAT.xml"/>
     <tool file="data_source/upload.xml"/>
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_test.xml" />
