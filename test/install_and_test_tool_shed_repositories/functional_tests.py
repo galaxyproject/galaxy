@@ -275,6 +275,7 @@ def execute_uninstall_method( app, deactivate_only=False ):
 
 def extract_log_data( test_result, from_tool_test=True ):
     '''Extract any useful data from the test_result.failures and test_result.errors attributes.'''
+    log_data = []
     for failure in test_result.failures + test_result.errors:
         # Record the twill test identifier and information about the tool, so the repository owner can discover which test is failing.
         test_id = str( failure[0] )
@@ -314,7 +315,8 @@ def extract_log_data( test_result, from_tool_test=True ):
         for output_type in [ 'stderr', 'traceback' ]:
             if output_type in tmp_output:
                 test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
-        return test_status
+        log_data.append( test_status )
+    return log_data
 
 def get_api_url( base, parts=[], params=None, key=None ):
     if 'api' in parts and parts.index( 'api' ) != 0:
