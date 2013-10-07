@@ -27,7 +27,6 @@ import tempfile
 from rgutils import getFileString
 import zipfile
 import gzip
-import bz2
 
 class FastQC():
     """wrapper
@@ -63,43 +62,27 @@ class FastQC():
         infname = self.opts.inputfilename
         linf = infname.lower()
         trimext = False
-        isgz = False
-        isbz2 = False
-        iszip = False
         # decompression at upload currently does NOT remove this now bogus ending - fastqc will barf
         # patched may 29 2013 until this is fixed properly
-        f = gzip.open(self.opts.input)
-        try:
+        if ( linf.endswith('.gz') or linf.endswith('.gzip') ): 
+            f = gzip.open(self.opts.input)
+            try:
                testrow = f.readline()
-               if not (linf.endswith('.gz') or linf.endswith('.gzip')):
-                   isgz = True
-        except:
-               if linf.endswith('.gz') or linf.endswith('.gzip'):
-                   trimext = True
-        f.close()
-        f = bz2.BZ2File(self.opts.input)
-        try:
-            x = read(f,2) # will work if a real bz2
-            if not linf.endswith('bz2'):
-                isbz2 = True
-        except:
-              if linf.endswith('bz2'):
-                  trimext = True
-        f.close()
-        if zipfile.is_zipfile(self.opts.input):
-            if not linf.endswith('.zip'):
-                iszip = True
-        else:
-            if linf.endswith('.zip'):
- 		trimext = True
+            except:
+               trimext = True
+            f.close()
+        elif linf.endswith('bz2'):
+           f = bz2.open(self.opts.input,'rb')
+           try:
+              f.readline()
+           except:
+              trimext = True
+           f.close()
+        elif linf.endswith('.zip'):
+           if not zipfile.is_zipfile(self.opts.input):
+              trimext = True
         if trimext:
            infname = os.path.splitext(infname)[0]
-        elif isgz:
-           infname = '%s.gz' % infname
-        elif isbz2:
-           infname = '%s.bzip2' % infname
-        elif iszip:
-           infname = '%s.zip' % infname
         fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(infname))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
