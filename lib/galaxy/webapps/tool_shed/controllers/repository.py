@@ -1037,6 +1037,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repo_files_dir = repository.repo_path( trans.app )
                 path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
                 if os.path.exists( path_to_file ):
+                    file_name = os.path.basename( relative_path_to_image_file )
+                    mimetype = trans.app.datatypes_registry.get_mimetype_by_extension( file_name, None )
+                    if mimetype:
+                        trans.response.set_content_type( mimetype )
                     return open( path_to_file, 'r' )
         return None
 
