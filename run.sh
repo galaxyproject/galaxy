@@ -1,6 +1,7 @@
 #!/bin/sh
 
 cd `dirname $0`
+
 python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
