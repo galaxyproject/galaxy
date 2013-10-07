@@ -114,7 +114,7 @@ class CompressedFile( object ):
         return False
     
     def open_tar( self, filepath, mode ):
-        return tarfile.open( filepath, mode )
+        return tarfile.open( filepath, mode, errorlevel=0 )
 
     def open_zip( self, filepath, mode ):
         return zipfile.ZipFile( filepath, mode )
