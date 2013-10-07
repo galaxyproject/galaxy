@@ -1495,6 +1495,12 @@ class JobWrapper( object ):
         just copy these files directly to the ulimate destination.
         """
         return output_path
+    
+    @property
+    def requires_setting_metadata( self ):
+        if self.tool:
+            return self.tool.requires_setting_metadata
+        return False
 
 
 class TaskWrapper(JobWrapper):

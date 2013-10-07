@@ -971,6 +971,7 @@ class Tool( object, Dictifiable ):
     """
 
     tool_type = 'default'
+    requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
 
@@ -3134,6 +3135,8 @@ class SetMetadataTool( Tool ):
     dataset.
     """
     tool_type = 'set_metadata'
+    requires_setting_metadata = False
+    
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
             external_metadata = JobExternalOutputMetadataWrapper( job )
