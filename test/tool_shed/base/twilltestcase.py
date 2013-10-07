@@ -1093,6 +1093,10 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def update_tool_shed_status( self ):
+        url = '/admin_toolshed/update_tool_shed_status_for_installed_repository?all_installed_repositories=True'
+        self.visit_galaxy_url( url )
+    
     def upload_file( self, 
                      repository, 
                      filename, 
