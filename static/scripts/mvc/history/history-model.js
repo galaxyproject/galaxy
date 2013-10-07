@@ -152,7 +152,8 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                 var timeout;
                 // set up to keep pulling if this history in run/queue state
                 if( ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
-                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
+                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) 
+                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.SETTING_METADATA )){
                 //||  ( history.hdas.running() ) ){
                     timeout = history.updateAfterDelay();
 
