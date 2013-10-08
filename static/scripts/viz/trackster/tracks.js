@@ -2128,9 +2128,9 @@ var Tile = function(track, region, w_scale, canvas, data) {
     this.low = region.get('start');
     this.high = region.get('end');
     this.w_scale = w_scale;
-    // Wrap element in div for background and explicitly set height. Use canvas
-    // height attribute because canvas may not have height if it is not in document yet.
-    this.html_elt = $("<div class='track-tile'/>").append(canvas).height( $(canvas).attr("height") );
+    this.canvas = canvas;
+    // Wrap element in div for background and to provide container for tile-specific elements.
+    this.html_elt = $("<div class='track-tile'/>").append(canvas);
     this.data = data;
     this.stale = false;
 };
@@ -3371,14 +3371,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         // -- Update track, tile heights based on new tile. --
         
-        // Clear any previous height settings for tile.
-        tile.html_elt.height('auto');
-
-        // Update max height based on current tile.
-        this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
+        // Update max height based on current tile's canvas.
+        this.max_height_px = Math.max(this.max_height_px, $(tile.canvas).height());
         
         // Update height for all tiles based on max height.
-        tile.html_elt.parent().children().css("height", this.max_height_px + "px");
+        tile_element.parent().children().css("height", this.max_height_px + "px");
         
         // Update track height based on max height and visible height.
         var track_height = this.max_height_px;
