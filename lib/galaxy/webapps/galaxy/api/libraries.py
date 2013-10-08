@@ -49,7 +49,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         rval = []
         for library in query:
-            item = library.to_dict()
+            item = library.to_dict( view='element' )
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
@@ -131,6 +131,9 @@ class LibrariesController( BaseAPIController ):
         rval['name'] = name
         rval['id'] = encoded_id
         return rval
+    
+    def edit( self, trans, payload, **kwd  ):
+        return "Not implemented yet"
 
     @web.expose_api
     def delete( self, trans, id, **kwd ):

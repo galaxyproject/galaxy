@@ -1,5 +1,5 @@
 """
-API operations on the contents of a library.
+API operations on the contents of a folder.
 """
 import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
@@ -11,12 +11,17 @@ from galaxy.model.orm import *
 log = logging.getLogger( __name__ )
 
 class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
+    """
+    Class controls retrieval, creation and updating of folder contents.
+    """
 
     @web.expose_api
     def index( self, trans, folder_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/contents
+        
         Displays a collection (list) of a folder's contents (files and folders).
+        
         The /api/library_contents/{encoded_library_id}/contents
         lists everything in a library recursively, which is not what
         we want here. We could add a parameter to use the recursive
@@ -25,7 +30,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         rval = []
         current_user_roles = trans.get_current_user_roles()
 
+
         def traverse( folder ):
+            """
+            Load contents of the folder (folders and datasets).
+            """
             admin = trans.user_is_admin()
             rval = []
             for subfolder in folder.active_folders:
@@ -50,6 +59,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
+#             log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX folder.parent_library" + str(folder.parent_library.id))
+#             log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX folder.parent_id" + str(folder.parent_id))
             parent_library = folder.parent_library
         except:
             folder = None
@@ -62,15 +73,43 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         if not folder or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
             trans.response.status = 400
             return "Invalid folder id ( %s ) specified." % str( folder_id )
+        # TODO MARTEN Can it be that predecessors of current folder have different access rights? aka user shouldn't see them?
+        
+        # Search the path upwards and load the whole route of names and ids for breadcrumb purposes.
+        path_to_library = []
+        
+        def build_path ( folder ):
+#             log.debug("XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id BEFORE   " + str(folder.parent_id))
+#             log.debug("XXXXXXXXXXXXXXXXXXXXXXX folder.parent_library.id BEFORE   " + str(folder.parent_library.id))
+            if ( folder.parent_id != folder.parent_library.id ) and ( folder.parent_id is not None ):
+                log.debug("XXXXXXXXXXXXXXXXXXXXXXX LOADING UPPER FOLDER WITH ID:  " + str(folder.parent_id))
+                upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
+                log.debug("XXXXXXXXXXXXXXXXXXXXXXX upper_folder.id   " + str(upper_folder.id))
+                log.debug("XXXXXXXXXXXXXXXXXXXXXXX upper_folder.name   " + str(upper_folder.name))
+                path_to_library.append( ( upper_folder.id, upper_folder.name ) )
+                path_to_library.extend( build_path( upper_folder ) )
+            else:
+                pass    
+            return path_to_library
+            
+        full_path = build_path( folder )
 
         for content in traverse( folder ):
+            return_item = {}
             encoded_id = trans.security.encode_id( content.id )
             if content.api_type == 'folder':
+                encoded_parent_library_id = trans.security.encode_id( content.parent_library.id )
                 encoded_id = 'F' + encoded_id
-            rval.append( dict( id = encoded_id,
+                if content.parent_id is not None: # For folder return its parent's id for browsing back.
+                    encoded_parent_id = 'F' + trans.security.encode_id( content.parent_id )
+                    return_item.update ( dict ( parent_id = encoded_parent_id ) )
+            return_item.update( dict( id = encoded_id,
                                type = content.api_type,
                                name = content.name,
+                               library_id = encoded_parent_library_id,
+                               full_path = full_path,
                                url = url_for( 'folder_contents', folder_id=encoded_id ) ) )
+            rval.append( return_item )
         return rval
 
     @web.expose_api

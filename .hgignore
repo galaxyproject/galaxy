@@ -115,3 +115,6 @@ doc/build
 *.rej
 *~
 
+
+syntax: regexp
+^static/AAA_scratch$
