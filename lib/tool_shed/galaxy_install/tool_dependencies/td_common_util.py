@@ -316,7 +316,8 @@ def move_directory_files( current_dir, source_dir, destination_dir ):
         shutil.move( source_file, destination_file )
 
 def move_file( current_dir, source, destination, rename_to=None ):
-    source_file = os.path.abspath( os.path.join( current_dir, source ) )
+    source_path = os.path.abspath( os.path.join( current_dir, source ) )
+    source_file = os.path.basename( source_path )
     if rename_to is not None:
         destination_file = rename_to
         destination_directory = os.path.join( destination )
@@ -326,7 +327,7 @@ def move_file( current_dir, source, destination, rename_to=None ):
         destination_path = os.path.join( destination_directory, source_file )
     if not os.path.exists( destination_directory ):
         os.makedirs( destination_directory )
-    shutil.move( source_file, destination_path )
+    shutil.move( source_path, destination_path )
 
 def parse_package_elem( package_elem, platform_info_dict=None, include_after_install_actions=True ):
     """
