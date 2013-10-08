@@ -19,11 +19,40 @@ from fabric.api import env
 from fabric.api import lcd
 from fabric.api import local
 from fabric.api import settings
+from fabric.api import hide
 
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
+
+def add_to_env_shell_file( text, env_shell_file ):
+    '''
+    Append a line to a file, if this line does not already exist in the file. Creates the file and sets the mode to
+    executable if the file does not exist. Equivalent to a local version of fabric.contrib.files.append.
+    '''
+    if not os.path.exists( env_shell_file ):
+        local( 'touch %s' % env_shell_file )
+    # Explicitly set env.sh executable.
+    with settings( hide( 'everything' ), warn_only=True ):
+        local( 'chmod +x %s' % env_shell_file )
+    return_code = 0
+    # Convert the contents to a list, in order to support adding one or more lines to env.sh.
+    if isinstance( text, basestring ):
+        text = [ text ]
+    for line in text:
+        # Build a regex to search for the relevant line in env.sh.
+        regex = td_common_util.egrep_escape( line )
+        # If the line exists, egrep will return a success.
+        with settings( hide( 'everything' ), warn_only=True ):
+            egrep_cmd = 'egrep "^%s$" %s' % ( regex, env_shell_file )
+            contains_line = local( egrep_cmd ).succeeded
+        if contains_line:
+            continue
+        # If not, then append the line, escaping any single quotes in the shell command.
+        line = line.replace( "'", r"'\\''" )
+        return_code = local( "echo '%s' >> %s" % ( line, env_shell_file ) ).return_code
+    return return_code
 
 def check_fabric_version():
     version = env.version
@@ -301,8 +330,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
                                 env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
-                                env_command = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = handle_command( app, tool_dependency, install_dir, env_command )
+                                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                                return_code = add_to_env_shell_file( env_entry, env_file )
                                 if return_code:
                                     return
                         elif action_type == 'set_environment_for_install':
@@ -344,13 +373,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
                                 return
                             modify_env_command_dict = dict( name="PYTHONPATH", action="prepend_to", value=output.stdout )
-                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                            return_code = add_to_env_shell_file( env_entry, env_file )
                             if return_code:
                                 return
                             modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
-                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = add_to_env_shell_file( env_entry, env_file )
                             if return_code:
                                 return
                         elif action_type == 'shell_command':

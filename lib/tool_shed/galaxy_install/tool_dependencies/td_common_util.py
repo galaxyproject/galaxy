@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import sys
 import tarfile
@@ -170,26 +171,9 @@ def create_or_update_env_shell_file( install_dir, env_var_dict ):
         changed_value = '%s' % env_var_value
     elif env_var_action == 'append_to':
         changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-    line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
-    return create_or_update_env_shell_file_with_command(install_dir, line)
-
-
-def create_or_update_env_shell_file_with_command( install_dir, command ):
-    """
-    Return a shell expression which when executed will create or update
-    a Galaxy env.sh dependency file in the specified install_dir containing
-    the supplied command.
-    """
-    env_shell_file_path = '%s/env.sh' % install_dir
-    if os.path.exists( env_shell_file_path ):
-        write_action = '>>'
-    else:
-        write_action = '>'
-    cmd = "echo %s %s %s;chmod +x %s" % ( __shellquote(command),
-                                          write_action,
-                                          __shellquote(env_shell_file_path),
-                                          __shellquote(env_shell_file_path))
-    return cmd
+    line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    env_shell_file_path = os.path.join( install_dir, 'env.sh' )
+    return line, env_shell_file_path
 
 def download_binary( url, work_dir ):
     '''
@@ -198,6 +182,17 @@ def download_binary( url, work_dir ):
     downloaded_filename = os.path.split( url )[ -1 ]
     dir = url_download( work_dir, downloaded_filename, url, extract=False )
     return downloaded_filename
+
+def egrep_escape( text ):
+    """Escape ``text`` to allow literal matching using egrep."""
+    regex = re.escape( text )
+    # Seems like double escaping is needed for \
+    regex = regex.replace( '\\\\', '\\\\\\' )
+    # Triple-escaping seems to be required for $ signs
+    regex = regex.replace( r'\$', r'\\\$' )
+    # Whereas single quotes should not be escaped
+    regex = regex.replace( r"\'", "'" )
+    return regex
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()

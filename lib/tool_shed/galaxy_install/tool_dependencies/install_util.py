@@ -820,10 +820,10 @@ def set_environment( app, elem, tool_shed_repository ):
                                                                                          type='set_environment',
                                                                                          status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                                          set_status=True )
-                cmd = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                 if env_var_version == '1.0':
                     # Handle setting environment variables using a fabric method.
-                    fabric_util.handle_command( app, tool_dependency, install_dir, cmd )
+                    fabric_util.add_to_env_shell_file( env_entry, env_file )
                     sa_session.refresh( tool_dependency )
                     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
                         tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
