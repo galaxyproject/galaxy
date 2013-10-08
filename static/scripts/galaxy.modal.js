@@ -12,9 +12,10 @@ var GalaxyModal = Backbone.View.extend(
     elMain: '#everything',
     
     // defaults inputs
-    optionsDefaults: {
-        title   : "galaxy-modal",
-        body    : "No content available."
+    optionsDefault: {
+        title       : "galaxy-modal",
+        body        : "",
+        backdrop    : true
     },
     
     // initialize
@@ -30,8 +31,16 @@ var GalaxyModal = Backbone.View.extend(
         this.initialize(options);
 
         // fix height
-        var body = (this.$el).find('.modal-body');
-        body.css('max-height', $(document).height() / 2);
+        this.$body.css('max-height', $(document).height() / 2);
+        
+        // set max-height so that modal does not exceed window size and is in middle of page.
+        /*/ TODO: this could perhaps be handled better using CSS.
+        this.$body.css( "max-height",
+                    $(window).height() -
+                    this.$footer.outerHeight() -
+                    this.$header.outerHeight() -
+                    parseInt( this.$dialog.css( "padding-top" ), 10 ) -
+                    parseInt( this.$dialog.css( "padding-bottom" ), 10 ));*/
         
         // show
         if (this.visible)
@@ -39,7 +48,7 @@ var GalaxyModal = Backbone.View.extend(
         else
             this.$el.fadeIn('fast');
         
-        // set visibility flag
+        // set flag
         this.visible = true;
     },
     
@@ -47,8 +56,8 @@ var GalaxyModal = Backbone.View.extend(
     hide: function(){
         // fade out
         this.$el.fadeOut('fast');
-
-        // set visibility flag
+        
+        // set flag
         this.visible = false;
     },
     
@@ -56,11 +65,11 @@ var GalaxyModal = Backbone.View.extend(
     create: function(options) {
         // configure options
         options = _.defaults(options, this.optionsDefault);
-
+        
         // check for progress bar request
         if (options.body == 'progress')
-            options.body = '<div class="progress progress-striped active"><div class="progress-bar progress-bar-info" style="width:100%"></div></div>';
-
+            options.body = $('<div class="progress progress-striped active"><div class="progress-bar progress-bar-info" style="width:100%"></div></div>');
+            
         // remove former element
         if (this.$el)
             this.$el.remove();
@@ -69,45 +78,54 @@ var GalaxyModal = Backbone.View.extend(
         this.setElement(this.template(options.title));
         
         // link elements
-        var body = (this.$el).find('.modal-body');
-        var footer  = (this.$el).find('.modal-footer');
-        var buttons = (this.$el).find('.buttons');
+        this.$body = (this.$el).find('.modal-body');
+        this.$footer  = (this.$el).find('.modal-footer');
+        this.$buttons = (this.$el).find('.buttons');
+        this.$backdrop = (this.$el).find('.modal-backdrop');
         
         // append body
-        body.append($(options.body));
-        
+        this.$body.html(options.body);
+
         // fix height if available
         if (options.height)
-            body.css('height', options.height);
+            this.$body.css('height', options.height);
         
+        // fix min-width so that modal cannot shrink considerably if new content is loaded.
+        this.$body.css('min-width', this.$body.width());
+
+        // configure background
+        if (!options.backdrop)
+            this.$backdrop.removeClass('in');
+                        
         // append buttons
         if (options.buttons) {
             // link functions
+            var self = this;
             $.each(options.buttons, function(name, value) {
-                 buttons.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
+                 self.$buttons.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
             });
         } else
             // hide footer
-            footer.hide();
+            this.$footer.hide();
         
         // append to main element
         $(this.elMain).append($(this.el));
     },
     
     // enable buttons
-    enable: function(name) {
-        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', false);
+    enableButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', false);
     },
 
     // disable buttons
-    disable: function(name) {
-        $(this.el).find('#' + String(name).toLowerCase()).prop('disabled', true);
+    disableButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', true);
     },
     
     // returns scroll top for body element
     scrollTop: function()
     {
-        return $(this.el).find('.modal-body').scrollTop();
+        return this.$body.scrollTop();
     },
         
     /*
@@ -116,12 +134,13 @@ var GalaxyModal = Backbone.View.extend(
     
     // fill regular modal template
     template: function(title) {
-        return  '<div class="modal in">' +
-                    '<div class="modal-backdrop in" style="z-index: -1;"></div>' +
+        return  '<div class="modal">' +
+                    '<div class="modal-backdrop fade in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
                         '<div class="modal-content">' +
                             '<div class="modal-header">' +
-                                '<span><h3 class="title">' + title + '</h3></span>' +
+                                '<button type="button" class="close" style="display: none;">&times;</button>' +
+                                '<h4 class="title">' + title + '</h4>' +
                             '</div>' +
                             '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +

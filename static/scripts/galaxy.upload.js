@@ -426,21 +426,21 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update reset button
         if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
-            this.modal.enable('Reset');
+            this.modal.enableButton('Reset');
         else
-            this.modal.disable('Reset');
+            this.modal.disableButton('Reset');
             
         // update upload button
         if (this.counter.running == 0 && this.counter.announce > 0)
-            this.modal.enable('Upload');
+            this.modal.enableButton('Upload');
         else
-            this.modal.disable('Upload');
+            this.modal.disableButton('Upload');
         
         // select upload button
         if (this.counter.running == 0)
-            this.modal.enable('Select');
+            this.modal.enableButton('Select');
         else
-            this.modal.disable('Select');
+            this.modal.disableButton('Select');
     },
 
     // load html template
