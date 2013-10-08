@@ -215,7 +215,7 @@ var Drawable = function(view, container, obj_dict) {
     this.name = obj_dict.name;
     this.view = view;
     this.container = container;
-    this.config = new DrawableConfig({
+    this.config = new Config({
         track: this,
         params: [ 
             { key: 'name', label: 'Name', type: 'text', default_value: this.name }
@@ -225,7 +225,7 @@ var Drawable = function(view, container, obj_dict) {
             this.track.set_name(this.track.config.values.name);
         }
     });
-    this.prefs = this.config.values;
+    this.prefs = this.config.get('values');
     this.drag_handle_class = obj_dict.drag_handle_class;
     this.is_overview = false;
     this.action_icons = {};
@@ -285,24 +285,10 @@ Drawable.prototype.action_icons_def = [
         title: "Edit settings",
         css_class: "settings-icon",
         on_click_fn: function(drawable) {
-            var cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
-                ok_fn = function() { 
-                    drawable.config.update_from_form( $(Galaxy.modal.el) );
-                    Galaxy.modal.hide();
-                    $(window).unbind("keypress.check_enter_esc");
-                },
-                check_enter_esc = function(e) {
-                    if ((e.keyCode || e.which) === 27) { // Escape key
-                        cancel_fn();
-                    } else if ((e.keyCode || e.which) === 13) { // Enter key
-                        ok_fn();
-                    }
-                };
-
-            $(window).bind("keypress.check_enter_esc", check_enter_esc);
-            
-            // show dialog
-            Galaxy.modal.show({title: "Configure", body: drawable.config.build_form(), buttons : {'Cancel' : cancel_fn, 'Ok' : ok_fn } });
+            var view = new ConfigView({
+                model: drawable.config
+            });
+            view.render();
         }
     },
     // Remove.
@@ -911,7 +897,7 @@ var TracksterView = Backbone.View.extend({
         this.reset();
 
         // Define track configuration
-        this.config = new DrawableConfig( {
+        this.config = new Config( {
             track: this,
             params: [
                 { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
@@ -1903,22 +1889,30 @@ FilterScaler.prototype.gen_val = function(feature_data) {
 };
 
 /**
- * Container for Drawable configuration data.
+ * Configuration object.
  */
-var DrawableConfig = function( options ) {
-    this.track = options.track;
-    this.params = options.params;
-    this.values = {};
-    this.restore_values( (options.saved_values ? options.saved_values : {}) );
-    this.onchange = options.onchange;
-};
+var Config = Backbone.Model.extend({
+    initialize: function(options) {
+        // values is a simple param_key -- value dictionary shared with drawables.
+        this.set('values', {});
 
-extend(DrawableConfig.prototype, {
+        // Restore saved values.
+        if (options.saved_values) {
+            this.restore_values(options.saved_values);
+        }
+        if (options.onchange) {
+            // HACK: to make onchange work as written, attach track at the 
+            // top level of model and call onchange on custom event.
+            this.track = options.track;
+            this.on('change:values', options.onchange, this);
+        }
+    },
+
     /**
      * Set default value for parameter.
      */
     set_param_default_value: function(key, default_value) {
-        var param = _.find(this.params, function(p) {
+        var param = _.find(this.get('params'), function(p) {
             return p.key === key;
         });
 
@@ -1932,7 +1926,7 @@ extend(DrawableConfig.prototype, {
      */
     set_param_value: function(key, value) {
         // Find param.
-        var param = _.find(this.params, function(p) {
+        var param = _.find(this.get('params'), function(p) {
             return p.key === key;
         });
 
@@ -1952,8 +1946,10 @@ extend(DrawableConfig.prototype, {
         }
 
         // Set value and return true if changed, false otherwise.
-        if (this.values[key] !== value) {
-            this.values[key] = value;
+        if (this.get('values')[key] !== value) {
+            this.get('values')[key] = value;
+            // HACK: custom event trigger needed to indicate that values were updated. 
+            this.trigger('change:values');
             return true;
         }
         else {
@@ -1965,21 +1961,25 @@ extend(DrawableConfig.prototype, {
      * Restore config values from a dictionary.
      */
     restore_values: function( values ) {
-        var track_config = this;
-        $.each( this.params, function( index, param ) {
-            if ( values[ param.key ] !== undefined ) {
-                track_config.values[ param.key ] = values[ param.key ];
-            } else {
-                track_config.values[ param.key ] = param.default_value;
-            }
+        var self = this;
+        _.each( this.get('params'), function(param) {
+            self.set_param_value(param.key, values[param.key] || param.default_value);
         }); 
     },
 
+});
+
+var ConfigView = Backbone.View.extend({
+
     /**
-     * Build form for modifying parameters.
+     * Build and show form for modifying configuration. Currently uses Galaxy modals.
      */
-    build_form: function() {
-        var track_config = this;
+    render: function() {
+        //
+        // Build config selection UI.
+        //
+
+        var track_config = this.model;
         var container = $("<div />");
         var param;
         // Function to process parameters recursively
@@ -1990,17 +1990,19 @@ extend(DrawableConfig.prototype, {
                 if ( param.hidden ) { continue; }
                 // Build row for param
                 var id = 'param_' + index;
-                var value = track_config.values[ param.key ];
+                var value = track_config.get('values')[ param.key ];
                 var row = $("<div class='form-row' />").appendTo( container );
                 row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
                 // Draw parameter as checkbox
                 if ( param.type === 'bool' ) {
                     row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
                 // Draw parameter as textbox
-                } else if ( param.type === 'text' ) {
+                } 
+                else if ( param.type === 'text' ) {
                     row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select(); }));
                 // Draw paramter as select area
-                } else if ( param.type === 'select' ) {
+                } 
+                else if ( param.type === 'select' ) {
                     var select = $('<select />').attr("id", id);
                     for ( var i = 0; i < param.options.length; i++ ) {
                         $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
@@ -2008,7 +2010,8 @@ extend(DrawableConfig.prototype, {
                     select.val( value );
                     row.append( select );
                 // Draw parameter as color picker
-                } else if ( param.type === 'color' ) {
+                } 
+                else if ( param.type === 'color' ) {
                     var 
                         container_div = $("<div/>").appendTo(row),
                         input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
@@ -2071,32 +2074,48 @@ extend(DrawableConfig.prototype, {
             }
         }
         // Handle top level parameters in order
-        handle_params( this.params, container );
-        // Return element containing constructed form
-        return container;
+        handle_params( track_config.get('params'), container );
+
+        //
+        // Use Galaxy modal to display config.
+        //
+
+        var self = this,
+            cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
+            ok_fn = function() { 
+                self.update_from_form( $(Galaxy.modal.el) );
+                Galaxy.modal.hide();
+                $(window).unbind("keypress.check_enter_esc");
+            },
+            check_enter_esc = function(e) {
+                if ((e.keyCode || e.which) === 27) { // Escape key
+                    cancel_fn();
+                } else if ((e.keyCode || e.which) === 13) { // Enter key
+                    ok_fn();
+                }
+            };
+
+        $(window).bind("keypress.check_enter_esc", check_enter_esc);
+        Galaxy.modal.show({title: "Configure", body: container, buttons : {'Cancel' : cancel_fn, 'Ok' : ok_fn } });
     },
 
     /**
      * Update configuration from form.
      */
     update_from_form: function( container ) {
-        var track_config = this;
+        var model = this.model;
         var changed = false;
-        $.each( this.params, function( index, param ) {
-            if ( ! param.hidden ) {
+        _.each(model.get('params'), function(param, index) {
+            if ( !param.hidden ) {
                 // Get value from form element.
                 var id = 'param_' + index;
                 var value = container.find( '#' + id ).val();
                 if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
                 }
-                changed = track_config.set_param_value(param.key, value) || changed;
+                changed = model.set_param_value(param.key, value) || changed;
             }
         });
-        if ( changed ) {
-            this.onchange();
-            this.track.changed();
-        }
     }
 });
 
@@ -3785,7 +3804,7 @@ var LineTrack = function (view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
        
     // Define track configuration
-    this.config = new DrawableConfig( {
+    this.config = new Config( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
@@ -3793,7 +3812,7 @@ var LineTrack = function (view, container, obj_dict) {
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'height', type: 'int', default_value: 32, hidden: true }
+            { key: 'height', type: 'int', default_value: 30, hidden: true }
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {
@@ -3802,8 +3821,8 @@ var LineTrack = function (view, container, obj_dict) {
         }
     });
 
-    this.prefs = this.config.values;
-    this.visible_height_px = this.config.values.height;
+    this.prefs = this.config.get('values');
+    this.visible_height_px = this.prefs.height;
 };
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     
@@ -3844,7 +3863,7 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
     TiledTrack.call(this, view, container, obj_dict);
        
     // Define track configuration
-    this.config = new DrawableConfig( {
+    this.config = new Config( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
@@ -3862,8 +3881,8 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
         }
     });
 
-    this.prefs = this.config.values;
-    this.visible_height_px = this.config.values.height;
+    this.prefs = this.config.get('values');
+    this.visible_height_px = this.prefs.height;
 };
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
@@ -3899,7 +3918,7 @@ var FeatureTrack = function(view, container, obj_dict) {
     var 
         block_color = util.get_random_color(),
         reverse_strand_color = util.get_random_color( [ block_color, "#FFFFFF" ] );
-    this.config = new DrawableConfig( {
+    this.config = new Config( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
@@ -3922,8 +3941,8 @@ var FeatureTrack = function(view, container, obj_dict) {
             track.request_draw({ clear_tile_cache: true });
         }
     });
-    this.prefs = this.config.values;
-    this.visible_height_px = this.config.values.height;
+    this.prefs = this.config.get('values');
+    this.visible_height_px = this.prefs.height;
         
     this.container_div.addClass( "feature-track" );
     this.show_labels_scale = 0.001;
@@ -4207,7 +4226,7 @@ var VariantTrack = function(view, container, obj_dict) {
     this.display_modes = ["Auto", "Coverage", "Dense", "Squish", "Pack"];
     TiledTrack.call(this, view, container, obj_dict);
     
-    this.config = new DrawableConfig( {
+    this.config = new Config( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
@@ -4223,7 +4242,7 @@ var VariantTrack = function(view, container, obj_dict) {
             this.track.request_draw({ clear_tile_cache: true });
         }
     });
-    this.prefs = this.config.values;
+    this.prefs = this.config.get('values');
     
     this.painter = painters.VariantPainter;
     this.summary_draw_height = 30;
@@ -4363,7 +4382,7 @@ var ReadTrack = function (view, container, obj_dict) {
     var 
         block_color = util.get_random_color(),
         reverse_strand_color = util.get_random_color( [ block_color, "#ffffff" ] );
-    this.config = new DrawableConfig( {
+    this.config = new Config( {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
@@ -4383,8 +4402,8 @@ var ReadTrack = function (view, container, obj_dict) {
             this.track.request_draw({ clear_tile_cache: true });
         }
     });
-    this.prefs = this.config.values;
-
+    this.prefs = this.config.get('values');
+    
     // Choose painter based on whether there is reference data.
     this.painter = (view.reference_track ? painters.RefBasedReadPainter : painters.ReadPainter);
 
