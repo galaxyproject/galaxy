@@ -222,7 +222,7 @@ var Drawable = function(view, container, obj_dict) {
         ],
         saved_values: obj_dict.prefs,
         onchange: function() {
-            this.track.set_name(this.track.config.values.name);
+            this.track.set_name(this.track.config.get('values').name);
         }
     });
     this.prefs = this.config.get('values');
@@ -1136,7 +1136,7 @@ var TracksterView = Backbone.View.extend({
     },
 
     get_base_color: function(base) {
-        return this.config.values[ base.toLowerCase() + '_color' ] || this.config.values[ 'n_color' ];
+        return this.config.get('values')[ base.toLowerCase() + '_color' ] || this.config.get('values')[ 'n_color' ];
     }
 
 });
@@ -1893,16 +1893,29 @@ FilterScaler.prototype.gen_val = function(feature_data) {
  */
 var Config = Backbone.Model.extend({
     initialize: function(options) {
-        // values is a simple param_key -- value dictionary shared with drawables.
-        this.set('values', {});
+        // values is a simple param_key-to-value dictionary used to store
+        // param values.
+        var values = {};
+
+        // Set default values.
+        _.each(options.params, function(p) {
+            values[p.key] = p.default_value;
+        });
 
         // Restore saved values.
         if (options.saved_values) {
-            this.restore_values(options.saved_values);
+            _.each( this.get('params'), function(p) {
+                if (p.key in options.saved_values) {
+                    values[p.key] = options.saved_values[p.key];
+                }
+            }); 
         }
+
+        this.set('values', values);
+
+        // HACK: to make onchange work as written, attach track at the 
+        // top level of model and call onchange on custom event.    
         if (options.onchange) {
-            // HACK: to make onchange work as written, attach track at the 
-            // top level of model and call onchange on custom event.
             this.track = options.track;
             this.on('change:values', options.onchange, this);
         }
@@ -1955,18 +1968,7 @@ var Config = Backbone.Model.extend({
         else {
             return false;
         }
-    },
-
-    /**
-     * Restore config values from a dictionary.
-     */
-    restore_values: function( values ) {
-        var self = this;
-        _.each( this.get('params'), function(param) {
-            self.set_param_value(param.key, values[param.key] || param.default_value);
-        }); 
-    },
-
+    }
 });
 
 var ConfigView = Backbone.View.extend({
@@ -2563,7 +2565,7 @@ extend(Track.prototype, Drawable.prototype, {
             track.tile_cache.clear();    
             in_drag = false;
             if (!in_handle) { drag_control.hide(); }
-            track.config.values.height = track.visible_height_px;
+            track.config.get('values').height = track.visible_height_px;
             track.changed();
         }).appendTo(track.container_div);
     },
@@ -2575,8 +2577,8 @@ extend(Track.prototype, Drawable.prototype, {
         // Set modes, init mode.
         this.display_modes = new_modes;
         this.mode = (init_mode ? init_mode : 
-                     (this.config && this.config.values['mode'] ? 
-                      this.config.values['mode'] : this.display_modes[0])
+                     (this.config && this.config.get('values')['mode'] ? 
+                      this.config.get('values')['mode'] : this.display_modes[0])
                     );
         
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + this.mode + ")");
@@ -2926,7 +2928,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var track = this;
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = new_mode;
-        track.config.values['mode'] = new_mode;
+        track.config.get('values')['mode'] = new_mode;
         // FIXME: find a better way to get Auto data w/o clearing cache; using mode in the
         // data manager would work if Auto data were checked for compatibility when a specific
         // mode is chosen.
@@ -3955,7 +3957,7 @@ var FeatureTrack = function(view, container, obj_dict) {
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
     set_painter_from_config: function() {
-        if ( this.config.values['connector_style'] === 'arcs' ) {
+        if ( this.config.get('values')['connector_style'] === 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
         } else {
             this.painter = painters.LinkedFeaturePainter;
