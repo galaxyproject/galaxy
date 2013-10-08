@@ -1238,21 +1238,27 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 log.debug( error_message )
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
-            # Find the specified changeset revision in the repository's changelog to see if it's valid.
-            found = False
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( app ) )
-            for changeset in repo.changelog:
-                changeset_hash = str( repo.changectx( changeset ) )
-                if changeset_hash == changeset_revision:
-                    found = True
-                    break
-            if not found:
-                error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
-                    ( toolshed, name, owner, changeset_revision )
-                error_message += "because the changeset revision is invalid.  "
-                log.debug( error_message )
-                is_valid = False
-                return repository_dependency_tup, is_valid, error_message
+            # The received changeset_revision may be None since defining it in the dependency definition is optional.  If this is the case,
+            # the default will be to set it's value to the repository dependency tip revision.
+            if changeset_revision is None:
+                changeset_revision = str( repo.changectx( repo.changelog.tip() ) )
+                repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required, str( only_if_compiling_contained_td ) ]
+            else:
+                # Find the specified changeset revision in the repository's changelog to see if it's valid.
+                found = False
+                for changeset in repo.changelog:
+                    changeset_hash = str( repo.changectx( changeset ) )
+                    if changeset_hash == changeset_revision:
+                        found = True
+                        break
+                if not found:
+                    error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                        ( toolshed, name, owner, changeset_revision )
+                    error_message += "because the changeset revision is invalid.  "
+                    log.debug( error_message )
+                    is_valid = False
+                    return repository_dependency_tup, is_valid, error_message
         else:
             # Repository dependencies are currently supported within a single tool shed.
             error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
