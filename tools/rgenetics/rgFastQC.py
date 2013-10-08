@@ -24,9 +24,28 @@ import subprocess
 import optparse
 import shutil
 import tempfile
-from rgutils import getFileString
 import zipfile
 import gzip
+
+
+def getFileString(fpath, outpath):
+    """
+    format a nice file size string
+    """
+    size = ''
+    fp = os.path.join(outpath, fpath)
+    s = '? ?'
+    if os.path.isfile(fp):
+        n = float(os.path.getsize(fp))
+        if n > 2**20:
+            size = ' (%1.1f MB)' % (n/2**20)
+        elif n > 2**10:
+            size = ' (%1.1f KB)' % (n/2**10)
+        elif n > 0:
+            size = ' (%d B)' % (int(n))
+        s = '%s %s' % (fpath, size) 
+    return s
+
 
 class FastQC():
     """wrapper
