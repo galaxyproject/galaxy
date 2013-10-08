@@ -48,7 +48,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
         /** HDACollection of the HDAs contained in this history. */
         this.hdas = new HDACollection();
-
+        /** the setTimeout id for any updater currently set */
         this.updateTimeoutId = null;
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
@@ -57,10 +57,14 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
             this.checkForUpdates();
             //TODO: don't call if force_history_refresh
             if( this.hdas.length > 0 ){
-                this.updateDisplayApplications();
+                this.fetchDisplayApplications();
             }
         }
+        this.setHdaEventHandlers();
+        this.setOwnEventHandlers();
+    },
 
+    setHdaEventHandlers : function(){
         // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
         //  then: refresh the panel
         this.hdas.bind( 'state:ready', function( hda, newState, oldState ){
@@ -68,7 +72,9 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                 this.updateAfterDelay();
             }
         }, this );
+    },
 
+    setOwnEventHandlers : function(){
         if( this.logger ){
             this.bind( 'all', function( event ){
                 this.log( this + '', arguments );
@@ -88,84 +94,86 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     updateAfterDelay : function(){
         var history = this;
         this.updateTimeoutId = setTimeout( function(){
+            history.updateTimeoutId = null;
             history.stateUpdater();
         }, History.UPDATE_DELAY );
         return this.updateTimeoutId;
     },
 
-    // get the history's state from it's cummulative ds states, delay + update if needed
-    // events: ready
+    isRunning : function(){
+        var historyState = this.get( 'state' );
+        // set up to keep pulling if this history in run/queue state
+        //note: the state strings btwn history & hda are shared on the server (or a subset of)
+        return ( ( historyState === HistoryDatasetAssociation.STATES.RUNNING )
+               ||( historyState === HistoryDatasetAssociation.STATES.QUEUED ) );
+    },
+
+    isReady : function(){
+        return !this.isRunning();
+    },
+
     checkForUpdates : function(){
-        // get overall History state from collection, run updater if History has running/queued hdas
-        // boiling it down on the client to running/not
-        if( this.hdas.running().length ){
+        // set up to keep pulling if this history in run/queue state
+        if( this.isRunning() ){
             this.updateAfterDelay();
 
+        // otherwise, we're now in a 'ready' state (no hdas running)
         } else {
             this.trigger( 'ready' );
         }
         return this;
     },
 
-    // update this history, find any hda's running/queued, update ONLY those that have changed states,
-    //  set up to run this again in some interval of time
+    findHdasToUpdate : function(){
+        var history = this,
+            state_ids = history.get( 'state_ids' ),
+            changedIds = [];
+
+        // get a list of hda ids for hdas we need to get more info on
+        _.each( state_ids, function( list, stateAccrdToHistory ){
+            _.each( list, function( id ){
+                var hda = history.hdas.get( id );
+                // if the id is not in the current hda list
+                //  or the state doesn't match the state rpt. by the history - save that id
+                if( !hda || hda.get( 'state' ) !== stateAccrdToHistory ){
+                    changedIds.push( id );
+                }
+            });
+        });
+        return changedIds;
+    },
+
+    // fetch new data for this history,
+    //  compare the state_ids from that with the current list and fetch updates for new or changed hdas
+    //  if the history still has non-ready hdas, set up to run this again in some interval of time
     // events: ready
     stateUpdater : function(){
         //TODO: we need to get states from one location: history_contents (right now it's both history and contents)
         var history = this,
             oldState = this.get( 'state' ),
-            // state ids is a map of every possible hda state, each containing a list of ids for hdas in that state
-            oldStateIds = this.get( 'state_ids' );
+            historyXhr = this.fetch();
 
         // pull from the history api
-        //TODO: fetch?
-        jQuery.ajax( 'api/histories/' + this.get( 'id' )
-
-        ).success( function( response ){
+        historyXhr.done( function( newHistoryModel ){
             //this.log( 'historyApiRequest, response:', response );
-            history.set( response );
-            history.log( 'current history state:', history.get( 'state' ),
-                '(was)', oldState,
+            history.set( newHistoryModel );
+            history.log( 'current history state:', history.get( 'state' ), '(was)', oldState,
                 'new size:', history.get( 'nice_size' ) );
 
-            //TODO: revisit this - seems too elaborate, need something straightforward
-            // for each state, check for the difference between old dataset states and new
-            //  the goal here is to check ONLY those datasets that have changed states (not all datasets)
-            var changedIds = [];
-            _.each( _.keys( response.state_ids ), function( state ){
-                var diffIds = _.difference( response.state_ids[ state ], oldStateIds[ state ] );
-                // aggregate those changed ids
-                changedIds = changedIds.concat( diffIds );
-            });
-
             // send the changed ids (if any) to dataset collection to have them fetch their own model changes
-            if( changedIds.length ){
-                history.fetchHdaUpdates( changedIds )
-                    .done( function(){
-                        furtherUpdatesOrReady( history );
+            var hdaIdsToUpdate = history.findHdasToUpdate();
+            if( hdaIdsToUpdate.length ){
+                // simplify with empty promise when no ids
+                history.fetchHdaUpdates( hdaIdsToUpdate )
+                    .done( function( models ){
+                        history.checkForUpdates();
                     });
             } else {
-                furtherUpdatesOrReady( history );
+                history.checkForUpdates();
             }
 
-            function furtherUpdatesOrReady( history ){
-                var timeout;
-                // set up to keep pulling if this history in run/queue state
-                if( ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
-                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) 
-                ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.SETTING_METADATA )){
-                //||  ( history.hdas.running() ) ){
-                    timeout = history.updateAfterDelay();
-
-                // otherwise, we're now in a 'ready' state (no hdas running)
-                } else {
-                    this.updateTimeoutId = null;
-                    history.trigger( 'ready' );
-                }
-                return timeout;
-            }
-
-        }).error( function( xhr, status, error ){
+        });
+        historyXhr.fail( function( xhr, status, error ){
             //TODO: use ajax.status handlers here
             // keep rolling on a bad gateway - server restart
             if( xhr.status === 502 ){
@@ -197,9 +205,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
             xhr = jQuery.ajax({
             url     : this.url() + '/contents?' + jQuery.param({ ids : hdaIds.join(',') }),
 
-            /**
-             *  @inner
-             */
+            /** @inner */
             error   : function( xhr, status, error ){
                 if( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ){ return; }
 
@@ -286,11 +292,10 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
      *  @param {String[]} ids an array of hda ids to update (optional, defaults to all hdas)
      *  @returns {HistoryDatasetAssociation[]} hda models that were updated
      */
-    updateDisplayApplications : function( ids ){
-        this.log( this + 'updateDisplayApplications:', ids );
+    fetchDisplayApplications : function( ids ){
+        this.log( this + '.fetchDisplayApplications:', ids );
         var history = this,
-        //    data = { id: this.get( 'id' ) };
-        //if( ids && _.isArray( ids ) ){ data.hda_ids = ids.join( ',' ); }
+            // if any ids passed place them in the query string data
             data = ( ids && _.isArray( ids ) )?({ hda_ids : ids.join( ',' ) }):({});
 
         //TODO: hardcoded

@@ -198,8 +198,11 @@ $(function(){
     //  2. from console: new PersistentStorage( '__history_panel' ).set( 'debugging', true )
     //  -> history panel and hdas will display console logs in console
     var debugging = false;
-    if( jQuery.jStorage.get( '__history_panel' ) ){
+    if( sessionStorage.getItem( '__history_panel' ) ){
         debugging = new PersistentStorage( '__history_panel' ).get( 'debugging' );
+        if( debugging ){
+            console.debug( '(debugging)' );
+        }
     }
 
     // get the current user (either from the top frame's Galaxy or if in tab via the bootstrap)
