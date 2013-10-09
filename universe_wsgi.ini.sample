@@ -368,7 +368,7 @@ nglims_config_file = tool-data/nglims.yaml
 #logo_url = /
 
 # The URL linked by the "Galaxy Wiki" link in the "Help" menu.
-#wiki_url = http://wiki.g2.bx.psu.edu/
+#wiki_url = http://wiki.galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = http://wiki.g2.bx.psu.edu/Support
