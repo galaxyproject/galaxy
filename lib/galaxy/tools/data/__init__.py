@@ -43,6 +43,9 @@ class ToolDataTableManager( object ):
         except KeyError:
             return default
 
+    def get_tables( self ):
+        return self.data_tables
+
     def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
         """
         This method is called under 3 conditions:
