@@ -154,6 +154,10 @@ class Repository( object, Dictifiable ):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
 
+    def allow_push( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        return repo.ui.config( 'web', 'allow_push' )
+
     def can_change_type( self, app ):
         # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
         # the default type.
@@ -172,18 +176,17 @@ class Repository( object, Dictifiable ):
                 return True
         return False
 
-    def to_dict( self, view='collection', value_mapper=None ):
-        rval = super( Repository, self ).to_dict( view=view, value_mapper=value_mapper )
-        if 'user_id' in rval:
-            rval[ 'owner' ] = self.user.username
-        return rval
-
     def get_changesets_for_setting_metadata( self, app ):
         type_class = self.get_type_class( app )
         return type_class.get_changesets_for_setting_metadata( app, self )
 
     def get_type_class( self, app ):
         return app.repository_types_registry.get_class_by_label( self.type )
+
+    def is_new( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return tip_ctx.rev() < 0
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
@@ -192,19 +195,6 @@ class Repository( object, Dictifiable ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )
-
-    def tip( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        return str( repo.changectx( repo.changelog.tip() ) )
-
-    def is_new( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        tip_ctx = repo.changectx( repo.changelog.tip() )
-        return tip_ctx.rev() < 0
-
-    def allow_push( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        return repo.ui.config( 'web', 'allow_push' )
 
     def set_allow_push( self, app, usernames, remove_auth='' ):
         allow_push = util.listify( self.allow_push( app ) )
@@ -226,6 +216,16 @@ class Repository( object, Dictifiable ):
             else:
                 fp.write( line )
         fp.close()
+
+    def tip( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        return str( repo.changectx( repo.changelog.tip() ) )
+
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( Repository, self ).to_dict( view=view, value_mapper=value_mapper )
+        if 'user_id' in rval:
+            rval[ 'owner' ] = self.user.username
+        return rval
 
 
 class RepositoryMetadata( object, Dictifiable ):

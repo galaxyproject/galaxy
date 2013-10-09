@@ -1467,9 +1467,17 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
 
 def reset_previously_installed_repository( trans, repository ):
     """
-    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a
-    status of INSTALLED, so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than INSTALLED,
+    so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
     """
+    debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( repository.name )
+    debug_msg += "The current state of the tool_shed_repository is:\n"
+    debug_msg += "deleted: %s\n" % str( repository.deleted )
+    debug_msg += "tool_shed_status: %s\n" % str( repository.tool_shed_status )
+    debug_msg += "uninstalled: %s\n" % str( repository.uninstalled )
+    debug_msg += "status: %s\n" % str( repository.status )
+    debug_msg += "error_message: %s\n" % str( repository.error_message )
+    log.debug( debug_msg )
     repository.deleted = False
     repository.tool_shed_status = None
     repository.uninstalled = False

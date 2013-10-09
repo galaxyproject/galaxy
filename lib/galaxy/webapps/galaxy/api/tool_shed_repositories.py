@@ -286,7 +286,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
         installation_dict = dict( install_repository_dependencies=install_repository_dependencies,
                                   new_tool_panel_section=new_tool_panel_section,
                                   no_changes_checked=False,
-                                  reinstalling=False,
                                   repo_info_dicts=repo_info_dicts,
                                   tool_panel_section=tool_panel_section,
                                   tool_path=tool_path,

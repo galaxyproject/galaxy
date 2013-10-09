@@ -1240,10 +1240,14 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 return repository_dependency_tup, is_valid, error_message
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( app ) )
             # The received changeset_revision may be None since defining it in the dependency definition is optional.  If this is the case,
-            # the default will be to set it's value to the repository dependency tip revision.
-            if changeset_revision is None:
-                changeset_revision = str( repo.changectx( repo.changelog.tip() ) )
+            # the default will be to set it's value to the repository dependency tip revision.  This probably occurs only when handling
+            # circular dependency definitions.
+            tip_ctx = repo.changectx( repo.changelog.tip() )
+            # Make sure the repo.changlog includes at least 1 revision.
+            if changeset_revision is None and tip_ctx.rev() >= 0:
+                changeset_revision = str( tip_ctx )
                 repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required, str( only_if_compiling_contained_td ) ]
+                return repository_dependency_tup, is_valid, error_message
             else:
                 # Find the specified changeset revision in the repository's changelog to see if it's valid.
                 found = False
