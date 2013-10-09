@@ -312,7 +312,7 @@
             </div>
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
-                    ${app.config.inactivity_box_content}
+                    ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif
             ${self.overlay(visible=self.overlay_visible)}

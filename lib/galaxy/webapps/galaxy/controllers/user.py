@@ -153,11 +153,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 if not trans.user.active and trans.app.config.user_activation_on: # Account activation is ON and the user is INACTIVE.
                     if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
                         if self.is_outside_grace_period( trans, trans.user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                            message = self.resend_verification_email( trans, trans.user.email )
+                            message, status = self.resend_verification_email( trans, trans.user.email, trans.user.username )
                         else: # User is within the grace period, let him log in.
                             pass
                     else: # Grace period is off. Login is disabled and user will have the activation email resent.
-                        message = self.resend_verification_email( trans, trans.user.email )                    
+                        message, status = self.resend_verification_email( trans, trans.user.email, trans.user.username )                    
                 elif not user_openid.user or user_openid.user == trans.user:
                     if openid_provider_obj.id:
                         user_openid.provider = openid_provider_obj.id
@@ -484,6 +484,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
+        username = kwd.get( 'username', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
@@ -502,11 +503,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         elif trans.app.config.user_activation_on and not user.active: # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
                 if self.is_outside_grace_period( trans, user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message = self.resend_verification_email( trans, email )
+                    message, status = self.resend_verification_email( trans, email, username )
                 else: # User is within the grace period, let him log in.
                     message, success, status = self.proceed_login( trans, user, redirect )
             else: # Grace period is off. Login is disabled and user will have the activation email resent.
-                message = self.resend_verification_email( trans, email )
+                message, status = self.resend_verification_email( trans, email, username )
         else: # activation is OFF
             message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )
@@ -526,19 +527,36 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         success = True
         status = 'done'
         return message, success, status
-
-    def resend_verification_email( self, trans, email ):
+    
+    @web.expose
+    def resend_verification ( self, trans ):
         """
-        Function resends the verification email in case user wants to log in with an inactive account.
+        Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
-        is_activation_sent  = self.send_verification_email( trans, email )
-        if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address %s.<br>' % email
+        message, status = self.resend_verification_email( trans, None, None )
+        if status == 'done':
+            return trans.show_ok_message( message )
         else:
-            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.'
+            return trans.show_error_message( message )
+    
+    def resend_verification_email( self, trans, email, username ):
+        """
+        Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
+        """
+        if email is None: # User is coming from outside registration form, load email from trans
+            email = trans.user.email
+        if username is None: # User is coming from outside registration form, load email from trans
+            username = trans.user.username
+        is_activation_sent  = self.send_verification_email( trans, email, username)
+        if is_activation_sent:
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
+            status = 'error'
+        else:
+            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for( '/' )
+            status = 'error'
             if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' %  trans.app.config.error_email_to
-        return message
+                message += '<br>Error contact: %s' %  trans.app.config.error_email_to
+        return message, status
 
     def is_outside_grace_period ( self, trans, create_time ):
         """
@@ -729,9 +747,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             success = False
         else:
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                is_activation_sent = self.send_verification_email( trans, email )
+                is_activation_sent = self.send_verification_email( trans, email, username )
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -743,10 +761,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 success = True
         return ( message, status, user, success )
 
-    def send_verification_email( self, trans, email ):
+    def send_verification_email( self, trans, email, username ):
         """
         Send the verification email containing the activation link to the user's email.
         """
+        if username is None:
+            username = trans.user.username
         activation_link = self.prepare_activation_link( trans, email )
 
         body =  ("Hello %s,\n\n"
@@ -755,7 +775,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
                 "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % ( trans.user.username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
+                "Your Galaxy Team" % ( username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
         to = email
         frm = trans.app.config.activation_email
         subject = 'Galaxy Account Activation'

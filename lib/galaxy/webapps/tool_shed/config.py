@@ -66,6 +66,7 @@ class Configuration( object ):
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        self.terms_url = kwargs.get( 'terms_url', None )
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
