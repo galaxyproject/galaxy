@@ -133,15 +133,13 @@ var GalaxyUpload = Backbone.View.extend(
         // get element
         var it = this.get_upload_item(index);
 
-        // get current history
+        // get configuration
         var current_history = Galaxy.currHistoryPanel.model.get('id');
-        
-        // configure tool
-        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
-        
-        // get
         var file_type = it.find('#extension').val();
         var space_to_tabs = it.find('#space_to_tabs').is(':checked');
+        
+        // configure uploadbox
+        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
         
         // configure tool
         tool_input = {};
@@ -174,7 +172,10 @@ var GalaxyUpload = Backbone.View.extend(
         it.find('.progress-bar').css({ width : percentage + '%' });
         
         // update value
-        it.find('#percentage').html(percentage + '%');
+        if (percentage != 100)
+            it.find('#percentage').html(percentage + '%');
+        else
+            it.find('#percentage').html('Adding to history...');
     },
     
     // success
@@ -201,6 +202,9 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update progress frame
         it.addClass('success');
+        
+        // update text
+        it.find('#percentage').html('100%');
         
         // update icon
         var sy = it.find('#symbol');
@@ -267,6 +271,10 @@ var GalaxyUpload = Backbone.View.extend(
                 symbol.addClass('fa-icon-spinner');
                 symbol.addClass('fa-icon-spin');
             }
+            
+            // disable options
+            $(this).find('#extension').attr('disabled', true);
+            $(this).find('#space_to_tabs').attr('disabled', true);
         });
         
         // update running

@@ -12,6 +12,7 @@
         url             : '',
         paramname       : 'content',
         maxfilesize     : 250,
+        maxfilenumber   : 20,
         dragover        : function() {},
         dragleave       : function() {},
         announce        : function() {},
@@ -21,7 +22,8 @@
         error           : function(index, file, message) { alert(message); },
         complete        : function() {},
         error_filesize  : "File exceeds 250MB. Please use an FTP client.",
-        error_default   : "Please make sure the file is available."
+        error_default   : "Please make sure the file is available.",
+        error_toomany   : "You can only queue <20 files per upload session."
     }
 
     // options
@@ -115,20 +117,23 @@
             if (queue_status)
                 return;
   
-            // add new files to queue
             for (var i = 0; i < files.length; i++)
             {
+                // check
+                if(queue_length >= opts.maxfilenumber)
+                    break;
+
                 // new identifier
                 var index = String(queue_index++);
   
                 // add to queue
                 queue[index] = files[i];
   
-                // increase counter
-                queue_length++;
-  
                 // announce
                 opts.announce(index, queue[index], "");
+  
+                // increase counter
+                queue_length++;
             }
         }
 
@@ -230,13 +235,6 @@
             xhr.upload.file = file;
             xhr.upload.addEventListener('progress', progress, false);
 
-            // open request
-            xhr.open('POST', opts.url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.send(formData);
-  
             // onloadend
             xhr.onloadend = function()
             {
@@ -266,6 +264,13 @@
                     // parse response
                     success(index, file, response);
             }
+  
+            // open request
+            xhr.open('POST', opts.url, true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.send(formData);
         }
   
         // success
