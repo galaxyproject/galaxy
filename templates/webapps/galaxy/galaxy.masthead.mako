@@ -163,11 +163,12 @@ ${h.to_json_string( user_dict )}
             menu_options = [ [_('Galaxy Q&A Site'), h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy' ), "_blank" ],
                              [_('Ask a question'), h.url_for( controller='biostar', action='biostar_question_redirect' ), "_blank" ] ]
         menu_options.extend( [
-            [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
-            [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],
-            [_('Galaxy wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
-            [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+            [_('Support'), app.config.get( "support_url", "http://wiki.galaxyproject.org/Support" ), "_blank" ],
+            [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/usegalaxy/" ), "_blank" ],
+            [_('Mailing Lists'), app.config.get( "mailing_lists", "http://wiki.galaxyproject.org/MailingLists" ), "_blank" ],
+            [_('Videos'), app.config.get( "screencasts_url", "http://vimeo.com/galaxyproject" ), "_blank" ],
+            [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
+            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.galaxyproject.org/CitingGalaxy" ), "_blank" ]
         ] )
         if app.config.get( 'terms_url', None ) is not None:
             menu_options.append( [_('Terms and Conditions'), app.config.get( 'terms_url', None ), '_blank'] )
