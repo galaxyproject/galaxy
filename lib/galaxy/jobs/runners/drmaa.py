@@ -214,7 +214,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 state = self.ds.jobStatus( external_job_id )
             # TODO: probably need to keep track of InvalidJobException count and remove after it exceeds some configurable
             except ( drmaa.DrmCommunicationException, drmaa.InternalException, drmaa.InvalidJobException ), e:
-                log.warning( "(%s/%s) job check resulted in %s: %s", galaxy_id_tag, external_job_id, e.__class__.name, e )
+                log.warning( "(%s/%s) job check resulted in %s: %s", galaxy_id_tag, external_job_id, e.__class__.__name__, e )
                 new_watched.append( ajs )
                 continue
             except Exception, e:
