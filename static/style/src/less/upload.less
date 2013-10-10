@@ -7,8 +7,7 @@
 .upload-box
 {
     width           : 100%;
-    height          : 95%;
-    max-height      : 95%;
+    height          : 90%;
     text-align      : center;
     overflow        : scroll;
     font-size       : @font-size-base;
@@ -16,71 +15,58 @@
     -moz-border-radius: @border-radius-large;
     border-radius   : @border-radius-large;
     border          : 1px dashed @btn-default-border;
-    padding         : 20px;
+    padding         : 10px;
+    
+    .table {
+        width : 100%;
+    }
+    
+    .table th {
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .table td {
+        margin: 0px;
+        paddign: 0px;
+    }
+    
+    .title {
+        width: 150px;
+        word-wrap: break-word;
+        font-size : @font-size-small;
+    }
+    
+    .size {
+        white-space: nowrap;
+    }
+    
+    .info {
+        width: 130px;
+        font-size : @font-size-small;
 
-    .panel
-    {
-        display: none;
-
-        .panel-heading
-        {
+        .progress {
+            top:1px;
             position: relative;
-            height: 19px;
-            padding: 5px;
-
-            .title
-            {
-                position: absolute;
-                top: 2px;
-                font-weight: normal;
-                text-align: left;
-                margin: 0px;
-                max-width: 300px;
-                overflow: hidden;
-            }
-
-            .info
-            {
-                position: absolute;
-                top: 3px;
-                font-weight: normal;
-                right: 20px;
-                text-align: right;
-                margin: 0px;
-            }
-
-            .symbol
-            {
-                position: absolute;
-                cursor: pointer;
-                top: 0px;
-                right: 3px;
-            }
-        }
-
-        .panel-body
-        {
-            position: relative;
-            padding: 5px;
-        }
-
-        .panel-footer
-        {
-            position:relative;
-            height: 20px;
+            width: 100%;
             padding: 0px;
+            margin: 0px;
             
-            .progress
-            {
-                height: 10px;
-                margin: 5px;
+            .progress-bar {
+                border-radius: inherit;
+                -moz-border-radius: inherit;
             }
             
-            .error
-            {
-                font-weight: normal;
-                margin: 2px;
+            .percentage {
+                position: absolute;
+                text-align: center;
+                width: 100%;
+                color: @white;
             }
         }
+    }
+    
+    .symbol {
+        cursor: pointer;
     }
 }

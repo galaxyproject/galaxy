@@ -20,8 +20,7 @@
         success         : function() {},
         error           : function(index, file, message) { alert(message); },
         complete        : function() {},
-        error_browser   : "Your browser does not support drag-and-drop file uploads.",
-        error_filesize  : "This file is too large (>250MB). Please use an FTP client to upload it.",
+        error_filesize  : "File exceeds 250MB. Please use an FTP client.",
         error_default   : "Please make sure the file is available."
     }
 
