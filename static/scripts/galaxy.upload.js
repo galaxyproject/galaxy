@@ -19,9 +19,7 @@ var GalaxyUpload = Backbone.View.extend(
     
     // extension types
     select_extension : {
-        'auto'  : 'Auto-detect',
-        'bed'   : 'bed',
-        'ab1'   : 'ab1'
+        'auto'  : 'Auto-detect'
     },
     
     // states
@@ -134,18 +132,31 @@ var GalaxyUpload = Backbone.View.extend(
     
         // get element
         var it = this.get_upload_item(index);
-        
-        // read in configuration
-        var data = {
-            source          : "upload",
-            space_to_tabs   : it.find('#space_to_tabs').is(':checked'),
-            extension       : it.find('#extension').val()
-        }
-        
-        // configure url
+
+        // get current history
         var current_history = Galaxy.currHistoryPanel.model.get('id');
-        this.uploadbox.configure({url : galaxy_config.root + "api/histories/" + current_history + "/contents"});
         
+        // configure tool
+        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
+        
+        // get
+        var file_type = it.find('#extension').val();
+        var space_to_tabs = it.find('#space_to_tabs').is(':checked');
+        
+        // configure tool
+        tool_input = {};
+        tool_input['dbkey'] = '?';
+        tool_input['file_type'] = file_type;
+        tool_input['files_0|NAME'] = file.name;
+        tool_input['files_0|type'] = 'upload_dataset';
+        tool_input['space_to_tabs'] = space_to_tabs;
+        
+        // setup data
+        data = {};
+        data['history_id'] = current_history;
+        data['tool_id'] = 'upload1';
+        data['inputs'] = JSON.stringify(tool_input);
+                
         // return additional data to be send with file
         return data;
     },

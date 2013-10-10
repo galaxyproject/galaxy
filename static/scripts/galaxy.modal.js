@@ -38,10 +38,12 @@ var GalaxyModal = Backbone.View.extend(
         this.$body.css('max-height', maxHeight);
         
         // fix height if available
-        if (this.options.height < maxHeight)
-            this.$body.css('height', this.options.height);
-        else
-            this.$body.css('height', maxHeight);
+        if (this.options.height) {
+            if (this.options.height < maxHeight)
+                this.$body.css('height', this.options.height);
+            else
+                this.$body.css('height', maxHeight);
+        }
         
         // remove scroll bar
         if (this.options.height)

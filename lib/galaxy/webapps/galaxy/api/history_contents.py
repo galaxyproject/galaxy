@@ -214,69 +214,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.sa_session.flush()
             return hda.to_dict()
 
-        # copy from upload
-        if source == 'upload':
-
-            # get upload specific features
-            dbkey = payload.get('dbkey', None)
-            extension = payload.get('extension', None)
-            space_to_tabs = payload.get('space_to_tabs', False)
-        
-            # check for filename
-            if content.filename is None:
-                trans.response.status = 400
-                return "history_contents:create() : The contents parameter needs to contain the uploaded file content."
-            
-            # create a dataset
-            dataset = trans.app.model.Dataset()
-            trans.sa_session.add(dataset)
-            trans.sa_session.flush()
-            
-            # get file destination
-            file_destination = dataset.get_file_name()
-
-            # check if the directory exists
-            dn = os.path.dirname(file_destination)
-            if not os.path.exists(dn):
-                os.makedirs(dn)
-    
-            # get file and directory names
-            fn = os.path.basename(content.filename)
-    
-            # save file locally
-            open(file_destination, 'wb').write(content.file.read())
-            
-            # log
-            log.info ('The file "' + fn + '" was uploaded successfully.')
-            
-            # replace separation with tabs
-            if space_to_tabs:
-                log.info ('Replacing spaces with tabs.')
-                sniff.convert_newlines_sep2tabs(file_destination)
-            
-            # guess extension
-            if extension is None:
-                log.info ('Guessing extension.')
-                extension = sniff.guess_ext(file_destination)
-    
-            # create hda
-            hda = trans.app.model.HistoryDatasetAssociation(dataset = dataset, name = content.filename,
-                    extension = extension, dbkey = dbkey, history = history, sa_session = trans.sa_session)
-    
-            # add status ok
-            hda.state = hda.states.OK
-            
-            # add dataset to history
-            history.add_dataset(hda, genome_build = dbkey)
-            permissions = trans.app.security_agent.history_get_default_permissions( history )
-            trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
-            
-            # add to session
-            trans.sa_session.add(hda)
-            trans.sa_session.flush()
-
-            # get name
-            return hda.to_dict()
         else:
             # other options
             trans.response.status = 501
