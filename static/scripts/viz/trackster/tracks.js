@@ -3727,13 +3727,9 @@ var ReferenceTrack = function (view) {
     TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
     
     view.reference_track = this;
-    this.left_offset = 200;
     this.visible_height_px = 12;
     this.container_div.addClass("reference-track");
-    this.content_div.css("background", "none");
-    this.content_div.css("min-height", "0px");
-    this.content_div.css("border", "none");
-    this.data_url = galaxy_config.root + "api/genomes/" + "/" + this.view.dbkey;
+    this.data_url = galaxy_config.root + "api/genomes/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
@@ -3780,6 +3776,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Try to subset data.
         var subset = this.data_manager.subset_entry(data, region),
             seq_data = subset.data;
+        console.log(region.toString());
         
         // Draw sequence data.
         var canvas = ctx.canvas;
@@ -4151,6 +4148,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param ref_seq reference sequence data
      */
     draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {
+        console.log("FeatureTrack", region.toString());
         var track = this,
             canvas = ctx.canvas,
             tile_low = region.get('start'),
