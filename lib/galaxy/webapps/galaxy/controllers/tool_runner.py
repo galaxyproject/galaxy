@@ -61,6 +61,7 @@ class ToolRunner( BaseUIController ):
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
+            trans.response.status = 404
             return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
         if tool.require_login and not trans.user:
             message = "You must be logged in to use this tool."
