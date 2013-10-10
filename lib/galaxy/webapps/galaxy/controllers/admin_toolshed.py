@@ -701,11 +701,11 @@ class AdminToolshed( AdminGalaxy ):
         installed_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                              tool_shed_repository=tool_shed_repository,
                                                                                              name='inst_td_ids',
-                                                                                             uninstalled=False )
+                                                                                             uninstalled_only=False )
         uninstalled_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                                tool_shed_repository=tool_shed_repository,
                                                                                                name='uninstalled_tool_dependency_ids',
-                                                                                               uninstalled=True )
+                                                                                               uninstalled_only=True )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository_tool_dependencies.mako',
                                     repository=tool_shed_repository,
                                     installed_tool_dependencies_select_field=installed_tool_dependencies_select_field,

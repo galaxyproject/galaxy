@@ -144,13 +144,18 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
             repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
-def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled=False ):
+def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
     """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
     for tool_dependency in tool_shed_repository.tool_dependencies:
-        if uninstalled and tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
-            continue
+        if uninstalled_only:
+            if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
+        else:
+            if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
         option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
         option_value = trans.security.encode_id( tool_dependency.id )
         tool_dependencies_select_field.add_option( option_label, option_value )
