@@ -16,48 +16,54 @@ eggs.require( 'paramiko' )
 eggs.require( 'Fabric' )
 
 from fabric.api import env
+from fabric.api import hide
 from fabric.api import lcd
 from fabric.api import local
 from fabric.api import settings
-from fabric.api import hide
 
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
-def add_to_env_shell_file( text, env_shell_file ):
+def check_fabric_version():
+    version = env.version
+    if int( version.split( "." )[ 0 ] ) < 1:
+        raise NotImplementedError( "Install Fabric version 1.0 or later." )
+
+def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
     '''
-    Append a line to a file, if this line does not already exist in the file. Creates the file and sets the mode to
-    executable if the file does not exist. Equivalent to a local version of fabric.contrib.files.append.
+    Append a line to a file unless skip_if_contained is True and the line already exists in the file. This method creates the file
+    if it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by the owner.  This method
+    is similar to a local version of fabric.contrib.files.append.
     '''
-    if not os.path.exists( env_shell_file ):
-        local( 'touch %s' % env_shell_file )
-    # Explicitly set env.sh executable.
-    with settings( hide( 'everything' ), warn_only=True ):
-        local( 'chmod +x %s' % env_shell_file )
+    if not os.path.exists( file_path ):
+        local( 'touch %s' % file_path )
+    if make_executable:
+        # Explicitly set the file to the received mode if valid.
+        with settings( hide( 'everything' ), warn_only=True ):
+            local( 'chmod +x %s' % file_path )
     return_code = 0
-    # Convert the contents to a list, in order to support adding one or more lines to env.sh.
+    # Convert the received text to a list, in order to support adding one or more lines to the file.
     if isinstance( text, basestring ):
         text = [ text ]
     for line in text:
         # Build a regex to search for the relevant line in env.sh.
         regex = td_common_util.egrep_escape( line )
-        # If the line exists, egrep will return a success.
-        with settings( hide( 'everything' ), warn_only=True ):
-            egrep_cmd = 'egrep "^%s$" %s' % ( regex, env_shell_file )
-            contains_line = local( egrep_cmd ).succeeded
-        if contains_line:
-            continue
-        # If not, then append the line, escaping any single quotes in the shell command.
+        if skip_if_contained:
+            # If the line exists in the file, egrep will return a success.
+            with settings( hide( 'everything' ), warn_only=True ):
+                egrep_cmd = 'egrep "^%s$" %s' % ( regex, file_path )
+                contains_line = local( egrep_cmd ).succeeded
+            if contains_line:
+                continue
+        # Append the current line to the file, escaping any single quotes in the line.
         line = line.replace( "'", r"'\\''" )
-        return_code = local( "echo '%s' >> %s" % ( line, env_shell_file ) ).return_code
+        return_code = local( "echo '%s' >> %s" % ( line, file_path ) ).return_code
+        if return_code:
+            # Return upon the first error encountered.
+            return return_code
     return return_code
-
-def check_fabric_version():
-    version = env.version
-    if int( version.split( "." )[ 0 ] ) < 1:
-        raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
 def filter_actions_after_binary_installation( actions ):
     '''Filter out actions that should not be processed if a binary download succeeded.'''
@@ -331,7 +337,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
                                 env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
                                 env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = add_to_env_shell_file( env_entry, env_file )
+                                return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                                 if return_code:
                                     return
                         elif action_type == 'set_environment_for_install':
@@ -373,13 +379,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
                                 return
                             modify_env_command_dict = dict( name="PYTHONPATH", action="prepend_to", value=output.stdout )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                            return_code = add_to_env_shell_file( env_entry, env_file )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
                             modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
                             env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = add_to_env_shell_file( env_entry, env_file )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
                         elif action_type == 'shell_command':
