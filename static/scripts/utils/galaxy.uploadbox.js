@@ -154,7 +154,7 @@
         function process()
         {
             // validate
-            if (queue_length == 0)
+            if (queue_length == 0 || !queue_status)
             {
                 queue_status = false;
                 opts.complete();
@@ -229,11 +229,6 @@
   
             // prepare request
             var xhr = new XMLHttpRequest();
-  
-            // prepare upload progress
-            xhr.upload.index = index;
-            xhr.upload.file = file;
-            xhr.upload.addEventListener('progress', progress, false);
 
             // onloadend
             xhr.onloadend = function()
@@ -264,6 +259,11 @@
                     // parse response
                     success(index, file, response);
             }
+  
+            // prepare upload progress
+            xhr.upload.index = index;
+            xhr.upload.file = file;
+            xhr.upload.addEventListener('progress', progress, false);
   
             // open request
             xhr.open('POST', opts.url, true);
@@ -314,7 +314,17 @@
         function upload()
         {
             if (!queue_status)
+            {
+                queue_status = true;
                 process();
+            }
+        }
+  
+        // pause upload process
+        function pause()
+        {
+            // set global status variable to false
+            queue_status = false;
         }
   
         // set options
@@ -338,6 +348,7 @@
             'select'        : select,
             'remove'        : remove,
             'upload'        : upload,
+            'pause'         : pause,
             'reset'         : reset,
             'configure'     : configure,
             'compatible'    : compatible

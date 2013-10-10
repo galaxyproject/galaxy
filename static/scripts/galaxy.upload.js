@@ -24,9 +24,11 @@ var GalaxyUpload = Backbone.View.extend(
     
     // states
     state : {
-        init : 'fa-icon-trash',
+        init    : 'fa-icon-trash',
+        queued  : 'fa-icon-spinner fa-icon-spin',
+        running : '__running__',
         success : 'fa-icon-ok',
-        error : 'fa-icon-warning-sign'
+        error   : 'fa-icon-warning-sign'
     },
     
     // counter
@@ -133,6 +135,10 @@ var GalaxyUpload = Backbone.View.extend(
         // get element
         var it = this.get_upload_item(index);
 
+        // update status
+        var sy = it.find('#symbol');
+        sy.addClass(this.state.running);
+      
         // get configuration
         var current_history = Galaxy.currHistoryPanel.model.get('id');
         var file_type = it.find('#extension').val();
@@ -208,10 +214,8 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update icon
         var sy = it.find('#symbol');
-        sy.removeClass('fa-icon-spin');
-        sy.removeClass('fa-icon-spinner');
-        
-        // set status
+        sy.removeClass(this.state.running);
+        sy.removeClass(this.state.queued);
         sy.addClass(this.state.success);
     },
     
@@ -245,10 +249,8 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update icon
         var sy = it.find('#symbol');
-        sy.removeClass('fa-icon-spin');
-        sy.removeClass('fa-icon-spinner');
-        
-        // set status
+        sy.removeClass(this.state.running);
+        sy.removeClass(this.state.queued);
         sy.addClass(this.state.error);
     },
     
@@ -267,14 +269,14 @@ var GalaxyUpload = Backbone.View.extend(
             var symbol = $(this).find('#symbol');
             if(symbol.hasClass(self.state.init))
             {
+                // set status
                 symbol.removeClass(self.state.init);
-                symbol.addClass('fa-icon-spinner');
-                symbol.addClass('fa-icon-spin');
-            }
+                symbol.addClass(self.state.queued);
             
-            // disable options
-            $(this).find('#extension').attr('disabled', true);
-            $(this).find('#space_to_tabs').attr('disabled', true);
+                // disable options
+                $(this).find('#extension').attr('disabled', true);
+                $(this).find('#space_to_tabs').attr('disabled', true);
+            }
         });
         
         // update running
@@ -283,6 +285,35 @@ var GalaxyUpload = Backbone.View.extend(
         
         // initiate upload procedure in plugin
         this.uploadbox.upload();
+    },
+    
+    // pause upload process
+    event_pause : function()
+    {
+        // check
+        if (this.counter.running == 0)
+            return;
+                            
+        // initiate upload procedure in plugin
+        this.uploadbox.pause();
+
+        // switch icons for new uploads
+        var items = $(this.el).find('.upload-item');
+        var self = this;
+        items.each(function()
+        {
+            var symbol = $(this).find('#symbol');
+            if(symbol.hasClass(self.state.queued) && !symbol.hasClass(self.state.running))
+            {
+                // update status
+                symbol.removeClass(self.state.queued);
+                symbol.addClass(self.state.init);
+                
+                // disable options
+                $(this).find('#extension').attr('disabled', false);
+                $(this).find('#space_to_tabs').attr('disabled', false);
+            }
+        });
     },
     
     // queue is done
@@ -361,6 +392,7 @@ var GalaxyUpload = Backbone.View.extend(
                 buttons : {
                     'Select' : function() {self.uploadbox.select()},
                     'Upload' : function() {self.event_upload()},
+                    'Pause'  : function() {self.event_pause()},
                     'Reset'  : function() {self.event_reset()},
                     'Close'  : function() {self.modal.hide()}
                 },
@@ -452,6 +484,12 @@ var GalaxyUpload = Backbone.View.extend(
             this.modal.enableButton('Upload');
         else
             this.modal.disableButton('Upload');
+
+        // pause upload button
+        if (this.counter.running > 0)
+            this.modal.enableButton('Pause');
+        else
+            this.modal.disableButton('Pause');
         
         // select upload button
         if (this.counter.running == 0)
