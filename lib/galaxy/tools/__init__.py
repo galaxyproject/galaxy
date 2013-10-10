@@ -34,7 +34,6 @@ from paste import httpexceptions
 from sqlalchemy import and_
 
 from galaxy import jobs, model
-from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
@@ -65,10 +64,32 @@ from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
 
-
 log = logging.getLogger( __name__ )
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION =  re.compile( '''\$\{.+?\}''' )
+
+# These determine stdio-based error levels from matching on regular expressions
+# and exit codes. They are meant to be used comparatively, such as showing
+# that warning < fatal. This is really meant to just be an enum.
+class StdioErrorLevel( object ):
+    NO_ERROR = 0
+    LOG  = 1
+    WARNING = 2
+    FATAL = 3
+    MAX = 3
+    descs = {
+        NO_ERROR : 'No error',
+        LOG: 'Log',
+        WARNING : 'Warning',
+        FATAL : 'Fatal error'
+    }
+    @staticmethod
+    def desc( error_level ):
+        err_msg = "Unknown error"
+        if ( error_level > 0 and
+             error_level <= StdioErrorLevel.MAX ):
+            err_msg = StdioErrorLevel.descs[ error_level ]
+        return err_msg
 
 class ToolNotFoundException( Exception ):
     pass
