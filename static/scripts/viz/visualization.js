@@ -1,5 +1,4 @@
-define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], 
-        function(_, data_mod, util_mod, config_mod) {
+define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -409,10 +408,11 @@ var GenomeDataManager = Cache.extend({
             // This would prevent bad extensions when zooming in/out while still preserving the behavior
             // below.
 
+            // Use copy of region to avoid changing actual region.
+            region = region.copy();
+
             // Use heuristic to extend region: extend relative to last data request.
-            var last_request = this.most_recently_added(),
-                // Use copy of region to avoid changing actual region.
-                region = region.copy();
+            var last_request = this.most_recently_added();
             if (!last_request || (region.get('start') > last_request.get('start'))) {
                 // This request is after the last request, so extend right.
                 region.set('end', region.get('start') + this.attributes.min_region_size);
