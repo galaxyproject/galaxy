@@ -14,6 +14,7 @@ from galaxy import util
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.util.odict import odict
 
 from sqlalchemy.orm import object_session
 
@@ -568,9 +569,9 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_xml=None, fsmon=False):
         super(HierarchicalObjectStore, self).__init__(config, config_xml=config_xml)
-        for b in config_xml.find('backends'):
+        self.backends = odict()
+        for b in sorted(config_xml.find('backends'), key=lambda b: int(b.get('order'))):
             self.backends[int(b.get('order'))] = build_object_store_from_config(config, fsmon=fsmon, config_xml=b)
-
 
     def exists(self, obj, **kwargs):
         """
