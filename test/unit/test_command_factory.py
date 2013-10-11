@@ -31,6 +31,13 @@ class TestCommandFactory(TestCase):
         self.__assert_command_is( MOCK_COMMAND_LINE )
 
     def test_set_metadata(self):
+        self._test_set_metadata()
+
+    def test_strips_trailing_semicolons(self):
+        self.job_wrapper.command_line = "%s;" % MOCK_COMMAND_LINE
+        self._test_set_metadata()
+
+    def _test_set_metadata(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
         metadata_line = "set_metadata_and_stuff.sh"

@@ -19,6 +19,10 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
     if not commands:
         return None
 
+    # Remove trailing semi-colon so we can start hacking up this command.
+    # TODO: Refactor to compose a list and join with ';', would be more clean.
+    commands = commands.rstrip(";")
+
     # Prepend version string
     if job_wrapper.version_string_cmd:
         commands = "%s &> %s; " % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() ) + commands
