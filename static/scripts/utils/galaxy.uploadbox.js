@@ -11,7 +11,7 @@
     {
         url             : '',
         paramname       : 'content',
-        maxfilesize     : 250,
+        maxfilesize     : 2048,
         maxfilenumber   : 20,
         dragover        : function() {},
         dragleave       : function() {},
@@ -21,7 +21,7 @@
         success         : function() {},
         error           : function(index, file, message) { alert(message); },
         complete        : function() {},
-        error_filesize  : "File exceeds 250MB. Please use an FTP client.",
+        error_filesize  : "File exceeds 2GB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
         error_server    : "The server is unavailable.",
         error_toomany   : "You can only queue <20 files per upload session."

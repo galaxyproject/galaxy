@@ -82,20 +82,13 @@ var GalaxyUpload = Backbone.View.extend(
             
     },
     
-    // events
-    events :
-    {
-        'mouseover'         : 'event_mouseover',
-        'mouseleave'        : 'event_mouseleave'
-    },
-    
     // mouse over
-    event_mouseover : function (e)
+    event_dragover : function (e)
     {
     },
     
     // mouse left
-    event_mouseleave : function (e)
+    event_dragleave : function (e)
     {
     },
     
@@ -420,8 +413,8 @@ var GalaxyUpload = Backbone.View.extend(
             var self = this;
             this.uploadbox = this.$el.uploadbox(
             {
-                dragover        : self.event_mouseover,
-                dragleave       : self.event_mouseleave,
+                dragover        : function() { self.event_dragover() },
+                dragleave       : function() { self.event_dragleave() },
                 announce        : function(index, file, message) { self.event_announce(index, file, message) },
                 initialize      : function(index, file, message) { return self.event_initialize(index, file, message) },
                 success         : function(index, file, message) { self.event_success(index, file, message) },
