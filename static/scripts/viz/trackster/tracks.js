@@ -145,19 +145,12 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
  * Init constants & functions used throughout trackster.
  */
 var 
-    // Minimum height of a track's contents; this must correspond to the .track-content's minimum height.
-    MIN_TRACK_HEIGHT = 16,
-    // FIXME: font size may not be static
-    CHAR_HEIGHT_PX = 9,
     // Padding at the top of tracks for error messages
     ERROR_PADDING = 20,
     // Maximum number of rows un a slotted track
     MAX_FEATURE_DEPTH = 100,
     // Minimum width for window for squish to be used.
     MIN_SQUISH_VIEW_WIDTH = 12000,
-    
-    // Other constants.
-    
     // Number of pixels per tile, not including left offset.
     TILE_SIZE = 400,
     DEFAULT_DATA_QUERY_WAIT = 5000,
@@ -3732,7 +3725,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 var ReferenceTrack = function (view) {
     TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
     
-    this.visible_height_px = 12;
+    this.visible_height_px = 13;
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
@@ -4139,7 +4132,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
             // works as a static function.
             var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
-            return Math.max(MIN_TRACK_HEIGHT, dummy_painter.get_required_height(rows_required, canvas_width) );
+            return Math.max(this.min_height_px, dummy_painter.get_required_height(rows_required, canvas_width) );
         }
     },
 
