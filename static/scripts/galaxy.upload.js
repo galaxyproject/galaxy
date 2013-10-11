@@ -529,7 +529,7 @@ var GalaxyUpload = Backbone.View.extend(
                                 '<th>Size</th>' +
                                 '<th>Type</th>' +
                                 '<th>Space&#8594;Tab</th>' +
-                                '<th>Progress</th>' +
+                                '<th>Status</th>' +
                                 '<th></th>' +
                             '</tr>' +
                         '</thead>' +
@@ -546,7 +546,7 @@ var GalaxyUpload = Backbone.View.extend(
                         '<td><div id="title" class="title"></div></td>' +
                         '<td><div id="size" class="size"></div></td>' +
                         '<td>' +
-                            '<select id="extension">';
+                            '<select id="extension" class="extension">';
 
         // add file types to selection
         for (key in select_extension)

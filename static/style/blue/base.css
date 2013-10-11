@@ -1125,11 +1125,12 @@ ul.icons{list-style-type:none;text-indent:-0.75em}ul.icons li [class^="fa-icon-"
 .galaxy-frame .frame .f-pin{left:6px;top:1px}
 .galaxy-frame .frame .f-resize{background:#fff;width:16px;height:16px;color:#2c3143;right:0px;bottom:0px;text-align:center;line-height:16px;border:0px}
 .upload-info{font-weight:normal;text-align:center}
-.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px}.upload-box .table{width:100%}
+.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .table{width:100%}
 .upload-box .table th{text-align:center;white-space:nowrap}
 .upload-box .table td{margin:0px;paddign:0px}
-.upload-box .title{width:120px;word-wrap:break-word;font-size:11px}
-.upload-box .size{white-space:nowrap}
+.upload-box .title{width:130px;word-wrap:break-word;font-size:11px}
+.upload-box .extension{width:100px;font-size:11px}
+.upload-box .size{width:60px;white-space:nowrap}
 .upload-box .info{width:130px;font-size:11px}.upload-box .info .progress{top:1px;position:relative;width:100%;padding:0px;margin:0px}.upload-box .info .progress .progress-bar{border-radius:inherit;-moz-border-radius:inherit}
 .upload-box .info .progress .percentage{position:absolute;text-align:center;width:100%;color:#fff}
 .upload-box .symbol{cursor:pointer}

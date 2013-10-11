@@ -16,6 +16,8 @@
     border-radius   : @border-radius-large;
     border          : 1px dashed @btn-default-border;
     padding         : 10px;
+    overflow-x      : hidden;
+    -ms-overflow-style: none;
     
     .table {
         width : 100%;
@@ -32,12 +34,18 @@
     }
     
     .title {
-        width: 120px;
+        width: 130px;
         word-wrap: break-word;
         font-size : @font-size-small;
     }
     
+    .extension {
+        width: 100px;
+        font-size : @font-size-small;
+    }
+
     .size {
+        width: 60px;
         white-space: nowrap;
     }
     
