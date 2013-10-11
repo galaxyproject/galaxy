@@ -265,6 +265,75 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         return changed
 
+    @web.expose_api
+    def delete( self, trans, history_id, id, **kwd ):
+        """
+        delete( self, trans, history_id, id, **kwd )
+        * DELETE /api/histories/{history_id}/contents/{id}
+            delete the HDA with the given ``id``
+        .. note:: Currently does not stop any active jobs for which this dataset is an output.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to delete
+        :type   kwd:    dict
+        :param  kwd:    (optional) dictionary structure containing:
+
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the HDA
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history was marked as deleted,
+            * purged:     if the history was purged
+        """
+        # a request body is optional here
+        purge = False
+        if kwd.get( 'payload', None ):
+            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
+
+        rval = { 'id' : id }
+        try:
+            hda = self.get_dataset( trans, id,
+                check_ownership=True, check_accessible=True, check_state=True )
+            hda.deleted = True
+
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.sa_session.flush()
+
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        pass
+                    # flush now to preserve deleted state in case of later interruption
+                    trans.sa_session.flush()
+
+                rval[ 'purged' ] = True
+
+            trans.sa_session.flush()
+            rval[ 'deleted' ] = True
+
+        except HTTPInternalServerError, http_server_err:
+            log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           id, str( kwd ), str( http_server_err ) )
+            raise
+        except HTTPException, http_exc:
+            raise
+        except Exception, exc:
+            log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
+                           id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
+
+        return rval
+
     def _validate_and_parse_update_payload( self, payload ):
         """
         Validate and parse incomming data payload for an HDA.
