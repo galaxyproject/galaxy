@@ -1614,7 +1614,7 @@ var TracksterTool = tools_mod.Tool.extend({
     initialize: function(options) {
         // Restore tool visibility from state.
         if (options.tool_state !== undefined) {
-            this.set('hidden', options.tool_state.hidden)
+            this.set('hidden', options.tool_state.hidden);
         }
 
         // FIXME: need to restore tool values from options.tool_state
@@ -2291,8 +2291,8 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
             // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
             // overlap popup.
             var 
-                popupX = offsetX + parseInt( tile.html_elt.css("left") ) - popup.width() / 2,
-                popupY = offsetY + parseInt( tile.html_elt.css("top") ) + 7;
+                popupX = offsetX + parseInt( tile.html_elt.css("left"), 10 ) - popup.width() / 2,
+                popupY = offsetY + parseInt( tile.html_elt.css("top"), 10 ) + 7;
             popup.css("left", popupX + "px").css("top", popupY + "px");
         }
         else if (!e.isPropagationStopped()) {
@@ -2715,20 +2715,24 @@ extend(Track.prototype, Drawable.prototype, {
                         })
                     );
                 }
-            } else if (result === "no converter") {
+            } 
+            else if (result === "no converter") {
                 track.container_div.addClass("error");
                 track.tiles_div.text(DATA_NOCONVERTER);
-            } else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
+            } 
+            else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
                 track.container_div.addClass("nodata");
                 track.tiles_div.text(DATA_NONE);
-            } else if (result === "pending") {
+            } 
+            else if (result === "pending") {
                 track.container_div.addClass("pending");
                 track.tiles_div.html(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
-            } else if (result === "data" || result['status'] === "data") {
-                if (result['valid_chroms']) {
-                    track.valid_chroms = result['valid_chroms'];
+            } 
+            else if (result === "data" || result.status === "data") {
+                if (result.valid_chroms) {
+                    track.valid_chroms = result.valid_chroms;
                     track.update_icons();
                 }
                 track.tiles_div.text(DATA_OK);
@@ -3276,7 +3280,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 }
                 drawing_modes.push(mode);
                 drawing_heights.push(d.get_canvas_height(data, mode, w_scale, width));
-            })
+            });
 
             var canvas = track.view.canvas_manager.new_canvas(),
                 tile_low = region.get('start'),
@@ -4062,10 +4066,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Update track interface to show display mode being used.
      */
-    update_auto_mode: function( mode ) {
-        var mode;
-        if ( this.mode === "Auto" ) {
-            if ( mode === "no_detail" ) {
+    update_auto_mode: function(mode) {
+        if (this.mode === "Auto") {
+            if (mode === "no_detail") {
                 mode = "feature spans";
             }
             this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
@@ -4436,10 +4439,10 @@ var object_from_template = function(template, view, container) {
     else {
         // Template is a dictionary.
         var
-           drawable_type = template['obj_type'];
+           drawable_type = template.obj_type;
         // For backward compatibility:
         if (!drawable_type) {
-            drawable_type = template['track_type']; 
+            drawable_type = template.track_type;
         }
         return new addable_objects[ drawable_type ](view, container, template);
     }
