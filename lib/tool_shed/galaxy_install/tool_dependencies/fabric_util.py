@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import td_common_util
 from contextlib import contextmanager
+from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy import eggs
 
@@ -82,9 +83,9 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     if output.return_code:
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
         if output.stderr:
-            tool_dependency.error_message = str( output.stderr )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
         elif output.stdout:
-            tool_dependency.error_message = str( output.stdout )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
         else:
             tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
         sa_session.add( tool_dependency )
