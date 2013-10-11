@@ -1215,7 +1215,9 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 
                 // Load chroms.
                 if (result.reference) {
-                    view.add_label_track( new ReferenceTrack(view) );
+                    var ref_track = new ReferenceTrack(view);
+                    view.add_label_track(ref_track);
+                    view.reference_track = ref_track;
                 }
                 view.chrom_data = result.chrom_info;
                 var chrom_options = '<option value="">Select Chrom/Contig</option>';
@@ -3726,8 +3728,9 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 var ReferenceTrack = function (view) {
     TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
     
-    view.reference_track = this;
     this.visible_height_px = 12;
+    // Use offset to ensure that bases at tile edges are drawn.
+    this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
     this.data_url = galaxy_config.root + "api/genomes/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
@@ -3776,7 +3779,6 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Try to subset data.
         var subset = this.data_manager.subset_entry(data, region),
             seq_data = subset.data;
-        console.log(region.toString());
         
         // Draw sequence data.
         var canvas = ctx.canvas;
@@ -4148,7 +4150,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param ref_seq reference sequence data
      */
     draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {
-        console.log("FeatureTrack", region.toString());
         var track = this,
             canvas = ctx.canvas,
             tile_low = region.get('start'),

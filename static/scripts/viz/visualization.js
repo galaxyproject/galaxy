@@ -410,7 +410,9 @@ var GenomeDataManager = Cache.extend({
             // below.
 
             // Use heuristic to extend region: extend relative to last data request.
-            var last_request = this.most_recently_added();
+            var last_request = this.most_recently_added(),
+                // Use copy of region to avoid changing actual region.
+                region = region.copy();
             if (!last_request || (region.get('start') > last_request.get('start'))) {
                 // This request is after the last request, so extend right.
                 region.set('end', region.get('start') + this.attributes.min_region_size);
