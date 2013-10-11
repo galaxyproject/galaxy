@@ -186,10 +186,7 @@ var GalaxyUpload = Backbone.View.extend(
     
     // success
     event_success : function(index, file, message)
-    {                
-        // update galaxy history
-        Galaxy.currHistoryPanel.refresh();
-        
+    {
         // make sure progress is shown correctly
         this.event_progress(index, file, 100);
         
@@ -217,6 +214,9 @@ var GalaxyUpload = Backbone.View.extend(
         sy.removeClass(this.state.running);
         sy.removeClass(this.state.queued);
         sy.addClass(this.state.success);
+        
+        // update galaxy history
+        Galaxy.currHistoryPanel.refresh();
     },
     
     // error
@@ -314,6 +314,9 @@ var GalaxyUpload = Backbone.View.extend(
                 $(this).find('#space_to_tabs').attr('disabled', false);
             }
         });
+        
+        // set html content
+        $('#upload-info').html('Queueing will pause after completing the current file.');
     },
     
     // queue is done

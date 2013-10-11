@@ -23,6 +23,7 @@
         complete        : function() {},
         error_filesize  : "File exceeds 250MB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
+        error_server    : "The server is unavailable.",
         error_toomany   : "You can only queue <20 files per upload session."
     }
 
@@ -39,7 +40,7 @@
     var queue_length = 0;
   
     // indicates if queue is currently running
-    var queue_status = false;
+    var queue_running = false;
   
     // element
     var el = null;
@@ -114,7 +115,7 @@
         function add(files)
         {
             // only allow adding file if current batch is complete
-            if (queue_status)
+            if (queue_running)
                 return;
   
             for (var i = 0; i < files.length; i++)
@@ -154,13 +155,13 @@
         function process()
         {
             // validate
-            if (queue_length == 0 || !queue_status)
+            if (queue_length == 0 || !queue_running)
             {
-                queue_status = false;
+                queue_running = false;
                 opts.complete();
                 return;
             } else
-                queue_status = true;
+                queue_running = true;
   
             // get an identifier from the queue
             var index = -1;
@@ -204,6 +205,12 @@
                     {
                         error(index, file, opts.error_default);
                     };
+  
+                    // link abort
+                    reader.onabort = function(e)
+                    {
+                        error(index, file, opts.error_default);
+                    };
 
                     // read data
                     reader.readAsDataURL(file);
@@ -230,9 +237,13 @@
             // prepare request
             var xhr = new XMLHttpRequest();
 
-            // onloadend
-            xhr.onloadend = function()
+            // captures state changes
+            xhr.onreadystatechange = function()
             {
+                // check for request completed, server connection closed
+                if (xhr.readyState != xhr.DONE)
+                    return;
+  
                 // retrieve response
                 var response = null;
                 if (xhr.responseText)
@@ -250,16 +261,20 @@
                 {
                     // format error
                     var text = xhr.statusText;
-                    if (!xhr.statusText)
-                        text = opts.error_default;
+                    if (!xhr.statusText) {
+                        if (xhr.status == 0)
+                            text = opts.error_server;
+                        else
+                            text = opts.error_default;
+                    }
   
                     // request error
-                    error(index, file, text + " (Server Code " + xhr.status + ")");
+                    error(index, file, text + " (" + xhr.status + ")");
                 } else
                     // parse response
                     success(index, file, response);
             }
-  
+
             // prepare upload progress
             xhr.upload.index = index;
             xhr.upload.file = file;
@@ -313,9 +328,9 @@
         // initiate upload process
         function upload()
         {
-            if (!queue_status)
+            if (!queue_running)
             {
-                queue_status = true;
+                queue_running = true;
                 process();
             }
         }
@@ -324,7 +339,7 @@
         function pause()
         {
             // set global status variable to false
-            queue_status = false;
+            queue_running = false;
         }
   
         // set options
