@@ -107,7 +107,7 @@
             Galaxy.master = new master.GalaxyMaster();
             Galaxy.frame_manager = new frame.GalaxyFrameManager();
             Galaxy.modal = new modal.GalaxyModal();
-            Galaxy.upload = new upload.GalaxyUpload();
+            ##Galaxy.upload = new upload.GalaxyUpload();
         });
     </script>
 </%def>
