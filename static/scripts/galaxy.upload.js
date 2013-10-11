@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.master", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master) {
+define(["galaxy.modal", "galaxy.master", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master, mod_util) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -69,6 +69,17 @@ var GalaxyUpload = Backbone.View.extend(
         
         // add to master
         Galaxy.master.prepend(this.button_show);
+        
+        // load extension
+        var self = this;
+        mod_util.jsonFromUrl(galaxy_config.root + "api/datatypes",
+            function(datatypes) {
+                for (key in datatypes) {
+                    var filetype = datatypes[key];
+                    self.select_extension[filetype] = filetype;
+                }
+            });
+            
     },
     
     // events
@@ -294,9 +305,20 @@ var GalaxyUpload = Backbone.View.extend(
         if (this.counter.running == 0)
             return;
                             
-        // initiate upload procedure in plugin
+        // request pause
         this.uploadbox.pause();
-
+        
+        // set html content
+        $('#upload-info').html('Queueing will pause after completing the current file...');
+    },
+    
+    // queue is done
+    event_complete: function()
+    {
+        // update running
+        this.counter.running = 0;
+        this.update_screen();
+        
         // switch icons for new uploads
         var items = $(this.el).find('.upload-item');
         var self = this;
@@ -314,17 +336,6 @@ var GalaxyUpload = Backbone.View.extend(
                 $(this).find('#space_to_tabs').attr('disabled', false);
             }
         });
-        
-        // set html content
-        $('#upload-info').html('Queueing will pause after completing the current file.');
-    },
-    
-    // queue is done
-    event_complete: function()
-    {
-        // update running
-        this.counter.running = 0;
-        this.update_screen();
     },
     
     // remove all

@@ -41,6 +41,7 @@
   
     // indicates if queue is currently running
     var queue_running = false;
+    var queue_pause = false;
   
     // element
     var el = null;
@@ -155,8 +156,9 @@
         function process()
         {
             // validate
-            if (queue_length == 0 || !queue_running)
+            if (queue_length == 0 || queue_pause)
             {
+                queue_pause = false;
                 queue_running = false;
                 opts.complete();
                 return;
@@ -338,8 +340,8 @@
         // pause upload process
         function pause()
         {
-            // set global status variable to false
-            queue_running = false;
+            // request pause
+            queue_pause = true;
         }
   
         // set options
