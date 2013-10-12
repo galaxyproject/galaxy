@@ -367,7 +367,7 @@ extend(Drawable.prototype, {
      */
     add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
         var drawable = this;
-        this.action_icons[name] = $("<a/>").attr("href", "").attr("title", title)
+        this.action_icons[name] = $("<a/>").attr("title", title)
                                            .addClass("icon-button").addClass(css_class).tooltip()
                                            .click( function() { on_click_fn(drawable); } )
                                            .appendTo(this.icons_div);
@@ -942,7 +942,10 @@ var TracksterView = Backbone.View.extend({
         // Overview (scrollbar and overview plot) at bottom
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
-        this.overview_close = $("<a/>").attr("href", "").attr("title", "Close overview").addClass("icon-button overview-close tooltip").hide().appendTo(this.overview_viewport);
+        this.overview_close = $("<a/>").attr("title", "Close overview")
+                                       .addClass("icon-button overview-close tooltip")
+                                       .hide()
+                                       .appendTo(this.overview_viewport);
         this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
         this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
         this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
