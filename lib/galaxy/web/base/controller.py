@@ -1082,7 +1082,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                 return {
                     "dataset_id": trans.security.decode_id( dataset_dict['id'] ),
                     "hda_ldda": dataset_dict.get('hda_ldda', 'hda'),
-                    "name": track_dict['name'],
                     "track_type": track_dict['track_type'],
                     "prefs": track_dict['prefs'],
                     "mode": track_dict['mode'],
@@ -1101,7 +1100,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                         drawable = unpack_collection( drawable_json )
                     unpacked_drawables.append( drawable )
                 return {
-                    "name": collection_json.get( 'name', '' ),
                     "obj_type": collection_json[ 'obj_type' ],
                     "drawables": unpacked_drawables,
                     "prefs": collection_json.get( 'prefs' , [] ),
@@ -1192,7 +1190,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                 return {
                     "track_type": dataset.datatype.track_type,
                     "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
-                    "name": track_dict['name'],
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
@@ -1208,7 +1205,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                     else:
                         drawables.append( pack_collection( drawable_dict ) )
                 return {
-                    'name': collection_dict.get( 'name', 'dummy' ),
                     'obj_type': collection_dict[ 'obj_type' ],
                     'drawables': drawables,
                     'prefs': collection_dict.get( 'prefs', [] ),

@@ -204,23 +204,28 @@ function round(num, places) {
 var Drawable = function(view, container, obj_dict) {
     if (!Drawable.id_counter) { Drawable.id_counter = 0; }
     this.id = Drawable.id_counter++;
-    this.name = obj_dict.name;
     this.view = view;
     this.container = container;
     this.drag_handle_class = obj_dict.drag_handle_class;
     this.is_overview = false;
     this.action_icons = {};
     
-    // Set up drawable configuration.
+    // -- Set up drawable configuration. --
+
     this.config = new Config({
         params: this.config_params,
         onchange: this.config_onchange,
         saved_values: obj_dict.prefs
     });
+    this.prefs = this.config.get('values');
+
+    // If there's no saved name, use object name.
+    if (!this.prefs.name) {
+        this.prefs.name = obj_dict.name;
+    }
     if (this.config_onchange) {
         this.config.on('change:values', this.config_onchange, this);
     }
-    this.prefs = this.config.get('values');
     
     // Build Drawable HTML and behaviors.
     this.container_div = this.build_container_div();
@@ -296,7 +301,7 @@ Drawable.prototype.action_icons_def = [
 
 extend(Drawable.prototype, {
     config_params: [ 
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+            { key: 'name', label: 'Name', type: 'text', default_value: '' },
             { key: 'content_visible', type: 'bool', default_value: true, hidden: true }
     ],
 
@@ -332,9 +337,9 @@ extend(Drawable.prototype, {
      * Set drawable name.
      */ 
     set_name: function(new_name) {
-        this.old_name = this.name;
-        this.name = new_name;
-        this.name_div.text(this.name);
+        this.old_name = this.prefs.name;
+        this.prefs.name = new_name;
+        this.name_div.text(this.prefs.name);
     },
 
     /**
@@ -342,8 +347,8 @@ extend(Drawable.prototype, {
      */
     revert_name: function() {
         if (this.old_name) {
-            this.name = this.old_name;
-            this.name_div.text(this.name);
+            this.prefs.name = this.old_name;
+            this.name_div.text(this.prefs.name);
         }
     },
 
@@ -473,7 +478,6 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             dictified_drawables.push(this.drawables[i].to_dict());
         }
         return {
-            name: this.name,
             prefs: this.prefs,
             obj_type: this.obj_type,
             drawables: dictified_drawables
@@ -669,7 +673,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     build_header_div: function() {
         var header_div = $("<div/>").addClass("track-header");
         header_div.append($("<div/>").addClass(this.drag_handle_class));
-        this.name_div = $("<div/>").addClass("track-name").text(this.name).appendTo(header_div);
+        this.name_div = $("<div/>").addClass("track-name").text(this.prefs.name).appendTo(header_div);
         return header_div;
     },
 
@@ -830,7 +834,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
      */
     show_composite_track: function() {
         var composite_track = new CompositeTrack(this.view, this.view, {
-            name: this.name,
+            name: this.prefs.name,
             drawables: this.drawables
         });
         var index = this.container.replace_drawable(this, composite_track, true);
@@ -1792,7 +1796,7 @@ var TracksterToolView = Backbone.View.extend({
         // already in group, add track to group.
         if (current_track.container === view) {
             // Create new group.
-            var group = new DrawableGroup(view, view, { name: this.name });
+            var group = new DrawableGroup(view, view, { name: this.prefs.name });
             
             // Replace track with group.
             var index = current_track.container.replace_drawable(current_track, group, false);
@@ -2512,8 +2516,8 @@ extend(Track.prototype, Drawable.prototype, {
     build_header_div: function() {
         var header_div = $("<div class='track-header'/>");
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.name)
-                        .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.prefs.name)
+                        .attr( "id", this.prefs.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
     },
 
@@ -2889,7 +2893,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     to_dict: function() {
         return {
             track_type: this.get_type(),
-            name: this.name,
             dataset: {
                 id: this.dataset.id,
                 hda_ldda: this.dataset.get('hda_ldda')
@@ -3643,7 +3646,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     show_group: function() {
         // Create group with individual tracks.
         var group = new DrawableGroup(this.view, this.container, {
-                name: this.name
+                name: this.prefs.name
             }),
             track;
         for (var i = 0; i < this.drawables.length; i++) {
