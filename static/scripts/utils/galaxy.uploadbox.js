@@ -46,6 +46,9 @@
     // element
     var el = null;
   
+    // xml request element
+    var xhr = null;
+  
     // attach to element
     $.fn.uploadbox = function(options)
     {
@@ -237,7 +240,7 @@
             formData.append(opts.paramname, file, file.name);
   
             // prepare request
-            var xhr = new XMLHttpRequest();
+            xhr = new XMLHttpRequest();
 
             // captures state changes
             xhr.onreadystatechange = function()
