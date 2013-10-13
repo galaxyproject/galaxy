@@ -3754,9 +3754,9 @@ var ReferenceTrack = function (view) {
     this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    config_params: [
-        { name: 'height', default: 13 }
-    ],
+    config_params: _.union( Drawable.prototype.config_params, [
+        { key: 'height', type: 'int', default_value: 13, hidden: true }
+    ] ),
 
     build_header_div: function() {},
 
