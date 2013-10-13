@@ -1986,7 +1986,11 @@ var ConfigView = Backbone.View.extend({
         //
 
         var track_config = this.model;
-        var container = $("<div />");
+
+        // Prevent propagation of keydown events to viz to avoid inadvertent navigation.
+        var container = $("<div/>").keydown(function(e) {
+            e.stopPropagation();
+        });
         var param;
         // Function to process parameters recursively
         function handle_params( params, container ) {
