@@ -208,15 +208,13 @@ var Drawable = function(view, container, obj_dict) {
     this.view = view;
     this.container = container;
     this.config = new Config({
-        track: this,
-        params: [ 
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name }
-        ],
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            this.track.set_name(this.track.config.get('values').name);
-        }
+        params: this.config_params,
+        onchange: this.config_onchange,
+        saved_values: obj_dict.prefs
     });
+    if (this.config_onchange) {
+        this.config.on('change:values', this.config_onchange, this);
+    }
     this.prefs = this.config.get('values');
     this.drag_handle_class = obj_dict.drag_handle_class;
     this.is_overview = false;
@@ -297,10 +295,20 @@ Drawable.prototype.action_icons_def = [
 ];
 
 extend(Drawable.prototype, {
+    config_params: [ 
+            { key: 'name', label: 'Name', type: 'text', default_value: this.name }
+    ],
+
+    config_onchange: function() {
+            this.track.set_name(this.track.config.get('values').name);
+    },
+    
     init: function() {},
+
     changed: function() {
         this.view.changed();
     },
+
     can_draw: function() {
         if (this.enabled && this.content_visible) { 
             return true;
@@ -308,6 +316,7 @@ extend(Drawable.prototype, {
         
         return false;
     },
+
     request_draw: function() {},
 
     _draw: function(options) {},
@@ -1909,13 +1918,6 @@ var Config = Backbone.Model.extend({
         }
 
         this.set('values', values);
-
-        // HACK: to make onchange work as written, attach track at the 
-        // top level of model and call onchange on custom event.    
-        if (options.onchange) {
-            this.track = options.track;
-            this.on('change:values', options.onchange, this);
-        }
     },
 
     /**
@@ -2161,7 +2163,7 @@ var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, mess
             canvas = this.html_elt.children()[0],
             message_div = $("<div/>").addClass("tile-message")
                             // -1 to account for border.
-                            .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt);
+                            .css({'height': ERROR_PADDING, 'width': canvas.width}).prependTo(this.html_elt);
                                                         
         // Handle message; only message currently is that only the first N elements are displayed.
         var tile_region = new visualization.GenomeRegion({
@@ -2170,10 +2172,10 @@ var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, mess
                 end: this.high
             }),
             num_features = data.length,
-            more_down_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-down")
+            more_down_icon = $("<a/>").addClass("icon more-down")
                                 .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
                                 .tooltip().appendTo(message_div),
-            more_across_icon = $("<a href='javascript:void(0);'/>").addClass("icon more-across")
+            more_across_icon = $("<a/>").addClass("icon more-across")
                                 .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
                                 .tooltip().appendTo(message_div);
 
@@ -2356,7 +2358,7 @@ var Track = function(view, container, obj_dict) {
     // Height attributes: min height, max height, and visible height.
     this.min_height_px = 16;
     this.max_height_px = 800;
-    this.visible_height_px = 0;
+    this.visible_height_px = this.prefs.height;
             
     //
     // Create content div, which is where track is displayed, and add to container if available.
@@ -3529,7 +3531,6 @@ extend(LabelTrack.prototype, Track.prototype, {
  * bigwig data for now.
  */
 var CompositeTrack = function(view, container, obj_dict) {
-    this.display_modes = CONTINUOUS_DATA_MODES;
     TiledTrack.call(this, view, container, obj_dict);
     
     // Init drawables; each drawable is a copy so that config/preferences 
@@ -3564,6 +3565,8 @@ var CompositeTrack = function(view, container, obj_dict) {
 };
 
 extend(CompositeTrack.prototype, TiledTrack.prototype, {
+    display_modes: CONTINUOUS_DATA_MODES,
+
     action_icons_def:
     [
         // Create composite track from group's tracks.
@@ -3728,7 +3731,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 var ReferenceTrack = function (view) {
     TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
     
-    this.visible_height_px = 13;
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
@@ -3741,6 +3743,10 @@ var ReferenceTrack = function (view) {
     this.hide_contents();
 };
 extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    config_params: [
+        { name: 'height', default: 13 }
+    ],
+
     build_header_div: function() {},
 
     init: function() {
@@ -3796,33 +3802,25 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
  * Track displays continuous/numerical data. Track expects position data in 1-based format, i.e. wiggle format.
  */
 var LineTrack = function (view, container, obj_dict) {
-    var track = this;
-    this.display_modes = CONTINUOUS_DATA_MODES;
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
-       
-    // Define track configuration
-    this.config = new Config( {
-        track: this,
-        params: [
+};
+extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    display_modes: CONTINUOUS_DATA_MODES,
+
+    config_params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'color', label: 'Color', type: 'color', default_value: util.get_random_color() },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
             { key: 'height', type: 'int', default_value: 30, hidden: true }
-        ], 
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            track.set_name(track.prefs.name);
-            track.request_redraw({ clear_tile_cache: true });
-        }
-    });
-
-    this.prefs = this.config.get('values');
-    this.visible_height_px = this.prefs.height;
-};
-extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    ],
+    
+    config_onchange: function() {
+            this.set_name(this.prefs.name);
+            this.request_draw({ clear_tile_cache: true });
+    },
     
     /**
      * Actions to be taken before drawing.
@@ -3854,35 +3852,32 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     }
 });
 
+/**
+ * Diagonal heatmap for showing interactions data.
+ */
 var DiagonalHeatmapTrack = function (view, container, obj_dict) {
-    var track = this;
-    this.display_modes = ["Heatmap"];
     this.mode = "Heatmap";
     TiledTrack.call(this, view, container, obj_dict);
-       
-    // Define track configuration
-    this.config = new Config( {
-        track: this,
-        params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
-            { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
-            { key: 'min_value', label: 'Min Value', type: 'float', default_value: -1 },
-            { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'height', type: 'int', default_value: 500, hidden: true }
-        ], 
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            track.set_name(track.prefs.name);
-            this.request_redraw({ clear_tile_cache: true });
-        }
-    });
-
-    this.prefs = this.config.get('values');
-    this.visible_height_px = this.prefs.height;
 };
+
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    display_modes: ["Heatmap"],
+
+    config_params: [
+        { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+        { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
+        { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
+        { key: 'min_value', label: 'Min Value', type: 'float', default_value: -1 },
+        { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'height', type: 'int', default_value: 500, hidden: true }
+    ],
+
+    config_onchange: function() {
+        this.set_name(this.prefs.name);
+        this.request_draw({ clear_tile_cache: true });
+    },
+
     /**
      * Draw tile.
      */
@@ -3900,51 +3895,8 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
  * A track that displays features/regions. Track expects position data in BED format, i.e. 0-based, half-open.
  */
 var FeatureTrack = function(view, container, obj_dict) {
-    //
-    // Preinitialization: do things that need to be done before calling Track and TiledTrack
-    // initialization code.
-    //
-    var track = this;
-    this.display_modes = ["Auto", "Coverage", "Dense", "Squish", "Pack"];
-    
-    //
-    // Initialization.
-    //    
     TiledTrack.call(this, view, container, obj_dict);
-
-    // Define and restore track configuration.
-    var 
-        block_color = util.get_random_color(),
-        reverse_strand_color = util.get_random_color( [ block_color, "#FFFFFF" ] );
-    this.config = new Config( {
-        track: this,
-        params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: block_color },
-            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
-            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
-              help: 'Show the number of items in each bin when drawing summary histogram' },
-            { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-            { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-            { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
-                options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'height', type: 'int', default_value: this.visible_height_px, hidden: true}
-        ], 
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            track.set_name(track.prefs.name);
-            track.set_painter_from_config();
-            track.request_draw({ clear_tile_cache: true });
-        }
-    });
-    this.prefs = this.config.get('values');
-    this.visible_height_px = this.prefs.height;
-        
     this.container_div.addClass( "feature-track" );
-    this.show_labels_scale = 0.001;
-    this.showing_details = false;
     this.summary_draw_height = 30;
     this.slotters = {};
     this.start_end_dct = {};
@@ -3954,6 +3906,28 @@ var FeatureTrack = function(view, container, obj_dict) {
     this.set_painter_from_config();
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+
+    config_params: [
+        { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+        { key: 'block_color', label: 'Block color', type: 'color', default_value: util.get_random_color() },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+        { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
+          help: 'Show the number of items in each bin when drawing summary histogram' },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
+            options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'height', type: 'int', default_value: 0, hidden: true}
+    ],
+
+    config_onchange: function() {
+        this.set_name(this.prefs.name);
+        this.set_painter_from_config();
+        this.request_draw({ clear_tile_cache: true });
+    },
 
     set_painter_from_config: function() {
         if ( this.config.get('values').connector_style === 'arcs' ) {
@@ -4221,27 +4195,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
  * Displays variant data.
  */
 var VariantTrack = function(view, container, obj_dict) {
-    this.display_modes = ["Auto", "Coverage", "Dense", "Squish", "Pack"];
     TiledTrack.call(this, view, container, obj_dict);
-    
-    this.config = new Config( {
-        track: this,
-        params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'color', label: 'Histogram color', type: 'color', default_value: util.get_random_color() },
-            { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
-            { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
-            { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
-        ], 
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            this.track.set_name(this.track.prefs.name);
-            this.track.request_draw({ clear_tile_cache: true });
-        }
-    });
-    this.prefs = this.config.get('values');
-    
     this.painter = painters.VariantPainter;
     this.summary_draw_height = 30;
 
@@ -4251,6 +4205,22 @@ var VariantTrack = function(view, container, obj_dict) {
 };
 
 extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+    display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+
+    config_params: [
+        { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+        { key: 'color', label: 'Histogram color', type: 'color', default_value: util.get_random_color() },
+        { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
+        { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
+        { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
+    ],
+    
+    config_onchange: function() {
+        this.set_name(this.prefs.name);
+        this.request_draw({ clear_tile_cache: true });
+    },
+
     /**
      * Draw tile.
      */
@@ -4375,39 +4345,32 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
  * Track that displays mapped reads. Track expects position data in 1-based, closed format, i.e. SAM/BAM format.
  */
 var ReadTrack = function (view, container, obj_dict) {
-    FeatureTrack.call(this, view, container, obj_dict);
-    
-    var 
-        block_color = util.get_random_color(),
-        reverse_strand_color = util.get_random_color( [ block_color, "#ffffff" ] );
-    this.config = new Config( {
-        track: this,
-        params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: block_color },
-            { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: reverse_strand_color },
-            { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
-            { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
-            { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
-            { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-            { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' }
-        ], 
-        saved_values: obj_dict.prefs,
-        onchange: function() {
-            this.track.set_name(this.track.prefs.name);
-            this.track.request_draw({ clear_tile_cache: true });
-        }
-    });
-    this.prefs = this.config.get('values');
-    
+    FeatureTrack.call(this, view, container, obj_dict);    
     // Choose painter based on whether there is reference data.
     this.painter = (view.reference_track ? painters.RefBasedReadPainter : painters.ReadPainter);
-
     this.update_icons();
 };
-extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
+
+extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+    config_params: [
+        { key: 'name', label: 'Name', type: 'text', default_value: this.name },
+        { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
+        { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
+        { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
+        { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'height', type: 'int', default_value: 0, hidden: true}
+    ],
+
+    config_onchange: function() {
+        this.set_name(this.prefs.name);
+        this.request_draw({ clear_tile_cache: true });
+    }
+});
 
 /**
  * Objects that can be added to a view.
