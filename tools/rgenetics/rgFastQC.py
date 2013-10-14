@@ -166,7 +166,7 @@ class FastQC():
                  res.append('<tr><td><a href="%s">%s</a></td></tr>\n' % (fn,getFileString(fn, self.opts.outputdir)))
         res.append('</table>\n') 
         res.append('<a href="http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/">FastQC documentation and full attribution is here</a><br/><hr/>\n')
-        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://rgenetics.org for details and licensing\n</div>')
+        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://bitbucket.org/rgenetics for details and licensing\n</div>')
         res.append(footer)
         fixed = rep[:bodyindex] + res + rep[bodyindex:]
         return fixed # with our additions
