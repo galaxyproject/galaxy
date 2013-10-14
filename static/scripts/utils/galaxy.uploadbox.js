@@ -24,7 +24,8 @@
         error_filesize  : "File exceeds 2GB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
         error_server    : "The server is unavailable.",
-        error_toomany   : "You can only queue <20 files per upload session."
+        error_toomany   : "You can only queue <20 files per upload session.",
+        error_login     : "Uploads require you to log in."
     }
 
     // options
@@ -292,7 +293,13 @@
                 {
                     // format error
                     var text = xhr.statusText;
-                    if (!xhr.statusText) {
+  
+                    // format status
+                    if (xhr.status == 403)
+                        text = opts.error_login;
+  
+                    // text
+                    if (!text) {
                         if (xhr.status == 0)
                             text = opts.error_server;
                         else
