@@ -49,6 +49,9 @@
     // xml request element
     var xhr = null;
   
+    // file reader
+    var reader = null;
+  
     // attach to element
     $.fn.uploadbox = function(options)
     {
@@ -158,6 +161,9 @@
         // process an upload, recursive
         function process()
         {
+            // log
+            console.log("Processing queue..." + queue_length + " (" + queue_running + " / " + queue_pause + ")");
+ 
             // validate
             if (queue_length == 0 || queue_pause)
             {
@@ -167,6 +173,9 @@
                 return;
             } else
                 queue_running = true;
+
+            // log
+            console.log("Looking for file...");
   
             // get an identifier from the queue
             var index = -1;
@@ -181,6 +190,9 @@
   
             // remove from queue
             remove(index)
+ 
+            // log
+            console.log("Initializing ('" + file.name + "').");
   
             // start
             var data = opts.initialize(index, file);
@@ -189,7 +201,7 @@
             try
             {
                 // load file read
-                var reader = new FileReader();
+                reader = new FileReader();
   
                 // identify maximum file size
                 var filesize = file.size;
@@ -202,6 +214,10 @@
                     // link load
                     reader.onload = function(e)
                     {
+                        // file read succesfully
+                        console.log("Preparing submission ('" + file.name + "').");
+  
+                        // sending file
                         send(index, file, data)
                     };
 
@@ -216,6 +232,9 @@
                     {
                         error(index, file, opts.error_default);
                     };
+
+                    // reading file
+                    console.log("Reading ('" + file.name + "').");
 
                     // read data
                     reader.readAsDataURL(file);
@@ -241,10 +260,17 @@
   
             // prepare request
             xhr = new XMLHttpRequest();
-
+            xhr.open('POST', opts.url, true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            
             // captures state changes
             xhr.onreadystatechange = function()
             {
+                // status change
+                console.log("Status changed: " + xhr.readyState + ".");
+  
                 // check for request completed, server connection closed
                 if (xhr.readyState != xhr.DONE)
                     return;
@@ -284,13 +310,12 @@
             xhr.upload.index = index;
             xhr.upload.file = file;
             xhr.upload.addEventListener('progress', progress, false);
-  
-            // open request
-            xhr.open('POST', opts.url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            // send request
             xhr.send(formData);
+  
+            // sending file
+            console.log("Sending file ('" + file.name + "').");
         }
   
         // success
