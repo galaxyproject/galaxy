@@ -150,3 +150,19 @@ class InstallTestRepository( TwillTestCase ):
         else:
             strings_displayed.append( 'has been uninstalled' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+        # Get all tool dependencies that are in an error state and uninstall them explicitly, so that the next installation attempt
+        # may succeed.
+        error_state = model.ToolDependency.installation_status.ERROR
+        tool_dependencies = test_db_util.get_tool_dependencies_for_installed_repository( installed_repository.id, status=error_state )
+        if len( tool_dependencies ) > 0:
+            encoded_tool_dependency_ids = [ self.security.encode_id( tool_dependency.id ) for tool_dependency in tool_dependencies ]
+            self.uninstall_tool_dependencies( self.security.encode_id( installed_repository.id ), encoded_tool_dependency_ids )
+        
+    def uninstall_tool_dependencies( self, encoded_repository_id, encoded_tool_dependency_ids ):
+        tool_dependency_ids = ','.join( encoded_tool_dependency_ids )
+        url = '/admin_toolshed/uninstall_tool_dependencies?repository_id=%s&inst_td_ids=%s&operation=uninstall' % \
+            ( encoded_repository_id, tool_dependency_ids )
+        self.visit_url( url )
+        tc.fv( 'uninstall_tool_dependencies', 'tool_dependency_ids', tool_dependency_ids )
+        tc.submit( 'uninstall_tool_dependencies_button' )
+        
