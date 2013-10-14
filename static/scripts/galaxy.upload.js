@@ -57,6 +57,10 @@ var GalaxyUpload = Backbone.View.extend(
             return;
         }
         
+        // check if logged in
+        if (!Galaxy.currUser.get('id'))
+            return;
+            
         // add activate icon
         var self = this;
         this.button_show = new mod_master.GalaxyMasterIcon (

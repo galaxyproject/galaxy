@@ -24,7 +24,8 @@
         error_filesize  : "File exceeds 2GB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
         error_server    : "The server is unavailable.",
-        error_toomany   : "You can only queue <20 files per upload session."
+        error_toomany   : "You can only queue <20 files per upload session.",
+        error_login     : "Uploads require you to log in."
     }
 
     // options
@@ -158,6 +159,9 @@
         // process an upload, recursive
         function process()
         {
+            // log
+            //console.log("Processing queue..." + queue_length + " (" + queue_running + " / " + queue_pause + ")");
+ 
             // validate
             if (queue_length == 0 || queue_pause)
             {
@@ -167,6 +171,9 @@
                 return;
             } else
                 queue_running = true;
+
+            // log
+            //console.log("Looking for file...");
   
             // get an identifier from the queue
             var index = -1;
@@ -181,52 +188,23 @@
   
             // remove from queue
             remove(index)
+ 
+            // log
+            //console.log("Initializing ('" + file.name + "').");
   
-            // start
-            var data = opts.initialize(index, file);
+            // identify maximum file size
+            var filesize = file.size;
+            var maxfilesize = 1048576 * opts.maxfilesize;
   
-            // add file to queue
-            try
+            // check file size
+            if (filesize < maxfilesize)
             {
-                // load file read
-                var reader = new FileReader();
-  
-                // identify maximum file size
-                var filesize = file.size;
-                var maxfilesize = 1048576 * opts.maxfilesize;
-    
-                // set index
-                reader.index = index;
-                if (filesize < maxfilesize)
-                {
-                    // link load
-                    reader.onload = function(e)
-                    {
-                        send(index, file, data)
-                    };
-
-                    // link error
-                    reader.onerror = function(e)
-                    {
-                        error(index, file, opts.error_default);
-                    };
-  
-                    // link abort
-                    reader.onabort = function(e)
-                    {
-                        error(index, file, opts.error_default);
-                    };
-
-                    // read data
-                    reader.readAsDataURL(file);
-                } else {
-                    // skip file
-                    error(index, file, opts.error_filesize);
-                }
-            } catch (err)
-            {
-                // parse error
-                error(index, file, err);
+                // send data
+                var data = opts.initialize(index, file);
+                send(index, file, data)
+            } else {
+                // skip file
+                error(index, file, opts.error_filesize);
             }
         }
   
@@ -241,10 +219,17 @@
   
             // prepare request
             xhr = new XMLHttpRequest();
-
+            xhr.open('POST', opts.url, true);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            
             // captures state changes
             xhr.onreadystatechange = function()
             {
+                // status change
+                //console.log("Status changed: " + xhr.readyState + ".");
+  
                 // check for request completed, server connection closed
                 if (xhr.readyState != xhr.DONE)
                     return;
@@ -264,14 +249,14 @@
                 // pass any error to the error option
                 if (xhr.status < 200 || xhr.status > 299)
                 {
-                    // format error
+                    // format status
                     var text = xhr.statusText;
-                    if (!xhr.statusText) {
-                        if (xhr.status == 0)
-                            text = opts.error_server;
-                        else
-                            text = opts.error_default;
-                    }
+                    if (xhr.status == 403)
+                        text = opts.error_login;
+                    else if (xhr.status == 0)
+                        text = opts.error_server;
+                    else if (!text)
+                        text = opts.error_default;
   
                     // request error
                     error(index, file, text + " (" + xhr.status + ")");
@@ -284,13 +269,12 @@
             xhr.upload.index = index;
             xhr.upload.file = file;
             xhr.upload.addEventListener('progress', progress, false);
-  
-            // open request
-            xhr.open('POST', opts.url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            // send request
             xhr.send(formData);
+  
+            // sending file
+            //console.log("Sending file ('" + file.name + "').");
         }
   
         // success
@@ -360,7 +344,7 @@
         // verify browser compatibility
         function compatible()
         {
-            return window.File && window.FileReader && window.FormData && window.XMLHttpRequest && window.FileList;
+            return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
         }
   
         // export functions

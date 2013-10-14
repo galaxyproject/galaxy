@@ -952,11 +952,11 @@ class TwillTestCase( unittest.TestCase ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
+        tc.fv( 'registration', 'email', email )
+        tc.fv( 'registration', 'redirect', redirect )
+        tc.fv( 'registration', 'password', password )
+        tc.fv( 'registration', 'confirm', password )
+        tc.fv( 'registration', 'username', username )
         tc.submit( 'create_user_button' )
         previously_created = False
         username_taken = False

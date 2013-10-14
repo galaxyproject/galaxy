@@ -9,7 +9,6 @@ import urllib2
 import zipfile
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
-from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
