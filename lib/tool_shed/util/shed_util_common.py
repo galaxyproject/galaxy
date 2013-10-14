@@ -21,6 +21,7 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
 from xml.etree import ElementTree as XmlET
+from urllib2 import HTTPError
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -1232,10 +1233,25 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
     try:
         encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, url )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
+        return tool_shed_status_dict
+    except HTTPError, e:
+        # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
+        # using a boolean value.
+        log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" % \
+            ( str( repository.name ), str( e ) ) )
+        url = url_join( tool_shed_url,
+                        'repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
+                        ( repository.name, repository.owner, repository.changeset_revision ) )
+        try:
+            # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
+            text = common_util.tool_shed_get( app, tool_shed_url, url )
+            return dict( revision_update=text )
+        except Exception, e:
+            # The required tool shed may be unavailable, so default the revision_update value to 'false'.
+            return dict( revision_update='false' )
     except Exception, e:
         log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
-    return tool_shed_status_dict
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
