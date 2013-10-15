@@ -33,8 +33,6 @@ class Tabular( data.Text ):
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
 
-    def init_meta( self, dataset, copy_from=None ):
-        data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns that
@@ -199,10 +197,13 @@ class Tabular( data.Text ):
             if not column_names and dataset.metadata.column_names:
                 column_names = dataset.metadata.column_names
 
-            column_headers = [None] * dataset.metadata.columns
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
+            column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
-            for i in range( min( dataset.metadata.columns, len( column_names ) ) ):
+            for i in range( min( columns, len( column_names ) ) ):
                 if column_headers[i] is None and column_names[i] is not None:
                     column_headers[i] = column_names[i]
 
@@ -213,7 +214,7 @@ class Tabular( data.Text ):
                         i = int( getattr( dataset.metadata, name ) ) - 1
                     except:
                         i = -1
-                    if 0 <= i < dataset.metadata.columns and column_headers[i] is None:
+                    if 0 <= i < columns and column_headers[i] is None:
                         column_headers[i] = column_parameter_alias.get(name, name)
 
             out.append( '<tr>' )
@@ -236,13 +237,16 @@ class Tabular( data.Text ):
         try:
             if not dataset.peek:
                 dataset.set_peek()
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
             for line in dataset.peek.splitlines():
                 if line.startswith( tuple( skipchars ) ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
                     elems = line.split( '\t' )
                     # we may have an invalid comment line or invalid data
-                    if len( elems ) != dataset.metadata.columns:
+                    if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                     else:
                         out.append( '<tr>' )

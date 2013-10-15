@@ -166,6 +166,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     success: function() {
                         // FIXME: setting model attribute causes re-rendering, which is unnecessary.
                         //self.$el.remove();
+
                         self.model.set({ deleted: true });
                     }
                 });
@@ -634,67 +635,77 @@ function create_scatterplot_action_fn( url, params ){
  *  @returns function that displays modal, loads trackster
  */
 //TODO: should be imported from trackster.js
-function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
-    return function() {
-        var listTracksParams = {};
-        if (dbkey){
-            // list_tracks seems to use 'f-dbkey' (??)
-            listTracksParams[ 'f-dbkey' ] = dbkey;
-        }
-        $.ajax({
-            url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
-            dataType: "html",
-            error: function() { alert( _l( "Could not add this dataset to browser" ) + '.' ); },
-            success: function(table_html) {
-                var parent = window.parent;
-
-                parent.show_modal( _l( "View Data in a New or Saved Visualization" ), "", {
-                    "Cancel": function() {
-                        parent.hide_modal();
-                    },
-                    "View in saved visualization": function() {
-                        // Show new modal with saved visualizations.
-                        parent.show_modal( _l( "Add Data to Saved Visualization" ), table_html, {
-                            "Cancel": function() {
-                                parent.hide_modal();
+//TODO: This function is redundant and also exists in data.js
+    // create action
+    function create_trackster_action_fn (vis_url, dataset_params, dbkey) {
+        return function() {
+            var listTracksParams = {};
+            if (dbkey){
+                // list_tracks seems to use 'f-dbkey' (??)
+                listTracksParams[ 'f-dbkey' ] = dbkey;
+            }
+            $.ajax({
+                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                dataType: "html",
+                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+                    parent.Galaxy.modal.show({
+                        title   : "View Data in a New or Saved Visualization",
+                        buttons :{
+                            "Cancel": function(){
+                                parent.Galaxy.modal.hide();
                             },
-                            "Add to visualization": function() {
-                                $(parent.document).find('input[name=id]:checked').each(function() {
-                                    var vis_id = $(this).val();
-                                    dataset_params.id = vis_id;
+                            "View in saved visualization": function(){
+                                // Show new modal with saved visualizations.
+                                parent.Galaxy.modal.show(
+                                {
+                                    title: "Add Data to Saved Visualization",
+                                    body: table_html,
+                                    buttons :{
+                                        "Cancel": function(){
+                                            parent.Galaxy.modal.hide();
+                                        },
+                                        "Add to visualization": function(){
+                                            $(parent.document).find('input[name=id]:checked').each(function(){
+                                                // hide
+                                                parent.Galaxy.modal.hide();
+                                                
+                                                var vis_id = $(this).val();
+                                                dataset_params.id = vis_id;
+                                        
+                                                // add widget
+                                                parent.Galaxy.frame_manager.frame_new({
+                                                    title    : "Trackster",
+                                                    type     : "url",
+                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            },
+                            "View in new visualization": function(){
+                                // hide
+                                parent.Galaxy.modal.hide();
+                                
+                                var url = vis_url + "/trackster?" + $.param(dataset_params);
 
-                                    // hide modal
-                                    parent.hide_modal();
-
-                                    // add widget
-                                    Galaxy.frame_manager.frame_new(
-                                    {
-                                        title    : "Trackster",
-                                        type     : "url",
-                                        content  : vis_url + "/trackster?" + $.param(dataset_params)
-                                    });
+                                // add widget
+                                parent.Galaxy.frame_manager.frame_new({
+                                    title    : "Trackster",
+                                    type     : "url",
+                                    content  : url
                                 });
                             }
-                        });
-                    },
-                    "View in new visualization": function() {
-                        // hide modal
-                        parent.hide_modal();
+                        }
+                    });
+                }
+            });
+            return false;
+        };
+    }
 
-                        // add widget
-                        Galaxy.frame_manager.frame_new(
-                        {
-                            title    : "Trackster",
-                            type     : "url",
-                            content  : vis_url + "/trackster?" + $.param(dataset_params)
-                        });
-                    }
-                });
-            }
-        });
-        return false;
-    };
-}
 
 //==============================================================================
 //return {

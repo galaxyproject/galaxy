@@ -114,7 +114,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #                           version=section_version )
         # This dict is appended to tool_panel_section_metadata[ tool_guid ]
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
-        assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
+        assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
     def check_installed_repository_tool_dependencies( self, 
@@ -723,7 +723,6 @@ class ShedTwillTestCase( TwillTestCase ):
                             post_submit_strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        tc.fv( "user_access", "allow_push", '-Select one' )
         for username in usernames:
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
@@ -1094,6 +1093,10 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def update_tool_shed_status( self ):
+        url = '/admin_toolshed/update_tool_shed_status_for_installed_repository?all_installed_repositories=True'
+        self.visit_galaxy_url( url )
+    
     def upload_file( self, 
                      repository, 
                      filename, 
@@ -1305,6 +1308,6 @@ class ShedTwillTestCase( TwillTestCase ):
                     # This timeout currently defaults to 180 seconds, or 3 minutes.
                     if timeout_counter > common.repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                              ( timeout_counter, repository.status ) )
+                                              ( timeout_counter, galaxy_repository.status ) )
                         break
                     time.sleep( 1 )

@@ -57,6 +57,14 @@ body  {
 
 // ==== Panel layout styles ====
 
+@panel-message-height: 30px;
+
+@layout_top_padding: 0px;
+@border-default-color_padding: 0px;
+
+@panel_header_height: 30px;
+@panel_footer_height: 25px;
+
 #background {
     position: absolute;
     background: #fff;
@@ -74,17 +82,22 @@ body  {
     top: @navbar-height + @layout_top_padding + 1;
     left:0; 
     width:100%; 
-    height: @panel_header_height !important;
+    height: @panel-message-height !important;
     overflow: hidden; 
     border-bottom: solid #999 1px;
     font-size: 90%;
 }
 
-@layout_top_padding: 0px;
-@border-default-color_padding: 0px;
-
-@panel_header_height: 30px;
-@panel_footer_height: 25px;
+#inactivebox {
+    position:absolute; 
+    top: @navbar-height + @layout_top_padding + 1;
+    left:0; 
+    width:100%; 
+    height: @panel-message-height !important;
+    overflow: hidden; 
+    border-bottom: solid #999 1px;
+    font-size: 90%;
+}
 
 // Panels
 
@@ -121,6 +134,23 @@ body  {
     right: 0px; 
     z-index: 200;
     border-left: solid @layout-border-color 1px;
+}
+
+// If the message box or inactivity box is visible
+body.has-message-box, body.has-inactivity-box {
+    #left, #left-border, #center, #right-border, #right {
+        top: @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
+}
+
+// If both are visible
+body.has-message-box.has-inactivity-box {
+    #left, #left-border, #center, #right-border, #right {
+        top: 2 * @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
+    #inactivebox {
+        top: @panel-message-height + @navbar-height + @layout_top_padding + 1;
+    }
 }
 
 .subnavbar {
@@ -288,8 +318,8 @@ div.unified-panel-body {
 
 .panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
 {
-    height: 24px;
-    line-height: 24px;
+    height: @panel-message-height;
+    line-height: @panel-message-height;
     padding: 0px;
     padding-left: 26px;
     background-color: @state-danger-bg;
@@ -324,7 +354,7 @@ div.unified-panel-body {
     top:0; 
     left:0; 
     width:100%;
-    min-width:980px;
+    min-width:990px;
     padding: 0;
 
     .nav {
@@ -387,17 +417,17 @@ div.unified-panel-body {
         .symbol
         {
             float           : left;
-            margin          : 0px 8px;
+            margin          : 0px 10px;
         }
 
         .symbol .number
         {
             font-weight     : bold;
-            font-size       : 12px;
+            font-size       : 10px;
             font-family     : @font-family-sans-serif;
             position        : relative;
             left            : 23px;
-            top             : -18px;
+            top             : -16px;
         }
         
         .toggle
@@ -660,6 +690,16 @@ textarea, input[type="text"], input[type="password"] {
     padding: 3px;
 }
 
+// Always style buttons and submits as bootstrap buttons
+input[type="submit"], button {
+    .btn();
+    .btn-default();
+    // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
+    &.btn-primary {
+        .btn-primary();
+    }
+}
+
 .search-query {
   display: inline-block;
   padding: 4px;
@@ -710,7 +750,7 @@ textarea, input[type="text"], input[type="password"] {
     padding-left: 52px;
     background-image: url(error_large.png);
     background-repeat: no-repeat;
-    background-position: 10px 10px;
+    background-position: 10px 8px;
 }
 
 .errormessagelarge {
@@ -754,28 +794,23 @@ textarea, input[type="text"], input[type="password"] {
     background-position: 5px 5px;
 }
 
-.errormessage {
+.errormessage, .errormessagesmall {
     .alert-danger();
 }
 
 .warningmessage, .warningmessagesmall {
+    .alert-warning();
     background-image: url(warn_small.png);
-    //border-color: @warn_message_border;
-    //background-color: @warn_message_bg;
 }
 
 .donemessage, .donemessagesmall {
     .alert-success();
     background-image: url(ok_small.png);
-    // border-color: @done_message_border;
-    // background-color: @done_message_bg;
 }
 
 .infomessage, .infomessagesmall {
     .alert-info();
     background-image: url(info_small.png);
-    //border-color: @info_message_border;
-    //background-color: @info_message_bg;
 }
 
 .errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
@@ -1194,7 +1229,7 @@ a.action-button {
     &.popup, &.popup.split {
         padding-right: 18px;
         &:after {
-            margin-top: 6px;
+            top: 45%;
             position: absolute;
             right: 6px;
             .caret();
@@ -1337,6 +1372,21 @@ div.permissionContainer {
     background-repeat:no-repeat;
     background-position: 0px 0px;
     padding: 0;
+}
+
+.fa-icon-button {
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    line-height: 8px;
+    // Fade to maroon on hover
+    &:hover {
+        color: maroon;
+        .transition(color .25s linear);
+    }
 }
 
 .editable-text {
@@ -1489,11 +1539,19 @@ div.historyItem-noPermission {
     filter: alpha(opacity=60);
     -moz-opacity: .60;
     opacity: .60;
+    .state-icon {
+        line-height: 16px;
+        .fa-icon();
+        &:before {
+            content: "\f05e";
+        }
+    }
 }
 
 div.historyItem-paused {
     background: @state-paused-bg;
     .state-icon {
+        line-height: 16px;
         .fa-icon();
         &:before {
             content: "\f04c";
@@ -1503,6 +1561,7 @@ div.historyItem-paused {
 
 div.historyItem-new {
     .state-icon {
+        line-height: 16px;
         .fa-icon();
         &:before {
             content: "\f071";
@@ -1791,4 +1850,10 @@ div.toolTitleNoSection
 }
 .icon-button.chevron-expand {
     .sprite(@chevron-expand-bw);
+}
+
+// honeypot for registration form
+
+#for_bears {
+    display: none;
 }

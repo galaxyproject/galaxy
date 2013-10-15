@@ -166,7 +166,17 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
-            external_job_id = self.ds.runJob(jt)
+            # TODO: create a queue for retrying submission indefinitely
+            # TODO: configurable max tries and sleep
+            trynum = 0
+            external_job_id = None
+            while external_job_id is None and trynum < 5:
+                try:
+                    external_job_id = self.ds.runJob(jt)
+                except drmaa.InternalException, e:
+                    trynum += 1
+                    log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
+                    time.sleep( 5 )
         else:
             job_wrapper.change_ownership_for_run()
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
@@ -226,7 +236,13 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
-            if state in ( drmaa.JobState.DONE, drmaa.JobState.FAILED ):
+            if state == drmaa.JobState.FAILED:
+                if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    ajs.stop_job = False
+                    ajs.fail_message = "The cluster DRM system terminated this job"
+                    self.work_queue.put( ( self.fail_job, ajs ) )
+                continue
+            if state == drmaa.JobState.DONE:
                 if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
                     self.work_queue.put( ( self.finish_job, ajs ) )
                 continue

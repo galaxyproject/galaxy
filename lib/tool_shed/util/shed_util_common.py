@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import string
 import tempfile
@@ -20,10 +21,11 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import xml_util
 from xml.etree import ElementTree as XmlET
-from galaxy import eggs
-import pkg_resources
+from urllib2 import HTTPError
 
-pkg_resources.require( 'mercurial' )
+from galaxy import eggs
+eggs.require( 'mercurial' )
+
 from mercurial import cmdutil
 from mercurial import commands
 from mercurial import hg
@@ -143,12 +145,18 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
             repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
-def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled=False ):
+def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
     """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
     for tool_dependency in tool_shed_repository.tool_dependencies:
-        if uninstalled and tool_dependency.status != trans.model.ToolDependency.installation_status.UNINSTALLED:
-            continue
+        if uninstalled_only:
+            if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
+        else:
+            if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
         option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
         option_value = trans.security.encode_id( tool_dependency.id )
         tool_dependencies_select_field.add_option( option_label, option_value )
@@ -306,6 +314,21 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
+
+def extract_components_from_tuple( repository_components_tuple ):
+    '''Extract the repository components from the provided tuple in a backward-compatible manner.'''
+    toolshed = repository_components_tuple[ 0 ]
+    name = repository_components_tuple[ 1 ]
+    owner = repository_components_tuple[ 2 ]
+    changeset_revision = repository_components_tuple[ 3 ]
+    components_list = [ toolshed, name, owner, changeset_revision ]
+    if len( repository_components_tuple ) == 5:
+        toolshed, name, owner, changeset_revision, prior_installation_required = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
+    elif len( repository_components_tuple ) == 6:
+        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_components_tuple
+        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
+    return components_list
 
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
@@ -868,6 +891,31 @@ def get_repository_by_name_and_owner( app, name, owner ):
                          .first()
     return None
 
+def get_repository_dependency_types( repository_dependencies ):
+    """
+    Inspect the received list of repository_dependencies tuples and return boolean values for has_repository_dependencies and
+    has_repository_dependencies_only_if_compiling_contained_td.
+    """
+    # Set has_repository_dependencies, which will be True only if at least one repository_dependency is defined with the value of
+    # only_if_compiling_contained_td as False.
+    has_repository_dependencies = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if not asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies = True
+            break
+    # Set has_repository_dependencies_only_if_compiling_contained_td, which will be True only if at least one repository_dependency is
+    # defined with the value of only_if_compiling_contained_td as True.
+    has_repository_dependencies_only_if_compiling_contained_td = False
+    for rd_tup in repository_dependencies:
+        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+            common_util.parse_repository_dependency_tuple( rd_tup )
+        if asbool( only_if_compiling_contained_td ):
+            has_repository_dependencies_only_if_compiling_contained_td = True
+            break
+    return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
+
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
@@ -1185,10 +1233,25 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
     try:
         encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, url )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
+        return tool_shed_status_dict
+    except HTTPError, e:
+        # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
+        # using a boolean value.
+        log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" % \
+            ( str( repository.name ), str( e ) ) )
+        url = url_join( tool_shed_url,
+                        'repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
+                        ( repository.name, repository.owner, repository.changeset_revision ) )
+        try:
+            # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
+            text = common_util.tool_shed_get( app, tool_shed_url, url )
+            return dict( revision_update=text )
+        except Exception, e:
+            # The required tool shed may be unavailable, so default the revision_update value to 'false'.
+            return dict( revision_update='false' )
     except Exception, e:
-        log.exception( "Error attemtping to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
+        log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
-    return tool_shed_status_dict
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
@@ -1389,14 +1452,23 @@ def remove_dir( dir ):
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
-    Handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
-    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
-    that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
+    Find out if a repository is already installed into Galaxy - there are several scenarios where this is necessary.  For example, this method
+    will handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
+    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one that was
+    previously installed.  We'll look in the database instead of on disk since the repository may be currently uninstalled.
     """
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-    # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
+    # See if we can locate the repository using the value of changeset_revision.
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+                                                                                                     tool_shed,
+                                                                                                     repository_name,
+                                                                                                     repository_owner,
+                                                                                                     changeset_revision )
+    if tool_shed_repository:
+        return tool_shed_repository, changeset_revision
+    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
@@ -1410,15 +1482,23 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                                              repository_name,
                                                                                                              repository_owner,
                                                                                                              previous_changeset_revision )
-            if tool_shed_repository and tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.NEW ]:
+            if tool_shed_repository:
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
 def reset_previously_installed_repository( trans, repository ):
     """
-    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than with a
-    status of INSTALLED, so all atributes will be set to the default (NEW( state.  This will enable the repository to be freshly installed.
+    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than INSTALLED,
+    so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
     """
+    debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( repository.name )
+    debug_msg += "The current state of the tool_shed_repository is:\n"
+    debug_msg += "deleted: %s\n" % str( repository.deleted )
+    debug_msg += "tool_shed_status: %s\n" % str( repository.tool_shed_status )
+    debug_msg += "uninstalled: %s\n" % str( repository.uninstalled )
+    debug_msg += "status: %s\n" % str( repository.status )
+    debug_msg += "error_message: %s\n" % str( repository.error_message )
+    log.debug( debug_msg )
     repository.deleted = False
     repository.tool_shed_status = None
     repository.uninstalled = False
@@ -1454,6 +1534,31 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+
+def set_image_paths( app, encoded_repository_id, text ):
+    """
+    Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy as well as image
+    display in repository README files.  This method will determine the location of the image file and return the path to it that will enable
+    the caller to open the file.
+    """
+    if text:
+        if app.name == 'galaxy':
+            route_to_images = '/admin_toolshed/static/images/%s' % encoded_repository_id
+        else:
+            # We're in the tool shed.
+            route_to_images = '/repository/static/images/%s' % encoded_repository_id
+        # We used to require $PATH_TO_IMAGES, but we now eliminate it if it's used.
+        text = text.replace( '$PATH_TO_IMAGES', '' )
+        # Eliminate the invalid setting of ./static/images since the routes will properly display images contained in that directory.
+        text = text.replace( './static/images', '' )
+        # Eliminate the default setting of /static/images since the routes will properly display images contained in that directory.
+        text = text.replace( '/static/images', '' )
+        # Use regex to instantiate routes into the defined image paths, but replace paths that start with neither http:// nor https://,
+        # which will allow for settings like .. images:: http_files/images/help.png
+        for match in re.findall( '.. image:: (?!http)/?(.+)', text ):
+            text = text.replace( match, match.replace( '/', '%2F' ) )
+        text = re.sub( r'\.\. image:: (?!https?://)/?(.+)', r'.. image:: %s/\1' % route_to_images, text )
+    return text
 
 def set_only_if_compiling_contained_td( repository, required_repository ):
     """Return True if the received required_repository is only needed to compile a tool dependency defined for the received repository."""

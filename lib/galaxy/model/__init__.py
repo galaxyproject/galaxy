@@ -25,7 +25,7 @@ import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 from galaxy.security import get_permitted_actions
-from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
+from galaxy.util import asbool, is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.framework.helpers import to_unicode
@@ -34,6 +34,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         WorkflowMappingField)
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -78,6 +79,8 @@ class User( object, Dictifiable ):
         self.external = False
         self.deleted = False
         self.purged = False
+        self.active = False
+        self.activation_token = None
         self.username = None
         # Relationships
         self.histories = []
@@ -1680,7 +1683,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
             rval += child.get_disk_usage( user )
         return rval
 
-    def to_dict( self, view='collection' ):
+    def to_dict( self, view='collection', expose_dataset_path=False ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -1713,6 +1716,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
+                # only when explicitly set: fetching filepaths can be expensive
+                if not expose_dataset_path:
+                    continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
             elif val == None and hasattr( hda.datatype, name ):
@@ -2323,9 +2329,12 @@ class UCI( object ):
         self.id = None
         self.user = None
 
+
 class StoredWorkflow( object, Dictifiable):
+
     dict_collection_visible_keys = ( 'id', 'name', 'published' )
     dict_element_visible_keys = ( 'id', 'name', 'published' )
+
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2342,7 +2351,7 @@ class StoredWorkflow( object, Dictifiable):
             self.tags.append(new_swta)
 
     def to_dict( self, view='collection', value_mapper = None  ):
-        rval = super( StoredWorkflow, self ).to_dict(self, view=view, value_mapper = value_mapper)
+        rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper = value_mapper )
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -2353,7 +2362,11 @@ class StoredWorkflow( object, Dictifiable):
         return rval
 
 
-class Workflow( object ):
+class Workflow( object, Dictifiable ):
+
+    dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+    dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+
     def __init__( self ):
         self.user = None
         self.name = None
@@ -2361,7 +2374,9 @@ class Workflow( object ):
         self.has_errors = None
         self.steps = []
 
+
 class WorkflowStep( object ):
+
     def __init__( self ):
         self.id = None
         self.type = None
@@ -2372,36 +2387,48 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
 
+
 class WorkflowStepConnection( object ):
+
     def __init__( self ):
         self.output_step_id = None
         self.output_name = None
         self.input_step_id = None
         self.input_name = None
 
+
 class WorkflowOutput(object):
+
     def __init__( self, workflow_step, output_name):
         self.workflow_step = workflow_step
         self.output_name = output_name
 
+
 class StoredWorkflowUserShareAssociation( object ):
+
     def __init__( self ):
         self.stored_workflow = None
         self.user = None
 
+
 class StoredWorkflowMenuEntry( object ):
+
     def __init__( self ):
         self.stored_workflow = None
         self.user = None
         self.order_index = None
 
+
 class WorkflowInvocation( object ):
     pass
+
 
 class WorkflowInvocationStep( object ):
     pass
 
+
 class MetadataFile( object ):
+
     def __init__( self, dataset = None, name = None ):
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
@@ -2416,7 +2443,8 @@ class MetadataFile( object ):
             da = self.history_dataset or self.library_dataset
             if self.object_store_id is None and da is not None:
                 self.object_store_id = da.dataset.object_store_id
-            da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            if not da.dataset.object_store.exists( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id ):
+                da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
             path = da.dataset.object_store.get_filename( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
             return path
         except AttributeError:
@@ -3462,7 +3490,28 @@ class ToolShedRepository( object ):
     @property
     def has_repository_dependencies( self ):
         if self.metadata:
-            return 'repository_dependencies' in self.metadata
+            repository_dependencies_dict = self.metadata.get( 'repository_dependencies', {} )
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+            for rd_tup in repository_dependencies:
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if not asbool( only_if_compiling_contained_td ):
+                    return True
+        return False
+
+    @property
+    def has_repository_dependencies_only_if_compiling_contained_td( self ):
+        if self.metadata:
+            repository_dependencies_dict = self.metadata.get( 'repository_dependencies', {} )
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            # [["http://localhost:9009", "package_libgtextutils_0_6", "test", "e2003cbf18cd", "True", "True"]]
+            for rd_tup in repository_dependencies:
+                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup )
+                if not asbool( only_if_compiling_contained_td ):
+                    return False
+            return True
         return False
 
     @property
@@ -3694,10 +3743,14 @@ class ToolShedRepository( object ):
 
     @property
     def tuples_of_repository_dependencies_needed_for_compiling_td( self ):
-        """Return this repository's repository dependencies that are necessary only for compiling this repository's tool dependencies."""
+        """
+        Return tuples defining this repository's repository dependencies that are necessary only for compiling this repository's tool
+        dependencies.
+        """
         rd_tups_of_repositories_needed_for_compiling_td = []
-        if self.has_repository_dependencies:
-            rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+        if self.metadata:
+            repository_dependencies = self.metadata.get( 'repository_dependencies', None )
+            rd_tups = repository_dependencies[ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 6: 
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
@@ -3859,7 +3912,7 @@ class ToolVersion( object, Dictifiable ):
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
 
     def to_dict( self, view='element' ):
-        rval = super( ToolVersion, self ).to_dict( self, view )
+        rval = super( ToolVersion, self ).to_dict( view=view )
         rval['tool_name'] = self.tool_id
         for a in self.parent_tool_association:
             rval['parent_tool_id'] = a.parent_id

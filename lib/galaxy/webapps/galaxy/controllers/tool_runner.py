@@ -61,6 +61,7 @@ class ToolRunner( BaseUIController ):
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
+            trans.response.status = 404
             return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
         if tool.require_login and not trans.user:
             message = "You must be logged in to use this tool."
@@ -96,22 +97,6 @@ class ToolRunner( BaseUIController ):
                                     add_frame=add_frame,
                                     form_input_auto_focus=True,
                                     **vars )
-
-    @web.expose
-    def display_tool_help_image_in_repository( self, trans, **kwd ):
-        repository_id = kwd.get( 'repository_id', None )
-        image_file = kwd.get( 'image_file', None )
-        if repository_id and image_file:
-            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_files_directory( trans.app ) )
-            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
-            if os.path.exists( default_path ):
-                return open( default_path, 'r' )
-            else:
-                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
-                if os.path.exists( path_to_file ):
-                    return open( path_to_file, 'r' )
-        return None
 
     @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):

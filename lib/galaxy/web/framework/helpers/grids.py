@@ -198,7 +198,10 @@ class Grid( object ):
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
+                # persistent page='all'
                 page_num = 1
+                #page_num = 'all'
+                #extra_url_args['page'] = page_num
                 num_pages = 1
             else:
                 # Show a limited number of rows. Before modifying query, get the total number of rows that query

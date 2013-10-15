@@ -18,9 +18,8 @@ from galaxy.tools.actions.upload import UploadToolAction
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -746,7 +745,8 @@ def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files
                 else:
                     elems.append( elem )
     else:
-        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.", tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
+        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
+                   tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
     for elem in elems:
         if elem.tag == 'table':
             for file_elem in elem.findall( 'file' ):
@@ -962,7 +962,7 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
         suc.config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
 
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
-    """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
+    """A tool shed repository is being deactivated or uninstalled, so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
     # in the same way when the repository is activated or reinstalled.
     tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )

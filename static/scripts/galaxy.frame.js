@@ -87,7 +87,11 @@ var GalaxyFrameManager = Backbone.View.extend(
         {
             icon        : 'fa-icon-th',
             tooltip     : 'Enable/Disable Scratchbook',
-            on_click    : function(e) { self.event_panel_active(e) }
+            on_click    : function(e) { self.event_panel_active(e) },
+            on_unload   : function() {
+                if (self.frame_counter > 0)
+                    return "You opened " + self.frame_counter + " frame(s) which will be lost.";
+            }
         });
         
         // add to master
@@ -157,13 +161,6 @@ var GalaxyFrameManager = Backbone.View.extend(
             if (self.visible)
                 self.panel_refresh();
         });
-        
-        // catch window close
-        window.onbeforeunload = function()
-        {
-            if (self.frame_counter > 0)
-                return "You opened " + self.frame_counter + " frame(s) which will be lost.";
-        };
     },
     
     /*
@@ -1062,7 +1059,7 @@ var GalaxyFrameManager = Backbone.View.extend(
                         '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
                         '<span class="f-icon f-close fa-icon-trash"></span>' +            
                     '</div>' +
-                    '<div class="f-content corner">' + content +
+                    '<div class="f-content">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
                     '<span class="f-resize f-icon corner fa-icon-resize-full"></span>' +

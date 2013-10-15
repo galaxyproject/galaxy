@@ -29,7 +29,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     try:
         egg = dialect_to_egg[ dialect ]
         try:
-            pkg_resources.require( egg )
+            eggs.require( egg )
             log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
         except:
             # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
@@ -113,7 +113,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                         msg += "setting in your main Galaxy configuration file (e.g., uninverse_wsgi.ini).\n"
                         processed_tool_dependencies = []
                         for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
-                            for tool_dependencies_tup in tool_dependencies:
+                            for tool_dependencies_tup in missing_tool_configs_dict[ missing_tool_config ][ 'tool_dependencies' ]:
                                 if tool_dependencies_tup not in processed_tool_dependencies:
                                     msg += "------------------------------------\n"
                                     msg += "Tool Dependency\n"
@@ -121,7 +121,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                                     msg += "Name: %s, Version: %s, Type: %s\n" % ( tool_dependencies_tup[ 0 ],
                                                                                    tool_dependencies_tup[ 1 ],
                                                                                    tool_dependencies_tup[ 2 ] )
-                                    if tool_dependencies_tup[ 3 ]:
+                                    if len( tool_dependencies_tup ) >= 4:
                                         msg += "Requirements and installation information:\n"
                                         msg += "%s\n" % tool_dependencies_tup[ 3 ]
                                     else:

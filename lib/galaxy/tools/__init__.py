@@ -11,6 +11,7 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
 import traceback
 import types
 import urllib
@@ -154,7 +155,23 @@ class ToolBox( object, Dictifiable ):
             # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
             # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
             # will be False when things like functional tests are the caller.
+            self.fix_integrated_tool_panel_dict()
             self.write_integrated_tool_panel_config_file()
+
+    def fix_integrated_tool_panel_dict( self ):
+        # HACK: instead of fixing after the fact, I suggest some combination of:
+        #  1) adjusting init_tools() and called methods to get this right
+        #  2) redesigning the code and/or data structure used to read/write integrated_tool_panel.xml
+        for key, value in self.integrated_tool_panel.iteritems():
+            if key.startswith( 'section_' ):
+                for section_key, section_value in value.elems.iteritems():
+                    if section_value is None:
+                        if section_key.startswith( 'tool_' ):
+                            tool_id = section_key[5:]
+                            value.elems[section_key] = self.tools_by_id.get( tool_id )
+                        elif section_key.startswith( 'workflow_' ):
+                            workflow_id = section_key[9:]
+                            value.elems[section_key] = self.workflows_by_id.get( workflow_id )
 
     def init_tools( self, config_filename ):
         """
@@ -954,6 +971,7 @@ class Tool( object, Dictifiable ):
     """
 
     tool_type = 'default'
+    requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
 
@@ -1317,19 +1335,16 @@ class Tool( object, Dictifiable ):
         help_header = ""
         help_footer = ""
         if self.help is not None:
-            # Handle tool help image display for tools that are contained in repositories that are in the tool shed or installed into Galaxy.
-            # When tool config files use the special string $PATH_TO_IMAGES, the following code will replace that string with the path on disk.
-            if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
-                if self.app.name == 'galaxy':
-                    repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
-                    if repository:
-                        path_to_images = '/tool_runner/static/images/%s' % self.repository_id
-                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
-                elif self.app.name == 'tool_shed':
-                    repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
-                    if repository:
-                        path_to_images = '/repository/static/images/%s' % self.repository_id
-                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+            if self.repository_id and self.help.text.find( '.. image:: ' ) >= 0:
+                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
+                lock = threading.Lock()
+                lock.acquire( True )
+                try:
+                    self.help.text = shed_util_common.set_image_paths( self.app, self.repository_id, self.help.text )
+                except Exception, e:
+                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
+                finally:
+                    lock.release()
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
@@ -1852,7 +1867,7 @@ class Tool( object, Dictifiable ):
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
-    def new_state( self, trans, all_pages=False ):
+    def new_state( self, trans, all_pages=False, history=None ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs.
@@ -1866,16 +1881,16 @@ class Tool( object, Dictifiable ):
             inputs = self.inputs
         else:
             inputs = self.inputs_by_page[ 0 ]
-        self.fill_in_new_state( trans, inputs, state.inputs )
+        self.fill_in_new_state( trans, inputs, state.inputs, history=history )
         return state
-    def fill_in_new_state( self, trans, inputs, state, context=None ):
+    def fill_in_new_state( self, trans, inputs, state, context=None, history=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
         in the dictionary `inputs`. Grouping elements are filled in recursively.
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
-            state[ input.name ] = input.get_initial_value( trans, context )
+            state[ input.name ] = input.get_initial_value( trans, context, history=history )
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each
@@ -1938,7 +1953,7 @@ class Tool( object, Dictifiable ):
             state = DefaultToolState()
             state.decode( encoded_state, self, trans.app )
         else:
-            state = self.new_state( trans )
+            state = self.new_state( trans, history=history )
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button
@@ -3120,6 +3135,8 @@ class SetMetadataTool( Tool ):
     dataset.
     """
     tool_type = 'set_metadata'
+    requires_setting_metadata = False
+    
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
             external_metadata = JobExternalOutputMetadataWrapper( job )

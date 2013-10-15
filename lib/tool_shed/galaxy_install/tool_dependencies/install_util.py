@@ -14,8 +14,8 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from galaxy.model.orm import and_
-from galaxy.web import url_for
 from galaxy.util import asbool
+from galaxy.util import listify
 
 log = logging.getLogger( __name__ )
 
@@ -394,7 +394,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                         if not binary_installed:
                                             print 'Binary installation did not occur, so proceeding with install and compile recipe.'
                                             # Make sure to reset for installation if attempt at binary installation resulted in an error.
-                                            if tool_dependency.status != app.model.ToolDependency.installation_status.NEW:
+                                            if tool_dependency.status != app.model.ToolDependency.installation_status.NEVER_INSTALLED:
                                                 removed, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
                                             install_via_fabric( app, 
                                                                 tool_dependency, 
@@ -460,7 +460,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             is_binary_download = True
         else:
             is_binary_download = False
-    elif action_elem:
+    elif action_elem is not None:
         # We were provided with a single <action> element to perform certain actions after a platform-specific tarball was downloaded.
         elems = [ action_elem ]
     else:
@@ -546,11 +546,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'directory' ] = action_elem.text
             else:
                 continue
-        elif action_type in [ 'move_directory_files', 'move_file' ]:
-            # <action type="move_file">
-            #     <source>misc/some_file</source>
-            #     <destination>$INSTALL_DIR/bin</destination>
-            # </action>
+        elif action_type == 'move_directory_files':
             # <action type="move_directory_files">
             #     <source_directory>bin</source_directory>
             #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
@@ -559,6 +555,14 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 move_elem_text = td_common_util.evaluate_template( move_elem.text, install_dir )
                 if move_elem_text:
                     action_dict[ move_elem.tag ] = move_elem_text
+        elif action_type == 'move_file':
+            # <action type="move_file" rename_to="new_file_name">
+            #     <source>misc/some_file</source>
+            #     <destination>$INSTALL_DIR/bin</destination>
+            # </action>
+            action_dict[ 'source' ] = evaluate_template( action_elem.find( 'source' ).text )
+            action_dict[ 'destination' ] = evaluate_template( action_elem.find( 'destination' ).text )
+            action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
         elif action_type == 'set_environment':
             # <action type="set_environment">
             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
@@ -607,6 +611,31 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             if action_elem.text:
                 configure_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
                 action_dict[ 'configure_opts' ] = configure_opts
+        elif action_type == 'setup_r_environment':
+            # setup an R environment
+            # <action type="setup_r_environment" name="package_r_3_0_1" owner="bgruening">
+            #   <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+            # </action>
+            
+            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
+
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+            if all_env_shell_file_paths:
+                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            r_packages = list()
+            for env_elem in action_elem:
+                if env_elem.tag == 'package':
+                    r_packages.append( env_elem.text.strip() )
+
+            if r_packages:
+                action_dict[ 'r_packages' ] = r_packages
+            else:
+                continue
+        elif action_type == 'make_install':
+            # make; make install; allow providing make options
+            if action_elem.text:
+                make_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
+                action_dict[ 'make_opts' ] = make_opts
         elif action_type == 'chmod':
             # Change the read, write, and execute bits on a file.
             # <action type="chmod">
@@ -648,20 +677,6 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
         raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
     else:
         install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
-
-def listify( item ):
-    """
-    Make a single item a single item list, or return a list if passed a
-    list.  Passing a None returns an empty list.
-    """
-    if not item:
-        return []
-    elif isinstance( item, list ):
-        return item
-    elif isinstance( item, basestring ) and item.count( ',' ):
-        return item.split( ',' )
-    else:
-        return [ item ]
 
 def parse_env_shell_entry( action, name, value, line ):
     new_value = value
@@ -820,10 +835,10 @@ def set_environment( app, elem, tool_shed_repository ):
                                                                                          type='set_environment',
                                                                                          status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                                          set_status=True )
-                cmd = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                 if env_var_version == '1.0':
                     # Handle setting environment variables using a fabric method.
-                    fabric_util.handle_command( app, tool_dependency, install_dir, cmd )
+                    fabric_util.file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                     sa_session.refresh( tool_dependency )
                     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
                         tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED

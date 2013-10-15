@@ -84,7 +84,6 @@
         /** Returns true if string denotes true. */
         var is_true = function(s) { return _.indexOf(['True', 'true', 't'], s) !== -1; };
 
-
         // Create grid.
         var grid = new Grid({
             url_base: '${trans.request.path_url}',
@@ -95,12 +94,20 @@
             sort_key: '${sort_key}',
             show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
             cur_page: ${cur_page_num},
+            // persistent page="all"
+            //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
             num_pages: ${num_pages}
         });
 
         // Initialize grid objects on load.
         // FIXME: use a grid view object eventually.
         $(document).ready(function() {
+            
+            // strip protocol and domain
+            var url = grid.get('url_base');
+            url = url.replace(/^.*\/\/[^\/]+/, '');
+            grid.set('url_base', url);
+            
             init_grid_elements();
             init_grid_controls();
             // Initialize text filters to select text on click and use normal font when user is typing.

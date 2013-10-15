@@ -72,13 +72,13 @@ class ToolParameter( object, Dictifiable ):
         """
         return value
 
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         """
         Return the starting value of the parameter
         """
         return None
 
-    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used, history=None ):
         """
         Get the starting value for the parameter, but if fetching from the history, try
         to find a value that has not yet been used. already_used is a list of objects that
@@ -86,7 +86,7 @@ class ToolParameter( object, Dictifiable ):
         if a value has already been chosen from the history. This is to support the capability to
         choose each dataset once
         """
-        return self.get_initial_value(trans, context);
+        return self.get_initial_value(trans, context, history=history);
 
     def get_required_enctype( self ):
         """
@@ -216,7 +216,7 @@ class TextToolParameter( ToolParameter ):
             return form_builder.TextArea( self.name, self.size, value )
         else:
             return form_builder.TextField( self.name, self.size, value )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return self.value
 
 class IntegerToolParameter( TextToolParameter ):
@@ -286,7 +286,7 @@ class IntegerToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return None
             raise err
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         if self.value:
             return int( self.value )
         else:
@@ -358,7 +358,7 @@ class FloatToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return None
             raise err
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         try:
             return float( self.value )
         except:
@@ -401,7 +401,7 @@ class BooleanToolParameter( ToolParameter ):
             return [ 'true' ]
     def to_python( self, value, app ):
         return ( value == 'True' )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return self.checked
     def to_param_dict_string( self, value, other_values={} ):
         if value:
@@ -474,7 +474,7 @@ class FileToolParameter( ToolParameter ):
             return value
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return None
 
 class FTPFileToolParameter( ToolParameter ):
@@ -513,7 +513,7 @@ class FTPFileToolParameter( ToolParameter ):
             return None
         elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
             return value
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return None
 
 class HiddenToolParameter( ToolParameter ):
@@ -534,7 +534,7 @@ class HiddenToolParameter( ToolParameter ):
         self.value = elem.get( 'value' )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return self.value
     def get_label( self ):
         return None
@@ -557,7 +557,7 @@ class BaseURLToolParameter( ToolParameter ):
         return url
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.get_value( trans ) )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return self.value
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
@@ -826,7 +826,7 @@ class SelectToolParameter( ToolParameter ):
                 return True
         # Dynamic, but all dependenceis are known and have values
         return False
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         # More working around dynamic options for workflow
         if self.need_late_validation( trans, context ):
             # Really the best we can do?
@@ -1074,7 +1074,7 @@ class ColumnListParameter( SelectToolParameter ):
                     options.append( ( 'c' + col, col, False ) )
         return options
 
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         if self.default_value is not None:
             # dataset not ready / in workflow / etc
             if self.need_late_validation( trans, context ):
@@ -1353,8 +1353,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             else:
                 rval = sanitize_param( rval )
         return rval
-
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         def recurse_options( initial_values, options ):
             for option in options:
                 if option['selected']:
@@ -1542,10 +1541,10 @@ class DataToolParameter( ToolParameter ):
                 field.add_option( "Selection is Optional", 'None', False )
         return field
 
-    def get_initial_value( self, trans, context ):
-        return self.get_initial_value_from_history_prevent_repeats(trans, context, None);
+    def get_initial_value( self, trans, context, history=None ):
+        return self.get_initial_value_from_history_prevent_repeats(trans, context, None, history=history);
 
-    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used ):
+    def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used, history=None ):
         """
         NOTE: This is wasteful since dynamic options and dataset collection
               happens twice (here and when generating HTML).
@@ -1554,7 +1553,8 @@ class DataToolParameter( ToolParameter ):
         if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
         assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.get_history()
+        if history is None:
+            history = trans.get_history()
         assert history is not None, "DataToolParameter requires a history"
         if self.optional:
             return None
@@ -1613,6 +1613,9 @@ class DataToolParameter( ToolParameter ):
             rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             rval = value
+        elif isinstance( value, dict ) and 'src' in value and 'id' in value:
+            if value['src'] == 'hda':
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
         else:
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
@@ -1727,7 +1730,7 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         self.value = "None"
         self.type = "hidden_data"
 
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return None
 
     def get_html_field( self, trans=None, value=None, other_values={} ):

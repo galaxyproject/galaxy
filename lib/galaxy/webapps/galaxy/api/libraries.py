@@ -28,7 +28,7 @@ class LibrariesController( BaseAPIController ):
         :returns:   list of dictionaries containing library information
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
         """
-        log.debug( "LibrariesController.index: enter" )
+#         log.debug( "LibrariesController.index: enter" )
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = util.string_as_bool( deleted )
         if deleted:
@@ -73,7 +73,7 @@ class LibrariesController( BaseAPIController ):
         :returns:   detailed library information
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
-        log.debug( "LibraryContentsController.show: enter" )
+#         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
         deleted = util.string_as_bool( deleted )
         try:

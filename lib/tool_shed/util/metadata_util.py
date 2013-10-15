@@ -23,9 +23,8 @@ from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -280,13 +279,16 @@ def compare_workflows( trans, ancestor_workflows, current_workflows ):
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     """Create or update a repository_metadatqa record in the tool shed."""
     has_repository_dependencies = False
+    has_repository_dependencies_only_if_compiling_contained_td = False
     includes_datatypes = False
     includes_tools = False
     includes_tool_dependencies = False
     includes_workflows = False
     if metadata_dict:
-        if 'repository_dependencies' in metadata_dict:
-            has_repository_dependencies = True
+        repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+        repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+            suc.get_repository_dependency_types( repository_dependencies )
         if 'datatypes' in metadata_dict:
             includes_datatypes = True
         if 'tools' in metadata_dict:
@@ -295,7 +297,11 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
             includes_tool_dependencies = True
         if 'workflows' in metadata_dict:
             includes_workflows = True
-    downloadable = has_repository_dependencies or includes_datatypes or includes_tools or includes_tool_dependencies or includes_workflows
+    if has_repository_dependencies or has_repository_dependencies_only_if_compiling_contained_td or includes_datatypes or \
+        includes_tools or includes_tool_dependencies or includes_workflows:
+        downloadable = True
+    else:
+        downloadable = False
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         # A repository metadata record already exists with the received changeset_revision, so we don't need to check the skip_tool_test table.
@@ -583,7 +589,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         original_repository_metadata = repository.metadata
     else:
         original_repository_metadata = None
-    readme_file_names = get_readme_file_names( repository.name )
+    readme_file_names = readme_util.get_readme_file_names( str( repository.name ) )
     if app.name == 'galaxy':
         # Shed related tool panel configs are only relevant to Galaxy.
         metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
@@ -704,8 +710,16 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                         fp = open( relative_path, 'rb' )
                         workflow_text = fp.read()
                         fp.close()
-                        exported_workflow_dict = json.from_json_string( workflow_text )
-                        if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
+                        if workflow_text:
+                            valid_exported_galaxy_workflow = True
+                            try:
+                                exported_workflow_dict = json.from_json_string( workflow_text )
+                            except Exception, e:
+                                log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s" \
+                                               % str( relative_path ), str( e ) )
+                                valid_exported_galaxy_workflow = False
+                        if valid_exported_galaxy_workflow and \
+                            'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     # Handle any data manager entries
     metadata_dict = generate_data_manager_metadata( app,
@@ -1040,16 +1054,6 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
         # The tool did not change through all of the changeset revisions.
         return old_id
 
-def get_readme_file_names( repository_name ):
-    """Creates a list of valid filenames."""
-    readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = map( lambda f: '%s.txt' % f, readme_files )
-    valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
-    valid_filenames.extend( readme_files )
-    valid_filenames.append( '%s.txt' % repository_name )
-    valid_filenames.append( '%s.rst' % repository_name )
-    return valid_filenames
-
 def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
     if resetting_all_metadata_on_repository:
         full_path_to_file = os.path.join( root, name )
@@ -1068,13 +1072,15 @@ def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 
-def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision ):
-    """Get a specified metadata record for a specified repository."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                           .first()
-
+def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
+    """Get a specified metadata record for a specified repository in the tool shed."""
+    if metadata_only:
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        if repository_metadata and repository_metadata.metadata:
+            return repository_metadata.metadata
+        return None
+    return suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []
@@ -1232,21 +1238,31 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 log.debug( error_message )
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
-            # Find the specified changeset revision in the repository's changelog to see if it's valid.
-            found = False
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( app ) )
-            for changeset in repo.changelog:
-                changeset_hash = str( repo.changectx( changeset ) )
-                if changeset_hash == changeset_revision:
-                    found = True
-                    break
-            if not found:
-                error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
-                    ( toolshed, name, owner, changeset_revision )
-                error_message += "because the changeset revision is invalid.  "
-                log.debug( error_message )
-                is_valid = False
+            # The received changeset_revision may be None since defining it in the dependency definition is optional.  If this is the case,
+            # the default will be to set it's value to the repository dependency tip revision.  This probably occurs only when handling
+            # circular dependency definitions.
+            tip_ctx = repo.changectx( repo.changelog.tip() )
+            # Make sure the repo.changlog includes at least 1 revision.
+            if changeset_revision is None and tip_ctx.rev() >= 0:
+                changeset_revision = str( tip_ctx )
+                repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required, str( only_if_compiling_contained_td ) ]
                 return repository_dependency_tup, is_valid, error_message
+            else:
+                # Find the specified changeset revision in the repository's changelog to see if it's valid.
+                found = False
+                for changeset in repo.changelog:
+                    changeset_hash = str( repo.changectx( changeset ) )
+                    if changeset_hash == changeset_revision:
+                        found = True
+                        break
+                if not found:
+                    error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                        ( toolshed, name, owner, changeset_revision )
+                    error_message += "because the changeset revision is invalid.  "
+                    log.debug( error_message )
+                    is_valid = False
+                    return repository_dependency_tup, is_valid, error_message
         else:
             # Repository dependencies are currently supported within a single tool shed.
             error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
@@ -1524,7 +1540,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
-                readme_files_dict = readme_util.build_readme_files_dict( repository.metadata, tool_path )
+                readme_files_dict = readme_util.build_readme_files_dict( trans, repository, repository.changeset_revision, repository.metadata, tool_path )
         else:
             readme_files_dict = None
         # Handle repository dependencies.
@@ -1851,10 +1867,13 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     repository_metadata.includes_datatypes = True
                 else:
                     repository_metadata.includes_datatypes = False
-                if 'repository_dependencies' in metadata_dict:
-                    repository_metadata.has_repository_dependencies = True
-                else:
-                    repository_metadata.has_repository_dependencies = False
+                # We don't store information about the special type of repository dependency that is needed only for compiling a tool dependency
+                # defined for the dependent repository.
+                repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+                repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+                    suc.get_repository_dependency_types( repository_dependencies )
+                repository_metadata.has_repository_dependencies = has_repository_dependencies
                 if 'tool_dependencies' in metadata_dict:
                     repository_metadata.includes_tool_dependencies = True
                 else:
@@ -1886,7 +1905,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     changeset_revisions.append( changeset_revision )
             add_tool_versions( trans, encoded_id, repository_metadata, changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:
-        message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip( trans.app ) )
+        message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % str( repository.tip( trans.app ) )
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:

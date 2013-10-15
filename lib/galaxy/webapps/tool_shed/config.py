@@ -62,6 +62,13 @@ class Configuration( object ):
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.user_activation_on = kwargs.get( 'user_activation_on', None )
+        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        self.terms_url = kwargs.get( 'terms_url', None )
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )

@@ -1,5 +1,5 @@
 /*
-    galaxy master v1.0
+    galaxy master
 */
 
 // dependencies
@@ -11,6 +11,9 @@ var GalaxyMaster = Backbone.View.extend(
     // base element
     el_master: '#masthead',
     
+    // item list
+    list : [],
+    
     // initialize
     initialize : function(options)
     {
@@ -19,6 +22,21 @@ var GalaxyMaster = Backbone.View.extend(
         
         // append to master
         $(this.el_master).append($(this.el));
+        
+        // loop through item specific unload functions
+        var self = this;
+        window.onbeforeunload = function()
+        {
+            var text = "";
+            for (key in self.list)
+                if (self.list[key].options.on_unload)
+                {
+                    var q = self.list[key].options.on_unload();
+                    if (q) text += q + " ";
+                }
+            if (text != "")
+                return text;
+        };
     },
 
     // prevent default
@@ -27,16 +45,18 @@ var GalaxyMaster = Backbone.View.extend(
         'mousedown' : function(e) {e.preventDefault()}
     },
 
-    // adds and displays a new frame/window
+    // adds a new item to the master
     append : function(item)
     {
         $(this.el).append($(item.el));
+        this.list.push(item);
     },
     
-    // adds and displays a new frame/window
+    // adds a new item to the master
     prepend : function(item)
     {
         $(this.el).prepend($(item.el));
+        this.list.push(item);
     },
     
     /*
@@ -61,6 +81,7 @@ var GalaxyMasterIcon = Backbone.View.extend(
         tooltip         : "galaxy-icon",
         with_number     : false,
         on_click        : function() { alert ('clicked') },
+        on_unload       : null,
         visible         : true
     },
     

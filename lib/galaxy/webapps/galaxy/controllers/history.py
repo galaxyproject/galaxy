@@ -309,7 +309,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # If deleting the current history, make a new current.
                 if history == trans.get_history():
                     deleted_current = True
-                    trans.get_or_create_default_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
@@ -339,6 +338,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
         if deleted_current:
+            #note: this needs to come after commits above or will use an empty history that was deleted above
+            trans.get_or_create_default_history()
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
         return ( status, " ".join( message_parts ) )
@@ -626,10 +627,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             assert history.user == trans.user
         # Rename
-        history.name = sanitize_html( new_name )
+        new_name = sanitize_html( new_name )
+        history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
-        return history.name
+        return new_name
 
     @web.expose
     @web.require_login( "use Galaxy histories" )

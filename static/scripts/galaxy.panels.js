@@ -125,15 +125,22 @@ var Modal = function( options ) {
     this.$body = this.$dialog.find( ".modal-body" );
     this.$footer = this.$dialog.find( ".modal-footer" );
     this.$backdrop = options.backdrop;
+    // Close button
+    this.$header.find( ".close" ).on( "click", $.proxy( this.hide, this ) );
 }
 $.extend( Modal.prototype, {
     setContent: function( options ) {
+        this.$header.hide();
         // Title
         if ( options.title ) {
             this.$header.find( ".title" ).html( options.title );
             this.$header.show();
+        }
+        if ( options.closeButton ) {
+            this.$header.find( ".close" ).show();
+            this.$header.show();
         } else {
-            this.$header.hide();
+            this.$header.find( ".close" ).hide();
         }
         // Buttons
         this.$footer.hide();
@@ -154,7 +161,7 @@ $.extend( Modal.prototype, {
         // Body
         var body = options.body;
         if ( body == "progress" ) {
-            body = $("<div class='progress progress-striped active'><div class='bar' style='width: 100%'></div></div>"); 
+            body = $("<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>"); 
         }
         this.$body.html( body );
     },
@@ -168,16 +175,17 @@ $.extend( Modal.prototype, {
             this.$overlay.show();
             this.$dialog.show();
             this.$overlay.addClass("in");
-            // Fix min-width so that modal cannot shrink considerably if 
-            // new content is loaded.
+            // Fix min-width so that modal cannot shrink considerably if new content is loaded.
             this.$body.css( "min-width", this.$body.width() );
-            // Set max-height so that modal does not exceed window size.
-            // FIXME: this could perhaps be handled better using a container for the modal 
-            // header-body-footer and setting max-height for the container.
+            // Set max-height so that modal does not exceed window size and is in middle of page.
+            // TODO: this could perhaps be handled better using CSS.
             this.$body.css( "max-height", 
-                            // 2* to provide buffer between bottom of modal and bottom of page.
-                            $(window).height() - 2 * this.$dialog.offset().top - 
-                            this.$footer.outerHeight() - this.$header.outerHeight());
+                            $(window).height() - 
+                            this.$footer.outerHeight() - 
+                            this.$header.outerHeight() -
+                            parseInt( this.$dialog.css( "padding-top" ), 10 ) - 
+                            parseInt( this.$dialog.css( "padding-bottom" ), 10 ) 
+                            );
         }
         // Callback on init
         if ( callback ) {
@@ -222,8 +230,8 @@ function show_in_overlay( options ) {
         hide_modal();
         $("#overlay-background").unbind( "click.overlay" );
     });
-    show_modal( null, $( "<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-17px;top:-15px;src='" + galaxy_config.root + "static/images/closebox.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
-    $("#close_button").bind( "click", function() { hide_modal(); } );
+    modal.setContent( { closeButton: true, title: "&nbsp;", body: $( "<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) } );
+    modal.show( { backdrop: true } );
 }
 
 function user_changed( user_email, is_admin ) {

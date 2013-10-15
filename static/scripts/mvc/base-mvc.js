@@ -91,7 +91,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
 
 //==============================================================================
 /**
- *  @class persistant storage adapter.
+ *  @class persistent storage adapter.
  *      Provides an easy interface to object based storage using method chaining.
  *      Allows easy change of the storage engine used (h5's local storage?).
  *  @augments StorageRecursionHelper
@@ -111,9 +111,9 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
  *  });
  *  @constructor
  */
-var PersistantStorage = function( storageKey, storageDefaults ){
+var PersistentStorage = function( storageKey, storageDefaults ){
     if( !storageKey ){
-        throw( "PersistantStorage needs storageKey argument" );
+        throw( "PersistentStorage needs storageKey argument" );
     }
     storageDefaults = storageDefaults || {};
 
@@ -194,7 +194,7 @@ var PersistantStorage = function( storageKey, storageDefaults ){
 
     // the object returned by this constructor will be a modified StorageRecursionHelper
     returnedStorage = new StorageRecursionHelper( data );
-    jQuery.extend( returnedStorage, /**  @lends PersistantStorage.prototype */{
+    jQuery.extend( returnedStorage, /**  @lends PersistentStorage.prototype */{
         /** The base case for save()'s upward recursion - save everything to storage.
          *  @private
          *  @param {Any} newData data object to save to storage
@@ -211,7 +211,7 @@ var PersistantStorage = function( storageKey, storageDefaults ){
         },
         /** String representation.
          */
-        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
+        toString : function(){ return 'PersistentStorage(' + storageKey + ')'; }
     });
     
     return returnedStorage;

@@ -46,11 +46,17 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
-    # The following route will handle displaying tool shelp images for tools contained in repositories installed from the tool shed.
-    webapp.add_route( '/tool_runner/static/images/:repository_id/:image_file', controller='tool_runner', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
+    # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
+    webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
+                      controller='admin_toolshed',
+                      action='display_image_in_repository',
+                      repository_id=None,
+                      image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
+    # Force /activate to go to the controller
+    webapp.add_route( '/activate', controller='user', action='activate' )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
@@ -156,6 +162,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
+    webapp.mapper.resource( 'datatype', 'datatypes', path_prefix='/api' )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
 
@@ -176,7 +183,10 @@ def app_factory( global_conf, **kwargs ):
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
-                            member={ 'repair_repository_revision' : 'POST' },
+                            member={ 'repair_repository_revision' : 'POST',
+                                     'exported_workflows' : 'GET',
+                                     'import_workflow' : 'POST',
+                                     'import_workflows' : 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
@@ -193,7 +203,8 @@ def app_factory( global_conf, **kwargs ):
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=app.config.plugin_frameworks, **kwargs )
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
+        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
         pack_scripts()
     # Close any pooled database connections before forking
@@ -362,12 +373,13 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
 
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
-    for static_serving_framework in ( framework for framework in plugin_frameworks if framework.serves_static ):
-        # invert control to each plugin for finding their own static dirs
-        for plugin_url, plugin_static_path in static_serving_framework.get_static_urls_and_paths():
-            plugin_url = '/plugins/' + plugin_url
-            urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
-            log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
+    for framework in plugin_frameworks:
+        if framework and framework.serves_static:
+            # invert control to each plugin for finding their own static dirs
+            for plugin_url, plugin_static_path in framework.get_static_urls_and_paths():
+                plugin_url = '/plugins/' + plugin_url
+                urlmap[( plugin_url )] = Static( plugin_static_path, cache_time )
+                log.debug( 'added url, path to static middleware: %s, %s', plugin_url, plugin_static_path )
 
     # URL mapper becomes the root webapp
     return urlmap

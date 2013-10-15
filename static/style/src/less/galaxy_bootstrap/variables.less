@@ -2,9 +2,7 @@
 // Caveat: currently only works for light colored backgrounds, less provides functions (contrast) that could be used to improve this
 
 // Base color -- Based on the Galaxy masthead color
-
 @base-color-1: #2C3143;
-
 @base-color-2: lighten(@base-color-1,25%);
 @base-color-3: lighten(@base-color-1,50%);
 
@@ -164,7 +162,7 @@
 @btn-font-weight:                normal;
 
 @btn-default-color:              #333;
-@btn-default-bg:                 @white;
+@btn-default-bg:                 darken(@white,5%);
 @btn-default-border:             @border-default-color;
 
 @btn-primary-color:              @white;
@@ -373,15 +371,15 @@
 @nav-open-caret-border-color:               @white;
 
 // Tabs
-@nav-tabs-border-color:                     #ddd;
+@nav-tabs-border-color:                     @border-default-color;
 
 @nav-tabs-link-hover-border-color:          @gray-lighter;
 
 @nav-tabs-active-link-hover-bg:             @body-bg;
 @nav-tabs-active-link-hover-color:          @gray;
-@nav-tabs-active-link-hover-border-color:   #ddd;
+@nav-tabs-active-link-hover-border-color:   @border-default-color;
 
-@nav-tabs-justified-link-border-color:            #ddd;
+@nav-tabs-justified-link-border-color:            @border-default-color;
 @nav-tabs-justified-active-link-border-color:     @body-bg;
 
 // Pills

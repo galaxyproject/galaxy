@@ -1,16 +1,17 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
+from galaxy import eggs
 from galaxy import web
 from galaxy import util
 from galaxy.web.base.controller import BaseAPIController
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
 
-from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui 
 
 log = logging.getLogger( __name__ )
 
@@ -73,6 +74,7 @@ class RepositoriesController( BaseAPIController ):
             "changeset_revision": "3a08cc21466f",
             "downloadable": true,
             "has_repository_dependencies": false,
+            "has_repository_dependencies_only_if_compiling_contained_td": false,
             "id": "f9cad7b01a472135",
             "includes_datatypes": false,
             "includes_tool_dependencies": false,
@@ -125,7 +127,8 @@ class RepositoriesController( BaseAPIController ):
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
                 # Get the repo_info_dict for installing the repository.
-                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies = \
+                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+                    has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
                     repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:

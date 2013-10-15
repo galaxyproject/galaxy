@@ -378,7 +378,7 @@ class GalaxyConfig( object ):
                 return True
         else:
             try:
-                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres://" ),
+                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
                          "MySQL_python":    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
                          "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "drmaa":           lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),

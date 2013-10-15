@@ -698,10 +698,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         registry = trans.app.visualizations_registry
         if not registry:
             raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)' )
-        if visualization_name not in registry.listings:
+        if visualization_name not in registry.plugins:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
             # or redirect to list?
-        registry_listing = registry.listings[ visualization_name ]
+        plugin = registry.plugins[ visualization_name ]
 
         returned = None
         try:
@@ -711,8 +711,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
 
             # look up template and render
-            template_path = registry_listing[ 'template' ]
-            returned = registry.fill_template( trans, template_path,
+            template_path = plugin.config[ 'template' ]
+            returned = registry.fill_template( trans, plugin, template_path,
                 visualization_name=visualization_name, query_args=kwargs,
                 embedded=embedded, shared_vars={}, **resources )
             #NOTE: passing *unparsed* kwargs as query_args
