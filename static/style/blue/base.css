@@ -1182,7 +1182,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}
 #masthead .navbar-brand a{color:white;text-decoration:none}
 #masthead .iconbar{position:absolute;top:2px;right:110px;cursor:pointer;color:#999;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 10px}
-#masthead .iconbar .symbol .number{font-weight:bold;font-size:12px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-18px}
+#masthead .iconbar .symbol .number{font-weight:bold;font-size:10px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-16px}
 #masthead .iconbar .toggle{color:#BCC800}
 .quota-meter-container{position:absolute;top:0;right:0;height:32px}
 .quota-meter{position:absolute;top:8px;right:8px;height:16px;width:100px;background-color:#f5f5f5}
@@ -1462,3 +1462,4 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold}
 .icon-button.arrow-split:hover{background-image:url(sprite-fugue.png);background-position:0px -128px;width:16px;height:16px;height:16px}
 .icon-button.chevron-expand:hover{background-image:url(sprite-fugue.png);background-position:0px -336px;width:16px;height:16px;height:16px}
 .icon-button.chevron-expand{background-image:url(sprite-fugue.png);background-position:0px -320px;width:16px;height:16px;height:16px}
+#for_bears{display:none}
