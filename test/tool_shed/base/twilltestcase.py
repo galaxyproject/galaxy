@@ -1308,6 +1308,6 @@ class ShedTwillTestCase( TwillTestCase ):
                     # This timeout currently defaults to 180 seconds, or 3 minutes.
                     if timeout_counter > common.repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                              ( timeout_counter, repository.status ) )
+                                              ( timeout_counter, galaxy_repository.status ) )
                         break
                     time.sleep( 1 )
