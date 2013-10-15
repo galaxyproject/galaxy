@@ -338,6 +338,43 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         filename = url.split( '/' )[ -1 ]
                     td_common_util.url_download( work_dir, filename, url )
                     dir = os.path.curdir
+                elif action_type == 'setup_r_environment':
+                    # setup an R environment
+                    # <action type="setup_r_environment">
+                    #   <r_base  name="package_r_3_0_1" owner="bgruening" />
+                    # </action>
+                    # allow downloading and installing an R package
+                    # <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+                    if action_dict.get( 'env_shell_file_paths', False ):
+                        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                    else:
+                        log.warning( 'Missing R environment. Please check your specified R installation exists.' )
+                        return
+                    tarball_names = list()
+                    for url in action_dict[ 'r_packages' ]:
+                        filename = url.split( '/' )[ -1 ]
+                        tarball_names.append( filename )
+                        td_common_util.url_download( work_dir, filename, url, extract=False )
+                    dir = os.path.curdir
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
+                        with settings( warn_only=True ):
+                            for tarball_name in tarball_names:
+                                cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
+                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % (tarball_name)
+
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
+
+                            # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
+                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            if return_code:
+                                return
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
