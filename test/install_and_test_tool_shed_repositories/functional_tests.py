@@ -1066,10 +1066,7 @@ def main():
                     # repository using Twill. If tool dependencies failed installation, select to uninstall instead of deavctivate,
                     # to make way for the next attempt. Otherwise, default to the value determined by the environment variable
                     # GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES.
-                    if failed_tool_dependencies:
-                        execute_uninstall_method( app, deactivate_only=False )
-                    else:
-                        execute_uninstall_method( app, deactivate_only=deactivate_only )
+                    execute_uninstall_method( app, deactivate_only=deactivate_only )
                     # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
                     test_toolbox.toolbox = app.toolbox
                     repositories_failed_install.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
