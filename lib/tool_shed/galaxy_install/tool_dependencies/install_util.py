@@ -626,6 +626,11 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'r_packages' ] = r_packages
             else:
                 continue
+        elif action_type == 'make_install':
+            # make; make install; allow providing make options
+            if action_elem.text:
+                make_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
+                action_dict[ 'make_opts' ] = make_opts
         elif action_type == 'chmod':
             # Change the read, write, and execute bits on a file.
             # <action type="chmod">

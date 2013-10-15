@@ -486,6 +486,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                     if return_code:
                                         return
+                        elif action_type == 'make_install':
+                            # make; make install; allow providing make options
+                            with settings( warn_only=True ):
+                                make_opts = action_dict.get( 'make_opts', '' )
+                                cmd = install_environment.build_command( 'make %s && make install' % make_opts )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
