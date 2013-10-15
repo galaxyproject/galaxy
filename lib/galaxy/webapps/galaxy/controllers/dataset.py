@@ -64,6 +64,7 @@ ${message}
 -----------------------------------------------------------------------------
 job id: ${job_id}
 tool id: ${job_tool_id}
+job pid or drm id: ${job_runner_external_id}
 -----------------------------------------------------------------------------
 job command line:
 ${job_command_line}
@@ -231,6 +232,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                               history_view_link=history_view_link,
                               job_id=job.id,
                               job_tool_id=job.tool_id,
+                              job_runner_external_id=job.job_runner_external_id,
                               job_command_line=job.command_line,
                               job_stderr=util.unicodify( job.stderr ),
                               job_stdout=util.unicodify( job.stdout ),
