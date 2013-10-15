@@ -445,10 +445,6 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
 def install_via_fabric( app, tool_dependency, install_dir, package_name=None, proprietary_fabfile_path=None, actions_elem=None, action_elem=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
 
-    def evaluate_template( text ):
-        """ Substitute variables defined in XML blocks from dependencies file."""
-        return Template( text ).safe_substitute( td_common_util.get_env_var_values( install_dir ) )
-
     sa_session = app.model.context.current
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -493,7 +489,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
         elif action_type == 'shell_command':
             # <action type="shell_command">make</action>
-            action_elem_text = evaluate_template( action_elem.text )
+            action_elem_text = td_common_util.evaluate_template( action_elem.text, install_dir )
             if action_elem_text:
                 action_dict[ 'command' ] = action_elem_text
             else:
@@ -541,7 +537,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
         elif action_type == 'make_directory':
             # <action type="make_directory">$INSTALL_DIR/lib/python</action>
             if action_elem.text:
-                action_dict[ 'full_path' ] = evaluate_template( action_elem.text )
+                action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
             else:
                 continue
         elif action_type == 'change_directory':
@@ -556,7 +552,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
             # </action>
             for move_elem in action_elem:
-                move_elem_text = evaluate_template( move_elem.text )
+                move_elem_text = td_common_util.evaluate_template( move_elem.text, install_dir )
                 if move_elem_text:
                     action_dict[ move_elem.tag ] = move_elem_text
         elif action_type == 'move_file':
@@ -609,9 +605,12 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             # <action type="setup_virtualenv">pyyaml==3.2.0
             # lxml==2.3.0</action>
             ## Manually specify contents of requirements.txt file to create dynamically.
-            action_dict[ 'requirements' ] = evaluate_template( action_elem.text or 'requirements.txt' )
+            action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
         elif action_type == 'chmod':
             # Change the read, write, and execute bits on a file.
+            # <action type="chmod">
+            #   <file mode="750">$INSTALL_DIR/bin/faToTwoBit</file>
+            # </action>
             file_elems = action_elem.findall( 'file' )
             chmod_actions = []
             # A unix octal mode is the sum of the following values:
@@ -627,7 +626,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 received_mode = int( file_elem.get( 'mode', 600 ), base=8 )
                 # For added security, ensure that the setuid and setgid bits are not set.
                 mode = received_mode & ~( stat.S_ISUID | stat.S_ISGID )
-                file = evaluate_template( file_elem.text )
+                file = td_common_util.evaluate_template( file_elem.text, install_dir )
                 chmod_tuple = ( file, mode )
                 chmod_actions.append( chmod_tuple )
             action_dict[ 'change_modes' ] = chmod_actions

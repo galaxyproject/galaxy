@@ -7,6 +7,7 @@ import tarfile
 import traceback
 import urllib2
 import zipfile
+from string import Template
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
 
@@ -470,3 +471,7 @@ def zipfile_ok( path_to_archive ):
 def __shellquote(s):
     """Quote and escape the supplied string for use in shell expressions."""
     return "'" + s.replace( "'", "'\\''" ) + "'"
+
+def evaluate_template( text, install_dir ):
+    """ Substitute variables defined in XML blocks from dependencies file."""
+    return Template( text ).safe_substitute( get_env_var_values( install_dir ) )
