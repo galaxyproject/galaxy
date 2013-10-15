@@ -23,7 +23,7 @@
         complete        : function() {},
         error_filesize  : "File exceeds 2GB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
-        error_server    : "The server is unavailable.",
+        error_server    : "Upload request failed.",
         error_toomany   : "You can only queue <20 files per upload session.",
         error_login     : "Uploads require you to log in."
     }
@@ -200,8 +200,7 @@
             if (filesize < maxfilesize)
             {
                 // send data
-                var data = opts.initialize(index, file);
-                send(index, file, data)
+                send(index, file, opts.initialize(index, file))
             } else {
                 // skip file
                 error(index, file, opts.error_filesize);

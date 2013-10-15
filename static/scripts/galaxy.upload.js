@@ -68,6 +68,10 @@ var GalaxyUpload = Backbone.View.extend(
             icon        : 'fa-icon-upload',
             tooltip     : 'Upload Files',
             on_click    : function(e) { self.event_show(e) },
+            on_unload   : function() {
+                if (self.counter.running > 0)
+                    return "Currently uploads are running.";
+            },
             with_number : true
         });
         
@@ -83,7 +87,6 @@ var GalaxyUpload = Backbone.View.extend(
                     self.select_extension[filetype] = filetype;
                 }
             });
-            
     },
     
     // mouse over
