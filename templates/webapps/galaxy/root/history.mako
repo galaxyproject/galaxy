@@ -195,11 +195,14 @@ $(function(){
 
     //NOTE: for debugging on non-local instances (main/test)
     //  1. load history panel in own tab
-    //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
+    //  2. from console: new PersistentStorage( '__history_panel' ).set( 'debugging', true )
     //  -> history panel and hdas will display console logs in console
     var debugging = false;
-    if( jQuery.jStorage.get( '__history_panel' ) ){
-        debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
+    if( sessionStorage.getItem( '__history_panel' ) ){
+        debugging = new PersistentStorage( '__history_panel' ).get( 'debugging' );
+        if( debugging ){
+            console.debug( '(debugging)' );
+        }
     }
 
     // get the current user (either from the top frame's Galaxy or if in tab via the bootstrap)

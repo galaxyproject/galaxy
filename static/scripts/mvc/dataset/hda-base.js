@@ -82,6 +82,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         this.$el.attr( 'id', 'historyItemContainer-' + id );
 
+        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
+        // handle that here by removing previous view's tooltips
+        this.$el.find("[title]").tooltip( "destroy" );
+
         /** web controller urls for functions relating to this hda.
          *      These are rendered from urlTemplates using the model data. */
         this.urls = this._renderUrls( this.urlTemplates, this.model.toJSON() );
@@ -247,7 +251,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             var self = this;
             displayBtnData.on_click = function(){
                 Galaxy.frame_manager.frame_new({
-                    title   : "Data Viewer",
+                    title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
                     location: "center",
                     content : self.urls.display

@@ -79,11 +79,13 @@
                     if qa_url:
                         menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
                     menu_options.extend( [
-                        [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
-                        [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],
-                        [_('Galaxy wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
-                        [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-                        [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+                        [_('Tool Shed Wiki'), app.config.get( "wiki_url", "http://wiki.galaxyproject.org/Tool%20Shed" ), "_blank" ],
+                        [_('Support'), app.config.get( "support_url", "http://wiki.galaxyproject.org/Support" ), "_blank" ],
+                        [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/usegalaxy/" ), "_blank" ],
+                        [_('Mailing Lists'), app.config.get( "mailing_lists_url", "http://wiki.galaxyproject.org/MailingLists" ), "_blank" ],
+                        [_('Videos'), app.config.get( "screencasts_url", "http://vimeo.com/galaxyproject" ), "_blank" ],
+                        [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
+                        [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.galaxyproject.org/CitingGalaxy" ), "_blank" ]
                     ] )
                     tab( "help", _("Help"), None, menu_options=menu_options )
                 %>

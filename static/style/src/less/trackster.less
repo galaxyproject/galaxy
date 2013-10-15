@@ -3,12 +3,14 @@
     overflow-y: auto;
     background: white;
 }
+
 .trackster-nav-container {
     width: 100%;
     /* Used to push nav into title bar: */
     height: 0;
     text-align: center;
 }
+
 .trackster-nav {
     padding: 0 0;
     color:#333;
@@ -21,16 +23,20 @@
     background: transparent;
     border: none;
 }
+
 .content {
     font: 10px verdana;
 }
+
 .nav-controls {
     text-align: center;
     padding: 1px 0;
 }
+
 .nav-controls input {
     margin: 0 5px;
 }
+
 #zoom-in, #zoom-out {
     display:inline-block;
     height: 16px;
@@ -38,23 +44,28 @@
     margin-bottom: -3px;
     cursor: pointer;
 }
+
 #zoom-out {
     background: transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;
 }
+
 #zoom-in {
     margin-left: 10px;
     background: transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;
 }
+
 .nav-input {
     font-size: 12px;
     width: 30em;
     z-index: 1000;
 }
+
 .location {
     display: inline-block;
     width: 15em;
     margin: 0 10px;
 }
+
 .draghandle {
     margin-top: 2px;
     cursor: move;
@@ -63,6 +74,7 @@
     width: 10px;
     height: 12px;
 }
+
 .intro {
     z-index: 1000;
 /*    margin-top: 200px;*/
@@ -72,11 +84,13 @@
     text-align: center;
     font-size: 16px;
 }
+
 .overview {
     width: 100%;
     margin: 0px;
     color: white;
 }
+
 .overview-viewport {
     position: relative;
     height: 14px;
@@ -85,6 +99,7 @@
     background: white;
     margin: 0;
 }
+
 .overview-close {
     font: 9px verdana;
     position: absolute;
@@ -94,6 +109,7 @@
     z-index: 500;
     background-color: white;
 }
+
 .overview-highlight {
     top: 0px;
     position: absolute;
@@ -102,6 +118,7 @@
     border-color: #666;
     border-width: 0px 1px;
 }
+
 .overview-boxback {
     width: 100%;
     bottom: 0px;
@@ -111,6 +128,7 @@
     background: #eee;
     border: solid #999 1px;
 }
+
 .overview-box {
     cursor: pointer;
     bottom: 0px;
@@ -121,6 +139,7 @@
     background: #C1C9E5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
     border: solid #666 1px;
 }
+
 .viewport-canvas {
     width: 100%;
     height: 100px;
@@ -155,11 +174,13 @@
     width: 12px;
     height: 12px;
 }
+
 .group {
     min-height: 20px;
     border-top: 2px solid #888;
     border-bottom: 2px solid #888;
-}    
+}
+
 .track {
     /* border-top: solid #DDDDDD 1px; */
     /* border-bottom: solid #DDDDDD 1px; */
@@ -178,10 +199,7 @@
 
 .tiles {
     text-align: center;
-    border-top: 1px solid #eee;
-    border-bottom: 2px solid #eee;
     background: #eee url('../images/tracks/diag_bg.gif');
-    min-height: 16px;
     position: relative;
     overflow: hidden;
 }
@@ -239,6 +257,7 @@
 .loading {
     min-height: 100px;
 }
+
 .label-track {
     /* font-weight: bold; */
     font-size: 10px; 
@@ -248,20 +267,26 @@
     height: 1.5em;
     overflow: hidden;
 }
+
 .label-track .label {
     border-left: solid #999 1px;
     padding: 1px;
     padding-bottom: 2px;
     display: inline-block;
 }
+
 .label-track .track-content {
     border: none;
 }
+
 .reference-track {
     border: none;
     margin: 0;
     padding: 0;
+    // Override Galaxy defaults.
+    line-height: 1;
 }
+
 .right-float {
     float: right;
     margin-left: 5px;
@@ -281,158 +306,203 @@
 input {
     font: 10px verdana;
 }
+
 .dynamic-tool, .filters {
     margin-left: 0.25em;
     padding-bottom:0.5em;
 }
+
 .dynamic-tool {
     width:410px;
 }
+
 .filters {
     float: left;
     margin: 1em;
     width: 60%;
     position:relative;
 }
+
 .display-controls {
     float: left;
     margin-left: 1em;
 }
+
 .slider-row {
     margin-left: 1em;
     height: 16px;
 }
+
 .slider-row.input {
     height: 22px;
 }
+
 .elt-label {
     float: left;
     width: 30%;
     font-weight: bold;
     margin-right: 1em;
 }
+
 .slider {
     float: left;
     width: 40%;
     position: relative;
     padding-top:2px;
 }
+
 .tool-name {
     font-size: 110%;
     font-weight: bold;
 }
+
 .param-row {
     margin-top: 0.2em;
     margin-left: 1em;
 }
+
 .param-label{
     float: left;
     font-weight: bold;
     padding-top: 0.2em;
     width: 50%;
 }
+
 .menu-button {
     margin: 0px 4px 0px 4px;
 }
+
 .exclamation{
     background: transparent url(../images/fugue/exclamation.png) no-repeat;
     margin-left: 5em;
 }
+
 .layer-transparent {
     background: transparent url(../images/fugue/layer-transparent-bw.png) no-repeat;
 }
+
 .layer-transparent.active {
     background: transparent url(../images/fugue/layer-transparent.png) no-repeat;
 }
+
 .arrow-resize-090 {
     background: transparent url(../images/fugue/arrow-resize-090-bw.png) no-repeat;
 }
+
 .arrow-resize-090.active {
     background: transparent url(../images/fugue/arrow-resize-090.png) no-repeat;
 }
+
 .layers-stack {
     background: transparent url(../images/fugue/layers-stack-bw.png) no-repeat;
 }
+
 .layers-stack:hover {
     background:transparent url(../images/fugue/layers-stack.png) no-repeat;
 }
+
 .settings-icon {
     background: transparent url(../images/fugue/gear-bw.png) no-repeat;
 }
+
 .settings-icon:hover {
     background: transparent url(../images/fugue/gear.png) no-repeat;
 }
+
 .overview-icon {
     background:transparent url(../images/fugue/application-dock-270-bw.png) no-repeat;
 }
+
 .overview-icon:hover {
     background:transparent url(../images/fugue/application-dock-270.png) no-repeat;
 }
+
 .hammer {
     background: transparent url(../images/fugue/hammer-bw.png) no-repeat;
 }
+
 .hammer:hover {
     background: transparent url(../images/fugue/hammer.png) no-repeat;
 }
+
 .toolbox {
     background: transparent url(../images/fugue/toolbox-bw.png) no-repeat;
 }
+
 .toolbox:hover {
     background: transparent url(../images/fugue/toolbox.png) no-repeat;
 }
+
 .filters-icon {
     background: transparent url(../images/fugue/ui-slider-050-bw.png) no-repeat;
 }
+
 .filters-icon:hover {
     background: transparent url(../images/fugue/ui-slider-050.png) no-repeat;
 }
+
 .globe {
     background: transparent url(../images/fugue/globe-bw.png) no-repeat;   
 }
+
 .globe:hover {
     background: transparent url(../images/fugue/globe.png) no-repeat;   
 }
+
 .remove-icon, .overview-close {
     background: transparent url(../images/fugue/cross-small-bw.png) no-repeat;
 }
+
 .icon-button.remove-icon:hover, .overview-close:hover {
     background: transparent url(../images/fugue/cross-circle.png) no-repeat;
 }
+
 .icon-button.toggle {
     background: transparent url(../images/fugue/toggle-bw.png) no-repeat;margin-right:0px;
 }
+
 .icon-button.toggle:hover {
     background: transparent url(../images/fugue/toggle.png) no-repeat;
 }
+
 .icon-button.toggle-expand {
     background: transparent url(../images/fugue/toggle-expand-bw.png) no-repeat;margin-right:0px;
 }
+
 .icon-button.toggle-expand:hover {
     background: transparent url(../images/fugue/toggle-expand.png) no-repeat;
 }
+
 .icon-button.block--plus {
     background: transparent url(../images/fugue/block--plus-bw.png) no-repeat;
 }
+
 .icon-button.block--plus:hover {
     background: transparent url(../images/fugue/block--plus.png) no-repeat;
 }
+
 .icon-button.bookmarks {
     background: transparent url(../images/fugue/bookmarks-bw.png) no-repeat;
 }
+
 .icon-button.bookmarks:hover {
     background: transparent url(../images/fugue/bookmarks.png) no-repeat;
 }
+
 .icon-button.toolbox {
     background: transparent url(../images/fugue/toolbox-bw.png) no-repeat;
 }
+
 .icon-button.toolbox:hover {
     background: transparent url(../images/fugue/toolbox.png) no-repeat;
 }
+
 .child-track-icon {
     background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;
     width: 30px;
     cursor: move;
 }
+
 .track-resize {
     background: white url('../images/visualization/draggable_vertical.png') no-repeat top center;
     position: absolute;
@@ -443,6 +513,7 @@ input {
     border: solid #999 1px;
     z-index: 100;
 }
+
 .bookmark {
     background:white;
     border:solid #999 1px;
@@ -451,29 +522,36 @@ input {
     margin-right:0;
     padding:0.5em;
 }
+
 .bookmark .position {
     font-weight:bold;
 }
+
 .delete-icon-container {
     float:right;
 }
+
 .icon {
     display:inline-block;
     width:16px;
     height:16px;
 }
+
 .icon.more-down {
     background:url('../images/fugue/arrow-transition-270-bw.png') no-repeat 0px 0px;
 }
+
 .icon.more-across {
     background: url('../images/fugue/arrow-transition-bw.png') no-repeat 0px 0px;
 }
+
 .intro > .action-button {
     background-color: #CCC;
     margin-top: 10px;
     padding: 1em;
     text-decoration:underline;
 }
+
 .feature-popup {
     position: absolute;
     z-index: 1000;
@@ -484,6 +562,7 @@ input {
     background-image: url(../images/tipsy.gif);
     background-position: top center;
 }
+
 .feature-popup-inner {
     padding: 5px 8px 4px 8px;
     background-color: black;

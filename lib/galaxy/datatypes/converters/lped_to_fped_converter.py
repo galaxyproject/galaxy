@@ -14,7 +14,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Galaxy %s tool output - see http://g2.trac.bx.psu.edu/" />
+<meta name="generator" content="Galaxy %s tool output - see http://getgalaxy.org" />
 <title></title>
 <link rel="stylesheet" href="/static/style/base.css" type="text/css" />
 </head>

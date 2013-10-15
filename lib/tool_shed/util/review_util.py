@@ -5,9 +5,8 @@ from galaxy.model.orm import and_
 from galaxy.util.odict import odict
 import tool_shed.util.shed_util_common as suc
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui

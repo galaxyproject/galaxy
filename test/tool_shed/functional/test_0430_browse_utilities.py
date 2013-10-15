@@ -57,7 +57,7 @@ class TestToolShedBrowseUtilities( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % datatypes_repository_name, 
-                              'Repository %s has been created' % "'%s'" % datatypes_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % datatypes_repository_name ]
         repository = self.get_or_create_repository( name=datatypes_repository_name, 
                                                     description=datatypes_repository_description, 
                                                     long_description=datatypes_repository_long_description, 
@@ -85,7 +85,7 @@ class TestToolShedBrowseUtilities( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % emboss_repository_name, 
-                              'Repository %s has been created' % "'%s'" % emboss_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % emboss_repository_name ]
         emboss_repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                     description=emboss_repository_description, 
                                                     long_description=emboss_repository_long_description, 
@@ -122,7 +122,7 @@ class TestToolShedBrowseUtilities( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % freebayes_repository_name, 
-                              'Repository %s has been created' % "'%s'" % freebayes_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % freebayes_repository_name ]
         repository = self.get_or_create_repository( name=freebayes_repository_name, 
                                                     description=freebayes_repository_description, 
                                                     long_description=freebayes_repository_long_description, 

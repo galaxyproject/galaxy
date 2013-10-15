@@ -2,6 +2,7 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
+import time
 import copy
 import datetime
 import galaxy
@@ -17,7 +18,7 @@ import threading
 import traceback
 from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
@@ -179,7 +180,7 @@ class JobConfiguration( object ):
         if tools is not None:
             for tool in self.__findall_with_required(tools, 'tool'):
                 # There can be multiple definitions with identical ids, but different params
-                id = tool.get('id')
+                id = tool.get('id').lower()
                 if id not in self.tools:
                     self.tools[id] = list()
                 self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
@@ -926,6 +927,17 @@ class JobWrapper( object ):
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                trynum = 0
+                while trynum < self.app.config.retry_job_output_collection:
+                    try:
+                        # Attempt to short circuit NFS attribute caching
+                        os.stat( dataset.dataset.file_name )
+                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                        trynum = self.app.config.retry_job_output_collection
+                    except ( OSError, ObjectNotFound ), e:
+                        trynum += 1
+                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                        time.sleep( 2 ) 
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info = (dataset.info or '')
@@ -1483,6 +1495,12 @@ class JobWrapper( object ):
         just copy these files directly to the ulimate destination.
         """
         return output_path
+    
+    @property
+    def requires_setting_metadata( self ):
+        if self.tool:
+            return self.tool.requires_setting_metadata
+        return False
 
 
 class TaskWrapper(JobWrapper):

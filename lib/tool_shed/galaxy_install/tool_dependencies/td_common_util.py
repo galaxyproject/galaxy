@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import sys
 import tarfile
@@ -9,9 +10,115 @@ import zipfile
 from string import Template
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
-from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
+
+
+class CompressedFile( object ):
+    
+    def __init__( self, file_path, mode='r' ):
+        if istar( file_path ):
+            self.file_type = 'tar'
+        elif iszip( file_path ) and not isjar( file_path ):
+            self.file_type = 'zip'
+        self.file_name = os.path.splitext( os.path.basename( file_path ) )[ 0 ]
+        if self.file_name.endswith( '.tar' ):
+            self.file_name = os.path.splitext( self.file_name )[ 0 ]
+        self.type = self.file_type
+        method = 'open_%s' % self.file_type
+        if hasattr( self, method ):
+            self.archive = getattr( self, method )( file_path, mode )
+        else:
+            raise NameError( 'File type %s specified, no open method found.' % self.file_type )
+        
+    def extract( self, path ):
+        '''Determine the path to which the archive should be extracted.'''
+        contents = self.getmembers()
+        extraction_path = path
+        if len( contents ) == 1:
+            # The archive contains a single file, return the extraction path.
+            if self.isfile( contents[ 0 ] ):
+                extraction_path = os.path.join( path, self.file_name )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( extraction_path )
+        else:
+            # Sort filenames within the archive by length, because if the shortest path entry in the archive is a directory,
+            # and the next entry has the directory prepended, then everything following that entry must be within that directory.
+            # For example, consider tarball for BWA 0.5.9:
+            # bwa-0.5.9.tar.bz2:
+            #                     bwa-0.5.9/
+            #                     bwa-0.5.9/bwt.c
+            #                     bwa-0.5.9/bwt.h
+            #                     bwa-0.5.9/Makefile
+            #                     bwa-0.5.9/bwt_gen/
+            #                     bwa-0.5.9/bwt_gen/Makefile
+            #                     bwa-0.5.9/bwt_gen/bwt_gen.c
+            #                     bwa-0.5.9/bwt_gen/bwt_gen.h
+            # When sorted by length, one sees a directory at the root of the tarball, and all other tarball contents as
+            # children of that directory.
+            filenames = sorted( [ self.getname( item ) for item in contents ], cmp=lambda a,b: cmp( len( a ), len( b ) ) )
+            parent_name = filenames[ 0 ]
+            parent = self.getmember( parent_name )
+            first_child = filenames[ 1 ]
+            if first_child.startswith( parent_name ) and parent is not None and self.isdir( parent ):
+                if self.getname( parent ) == self.file_name:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.file_name )
+                else:
+                    self.archive.extractall( os.path.join( path ) )
+                    extraction_path = os.path.join( path, self.getname( parent ) )
+            else:
+                extraction_path = os.path.join( path, self.file_name )
+                if not os.path.exists( extraction_path ):
+                    os.makedirs( extraction_path )
+                self.archive.extractall( os.path.join( extraction_path ) )
+        return os.path.abspath( extraction_path )
+    
+    def getmembers_tar( self ):
+        return self.archive.getmembers()
+    
+    def getmembers_zip( self ):
+        return self.archive.infolist()
+    
+    def getname_tar( self, item ):
+        return item.name
+    
+    def getname_zip( self, item ):
+        return item.filename
+    
+    def getmember( self, name ):
+        for member in self.getmembers():
+            if self.getname( member ) == name:
+                return member
+    
+    def getmembers( self ):
+        return getattr( self, 'getmembers_%s' % self.type )()
+        
+    def getname( self, member ):
+        return getattr( self, 'getname_%s' % self.type )( member )
+    
+    def isdir( self, member ):
+        return getattr( self, 'isdir_%s' % self.type )( member )
+    
+    def isdir_tar( self, member ):
+        return member.isdir()
+    
+    def isdir_zip( self, member ):
+        if member.filename.endswith( os.sep ):
+            return True
+        return False
+
+    def isfile( self, member ):
+        if not self.isdir( member ):
+            return True
+        return False
+    
+    def open_tar( self, filepath, mode ):
+        return tarfile.open( filepath, mode, errorlevel=0 )
+
+    def open_zip( self, filepath, mode ):
+        return zipfile.ZipFile( filepath, mode )
 
 def clean_tool_shed_url( base_url ):
     if base_url:
@@ -64,26 +171,9 @@ def create_or_update_env_shell_file( install_dir, env_var_dict ):
         changed_value = '%s' % env_var_value
     elif env_var_action == 'append_to':
         changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-    line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
-    return create_or_update_env_shell_file_with_command(install_dir, line)
-
-
-def create_or_update_env_shell_file_with_command( install_dir, command ):
-    """
-    Return a shell expression which when executed will create or update
-    a Galaxy env.sh dependency file in the specified install_dir containing
-    the supplied command.
-    """
-    env_shell_file_path = '%s/env.sh' % install_dir
-    if os.path.exists( env_shell_file_path ):
-        write_action = '>>'
-    else:
-        write_action = '>'
-    cmd = "echo %s %s %s;chmod +x %s" % ( __shellquote(command),
-                                          write_action,
-                                          __shellquote(env_shell_file_path),
-                                          __shellquote(env_shell_file_path))
-    return cmd
+    line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    env_shell_file_path = os.path.join( install_dir, 'env.sh' )
+    return line, env_shell_file_path
 
 def download_binary( url, work_dir ):
     '''
@@ -93,29 +183,16 @@ def download_binary( url, work_dir ):
     dir = url_download( work_dir, downloaded_filename, url, extract=False )
     return downloaded_filename
 
-def extract_tar( file_name, file_path ):
-    if isgzip( file_name ) or isbz2( file_name ):
-        # Open for reading with transparent compression.
-        tar = tarfile.open( file_name, 'r:*', errorlevel=0 )
-    else:
-        tar = tarfile.open( file_name, errorlevel=0 )
-    tar.extractall( path=file_path )
-    tar.close()
-
-def extract_zip( archive_path, extraction_path ):
-    # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
-    if not zipfile_ok( archive_path ):
-        return False
-    zip_archive = zipfile.ZipFile( archive_path, 'r' )
-    for name in zip_archive.namelist():
-        uncompressed_path = os.path.join( extraction_path, name )
-        if uncompressed_path.endswith( '/' ):
-            if not os.path.isdir( uncompressed_path ):
-                os.makedirs( uncompressed_path )
-        else:
-            file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
-    zip_archive.close()
-    return True
+def egrep_escape( text ):
+    """Escape ``text`` to allow literal matching using egrep."""
+    regex = re.escape( text )
+    # Seems like double escaping is needed for \
+    regex = regex.replace( '\\\\', '\\\\\\' )
+    # Triple-escaping seems to be required for $ signs
+    regex = regex.replace( r'\$', r'\\\$' )
+    # Whereas single quotes should not be escaped
+    regex = regex.replace( r"\'", "'" )
+    return regex
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()
@@ -233,12 +310,19 @@ def move_directory_files( current_dir, source_dir, destination_dir ):
         destination_file = os.path.join( destination_directory, file_name )
         shutil.move( source_file, destination_file )
 
-def move_file( current_dir, source, destination_dir ):
-    source_file = os.path.abspath( os.path.join( current_dir, source ) )
-    destination_directory = os.path.join( destination_dir )
-    if not os.path.isdir( destination_directory ):
+def move_file( current_dir, source, destination, rename_to=None ):
+    source_path = os.path.abspath( os.path.join( current_dir, source ) )
+    source_file = os.path.basename( source_path )
+    if rename_to is not None:
+        destination_file = rename_to
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, destination_file )
+    else:
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, source_file )
+    if not os.path.exists( destination_directory ):
         os.makedirs( destination_directory )
-    shutil.move( source_file, destination_directory )
+    shutil.move( source_path, destination_path )
 
 def parse_package_elem( package_elem, platform_info_dict=None, include_after_install_actions=True ):
     """
@@ -265,11 +349,13 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             in_actions_group = True
             # Record the number of <actions> elements so we can filter out any <action> elements that precede <actions> elements.
             actions_elem_count = len( elem.findall( 'actions' ) )
-            # Record the number of <actions> elements that have architecture and os specified, in order to filter out any platform-independent
-            # <actions> elements that come before platform-specific <actions> elements. This call to elem.findall is filtered by tags that have
-            # both the os and architecture specified.  For more details, see http://docs.python.org/2/library/xml.etree.elementtree.html Section
-            # 19.7.2.1.
-            platform_actions_element_count = len( elem.findall( 'actions[@architecture][@os]' ) )
+            # Record the number of <actions> elements that have both architecture and os specified, in order to filter out any 
+            # platform-independent <actions> elements that come before platform-specific <actions> elements.
+            platform_actions_elements = []
+            for actions_elem in elem.findall( 'actions' ):
+                if actions_elem.get( 'architecture' ) is not None and actions_elem.get( 'os' ) is not None:
+                    platform_actions_elements.append( actions_elem )
+            platform_actions_element_count = len( platform_actions_elements )
             platform_actions_elements_processed = 0
             actions_elems_processed = 0
             # The tag sets that will go into the after_install_actions list are <action> tags instead of <actions> tags.  These will be processed
@@ -339,19 +425,6 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             continue
     return actions_elem_tuples
 
-def tar_extraction_directory( file_path, file_name ):
-    """Try to return the correct extraction directory."""
-    file_name = file_name.strip()
-    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.tar', '.zip' ]
-    for extension in extensions:
-        if file_name.find( extension ) > 0:
-            dir_name = file_name[ :-len( extension ) ]
-            if os.path.exists( os.path.abspath( os.path.join( file_path, dir_name ) ) ):
-                return dir_name
-    if os.path.exists( os.path.abspath( os.path.join( file_path, file_name ) ) ):
-        return os.path.abspath( file_path )
-    raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
-
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -373,32 +446,14 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
         if dst:
             dst.close()
     if extract:
-        if istar( file_path ):
-            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
-            extract_tar( file_path, install_dir )
-            dir = tar_extraction_directory( install_dir, downloaded_file_name )
-        elif isjar( file_path ):
-            dir = os.path.curdir
-        elif iszip( file_path ):
-            # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
-            zip_archive_extracted = extract_zip( file_path, install_dir )
-            dir = zip_extraction_directory( install_dir, downloaded_file_name )
+        if istar( file_path ) or iszip( file_path ):
+            archive = CompressedFile( file_path )
+            extraction_path = archive.extract( install_dir )
         else:
-            dir = os.path.abspath( install_dir )
+            extraction_path = os.path.abspath( install_dir )
     else:
-        dir = os.path.abspath( install_dir )
-    return dir
-
-def zip_extraction_directory( file_path, file_name ):
-    """Try to return the correct extraction directory."""
-    files = [ filename for filename in os.listdir( file_path ) if not filename.endswith( '.zip' ) ]
-    if len( files ) > 1:
-        return os.path.abspath( file_path )
-    elif len( files ) == 1:
-        # If there is only on file it should be a directory.
-        if os.path.isdir( os.path.join( file_path, files[ 0 ] ) ):
-            return os.path.abspath( os.path.join( file_path, files[ 0 ] ) )
-    raise ValueError( 'Could not find directory for the extracted file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+        extraction_path = os.path.abspath( install_dir )
+    return extraction_path
 
 def zipfile_ok( path_to_archive ):
     """
@@ -420,4 +475,3 @@ def __shellquote(s):
 def evaluate_template( text, install_dir ):
     """ Substitute variables defined in XML blocks from dependencies file."""
     return Template( text ).safe_substitute( get_env_var_values( install_dir ) )
-

@@ -11,13 +11,13 @@ pre {
   white-space: pre;
 }
 
-
 .btn.hover {
     @btn:hover();
 }
 
-.btn.active, .btn:active {
-    color: inherit;
+// Allow text in buttons to wrap
+.btn {
+  white-space: normal;
 }
 
 .dropdown-menu {
@@ -30,6 +30,10 @@ input[type="checkbox"],input[type="radio"] {
 }
 
 // Modal -- wider by default, scroll like Trello
+
+.modal-dialog {
+    width: 690px;
+}
 
 /*
 

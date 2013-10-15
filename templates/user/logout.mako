@@ -39,6 +39,14 @@ def inherit(context):
 </%def>
 
 <%def name="body()">
+    <script type="text/javascript">
+        $(function(){
+            //HACK: should happen before we get to this page - _before_ logged out of session
+            if( top.Galaxy && top.Galaxy.currUser ){
+                top.Galaxy.currUser.clearSessionStorage();
+            }
+        });
+    </script>
     %if message:
         ${render_msg( message, status )}
     %endif

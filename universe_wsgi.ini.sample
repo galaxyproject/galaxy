@@ -204,6 +204,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #collect_outputs_from = new_file_path,job_working_directory
 
 # -- Data Storage (Object Store)
+#
+# Configuration file for the object store
+# If this is set and exists, it overrides any other objectstore settings.
+# object_store_config_file = object_store_conf.xml
 
 # Object store backend module (valid options are: disk, s3, swift, irods,
 # distributed, hierarchical)
@@ -248,8 +252,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Galaxy sends mail for various things: Subscribing users to the mailing list
 # if they request it, emailing password resets, notification from the Galaxy
-# Sample Tracking system, and reporting dataset errors.  To do this, it needs
-# to send mail through an SMTP server, which you may define here (host:port).
+# Sample Tracking system, reporting dataset errors, and sending activation emails.
+# To do this, it needs to send mail through an SMTP server, which you may define here (host:port).
 # Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
 
@@ -265,7 +269,42 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Datasets in an error state include a link to report the error.  Those reports
 # will be sent to this address.  Error reports are disabled if no address is set.
+# Also this email is shown as a contact to user in case of Galaxy misconfiguration and other events user may encounter.
 #error_email_to = None
+
+# Activation email is used as a sender ('from' field) for the account activation mail.
+# We recommend using string in the following format: Galaxy Project <galaxy-no-reply@example.com>
+#activation_email = None
+
+# URL of the support resource for the galaxy instance. Used in activation emails.
+#instance_resource_url = http://wiki.galaxyproject.org/
+
+# E-mail domains blacklist is used for filtering out users that are using disposable email address
+# during the registration. If their address domain matches any domain in the BL they are refused the registration.
+#blacklist_file = config/disposable_email_blacklist.conf
+
+# Registration warning message is used to discourage people from registering multiple accounts. Applies mostly for the main Galaxy instance.
+# If no message specified the warning box will not be shown.
+#registration_warning_message = Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+
+
+# -- Account activation
+
+# This is user account activation feature global flag. If set to "False" the rest of the Account 
+# activation configuration is ignored and user activation is disabled (a.k.a. accounts are active since registration).
+# Note the activation is also not working in case the smtp server is not defined.
+#user_activation_on = False
+
+# Activation grace period. Activation is not forced (login is not disabled) until 
+# grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
+# In hours. Default is 3. Enter 0 to disable grace period. 
+# Users with OpenID logins have grace period forever. 
+#activation_grace_period = 0
+
+# Used for warning box for inactive accounts (unable to run jobs).
+# In use only if activation_grace_period is set.
+#inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
+
 
 # -- Display sites
 
@@ -328,17 +367,26 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy/brand" text.
 #logo_url = /
 
-# The URL linked by the "Galaxy Wiki" link in the "Help" menu.
-#wiki_url = http://wiki.g2.bx.psu.edu/
+# The URL linked by the "Wiki" link in the "Help" menu.
+#wiki_url = http://wiki.galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = http://wiki.g2.bx.psu.edu/Support
+#support_url = http://wiki.galaxyproject.org/Support
 
-# The URL linked by the "How to Cite..." link in the "Help" menu.
-#citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
+# The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+#citation_url = http://wiki.galaxyproject.org/CitingGalaxy
+
+#The URL linked by the "Search" link in the "Help" menu.
+#search_url = http://galaxyproject.org/search/usegalaxy/
+
+#The URL linked by the "Mailing Lists" link in the "Help" menu.
+#mailing_lists_url = http://wiki.galaxyproject.org/MailingLists
+
+#The URL linked by the "Videos" link in the "Help" menu.
+#videos_url = http://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
-# as on the user registration and login forms.
+# as on the user registration and login forms and in the activation emails.
 #terms_url = None
 
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu

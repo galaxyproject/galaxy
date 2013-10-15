@@ -287,7 +287,7 @@
 
 <%def name="overlay(visible=False)">
     ${parent.overlay( "Loading workflow editor...",
-                      "<div class='progress progress-striped progress-info active'><div class='bar' style='width: 100%;'></div></div>", self.overlay_visible )}
+                      "<div class='progress progress-striped progress-info active'><div class='progress-bar' style='width: 100%;'></div></div>", self.overlay_visible )}
 </%def>
 
 <%def name="left_panel()">

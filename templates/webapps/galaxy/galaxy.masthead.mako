@@ -34,10 +34,11 @@ ${h.to_json_string( user_dict )}
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
         
         ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame'], function(master, frame)
+        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal'], function(master, frame, modal)
         {
             Galaxy.master = new master.GalaxyMaster();
             Galaxy.frame_manager = new frame.GalaxyFrameManager();
+            Galaxy.modal = new modal.GalaxyModal();
         });
     </script>
 
@@ -50,7 +51,7 @@ ${h.to_json_string( user_dict )}
 
     <ul class="nav navbar-nav" border="0" cellspacing="0">
     
-    <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
+    <%def name="tab( id, display, href, onclick=False, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
         ## that are options in the menu.
     
@@ -60,8 +61,6 @@ ${h.to_json_string( user_dict )}
         extra = ""
         if extra_class:
             cls += " " + extra_class
-        ##if self.active_view == id:
-        ##    cls += " active"
         if menu_options:
             cls += " dropdown"
             a_cls += " dropdown-toggle"
@@ -87,7 +86,11 @@ ${h.to_json_string( user_dict )}
                                 ${menu_item[0]}
                             %elif len ( menu_item ) == 2:
                                 <% name, link = menu_item %>
-                                <a href="${link}">${name}</a>
+                                %if onclick:
+                                    <a href="${link}" onclick="Galaxy.frame_manager.frame_new({title: '${name}', type: 'url', content: '${link}'}); return false;">${name}</a>
+                                %else:
+                                    <a href="${link}">${name}</a>
+                                %endif
                             %else:
                                 <% name, link, target = menu_item %>
                                 <a target="${target}" href="${link}">${name}</a>
@@ -104,7 +107,7 @@ ${h.to_json_string( user_dict )}
     ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
     
     ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), "javascript:Galaxy.frame_manager.frame_new({title: 'Workflow', type: 'url', content: '" + h.url_for( controller='/workflow', action='index' ) + "'});")}
+    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
 
     ## 'Shared Items' or Libraries tab.
     <%
@@ -134,10 +137,10 @@ ${h.to_json_string( user_dict )}
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='trackster' ) + "'});"],
-                         [_('Saved Visualizations'), "javascript:Galaxy.frame_manager.frame_new({ type: 'url', content : '" + h.url_for( controller='/visualization', action='list' ) + "'});" ]
+                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' )],
+                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' )]
                        ]
-        tab( "visualization", _("Visualization"), "javascript:Galaxy.frame_manager.frame_new({title: 'Trackster', type: 'url', content: '" + h.url_for( controller='/visualization', action='list' ) + "'});", menu_options=menu_options )
+        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list' ), menu_options=menu_options, onclick=True )
     %>
 
     ## Cloud menu.
@@ -160,11 +163,12 @@ ${h.to_json_string( user_dict )}
             menu_options = [ [_('Galaxy Q&A Site'), h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy' ), "_blank" ],
                              [_('Ask a question'), h.url_for( controller='biostar', action='biostar_question_redirect' ), "_blank" ] ]
         menu_options.extend( [
-            [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
-            [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],
-            [_('Galaxy wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
-            [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+            [_('Support'), app.config.get( "support_url", "http://wiki.galaxyproject.org/Support" ), "_blank" ],
+            [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/usegalaxy/" ), "_blank" ],
+            [_('Mailing Lists'), app.config.get( "mailing_lists", "http://wiki.galaxyproject.org/MailingLists" ), "_blank" ],
+            [_('Videos'), app.config.get( "screencasts_url", "http://vimeo.com/galaxyproject" ), "_blank" ],
+            [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
+            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.galaxyproject.org/CitingGalaxy" ), "_blank" ]
         ] )
         if app.config.get( 'terms_url', None ) is not None:
             menu_options.append( [_('Terms and Conditions'), app.config.get( 'terms_url', None ), '_blank'] )

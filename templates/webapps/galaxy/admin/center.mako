@@ -106,7 +106,7 @@
     <p><strong>Data Security and Data Libraries</strong></p>
     <p/>
     <strong>Security</strong> - Data security in Galaxy is a new feature, so familiarize yourself with the details which can be found 
-    here or in our <a href="http://g2.trac.bx.psu.edu/wiki/SecurityFeatures" target="_blank">data security page</a>.  The data security 
+    here or in our <a href="http://wiki.galaxyproject.org/Learn/Security%20Features" target="_blank">data security page</a>.  The data security 
     process incorporates users, groups and roles, and enables the application of certain permissions on datasets, specifically "access"
     and "manage permissions".  By default, the "manage permissions" permission is associated with the dataset owner's private role, and
     the "access" permission is not set, making the dataset public.  With these default permissions, users should not see any difference

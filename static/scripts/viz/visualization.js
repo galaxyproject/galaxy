@@ -1,5 +1,4 @@
-define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], 
-        function(_, data_mod, util_mod, config_mod) {
+define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -20,11 +19,13 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
         data: filters,
         error: function() { alert( "Grid failed" ); },
         success: function(table_html) {
-            show_modal(
-                "Select datasets for new tracks",
-                table_html, {
+            Galaxy.modal.show({
+                title   : "Select datasets for new tracks",
+                body    : table_html,
+                buttons :
+                {
                     "Cancel": function() {
-                        hide_modal();
+                        Galaxy.modal.hide();
                     },
                     "Add": function() {
                        var requests = [];
@@ -55,10 +56,10 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                                                );
                             success_fn(track_defs);
                         });
-                        hide_modal();
+                        Galaxy.modal.hide();
                     }
                }
-            );
+            });
         }
     });
 };
@@ -407,6 +408,9 @@ var GenomeDataManager = Cache.extend({
             // This would prevent bad extensions when zooming in/out while still preserving the behavior
             // below.
 
+            // Use copy of region to avoid changing actual region.
+            region = region.copy();
+
             // Use heuristic to extend region: extend relative to last data request.
             var last_request = this.most_recently_added();
             if (!last_request || (region.get('start') > last_request.get('start'))) {
@@ -713,6 +717,11 @@ var GenomeRegion = Backbone.RelationalModel.extend({
 
         // Keep a copy of region's string value for fast lookup.
         this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
+
+        // Set str_val on attribute change.
+        this.on('change', function() {
+            this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');            
+        }, this);
     },
     
     copy: function() {

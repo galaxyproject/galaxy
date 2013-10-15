@@ -175,18 +175,14 @@ function make_popup_menus( parent ) {
 
                         // if theres confirm text, send the dialog
                         if ( !confirmtext || confirm( confirmtext ) ) {
-                            var f;    
-                            // Http request target is a window named demolocal on the local box
-                             if ( target === "demo" ) {
-                                if ( f === undefined || f.closed ) {
-                                    f = window.open( href,target );
-                                    f.creator = self;
-                                }
-                                
+                            // link.click() doesn't use target for some reason, 
+                            // so manually do it here. 
+                            if (target) {
+                                window.open(href, target);
                             }
                             // For all other links, do the default action.
                             else {
-                                link.trigger('click');
+                                link.click();
                             }
                         }
                     }

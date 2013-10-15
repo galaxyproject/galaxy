@@ -152,34 +152,6 @@
     </script>
 </%def>
 
-## overlay
-<%def name="overlay( title='', content='')">
-    <%def name="title()"></%def>
-    <%def name="content()"></%def>
-    <%
-        display = "style='display: none;'"
-        overlay_class = ""
-    %>
-
-    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
-        <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
-        <div id="top-modal-dialog" class="modal-dialog" border="0" ${display}>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span><h3 class='title'>${title}</h3></span>
-                </div>
-                <div class="modal-body">${content}</div>
-                <div class="modal-footer">
-                    <div class="buttons" style="float: right;"></div>
-                    <div class="extra_buttons" style=""></div>
-                    <div style="clear: both;"></div>
-                </div>
-            </div>
-        </div>
-    
-    </div>
-</%def>
-
 ## document
 <html>
     <head>
@@ -197,14 +169,6 @@
     </head>
     
     <body scroll="no" class="full-content">
-        <noscript>
-            <div class="overlay overlay-background">
-                <div class="modal dialog-box" border="0">
-                    <div class="modal-header"><h3 class="title">Javascript Required</h3></div>
-                    <div class="modal-body">The Galaxy analysis interface requires a browser with Javascript enabled. <br> Please enable Javascript and refresh this page</div>
-                </div>
-            </div>
-        </noscript>
         <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
             ## background displays first
             <div id="background"></div>
@@ -218,10 +182,6 @@
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
             %endif
-            
-            ## overlay
-            ${self.overlay()}
-            
             ## left panel
             %if self.galaxy_config['left_panel']:
                 <div id="left">

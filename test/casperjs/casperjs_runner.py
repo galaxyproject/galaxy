@@ -323,7 +323,7 @@ class Test_01_User( CasperJSTestCase ):
         self.run_js_script( 'registration-tests.js' )
 
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
-        #TODO: have run_js_script return other persistant fixture data (uploaded files, etc.)
+        #TODO: have run_js_script return other persistent fixture data (uploaded files, etc.)
 
     def test_20_login( self ):
         """User log in tests.

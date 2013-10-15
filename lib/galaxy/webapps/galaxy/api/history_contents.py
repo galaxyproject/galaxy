@@ -214,69 +214,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.sa_session.flush()
             return hda.to_dict()
 
-        # copy from upload
-        if source == 'upload':
-
-            # get upload specific features
-            dbkey = payload.get('dbkey', None)
-            extension = payload.get('extension', None)
-            space_to_tabs = payload.get('space_to_tabs', False)
-        
-            # check for filename
-            if content.filename is None:
-                trans.response.status = 400
-                return "history_contents:create() : The contents parameter needs to contain the uploaded file content."
-            
-            # create a dataset
-            dataset = trans.app.model.Dataset()
-            trans.sa_session.add(dataset)
-            trans.sa_session.flush()
-            
-            # get file destination
-            file_destination = dataset.get_file_name()
-
-            # check if the directory exists
-            dn = os.path.dirname(file_destination)
-            if not os.path.exists(dn):
-                os.makedirs(dn)
-    
-            # get file and directory names
-            fn = os.path.basename(content.filename)
-    
-            # save file locally
-            open(file_destination, 'wb').write(content.file.read())
-            
-            # log
-            log.info ('The file "' + fn + '" was uploaded successfully.')
-            
-            # replace separation with tabs
-            if space_to_tabs:
-                log.info ('Replacing spaces with tabs.')
-                sniff.convert_newlines_sep2tabs(file_destination)
-            
-            # guess extension
-            if extension is None:
-                log.info ('Guessing extension.')
-                extension = sniff.guess_ext(file_destination)
-    
-            # create hda
-            hda = trans.app.model.HistoryDatasetAssociation(dataset = dataset, name = content.filename,
-                    extension = extension, dbkey = dbkey, history = history, sa_session = trans.sa_session)
-    
-            # add status ok
-            hda.state = hda.states.OK
-            
-            # add dataset to history
-            history.add_dataset(hda, genome_build = dbkey)
-            permissions = trans.app.security_agent.history_get_default_permissions( history )
-            trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
-            
-            # add to session
-            trans.sa_session.add(hda)
-            trans.sa_session.flush()
-
-            # get name
-            return hda.to_dict()
         else:
             # other options
             trans.response.status = 501
@@ -327,6 +264,75 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( exception ) }
 
         return changed
+
+    @web.expose_api
+    def delete( self, trans, history_id, id, **kwd ):
+        """
+        delete( self, trans, history_id, id, **kwd )
+        * DELETE /api/histories/{history_id}/contents/{id}
+            delete the HDA with the given ``id``
+        .. note:: Currently does not stop any active jobs for which this dataset is an output.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to delete
+        :type   kwd:    dict
+        :param  kwd:    (optional) dictionary structure containing:
+
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the HDA
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history was marked as deleted,
+            * purged:     if the history was purged
+        """
+        # a request body is optional here
+        purge = False
+        if kwd.get( 'payload', None ):
+            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
+
+        rval = { 'id' : id }
+        try:
+            hda = self.get_dataset( trans, id,
+                check_ownership=True, check_accessible=True, check_state=True )
+            hda.deleted = True
+
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.sa_session.flush()
+
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        pass
+                    # flush now to preserve deleted state in case of later interruption
+                    trans.sa_session.flush()
+
+                rval[ 'purged' ] = True
+
+            trans.sa_session.flush()
+            rval[ 'deleted' ] = True
+
+        except HTTPInternalServerError, http_server_err:
+            log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           id, str( kwd ), str( http_server_err ) )
+            raise
+        except HTTPException, http_exc:
+            raise
+        except Exception, exc:
+            log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
+                           id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
+
+        return rval
 
     def _validate_and_parse_update_payload( self, payload ):
         """

@@ -352,19 +352,20 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     for key, val in repository_dependencies.items():
                         if key in [ 'root_key', 'description' ]:
                             continue
-                        try:
-                            toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                                container_util.get_components_from_key( key )
-                            components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
-                        except ValueError:
-                            # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required and only_if_compiling_contained_td
-                            # to False in the caller.
-                            toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
-                            components_list = [ toolshed, name, owner, changeset_revision ]
-                            only_if_compiling_contained_td = 'False'
+                        repository_components_tuple = container_util.get_components_from_key( key )
+                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
                         # Skip listing a repository dependency if it is required only to compile a tool dependency defined for the dependent repository since
                         # in this case, the repository dependency is really a dependency of the dependent repository's contained tool dependency, and only if
                         # that tool dependency requires compilation.
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        prior_installation_required = 'False'
+                        only_if_compiling_contained_td = 'False'
+                        if len( components_list ) == 4:
+                            prior_installation_required = 'False'
+                            only_if_compiling_contained_td = 'False'
+                        elif len( components_list ) == 5:
+                            prior_installation_required = components_list[ 4 ]
+                            only_if_compiling_contained_td = 'False'
                         if not util.asbool( only_if_compiling_contained_td ):
                             if components_list not in required_repository_tups:
                                 required_repository_tups.append( components_list )
@@ -428,6 +429,10 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     will be installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
     """
+    # The received list of tool_dependencies are the database records for those dependencies defined in the received tool_dependencies_config
+    # that should be installed.  This allows for filtering out dependencies that have not been checked for installation on the 'Manage tool
+    # dependencies' page for an installed tool shed repository.
+    attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
     sa_session = app.model.context.current
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
@@ -438,19 +443,43 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     fabric_version_checked = False
     for elem in root:
         if elem.tag == 'package':
-            # Only install the tool_dependency if it is not already installed.
+            # Only install the tool_dependency if it is not already installed and it is associated with a database record in the received
+            # tool_dependencies.
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
             if package_name and package_version:
-                for tool_dependency in tool_dependencies:
-                    if tool_dependency.name==package_name and tool_dependency.version==package_version:
-                        break
-                if tool_dependency.can_install:
+                attr_tup = ( package_name, package_version, 'package' )
+                try:
+                    index = attr_tups_of_dependencies_for_install.index( attr_tup )
+                except Exception, e:
+                    index = None
+                if index is not None:
+                    tool_dependency = tool_dependencies[ index ]
+                    if tool_dependency.can_install:
+                        try:
+                            tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                        except Exception, e:
+                            error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
+                            log.exception( error_message )
+                            if tool_dependency:
+                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                                tool_dependency.error_message = error_message
+                                sa_session.add( tool_dependency )
+                                sa_session.flush()
+                        if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
+                                                                           app.model.ToolDependency.installation_status.ERROR ]:
+                            installed_tool_dependencies.append( tool_dependency )
+        elif elem.tag == 'set_environment':
+            env_var_name = env_var_elem.get( 'name', None )
+            if env_var_name:
+                # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
+                attr_tup = ( env_var_name, None, 'set_environment' )
+                if attr_tup in attr_tups_of_dependencies_for_install:
                     try:
-                        tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                        tool_dependency = set_environment( app, elem, tool_shed_repository )
                     except Exception, e:
-                        error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
-                        log.exception( error_message )
+                        error_message = "Error setting environment for tool dependency: %s" % str( e )
+                        log.debug( error_message )
                         if tool_dependency:
                             tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
                             tool_dependency.error_message = error_message
@@ -459,20 +488,6 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                        app.model.ToolDependency.installation_status.ERROR ]:
                         installed_tool_dependencies.append( tool_dependency )
-        elif elem.tag == 'set_environment':
-            try:
-                tool_dependency = set_environment( app, elem, tool_shed_repository )
-            except Exception, e:
-                error_message = "Error setting environment for tool dependency: %s" % str( e )
-                log.debug( error_message )
-                if tool_dependency:
-                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                    tool_dependency.error_message = error_message
-                    sa_session.add( tool_dependency )
-                    sa_session.flush()
-            if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
-                                                               app.model.ToolDependency.installation_status.ERROR ]:
-                installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
 
 def repository_dependency_needed_only_for_compiling_tool_dependency( repository, repository_dependency ):

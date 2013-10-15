@@ -8,15 +8,16 @@ import tempfile
 import shutil
 import td_common_util
 from contextlib import contextmanager
+from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy import eggs
 
-import pkg_resources
-
-pkg_resources.require('ssh' )
-pkg_resources.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
+eggs.require( 'Fabric' )
 
 from fabric.api import env
+from fabric.api import hide
 from fabric.api import lcd
 from fabric.api import local
 from fabric.api import settings
@@ -30,6 +31,40 @@ def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
+
+def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
+    '''
+    Append a line to a file unless skip_if_contained is True and the line already exists in the file. This method creates the file
+    if it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by the owner.  This method
+    is similar to a local version of fabric.contrib.files.append.
+    '''
+    if not os.path.exists( file_path ):
+        local( 'touch %s' % file_path )
+    if make_executable:
+        # Explicitly set the file to the received mode if valid.
+        with settings( hide( 'everything' ), warn_only=True ):
+            local( 'chmod +x %s' % file_path )
+    return_code = 0
+    # Convert the received text to a list, in order to support adding one or more lines to the file.
+    if isinstance( text, basestring ):
+        text = [ text ]
+    for line in text:
+        # Build a regex to search for the relevant line in env.sh.
+        regex = td_common_util.egrep_escape( line )
+        if skip_if_contained:
+            # If the line exists in the file, egrep will return a success.
+            with settings( hide( 'everything' ), warn_only=True ):
+                egrep_cmd = 'egrep "^%s$" %s' % ( regex, file_path )
+                contains_line = local( egrep_cmd ).succeeded
+            if contains_line:
+                continue
+        # Append the current line to the file, escaping any single quotes in the line.
+        line = line.replace( "'", r"'\\''" )
+        return_code = local( "echo '%s' >> %s" % ( line, file_path ) ).return_code
+        if return_code:
+            # Return upon the first error encountered.
+            return return_code
+    return return_code
 
 def filter_actions_after_binary_installation( actions ):
     '''Filter out actions that should not be processed if a binary download succeeded.'''
@@ -48,9 +83,9 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     if output.return_code:
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
         if output.stderr:
-            tool_dependency.error_message = str( output.stderr )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
         elif output.stdout:
-            tool_dependency.error_message = str( output.stdout )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
         else:
             tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
         sa_session.add( tool_dependency )
@@ -164,6 +199,54 @@ def install_virtualenv( app, venv_dir ):
             shutil.move( full_path_to_dir, venv_dir )
     return True
 
+
+class InstallEnvironment( object ):
+    """
+    Object describing the environment built up as part of the process of building
+    and installing a package.
+    """
+
+    def __init__( self ):
+        self.env_shell_file_paths = []
+
+    def build_command( self, command, action_type='shell_command' ):
+        """
+        Build command line for execution from simple command, but
+        configuring environment described by this object.
+        """
+        env_cmds = self.environment_commands(action_type)
+        return '\n'.join(env_cmds + [command])
+
+    def environment_commands(self, action_type):
+        """
+        Build a list of commands used to construct the environment described by
+        this object.
+        """
+        cmds = []
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    cmds.append( env_setting.strip( '\n' ) )
+            else:
+                log.debug( 'Invalid file %s specified, ignoring %s action.', env_shell_file_path, action_type )
+        return cmds
+
+    def environment_dict(self, action_type='template_command'):
+        env_vars = dict()
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    env_string = env_setting.split( ';' )[ 0 ]
+                    env_name, env_path = env_string.split( '=' )
+                    env_vars[ env_name ] = env_path
+            else:
+                log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+        return env_vars
+
+    def add_env_shell_file_paths(self, paths):
+        self.env_shell_file_paths.extend(paths)
+
+
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     sa_session = app.model.context.current
@@ -171,7 +254,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
-    env_shell_file_paths = []
+    install_environment = InstallEnvironment()
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
@@ -255,6 +338,43 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         filename = url.split( '/' )[ -1 ]
                     td_common_util.url_download( work_dir, filename, url )
                     dir = os.path.curdir
+                elif action_type == 'setup_r_environment':
+                    # setup an R environment
+                    # <action type="setup_r_environment">
+                    #   <r_base  name="package_r_3_0_1" owner="bgruening" />
+                    # </action>
+                    # allow downloading and installing an R package
+                    # <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+                    if action_dict.get( 'env_shell_file_paths', False ):
+                        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                    else:
+                        log.warning( 'Missing R environment. Please check your specified R installation exists.' )
+                        return
+                    tarball_names = list()
+                    for url in action_dict[ 'r_packages' ]:
+                        filename = url.split( '/' )[ -1 ]
+                        tarball_names.append( filename )
+                        td_common_util.url_download( work_dir, filename, url, extract=False )
+                    dir = os.path.curdir
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
+                        with settings( warn_only=True ):
+                            for tarball_name in tarball_names:
+                                cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
+                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % (tarball_name)
+
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
+
+                            # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
+                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            if return_code:
+                                return
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
@@ -273,7 +393,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
                         if action_type == 'make_directory':
-                            td_common_util.make_directory( full_path=action_dict[ 'full_path' ] )
+                            if os.path.isabs( action_dict[ 'full_path' ] ):
+                                full_path = action_dict[ 'full_path' ]
+                            else:
+                                full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+                            td_common_util.make_directory( full_path=full_path )
                         elif action_type == 'move_directory_files':
                             td_common_util.move_directory_files( current_dir=current_dir,
                                                                  source_dir=os.path.join( action_dict[ 'source_directory' ] ),
@@ -281,31 +405,26 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         elif action_type == 'move_file':
                             td_common_util.move_file( current_dir=current_dir,
                                                       source=os.path.join( action_dict[ 'source' ] ),
-                                                      destination_dir=os.path.join( action_dict[ 'destination' ] ) )
+                                                      destination=os.path.join( action_dict[ 'destination' ] ),
+                                                      rename_to=action_dict[ 'rename_to' ] )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
                             # Build a command line from the prior_installation_required, in case an environment variable is referenced
                             # in the set_environment action.
-                            cmds = []
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        cmds.append( env_setting.strip( '\n' ) )
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
+                            cmds = install_environment.environment_commands( 'set_environment' )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
                                 env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
-                                env_command = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = handle_command( app, tool_dependency, install_dir, env_command )
+                                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                                return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                                 if return_code:
                                     return
                         elif action_type == 'set_environment_for_install':
                             # Currently the only action supported in this category is a list of paths to one or more tool dependency env.sh files,
                             # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
                             # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
-                            env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
+                            install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                         elif action_type == 'setup_virtualenv':
                             # TODO: maybe should be configurable
                             venv_src_directory = os.path.abspath( os.path.join( app.config.tool_dependency_dir, '__virtualenv_src' ) )
@@ -340,38 +459,24 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
                                 return
                             modify_env_command_dict = dict( name="PYTHONPATH", action="prepend_to", value=output.stdout )
-                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
                             modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
-                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
-                                cmd = ''
-                                for env_shell_file_path in env_shell_file_paths:
-                                    if os.path.exists( env_shell_file_path ):
-                                        for env_setting in open( env_shell_file_path ):
-                                            cmd += '%s\n' % env_setting
-                                    else:
-                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
-                                cmd += action_dict[ 'command' ]
+                                cmd = install_environment.build_command( action_dict[ 'command' ] )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
                         elif action_type == 'template_command':
                             env_vars = dict()
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        env_string = env_setting.split( ';' )[ 0 ]
-                                        env_name, env_path = env_string.split( '=' )
-                                        env_vars[ env_name ] = env_path
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+                            env_vars = install_environment.environment_dict()
                             env_vars.update( td_common_util.get_env_var_values( install_dir ) )
                             language = action_dict[ 'language' ]
                             with settings( warn_only=True, **env_vars ):
@@ -381,6 +486,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                     if return_code:
                                         return
+                        elif action_type == 'make_install':
+                            # make; make install; allow providing make options
+                            with settings( warn_only=True ):
+                                make_opts = action_dict.get( 'make_opts', '' )
+                                cmd = install_environment.build_command( 'make %s && make install' % make_opts )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]

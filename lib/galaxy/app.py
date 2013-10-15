@@ -172,6 +172,7 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+        self.model.engine.dispose()
 
     def shutdown( self ):
         self.job_manager.shutdown()

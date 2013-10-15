@@ -3,19 +3,48 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.master", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master) {
+define(["galaxy.modal", "galaxy.master", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master, mod_util) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
 {
     // own modal
-    modal   : null,
+    modal : null,
     
     // button
     button_show : null,
     
     // upload mod
     uploadbox: null,
+    
+    // extension types
+    select_extension : {
+        'auto'  : 'Auto-detect'
+    },
+    
+    // states
+    state : {
+        init    : 'fa-icon-trash',
+        queued  : 'fa-icon-spinner fa-icon-spin',
+        running : '__running__',
+        success : 'fa-icon-ok',
+        error   : 'fa-icon-warning-sign'
+    },
+    
+    // counter
+    counter : {
+        // stats
+        announce    : 0,
+        success     : 0,
+        error       : 0,
+        running     : 0,
+        
+        // reset stats
+        reset : function()
+        {
+            this.announce = this.success = this.error = this.running = 0;
+        }
+    },
     
     // initialize
     initialize : function()
@@ -28,6 +57,10 @@ var GalaxyUpload = Backbone.View.extend(
             return;
         }
         
+        // check if logged in
+        if (!Galaxy.currUser.get('id'))
+            return;
+            
         // add activate icon
         var self = this;
         this.button_show = new mod_master.GalaxyMasterIcon (
@@ -35,44 +68,48 @@ var GalaxyUpload = Backbone.View.extend(
             icon        : 'fa-icon-upload',
             tooltip     : 'Upload Files',
             on_click    : function(e) { self.event_show(e) },
+            on_unload   : function() {
+                if (self.counter.running > 0)
+                    return "Currently uploads are running.";
+            },
             with_number : true
         });
         
         // add to master
         Galaxy.master.prepend(this.button_show);
-    },
-    
-    // events
-    events :
-    {
-        'mouseover'         : 'event_mouseover',
-        'mouseleave'        : 'event_mouseleave'
+        
+        // load extension
+        var self = this;
+        mod_util.jsonFromUrl(galaxy_config.root + "api/datatypes",
+            function(datatypes) {
+                for (key in datatypes) {
+                    var filetype = datatypes[key];
+                    self.select_extension[filetype] = filetype;
+                }
+            });
     },
     
     // mouse over
-    event_mouseover : function (e)
+    event_dragover : function (e)
     {
     },
     
     // mouse left
-    event_mouseleave : function (e)
+    event_dragleave : function (e)
     {
     },
-
+    
     // start
     event_announce : function(index, file, message)
     {
-        // hide info
-        this.uploadbox.info().hide();
-        
         // make id
         var id = '#upload-' + index;
-        
+
         // add upload item
-        $(this.el).append(this.template_file(id));
+        $(this.el).find('tbody:last').append(this.template_row(id, this.select_extension));
         
         // scroll to bottom
-        $(this.el).scrollTop($(this.el).prop('scrollHeight'));
+        //$(this.el).scrollTop($(this.el).prop('scrollHeight'));
         
         // access upload item
         var it = this.get_upload_item(index);
@@ -81,73 +118,60 @@ var GalaxyUpload = Backbone.View.extend(
         it.fadeIn();
         
         // update title
-        it.find('.title').html(file.name);
-        
-        // configure select field
-        it.find('#extension').select2(
-        {
-            placeholder: 'Auto-detect',
-            width: 'copy',
-            ajax: {
-                url: "http://www.weighttraining.com/sm/search",
-                dataType: 'jsonp',
-                quietMillis: 100,
-                data: function(term, page)
-                {
-                    return {
-                        types: ["exercise"],
-                        limit: -1,
-                        term: term
-                    };
-                },
-                results: function(data, page)
-                {
-                    return { results: data.results.exercise }
-                }
-            },
-            formatResult: function(exercise)
-            {
-                return "<div class='select2-user-result'>" + exercise.term + "</div>";
-            },
-            formatSelection: function(exercise)
-            {
-                return exercise.term;
-            },
-            initSelection : function (element, callback)
-            {
-                var elementText = $(element).attr('data-init-text');
-                callback({"term":elementText});
-            }
-        });
+        it.find('#title').html(file.name);
+    
+        // update info
+        it.find('#size').html(this.size_to_string (file.size));
         
         // add functionality to remove button
         var self = this;
-        it.find('.remove').on('click', function() { self.event_remove (index) });
-    
+        it.find('#symbol').on('click', function() { self.event_remove (index) });
+        
         // initialize progress
         this.event_progress(index, file, 0);
         
-        // update button status
-        this.modal.enable('Upload');
-        this.modal.enable('Reset');
+        // update counter
+        this.counter.announce++;
+        
+        // update screen
+        this.update_screen();
     },
     
     // start
     event_initialize : function(index, file, message)
     {
         // update on screen counter
-        this.button_show.number(message);
+        this.button_show.number(this.counter.announce);
     
         // get element
         var it = this.get_upload_item(index);
+
+        // update status
+        var sy = it.find('#symbol');
+        sy.addClass(this.state.running);
+      
+        // get configuration
+        var current_history = Galaxy.currHistoryPanel.model.get('id');
+        var file_type = it.find('#extension').val();
+        var space_to_tabs = it.find('#space_to_tabs').is(':checked');
         
-        // read in configuration
-        var data = {
-            source          : "upload",
-            space_to_tabs   : it.find('#space_to_tabs').is(':checked'),
-            extension       : it.find('#extension').val()
-        }
+        // configure uploadbox
+        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
         
+        // configure tool
+        tool_input = {};
+        tool_input['dbkey'] = '?';
+        tool_input['file_type'] = file_type;
+        tool_input['files_0|NAME'] = file.name;
+        tool_input['files_0|type'] = 'upload_dataset';
+        tool_input['space_to_tabs'] = space_to_tabs;
+        
+        // setup data
+        data = {};
+        data['history_id'] = current_history;
+        data['tool_id'] = 'upload1';
+        data['inputs'] = JSON.stringify(tool_input);
+                
         // return additional data to be send with file
         return data;
     },
@@ -164,133 +188,204 @@ var GalaxyUpload = Backbone.View.extend(
         // update progress
         it.find('.progress-bar').css({ width : percentage + '%' });
         
-        // update info
-        it.find('.info').html(percentage + '% of ' + this.size_to_string (file.size));
+        // update value
+        if (percentage != 100)
+            it.find('#percentage').html(percentage + '%');
+        else
+            it.find('#percentage').html('Adding to history...');
     },
     
-    // end
+    // success
     event_success : function(index, file, message)
-    {        
-        // get element
-        var it = this.get_upload_item(index);
-        
-        // update progress frame
-        it.addClass('panel-success');
-        it.removeClass('panel-default');
-        
-        // update galaxy history
-        Galaxy.currHistoryPanel.refresh();
-        
+    {
         // make sure progress is shown correctly
         this.event_progress(index, file, 100);
         
         // update on screen counter
         this.button_show.number('');
-    },
-    
-    // end
-    event_error : function(index, file, message)
-    {
+        
+        // update counter
+        this.counter.announce--;
+        this.counter.success++;
+        
+        // update on screen info
+        this.update_screen();
+        
         // get element
         var it = this.get_upload_item(index);
         
         // update progress frame
-        it.addClass('panel-danger');
-        it.removeClass('panel-default');
+        it.addClass('success');
         
-        // remove progress bar
-        it.find('.progress').remove();
+        // update text
+        it.find('#percentage').html('100%');
         
-        // write error message
-        it.find('.error').html('<strong>Failed:</strong> ' + message);
+        // update icon
+        var sy = it.find('#symbol');
+        sy.removeClass(this.state.running);
+        sy.removeClass(this.state.queued);
+        sy.addClass(this.state.success);
         
+        // update galaxy history
+        Galaxy.currHistoryPanel.refresh();
+    },
+    
+    // error
+    event_error : function(index, file, message)
+    {
         // make sure progress is shown correctly
         this.event_progress(index, file, 0);
         
         // update on screen counter
         this.button_show.number('');
+        
+        // update counter
+        this.counter.announce--;
+        this.counter.error++;
+        
+        // update on screen info
+        this.update_screen();
+        
+        // get element
+        var it = this.get_upload_item(index);
+        
+        // update progress frame
+        it.addClass('danger');
+        
+        // remove progress bar
+        it.find('.progress').remove();
+        
+        // write error message
+        it.find('#info').html('<strong>Failed: </strong>' + message).show();
+        
+        // update icon
+        var sy = it.find('#symbol');
+        sy.removeClass(this.state.running);
+        sy.removeClass(this.state.queued);
+        sy.addClass(this.state.error);
     },
     
     // start upload process
     event_upload : function()
     {
-        // hide configuration
-        $(this.el).find('.panel-body').hide();
-        
-        // switch icon
-        $(this.el).find('.remove').each(function()
+        // check
+        if (this.counter.announce == 0 || this.counter.running > 0)
+            return;
+            
+        // switch icons for new uploads
+        var items = $(this.el).find('.upload-item');
+        var self = this;
+        items.each(function()
         {
-            $(this).removeClass('fa-icon-trash');
-            $(this).addClass('fa-icon-caret-down');
+            var symbol = $(this).find('#symbol');
+            if(symbol.hasClass(self.state.init))
+            {
+                // set status
+                symbol.removeClass(self.state.init);
+                symbol.addClass(self.state.queued);
+            
+                // disable options
+                $(this).find('#extension').attr('disabled', true);
+                $(this).find('#space_to_tabs').attr('disabled', true);
+            }
         });
         
-        // update button status
-        this.modal.disable('Upload');
-        
-        // configure url
-        var current_history = Galaxy.currHistoryPanel.model.get('id');
-        this.uploadbox.configure({url : galaxy_config.root + "api/histories/" + current_history + "/contents"});
+        // update running
+        this.counter.running = this.counter.announce;
+        this.update_screen();
         
         // initiate upload procedure in plugin
         this.uploadbox.upload();
     },
     
+    // pause upload process
+    event_pause : function()
+    {
+        // check
+        if (this.counter.running == 0)
+            return;
+                            
+        // request pause
+        this.uploadbox.pause();
+        
+        // set html content
+        $('#upload-info').html('Queueing will pause after completing the current file...');
+    },
+    
+    // queue is done
+    event_complete: function()
+    {
+        // update running
+        this.counter.running = 0;
+        this.update_screen();
+        
+        // switch icons for new uploads
+        var items = $(this.el).find('.upload-item');
+        var self = this;
+        items.each(function()
+        {
+            var symbol = $(this).find('#symbol');
+            if(symbol.hasClass(self.state.queued) && !symbol.hasClass(self.state.running))
+            {
+                // update status
+                symbol.removeClass(self.state.queued);
+                symbol.addClass(self.state.init);
+                
+                // disable options
+                $(this).find('#extension').attr('disabled', false);
+                $(this).find('#space_to_tabs').attr('disabled', false);
+            }
+        });
+    },
+    
     // remove all
     event_reset : function()
     {
-        // remove from screen
-        var panels = $(this.el).find('.panel');
-        var self = this;
-        panels.fadeOut({complete: function()
+        // make sure queue is not running
+        if (this.counter.running == 0)
         {
-            // remove panels
-            panels.remove();
-                    
+            // remove from screen
+            var items = $(this.el).find('.upload-item');
+            $(this.el).find('table').fadeOut({ complete : function() { items.remove(); }});
+            
+            // reset counter
+            this.counter.reset();
+        
             // show on screen info
-            self.uploadbox.info().fadeIn();
-        }});
-        
-        // update button status
-        this.modal.disable('Upload');
-        this.modal.disable('Reset');
-        
-        // remove from queue
-        this.uploadbox.reset();
+            this.update_screen();
+            
+            // remove from queue
+            this.uploadbox.reset();
+        }
     },
     
     // remove item from upload list
     event_remove : function(index)
     {
-        // remove
-        var self = this;
+        // get item
         var it = this.get_upload_item(index);
-        
-        // fade out and update button status
-        it.fadeOut({complete: function()
-        {
-            // remove from screen
-            it.remove();
-        
-            // remove from queue
-            self.uploadbox.remove(index);
-        
-            // update reset button
-            if ($(self.el).find('.panel').length > 0)
-                self.modal.enable('Reset');
-            else {
-                // disable reset button
-                self.modal.disable('Reset');
+        var sy = it.find('#symbol');
                 
-                // show on screen info
-                self.uploadbox.info().fadeIn();
-            }
-            
-            // update upload button
-            if (self.uploadbox.length() > 0)
-                self.modal.enable('Upload');
+        // only remove from queue if not in processing line
+        if (sy.hasClass(this.state.init) || sy.hasClass(this.state.success) || sy.hasClass(this.state.error))
+        {
+            // reduce counter
+            if (it.hasClass('success'))
+                this.counter.success--;
+            else if (it.hasClass('danger'))
+                this.counter.error--;
             else
-                self.modal.disable('Upload');
-        }});
+                this.counter.announce--;
+            
+            // show on screen info
+            this.update_screen();
+                
+            // remove from queue
+            this.uploadbox.remove(index);
+            
+            // remove element
+            it.remove();
+        }
     },
     
     // show/hide upload frame
@@ -307,13 +402,15 @@ var GalaxyUpload = Backbone.View.extend(
             this.modal = new mod_modal.GalaxyModal(
             {
                 title   : 'Upload files from your local drive',
-                body    : this.template('upload-box'),
+                body    : this.template('upload-box', 'upload-info'),
                 buttons : {
                     'Select' : function() {self.uploadbox.select()},
                     'Upload' : function() {self.event_upload()},
+                    'Pause'  : function() {self.event_pause()},
                     'Reset'  : function() {self.event_reset()},
                     'Close'  : function() {self.modal.hide()}
-                }
+                },
+                height : '350'
             });
         
             // set element
@@ -323,20 +420,20 @@ var GalaxyUpload = Backbone.View.extend(
             var self = this;
             this.uploadbox = this.$el.uploadbox(
             {
-                dragover        : self.event_mouseover,
-                dragleave       : self.event_mouseleave,
+                dragover        : function() { self.event_dragover() },
+                dragleave       : function() { self.event_dragleave() },
                 announce        : function(index, file, message) { self.event_announce(index, file, message) },
                 initialize      : function(index, file, message) { return self.event_initialize(index, file, message) },
                 success         : function(index, file, message) { self.event_success(index, file, message) },
                 progress        : function(index, file, message) { self.event_progress(index, file, message) },
                 error           : function(index, file, message) { self.event_error(index, file, message) },
+                complete        : function() { self.event_complete() },
             });
             
-            // update button status
-            this.modal.disable('Upload');
-            this.modal.disable('Reset');
+            // setup info
+            this.update_screen();
         }
-                
+        
         // show modal
         this.modal.show();
     },
@@ -362,34 +459,115 @@ var GalaxyUpload = Backbone.View.extend(
         return "<strong>" + (Math.round(size) / 10) + "</strong> " + unit;
     },
 
-    // load html template
-    template: function(id)
+    // set screen
+    update_screen: function ()
     {
-        return  '<div id="' + id + '" class="upload-box"></div>';
+        /*
+            update on screen info
+        */
+        
+        // check default message
+        if(this.counter.announce == 0)
+        {
+            if (this.uploadbox.compatible)
+                message = 'Drag&drop files into this box or click \'Select\' to select files!';
+            else
+                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
+        } else {
+            if (this.counter.running == 0)
+                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Upload\' to proceed.';
+            else
+                message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
+        }
+        
+        // set html content
+        $('#upload-info').html(message);
+        
+        /*
+            update button status
+        */
+        
+        // update reset button
+        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
+            this.modal.enableButton('Reset');
+        else
+            this.modal.disableButton('Reset');
+            
+        // update upload button
+        if (this.counter.running == 0 && this.counter.announce > 0)
+            this.modal.enableButton('Upload');
+        else
+            this.modal.disableButton('Upload');
+
+        // pause upload button
+        if (this.counter.running > 0)
+            this.modal.enableButton('Pause');
+        else
+            this.modal.disableButton('Pause');
+        
+        // select upload button
+        if (this.counter.running == 0)
+            this.modal.enableButton('Select');
+        else
+            this.modal.disableButton('Select');
+            
+        // table visibility
+        if (this.counter.announce + this.counter.success + this.counter.error > 0)
+            $(this.el).find('table').show();
+        else
+            $(this.el).find('table').hide();
+    },
+
+    // load html template
+    template: function(id, idInfo)
+    {
+        return  '<div id="' + id + '" class="upload-box">' +
+                    '<table class="table table-striped" style="display: none;">' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th>Name</th>' +
+                                '<th>Size</th>' +
+                                '<th>Type</th>' +
+                                '<th>Space&#8594;Tab</th>' +
+                                '<th>Status</th>' +
+                                '<th></th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody></tbody>' +
+                    '</table>' +
+                '</div>' +
+                '<h6 id="' + idInfo + '" class="upload-info"></h6>';
     },
     
-    // load html template
-    template_file: function(id)
+    template_row: function(id, select_extension)
     {
-        return  '<div id="' + id.substr(1) + '" class="panel panel-default">' +
-                    '<div class="panel-heading">' +
-                        '<h5 class="title"></h5>' +
-                        '<h5 class="info"></h5>' +
-                        '<div class="remove fa-icon-trash"></div>' +
-                    '</div>' +
-                    '<div class="panel-body">' +
-                        '<div class="menu">' +
-                            //'<input id="extension" type="hidden" width="10px"/>&nbsp;' +
-                            '<span><input id="space_to_tabs" type="checkbox">Convert spaces to tabs</input></span>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="panel-footer">' +
-                        '<div class="progress">' +
-                            '<div class="progress-bar progress-bar-success"></div>' +
-                        '</div>' +
-                        '<h6 class="error"></h6>' +
-                    '</div>' +
-                '</div>';
+        // construct template
+        var tmpl = '<tr id="' + id.substr(1) + '" class="upload-item">' +
+                        '<td><div id="title" class="title"></div></td>' +
+                        '<td><div id="size" class="size"></div></td>' +
+                        '<td>' +
+                            '<select id="extension" class="extension">';
+
+        // add file types to selection
+        for (key in select_extension)
+            tmpl +=             '<option value="' + key + '">' + select_extension[key] + '</option>';
+            
+        tmpl +=             '</select>' +
+                        '</td>' +
+                        '<td><input id="space_to_tabs" type="checkbox"></input></td>' +
+                        '<td>' +
+                            '<div id="info" class="info">' +
+                                '<div class="progress">' +
+                                    '<div class="progress-bar progress-bar-success"></div>' +
+                                    '<div id="percentage" class="percentage">0%</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</td>' +
+                        '<td><div id="symbol" class="symbol ' + this.state.init + '"></div></td>' +
+                    '</tr>';
+        
+        // return html string
+        return tmpl;
     }
 });
 

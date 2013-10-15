@@ -627,10 +627,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             assert history.user == trans.user
         # Rename
-        history.name = sanitize_html( new_name )
+        new_name = sanitize_html( new_name )
+        history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
-        return history.name
+        return new_name
 
     @web.expose
     @web.require_login( "use Galaxy histories" )
