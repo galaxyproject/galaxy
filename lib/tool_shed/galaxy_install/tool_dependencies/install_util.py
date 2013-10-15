@@ -14,8 +14,8 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from galaxy.model.orm import and_
-from galaxy.web import url_for
 from galaxy.util import asbool
+from galaxy.util import listify
 
 log = logging.getLogger( __name__ )
 
@@ -672,20 +672,6 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
         raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
     else:
         install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
-
-def listify( item ):
-    """
-    Make a single item a single item list, or return a list if passed a
-    list.  Passing a None returns an empty list.
-    """
-    if not item:
-        return []
-    elif isinstance( item, list ):
-        return item
-    elif isinstance( item, basestring ) and item.count( ',' ):
-        return item.split( ',' )
-    else:
-        return [ item ]
 
 def parse_env_shell_entry( action, name, value, line ):
     new_value = value
