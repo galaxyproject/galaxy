@@ -144,6 +144,10 @@ var GalaxyUpload = Backbone.View.extend(
         // add functionality to remove button
         var self = this;
         it.find('#symbol').on('click', function() { self.event_remove (index) });
+        it.find('#text-content').on('keyup', function() {
+            var count = it.find('#text-content').val().length;
+            it.find('#size').html(self.size_to_string (count));
+        });
         
         // initialize progress
         this.event_progress(index, file, 0);
@@ -437,8 +441,8 @@ var GalaxyUpload = Backbone.View.extend(
         }
     },
     
-    // add (pseudo) file
-    event_add : function ()
+    // create (pseudo) file
+    event_create : function ()
     {
         this.uploadbox.add([{ name : 'New File', size : -1 }]);
     },
@@ -460,7 +464,7 @@ var GalaxyUpload = Backbone.View.extend(
                 body    : this.template('upload-box', 'upload-info'),
                 buttons : {
                     'Select'    : function() {self.uploadbox.select()},
-                    'Create'    : function() {self.event_add()},
+                    'Create'    : function() {self.event_create()},
                     'Upload'    : function() {self.event_start()},
                     'Pause'     : function() {self.event_stop()},
                     'Reset'     : function() {self.event_reset()},
@@ -511,7 +515,8 @@ var GalaxyUpload = Backbone.View.extend(
         if (size >= 100000000)      { size = size / 100000000; unit = 'GB'; } else
         if (size >= 100000)         { size = size / 100000; unit = 'MB'; } else
         if (size >= 100)            { size = size / 100; unit = 'KB'; } else
-        if (size >  0)              { size = size * 10; unit = 'b'; } else return '?';
+        if (size >  0)              { size = size * 10; unit = 'b'; } else
+            return '<strong>-</strong>';
                                     
         // return formatted string
         return '<strong>' + (Math.round(size) / 10) + '</strong> ' + unit;
