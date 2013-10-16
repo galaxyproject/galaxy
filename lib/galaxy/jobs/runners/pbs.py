@@ -1,9 +1,10 @@
-import os, logging, threading, time, traceback
+import os
+import logging
+import time
+import traceback
 from datetime import timedelta
-from Queue import Queue, Empty
 
 from galaxy import model
-from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
@@ -35,42 +36,14 @@ __all__ = [ 'PBSJobRunner' ]
 
 # The last two lines execute the command and then retrieve the command's
 # exit code ($?) and write it to a file.
-pbs_template = """#!/bin/sh
-GALAXY_LIB="%s"
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        export PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        export PYTHONPATH="$GALAXY_LIB"
-    fi
-fi
-%s
-cd %s
-%s
-echo $? > %s
-"""
-
-# The last two lines execute the command and then retrieve the command's
-# exit code ($?) and write it to a file.
-pbs_symlink_template = """#!/bin/sh
-GALAXY_LIB="%s"
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        export PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        export PYTHONPATH="$GALAXY_LIB"
-    fi
-fi
+pbs_symlink_template = """
 for dataset in %s; do
     dir=`dirname $dataset`
     file=`basename $dataset`
     [ ! -d $dir ] && mkdir -p $dir
     [ ! -e $dataset ] && ln -s %s/$file $dataset
 done
-%s
-cd %s
-%s
-echo $? > %s
+mkdir -p %s
 """
 
 PBS_ARGMAP = {
@@ -108,6 +81,7 @@ JOB_EXIT_STATUS = {
     -7: "job restart failed",
     -8: "exec() of user command failed",
 }
+
 
 class PBSJobRunner( AsynchronousJobRunner ):
     """
@@ -273,6 +247,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
             pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
             pbs_efile = self.app.config.pbs_application_server + ':' + efile
             output_files = [ str( o ) for o in output_fnames ]
+            output_files.append(ecfile)
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
             stageout = self.get_stage_in_out( output_files )
             attrs = [
@@ -300,20 +275,20 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
-            script = pbs_symlink_template % ( job_wrapper.galaxy_lib_dir,
-                                              " ".join( job_wrapper.get_input_fnames() + output_files ),
-                                              self.app.config.pbs_stage_path,
-                                              job_wrapper.get_env_setup_clause(),
-                                              exec_dir,
-                                              command_line,
-                                              ecfile )
+            # touch the ecfile so that it gets staged
+            with file(ecfile, 'a'):
+                os.utime(ecfile, None)
 
+            stage_commands = pbs_symlink_template % (
+                " ".join( job_wrapper.get_input_fnames() + output_files ),
+                self.app.config.pbs_stage_path,
+                exec_dir,
+            )
         else:
-            script = pbs_template % ( job_wrapper.galaxy_lib_dir,
-                                      job_wrapper.get_env_setup_clause(),
-                                      exec_dir,
-                                      command_line,
-                                      ecfile )
+            stage_commands = ''
+
+        env_setup_commands = '%s\n%s' % (stage_commands, job_wrapper.get_env_setup_clause())
+        script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
         fh.write(script)
