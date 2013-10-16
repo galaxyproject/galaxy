@@ -71,7 +71,7 @@ var GalaxyUpload = Backbone.View.extend(
             on_click    : function(e) { self.event_show(e) },
             on_unload   : function() {
                 if (self.counter.running > 0)
-                    return "Currently uploads are running.";
+                    return "Several uploads are still processing.";
             },
             with_number : true
         });
@@ -129,9 +129,6 @@ var GalaxyUpload = Backbone.View.extend(
         // add upload item
         $(this.el).find('tbody:last').append(this.template_row(id));
         
-        // scroll to bottom
-        //$(this.el).scrollTop($(this.el).prop('scrollHeight'));
-        
         // access upload item
         var it = this.get_upload_item(index);
         
@@ -156,6 +153,26 @@ var GalaxyUpload = Backbone.View.extend(
         
         // update screen
         this.update_screen();
+        
+        // activate text field if file content is zero
+        if (file.size == -1)
+        {
+            // get text component
+            var text = it.find('#text');
+            
+            // get dimensions
+            var padding = parseInt($(text.parent()).css('padding'));
+            var width = it.width() - 2 * padding;
+            var height = it.height();
+            
+            // set dimensions
+            text.width(width);
+            text.css('top', height + 'px');
+            it.height(height + text.height() + padding);
+            
+            // show text field
+            text.show();
+        }
     },
     
     // start
@@ -175,8 +192,13 @@ var GalaxyUpload = Backbone.View.extend(
         var current_history = Galaxy.currHistoryPanel.model.get('id');
         var file_type = it.find('#extension').val();
         var genome = it.find('#genome').val();
+        var url_paste = it.find('#text-content').val();
         var space_to_tabs = it.find('#space_to_tabs').is(':checked');
         
+        // validate
+        if (!url_paste && !(file.size > 0))
+            return null;
+            
         // configure uploadbox
         this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
         
@@ -186,6 +208,7 @@ var GalaxyUpload = Backbone.View.extend(
         tool_input['file_type'] = file_type;
         tool_input['files_0|NAME'] = file.name;
         tool_input['files_0|type'] = 'upload_dataset';
+        tool_input['files_0|url_paste'] = url_paste;
         tool_input['space_to_tabs'] = space_to_tabs;
         
         // setup data
@@ -193,7 +216,7 @@ var GalaxyUpload = Backbone.View.extend(
         data['history_id'] = current_history;
         data['tool_id'] = 'upload1';
         data['inputs'] = JSON.stringify(tool_input);
-                
+        
         // return additional data to be send with file
         return data;
     },
@@ -288,7 +311,7 @@ var GalaxyUpload = Backbone.View.extend(
     },
     
     // start upload process
-    event_upload : function()
+    event_start : function()
     {
         // check
         if (this.counter.announce == 0 || this.counter.running > 0)
@@ -307,6 +330,7 @@ var GalaxyUpload = Backbone.View.extend(
                 symbol.addClass(self.state.queued);
             
                 // disable options
+                $(this).find('#text-content').attr('disabled', true);
                 $(this).find('#genome').attr('disabled', true);
                 $(this).find('#extension').attr('disabled', true);
                 $(this).find('#space_to_tabs').attr('disabled', true);
@@ -318,21 +342,21 @@ var GalaxyUpload = Backbone.View.extend(
         this.update_screen();
         
         // initiate upload procedure in plugin
-        this.uploadbox.upload();
+        this.uploadbox.start();
     },
     
     // pause upload process
-    event_pause : function()
+    event_stop : function()
     {
         // check
         if (this.counter.running == 0)
             return;
                             
         // request pause
-        this.uploadbox.pause();
+        this.uploadbox.stop();
         
         // set html content
-        $('#upload-info').html('Queueing will pause after completing the current file...');
+        $('#upload-info').html('Queue will pause after completing the current file...');
     },
     
     // queue is done
@@ -355,6 +379,7 @@ var GalaxyUpload = Backbone.View.extend(
                 symbol.addClass(self.state.init);
                 
                 // disable options
+                $(this).find('#text-content').attr('disabled', false);
                 $(this).find('#genome').attr('disabled', false);
                 $(this).find('#extension').attr('disabled', false);
                 $(this).find('#space_to_tabs').attr('disabled', false);
@@ -412,6 +437,12 @@ var GalaxyUpload = Backbone.View.extend(
         }
     },
     
+    // add (pseudo) file
+    event_add : function ()
+    {
+        this.uploadbox.add([{ name : 'New File', size : -1 }]);
+    },
+    
     // show/hide upload frame
     event_show : function (e)
     {
@@ -428,13 +459,14 @@ var GalaxyUpload = Backbone.View.extend(
                 title   : 'Upload files from your local drive',
                 body    : this.template('upload-box', 'upload-info'),
                 buttons : {
-                    'Select' : function() {self.uploadbox.select()},
-                    'Upload' : function() {self.event_upload()},
-                    'Pause'  : function() {self.event_pause()},
-                    'Reset'  : function() {self.event_reset()},
-                    'Close'  : function() {self.modal.hide()}
+                    'Select'    : function() {self.uploadbox.select()},
+                    'Create'    : function() {self.event_add()},
+                    'Upload'    : function() {self.event_start()},
+                    'Pause'     : function() {self.event_stop()},
+                    'Reset'     : function() {self.event_reset()},
+                    'Close'     : function() {self.modal.hide()},
                 },
-                height      : '350',
+                height      : '400',
                 width       : '850'
             });
         
@@ -475,13 +507,14 @@ var GalaxyUpload = Backbone.View.extend(
     {
         // identify unit
         var unit = "";
-        if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
-        if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
-        if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
-        if (size >= 100)            { size = size / 100; unit = "KB"; } else
-                                    { size = size * 10; unit = "b"; }
+        if (size >= 100000000000)   { size = size / 100000000000; unit = 'TB'; } else
+        if (size >= 100000000)      { size = size / 100000000; unit = 'GB'; } else
+        if (size >= 100000)         { size = size / 100000; unit = 'MB'; } else
+        if (size >= 100)            { size = size / 100; unit = 'KB'; } else
+        if (size >  0)              { size = size * 10; unit = 'b'; } else return '?';
+                                    
         // return formatted string
-        return "<strong>" + (Math.round(size) / 10) + "</strong> " + unit;
+        return '<strong>' + (Math.round(size) / 10) + '</strong> ' + unit;
     },
 
     // set screen
@@ -494,7 +527,7 @@ var GalaxyUpload = Backbone.View.extend(
         // check default message
         if(this.counter.announce == 0)
         {
-            if (this.uploadbox.compatible)
+            if (this.uploadbox.compatible())
                 message = 'Drag&drop files into this box or click \'Select\' to select files!';
             else
                 message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
@@ -532,10 +565,14 @@ var GalaxyUpload = Backbone.View.extend(
         
         // select upload button
         if (this.counter.running == 0)
+        {
             this.modal.enableButton('Select');
-        else
+            this.modal.enableButton('Create');
+        } else {
             this.modal.disableButton('Select');
-            
+            this.modal.disableButton('Create');
+        }
+        
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0)
             $(this.el).find('table').show();
@@ -569,7 +606,13 @@ var GalaxyUpload = Backbone.View.extend(
     {
         // construct template
         var tmpl = '<tr id="' + id.substr(1) + '" class="upload-item">' +
-                        '<td><div id="title" class="title"></div></td>' +
+                        '<td style="position: relative;">' +
+                            '<div id="title" class="title"></div>' +
+                            '<div id="text" class="text">' +
+                                '<div class="text-info">You may specify a list of URLs (one per line) or paste the contents of a file.</div>' +
+                                '<textarea id="text-content" class="text-content form-control"></textarea>' +
+                            '</div>' +
+                        '</td>' +
                         '<td><div id="size" class="size"></div></td>';
 
         // add file type selectore

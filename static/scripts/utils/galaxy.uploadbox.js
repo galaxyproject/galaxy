@@ -25,7 +25,8 @@
         error_default   : "Please make sure the file is available.",
         error_server    : "Upload request failed.",
         error_toomany   : "You can only queue <20 files per upload session.",
-        error_login     : "Uploads require you to log in."
+        error_login     : "Uploads require you to log in.",
+        error_missing   : "No upload content available."
     }
 
     // options
@@ -42,7 +43,7 @@
   
     // indicates if queue is currently running
     var queue_running = false;
-    var queue_pause = false;
+    var queue_stop = false;
   
     // element
     var el = null;
@@ -159,21 +160,15 @@
         // process an upload, recursive
         function process()
         {
-            // log
-            //console.log("Processing queue..." + queue_length + " (" + queue_running + " / " + queue_pause + ")");
- 
             // validate
-            if (queue_length == 0 || queue_pause)
+            if (queue_length == 0 || queue_stop)
             {
-                queue_pause = false;
+                queue_stop = false;
                 queue_running = false;
                 opts.complete();
                 return;
             } else
                 queue_running = true;
-
-            // log
-            //console.log("Looking for file...");
   
             // get an identifier from the queue
             var index = -1;
@@ -188,9 +183,6 @@
   
             // remove from queue
             remove(index)
- 
-            // log
-            //console.log("Initializing ('" + file.name + "').");
   
             // identify maximum file size
             var filesize = file.size;
@@ -199,8 +191,14 @@
             // check file size
             if (filesize < maxfilesize)
             {
-                // send data
-                send(index, file, opts.initialize(index, file))
+                // get parameters
+                var data = opts.initialize(index, file);
+  
+                // validate
+                if (data)
+                    send(index, file, data);
+                else
+                    error(index, file, opts.error_missing);
             } else {
                 // skip file
                 error(index, file, opts.error_filesize);
@@ -214,7 +212,10 @@
             var formData = new FormData();
             for (var key in data)
                 formData.append(key, data[key]);
-            formData.append(opts.paramname, file, file.name);
+  
+            // check file size
+            if (file.size > 0)
+                formData.append(opts.paramname, file, file.name);
   
             // prepare request
             xhr = new XMLHttpRequest();
@@ -226,9 +227,6 @@
             // captures state changes
             xhr.onreadystatechange = function()
             {
-                // status change
-                //console.log("Status changed: " + xhr.readyState + ".");
-  
                 // check for request completed, server connection closed
                 if (xhr.readyState != xhr.DONE)
                     return;
@@ -271,9 +269,6 @@
 
             // send request
             xhr.send(formData);
-  
-            // sending file
-            //console.log("Sending file ('" + file.name + "').");
         }
   
         // success
@@ -314,7 +309,7 @@
         }
   
         // initiate upload process
-        function upload()
+        function start()
         {
             if (!queue_running)
             {
@@ -323,11 +318,11 @@
             }
         }
   
-        // pause upload process
-        function pause()
+        // stop upload process
+        function stop()
         {
-            // request pause
-            queue_pause = true;
+            // request stop
+            queue_stop = true;
         }
   
         // set options
@@ -349,9 +344,10 @@
         // export functions
         return {
             'select'        : select,
+            'add'           : add,
             'remove'        : remove,
-            'upload'        : upload,
-            'pause'         : pause,
+            'start'         : start,
+            'stop'          : stop,
             'reset'         : reset,
             'configure'     : configure,
             'compatible'    : compatible
