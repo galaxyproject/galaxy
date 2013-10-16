@@ -25,6 +25,7 @@ from galaxy.jobs.runners import BaseJobRunner
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
+from galaxy.util import unicodify
 from .output_checker import check_output
 
 log = logging.getLogger( __name__ )
@@ -869,6 +870,9 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
@@ -1518,6 +1522,9 @@ class TaskWrapper(JobWrapper):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # This may have ended too soon
         log.debug( 'task %s for job %d ended; exit code: %d'
                  % (self.task_id, self.job_id,
