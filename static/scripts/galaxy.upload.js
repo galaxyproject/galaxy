@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.master", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master, mod_util) {
+define(["galaxy.modal", "galaxy.master", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master, mod_utils) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -18,14 +18,10 @@ var GalaxyUpload = Backbone.View.extend(
     uploadbox: null,
     
     // extension types
-    select_extension : {
-        'auto'  : 'Auto-detect'
-    },
+    select_extension :[['Auto-detect', 'auto']],
     
     // genomes
-    select_genome : {
-        '?'     : 'Unspecified'
-    },
+    select_genome : [['Unspecified (?)', '?']],
     
     // states
     state : {
@@ -85,17 +81,32 @@ var GalaxyUpload = Backbone.View.extend(
         
         // load extension
         var self = this;
-        mod_util.jsonFromUrl(galaxy_config.root + "api/datatypes",
+        mod_utils.jsonFromUrl(galaxy_config.root + "api/datatypes",
             function(datatypes) {
                 for (key in datatypes)
-                    self.select_extension[datatypes[key]] = datatypes[key];
+                    self.select_extension.push([datatypes[key], datatypes[key]]);
             });
             
         // load genomes
-        mod_util.jsonFromUrl(galaxy_config.root + "api/genomes",
+        mod_utils.jsonFromUrl(galaxy_config.root + "api/genomes",
             function(genomes) {
+                // backup default
+                var def = self.select_genome[0];
+                
+                // fill array
+                self.select_genome = [];
                 for (key in genomes)
-                    self.select_genome[genomes[key][1]] = genomes[key][0];
+                    if (genomes[key].length > 1)
+                        if (genomes[key][1] !== def[1])
+                            self.select_genome.push(genomes[key]);
+                
+                // sort
+                self.select_genome.sort(function(a, b) {
+                    return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;
+                });
+
+                // insert default back to array
+                self.select_genome.unshift(def);
             });
     },
     
@@ -565,7 +576,7 @@ var GalaxyUpload = Backbone.View.extend(
         tmpl +=         '<td>' +
                             '<select id="extension" class="extension">';
         for (key in this.select_extension)
-            tmpl +=             '<option value="' + key + '">' + this.select_extension[key] + '</option>';
+            tmpl +=             '<option value="' + this.select_extension[key][1] + '">' + this.select_extension[key][0] + '</option>';
         tmpl +=             '</select>' +
                         '</td>';                        
 
@@ -573,7 +584,7 @@ var GalaxyUpload = Backbone.View.extend(
         tmpl +=         '<td>' +
                             '<select id="genome" class="genome">';
         for (key in this.select_genome)
-            tmpl +=             '<option value="' + key + '">' + this.select_genome[key] + '</option>';
+            tmpl +=             '<option value="' + this.select_genome[key][1] + '">' + this.select_genome[key][0] + '</option>';
         tmpl +=             '</select>' +
                         '</td>';
         
