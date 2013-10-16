@@ -37,29 +37,10 @@ drmaa_state = {
     drmaa.JobState.FAILED: 'job finished, but failed',
 }
 
-# The last four lines (following the last fi) will:
-#  - setup the env
-#  - move to the job wrapper's working directory
-#  - execute the command
-#  - take the command's exit code ($?) and write it to a file.
-drm_template = """#!/bin/sh
-GALAXY_LIB="%s"
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        PYTHONPATH="$GALAXY_LIB"
-    fi
-    export PYTHONPATH
-fi
-%s
-cd %s
-%s
-echo $? > %s
-"""
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                    'jobName','email','project' ]
+                                 'jobName', 'email', 'project' ]
+
 
 class DRMAAJobRunner( AsynchronousJobRunner ):
     """
@@ -138,12 +119,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             jt.nativeSpecification = native_spec
 
         # fill in the DRM's job run template
-        script = drm_template % ( job_wrapper.galaxy_lib_dir,
-                                  job_wrapper.get_env_setup_clause(),
-                                  os.path.abspath( job_wrapper.working_directory ),
-                                  command_line,
-                                  ajs.exit_code_file )
-
+        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
         try:
             fh = file( ajs.job_file, "w" )
             fh.write( script )

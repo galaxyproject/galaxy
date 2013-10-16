@@ -15,6 +15,7 @@ import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
+from galaxy.jobs.runners.util.job_script import job_script
 
 log = logging.getLogger( __name__ )
 
@@ -217,6 +218,16 @@ class BaseJobRunner( object ):
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
+
+    def get_job_file(self, job_wrapper, **kwds):
+        options = dict(
+            galaxy_lib=job_wrapper.galaxy_lib_dir,
+            env_setup_commands=job_wrapper.get_env_setup_clause(),
+            working_directory=os.path.abspath( job_wrapper.working_directory ),
+            command=job_wrapper.runner_command_line,
+        )
+        options.update(**kwds)
+        return job_script(**options)
 
 
 class AsynchronousJobState( object ):
