@@ -45,7 +45,7 @@ def main( options ):
             data = {}
             # NOTE: to import a single workflow, add an index to data (e.g., 
             # data[ 'index' ] = 0
-            # and change the url to be ~/import_workflow (simgular).  For example,
+            # and change the url to be ~/import_workflow (singular).  For example,
             # url = '%s%s' % ( base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflow' % str( tool_shed_repository_id ) )
             url = '%s%s' % ( base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflows' % str( tool_shed_repository_id ) )
             submit( options.api, url, data )

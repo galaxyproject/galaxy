@@ -1,6 +1,7 @@
 import logging
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
+from time import strftime
 
 from galaxy import util
 from galaxy import web
@@ -10,6 +11,7 @@ from galaxy.web.base.controller import BaseAPIController
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import metadata_util
 from tool_shed.util import workflow_util
 import tool_shed.util.shed_util_common as suc
 
@@ -486,6 +488,49 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 tool_shed_repositories.append( repository_dict )
         # Display the list of repaired repositories.
         return tool_shed_repositories
+
+    @web.expose_api
+    def reset_metadata_on_installed_repositories( self, trans, payload, **kwd ):
+        """
+        PUT /api/tool_shed_repositories/reset_metadata_on_installed_repositories
+
+        Resets all metadata on all repositories installed into Galaxy in an "orderly fashion".
+        
+        :param key: the API key of the Galaxy admin user.
+        """
+        try:
+            start_time = strftime( "%Y-%m-%d %H:%M:%S" )
+            results = dict( start_time=start_time,
+                            successful_count=0,
+                            unsuccessful_count=0,
+                            repository_status=[] )
+            # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
+            if not trans.user_is_admin():
+                raise HTTPForbidden( detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.' )
+            query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=False )
+            # Now reset metadata on all remaining repositories.
+            for repository in query:
+                repository_id = trans.security.encode_id( repository.id )
+                try:
+                    invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans, repository_id )
+                    if invalid_file_tups:
+                        message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                        results[ 'unsuccessful_count' ] += 1
+                    else:
+                        message = "Successfully reset metadata on repository %s" % str( repository.name )
+                        results[ 'successful_count' ] += 1
+                except Exception, e:
+                    message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
+                    results[ 'unsuccessful_count' ] += 1
+                results[ 'repository_status' ].append( message )
+            stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
+            results[ 'stop_time' ] = stop_time
+            return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        except Exception, e:
+            message = "Error in the Galaxy tool_shed_repositories API in reset_metadata_on_installed_repositories: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
 
     @web.expose_api
     def show( self, trans, id, **kwd ):

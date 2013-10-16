@@ -1,11 +1,16 @@
 import logging
+from time import strftime
 from galaxy.web.framework.helpers import time_ago
 from galaxy import eggs
 from galaxy import web
 from galaxy import util
+from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
+import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
+from tool_shed.util import metadata_util
+from tool_shed.util import tool_util
 
 eggs.require( 'mercurial' )
 
@@ -167,6 +172,69 @@ class RepositoriesController( BaseAPIController ):
             return repository_dicts
         except Exception, e:
             message = "Error in the Tool Shed repositories API in index: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api
+    def reset_metadata_on_repositories( self, trans, payload, **kwd ):
+        """
+        PUT /api/repositories/reset_metadata_on_repositories
+
+        Resets all metadata on all repositories in the Tool Shed in an "orderly fashion".  Since there are currently only two
+        repository types (tool_dependecy_definition and unrestricted), the order in which metadata is reset is repositories of
+        type tool_dependecy_definition first followed by repositories of type unrestricted, and only one pass is necessary.  If
+        a new repository type is introduced, the process will undoubtedly need to be revisited.  To facilitate this order, an
+        in-memory list of repository ids that have been processed is maintained.
+        
+        :param key: the API key of the Tool Shed user.
+
+        The following parameters can optionally be included in the payload.
+        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
+                                       to True will restrict resetting metadata to only repositories that are writable by the user
+                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
+                                       if the current user is not an admin user, in which case this same restriction is automatic.
+        """
+        def handle_repository( trans, repository, results ):
+            repository_id = trans.security.encode_id( repository.id )
+            try:
+                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                if invalid_file_tups:
+                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    results[ 'unsuccessful_count' ] += 1
+                else:
+                    message = "Successfully reset metadata on repository %s" % str( repository.name )
+                    results[ 'successful_count' ] += 1
+            except Exception, e:
+                message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
+                results[ 'unsuccessful_count' ] += 1
+            results[ 'repository_status' ].append( message )
+            return results
+        try:
+            start_time = strftime( "%Y-%m-%d %H:%M:%S" )
+            results = dict( start_time=start_time,
+                            repository_status=[],
+                            successful_count=0,
+                            unsuccessful_count=0 )
+            handled_repository_ids = []
+            if trans.user_is_admin():
+                my_writable = util.asbool( payload.get( 'my_writable', False ) )
+            else:
+                my_writable = True
+            query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+            # First reset metadata on all repositories of type repository_dependency_definition.
+            for repository in query:
+                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                    results = handle_repository( trans, repository, results )
+            # Now reset metadata on all remaining repositories.
+            for repository in query:
+                if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                    results = handle_repository( trans, repository, results )
+            stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
+            results[ 'stop_time' ] = stop_time
+            return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        except Exception, e:
+            message = "Error in the Tool Shed repositories API in reset_metadata_on_repositories: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message

@@ -1782,10 +1782,10 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                     log.debug( message )
                     unsuccessful_count += 1
                 else:
-                    log.debug( "Successfully reset metadata on repository %s" % repository.name )
+                    log.debug( "Successfully reset metadata on repository %s" % str( repository.name ) )
                     successful_count += 1
             except:
-                log.exception( "Error attempting to reset metadata on repository %s", repository.name )
+                log.exception( "Error attempting to reset metadata on repository %s", str( repository.name ) )
                 unsuccessful_count += 1
         message = "Successfully reset metadata on %d %s.  " % ( successful_count, inflector.cond_plural( successful_count, "repository" ) )
         if unsuccessful_count:
