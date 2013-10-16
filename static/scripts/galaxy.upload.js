@@ -164,15 +164,17 @@ var GalaxyUpload = Backbone.View.extend(
             // get text component
             var text = it.find('#text');
             
-            // get dimensions
-            var padding = parseInt($(text.parent()).css('padding'));
-            var width = it.width() - 2 * padding;
-            var height = it.height();
+            // get padding
+            var padding = 8;
             
+            // get dimensions
+            var width = it.width() - 2 * padding;
+            var height = it.height() - padding;
+
             // set dimensions
-            text.width(width);
+            text.css('width', width + 'px');
             text.css('top', height + 'px');
-            it.height(height + text.height() + padding);
+            it.height(height + text.height() + 2 * padding);
             
             // show text field
             text.show();
@@ -471,7 +473,7 @@ var GalaxyUpload = Backbone.View.extend(
                     'Close'     : function() {self.modal.hide()},
                 },
                 height      : '400',
-                width       : '850'
+                width       : '900'
             });
         
             // set element
@@ -611,11 +613,13 @@ var GalaxyUpload = Backbone.View.extend(
     {
         // construct template
         var tmpl = '<tr id="' + id.substr(1) + '" class="upload-item">' +
-                        '<td style="position: relative;">' +
-                            '<div id="title" class="title"></div>' +
-                            '<div id="text" class="text">' +
-                                '<div class="text-info">You may specify a list of URLs (one per line) or paste the contents of a file.</div>' +
-                                '<textarea id="text-content" class="text-content form-control"></textarea>' +
+                        '<td>' +
+                            '<div style="position: relative;">' +
+                                '<div id="title" class="title"></div>' +
+                                '<div id="text" class="text">' +
+                                    '<div class="text-info">You may specify a list of URLs (one per line) or paste the contents of a file.</div>' +
+                                    '<textarea id="text-content" class="text-content form-control"></textarea>' +
+                                '</div>' +
                             '</div>' +
                         '</td>' +
                         '<td><div id="size" class="size"></div></td>';
