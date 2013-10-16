@@ -58,6 +58,11 @@ class CondorJobRunner( AsynchronousJobRunner ):
 
         # get destination params
         query_params = submission_params(**job_destination.params)
+        galaxy_slots = query_params.get('request_cpus', None)
+        if galaxy_slots:
+            galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots
+        else:
+            galaxy_slots_statement = 'GALAXY_SLOTS="1"'
 
         # define job attributes
         cjs = CondorJobState(
@@ -80,7 +85,11 @@ class CondorJobRunner( AsynchronousJobRunner ):
         )
 
         submit_file_contents = build_submit_description(**build_submit_params)
-        script = self.get_job_file( job_wrapper, exit_code_path=cjs.exit_code_file )
+        script = self.get_job_file(
+            job_wrapper,
+            exit_code_path=cjs.exit_code_file,
+            slots_statement=galaxy_slots_statement,
+        )
         try:
             fh = file( executable, "w" )
             fh.write( script )
