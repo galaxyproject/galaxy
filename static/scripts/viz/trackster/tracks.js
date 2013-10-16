@@ -292,7 +292,7 @@ Drawable.prototype.action_icons_def = [
         title: "Remove",
         css_class: "remove-icon",
         on_click_fn: function(drawable) {
-            // Tipsy for remove icon must be deleted when drawable is deleted.
+            // Tooltip for remove icon must be deleted when drawable is deleted.
             $(".tooltip").remove();
             drawable.remove();
         }
@@ -642,7 +642,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             title: "Filters",
             css_class: "filters-icon",
             on_click_fn: function(group) {
-                // TODO: update tipsy text.
+                // TODO: update Tooltip text.
                 if (group.filters_manager.visible()) {
                     // Hiding filters.
                     group.filters_manager.clear_filters();
@@ -2409,7 +2409,7 @@ extend(Track.prototype, Drawable.prototype, {
             title: "Filters",
             css_class: "filters-icon",
             on_click_fn: function(drawable) {
-                // TODO: update tipsy text.
+                // TODO: update Tooltip text.
                 if (drawable.filters_manager.visible()) {
                     drawable.filters_manager.clear_filters();    
                 }
@@ -2425,7 +2425,7 @@ extend(Track.prototype, Drawable.prototype, {
             title: "Tool",
             css_class: "hammer",
             on_click_fn: function(track) {
-                // TODO: update tipsy text.
+                // TODO: update Tooltip text.
 
                 track.tool.toggle();
 
