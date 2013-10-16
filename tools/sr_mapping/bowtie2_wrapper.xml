@@ -109,7 +109,7 @@
     
     <!-- basic error handling -->
     <stdio>
-        <regex match="Exception" source="stderr" level="fatal" description="Tool exception"/>
+        <exit_code range="1:" level="fatal" description="Tool exception" />
     </stdio>
     
     <inputs>
