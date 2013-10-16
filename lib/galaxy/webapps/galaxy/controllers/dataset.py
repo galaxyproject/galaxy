@@ -8,7 +8,7 @@ import zipfile
 from galaxy import datatypes, eggs, model, util, web
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import inflector
+from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
@@ -184,7 +184,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stdout = job.stdout
         except:
             stdout = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stdout
+        return smart_str( stdout )
 
     @web.expose
     # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
@@ -196,7 +196,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             stderr = job.stderr
         except:
             stderr = "Invalid dataset ID or you are not allowed to access this dataset"
-        return stderr
+        return smart_str( stderr )
 
     @web.expose
     def exit_code( self, trans, dataset_id=None, **kwargs ):
