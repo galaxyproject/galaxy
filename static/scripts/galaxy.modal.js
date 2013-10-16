@@ -15,7 +15,9 @@ var GalaxyModal = Backbone.View.extend(
     optionsDefault: {
         title       : "galaxy-modal",
         body        : "",
-        backdrop    : true
+        backdrop    : true,
+        height      : null,
+        width       : null
     },
     
     // options
@@ -23,7 +25,6 @@ var GalaxyModal = Backbone.View.extend(
     
     // initialize
     initialize : function(options) {
-        // create
         if (options)
             this.create(options);
     },
@@ -32,18 +33,18 @@ var GalaxyModal = Backbone.View.extend(
     show: function(options) {
         // create
         this.initialize(options);
-
+        
         // fix height
-        var maxHeight = $(document).height() / 2;
-        this.$body.css('max-height', maxHeight);
-        
-        // fix height if available
         if (this.options.height)
-            this.$body.css('height', Math.min(this.options.height, maxHeight));
-        
-        // remove scroll bar
-        if (this.options.height)
+        {
+            this.$body.css('height', this.options.height);
             this.$body.css('overflow', 'hidden');
+        } else
+            this.$body.css('max-height', $(window).height() / 2);
+
+        // fix width
+        if (this.options.width)
+            this.$dialog.css('width', this.options.width);
         
         // show
         if (this.visible)
@@ -81,6 +82,7 @@ var GalaxyModal = Backbone.View.extend(
         this.setElement(this.template(this.options.title));
         
         // link elements
+        this.$dialog = (this.$el).find('.modal-dialog');
         this.$body = (this.$el).find('.modal-body');
         this.$footer  = (this.$el).find('.modal-footer');
         this.$buttons = (this.$el).find('.buttons');
@@ -89,9 +91,6 @@ var GalaxyModal = Backbone.View.extend(
         // append body
         this.$body.html(this.options.body);
         
-        // fix min-width so that modal cannot shrink considerably if new content is loaded.
-        this.$body.css('min-width', this.$body.width());
-
         // configure background
         if (!this.options.backdrop)
             this.$backdrop.removeClass('in');

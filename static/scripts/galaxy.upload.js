@@ -22,6 +22,11 @@ var GalaxyUpload = Backbone.View.extend(
         'auto'  : 'Auto-detect'
     },
     
+    // genomes
+    select_genome : {
+        '?'     : 'Unspecified'
+    },
+    
     // states
     state : {
         init    : 'fa-icon-trash',
@@ -82,10 +87,15 @@ var GalaxyUpload = Backbone.View.extend(
         var self = this;
         mod_util.jsonFromUrl(galaxy_config.root + "api/datatypes",
             function(datatypes) {
-                for (key in datatypes) {
-                    var filetype = datatypes[key];
-                    self.select_extension[filetype] = filetype;
-                }
+                for (key in datatypes)
+                    self.select_extension[datatypes[key]] = datatypes[key];
+            });
+            
+        // load genomes
+        mod_util.jsonFromUrl(galaxy_config.root + "api/genomes",
+            function(genomes) {
+                for (key in genomes)
+                    self.select_genome[genomes[key][1]] = genomes[key][0];
             });
     },
     
@@ -106,7 +116,7 @@ var GalaxyUpload = Backbone.View.extend(
         var id = '#upload-' + index;
 
         // add upload item
-        $(this.el).find('tbody:last').append(this.template_row(id, this.select_extension));
+        $(this.el).find('tbody:last').append(this.template_row(id));
         
         // scroll to bottom
         //$(this.el).scrollTop($(this.el).prop('scrollHeight'));
@@ -153,6 +163,7 @@ var GalaxyUpload = Backbone.View.extend(
         // get configuration
         var current_history = Galaxy.currHistoryPanel.model.get('id');
         var file_type = it.find('#extension').val();
+        var genome = it.find('#genome').val();
         var space_to_tabs = it.find('#space_to_tabs').is(':checked');
         
         // configure uploadbox
@@ -160,7 +171,7 @@ var GalaxyUpload = Backbone.View.extend(
         
         // configure tool
         tool_input = {};
-        tool_input['dbkey'] = '?';
+        tool_input['dbkey'] = genome;
         tool_input['file_type'] = file_type;
         tool_input['files_0|NAME'] = file.name;
         tool_input['files_0|type'] = 'upload_dataset';
@@ -285,6 +296,7 @@ var GalaxyUpload = Backbone.View.extend(
                 symbol.addClass(self.state.queued);
             
                 // disable options
+                $(this).find('#genome').attr('disabled', true);
                 $(this).find('#extension').attr('disabled', true);
                 $(this).find('#space_to_tabs').attr('disabled', true);
             }
@@ -332,6 +344,7 @@ var GalaxyUpload = Backbone.View.extend(
                 symbol.addClass(self.state.init);
                 
                 // disable options
+                $(this).find('#genome').attr('disabled', false);
                 $(this).find('#extension').attr('disabled', false);
                 $(this).find('#space_to_tabs').attr('disabled', false);
             }
@@ -410,7 +423,8 @@ var GalaxyUpload = Backbone.View.extend(
                     'Reset'  : function() {self.event_reset()},
                     'Close'  : function() {self.modal.hide()}
                 },
-                height : '350'
+                height      : '350',
+                width       : '850'
             });
         
             // set element
@@ -528,6 +542,7 @@ var GalaxyUpload = Backbone.View.extend(
                                 '<th>Name</th>' +
                                 '<th>Size</th>' +
                                 '<th>Type</th>' +
+                                '<th>Genome</th>' +
                                 '<th>Space&#8594;Tab</th>' +
                                 '<th>Status</th>' +
                                 '<th></th>' +
@@ -539,22 +554,31 @@ var GalaxyUpload = Backbone.View.extend(
                 '<h6 id="' + idInfo + '" class="upload-info"></h6>';
     },
     
-    template_row: function(id, select_extension)
+    template_row: function(id)
     {
         // construct template
         var tmpl = '<tr id="' + id.substr(1) + '" class="upload-item">' +
                         '<td><div id="title" class="title"></div></td>' +
-                        '<td><div id="size" class="size"></div></td>' +
-                        '<td>' +
-                            '<select id="extension" class="extension">';
+                        '<td><div id="size" class="size"></div></td>';
 
-        // add file types to selection
-        for (key in select_extension)
-            tmpl +=             '<option value="' + key + '">' + select_extension[key] + '</option>';
-            
+        // add file type selectore
+        tmpl +=         '<td>' +
+                            '<select id="extension" class="extension">';
+        for (key in this.select_extension)
+            tmpl +=             '<option value="' + key + '">' + this.select_extension[key] + '</option>';
         tmpl +=             '</select>' +
-                        '</td>' +
-                        '<td><input id="space_to_tabs" type="checkbox"></input></td>' +
+                        '</td>';                        
+
+        // add genome selector
+        tmpl +=         '<td>' +
+                            '<select id="genome" class="genome">';
+        for (key in this.select_genome)
+            tmpl +=             '<option value="' + key + '">' + this.select_genome[key] + '</option>';
+        tmpl +=             '</select>' +
+                        '</td>';
+        
+        // add next row
+        tmpl +=         '<td><input id="space_to_tabs" type="checkbox"></input></td>' +
                         '<td>' +
                             '<div id="info" class="info">' +
                                 '<div class="progress">' +
