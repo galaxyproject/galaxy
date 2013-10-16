@@ -594,6 +594,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
         params = util.Params( kwd )
+                
+        # If the honeypot field is not empty we are dealing with a bot.
+        honeypot_field = params.get( 'bear_field', '' )
+        if honeypot_field != '':
+            return trans.show_error_message( "You are considered a bot. If you are not one please try registering again and follow the form's legend. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
+       
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )

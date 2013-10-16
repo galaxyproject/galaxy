@@ -162,7 +162,7 @@
             %endif
             <div id="for_bears">
             If you see this, please leave following field blank. 
-            <input type="text" name="please leave this field blank" size="1" value=""/>
+            <input type="text" name="bear_field" size="1" value=""/>
             </div>
             <div class="form-row">
                 <input type="submit" id="send" name="create_user_button" value="Submit"/>
