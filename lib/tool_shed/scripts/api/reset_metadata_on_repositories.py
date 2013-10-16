@@ -16,20 +16,37 @@ import argparse
 import os
 import sys
 sys.path.insert( 0, os.path.dirname( __file__ ) )
+from common import get
 from common import submit
+
+def string_as_bool( string ):
+    if str( string ).lower() in [ 'true' ]:
+        return True
+    else:
+        return False
 
 def main( options ):
     api_key = options.api
     my_writable = options.my_writable
+    one_per_request = options.one_per_request
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
-    data = dict( my_writable=my_writable )
-    url = '%s/api/repositories/reset_metadata_on_repositories' % base_tool_shed_url
-    submit( url, data, options.api )
+    if string_as_bool( one_per_request ):
+        url = '%s/api/repositories/repository_ids_for_setting_metadata?key=%s&my_writable=%s' % ( base_tool_shed_url, api_key, str( my_writable ) )
+        repository_ids = get( url, api_key )
+        for repository_id in repository_ids:
+            data = dict( repository_id=repository_id )
+            url = '%s/api/repositories/reset_metadata_on_repository' % base_tool_shed_url
+            submit( url, data, options.api )
+    else:
+        data = dict( my_writable=my_writable )
+        url = '%s/api/repositories/reset_metadata_on_repositories' % base_tool_shed_url
+        submit( url, data, options.api )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Reset metadata on certain repositories in the Tool Shed via the Tool Shed API.' )
     parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key" )
     parser.add_argument( "-m", "--my_writable", dest="my_writable", required=False, default='False', help="Restrict to my writable repositories" )
+    parser.add_argument( "-o", "--one_per_request", dest="one_per_request", required=False, default='False', help="One repository per request" )
     parser.add_argument( "-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL" )
     options = parser.parse_args()
     main( options )

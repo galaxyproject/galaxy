@@ -177,6 +177,42 @@ class RepositoriesController( BaseAPIController ):
             return message
 
     @web.expose_api
+    def repository_ids_for_setting_metadata( self, trans, my_writable=False, **kwd ):
+        """
+        GET /api/get_repository_ids_for_setting_metadata
+
+        Displays a collection (list) of repository ids ordered for setting metadata.
+
+        :param key: the API key of the Tool Shed user.
+        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
+                                       to True will restrict resetting metadata to only repositories that are writable by the user
+                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
+                                       if the current user is not an admin user, in which case this same restriction is automatic.
+        """
+        try:
+            if trans.user_is_admin():
+                my_writable = util.asbool( my_writable )
+            else:
+                my_writable = True
+            handled_repository_ids = []
+            repository_ids = []
+            query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+            # Make sure repositories of type tool_dependency_definition are first in the list.
+            for repository in query:
+                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                    repository_ids.append( trans.security.encode_id( repository.id ) )
+            # Now add all remaining repositories to the list.
+            for repository in query:
+                if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                    repository_ids.append( trans.security.encode_id( repository.id ) )
+            return repository_ids
+        except Exception, e:
+            message = "Error in the Tool Shed repositories API in repository_ids_for_setting_metadata: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api
     def reset_metadata_on_repositories( self, trans, payload, **kwd ):
         """
         PUT /api/repositories/reset_metadata_on_repositories
@@ -232,6 +268,48 @@ class RepositoriesController( BaseAPIController ):
                     results = handle_repository( trans, repository, results )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
+            return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        except Exception, e:
+            message = "Error in the Tool Shed repositories API in reset_metadata_on_repositories: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api
+    def reset_metadata_on_repository( self, trans, payload, **kwd ):
+        """
+        PUT /api/repositories/reset_metadata_on_repository
+
+        Resets all metadata on a specified repository in the Tool Shed.
+        
+        :param key: the API key of the Tool Shed user.
+        
+        The following parameters must be included in the payload.
+        :param repository_id: the encoded id of the repository on which metadata is to be reset.
+        """
+        def handle_repository( trans, start_time, repository ):
+            results = dict( start_time=start_time,
+                            repository_status=[] )
+            try:
+                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
+                                                                                                                trans.security.encode_id( repository.id ) )
+                if invalid_file_tups:
+                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                else:
+                    message = "Successfully reset metadata on repository %s" % str( repository.name )
+            except Exception, e:
+                message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
+                
+            results[ 'repository_status' ].append( message )
+            return results
+        try:
+            repository_id = payload.get( 'repository_id', None )
+            if repository_id is not None:
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                start_time = strftime( "%Y-%m-%d %H:%M:%S" )
+                results = handle_repository( trans, start_time, repository )
+                stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
+                results[ 'stop_time' ] = stop_time
             return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
         except Exception, e:
             message = "Error in the Tool Shed repositories API in reset_metadata_on_repositories: %s" % str( e )
