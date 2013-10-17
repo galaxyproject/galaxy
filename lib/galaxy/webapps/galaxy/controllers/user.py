@@ -28,7 +28,6 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from datetime import datetime, timedelta
-from galaxy.web.framework.helpers import grids
 from galaxy.util import hash_util
 
 log = logging.getLogger( __name__ )
