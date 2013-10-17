@@ -143,34 +143,34 @@ def __test_base_path():
 
 def test_parse():
     with __parse_resolvers('''<dependency_resolvers>
-  <tool_shed_package />
-  <galaxy_package />
+  <tool_shed_packages />
+  <galaxy_packages />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         assert 'ToolShed' in dependency_resolvers[0].__class__.__name__
         assert 'Galaxy' in dependency_resolvers[1].__class__.__name__
 
     with __parse_resolvers('''<dependency_resolvers>
-  <galaxy_package />
-  <tool_shed_package />
+  <galaxy_packages />
+  <tool_shed_packages />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         assert 'Galaxy' in dependency_resolvers[0].__class__.__name__
         assert 'ToolShed' in dependency_resolvers[1].__class__.__name__
 
     with __parse_resolvers('''<dependency_resolvers>
-  <galaxy_package />
-  <tool_shed_package />
-  <galaxy_package versionless="true" />
+  <galaxy_packages />
+  <tool_shed_packages />
+  <galaxy_packages versionless="true" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         assert not dependency_resolvers[0].versionless
         assert dependency_resolvers[2].versionless
 
     with __parse_resolvers('''<dependency_resolvers>
-  <galaxy_package />
-  <tool_shed_package />
-  <galaxy_package base_path="/opt/galaxy/legacy/"/>
+  <galaxy_packages />
+  <tool_shed_packages />
+  <galaxy_packages base_path="/opt/galaxy/legacy/"/>
 </dependency_resolvers>
 ''') as dependency_resolvers:
         # Unspecified base_paths are both default_base_paths

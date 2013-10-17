@@ -182,6 +182,6 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
 
 
 RESOLVER_CLASSES = {
-    'tool_shed_package': ToolShedPackageDependencyResolver,
-    'galaxy_package': GalaxyPackageDependencyResolver,
+    'tool_shed_packages': ToolShedPackageDependencyResolver,
+    'galaxy_packages': GalaxyPackageDependencyResolver,
 }
