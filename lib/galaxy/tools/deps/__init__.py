@@ -70,12 +70,7 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
             path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
         else:
             path = os.path.join( base_path, name, version )
-        script = os.path.join( path, 'env.sh' )
-        if os.path.exists( script ):
-            return script, path, version
-        elif os.path.exists( os.path.join( path, 'bin' ) ):
-            return None, path, version
-        return INDETERMINATE_DEPENDENCY
+        return self._galaxy_package_dep(path, version)
 
     def _find_dep_default( self, name, type='package', **kwds ):
         if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
@@ -89,13 +84,17 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
         path = os.path.join( base_path, name, 'default' )
         if os.path.islink( path ):
             real_path = os.path.realpath( path )
-            real_bin = os.path.join( real_path, 'bin' )
             real_version = os.path.basename( real_path )
-            script = os.path.join( real_path, 'env.sh' )
-            if os.path.exists( script ):
-                return script, real_path, real_version
-            elif os.path.exists( real_bin ):
-                return None, real_path, real_version
+            return self._galaxy_package_dep(real_path, real_version)
+        else:
+            return INDETERMINATE_DEPENDENCY
+
+    def _galaxy_package_dep( self, path, version ):
+        script = os.path.join( path, 'env.sh' )
+        if os.path.exists( script ):
+            return script, path, version
+        elif os.path.exists( os.path.join( path, 'bin' ) ):
+            return None, path, version
         return INDETERMINATE_DEPENDENCY
 
     def _get_installed_dependency( self, name, type, version=None, **kwds ):
