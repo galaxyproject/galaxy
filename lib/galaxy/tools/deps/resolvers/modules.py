@@ -6,6 +6,7 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
+from os import environ
 from os.path import exists, isdir, join
 from StringIO import StringIO
 from subprocess import Popen, PIPE
@@ -17,8 +18,12 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-DEFAULT_MODULE_COMMAND = 'module'
-DEFAULT_MODULE_DIRECTORY = '/usr/share/modules/modulefiles'
+if environ.has_key('MODULEPATH'):
+    DEFAULT_MODULE_PATH = environ['MODULEPATH']
+elif environ.has_key('MODULESHOME'):
+    DEFAULT_MODULE_PATH = join(environ['MODULESHOME'], 'modulefiles')
+else:
+    DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
 DEFAULT_INDICATOR = '(default)'
 DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
@@ -28,13 +33,12 @@ class ModuleDependencyResolver(DependencyResolver):
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
-        self.module_command = kwds.get('command', DEFAULT_MODULE_COMMAND)
         self.versionless = string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
         prefetch = string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         if find_by == 'directory':
-            directory = kwds.get('directory', DEFAULT_MODULE_DIRECTORY)
-            self.module_checker = DirectoryModuleChecker(self, directory, prefetch)
+            modulepath = kwds.get('modulepath', DEFAULT_MODULE_PATH)
+            self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
         elif find_by == 'avail':
             self.module_checker = AvailModuleChecker(self, prefetch)
         else:
@@ -44,11 +48,10 @@ class ModuleDependencyResolver(DependencyResolver):
         if type != "package":
             return INDETERMINATE_DEPENDENCY
 
-        if self.versionless:
-            version = None
-
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version)
+        elif self.versionless and self.__has_module(name, None):
+            return ModuleDependency(self, name, None)
 
         return INDETERMINATE_DEPENDENCY
 
@@ -58,23 +61,26 @@ class ModuleDependencyResolver(DependencyResolver):
 
 class DirectoryModuleChecker(object):
 
-    def __init__(self, module_dependency_resolver, directory, prefetch):
+    def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
-        self.directory = directory
+        self.directories = modulepath.split(':')
         if prefetch:
             log.warn("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
             pass
 
     def has_module(self, module, version):
-        module_directory = join(self.directory, module)
-        has_module_directory = isdir( join( self.directory, module ) )
-        if not version:
-            has_module = has_module_directory
-        else:
-            modulefile = join(  module_directory, version )
-            has_modulefile = exists( modulefile )
-            has_module = has_module_directory and has_modulefile
-        return has_module
+        for directory in self.directories:
+            module_directory = join(directory, module)
+            has_module_directory = isdir( module_directory )
+            if not version:
+                has_module = has_module_directory or exists(module_directory) # could be a bare modulefile
+            else:
+                modulefile = join(  module_directory, version )
+                has_modulefile = exists( modulefile )
+                has_module = has_module_directory and has_modulefile
+            if has_module:
+                return True
+        return False
 
 
 class AvailModuleChecker(object):
@@ -102,7 +108,7 @@ class AvailModuleChecker(object):
         return False
 
     def __modules(self):
-        raw_output = self.__module_avail_ouptut()
+        raw_output = self.__module_avail_output()
         for line in StringIO(raw_output):
             line = line and line.strip()
             if not line or line.startswith("-"):
@@ -119,10 +125,9 @@ class AvailModuleChecker(object):
                 module_name = module_parts[0]
                 yield module_name, module_version
 
-    def __module_avail_ouptut(self):
-        avail_command = '%s avail' % self.module_dependency_resolver.module_command
-        return Popen([avail_command], shell=True, stderr=PIPE).communicate()[1]
-
+    def __module_avail_output(self):
+        avail_command = ['modulecmd', 'sh', 'avail']
+        return Popen(avail_command, stderr=PIPE).communicate()[1]
 
 class ModuleDependency(Dependency):
 
@@ -132,9 +137,10 @@ class ModuleDependency(Dependency):
         self.module_version = module_version
 
     def shell_commands(self, requirement):
-        command = '%s load %s' % (self.module_dependency_resolver.module_command, self.module_name)
+        module_to_load = self.module_name
         if self.module_version:
-            command = '%s/%s' % self.module_version
+            module_to_load = '%s/%s' % (self.module_name, self.module_version)
+        command = 'eval `modulecmd sh load %s`' % (module_to_load)
         return command
 
 __all__ = [ModuleDependencyResolver]
