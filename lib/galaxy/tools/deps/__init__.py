@@ -7,15 +7,19 @@ import os.path
 import logging
 log = logging.getLogger( __name__ )
 
+INDETERMINATE_DEPENDENCY = (None, None, None)
+
 
 class DependencyManager( object ):
     """
-    A DependencyManager attempts to resolve named and versioned dependencies by searching for them under a list of directories. Directories should be
+    A DependencyManager attempts to resolve named and versioned dependencies by
+    searching for them under a list of directories. Directories should be
     of the form:
 
         $BASE/name/version/...
 
-    and should each contain a file 'env.sh' which can be sourced to make the dependency available in the current shell environment.
+    and should each contain a file 'env.sh' which can be sourced to make the
+    dependency available in the current shell environment.
     """
     def __init__( self, default_base_path ):
         """
@@ -50,7 +54,7 @@ class DependencyManager( object ):
             return script, path, version
         elif os.path.exists( os.path.join( path, 'bin' ) ):
             return None, path, version
-        return None, None, None
+        return INDETERMINATE_DEPENDENCY
 
     def _find_dep_default( self, name, type='package', installed_tool_dependencies=None ):
         if type == 'set_environment' and installed_tool_dependencies:
@@ -71,16 +75,17 @@ class DependencyManager( object ):
                 return script, real_path, real_version
             elif os.path.exists( real_bin ):
                 return None, real_path, real_version
-        return None, None, None
+        return INDETERMINATE_DEPENDENCY
 
     def _get_installed_dependency( self, installed_tool_dependencies, name, type, version=None ):
         if installed_tool_dependencies:
             for installed_tool_dependency in installed_tool_dependencies:
+                name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
                 if version:
-                    if installed_tool_dependency.name == name and installed_tool_dependency.type == type and installed_tool_dependency.version == version:
+                    if name_and_type_equal and installed_tool_dependency.version == version:
                         return installed_tool_dependency
                 else:
-                    if installed_tool_dependency.name == name and installed_tool_dependency.type == type:
+                    if name_and_type_equal:
                         return installed_tool_dependency
         return None
 
@@ -105,4 +110,4 @@ class DependencyManager( object ):
         if os.path.exists( path ):
             script = os.path.join( path, 'env.sh' )
             return script, path, None
-        return None, None, None
+        return INDETERMINATE_DEPENDENCY
