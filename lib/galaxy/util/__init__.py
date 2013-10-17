@@ -873,19 +873,24 @@ def send_mail( frm, to, subject, body, config ):
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
-    s = smtplib.SMTP()
+    smtp_ssl = asbool( config.smtp_ssl )
+    if smtp_ssl:
+        s = smtplib.SMTP_SSL()
+    else:
+        s = smtplib.SMTP()
     s.connect( config.smtp_server )
-    try:
-        s.starttls()
-        log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
-    except RuntimeError, e:
-        log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
-    except smtplib.SMTPHeloError, e:
-        log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
-        s.close()
-        raise
-    except smtplib.SMTPException, e:
-        log.warning( 'The server does not support the STARTTLS extension: %s' % e )
+    if not smtp_ssl:
+        try:
+            s.starttls()
+            log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
+        except RuntimeError, e:
+            log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
+        except smtplib.SMTPHeloError, e:
+            log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPException, e:
+            log.warning( 'The server does not support the STARTTLS extension: %s' % e )
     if config.smtp_username and config.smtp_password:
         try:
             s.login( config.smtp_username, config.smtp_password )
