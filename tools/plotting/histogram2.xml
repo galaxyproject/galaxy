@@ -27,6 +27,7 @@
   </tests>
   <requirements>
     <requirement type="python-module">rpy</requirement>
+    <requirement type="package">R</requirement>
   </requirements>
   <help>
 
