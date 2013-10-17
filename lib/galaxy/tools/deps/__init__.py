@@ -7,7 +7,7 @@ import os.path
 import logging
 log = logging.getLogger( __name__ )
 
-from galaxy.util import parse_xml
+from galaxy.util import parse_xml, string_as_bool
 
 INDETERMINATE_DEPENDENCY = (None, None, None)
 
@@ -65,7 +65,8 @@ class DependencyManager( object ):
         resolvers_element = tree.getroot()
         for resolver_element in resolvers_element.getchildren():
             resolver_type = resolver_element.tag
-            resolver = RESOLVER_CLASSES[resolver_type](self)
+            resolver_kwds = dict(resolver_element.items())
+            resolver = RESOLVER_CLASSES[resolver_type](self, **resolver_kwds)
             resolvers.append(resolver)
         return resolvers
 
@@ -78,15 +79,22 @@ class DependencyResolver(object):
 
 class GalaxyPackageDependencyResolver(DependencyResolver):
 
-    def __init__(self, dependency_manager):
+    def __init__(self, dependency_manager, **kwds):
         self.default_base_path = dependency_manager.default_base_path
+
+        ## Galaxy tool shed requires explicit versions on XML elements,
+        ## this in inconvient for testing or Galaxy instances not utilizing
+        ## the tool shed so allow a fallback version of the Galaxy package
+        ## resolver that will just grab 'default' version of exact version
+        ## unavailable.
+        self.versionless = string_as_bool(kwds.get('versionless', "false"))
 
     def resolve( self, name, version, type, **kwds ):
         """
         Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
-        if version is None:
+        if version is None or self.versionless:
             return self._find_dep_default( name, type=type, **kwds )
         else:
             return self._find_dep_versioned( name, version, type=type, **kwds )
@@ -117,8 +125,8 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
 
 class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
 
-    def __init__(self, dependency_manager):
-        super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager)
+    def __init__(self, dependency_manager, **kwds):
+        super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )

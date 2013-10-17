@@ -158,6 +158,15 @@ def test_parse():
         assert 'Galaxy' in dependency_resolvers[0].__class__.__name__
         assert 'ToolShed' in dependency_resolvers[1].__class__.__name__
 
+    with __parse_resolvers('''<dependency_resolvers>
+  <galaxy_package />
+  <tool_shed_package />
+  <galaxy_package versionless="true" />
+</dependency_resolvers>
+''') as dependency_resolvers:
+        assert not dependency_resolvers[0].versionless
+        assert dependency_resolvers[2].versionless
+
 
 @contextmanager
 def __parse_resolvers(xml_content):
