@@ -213,226 +213,159 @@ var GridView = Backbone.View.extend({
 });
 
 // =============================================================================
-/** 
+/**
  * view for a popup menu
  */
-var PopupMenu = Backbone.View.extend(
-{
-    /* TODO:
-        add submenus
-        add hrefs
-        test various html keys
-        add make_popupmenus style
-    */
+var PopupMenu = Backbone.View.extend({
     /** Cache the desired button element and options, set up the button click handler
      *  NOTE: attaches this view as HTML/jQ data on the button for later use.
      */
-    //TODO: include docs on special option keys (divider, checked, etc.)
-    initialize: function($button, options)
-    {
+    initialize: function( $button, options ){
         // default settings
-        this.$button = $button || $('<div/>');
+        this.$button = $button || $( '<div/>' );
         this.options = options || [];
 
         // set up button click -> open menu behavior
         var menu = this;
-        this.$button.click(function(event)
-        {
-            menu._renderAndShow(event);
+        this.$button.click( function( event ){
+            menu._renderAndShow( event );
             return false;
         });
+    },
 
-        // attach this view as a data object on the button - for later access
-        //TODO:?? memleak?
-        this.$button.data('PopupMenu', this);
+    // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
+    _renderAndShow: function( clickEvent ){
+        this.render();
+        this.$el.appendTo( 'body' );
+        this.$el.css( this._getShownPosition( clickEvent ));
+        this._setUpCloseBehavior();
+        this.$el.show();
     },
 
     // render the menu
-    // this menu doesn't attach itself to the DOM (see _renderAndShow)
-    render: function()
-    {
-        // link this popup
-        var menu = this;
-
-        // render the menu body
-        this.$el.addClass('popmenu-wrapper')
-            .css(
-            {
-                position    : 'absolute',
-                display     : 'none'
-            });
-
-        // use template
-        this.$el.html(this.template(this.$button.attr('id'), this.options));
+    // this menu doesn't attach itself to the DOM ( see _renderAndShow )
+    render: function(){
+        // render the menu body absolute and hidden, fill with template
+        this.$el.addClass( 'popmenu-wrapper' ).hide()
+            .css({ position : 'absolute' })
+            .html( this.template( this.$button.attr( 'id' ), this.options ));
 
         // set up behavior on each link/anchor elem
-        if(this.options.length)
-        {
-            this.$el.find('li').each(function(i, li)
-            {
-                var $li = $(li),
-                    $anchor = $li.children( 'a.popupmenu-option' ),
-                    menuFunc = menu.options[i].func;
+        if( this.options.length ){
+            var menu = this;
+            //precondition: there should be one option per li
+            this.$el.find( 'li' ).each( function( i, li ){
+                var option = menu.options[i];
 
-                // click event
-                if($anchor.length && menuFunc)
-                {
-                    $anchor.click(function(event)
-                    {
-                        menuFunc(event, menu.options[i]);
+                // if the option has 'func', call that function when the anchor is clicked
+                if( option.func ){
+                    $( this ).children( 'a.popupmenu-option' ).click( function( event ){
+                        option.func.call( menu, event, option );
+                        // bubble up so that an option click will call the close behavior
+                        //return false;
                     });
                 }
-
-                // cache the anchor as a jq obj within the options obj
-                menu.options[i].$li = $li;
             });
         }
         return this;
     },
 
+    template : function( id, options ){
+        return [
+            '<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions( options ), '</ul>'
+        ].join( '' );
+    },
+
+    _templateOptions : function( options ){
+        if( !options.length ){
+            return '<li>(no options)</li>';
+        }
+        return _.map( options, function( option ){
+            if( option.divider ){
+                return '<li class="divider"></li>';
+            } else if( option.header ){
+                return [ '<li class="head"><a href="javascript:void(0);">', option.html, '</a></li>' ].join( '' );
+            }
+            var href   = option.href || 'javascript:void(0);',
+                target = ( option.target  )?( ' target="' + target + '"' ):( '' ),
+                check  = ( option.checked )?( '<span class="fa-icon-ok"></span>' ):( '' );
+            return [
+                '<li><a class="popupmenu-option" href="', href, '"', target, '>',
+                    check, option.html,
+                '</a></li>'
+            ].join( '' );
+        }).join( '' );
+    },
+
     // get the absolute position/offset for the menu
-    _getShownPosition : function( clickEvent )
-    {
-        // get element width
-        var menuWidth = this.$el.width();
-        
+    _getShownPosition : function( clickEvent ){
+
         // display menu horiz. centered on click...
+        var menuWidth = this.$el.width();
         var x = clickEvent.pageX - menuWidth / 2 ;
 
-        // adjust to handle horiz. scroll and window dimensions (draw entirely on visible screen area)
+        // adjust to handle horiz. scroll and window dimensions ( draw entirely on visible screen area )
         x = Math.min( x, $( document ).scrollLeft() + $( window ).width() - menuWidth - 5 );
         x = Math.max( x, $( document ).scrollLeft() + 5 );
-
-        // return
         return {
             top: clickEvent.pageY,
             left: x
         };
     },
 
-    // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
-    _renderAndShow: function(clickEvent)
-    {
-        this.render();
-        this.$el.appendTo('body');
-        this.$el.css( this._getShownPosition(clickEvent));
-        this._setUpCloseBehavior();
-        this.$el.show();
-    },
-
     // bind an event handler to all available frames so that when anything is clicked
     // the menu is removed from the DOM and the event handler unbinds itself
-    _setUpCloseBehavior: function()
-    {
+    _setUpCloseBehavior: function(){
         // function to close popup and unbind itself
         var menu = this;
-        var closePopupWhenClicked = function($elClicked)
-        {
-            $elClicked.bind("click.close_popup", function()
-            {
+        var closePopupWhenClicked = function( $elClicked ){
+            $elClicked.one( "click.close_popup", function(){
                 menu.remove();
-                $elClicked.unbind("click.close_popup");
             });
         };
 
         // bind to current, parent, and sibling frames
-        closePopupWhenClicked($(window.document));
-        closePopupWhenClicked($(window.top.document));
-        _.each(window.top.frames, function(siblingFrame)
-        {
-            closePopupWhenClicked($(siblingFrame.document));
+        closePopupWhenClicked( $( window.document ));
+        closePopupWhenClicked( $( window.top.document ));
+        _.each( window.top.frames, function( siblingFrame ){
+            closePopupWhenClicked( $( siblingFrame.document ));
         });
     },
 
     // add a menu option/item at the given index
-    addItem: function(item, index)
-    {
+    addItem: function( item, index ){
         // append to end if no index
-        index = (index >= 0) ? index : this.options.length;
-        this.options.splice(index, 0, item);
+        index = ( index >= 0 ) ? index : this.options.length;
+        this.options.splice( index, 0, item );
         return this;
     },
 
     // remove a menu option/item at the given index
-    removeItem: function(index)
-    {
-        if(index >=0)
-            this.options.splice(index, 1);
+    removeItem: function( index ){
+        if( index >=0 ){
+            this.options.splice( index, 1 );
+        }
         return this;
     },
 
     // search for a menu option by it's html
-    findIndexByHtml: function(html)
-    {
-        for(var i = 0; i < this.options.length; i++)
-            if(_.has(this.options[i], 'html') && (this.options[i].html === html))
+    findIndexByHtml: function( html ){
+        for( var i = 0; i < this.options.length; i++ ){
+            if( _.has( this.options[i], 'html' ) && ( this.options[i].html === html )){
                 return i;
+            }
+        }
         return null;
     },
 
     // search for a menu option by it's html
-    findItemByHtml: function(html)
-    {
-        return this.options[(this.findIndexByHtml(html))];
+    findItemByHtml: function( html ){
+        return this.options[( this.findIndexByHtml( html ))];
     },
 
     // string representation
-    toString: function()
-    {
+    toString: function(){
         return 'PopupMenu';
-    },
-    
-    // template
-    template: function(id, options)
-    {
-        // initialize template
-        var tmpl = '<ul id="' + id + '-menu" class="dropdown-menu">';
-        
-        // check item number
-        if (options.length > 0)
-        {
-            // add option
-            for (var i in options)
-            {
-                // get item
-                var item = options[i];
-            
-                // check for divider
-                if (item.divider)
-                {
-                    // add divider
-                    tmpl += '<li class="divider"></li>';
-                } else {
-                    // identify header
-                    if(item.header)
-                    {
-                        tmpl += '<li class="head"><a href="javascript:void(0);">' + item.html + '</a></li>';
-                    } else {
-                        // add href
-                        if (item.href)
-                        {
-                            tmpl += '<li><a href="' + item.href + '"';
-                            tmpl += 'target="' + item.target + '"';
-                        } else
-                            tmpl += '<li><a href="javascript:void(0);"';
-                        
-                        // add class
-                        tmpl += 'class="popupmenu-option">'
-                        
-                        // add target
-                        if (item.checked)
-                            tmpl += '<span class="fa-icon-ok"></span>';
-                        
-                        // add html
-                        tmpl += item.html;
-                    }
-                }
-            }
-        } else
-            tmpl += '<li>No Options.</li>';
-        
-        // return
-        return tmpl + '</ul>';
     }
 });
 
