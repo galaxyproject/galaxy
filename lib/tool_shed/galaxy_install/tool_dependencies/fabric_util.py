@@ -293,7 +293,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             full_path_to_dir = os.path.abspath( install_dir )
                         td_common_util.move_file( current_dir=work_dir,
                                                   source=downloaded_filename,
-                                                  destination_dir=full_path_to_dir )
+                                                  destination=full_path_to_dir )
                 if action_type == 'download_by_url':
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
@@ -551,7 +551,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     full_path_to_dir = os.path.abspath( install_dir )
                                 td_common_util.move_file( current_dir=work_dir,
                                                           source=downloaded_filename,
-                                                          destination_dir=full_path_to_dir )
+                                                          destination=full_path_to_dir )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """
