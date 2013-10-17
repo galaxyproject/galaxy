@@ -1,7 +1,8 @@
 import tempfile
 import os.path
-from os import makedirs, mkdir
+from os import makedirs
 import galaxy.tools.deps
+
 
 def touch( fname, data=None ):
     f = open( fname, 'w' )
@@ -9,7 +10,8 @@ def touch( fname, data=None ):
         f.write( data )
     f.close()
 
-def test():
+
+def test_tool_dependencies():
 
     # Setup directories
     base_path = tempfile.mkdtemp()
@@ -28,5 +30,11 @@ def test():
 
     dm = galaxy.tools.deps.DependencyManager( [ base_path ] )
 
-    print dm.find_dep( "dep1", "1.0" )
-    print dm.find_dep( "dep1", "2.0" )
+    d1_script, d1_path, d1_version = dm.find_dep( "dep1", "1.0" )
+    assert d1_script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
+    assert d1_path == os.path.join( base_path, 'dep1', '1.0' )
+    assert d1_version == "1.0"
+    d2_script, d2_path, d2_version = dm.find_dep( "dep1", "2.0" )
+    assert d2_script == None
+    assert d2_path == os.path.join( base_path, 'dep1', '2.0' )
+    assert d2_version == "2.0"
