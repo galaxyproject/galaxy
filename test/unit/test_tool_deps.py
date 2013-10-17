@@ -277,6 +277,20 @@ def test_parse():
         assert dependency_resolvers[0].base_path != dependency_resolvers[2].base_path
 
 
+def test_uses_tool_shed_dependencies():
+    with __dependency_manager('''<dependency_resolvers>
+  <galaxy_packages />
+</dependency_resolvers>
+''') as dm:
+        assert not dm.uses_tool_shed_dependencies()
+
+    with __dependency_manager('''<dependency_resolvers>
+  <tool_shed_packages />
+</dependency_resolvers>
+''') as dm:
+        assert dm.uses_tool_shed_dependencies()
+
+
 def test_config_module_defaults():
     with __parse_resolvers('''<dependency_resolvers>
   <modules />
@@ -349,9 +363,15 @@ def __environ(values, remove=[]):
 
 @contextmanager
 def __parse_resolvers(xml_content):
+    with __dependency_manager(xml_content) as dm:
+        yield dm.dependency_resolvers
+
+
+@contextmanager
+def __dependency_manager(xml_content):
     with __test_base_path() as base_path:
         f = tempfile.NamedTemporaryFile()
         f.write(xml_content)
         f.flush()
         dm = DependencyManager( default_base_path=base_path, conf_file=f.name )
-        yield dm.dependency_resolvers
+        yield dm

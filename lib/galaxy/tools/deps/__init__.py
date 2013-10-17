@@ -56,6 +56,9 @@ class DependencyManager( object ):
                 commands.append( dependency_commands )
         return commands
 
+    def uses_tool_shed_dependencies(self):
+        return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
+
     def find_dep( self, name, version=None, type='package', **kwds ):
         for resolver in self.dependency_resolvers:
             dependency = resolver.resolve( name, version, type, **kwds )
