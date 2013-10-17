@@ -1,9 +1,11 @@
 import tempfile
 import os.path
-from os import makedirs, symlink
+from stat import S_IXUSR
+from os import makedirs, symlink, stat, chmod
 from shutil import rmtree
 from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
+from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
@@ -100,6 +102,50 @@ def __build_ts_test_package(base_path, script_contents=''):
     return package_dir
 
 
+def test_module_dependency_resolver():
+    with __test_base_path() as temp_directory:
+        module_script = os.path.join(temp_directory, "module")
+        with open(module_script, 'w') as f:
+            f.write('''#!/bin/sh
+cat %s/example_output 1>&2;
+''' % temp_directory)
+        with open(os.path.join(temp_directory, "example_output"), "w") as f:
+            # Subset of module avail from MSI cluster.
+            f.write('''
+-------------------------- /soft/modules/modulefiles ---------------------------
+JAGS/3.2.0-gcc45
+JAGS/3.3.0-gcc4.7.2
+ProbABEL/0.1-3
+ProbABEL/0.1-9e
+R/2.12.2
+R/2.13.1
+R/2.14.1
+R/2.15.0
+R/2.15.1
+R/3.0.1(default)
+abokia-blast/2.0.2-130524/ompi_intel
+abokia-blast/2.0.2-130630/ompi_intel
+
+--------------------------- /soft/intel/modulefiles ----------------------------
+advisor/2013/update1    intel/11.1.075          mkl/10.2.1.017
+advisor/2013/update2    intel/11.1.080          mkl/10.2.5.035
+advisor/2013/update3    intel/12.0              mkl/10.2.7.041
+''')
+        st = os.stat(module_script)
+        chmod(module_script, st.st_mode | S_IXUSR)
+        resolver = ModuleDependencyResolver(None, command=module_script)
+        module = resolver.resolve( name="R", version=None, type="package" )
+        assert module.module_name == "R"
+        assert module.module_version == None
+
+        module = resolver.resolve( name="R", version="3.0.1", type="package" )
+        assert module.module_name == "R"
+        assert module.module_version == "3.0.1"
+
+        module = resolver.resolve( name="R", version="3.0.4", type="package" )
+        assert module == INDETERMINATE_DEPENDENCY
+
+
 def test_galaxy_dependency_object_script():
     with __test_base_path() as base_path:
         ## Create env.sh file that just exports variable FOO and verify it
@@ -189,9 +235,28 @@ def test_parse():
         # Unspecified base_paths are both default_base_paths
         assert dependency_resolvers[0].base_path == dependency_resolvers[1].base_path
         # Can specify custom base path...
-        assert dependency_resolvers[2].base_path == "/opt/galaxy/legacy/"
+        assert dependency_resolvers[2].base_path == "/opt/galaxy/legacy"
         # ... that is different from the default.
         assert dependency_resolvers[0].base_path != dependency_resolvers[2].base_path
+
+
+def test_config_module_defaults():
+    with __parse_resolvers('''<dependency_resolvers>
+  <modules />
+</dependency_resolvers>
+''') as dependency_resolvers:
+        module_resolver = dependency_resolvers[0]
+        assert module_resolver.module_command == "module"
+        assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
+
+
+def test_config_module_directory_searcher():
+    with __parse_resolvers('''<dependency_resolvers>
+  <modules find_by="directory" directory="/opt/Modules/modulefiles" />
+</dependency_resolvers>
+''') as dependency_resolvers:
+        module_resolver = dependency_resolvers[0]
+        assert module_resolver.module_checker.directory == "/opt/Modules/modulefiles"
 
 
 @contextmanager

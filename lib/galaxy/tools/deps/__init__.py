@@ -11,6 +11,7 @@ from galaxy.util import parse_xml
 from .resolvers import INDETERMINATE_DEPENDENCY
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
+from .resolvers.modules import ModuleDependencyResolver
 
 
 class DependencyManager( object ):
@@ -74,4 +75,5 @@ class DependencyManager( object ):
 RESOLVER_CLASSES = {
     'tool_shed_packages': ToolShedPackageDependencyResolver,
     'galaxy_packages': GalaxyPackageDependencyResolver,
+    'modules': ModuleDependencyResolver,
 }
