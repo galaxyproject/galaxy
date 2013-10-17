@@ -31,8 +31,29 @@ class DependencyManager( object ):
         if not os.path.isdir( default_base_path ):
             log.warn( "Path '%s' is not directory, ignoring", default_base_path )
         self.default_base_path = os.path.abspath( default_base_path )
+        self.dependency_resolvers = [ GalaxyPackageDependencyResolver(self) ]
+
 
     def find_dep( self, name, version=None, type='package', **kwds ):
+        for resolver in self.dependency_resolvers:
+            dependency = resolver.resolve( name, version, type, **kwds )
+            if dependency != INDETERMINATE_DEPENDENCY:
+                return dependency
+        return INDETERMINATE_DEPENDENCY
+
+
+class DependencyResolver(object):
+
+    def resolve( self, name, version, type, **kwds ):
+        raise NotImplementedError()
+
+
+class GalaxyPackageDependencyResolver(DependencyResolver):
+
+    def __init__(self, dependency_manager):
+        self.default_base_path = dependency_manager.default_base_path
+
+    def resolve( self, name, version, type, **kwds ):
         """
         Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
