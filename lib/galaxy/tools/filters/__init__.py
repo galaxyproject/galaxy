@@ -39,8 +39,8 @@ class FilterFactory( object ):
                     if category:
                         self.__init_filters( category, user_filters, filters )
         else:
-        if kwds.get( "trackster", False ):
-            filters[ "tool" ].append( _has_trackster_conf )
+            if kwds.get( "trackster", False ):
+                filters[ "tool" ].append( _has_trackster_conf )
 
         return filters
 
