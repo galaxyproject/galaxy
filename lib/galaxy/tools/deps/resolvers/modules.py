@@ -6,7 +6,7 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
-from os import environ
+from os import environ, pathsep
 from os.path import exists, isdir, join
 from StringIO import StringIO
 from subprocess import Popen, PIPE
@@ -18,12 +18,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-if environ.has_key('MODULEPATH'):
-    DEFAULT_MODULE_PATH = environ['MODULEPATH']
-elif environ.has_key('MODULESHOME'):
-    DEFAULT_MODULE_PATH = join(environ['MODULESHOME'], 'modulefiles')
-else:
-    DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
+DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
 DEFAULT_INDICATOR = '(default)'
 DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
@@ -44,6 +39,15 @@ class ModuleDependencyResolver(DependencyResolver):
         else:
             raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
 
+    def __default_modulespath(self):
+        if 'MODULEPATH' in environ:
+            module_path = environ['MODULEPATH']
+        elif 'MODULESHOME' in environ:
+            module_path = join(environ['MODULESHOME'], 'modulefiles')
+        else:
+            module_path = DEFAULT_MODULE_PATH
+        return module_path
+
     def resolve( self, name, version, type, **kwds ):
         if type != "package":
             return INDETERMINATE_DEPENDENCY
@@ -63,24 +67,25 @@ class DirectoryModuleChecker(object):
 
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
-        self.directories = modulepath.split(':')
+        self.directories = modulepath.split(pathsep)
         if prefetch:
             log.warn("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
             pass
 
     def has_module(self, module, version):
+        has_module = False
         for directory in self.directories:
             module_directory = join(directory, module)
             has_module_directory = isdir( module_directory )
             if not version:
-                has_module = has_module_directory or exists(module_directory) # could be a bare modulefile
+                has_module = has_module_directory or exists(module_directory)  # could be a bare modulefile
             else:
                 modulefile = join(  module_directory, version )
                 has_modulefile = exists( modulefile )
                 has_module = has_module_directory and has_modulefile
             if has_module:
-                return True
-        return False
+                break
+        return has_module
 
 
 class AvailModuleChecker(object):
@@ -128,6 +133,7 @@ class AvailModuleChecker(object):
     def __module_avail_output(self):
         avail_command = ['modulecmd', 'sh', 'avail']
         return Popen(avail_command, stderr=PIPE).communicate()[1]
+
 
 class ModuleDependency(Dependency):
 
