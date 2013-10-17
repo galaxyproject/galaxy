@@ -696,7 +696,11 @@ class ToolBox( object, Dictifiable ):
 
     def init_dependency_manager( self ):
         if self.app.config.use_tool_dependencies:
-            self.dependency_manager = DependencyManager( self.app.config.tool_dependency_dir )
+            dependency_manager_kwds = {
+                'default_base_path': self.app.config.tool_dependency_dir,
+                'conf_file': self.app.config.dependency_resolvers_config_file,
+            }
+            self.dependency_manager = DependencyManager( **dependency_manager_kwds )
         else:
             self.dependency_manager = None
 
