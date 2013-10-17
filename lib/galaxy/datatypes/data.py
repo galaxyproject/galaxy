@@ -7,6 +7,7 @@ import sys
 import tempfile
 import zipfile
 from cgi import escape
+from inspect import isclass
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
@@ -230,6 +231,7 @@ class Data( object ):
                 if (params.do_action == 'zip'):
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
                     if ziptype == '64':
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
@@ -280,14 +282,14 @@ class Data( object ):
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -553,7 +555,7 @@ class Data( object ):
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.
         """
-        datatype_classes = tuple( [ datatype.__class__ for datatype in target_datatypes ] )
+        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
         return isinstance( self, datatype_classes )
     def merge( split_files, output_file):
         """

@@ -9,7 +9,12 @@
         grep -v '^#' $input | sort -k1,1 | 
 
         ## Generate coverage bedgraph.
-        bedtools genomecov -bg -split -i stdin -g $chromInfo 
+        bedtools genomecov -bg -i stdin -g $chromInfo
+
+        ## Only use split option for bed and gff/gff3/gtf.
+        #if $input.ext in [ 'bed', 'gff', 'gff3', 'gtf' ]:
+            -split
+        #end if
 
         ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
         ## should only be used on systems with large RAM.

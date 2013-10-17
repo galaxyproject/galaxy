@@ -7,11 +7,11 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <h3 align="center">Jobs Per User</h3>
-        <h4 align="center">Click User to view jobs per month for that user</h4>
+        <h4 align="center">Jobs Per User</h4>
+        <h5 align="center">Click User to view details.</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
-                <tr><td colspan="2">There are no jobs</td></tr>
+                <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
                     <td>User</td>

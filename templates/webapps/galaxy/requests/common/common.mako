@@ -634,7 +634,7 @@
                     <th>Name</th>
                     %for index, field in fields_dict.items():
                         <th>
-                            <a class="display tooltip" title="${field['helptext']}" >${field['label']}</a>
+                            <a class="display" title="${field['helptext']}" >${field['label']}</a>
                         </th>
                     %endfor
                     <th></th>

@@ -7,16 +7,18 @@ Unit tests for base DataProviders.
 
 #TODO: fix off by ones in FilteredDataProvider counters
 
+import imp
 import unittest
 import StringIO
 
 import tempfilecache
-import utility
 
+utility = imp.load_source( 'utility', '../../util/utility.py' )
 log = utility.set_up_filelogger( __name__ + '.log' )
+utility.add_galaxy_lib_to_path( 'test/unit/datatypes/dataproviders' )
 
-utility.add_galaxy_lib_to_path( '/test/unit/datatypes/dataproviders' )
-from galaxy.datatypes import dataproviders
+from galaxy.datatypes.dataproviders import base, exceptions
+from galaxy import eggs
 
 
 class BaseTestCase( unittest.TestCase ):
@@ -53,9 +55,12 @@ class BaseTestCase( unittest.TestCase ):
         log.debug( 'file contents:\n%s', contents )
         return contents
 
+    def parses_default_content_as( self ):
+        return [ 'One\n', 'Two\n', 'Three\n' ]
+
 
 class Test_BaseDataProvider( BaseTestCase ):
-    provider_class = dataproviders.base.DataProvider
+    provider_class = base.DataProvider
 
     def contents_provider_and_data( self,
             filename=None, contents=None, source=None, *provider_args, **provider_kwargs ):
@@ -74,38 +79,38 @@ class Test_BaseDataProvider( BaseTestCase ):
         return ( contents, provider, data )
 
     def test_iterators( self ):
-        source = ( x for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ x for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
 
-        source = [ x for x in xrange( 1, 10 ) ]
+        source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ x for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
 
-        source = ( x for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ x for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
 
     def test_validate_source( self ):
         """validate_source should throw an error if the source doesn't have attr '__iter__'
         """
         def non_iterator_dprov( source ):
             return self.provider_class( source )
-        self.assertRaises( dataproviders.exceptions.InvalidDataProviderSource,
+        self.assertRaises( exceptions.InvalidDataProviderSource,
             non_iterator_dprov, 'one two three' )
-        self.assertRaises( dataproviders.exceptions.InvalidDataProviderSource,
+        self.assertRaises( exceptions.InvalidDataProviderSource,
             non_iterator_dprov, 40 )
 
     def test_writemethods( self ):
         """should throw an error if any write methods are called
         """
-        source = ( x for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
         # should throw error
         def call_method( provider, method_name, *args ):
@@ -118,11 +123,11 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_readlines( self ):
         """readlines should return all the data in list form
         """
-        source = ( x for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
         data = provider.readlines()
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ x for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
 
     def test_stringio( self ):
         """should work with StringIO
@@ -137,21 +142,21 @@ class Test_BaseDataProvider( BaseTestCase ):
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
         # provider should call close on file
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         self.assertTrue( source.closed )
 
     def test_file( self ):
         """should work with files
         """
         ( contents, provider, data ) = self.contents_provider_and_data()
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         # provider should call close on file
         self.assertTrue( isinstance( provider.source, file ) )
         self.assertTrue( provider.source.closed )
 
 
 class Test_FilteredDataProvider( Test_BaseDataProvider ):
-    provider_class = dataproviders.base.FilteredDataProvider
+    provider_class = base.FilteredDataProvider
 
     def assertCounters( self, provider, read, valid, returned ):
         self.assertEqual( provider.num_data_read, read )
@@ -177,13 +182,13 @@ class Test_FilteredDataProvider( Test_BaseDataProvider ):
 
 
 class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
-    provider_class = dataproviders.base.LimitedOffsetDataProvider
+    provider_class = base.LimitedOffsetDataProvider
 
     def test_offset_1( self ):
         """when offset is 1, should skip first
         """
         ( contents, provider, data ) = self.contents_provider_and_data( offset=1 )
-        self.assertEqual( data, [ 'Two\n', 'Three\n' ] )
+        self.assertEqual( data, self.parses_default_content_as()[1:] )
         self.assertCounters( provider, 3, 3, 2 )
 
     def test_offset_all( self ):
@@ -197,29 +202,28 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
         """when offset is 0, should return all
         """
         ( contents, provider, data ) = self.contents_provider_and_data( offset=0 )
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         self.assertCounters( provider, 3, 3, 3 )
 
     def test_offset_negative( self ):
         """when offset is negative, should return all
         """
         ( contents, provider, data ) = self.contents_provider_and_data( offset=-1 )
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         self.assertCounters( provider, 3, 3, 3 )
 
     def test_limit_1( self ):
         """when limit is one, should return first
         """
         ( contents, provider, data ) = self.contents_provider_and_data( limit=1 )
-        self.assertEqual( data, [ 'One\n' ] )
-        #TODO: currently reads 2 in all counters before ending
-        #self.assertCounters( provider, 1, 1, 1 )
+        self.assertEqual( data, self.parses_default_content_as()[:1] )
+        self.assertCounters( provider, 1, 1, 1 )
 
     def test_limit_all( self ):
         """when limit >= num lines, should return all
         """
         ( contents, provider, data ) = self.contents_provider_and_data( limit=4 )
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         self.assertCounters( provider, 3, 3, 3 )
 
     def test_limit_zero( self ):
@@ -227,14 +231,13 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
         """
         ( contents, provider, data ) = self.contents_provider_and_data( limit=0 )
         self.assertEqual( data, [] )
-        #TODO: currently reads 1 before ending
-        self.assertCounters( provider, 3, 0, 0 )
+        self.assertCounters( provider, 0, 0, 0 )
 
     def test_limit_zero( self ):
         """when limit is None, should return all
         """
         ( contents, provider, data ) = self.contents_provider_and_data( limit=None )
-        self.assertEqual( ''.join( data ), contents )
+        self.assertEqual( data, self.parses_default_content_as() )
         self.assertCounters( provider, 3, 3, 3 )
 
     #TODO: somehow re-use tmpfile here
@@ -243,17 +246,18 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
             ( contents, provider, data ) = self.contents_provider_and_data( limit=limit, offset=offset )
             self.assertEqual( data, data_should_be )
             #self.assertCounters( provider, read, valid, returned )
+        result_data = self.parses_default_content_as()
         test_data = [
             ( 0, 0, [], 0, 0, 0 ),
-            ( 1, 0, [ 'One\n' ], 1, 1, 1 ),
-            ( 2, 0, [ 'One\n', 'Two\n' ], 2, 2, 2 ),
-            ( 3, 0, [ 'One\n', 'Two\n', 'Three\n' ], 3, 3, 3 ),
-            ( 1, 1, [ 'Two\n' ], 1, 1, 1 ),
-            ( 2, 1, [ 'Two\n', 'Three\n' ], 2, 2, 2 ),
-            ( 3, 1, [ 'Two\n', 'Three\n' ], 2, 2, 2 ),
-            ( 1, 2, [ 'Three\n' ], 1, 1, 1 ),
-            ( 2, 2, [ 'Three\n' ], 1, 1, 1 ),
-            ( 3, 2, [ 'Three\n' ], 1, 1, 1 ),
+            ( 1, 0, self.parses_default_content_as()[:1], 1, 1, 1 ),
+            ( 2, 0, self.parses_default_content_as()[:2], 2, 2, 2 ),
+            ( 3, 0, self.parses_default_content_as()[:3], 3, 3, 3 ),
+            ( 1, 1, self.parses_default_content_as()[1:2], 1, 1, 1 ),
+            ( 2, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
+            ( 3, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
+            ( 1, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
+            ( 2, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
+            ( 3, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
         ]
         for test in test_data:
             log.debug( 'limit_offset_combo: %s', ', '.join([ str( e ) for e in test ]) )
@@ -269,14 +273,15 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
                 limit=limit, offset=offset, filter_fn=only_ts )
             self.assertEqual( data, data_should_be )
             #self.assertCounters( provider, read, valid, returned )
+        result_data = [ c for c in self.parses_default_content_as() if c.lower().startswith( 't' ) ]
         test_data = [
             ( 0, 0, [], 0, 0, 0 ),
-            ( 1, 0, [ 'Two\n' ], 1, 1, 1 ),
-            ( 2, 0, [ 'Two\n', 'Three\n' ], 2, 2, 2 ),
-            ( 3, 0, [ 'Two\n', 'Three\n' ], 2, 2, 2 ),
-            ( 1, 1, [ 'Three\n' ], 1, 1, 1 ),
-            ( 2, 1, [ 'Three\n' ], 1, 1, 1 ),
-            ( 1, 2, [], 0, 0, 0 ),
+            ( 1, 0, result_data[:1], 1, 1, 1 ),
+            ( 2, 0, result_data[:2], 2, 2, 2 ),
+            ( 3, 0, result_data[:3], 2, 2, 2 ),
+            ( 1, 1, result_data[1:2], 1, 1, 1 ),
+            ( 2, 1, result_data[1:3], 1, 1, 1 ),
+            ( 1, 2, result_data[2:3], 0, 0, 0 ),
         ]
         for test in test_data:
             log.debug( 'limit_offset_combo: %s', ', '.join([ str( e ) for e in test ]) )
@@ -284,7 +289,7 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
 
 
 class Test_MultiSourceDataProvider( BaseTestCase ):
-    provider_class = dataproviders.base.MultiSourceDataProvider
+    provider_class = base.MultiSourceDataProvider
 
     def contents_and_tmpfile( self, contents=None ):
         #TODO: hmmmm...
@@ -355,9 +360,9 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
         def no_youtube( string ):
             return None if ( 'youtu.be' in string ) else string
         source_list = [
-            dataproviders.base.LimitedOffsetDataProvider( source_list[0], filter_fn=no_Fs, limit=2, offset=1 ),
-            dataproviders.base.LimitedOffsetDataProvider( source_list[1], limit=1, offset=3 ),
-            dataproviders.base.FilteredDataProvider( source_list[2], filter_fn=no_youtube ),
+            base.LimitedOffsetDataProvider( source_list[0], filter_fn=no_Fs, limit=2, offset=1 ),
+            base.LimitedOffsetDataProvider( source_list[1], limit=1, offset=3 ),
+            base.FilteredDataProvider( source_list[2], filter_fn=no_youtube ),
         ]
         provider = self.provider_class( source_list )
         log.debug( 'provider: %s', provider )

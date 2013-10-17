@@ -42,7 +42,7 @@ class Hg( object ):
         cmd = self.__get_hg_command( **environ )
         if cmd == 'changegroup':
             # This is an hg clone from the command line.  When doing this, the following 5 commands, in order,
-            # will be retrieved from environ: 
+            # will be retrieved from environ:
             # between -> heads -> changegroup -> capabilities -> listkeys
             #
             # Increment the value of the times_downloaded column in the repository table for the cloned repository.
@@ -69,22 +69,22 @@ class Hg( object ):
             # The mercurial API unbundle() ( i.e., hg push ) and pushkey() methods ultimately require authorization.
             # We'll force password entry every time a change set is pushed.
             #
-            # When a user executes hg commit, it is not guaranteed to succeed.  Mercurial records your name 
-            # and address with each change that you commit, so that you and others will later be able to 
-            # tell who made each change. Mercurial tries to automatically figure out a sensible username 
+            # When a user executes hg commit, it is not guaranteed to succeed.  Mercurial records your name
+            # and address with each change that you commit, so that you and others will later be able to
+            # tell who made each change. Mercurial tries to automatically figure out a sensible username
             # to commit the change with. It will attempt each of the following methods, in order:
             #
-            # 1) If you specify a -u option to the hg commit command on the command line, followed by a username, 
+            # 1) If you specify a -u option to the hg commit command on the command line, followed by a username,
             # this is always given the highest precedence.
             # 2) If you have set the HGUSER environment variable, this is checked next.
-            # 3) If you create a file in your home directory called .hgrc with a username entry, that 
+            # 3) If you create a file in your home directory called .hgrc with a username entry, that
             # will be used next.
             # 4) If you have set the EMAIL environment variable, this will be used next.
-            # 5) Mercurial will query your system to find out your local user name and host name, and construct 
-            # a username from these components. Since this often results in a username that is not very useful, 
+            # 5) Mercurial will query your system to find out your local user name and host name, and construct
+            # a username from these components. Since this often results in a username that is not very useful,
             # it will print a warning if it has to do this.
             #
-            # If all of these mechanisms fail, Mercurial will fail, printing an error message. In this case, it 
+            # If all of these mechanisms fail, Mercurial will fail, printing an error message. In this case, it
             # will not let you commit until you set up a username.
             result = self.authentication( environ )
             if not isinstance( result, str ) and cmd == 'unbundle' and 'wsgi.input' in environ:

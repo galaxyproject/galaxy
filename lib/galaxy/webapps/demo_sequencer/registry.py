@@ -72,7 +72,7 @@ class Registry( object ):
                 for redirect_elem in root.findall( 'redirect' ):
                     requests = []
                     action_dict = {}
-                    action_dict[ 'title' ] = redirect_elem.get( 'title', None ) 
+                    action_dict[ 'title' ] = redirect_elem.get( 'title', None )
                     action = redirect_elem.get( 'action', None )
                     # Load the external webapp requests, if any exist for this redirect action
                     for request_elem in redirect_elem.findall( 'external_webapp' ):

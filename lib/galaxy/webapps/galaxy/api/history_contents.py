@@ -6,7 +6,9 @@ from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.datatypes import sniff
 
+import os
 import logging
 log = logging.getLogger( __name__ )
 
@@ -18,28 +20,24 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         index( self, trans, history_id, ids=None, **kwd )
         * GET /api/histories/{history_id}/contents
             return a list of HDA data for the history with the given ``id``
+        .. note:: Anonymous users are allowed to get their current history contents
+
+        If Ids is not given, index returns a list of *summary* objects for
+        every HDA associated with the given `history_id`.
+
+        If ids is given, index returns a *more complete* json object for each
+        HDA in the ids list.
 
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
         :type   ids:        str
         :param  ids:        (optional) a comma separated list of encoded `HDA` ids
 
-        If Ids is not given, index returns a list of *summary* objects for
-        every HDA associated with the given `history_id`.
-
-        .. seealso::
-            :func:`_summary_hda_dict`
-
-        If ids is given, index returns a *more complete* json object for each
-        HDA in the ids list.
-
-        .. seealso::
-            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
-
-        .. note:: Anonymous users are allowed to get their current history contents
-
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
+        .. seealso::
+            :func:`_summary_hda_dict` and
+            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
         rval = []
         try:
@@ -111,18 +109,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         show( self, trans, id, history_id, **kwd )
         * GET /api/histories/{history_id}/contents/{id}
             return detailed information about an HDA within a history
+        .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
         :param  ids:        the encoded id of the HDA to return
         :type   history_id: str
         :param  history_id: encoded id string of the HDA's History
 
-        .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
-
-        .. note:: Anonymous users are allowed to get their current history contents
-
         :rtype:     dict
         :returns:   dictionary containing detailed HDA information
+        .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
         hda_dict = {}
         try:
@@ -166,41 +162,60 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :param  history_id: encoded id string of the new HDA's History
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
-            'from_ld_id':   the encoded id of the LibraryDataset to copy
-
+            copy from library:
+            'source'    = 'library'
+            'content'   = [the encoded id from the library dataset]
+            
+            copy from url:
+            'source'    = 'url'
+            'content'   = [the url of the dataset]
+            
+            copy from file:
+            'source'    = 'upload'
+            'content'   = [the uploaded file content]
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
+        
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
-        from_ld_id = payload.get( 'from_ld_id', None )
-        from_hda_id= payload.get( 'from_hda_id', None )
+        
+        # check parameters
+        source  = payload.get('source', None)
+        content = payload.get('content', None)
+        if source not in ['library', 'url', 'upload', 'history']:
+            trans.response.status = 400
+            return "history_contents:create() : Please define the source ['library', 'url' or 'upload'] and the content."
+        
+        # retrieve history
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
-            #TODO: no way to tell if it failed bc of perms or other (all MessageExceptions)
+            # no way to tell if it failed bc of perms or other (all MessageExceptions)
             trans.response.status = 500
             return str( e )
 
-        if from_ld_id:
+        # copy from library dataset
+        if source == 'library':
+        
+            # get library data set
             try:
-                ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
+                ld = self.get_library_dataset( trans, content, check_ownership=False, check_accessible=False )
                 assert type( ld ) is trans.app.model.LibraryDataset, (
-                    "Library content id ( %s ) is not a dataset" % from_ld_id )
-
+                    "Library content id ( %s ) is not a dataset" % content )
             except AssertionError, e:
                 trans.response.status = 400
                 return str( e )
-
             except Exception, e:
                 return str( e )
 
+            # insert into history
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
-            return hda.get_api_value()
-        elif from_hda_id:
+            return hda.to_dict()
+        elif source == 'history':
             try:
-                hda = self.get_dataset(trans, from_hda_id)
+                hda = self.get_dataset(trans, content)
                 assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
             except AssertionError, e:
                 trans.response.status=400
@@ -210,11 +225,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             data_copy=hda.copy(copy_children = True)
             result=history.add_dataset(data_copy)
             trans.sa_session.flush()
-            return result.get_api_value()
+            return result.to_dict()
         else:
-            # TODO: implement other "upload" methods here.
+            # other options
             trans.response.status = 501
-            return "Not implemented."
+            return
 
     @web.expose_api
     def update( self, trans, history_id, id, payload, **kwd ):
@@ -229,10 +244,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :param  id:         the encoded id of the history to undelete
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
-            fields in :func:`galaxy.model.HistoryDatasetAssociation.get_api_value`
-            and/or the following::
+            fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`
+            and/or the following:
 
-            'annotation': an annotation for the history
+            * annotation: an annotation for the HDA
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
@@ -261,6 +276,75 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( exception ) }
 
         return changed
+
+    @web.expose_api
+    def delete( self, trans, history_id, id, **kwd ):
+        """
+        delete( self, trans, history_id, id, **kwd )
+        * DELETE /api/histories/{history_id}/contents/{id}
+            delete the HDA with the given ``id``
+        .. note:: Currently does not stop any active jobs for which this dataset is an output.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to delete
+        :type   kwd:    dict
+        :param  kwd:    (optional) dictionary structure containing:
+
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the HDA
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history was marked as deleted,
+            * purged:     if the history was purged
+        """
+        # a request body is optional here
+        purge = False
+        if kwd.get( 'payload', None ):
+            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
+
+        rval = { 'id' : id }
+        try:
+            hda = self.get_dataset( trans, id,
+                check_ownership=True, check_accessible=True, check_state=True )
+            hda.deleted = True
+
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.sa_session.flush()
+
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        pass
+                    # flush now to preserve deleted state in case of later interruption
+                    trans.sa_session.flush()
+
+                rval[ 'purged' ] = True
+
+            trans.sa_session.flush()
+            rval[ 'deleted' ] = True
+
+        except HTTPInternalServerError, http_server_err:
+            log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           id, str( kwd ), str( http_server_err ) )
+            raise
+        except HTTPException, http_exc:
+            raise
+        except Exception, exc:
+            log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
+                           id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
+
+        return rval
 
     def _validate_and_parse_update_payload( self, payload ):
         """

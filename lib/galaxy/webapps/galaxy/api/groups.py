@@ -21,7 +21,7 @@ class GroupAPIController( BaseAPIController ):
         rval = []
         for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ):
             if trans.user_is_admin():
-                item = group.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+                item = group.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( group.id )
                 item['url'] = url_for( 'group', id=encoded_id )
                 rval.append( item )
@@ -33,7 +33,7 @@ class GroupAPIController( BaseAPIController ):
         POST /api/groups
         Creates a new group.
         """
-        log.info("groups payload%s\n" % (payload)) 
+        log.info("groups payload%s\n" % (payload))
         if not trans.user_is_admin():
             trans.response.status = 403
             return "You are not authorized to create a new group."
@@ -49,8 +49,8 @@ class GroupAPIController( BaseAPIController ):
         trans.sa_session.add( group )
         user_ids = payload.get( 'user_ids', [] )
         for i in user_ids:
-          log.info("user_id: %s\n" % (i )) 
-          log.info("%s %s\n" % (i, trans.security.decode_id( i ) )) 
+          log.info("user_id: %s\n" % (i ))
+          log.info("%s %s\n" % (i, trans.security.decode_id( i ) ))
         users = [ trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( i ) ) for i in user_ids ]
         role_ids = payload.get( 'role_ids', [] )
         roles = [ trans.sa_session.query( trans.model.Role ).get( trans.security.decode_id( i ) ) for i in role_ids ]
@@ -65,7 +65,7 @@ class GroupAPIController( BaseAPIController ):
         """
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( group.id )
-        item = group.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = group.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'group', id=encoded_id )
         return [ item ]
 
@@ -89,7 +89,7 @@ class GroupAPIController( BaseAPIController ):
         if not group:
             trans.response.status = 400
             return "Invalid group id ( %s ) specified." % str( group_id )
-        item = group.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        item = group.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'group', id=group_id )
         item['users_url'] = url_for( 'group_users', group_id=group_id )
         item['roles_url'] = url_for( 'group_roles', group_id=group_id )

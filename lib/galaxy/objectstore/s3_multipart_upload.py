@@ -76,7 +76,7 @@ def multipart_upload(bucket, s3_key_name, tarball, mb_size, use_rr=True):
 @contextlib.contextmanager
 def multimap(cores=None):
     """Provide multiprocessing imap like function.
-    
+
     The context manager handles setting up the pool, worked around interrupt issues
     and terminating the pool on completion.
     """

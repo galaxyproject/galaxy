@@ -4,6 +4,9 @@
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible = app.config.message_box_visible
+    self.show_inactivity_warning = False
+    if trans.webapp.name == 'galaxy' and trans.user:
+        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) )
     self.overlay_visible=False
     self.active_view=None
     self.body_class=""
@@ -26,12 +29,6 @@
             right: 0 !important;
         %endif
     }
-    %if self.message_box_visible:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
     </style>
 </%def>
 
@@ -52,7 +49,6 @@
     ${h.js(
         'libs/jquery/jquery',
         'libs/jquery/jquery.migrate',
-        'libs/json2',
         'libs/jquery/select2',
         'libs/bootstrap',
         'libs/underscore',
@@ -72,35 +68,19 @@
     )}
 
     <script type="text/javascript">
-        ## path to style sheets
-        var galaxy_config = {
-            url: {
-                styles : "${h.url_for('/static/style')}"
-            }
-        };
-
-        ## check if its in a galaxy iframe
-        function is_in_galaxy_frame()
+        ## global configuration object
+        var galaxy_config =
         {
-            var iframes = parent.document.getElementsByTagName("iframe");
-            for (var i=0, len=iframes.length; i < len; ++i)
-                if (document == iframes[i].contentDocument || self == iframes[i].contentWindow)
-                    return $(iframes[i]).hasClass('f-iframe');
-            return false;
-        };
-
-        ## load css
-        function load_css (url)
-        {
-            ## check if css is already available
-            if (!$('link[href="' + url + '"]').length)
-                $('<link href="' + url + '" rel="stylesheet">').appendTo('head');
+            root: '${h.url_for( "/" )}'
         };
 
         ## load additional style sheet
-        if (is_in_galaxy_frame())
-            load_css(galaxy_config.url.styles + '/galaxy.frame.masthead.css');
-        
+        if (window != window.top)
+            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+
+        // start a Galaxy namespace for objects created
+        window.Galaxy = window.Galaxy || {};
+
         // console protection
         window.console = window.console || {
             log     : function(){},
@@ -110,19 +90,6 @@
             error   : function(){},
             assert  : function(){}
         };
-
-        // Set up needed paths.
-        var galaxy_paths = new GalaxyPaths({
-            root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}',
-            
-            tool_url: '${h.url_for( controller="/api/tools" )}',
-            history_url: '${h.url_for( controller="/api/histories" )}',
-            
-            datasets_url: '${h.url_for( controller="/api/datasets" )}',
-            sweepster_url: '${h.url_for( controller="/visualization", action="sweepster" )}',
-            visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
-        });
 
         ## configure require
         require.config({
@@ -134,9 +101,14 @@
             }
         });
         
-        ## frame manager
-        var frame_manager = null;
-        require(['galaxy.frame'], function(frame) { this.frame_manager = new frame.GalaxyFrameManager(galaxy_config); });
+        ## load galaxy js-modules
+        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload'], function(master, frame, modal, upload)
+        {
+            Galaxy.master = new master.GalaxyMaster();
+            Galaxy.frame_manager = new frame.GalaxyFrameManager();
+            Galaxy.modal = new modal.GalaxyModal();
+            ##Galaxy.upload = new upload.GalaxyUpload();
+        });
     </script>
 </%def>
 
@@ -271,13 +243,13 @@
         overlay_class = ""
     %>
 
-    <div id="overlay" ${display}>
-
-        <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
-
-        <div id="dialog-box" class="modal dialog-box" border="0" ${display}>
+    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
+        <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
+        <div id="top-modal-dialog" class="modal-dialog">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <span><h3 class='title'>${title}</h3></span>
+                    <button type='button' class='close' style="display: none;">&times;</button>
+                    <h4 class='title'>${title}</h4>
                 </div>
                 <div class="modal-body">${content}</div>
                 <div class="modal-footer">
@@ -285,8 +257,8 @@
                     <div class="extra_buttons" style=""></div>
                     <div style="clear: both;"></div>
                 </div>
+            </div>
         </div>
-    
     </div>
 </%def>
 
@@ -309,7 +281,15 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="full-content ${self.body_class}">
+    <%
+    body_class = self.body_class
+    if self.message_box_visible:
+        body_class += " has-message-box"
+    if self.show_inactivity_warning:
+        body_class += " has-inactivity-box"
+    %>
+
+    <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">
@@ -324,16 +304,17 @@
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top">
-                <div class="masthead-inner navbar-inner">
-                    ${self.masthead()}
-                </div>
+            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
+                ${self.masthead()}
             </div>
             <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                %if self.message_box_visible and app.config.message_box_content:
-                        ${app.config.message_box_content}
-                %endif
+                ${app.config.message_box_content}
             </div>
+            %if self.show_inactivity_warning:
+                <div id="inactivebox" class="panel-warning-message">
+                    ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
+                </div>
+            %endif
             ${self.overlay(visible=self.overlay_visible)}
             %if self.has_left_panel:
                 <div id="left">

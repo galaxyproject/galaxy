@@ -191,20 +191,20 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
         try: 
             self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
-            tc.fv("1","dbkey", dbkey)
+            tc.fv( "tool_form", "dbkey", dbkey )
             if metadata:
                 for elem in metadata:
-                    tc.fv( "1", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
+                    tc.fv( "tool_form", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
             if composite_data:
                 for i, composite_file in enumerate( composite_data ):
                     filename = self.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
-                    tc.formfile( "1", "files_%i|file_data" % i, filename )
-                    tc.fv( "1", "files_%i|space_to_tab" % i, composite_file.get( 'space_to_tab', False ) )
+                    tc.formfile( "tool_form", "files_%i|file_data" % i, filename )
+                    tc.fv( "tool_form", "files_%i|space_to_tab" % i, composite_file.get( 'space_to_tab', False ) )
             else:
                 filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
-                tc.formfile( "1", "file_data", filename )
-                tc.fv( "1", "space_to_tab", space_to_tab )
-            tc.submit("runtool_btn")
+                tc.formfile( "tool_form", "file_data", filename )
+                tc.fv( "tool_form", "space_to_tab", space_to_tab )
+            tc.submit( "runtool_btn" )
             self.home()
         except AssertionError, err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
@@ -952,11 +952,11 @@ class TwillTestCase( unittest.TestCase ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
+        tc.fv( 'registration', 'email', email )
+        tc.fv( 'registration', 'redirect', redirect )
+        tc.fv( 'registration', 'password', password )
+        tc.fv( 'registration', 'confirm', password )
+        tc.fv( 'registration', 'username', username )
         tc.submit( 'create_user_button' )
         previously_created = False
         username_taken = False

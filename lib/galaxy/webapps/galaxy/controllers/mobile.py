@@ -4,11 +4,11 @@ class Mobile( BaseUIController ):
     @web.expose
     def index( self, trans, **kwargs ):
         return trans.fill_template( "mobile/index.mako" )
-        
+
     @web.expose
     def history_list( self, trans ):
         return trans.fill_template( "mobile/history/list.mako" )
-        
+
     @web.expose
     def history_detail( self, trans, id ):
         history = trans.sa_session.query( trans.app.model.History ).get( id )
@@ -26,7 +26,7 @@ class Mobile( BaseUIController ):
         dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
         assert dataset.history.user == trans.user
         return trans.fill_template( "mobile/dataset/peek.mako", dataset=dataset )
-        
+
     @web.expose
     def settings( self, trans, email=None, password=None ):
         message = None
@@ -38,7 +38,7 @@ class Mobile( BaseUIController ):
                 error = self.__login( trans, email, password )
                 message = error or "Login changed"
         return trans.fill_template( "mobile/settings.mako", message=message )
-        
+
     def __logout( self, trans ):
         trans.log_event( "User logged out" )
         trans.handle_user_logout()

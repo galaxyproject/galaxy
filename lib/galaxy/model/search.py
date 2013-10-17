@@ -31,10 +31,10 @@ from galaxy import eggs
 eggs.require("Parsley")
 import parsley
 
-from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, 
-History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation, 
+from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
+History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation,
 StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
-ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter, 
+ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
 JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion)
 
 from galaxy.util.json import to_json_string
@@ -560,7 +560,7 @@ class SearchQuery:
         return self.view.get_results(True)
 
     def item_to_api_value(self, item):
-        r = item.get_api_value( view='element' )
+        r = item.to_dict( view='element' )
         if self.query.field_list.count("*"):
             return r
         o = {}

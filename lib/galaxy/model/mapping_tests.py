@@ -29,7 +29,7 @@ class MappingTests( unittest.TestCase ):
         assert users[0].email == "james@foo.bar.baz"
         assert users[0].password == "password"
         assert len( users[0].histories ) == 1
-        assert users[0].histories[0].name == "History 1"    
+        assert users[0].histories[0].name == "History 1"
         hists = model.session.query( model.History ).all()
         assert hists[0].name == "History 1"
         assert hists[1].name == ( "H" * 255 )
@@ -47,7 +47,7 @@ class MappingTests( unittest.TestCase ):
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
-        
+
 def get_suite():
     suite = unittest.TestSuite()
     suite.addTest( MappingTests( "test_basic" ) )

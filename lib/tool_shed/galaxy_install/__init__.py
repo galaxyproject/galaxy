@@ -52,4 +52,3 @@ class InstalledRepositoryManager( object ):
                 tool_shed.util.datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
                 tool_shed.util.datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
-           

@@ -136,7 +136,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
         ajs.job_id = external_job_id
         ajs.old_state = 'new'
         ajs.job_destination = job_destination
-        
+
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put( ajs )
 

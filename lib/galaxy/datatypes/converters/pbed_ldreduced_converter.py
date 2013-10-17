@@ -13,7 +13,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Galaxy %s tool output - see http://g2.trac.bx.psu.edu/" />
+<meta name="generator" content="Galaxy %s tool output - see http://getgalaxy.org" />
 <title></title>
 <link rel="stylesheet" href="/static/style/base.css" type="text/css" />
 </head>
@@ -21,7 +21,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <div class="document">
 """
 
-plinke = 'plink' 
+plinke = 'plink'
 
 
 def timenow():
@@ -51,7 +51,7 @@ def pruneLD(plinktasks=[],cd='./',vclbase = []):
         except:
             alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(),' '.join(vcl)))
     return alog
- 
+
 
 def makeLDreduced(basename,infpath=None,outfpath=None,plinke='plink',forcerebuild=False,returnFname=False,
         winsize="60", winmove="40", r2thresh="0.1" ):
@@ -79,11 +79,11 @@ def main():
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
 
-    .. raw:: xml 
+    .. raw:: xml
 
         <command interpreter="python">
-            pbed_ldreduced_converter.py '$input1.extra_files_path/$input1.metadata.base_name' '$winsize' '$winmove' '$r2thresh' 
-            '$output1' '$output1.files_path' 'plink'    
+            pbed_ldreduced_converter.py '$input1.extra_files_path/$input1.metadata.base_name' '$winsize' '$winmove' '$r2thresh'
+            '$output1' '$output1.files_path' 'plink'
         </command>
 
     """
@@ -116,7 +116,7 @@ def main():
         f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1],os.path.split(data)[-1]))
     f.write("</div></body></html>")
     f.close()
-  
+
 
 if __name__ == "__main__":
    main()

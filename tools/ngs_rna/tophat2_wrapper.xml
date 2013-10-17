@@ -1,5 +1,5 @@
-<tool id="tophat2" name="Tophat2" version="0.5">
-    <!-- Wrapper compatible with Tophat version 2.0.0 -->
+<tool id="tophat2" name="Tophat2" version="0.6">
+    <!-- Wrapper compatible with Tophat version 2.0.0+ -->
     <description>Gapped-read mapper for RNA-seq data</description>
     <version_command>tophat2 --version</version_command>
     <requirements>
@@ -268,11 +268,12 @@
     </inputs>
 
     <stdio>
-        <regex match="Exception" source="both" level="fatal" description="Tool exception"/>
+        <regex match="Exception|Error" source="both" level="fatal" description="Tool execution failed"/>
         <regex match=".*" source="both" level="log" description="tool progress"/>
     </stdio>
 
     <outputs>
+        <data format="txt" name="align_summary" label="${tool.name} on ${on_string}: align_summary" from_work_dir="tophat_out/align_summary.txt"/>
         <data format="tabular" name="fusions" label="${tool.name} on ${on_string}: fusions" from_work_dir="tophat_out/fusions.out">
             <filter>(params['settingsType'] == 'full' and params['fusion_search']['do_search'] == 'Yes')</filter>
         </data>
@@ -312,6 +313,7 @@
         </actions>
       </macro>
     </macros>
+
     <tests>
         <!-- Test base-space single-end reads with pre-built index and preset parameters -->
         <test>
@@ -450,7 +452,8 @@
     <help>
 **Tophat Overview**
 
-TopHat_ is a fast splice junction mapper for RNA-Seq reads. It aligns RNA-Seq reads to mammalian-sized genomes using the ultra high-throughput short read aligner Bowtie, and then analyzes the mapping results to identify splice junctions between exons. Please cite: Trapnell, C., Pachter, L. and Salzberg, S.L. TopHat: discovering splice junctions with RNA-Seq. Bioinformatics 25, 1105-1111 (2009).        
+TopHat_ is a fast splice junction mapper for RNA-Seq reads. It aligns RNA-Seq reads to mammalian-sized genomes using the ultra high-throughput short read aligner Bowtie(2), and then analyzes the mapping results to identify splice junctions between exons. Please cite: Kim D, Pertea G, Trapnell C, Pimentel H, Kelley R, and Salzberg SL. TopHat2: accurate alignment
+of transcriptomes in the presence of insertions, deletions and gene fusions. Genome Biol 14:R36, 2013.
 
 .. _Tophat: http://tophat.cbcb.umd.edu/
         

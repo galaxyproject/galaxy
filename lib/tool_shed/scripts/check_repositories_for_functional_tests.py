@@ -11,7 +11,7 @@ log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 from galaxy import eggs
-import pkg_resources  
+import pkg_resources
 eggs.require( "SQLAlchemy >= 0.4" )
 eggs.require( 'mercurial' )
 from mercurial import hg, ui, commands, __version__
@@ -38,10 +38,10 @@ def main():
     '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
     parser = OptionParser()
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
-    parser.add_option( "-s", 
-                       "--section", 
-                       action="store", 
-                       dest="section", 
+    parser.add_option( "-s",
+                       "--section",
+                       action="store",
+                       dest="section",
                        default='server:main',
                        help="which .ini file section to extract the host and port from" )
     parser.add_option(
@@ -66,24 +66,24 @@ def main():
     for key, value in config_parser.items( "app:main" ):
         config_dict[key] = value
     config = tool_shed_config.Configuration( **config_dict )
-    
+
     config_section = options.section
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
     print "# %s - Checking repositories for tools with functional tests." % now
     print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
     app = FlagRepositoriesApplication( config )
-    
+
     if options.info_only:
         print "# Displaying info only ( --info_only )"
     if options.verbosity:
         print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
-    
+
     check_and_flag_repositories( app, info_only=options.info_only, verbosity=options.verbosity )
 
 def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     '''
-    This method will iterate through all records in the repository_metadata table, checking each one for tool metadata, 
+    This method will iterate through all records in the repository_metadata table, checking each one for tool metadata,
     then checking the tool metadata for tests.
     Each tool's metadata should look something like:
     {
@@ -111,14 +111,14 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
       "version": "1.2.3",
       "version_string_cmd": null
     }
-    
+
     If the "tests" attribute is missing or empty, this script will mark the metadata record (which is specific to a changeset revision of a repository)
     not to be tested. If each "tools" attribute has at least one valid "tests" entry, this script will do nothing, and leave it available for the install
     and test repositories script to process. If the tested changeset revision does not have a test-data directory, this script will also mark the revision
     not to be tested.
-    
+
     TODO: Update this dict structure with the recently added components.
-    
+
     If any error is encountered, the script will update the repository_metadata.tool_test_results attribute following this structure:
     {
         "test_environment":
@@ -155,8 +155,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                  'tool_dependencies':
                      [
                          {
-                            'type': 'Type of tool dependency, e.g. package, set_environment, etc.', 
-                            'name': 'Name of the tool dependency.', 
+                            'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
+                            'name': 'Name of the tool dependency.',
                             'version': 'Version if this is a package, otherwise blank.',
                             'error_message': 'The error message returned when installation was attempted.',
                          },
@@ -164,8 +164,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                  'repository_dependencies':
                      [
                          {
-                            'tool_shed': 'The tool shed that this repository was installed from.', 
-                            'name': 'The name of the repository that failed to install.', 
+                            'tool_shed': 'The tool shed that this repository was installed from.',
+                            'name': 'The name of the repository that failed to install.',
                             'owner': 'Owner of the failed repository.',
                             'changeset_revision': 'Changeset revision of the failed repository.',
                             'error_message': 'The error message that was returned when the repository failed to install.',
@@ -174,8 +174,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                  'current_repository':
                      [
                          {
-                            'tool_shed': 'The tool shed that this repository was installed from.', 
-                            'name': 'The name of the repository that failed to install.', 
+                            'tool_shed': 'The tool shed that this repository was installed from.',
+                            'name': 'The name of the repository that failed to install.',
                             'owner': 'Owner of the failed repository.',
                             'changeset_revision': 'Changeset revision of the failed repository.',
                             'error_message': 'The error message that was returned when the repository failed to install.',
@@ -220,7 +220,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                                                         app.model.RepositoryMetadata.table.c.do_not_test == False,
                                                         not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
-        # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
+        # Initialize the repository_status dict with the test environment, but leave the test_errors empty.
         repository_status = {}
         if metadata_record.tool_test_results:
             repository_status = metadata_record.tool_test_results
@@ -241,7 +241,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
             checked_repository_ids.append( metadata_record.repository.id )
         if verbosity >= 1:
             print '# -------------------------------------------------------------------------------------------'
-            print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner ) 
+            print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         if 'tools' not in metadata_record.metadata:
@@ -271,7 +271,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 else:
                     print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                 print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
-                    ( changeset_revision,  name, owner ) 
+                    ( changeset_revision,  name, owner )
             # Loop through all the tools in this metadata record, checking each one for defined functional tests.
             for tool_metadata in metadata_record.metadata[ 'tools' ]:
                 tool_count += 1
@@ -280,7 +280,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 tool_guid = tool_metadata[ 'guid' ]
                 if verbosity >= 2:
                     print "# Checking tool ID '%s' in changeset revision %s of %s." % \
-                        ( tool_id, changeset_revision, name ) 
+                        ( tool_id, changeset_revision, name )
                 # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
                 # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
                 # automated functional test framework produces.
@@ -294,7 +294,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                     tool_has_tests = True
                     if verbosity >= 2:
                         print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
-                            ( tool_id, changeset_revision, name ) 
+                            ( tool_id, changeset_revision, name )
                     has_tests += 1
                 failure_reason = ''
                 problem_found = False
@@ -305,7 +305,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                     if missing_test_files:
                         if verbosity >= 2:
                             print "# Tool ID '%s' in changeset revision %s of %s is missing one or more required test files: %s" % \
-                                ( tool_id, changeset_revision, name, ', '.join( missing_test_files ) ) 
+                                ( tool_id, changeset_revision, name, ', '.join( missing_test_files ) )
                     else:
                         has_test_files = True
                 if not has_test_data:
@@ -355,8 +355,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 #              'tool_dependencies':
                 #                  [
                 #                      {
-                #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.', 
-                #                         'name': 'Name of the tool dependency.', 
+                #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
+                #                         'name': 'Name of the tool dependency.',
                 #                         'version': 'Version if this is a package, otherwise blank.',
                 #                         'error_message': 'The error message returned when installation was attempted.',
                 #                      },
@@ -364,8 +364,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 #              'repository_dependencies':
                 #                  [
                 #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.', 
-                #                         'name': 'The name of the repository that failed to install.', 
+                #                         'tool_shed': 'The tool shed that this repository was installed from.',
+                #                         'name': 'The name of the repository that failed to install.',
                 #                         'owner': 'Owner of the failed repository.',
                 #                         'changeset_revision': 'Changeset revision of the failed repository.',
                 #                         'error_message': 'The error message that was returned when the repository failed to install.',
@@ -374,8 +374,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 #              'current_repository':
                 #                  [
                 #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.', 
-                #                         'name': 'The name of the repository that failed to install.', 
+                #                         'tool_shed': 'The tool shed that this repository was installed from.',
+                #                         'name': 'The name of the repository that failed to install.',
                 #                         'owner': 'Owner of the failed repository.',
                 #                         'changeset_revision': 'Changeset revision of the failed repository.',
                 #                         'error_message': 'The error message that was returned when the repository failed to install.',
@@ -398,7 +398,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 #             },
                 #         ]
                 # }
-                # 
+                #
                 # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
                 # than the list relevant to what it is testing.
                 # Only append this error dict if it hasn't already been added.
@@ -426,7 +426,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 # If repository_status[ 'test_errors' ] is empty, no issues were found, and we can just update time_last_tested with the platform
                 # on which this script was run.
                 if missing_test_components:
-                    # If functional test definitions or test data are missing, set do_not_test = True if no tool with valid tests has been 
+                    # If functional test definitions or test data are missing, set do_not_test = True if no tool with valid tests has been
                     # found in this revision, and:
                     # a) There are multiple downloadable revisions, and the revision being tested is not the most recent downloadable revision.
                     #    In this case, the revision will never be updated with the missing components, and re-testing it would be redundant.
@@ -455,7 +455,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     if info_only:
         print '# Database not updated, info_only set.'
     print "# Elapsed time: ", stop - start
-    print "#############################################################################" 
+    print "#############################################################################"
 
 def get_repo_changelog_tuples( repo_path ):
     repo = hg.repository( ui.ui(), repo_path )
@@ -498,7 +498,7 @@ def should_set_do_not_test_flag( app, repository, changeset_revision ):
     Returns True if:
     a) There are multiple downloadable revisions, and the provided changeset revision is not the most recent downloadable revision. In this case,
        the revision will never be updated with correct data, and re-testing it would be redundant.
-    b) There are one or more downloadable revisions, and the provided changeset revision is the most recent downloadable revision. In this case, if 
+    b) There are one or more downloadable revisions, and the provided changeset revision is the most recent downloadable revision. In this case, if
        the repository is updated with test data or functional tests, the downloadable changeset revision that was tested will either be replaced
        with the new changeset revision, or a new downloadable changeset revision will be created, either of which will be automatically checked and
        flagged as appropriate. In the install and test script, this behavior is slightly different, since we do want to always run functional tests
@@ -518,8 +518,8 @@ def should_set_do_not_test_flag( app, repository, changeset_revision ):
         return True
     else:
         return False
-    
-    
+
+
 class FlagRepositoriesApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, config ):

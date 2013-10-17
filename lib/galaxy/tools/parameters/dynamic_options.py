@@ -6,6 +6,7 @@ on the values of other parameters or other aspects of the current state)
 import operator, sys, os, logging
 import basic, validation
 from galaxy.util import string_as_bool
+from galaxy.model import User
 import galaxy.tools
 
 log = logging.getLogger(__name__)
@@ -33,9 +34,9 @@ class Filter( object ):
 class StaticValueFilter( Filter ):
     """
     Filters a list of options on a column by a static value.
-    
+
     Type: static_value
-    
+
     Required Attributes:
         value: static value to compare to
         column: column in options to compare with
@@ -55,8 +56,7 @@ class StaticValueFilter( Filter ):
         rval = []
         filter_value = self.value
         try:
-            if trans.user.email:
-                filter_value = filter_value.replace('$__user_email__',trans.user.email)
+            filter_value = User.expand_user_properties( trans.user, filter_value)
         except:
             pass
         for fields in options:
@@ -67,12 +67,12 @@ class StaticValueFilter( Filter ):
 class DataMetaFilter( Filter ):
     """
     Filters a list of options on a column by a dataset metadata value.
-    
+
     Type: data_meta
-    
+
     When no 'from' source has been specified in the <options> tag, this will populate the options list with (meta_value, meta_value, False).
     Otherwise, options which do not match the metadata value in the column are discarded.
-    
+
     Required Attributes:
 
         - ref: Name of input dataset
@@ -121,7 +121,7 @@ class DataMetaFilter( Filter ):
         meta_value = ref.metadata.get( self.key, None )
         if meta_value is None: #assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
             return [ ( disp_name, basic.UnvalidatedValue( optval ), selected ) for disp_name, optval, selected in options ]
-        
+
         if self.column is not None:
             rval = []
             for fields in options:
@@ -145,9 +145,9 @@ class DataMetaFilter( Filter ):
 class ParamValueFilter( Filter ):
     """
     Filters a list of options on a column by the value of another input.
-    
+
     Type: param_value
-    
+
     Required Attributes:
 
         - ref: Name of input value
@@ -193,9 +193,9 @@ class ParamValueFilter( Filter ):
 class UniqueValueFilter( Filter ):
     """
     Filters a list of options to be unique by a column value.
-    
+
     Type: unique_value
-    
+
     Required Attributes:
         column: column in options to compare with
     """
@@ -218,9 +218,9 @@ class UniqueValueFilter( Filter ):
 class MultipleSplitterFilter( Filter ):
     """
     Turns a single line of options into multiple lines, by splitting a column and creating a line for each item.
-    
+
     Type: multiple_splitter
-    
+
     Required Attributes:
         column: column in options to compare with
     Optional Attributes:
@@ -239,7 +239,7 @@ class MultipleSplitterFilter( Filter ):
                 for field in fields[column].split( self.separator ):
                     rval.append( fields[0:column] + [field] + fields[column+1:] )
         return rval
-        
+
 class AttributeValueSplitterFilter( Filter ):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
@@ -277,9 +277,9 @@ class AttributeValueSplitterFilter( Filter ):
 class AdditionalValueFilter( Filter ):
     """
     Adds a single static value to an options list.
-    
+
     Type: add_value
-    
+
     Required Attributes:
         value: value to appear in select list
     Optional Attributes:
@@ -312,9 +312,9 @@ class AdditionalValueFilter( Filter ):
 class RemoveValueFilter( Filter ):
     """
     Removes a value from an options list.
-    
+
     Type: remove_value
-    
+
     Required Attributes::
 
         value: value to remove from select list
@@ -363,9 +363,9 @@ class RemoveValueFilter( Filter ):
 class SortByColumnFilter( Filter ):
     """
     Sorts an options list by a column
-    
+
     Type: sort_by
-    
+
     Required Attributes:
         column: column to sort by
     """
@@ -417,7 +417,7 @@ class DynamicOptions( object ):
         self.has_dataset_dependencies = False
         self.validators = []
         self.converter_safe = True
-        
+
         # Parse the <options> tag
         self.separator = elem.get( 'separator', '\t' )
         self.line_startswith = elem.get( 'startswith', None )
@@ -466,18 +466,18 @@ class DynamicOptions( object ):
             elif from_parameter is not None:
                 transform_lines = elem.get( 'transform_lines', None )
                 self.file_fields = list( load_from_parameter( from_parameter, transform_lines ) )
-        
+
         # Load filters
         for filter_elem in elem.findall( 'filter' ):
             self.filters.append( Filter.from_element( self, filter_elem ) )
-        
+
         # Load Validators
         for validator in elem.findall( 'validator' ):
             self.validators.append( validation.Validator.from_element( self.tool_param, validator ) )
-        
+
         if self.dataset_ref_name:
             tool_param.data_ref = self.dataset_ref_name
-            
+
     def parse_column_definitions( self, elem ):
         for column_elem in elem.findall( 'column' ):
             name = column_elem.get( 'name', None )
@@ -491,7 +491,7 @@ class DynamicOptions( object ):
         assert 'value' in self.columns, "Required 'value' column missing from column def"
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
-    
+
     def parse_file_fields( self, reader ):
         rval = []
         field_count = None
@@ -514,7 +514,7 @@ class DynamicOptions( object ):
                                   ( field_count, len( fields ), name, self.separator, line ) )
                     rval.append( fields )
         return rval
-    
+
     def get_dependency_names( self ):
         """
         Return the names of parameters these options depend on -- both data
@@ -528,7 +528,7 @@ class DynamicOptions( object ):
             if depend:
                 rval.append( depend )
         return rval
-    
+
     def get_fields( self, trans, other_values ):
         if self.dataset_ref_name:
             dataset = other_values.get( self.dataset_ref_name, None )
@@ -540,7 +540,7 @@ class DynamicOptions( object ):
             if os.path.getsize( path ) < 1048576:
                 options = self.parse_file_fields( open( path ) )
             else:
-                # Pass just the first megabyte to parse_file_fields. 
+                # Pass just the first megabyte to parse_file_fields.
                 import StringIO
                 log.warn( "Attempting to load options from large file, reading just first megabyte" )
                 contents = open( path, 'r' ).read( 1048576 )
@@ -552,7 +552,7 @@ class DynamicOptions( object ):
         for filter in self.filters:
             options = filter.filter_options( options, trans, other_values )
         return options
-    
+
     def get_fields_by_value( self, value, trans, other_values ):
         """
         Return a list of fields with column 'value' matching provided value.
@@ -563,7 +563,7 @@ class DynamicOptions( object ):
             if fields[ val_index ] == value:
                 rval.append( fields )
         return rval
-    
+
     def get_field_by_name_for_value( self, field_name, value, trans, other_values ):
         """
         Get contents of field by name for specified value.
@@ -580,7 +580,7 @@ class DynamicOptions( object ):
             for fields in self.get_fields_by_value( val, trans, other_values ):
                 rval.append( fields[ field_index ] )
         return rval
-    
+
     def get_options( self, trans, other_values ):
         rval = []
         if self.file_fields is not None or self.tool_data_table is not None or self.dataset_ref_name is not None:
@@ -591,7 +591,7 @@ class DynamicOptions( object ):
             for filter in self.filters:
                 rval = filter.filter_options( rval, trans, other_values )
         return rval
-    
+
     def column_spec_to_index( self, column_spec ):
         """
         Convert a column specification (as read from the config file), to an

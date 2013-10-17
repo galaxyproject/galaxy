@@ -309,7 +309,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # If deleting the current history, make a new current.
                 if history == trans.get_history():
                     deleted_current = True
-                    trans.new_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
@@ -339,6 +338,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
         if deleted_current:
+            #note: this needs to come after commits above or will use an empty history that was deleted above
+            trans.get_or_create_default_history()
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
         return ( status, " ".join( message_parts ) )
@@ -526,7 +527,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
                         trans.sa_session.add( hda.dataset )
                     except:
                         log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
@@ -571,8 +572,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )
-        # Regardless of whether it was previously deleted, we make a new history active
-        trans.new_history()
+        # Regardless of whether it was previously deleted, get or create default history.
+        trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
     @web.expose
@@ -626,10 +627,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             assert history.user == trans.user
         # Rename
-        history.name = sanitize_html( new_name )
+        new_name = sanitize_html( new_name )
+        history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
-        return history.name
+        return new_name
 
     @web.expose
     @web.require_login( "use Galaxy histories" )
@@ -1312,7 +1314,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         copy_choice = params.get( 'copy_choice', None )
         if not copy_choice:
             return trans.fill_template( "/history/copy.mako", id_argument=id )
-            
+
         # Extract histories for id argument, defaulting to current
         if id is None:
             histories = [ trans.history ]
@@ -1352,7 +1354,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history = self.get_history( trans, hist_id )
         trans.set_history( history )
         return trans.response.send_redirect( url_for( "/" ) )
-        
+
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
 

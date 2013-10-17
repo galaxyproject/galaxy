@@ -84,7 +84,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','panel_layout','jquery.rating')}
+    ${h.css('base','library','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -133,7 +133,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 <label>${sharable_link_label}</label>
                 ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
             </div>
-            %if can_download:
+            %if can_download or can_push:
                 <div class="form-row">
                     <label>Clone this repository:</label>
                     ${render_clone_str( repository )}
@@ -355,7 +355,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_safe_string( review.comment, to_html=True ) )}</td>
+                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username | h}</td>
                             </tr>

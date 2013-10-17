@@ -121,5 +121,8 @@ class TestUpdateManager( ShedTwillTestCase ):
         time.sleep( 3 )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        self.display_galaxy_browse_repositories_page( strings_displayed=[ 'state-color-running' ] )
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.update_tool_shed_status()
+        strings_displayed = [ '"%s"><img src="/static/images/icon_warning_sml.gif"' % self.security.encode_id( repository.id ) ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         

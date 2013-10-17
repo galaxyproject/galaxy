@@ -28,9 +28,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             return undeleted histories for the current user
         * GET /api/histories/deleted:
             return deleted histories for the current user
-
-        If the user is logged-in, a full list of all histories is shown.
-        If not logged in, only the curernt history (if any) is shown.
+        .. note:: Anonymous users are allowed to get their current history
 
         :type   deleted: boolean
         :param  deleted: if True, show only deleted histories, if False, non-deleted
@@ -48,14 +46,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                             .order_by( desc( trans.app.model.History.table.c.update_time ) )
                             .all() )
                 for history in query:
-                    item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
+                    item = history.to_dict(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
 
             elif trans.galaxy_session.current_history:
                 #No user, this must be session authentication with an anonymous user.
                 history = trans.galaxy_session.current_history
-                item = history.get_api_value(value_mapper={'id':trans.security.encode_id})
+                item = history.to_dict(value_mapper={'id':trans.security.encode_id})
                 item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                 rval.append(item)
 
@@ -76,6 +74,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             return the deleted history with ``id``
         * GET /api/histories/most_recently_used:
             return the most recently used history
+        .. note:: Anonymous users are allowed to get their current history
 
         :type   id:      an encoded id string
         :param  id:      the encoded id of the history to query or the string 'most_recently_used'
@@ -91,15 +90,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         history_id = id
         deleted = string_as_bool( deleted )
 
-        # try to load the history, by most_recently_used or the given id
         try:
             if history_id == "most_recently_used":
-                if trans.user and len( trans.user.galaxy_sessions ) > 0:
-                    # Most recent active history for user sessions, not deleted
-                    history = trans.user.galaxy_sessions[0].histories[-1].history
-                    history_id = trans.security.encode_id( history.id )
-                else:
+                if not trans.user or len( trans.user.galaxy_sessions ) <= 0:
                     return None
+                # Most recent active history for user sessions, not deleted
+                history = trans.user.galaxy_sessions[0].histories[-1].history
+
             else:
                 history = self.get_history( trans, history_id, check_ownership=False,
                                             check_accessible=True, deleted=deleted )
@@ -120,6 +117,41 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         return history_data
 
     @web.expose_api
+    def set_as_current( self, trans, id, *kwd ):
+        """
+        set_as_current( trans, id, **kwd )
+        * POST /api/histories/{id}/set_as_current:
+            set the history with ``id`` to the user's current history and return details
+
+        :type   id:      an encoded id string
+        :param  id:      the encoded id of the history to query or the string 'most_recently_used'
+
+        :rtype:     dictionary
+        :returns:   detailed history information from
+            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_history_dict`
+        """
+        # added as a non-ATOM API call to support the notion of a 'current/working' history
+        #   - unique to the history resource
+        history_id = id
+        try:
+            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
+            trans.history = history
+            history_data = self.get_history_dict( trans, history )
+            history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
+
+        except HTTPBadRequest, bad_req:
+            trans.response.status = 400
+            return str( bad_req )
+
+        except Exception, e:
+            msg = "Error in history API when switching current history: %s" % ( str( e ) )
+            log.exception( e )
+            trans.response.status = 500
+            return msg
+
+        return history_data
+
+    @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -127,9 +159,11 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             create a new history
 
         :type   payload: dict
-        :param  payload: (optional) dictionary structure containing::
-            'name':     the new history's name
-            
+        :param  payload: (optional) dictionary structure containing:
+            * name:     the new history's name
+            * current:  if passed, set the new history to be the user's 'current'
+                        history
+
         :rtype:     dict
         :returns:   element view of new history
         """
@@ -140,8 +174,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
+        item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for( 'history', id=item['id'] )
+
+        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
+        current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
+        if current:
+            trans.history = new_history
 
         #TODO: copy own history
         #TODO: import an importable history
@@ -159,16 +198,16 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :type   id:     str
         :param  id:     the encoded id of the history to delete
         :type   kwd:    dict
-        :param  kwd:    (optional) dictionary structure containing::
-            'payload':     a dictionary itself containing::
-                'purge':   if True, purge the history and all of it's HDAs
+        :param  kwd:    (optional) dictionary structure containing:
+
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the history and all of it's HDAs
 
         :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing::
-        
-            id:         the encoded id of the history,
-            deleted:    if the history was marked as deleted,
-            purged:     if the history was purged
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the history,
+            * deleted:    if the history was marked as deleted,
+            * purged:     if the history was purged
         """
         history_id = id
         # a request body is optional here
@@ -255,9 +294,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         :param  id:      the encoded id of the history to undelete
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
-            fields in :func:`galaxy.model.History.get_api_value` and/or the following::
-            
-            'annotation': an annotation for the history
+            fields in :func:`galaxy.model.History.to_dict` and/or the following:
+
+            * annotation: an annotation for the history
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
@@ -330,4 +369,3 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
-

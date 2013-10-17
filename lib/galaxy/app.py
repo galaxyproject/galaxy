@@ -22,6 +22,8 @@ from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 
+from galaxy.web.base import pluginframework
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -54,7 +56,7 @@ class UniverseApplication( object ):
         from tool_shed.galaxy_install.migrate.check import verify_tools
         verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
-        self.object_store = build_object_store_from_config(self.config)
+        self.object_store = build_object_store_from_config(self.config, fsmon=True)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
@@ -124,9 +126,10 @@ class UniverseApplication( object ):
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = None
-        if self.config.visualizations_config_directory:
-            self.visualizations_registry = VisualizationsRegistry( self.config.root,
-                                                                   self.config.visualizations_config_directory )
+        if self.config.visualizations_plugins_directory:
+            self.visualizations_registry = VisualizationsRegistry( self,
+                directories_setting=self.config.visualizations_plugins_directory,
+                template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
@@ -169,6 +172,7 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+        self.model.engine.dispose()
 
     def shutdown( self ):
         self.job_manager.shutdown()
@@ -188,6 +192,6 @@ class UniverseApplication( object ):
     def configure_fluent_log( self ):
         if self.config.fluent_log:
             from galaxy.util.log.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port ) 
+            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port )
         else:
             self.trace_logger = None
