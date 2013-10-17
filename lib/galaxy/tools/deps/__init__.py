@@ -31,7 +31,10 @@ class DependencyManager( object ):
         if not os.path.isdir( default_base_path ):
             log.warn( "Path '%s' is not directory, ignoring", default_base_path )
         self.default_base_path = os.path.abspath( default_base_path )
-        self.dependency_resolvers = [ GalaxyPackageDependencyResolver(self) ]
+        self.dependency_resolvers = [
+            ToolShedPackageDependencyResolver(self),
+            GalaxyPackageDependencyResolver(self),
+        ]
 
 
     def find_dep( self, name, version=None, type='package', **kwds ):
@@ -64,22 +67,11 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
             return self._find_dep_versioned( name, version, type=type, **kwds )
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
-        installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
         base_path = self.default_base_path
-        if installed_tool_dependency:
-            path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
-        else:
-            path = os.path.join( base_path, name, version )
+        path = os.path.join( base_path, name, version )
         return self._galaxy_package_dep(path, version)
 
     def _find_dep_default( self, name, type='package', **kwds ):
-        if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
-            installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
-            if installed_tool_dependency:
-                script, path, version = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
-                if script and path:
-                    # Environment settings do not use versions.
-                    return script, path, None
         base_path = self.default_base_path
         path = os.path.join( base_path, name, 'default' )
         if os.path.islink( path ):
@@ -95,6 +87,31 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
             return script, path, version
         elif os.path.exists( os.path.join( path, 'bin' ) ):
             return None, path, version
+        return INDETERMINATE_DEPENDENCY
+
+
+class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
+
+    def __init__(self, dependency_manager):
+        super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager)
+
+    def _find_dep_versioned( self, name, version, type='package', **kwds ):
+        installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
+        base_path = self.default_base_path
+        if installed_tool_dependency:
+            path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
+            return self._galaxy_package_dep(path, version)
+        else:
+            return INDETERMINATE_DEPENDENCY
+
+    def _find_dep_default( self, name, type='package', **kwds ):
+        if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
+            installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
+            if installed_tool_dependency:
+                script, path, version = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
+                if script and path:
+                    # Environment settings do not use versions.
+                    return script, path, None
         return INDETERMINATE_DEPENDENCY
 
     def _get_installed_dependency( self, name, type, version=None, **kwds ):
