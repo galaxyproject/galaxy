@@ -9,6 +9,7 @@ from contextlib import contextmanager
 
 def test_tool_dependencies():
     # Setup directories
+
     with __test_base_path() as base_path:
         for name, version, sub in [ ( "dep1", "1.0", "env.sh" ), ( "dep1", "2.0", "bin" ), ( "dep2", "1.0", None ) ]:
             if sub == "bin":
@@ -22,7 +23,7 @@ def test_tool_dependencies():
             if sub == "env.sh":
                 __touch( os.path.join( p, "env.sh" ) )
 
-        dm = DependencyManager( [base_path] )
+        dm = DependencyManager( default_base_path=base_path )
         d1_script, d1_path, d1_version = dm.find_dep( "dep1", "1.0" )
         assert d1_script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
         assert d1_path == os.path.join( base_path, 'dep1', '1.0' )
@@ -52,7 +53,7 @@ TEST_VERSION = "0.5.9"
 def test_toolshed_set_enviornment_requiremetns():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('set_environment')
-        dm = DependencyManager( [base_path] )
+        dm = DependencyManager( default_base_path=base_path )
         env_settings_dir = os.path.join(base_path, "environment_settings", TEST_REPO_NAME, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
         os.makedirs(env_settings_dir)
         d1_script, d1_path, d1_version = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
@@ -63,7 +64,7 @@ def test_toolshed_set_enviornment_requiremetns():
 def test_toolshed_package_requirements():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('package', version=TEST_VERSION)
-        dm = DependencyManager( [base_path] )
+        dm = DependencyManager( default_base_path=base_path )
         package_dir = __build_ts_test_package(base_path)
         d1_script, d1_path, d1_version = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
         assert d1_version == TEST_VERSION, d1_version
@@ -72,7 +73,7 @@ def test_toolshed_package_requirements():
 
 def test_toolshed_tools_fallback_on_manual_dependencies():
     with __test_base_path() as base_path:
-        dm = DependencyManager( [base_path] )
+        dm = DependencyManager( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         env_path = __setup_galaxy_package_dep(base_path, "dep1", "1.0")
         d1_script, d1_path, d1_version = dm.find_dep( "dep1", version="1.0", type='package', installed_tool_dependencies=[test_repo] )
@@ -82,7 +83,7 @@ def test_toolshed_tools_fallback_on_manual_dependencies():
 
 def test_toolshed_greater_precendence():
     with __test_base_path() as base_path:
-        dm = DependencyManager( [base_path] )
+        dm = DependencyManager( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         ts_package_dir = __build_ts_test_package(base_path)
         gx_env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION)

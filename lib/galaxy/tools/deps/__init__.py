@@ -17,18 +17,16 @@ class DependencyManager( object ):
 
     and should each contain a file 'env.sh' which can be sourced to make the dependency available in the current shell environment.
     """
-    def __init__( self, base_paths=[] ):
+    def __init__( self, default_base_path ):
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
-        self.base_paths = []
-        for base_path in base_paths:
-            if not os.path.exists( base_path ):
-                log.warn( "Path '%s' does not exist, ignoring", base_path )
-            if not os.path.isdir( base_path ):
-                log.warn( "Path '%s' is not directory, ignoring", base_path )
-            self.base_paths.append( os.path.abspath( base_path ) )
+        if not os.path.exists( default_base_path ):
+            log.warn( "Path '%s' does not exist, ignoring", default_base_path )
+        if not os.path.isdir( default_base_path ):
+            log.warn( "Path '%s' is not directory, ignoring", default_base_path )
+        self.default_base_path = os.path.abspath( default_base_path )
 
     def find_dep( self, name, version=None, type='package', installed_tool_dependencies=None ):
         """
@@ -42,18 +40,17 @@ class DependencyManager( object ):
 
     def _find_dep_versioned( self, name, version, type='package', installed_tool_dependencies=None ):
         installed_tool_dependency = self._get_installed_dependency( installed_tool_dependencies, name, type, version=version )
-        for base_path in self.base_paths:
-            if installed_tool_dependency:
-                path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
-            else:
-                path = os.path.join( base_path, name, version )
-            script = os.path.join( path, 'env.sh' )
-            if os.path.exists( script ):
-                return script, path, version
-            elif os.path.exists( os.path.join( path, 'bin' ) ):
-                return None, path, version
+        base_path = self.default_base_path
+        if installed_tool_dependency:
+            path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
         else:
-            return None, None, None
+            path = os.path.join( base_path, name, version )
+        script = os.path.join( path, 'env.sh' )
+        if os.path.exists( script ):
+            return script, path, version
+        elif os.path.exists( os.path.join( path, 'bin' ) ):
+            return None, path, version
+        return None, None, None
 
     def _find_dep_default( self, name, type='package', installed_tool_dependencies=None ):
         if type == 'set_environment' and installed_tool_dependencies:
@@ -63,19 +60,18 @@ class DependencyManager( object ):
                 if script and path:
                     # Environment settings do not use versions.
                     return script, path, None
-        for base_path in self.base_paths:
-            path = os.path.join( base_path, name, 'default' )
-            if os.path.islink( path ):
-                real_path = os.path.realpath( path )
-                real_bin = os.path.join( real_path, 'bin' )
-                real_version = os.path.basename( real_path )
-                script = os.path.join( real_path, 'env.sh' )
-                if os.path.exists( script ):
-                    return script, real_path, real_version
-                elif os.path.exists( real_bin ):
-                    return None, real_path, real_version
-        else:
-            return None, None, None
+        base_path = self.default_base_path
+        path = os.path.join( base_path, name, 'default' )
+        if os.path.islink( path ):
+            real_path = os.path.realpath( path )
+            real_bin = os.path.join( real_path, 'bin' )
+            real_version = os.path.basename( real_path )
+            script = os.path.join( real_path, 'env.sh' )
+            if os.path.exists( script ):
+                return script, real_path, real_version
+            elif os.path.exists( real_bin ):
+                return None, real_path, real_version
+        return None, None, None
 
     def _get_installed_dependency( self, installed_tool_dependencies, name, type, version=None ):
         if installed_tool_dependencies:
@@ -99,14 +95,14 @@ class DependencyManager( object ):
 
     def _get_set_environment_installed_dependency_script_path( self, installed_tool_dependency, name ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
-        for base_path in self.base_paths:
-            path = os.path.abspath( os.path.join( base_path,
-                                                  'environment_settings',
-                                                  name,
-                                                  tool_shed_repository.owner,
-                                                  tool_shed_repository.name,
-                                                  tool_shed_repository.installed_changeset_revision ) )
-            if os.path.exists( path ):
-                script = os.path.join( path, 'env.sh' )
-                return script, path, None
+        base_path = self.default_base_path
+        path = os.path.abspath( os.path.join( base_path,
+                                              'environment_settings',
+                                              name,
+                                              tool_shed_repository.owner,
+                                              tool_shed_repository.name,
+                                              tool_shed_repository.installed_changeset_revision ) )
+        if os.path.exists( path ):
+            script = os.path.join( path, 'env.sh' )
+            return script, path, None
         return None, None, None
