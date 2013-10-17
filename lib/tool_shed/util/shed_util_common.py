@@ -821,12 +821,12 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
             clause_list = []
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( trans.model.Repository.table.c.deleted == False ):
-                allow_push = repository.allow_push( trans.app )
-                if not order:
-                    # We've been called from the Tool Shed API, so reset metadata on all repositories of type tool_dependency_definition.
-                    if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
-                        clause_list.append( trans.model.Repository.table.c.id == repository.id )
-                    elif allow_push:
+                # Always reset metadata on all repositories of type tool_dependency_definition.
+                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                    clause_list.append( trans.model.Repository.table.c.id == repository.id )
+                else:
+                    allow_push = repository.allow_push( trans.app )
+                    if allow_push:
                         # Include all repositories that are writable by the current user.
                         allow_push_usernames = allow_push.split( ',' )
                         if username in allow_push_usernames:

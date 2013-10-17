@@ -230,6 +230,7 @@ class RepositoriesController( BaseAPIController ):
                                        to True will restrict resetting metadata to only repositories that are writable by the user
                                        in addition to those repositories of type tool_dependency_definition.  This param is ignored
                                        if the current user is not an admin user, in which case this same restriction is automatic.
+        :param encoded_ids_to_skip (optional): a list of encoded repository ids for repositories that should not be processed.
         """
         def handle_repository( trans, repository, results ):
             repository_id = trans.security.encode_id( repository.id )
@@ -253,6 +254,7 @@ class RepositoriesController( BaseAPIController ):
                             successful_count=0,
                             unsuccessful_count=0 )
             handled_repository_ids = []
+            encoded_ids_to_skip = payload.get( 'encoded_ids_to_skip', [] )
             if trans.user_is_admin():
                 my_writable = util.asbool( payload.get( 'my_writable', False ) )
             else:
@@ -260,11 +262,19 @@ class RepositoriesController( BaseAPIController ):
             query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
             # First reset metadata on all repositories of type repository_dependency_definition.
             for repository in query:
-                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                encoded_id = trans.security.encode_id( repository.id )
+                if encoded_id in encoded_ids_to_skip:
+                    log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             # Now reset metadata on all remaining repositories.
             for repository in query:
-                if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+                encoded_id = trans.security.encode_id( repository.id )
+                if encoded_id in encoded_ids_to_skip:
+                    log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
