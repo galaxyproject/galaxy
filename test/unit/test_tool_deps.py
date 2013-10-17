@@ -1,11 +1,11 @@
 import tempfile
 import os.path
 from stat import S_IXUSR
-from os import makedirs, symlink, stat, chmod
+from os import makedirs, stat, symlink, chmod, environ
 from shutil import rmtree
 from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver
+from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver, ModuleDependency
 from galaxy.util.bunch import Bunch
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
@@ -92,7 +92,7 @@ def test_toolshed_greater_precendence():
         gx_env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION)
         ts_env_path = os.path.join(ts_package_dir, "env.sh")
         dependency = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
-        assert dependency.script != gx_env_path  # Not the galaxy path, it should be the tool shed path used.           
+        assert dependency.script != gx_env_path  # Not the galaxy path, it should be the tool shed path used.
         assert dependency.script == ts_env_path
 
 
@@ -104,9 +104,8 @@ def __build_ts_test_package(base_path, script_contents=''):
 
 def test_module_dependency_resolver():
     with __test_base_path() as temp_directory:
-        module_script = os.path.join(temp_directory, "module")
-        with open(module_script, 'w') as f:
-            f.write('''#!/bin/sh
+        module_script = os.path.join(temp_directory, "modulecmd")
+        __write_script(module_script, '''#!/bin/sh
 cat %s/example_output 1>&2;
 ''' % temp_directory)
         with open(os.path.join(temp_directory, "example_output"), "w") as f:
@@ -131,9 +130,7 @@ advisor/2013/update1    intel/11.1.075          mkl/10.2.1.017
 advisor/2013/update2    intel/11.1.080          mkl/10.2.5.035
 advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 ''')
-        st = os.stat(module_script)
-        chmod(module_script, st.st_mode | S_IXUSR)
-        resolver = ModuleDependencyResolver(None, command=module_script)
+        resolver = ModuleDependencyResolver(None, modulecmd=module_script)
         module = resolver.resolve( name="R", version=None, type="package" )
         assert module.module_name == "R"
         assert module.module_version == None
@@ -144,6 +141,31 @@ advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 
         module = resolver.resolve( name="R", version="3.0.4", type="package" )
         assert module == INDETERMINATE_DEPENDENCY
+
+
+def test_module_dependency():
+    with __test_base_path() as temp_directory:
+        ## Create mock modulecmd script that just exports a variable
+        ## the way modulecmd sh load would, but also validate correct
+        ## module name and version are coming through.
+        mock_modulecmd = os.path.join(temp_directory, 'modulecmd')
+        __write_script(mock_modulecmd, '''#!/bin/sh
+if [ $3 != "foomodule/1.0" ];
+then
+    exit 1
+fi
+echo 'FOO="bar"'
+''')
+        resolver = Bunch(modulecmd=mock_modulecmd)
+        dependency = ModuleDependency(resolver, "foomodule", "1.0")
+        __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
+
+
+def __write_script(path, contents):
+    with open(path, 'w') as f:
+        f.write(contents)
+    st = stat(path)
+    chmod(path, st.st_mode | S_IXUSR)
 
 
 def test_galaxy_dependency_object_script():
@@ -170,7 +192,7 @@ def __assert_foo_exported( commands ):
     command = ["bash", "-c", "%s; echo \"$FOO\"" % "".join(commands)]
     process = Popen(command, stdout=PIPE)
     output = process.communicate()[0].strip()
-    assert output == 'bar'
+    assert output == 'bar', "Command %s exports FOO as %s, not bar" % (command, output)
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):
@@ -261,17 +283,68 @@ def test_config_module_defaults():
 </dependency_resolvers>
 ''') as dependency_resolvers:
         module_resolver = dependency_resolvers[0]
-        assert module_resolver.module_command == "module"
         assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
+
+
+def test_config_modulepath():
+    # Test reads and splits MODULEPATH if modulepath is not specified.
+    with __parse_resolvers('''<dependency_resolvers>
+  <modules find_by="directory" modulepath="/opt/modules/modulefiles:/usr/local/modules/modulefiles" />
+</dependency_resolvers>
+''') as dependency_resolvers:
+        assert dependency_resolvers[0].module_checker.directories == ["/opt/modules/modulefiles", "/usr/local/modules/modulefiles"]
+
+
+def test_config_MODULEPATH():
+    # Test reads and splits MODULEPATH if modulepath is not specified.
+    with __environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
+        with __parse_resolvers('''<dependency_resolvers>
+  <modules find_by="directory" />
+</dependency_resolvers>
+''') as dependency_resolvers:
+            assert dependency_resolvers[0].module_checker.directories == ["/opt/modules/modulefiles", "/usr/local/modules/modulefiles"]
+
+
+def test_config_MODULESHOME():
+    # Test fallbacks to read MODULESHOME if modulepath is not specified and
+    # neither is MODULEPATH.
+    with __environ({"MODULESHOME": "/opt/modules"}, remove="MODULEPATH"):
+        with __parse_resolvers('''<dependency_resolvers>
+  <modules find_by="directory" />
+</dependency_resolvers>
+''') as dependency_resolvers:
+            assert dependency_resolvers[0].module_checker.directories == ["/opt/modules/modulefiles"]
 
 
 def test_config_module_directory_searcher():
     with __parse_resolvers('''<dependency_resolvers>
-  <modules find_by="directory" directory="/opt/Modules/modulefiles" />
+  <modules find_by="directory" modulepath="/opt/Modules/modulefiles" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         module_resolver = dependency_resolvers[0]
-        assert module_resolver.module_checker.directory == "/opt/Modules/modulefiles"
+        assert module_resolver.module_checker.directories == ["/opt/Modules/modulefiles"]
+
+
+@contextmanager
+def __environ(values, remove=[]):
+    """
+    Modify the environment for a test, adding/updating values in dict `values` and
+    removing any environment variables mentioned in list `remove`.
+    """
+    new_keys = set(environ.keys()) - set(values.keys())
+    old_environ = environ.copy()
+    try:
+        environ.update(values)
+        for to_remove in remove:
+            try:
+                del environ[remove]
+            except KeyError:
+                pass
+        yield
+    finally:
+        environ.update(old_environ)
+        for key in new_keys:
+            del environ[key]
 
 
 @contextmanager
@@ -282,4 +355,3 @@ def __parse_resolvers(xml_content):
         f.flush()
         dm = DependencyManager( default_base_path=base_path, conf_file=f.name )
         yield dm.dependency_resolvers
-

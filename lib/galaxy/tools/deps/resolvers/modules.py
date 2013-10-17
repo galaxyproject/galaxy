@@ -17,7 +17,7 @@ from galaxy.util import string_as_bool
 import logging
 log = logging.getLogger( __name__ )
 
-
+DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
 DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
 DEFAULT_INDICATOR = '(default)'
 DEFAULT_MODULE_PREFETCH = "true"
@@ -31,8 +31,9 @@ class ModuleDependencyResolver(DependencyResolver):
         self.versionless = string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
         prefetch = string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
+        self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
         if find_by == 'directory':
-            modulepath = kwds.get('modulepath', DEFAULT_MODULE_PATH)
+            modulepath = kwds.get('modulepath', self.__default_modulespath())
             self.module_checker = DirectoryModuleChecker(self, modulepath, prefetch)
         elif find_by == 'avail':
             self.module_checker = AvailModuleChecker(self, prefetch)
@@ -131,7 +132,7 @@ class AvailModuleChecker(object):
                 yield module_name, module_version
 
     def __module_avail_output(self):
-        avail_command = ['modulecmd', 'sh', 'avail']
+        avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
         return Popen(avail_command, stderr=PIPE).communicate()[1]
 
 
@@ -146,7 +147,7 @@ class ModuleDependency(Dependency):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'eval `modulecmd sh load %s`' % (module_to_load)
+        command = 'eval `%s sh load %s`' % (self.module_dependency_resolver.modulecmd, module_to_load)
         return command
 
 __all__ = [ModuleDependencyResolver]
