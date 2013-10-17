@@ -80,14 +80,13 @@ class DependencyResolver(object):
 class GalaxyPackageDependencyResolver(DependencyResolver):
 
     def __init__(self, dependency_manager, **kwds):
-        self.default_base_path = dependency_manager.default_base_path
-
         ## Galaxy tool shed requires explicit versions on XML elements,
         ## this in inconvient for testing or Galaxy instances not utilizing
         ## the tool shed so allow a fallback version of the Galaxy package
         ## resolver that will just grab 'default' version of exact version
         ## unavailable.
         self.versionless = string_as_bool(kwds.get('versionless', "false"))
+        self.base_path = kwds.get('base_path', dependency_manager.default_base_path)
 
     def resolve( self, name, version, type, **kwds ):
         """
@@ -100,12 +99,12 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
             return self._find_dep_versioned( name, version, type=type, **kwds )
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
-        base_path = self.default_base_path
+        base_path = self.base_path
         path = os.path.join( base_path, name, version )
         return self._galaxy_package_dep(path, version)
 
     def _find_dep_default( self, name, type='package', **kwds ):
-        base_path = self.default_base_path
+        base_path = self.base_path
         path = os.path.join( base_path, name, 'default' )
         if os.path.islink( path ):
             real_path = os.path.realpath( path )
@@ -130,7 +129,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
-        base_path = self.default_base_path
+        base_path = self.base_path
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
             return self._galaxy_package_dep(path, version)
@@ -169,7 +168,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
 
     def _get_set_environment_installed_dependency_script_path( self, installed_tool_dependency, name ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
-        base_path = self.default_base_path
+        base_path = self.base_path
         path = os.path.abspath( os.path.join( base_path,
                                               'environment_settings',
                                               name,

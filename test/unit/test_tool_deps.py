@@ -167,6 +167,19 @@ def test_parse():
         assert not dependency_resolvers[0].versionless
         assert dependency_resolvers[2].versionless
 
+    with __parse_resolvers('''<dependency_resolvers>
+  <galaxy_package />
+  <tool_shed_package />
+  <galaxy_package base_path="/opt/galaxy/legacy/"/>
+</dependency_resolvers>
+''') as dependency_resolvers:
+        # Unspecified base_paths are both default_base_paths
+        assert dependency_resolvers[0].base_path == dependency_resolvers[1].base_path
+        # Can specify custom base path...
+        assert dependency_resolvers[2].base_path == "/opt/galaxy/legacy/"
+        # ... that is different from the default.
+        assert dependency_resolvers[0].base_path != dependency_resolvers[2].base_path
+
 
 @contextmanager
 def __parse_resolvers(xml_content):
