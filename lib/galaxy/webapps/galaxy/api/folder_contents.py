@@ -27,11 +27,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         we want here. We could add a parameter to use the recursive
         style, but this is meant to act similar to an "ls" directory listing.
         """
-        rval = []
+        folder_contents = []
         current_user_roles = trans.get_current_user_roles()
 
 
-        def traverse( folder ):
+        def load_folder_contents( folder ):
             """
             Load contents of the folder (folders and datasets).
             """
@@ -76,41 +76,55 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         # TODO MARTEN Can it be that predecessors of current folder have different access rights? aka user shouldn't see them?
         
         # Search the path upwards and load the whole route of names and ids for breadcrumb purposes.
-        path_to_library = []
+        path_to_root = []
         
         def build_path ( folder ):
-#             log.debug("XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id BEFORE   " + str(folder.parent_id))
-#             log.debug("XXXXXXXXXXXXXXXXXXXXXXX folder.parent_library.id BEFORE   " + str(folder.parent_library.id))
-            if ( folder.parent_id != folder.parent_library.id ) and ( folder.parent_id is not None ):
-                log.debug("XXXXXXXXXXXXXXXXXXXXXXX LOADING UPPER FOLDER WITH ID:  " + str(folder.parent_id))
-                upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
-                log.debug("XXXXXXXXXXXXXXXXXXXXXXX upper_folder.id   " + str(upper_folder.id))
-                log.debug("XXXXXXXXXXXXXXXXXXXXXXX upper_folder.name   " + str(upper_folder.name))
-                path_to_library.append( ( upper_folder.id, upper_folder.name ) )
-                path_to_library.extend( build_path( upper_folder ) )
+            path_to_root = []
+            # We are almost in root
+            log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id: " + str( folder.parent_id ) )
+            log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_library.id: " + str( folder.parent_library.id ) )
+            if folder.parent_id is None:
+                log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING: " + str( folder.name ) )
+                path_to_root.append( ( folder.id, folder.name ) )
+#                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_library.id )
+#                 path_to_root.append( ( upper_folder.id, upper_folder.name ) )
             else:
-                pass    
-            return path_to_library
+            # We add the current folder and traverse up one folder.
+                log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ADDING THIS FOLDER AND TRAVERSING UP:  " + str( folder.name ) )
+                path_to_root.append( ( folder.id, folder.name ) )
+                upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
+                path_to_root.extend( build_path( upper_folder ) )
+#             path_to_root = path_to_root.reverse()
+#             return path_to_root[::-1]
+            return path_to_root
             
-        full_path = build_path( folder )
+        # Return the reversed path so it starts with the library node.
+        full_path = build_path( folder )[::-1]
 
-        for content in traverse( folder ):
+        # Go through every item in the folder and include its meta-data.
+        for content_item in load_folder_contents( folder ):
             return_item = {}
-            encoded_id = trans.security.encode_id( content.id )
-            if content.api_type == 'folder':
-                encoded_parent_library_id = trans.security.encode_id( content.parent_library.id )
+            encoded_id = trans.security.encode_id( content_item.id )
+            
+            # For folder return also hierarchy values
+            if content_item.api_type == 'folder':
+                encoded_parent_library_id = trans.security.encode_id( content_item.parent_library.id )
                 encoded_id = 'F' + encoded_id
-                if content.parent_id is not None: # For folder return its parent's id for browsing back.
-                    encoded_parent_id = 'F' + trans.security.encode_id( content.parent_id )
+                if content_item.parent_id is not None: # Return folder's parent id for browsing back.
+                    encoded_parent_id = 'F' + trans.security.encode_id( content_item.parent_id )
                     return_item.update ( dict ( parent_id = encoded_parent_id ) )
+            
+            # For every item return also the default meta-data
             return_item.update( dict( id = encoded_id,
-                               type = content.api_type,
-                               name = content.name,
+                               type = content_item.api_type,
+                               name = content_item.name,
                                library_id = encoded_parent_library_id,
                                full_path = full_path,
                                url = url_for( 'folder_contents', folder_id=encoded_id ) ) )
-            rval.append( return_item )
-        return rval
+            folder_contents.append( return_item )
+        if len( folder_contents ) == 0:
+            folder_contents.append( dict( full_path = full_path ) )
+        return folder_contents
 
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):
