@@ -560,8 +560,8 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             #     <source>misc/some_file</source>
             #     <destination>$INSTALL_DIR/bin</destination>
             # </action>
-            action_dict[ 'source' ] = evaluate_template( action_elem.find( 'source' ).text )
-            action_dict[ 'destination' ] = evaluate_template( action_elem.find( 'destination' ).text )
+            action_dict[ 'source' ] = td_common_util.evaluate_template( action_elem.find( 'source' ).text, install_dir )
+            action_dict[ 'destination' ] = td_common_util.evaluate_template( action_elem.find( 'destination' ).text, install_dir )
             action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
         elif action_type == 'set_environment':
             # <action type="set_environment">
