@@ -6,6 +6,7 @@ from galaxy import eggs
 from galaxy import util
 from galaxy import web
 from galaxy.util import json
+from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import container_util
@@ -457,7 +458,19 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     tool_dependency = tool_dependencies[ index ]
                     if tool_dependency.can_install:
                         try:
-                            tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                            dependencies_ignored = app.toolbox.dependency_manager and not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
+                            if dependencies_ignored:
+                                log.info("Skipping package %s, tool shed dependency resolver not enabled." % package_name)
+                                # Tool dependency resolves have been configured and they do not
+                                # include the tool shed. Do not install package.
+                                status = app.model.ToolDependency.installation_status.ERROR
+                                if app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
+                                    ## TODO: Do something here such as marking it installed or
+                                    ## configured externally.
+                                    pass
+                                tool_dependency.status = status
+                            else:
+                                tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
                         except Exception, e:
                             error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
                             log.exception( error_message )
