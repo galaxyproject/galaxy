@@ -45,6 +45,18 @@ class TestCommandFactory(TestCase):
         expected_command = '%s; return_code=$?; cd %s; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, getcwd(), metadata_line)
         self.__assert_command_is( expected_command )
 
+    def test_empty_metadata(self):
+        """
+        As produced by TaskWrapper.
+        """
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.metadata_line = ' '
+        # Empty metadata command do not touch command line.
+        expected_command = '%s' % (MOCK_COMMAND_LINE)
+        self.__assert_command_is( expected_command )
+        
+        
     def __assert_command_is(self, expected_command):
         command = self.__command()
         self.assertEqual(command, expected_command)
