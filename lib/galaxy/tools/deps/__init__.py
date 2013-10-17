@@ -32,18 +32,18 @@ class DependencyManager( object ):
             log.warn( "Path '%s' is not directory, ignoring", default_base_path )
         self.default_base_path = os.path.abspath( default_base_path )
 
-    def find_dep( self, name, version=None, type='package', installed_tool_dependencies=None ):
+    def find_dep( self, name, version=None, type='package', **kwds ):
         """
         Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
         if version is None:
-            return self._find_dep_default( name, type=type, installed_tool_dependencies=installed_tool_dependencies )
+            return self._find_dep_default( name, type=type, **kwds )
         else:
-            return self._find_dep_versioned( name, version, type=type, installed_tool_dependencies=installed_tool_dependencies )
+            return self._find_dep_versioned( name, version, type=type, **kwds )
 
-    def _find_dep_versioned( self, name, version, type='package', installed_tool_dependencies=None ):
-        installed_tool_dependency = self._get_installed_dependency( name, type, version=version, installed_tool_dependencies=installed_tool_dependencies )
+    def _find_dep_versioned( self, name, version, type='package', **kwds ):
+        installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
         base_path = self.default_base_path
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
@@ -56,9 +56,9 @@ class DependencyManager( object ):
             return None, path, version
         return INDETERMINATE_DEPENDENCY
 
-    def _find_dep_default( self, name, type='package', installed_tool_dependencies=None ):
-        if type == 'set_environment' and installed_tool_dependencies:
-            installed_tool_dependency = self._get_installed_dependency( name, type, version=None, installed_tool_dependencies=installed_tool_dependencies )
+    def _find_dep_default( self, name, type='package', **kwds ):
+        if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
+            installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
             if installed_tool_dependency:
                 script, path, version = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
                 if script and path:
