@@ -1,7 +1,10 @@
 from os.path import join, islink, realpath, basename, exists, abspath
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY
+from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
 from galaxy.util import string_as_bool
+
+import logging
+log = logging.getLogger( __name__ )
 
 
 class GalaxyPackageDependencyResolver(DependencyResolver):
@@ -43,9 +46,28 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
     def _galaxy_package_dep( self, path, version ):
         script = join( path, 'env.sh' )
         if exists( script ):
-            return script, path, version
+            return GalaxyPackageDependency(script, path, version)
         elif exists( join( path, 'bin' ) ):
-            return None, path, version
+            return GalaxyPackageDependency(None, path, version)
         return INDETERMINATE_DEPENDENCY
 
-__all__ = [GalaxyPackageDependencyResolver]
+
+class GalaxyPackageDependency(Dependency):
+
+    def __init__( self, script, path, version ):
+        self.script = script
+        self.path = path
+        self.version = version
+
+    def shell_commands( self, requirement ):
+        base_path = self.path
+        if self.script is None and base_path is None:
+            log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+            commands = None
+        elif requirement.type == 'package' and self.script is None:
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path )
+        else:
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, self.script )
+        return commands
+
+__all__ = [GalaxyPackageDependencyResolver, GalaxyPackageDependency]

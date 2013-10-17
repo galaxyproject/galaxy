@@ -40,7 +40,7 @@ from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
@@ -2681,20 +2681,17 @@ class Tool( object, Dictifiable ):
             installed_tool_dependencies = None
         for requirement in self.requirements:
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            script_file = None
-            base_path = None
-            version = None
+            dependency = INDETERMINATE_DEPENDENCY
             if requirement.type in [ 'package', 'set_environment' ]:
-                script_file, base_path, version = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
-                                                                                                version=requirement.version,
-                                                                                                type=requirement.type,
-                                                                                                installed_tool_dependencies=installed_tool_dependencies )
-            if script_file is None and base_path is None:
+                dependency = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
+                                                                           version=requirement.version,
+                                                                           type=requirement.type,
+                                                                           installed_tool_dependencies=installed_tool_dependencies )
+            dependency_commands = dependency.shell_commands( requirement )
+            if not dependency_commands:
                 log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            elif requirement.type == 'package' and script_file is None:
-                commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path ) )
             else:
-                commands.append( 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, script_file ) )
+                commands.append(dependency_commands)
         return commands
     def build_redirect_url_params( self, param_dict ):
         """

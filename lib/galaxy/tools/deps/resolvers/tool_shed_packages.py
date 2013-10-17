@@ -1,6 +1,6 @@
 from os.path import abspath, join, exists
 
-from .galaxy_packages import GalaxyPackageDependencyResolver
+from .galaxy_packages import GalaxyPackageDependencyResolver, GalaxyPackageDependency
 from ..resolvers import INDETERMINATE_DEPENDENCY
 
 
@@ -22,10 +22,10 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
         if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
             installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
             if installed_tool_dependency:
-                script, path, version = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
-                if script and path:
+                dependency = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
+                if dependency.script and dependency.path:
                     # Environment settings do not use versions.
-                    return script, path, None
+                    return GalaxyPackageDependency(dependency.script, dependency.path, None)
         return INDETERMINATE_DEPENDENCY
 
     def _get_installed_dependency( self, name, type, version=None, **kwds ):
@@ -60,7 +60,7 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
                               tool_shed_repository.installed_changeset_revision ) )
         if exists( path ):
             script = join( path, 'env.sh' )
-            return script, path, None
+            return GalaxyPackageDependency(script, path, None)
         return INDETERMINATE_DEPENDENCY
 
 __all__ = [ToolShedPackageDependencyResolver]

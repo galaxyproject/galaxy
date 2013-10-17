@@ -2,9 +2,11 @@ import tempfile
 import os.path
 from os import makedirs, symlink
 from shutil import rmtree
-from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
 from galaxy.util.bunch import Bunch
 from contextlib import contextmanager
+from subprocess import Popen, PIPE
 
 
 def test_tool_dependencies():
@@ -24,24 +26,23 @@ def test_tool_dependencies():
                 __touch( os.path.join( p, "env.sh" ) )
 
         dm = DependencyManager( default_base_path=base_path )
-        d1_script, d1_path, d1_version = dm.find_dep( "dep1", "1.0" )
-        assert d1_script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
-        assert d1_path == os.path.join( base_path, 'dep1', '1.0' )
-        assert d1_version == "1.0"
-        d2_script, d2_path, d2_version = dm.find_dep( "dep1", "2.0" )
-        assert d2_script == None
-        assert d2_path == os.path.join( base_path, 'dep1', '2.0' )
-        assert d2_version == "2.0"
+        dependency = dm.find_dep( "dep1", "1.0" )
+        assert dependency.script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
+        assert dependency.path == os.path.join( base_path, 'dep1', '1.0' )
+        assert dependency.version == "1.0"
+        dependency = dm.find_dep( "dep1", "2.0" )
+        assert dependency.script == None
+        assert dependency.path == os.path.join( base_path, 'dep1', '2.0' )
+        assert dependency.version == "2.0"
 
         ## Test default versions
         symlink( os.path.join( base_path, 'dep1', '2.0'), os.path.join( base_path, 'dep1', 'default' ) )
-        default_script, default_path, default_version = dm.find_dep( "dep1", None )
-        assert default_version == "2.0"
+        dependency = dm.find_dep( "dep1", None )
+        assert dependency.version == "2.0"
 
         ## Test default will not be fallen back upon by default
-        default_script, default_path, default_version = dm.find_dep( "dep1", "2.1" )
-        assert default_script == None
-        assert default_version == None
+        dependency = dm.find_dep( "dep1", "2.1" )
+        assert dependency == INDETERMINATE_DEPENDENCY
 
 
 TEST_REPO_USER = "devteam"
@@ -56,9 +57,9 @@ def test_toolshed_set_enviornment_requiremetns():
         dm = DependencyManager( default_base_path=base_path )
         env_settings_dir = os.path.join(base_path, "environment_settings", TEST_REPO_NAME, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
         os.makedirs(env_settings_dir)
-        d1_script, d1_path, d1_version = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
-        assert d1_version == None
-        assert d1_script == os.path.join(env_settings_dir, "env.sh"), d1_script
+        dependency = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
+        assert dependency.version == None
+        assert dependency.script == os.path.join(env_settings_dir, "env.sh")
 
 
 def test_toolshed_package_requirements():
@@ -66,9 +67,9 @@ def test_toolshed_package_requirements():
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         dm = DependencyManager( default_base_path=base_path )
         package_dir = __build_ts_test_package(base_path)
-        d1_script, d1_path, d1_version = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
-        assert d1_version == TEST_VERSION, d1_version
-        assert d1_script == os.path.join(package_dir, "env.sh"), d1_script
+        dependency = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
+        assert dependency.version == TEST_VERSION
+        assert dependency.script == os.path.join(package_dir, "env.sh")
 
 
 def test_toolshed_tools_fallback_on_manual_dependencies():
@@ -76,9 +77,9 @@ def test_toolshed_tools_fallback_on_manual_dependencies():
         dm = DependencyManager( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         env_path = __setup_galaxy_package_dep(base_path, "dep1", "1.0")
-        d1_script, d1_path, d1_version = dm.find_dep( "dep1", version="1.0", type='package', installed_tool_dependencies=[test_repo] )
-        assert d1_version == "1.0"
-        assert d1_script == env_path
+        dependency = dm.find_dep( "dep1", version="1.0", type='package', installed_tool_dependencies=[test_repo] )
+        assert dependency.version == "1.0"
+        assert dependency.script == env_path
 
 
 def test_toolshed_greater_precendence():
@@ -88,15 +89,27 @@ def test_toolshed_greater_precendence():
         ts_package_dir = __build_ts_test_package(base_path)
         gx_env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION)
         ts_env_path = os.path.join(ts_package_dir, "env.sh")
-        d1_script, d1_path, d1_version = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
-        assert d1_script != gx_env_path  # Not the galaxy path, it should be the tool shed path used.
-        assert d1_script == ts_env_path
+        dependency = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
+        assert dependency.script != gx_env_path  # Not the galaxy path, it should be the tool shed path used.           
+        assert dependency.script == ts_env_path
 
 
 def __build_ts_test_package(base_path, script_contents=''):
     package_dir = os.path.join(base_path, TEST_REPO_NAME, TEST_VERSION, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
     __touch(os.path.join(package_dir, 'env.sh'), script_contents)
     return package_dir
+
+
+def test_galaxy_dependency_object_script():
+    with __test_base_path() as base_path:
+        ## Create env.sh file that just exports variable FOO and verify it
+        ## shell_commands export it correctly.
+        env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
+        command = ["bash", "-c", "%s; echo \"$FOO\"" % dependency.shell_commands(Bunch(type="package"))]
+        process = Popen(command, stdout=PIPE)
+        output = process.communicate()[0].strip()
+        assert output == 'bar'
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):

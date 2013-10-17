@@ -1,9 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
-INDETERMINATE_DEPENDENCY = (None, None, None)
 
-
-class DependencyResolver(object):
+class DependencyResolver( object ):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -16,3 +14,21 @@ class DependencyResolver(object):
         resolved tool dependency version (which may differ from requested
         version for instance if the request version is 'default'.)
         """
+
+
+class Dependency( object ):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def shell_commands( self, requirement ):
+        """
+        Return shell commands to enable this dependency.
+        """
+
+
+class NullDependency( Dependency ):
+
+    def shell_commands( self, requirement ):
+        return None
+
+INDETERMINATE_DEPENDENCY = NullDependency()
