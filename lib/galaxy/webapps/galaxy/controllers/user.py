@@ -10,15 +10,25 @@ import string
 import random
 import urllib
 from galaxy import web
-from galaxy import util, model
+from galaxy import util
+from galaxy import model
 from galaxy.model.orm import and_
-from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password, transform_publicname
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.security.validate_user_input import validate_email
+from galaxy.security.validate_user_input import validate_publicname
+from galaxy.security.validate_user_input import validate_password
+from galaxy.security.validate_user_input import transform_publicname
+from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string
+from galaxy.util import listify
+from galaxy.util import docstring_trim
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.form_builder import CheckboxField, build_select_field
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import UsesFormDefinitionsMixin
+from galaxy.web.form_builder import CheckboxField
+from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from datetime import datetime, timedelta
+from galaxy.web.framework.helpers import grids
 from galaxy.util import hash_util
 
 log = logging.getLogger( __name__ )
@@ -104,6 +114,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                       use_panels=use_panels,
                                                       message=message,
                                                       status='error' ) )
+
     @web.expose
     def openid_process( self, trans, **kwd ):
         '''Handle's response from OpenID Providers'''
@@ -231,6 +242,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                       redirect=redirect,
                                                       message=message,
                                                       status=status ) )
+
     @web.expose
     def openid_associate( self, trans, cntrller='user', **kwd ):
         '''Associates a user with an OpenID log in'''
@@ -369,6 +381,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     user_type_form_definition=user_type_form_definition,
                                     widgets=widgets,
                                     openids=openids )
+
     @web.expose
     @web.require_login( 'manage OpenIDs' )
     def openid_disassociate( self, trans, **kwd ):
@@ -849,6 +862,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         else:
             user_type_form_definition = None
         return user_type_form_definition
+
     def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
         widgets = []
         if user_type_form_definition:
@@ -950,6 +964,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     username=user.username,
                                     message=message,
                                     status=status )
+
     @web.expose
     def edit_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -1058,6 +1073,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                           action='manage_user_info',
                                                           cntrller=cntrller,
                                                           **kwd ) )
+
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
@@ -1105,6 +1121,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
                                     status=status )
+
     def __validate( self, trans, params, email, password, confirm, username ):
         # If coming from the tool shed webapp, we'll require a public user name
         if trans.webapp.name == 'tool_shed':
@@ -1126,6 +1143,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     if user_type_fd_id in [ 'none' ]:
                         return "Select the user's type and information"
         return message
+
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
         """Sets the user's default permissions for the new histories"""
@@ -1152,6 +1170,127 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+
+    @web.expose
+    @web.require_login()
+    def toolbox_filters( self, trans, cntrller, **kwd ):
+        """
+            Sets the user's default filters for the toolbox.
+            Toolbox filters are specified in universe_wsgi.ini.
+            The user can activate them and the choice is stored in user_preferences.
+        """
+
+        def get_filter_mapping( db_filters, config_filters ):
+            """
+                Compare the allowed filters from the universe_wsgi.ini config file with the previously saved or default filters from the database.
+                We need that to toogle the checkboxes for the formular in the right way.
+                Furthermore we extract all information associated to a filter to display them in the formular.
+            """
+            filters = list()
+            for filter_name in config_filters:
+                if ":" in filter_name:
+                    # Should be a submodule of filters (e.g. examples:restrict_development_tools)
+                    (module_name, function_name) = filter_name.rsplit(":", 1)
+                    module_name = 'galaxy.tools.filters.%s' % module_name.strip()
+                    module = __import__( module_name, globals(), fromlist=['temp_module'] )
+                    function = getattr( module, function_name.strip() )
+                else:
+                    # No module found it has to be explicitly imported.
+                    module = __import__( 'galaxy.tools.filters', globals(), fromlist=['temp_module'] )
+                    function = getattr( globals(), filter_name.strip() )
+
+                doc_string = docstring_trim( function.__doc__ )
+                split = doc_string.split('\n\n')
+                if split:
+                    sdesc = split[0]
+                else:
+                    log.error( 'No description specified in the __doc__ string for %s.' % filter_name )
+                if len(split) > 1:
+                    description = split[1]
+                else:
+                    description = ''
+
+                if filter_name in db_filters:
+                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=True ) )
+                else:
+                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
+            return filters
+
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+
+        user_id = params.get( 'user_id', False )
+        if user_id:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+
+        if user:
+            saved_user_tool_filters = list()
+            saved_user_section_filters = list()
+            saved_user_label_filters = list()
+
+            for name, value in user.preferences.items():
+                if name == 'toolbox_tool_filters':
+                    saved_user_tool_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_section_filters':
+                    saved_user_section_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_label_filters':
+                    saved_user_label_filters = listify( value, do_strip=True )
+
+            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
+            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
+            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
+
+            return trans.fill_template( 'user/toolbox_filters.mako',
+                                        cntrller=cntrller,
+                                        message=message,
+                                        tool_filters=tool_filters,
+                                        section_filters=section_filters,
+                                        label_filters=label_filters,
+                                        user=user,
+                                        status=status )
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change private toolbox filters." )
+
+    @web.expose
+    @web.require_login( "to change the private toolbox filters" )
+    def edit_toolbox_filters( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        user_id = params.get( 'user_id', False )
+        if not user_id:
+            # User must be logged in to create a new address
+            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
+
+        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+
+        if params.get( 'edit_toolbox_filter_button', False ):
+            tool_filters = list()
+            section_filters = list()
+            label_filters = list()
+            for name, state in params.flatten():
+                if state == 'on':
+                    if name.startswith('t_'):
+                        tool_filters.append( name[2:] )
+                    elif name.startswith('l_'):
+                        label_filters.append( name[2:] )
+                    elif name.startswith('s_'):
+                        section_filters.append( name[2:] )
+            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
+            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
+            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+            message = 'ToolBox filters has been updated.'
+            kwd = dict( message=message, status='done' )
+
+        # Display the ToolBox filters form with the current values filled in
+        return self.toolbox_filters( trans, cntrller, **kwd )
+
     @web.expose
     @web.require_login( "to get most recently used tool" )
     @web.json_pretty
@@ -1175,6 +1314,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             "description" : tool.description
         }
         return tool_info
+
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
@@ -1196,6 +1336,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+
     @web.expose
     def new_address( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -1280,6 +1421,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     phone=phone,
                                     message=message,
                                     status=status )
+
     @web.expose
     def edit_address( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -1357,6 +1499,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     address_obj=address_obj,
                                     message=message,
                                     status=status )
+
     @web.expose
     def delete_address( self, trans, cntrller, address_id=None, user_id=None ):
         try:
@@ -1377,6 +1520,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                           user_id=user_id,
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     def undelete_address( self, trans, cntrller, address_id=None, user_id=None ):
         try:
@@ -1396,6 +1540,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                           user_id=user_id,
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     def set_user_pref_async( self, trans, pref_name, pref_value ):
         """ Set a user preference asynchronously. If user is not logged in, do nothing. """

@@ -6,8 +6,9 @@ import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
-from galaxy.util import string_as_bool, listify, parse_xml
-
+from galaxy.util import string_as_bool
+from galaxy.util import listify
+from galaxy.util import parse_xml
 from galaxy import eggs
 import pkg_resources
 
@@ -64,9 +65,14 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml,shed_tool_conf.xml'
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
+
+        self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
+        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
@@ -489,3 +495,4 @@ def configure_logging( config ):
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
         root.addHandler( sentry_handler )
+
