@@ -5,6 +5,7 @@ from ..resolvers import INDETERMINATE_DEPENDENCY
 
 
 class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
+    resolver_type = "tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
         super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)

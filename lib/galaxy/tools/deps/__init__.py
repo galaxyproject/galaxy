@@ -8,10 +8,11 @@ import logging
 log = logging.getLogger( __name__ )
 
 from galaxy.util import parse_xml
+
 from .resolvers import INDETERMINATE_DEPENDENCY
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
-from .resolvers.modules import ModuleDependencyResolver
+from galaxy.util.submodules import submodules
 
 
 class DependencyManager( object ):
@@ -35,6 +36,7 @@ class DependencyManager( object ):
         if not os.path.isdir( default_base_path ):
             log.warn( "Path '%s' is not directory, ignoring", default_base_path )
         self.default_base_path = os.path.abspath( default_base_path )
+        self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
 
 
@@ -68,12 +70,19 @@ class DependencyManager( object ):
         for resolver_element in resolvers_element.getchildren():
             resolver_type = resolver_element.tag
             resolver_kwds = dict(resolver_element.items())
-            resolver = RESOLVER_CLASSES[resolver_type](self, **resolver_kwds)
+            resolver = self.resolver_classes[resolver_type](self, **resolver_kwds)
             resolvers.append(resolver)
         return resolvers
 
-RESOLVER_CLASSES = {
-    'tool_shed_packages': ToolShedPackageDependencyResolver,
-    'galaxy_packages': GalaxyPackageDependencyResolver,
-    'modules': ModuleDependencyResolver,
-}
+    def __resolvers_dict( self ):
+        resolver_dict = {}
+        for resolver_module in self.__resolver_modules():
+            for clazz in resolver_module.__all__:
+                resolver_type = getattr(clazz, 'resolver_type', None)
+                if resolver_type:
+                    resolver_dict[resolver_type] = clazz
+        return resolver_dict
+
+    def __resolver_modules( self ):
+        import galaxy.tools.deps.resolvers
+        return submodules( galaxy.tools.deps.resolvers )

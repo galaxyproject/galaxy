@@ -8,6 +8,7 @@ log = logging.getLogger( __name__ )
 
 
 class GalaxyPackageDependencyResolver(DependencyResolver):
+    resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
         ## Galaxy tool shed requires explicit versions on XML elements,
