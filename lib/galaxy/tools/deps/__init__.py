@@ -43,7 +43,7 @@ class DependencyManager( object ):
             return self._find_dep_versioned( name, version, type=type, installed_tool_dependencies=installed_tool_dependencies )
 
     def _find_dep_versioned( self, name, version, type='package', installed_tool_dependencies=None ):
-        installed_tool_dependency = self._get_installed_dependency( installed_tool_dependencies, name, type, version=version )
+        installed_tool_dependency = self._get_installed_dependency( name, type, version=version, installed_tool_dependencies=installed_tool_dependencies )
         base_path = self.default_base_path
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
@@ -58,7 +58,7 @@ class DependencyManager( object ):
 
     def _find_dep_default( self, name, type='package', installed_tool_dependencies=None ):
         if type == 'set_environment' and installed_tool_dependencies:
-            installed_tool_dependency = self._get_installed_dependency( installed_tool_dependencies, name, type, version=None )
+            installed_tool_dependency = self._get_installed_dependency( name, type, version=None, installed_tool_dependencies=installed_tool_dependencies )
             if installed_tool_dependency:
                 script, path, version = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
                 if script and path:
@@ -77,16 +77,15 @@ class DependencyManager( object ):
                 return None, real_path, real_version
         return INDETERMINATE_DEPENDENCY
 
-    def _get_installed_dependency( self, installed_tool_dependencies, name, type, version=None ):
-        if installed_tool_dependencies:
-            for installed_tool_dependency in installed_tool_dependencies:
-                name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
-                if version:
-                    if name_and_type_equal and installed_tool_dependency.version == version:
-                        return installed_tool_dependency
-                else:
-                    if name_and_type_equal:
-                        return installed_tool_dependency
+    def _get_installed_dependency( self, name, type, version=None, **kwds ):
+        for installed_tool_dependency in kwds.get("installed_tool_dependencies", []):
+            name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
+            if version:
+                if name_and_type_equal and installed_tool_dependency.version == version:
+                    return installed_tool_dependency
+            else:
+                if name_and_type_equal:
+                    return installed_tool_dependency
         return None
 
     def _get_package_installed_dependency_path( self, installed_tool_dependency, base_path, name, version ):
