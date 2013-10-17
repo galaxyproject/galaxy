@@ -41,6 +41,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
@@ -938,15 +939,6 @@ class ToolOutput( object, Dictifiable ):
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
-class ToolRequirement( object ):
-    """
-    Represents an external requirement that must be available for the tool to run (for example, a program, package, or library).
-    Requirements can optionally assert a specific version.
-    """
-    def __init__( self, name=None, type=None, version=None ):
-        self.name = name
-        self.type = type
-        self.version = version
 
 class Tool( object, Dictifiable ):
     """
@@ -1236,10 +1228,7 @@ class Tool( object, Dictifiable ):
         else:
             self.tests = None
         # Requirements (dependencies)
-        self.requirements = []
-        requirements_elem = root.find( "requirements" )
-        if requirements_elem:
-            self.parse_requirements( requirements_elem )
+        self.requirements = parse_requirements_from_xml( root )
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
@@ -1810,17 +1799,6 @@ class Tool( object, Dictifiable ):
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
         return param
-    def parse_requirements( self, requirements_elem ):
-        """
-        Parse each requirement from the <requirements> element and add to
-        self.requirements
-        """
-        for requirement_elem in requirements_elem.findall( 'requirement' ):
-            name = xml_text( requirement_elem )
-            type = requirement_elem.get( "type", "package" )
-            version = requirement_elem.get( "version", None )
-            requirement = ToolRequirement( name=name, type=type, version=version )
-            self.requirements.append( requirement )
 
     def populate_tool_shed_info( self ):
         if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
@@ -2672,27 +2650,16 @@ class Tool( object, Dictifiable ):
             command_line = command_line.replace(executable, abs_executable, 1)
             command_line = self.interpreter + " " + command_line
         return command_line
+
     def build_dependency_shell_commands( self ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        commands = []
         if self.tool_shed_repository:
             installed_tool_dependencies = self.tool_shed_repository.installed_tool_dependencies
         else:
             installed_tool_dependencies = None
-        for requirement in self.requirements:
-            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = INDETERMINATE_DEPENDENCY
-            if requirement.type in [ 'package', 'set_environment' ]:
-                dependency = self.app.toolbox.dependency_manager.find_dep( name=requirement.name,
-                                                                           version=requirement.version,
-                                                                           type=requirement.type,
-                                                                           installed_tool_dependencies=installed_tool_dependencies )
-            dependency_commands = dependency.shell_commands( requirement )
-            if not dependency_commands:
-                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            else:
-                commands.append(dependency_commands)
-        return commands
+        return self.app.toolbox.dependency_manager.dependency_shell_commands( self.requirements,
+                                                                              installed_tool_dependencies=installed_tool_dependencies )
+
     def build_redirect_url_params( self, param_dict ):
         """
         Substitute parameter values into self.redirect_url_params

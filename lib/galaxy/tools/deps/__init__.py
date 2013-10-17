@@ -39,6 +39,22 @@ class DependencyManager( object ):
         self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
 
+    def dependency_shell_commands( self, requirements, **kwds ):
+        commands = []
+        for requirement in requirements:
+            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
+            dependency = INDETERMINATE_DEPENDENCY
+            if requirement.type in [ 'package', 'set_environment' ]:
+                dependency = self.find_dep( name=requirement.name,
+                                            version=requirement.version,
+                                            type=requirement.type,
+                                            **kwds )
+            dependency_commands = dependency.shell_commands( requirement )
+            if not dependency_commands:
+                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+            else:
+                commands.append( dependency_commands )
+        return commands
 
     def find_dep( self, name, version=None, type='package', **kwds ):
         for resolver in self.dependency_resolvers:

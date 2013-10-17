@@ -152,10 +152,25 @@ def test_galaxy_dependency_object_script():
         ## shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
         dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
-        command = ["bash", "-c", "%s; echo \"$FOO\"" % dependency.shell_commands(Bunch(type="package"))]
-        process = Popen(command, stdout=PIPE)
-        output = process.communicate()[0].strip()
-        assert output == 'bar'
+        __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
+
+
+def test_shell_commands_built():
+    ## Test that dependency manager builds valid shell commands for a list of
+    ## requirements.
+    with __test_base_path() as base_path:
+        dm = DependencyManager( default_base_path=base_path )
+        __setup_galaxy_package_dep( base_path, TEST_REPO_NAME, TEST_VERSION, contents="export FOO=\"bar\"" )
+        mock_requirements = [ Bunch(type="package", version=TEST_VERSION, name=TEST_REPO_NAME ) ]
+        commands = dm.dependency_shell_commands( mock_requirements )
+        __assert_foo_exported( commands )
+
+
+def __assert_foo_exported( commands ):
+    command = ["bash", "-c", "%s; echo \"$FOO\"" % "".join(commands)]
+    process = Popen(command, stdout=PIPE)
+    output = process.communicate()[0].strip()
+    assert output == 'bar'
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):
