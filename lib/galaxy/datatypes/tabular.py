@@ -227,6 +227,7 @@ class Tabular( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception, exc:
+            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
             raise Exception, "Can't create peek header %s" % str( exc )
         return "".join( out )
 
@@ -254,6 +255,7 @@ class Tabular( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception, exc:
+            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
             raise Exception, "Can't create peek rows %s" % str( exc )
         return "".join( out )
 
