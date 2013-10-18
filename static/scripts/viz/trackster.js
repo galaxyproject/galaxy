@@ -197,7 +197,7 @@ var TracksterView = Backbone.View.extend(
     init_editor : function ()
     {
         // set title
-        $("#center .unified-panel-title").text(view.name + " (" + view.dbkey + ")");
+        $("#center .unified-panel-title").text(view.prefs.name + " (" + view.dbkey + ")");
         
         // add dataset
         if (galaxy_config.app.add_dataset)
