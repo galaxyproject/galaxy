@@ -325,7 +325,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
             if purge:
                 if not trans.app.config.allow_user_dataset_purge:
-                    raise HTTPForbidden( detail='This instance does not allow user dataset purging' )
+                    raise exceptions.httpexceptions.HTTPForbidden(
+                        detail='This instance does not allow user dataset purging' )
 
                 hda.purged = True
                 trans.sa_session.add( hda )
@@ -345,11 +346,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
 
-        except HTTPInternalServerError, http_server_err:
+        except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
             raise
-        except HTTPException, http_exc:
+        except exceptions.httpexceptions.HTTPException, http_exc:
             raise
         except Exception, exc:
             log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
