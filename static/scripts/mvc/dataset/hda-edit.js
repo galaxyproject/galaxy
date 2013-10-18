@@ -50,15 +50,16 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             purge_link.attr( 'href', [ "javascript", "void(0)" ].join( ':' ) );
             purge_link.click( function( event ){
                 //TODO??: confirm?
-                var ajaxPromise = jQuery.ajax( purge_url );
-                ajaxPromise.success( function( message, status, responseObj ){
+                var xhr = jQuery.ajax( purge_url );
+                xhr.success( function( message, status, responseObj ){
                     hdaView.model.set( 'purged', true );
                     hdaView.trigger( 'purged', hdaView );
                 });
-                ajaxPromise.error( function( error, status, message ){
+                xhr.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    hdaView.trigger( 'error', _l( "Unable to purge this dataset" ), error, status, message );
+                    view.trigger( 'error',
+                        hdaView, xhr, { url: purge_url }, _l( "Unable to purge this dataset" ) );
                 });
             });
         }
@@ -161,6 +162,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     error: function() {
                         // Something went wrong, so show HDA again.
                         // TODO: an error notification would be good.
+                        self.trigger( 'error', self, null, null, { url: delete_url }, _l( 'deletion failed' ) );
                         self.$el.show();
                     },
                     success: function() {
@@ -521,7 +523,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     url: this.urls.tags.get,
                     error: function( xhr, status, error ){
                         view.log( "Tagging failed", xhr, status, error );
-                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                        view.trigger( 'error', view, xhr, { url: view.urls.tags.get }, _l( "Tagging failed" ) );
                     },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
@@ -546,7 +548,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     loadAndDisplayAnnotation : function( event ){
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayAnnotation', event );
-        var annotationArea = this.$el.find( '.annotation-area' ),
+        var view = this,
+            annotationArea = this.$el.find( '.annotation-area' ),
             annotationElem = annotationArea.find( '.annotation-elt' ),
             setAnnotationUrl = this.urls.annotation.set;
 
@@ -556,9 +559,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){
-                        view.log( "Annotation failed", xhr, status, error );
-                        view.trigger( 'error', _l( "Annotation failed" ), xhr, status, error );
+                    error: function( xhr, status, message ){
+                        view.log( "Annotation failed", xhr, status, message );
+                        view.trigger( 'error',
+                            view, xhr, { url: view.urls.annotation.get }, _l( "Annotation failed" ) );
                     },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){

@@ -114,9 +114,21 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.urls = {};
     },
 
-    // refresh function
+    errorHandler : function( model, xhr, options, msg ){
+        // let 'lost contact' errors fail silently
+        if( xhr && (  ( xhr.status === 0 && xhr.readyState === 0 )
+                   || ( xhr.status === 502 ) ) ){
+            this.log( 'lost contact with server', model, xhr, options, msg );
+            return;
+        }
+
+        // otherwise display a message
+        msg = msg ||  _l( 'An error occurred while getting updates from the server.' ) + ' '
+                    + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+        this.displayMessage( 'error', msg );
+    },
+
     refresh : function() {
-        // refresh
         // TODO: refresh content without reloading frame
         window.location = window.location;
     },
@@ -128,8 +140,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
 
         // don't need to re-render entire model on all changes, just render disk size when it changes
-        this.model.bind( 'error', function( msg, xhr, error, status ){
-            this.displayMessage( 'error', msg );
+        this.model.bind( 'error', function( model, xhr, options, msg ){
+            this.errorHandler( model, xhr, options, msg );
             this.model.attributes.error = undefined;
         }, this );
 
@@ -157,8 +169,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }, this );
 
         // ---- self
-        this.bind( 'error', function( msg, xhr, error, status ){
-            this.displayMessage( 'error', msg );
+        this.bind( 'error', function( model, xhr, options, msg ){
+            this.errorHandler( model, xhr, options, msg );
         });
 
         if( this.logger ){
@@ -380,8 +392,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         hdaView.bind( 'body-collapsed', function( id ){
             historyView.storage.get( 'expandedHdas' ).deleteKey( id );
         });
-        hdaView.bind( 'error', function( msg, xhr, status, error ){
-            historyView.displayMessage( 'error', msg );
+        hdaView.bind( 'error', function( model, xhr, options, msg ){
+            historyView.errorHandler( model, xhr, options, msg );
         });
     },
 
@@ -488,7 +500,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     url: view.urls.tag,
                     error: function( xhr, error, status ) {
                         panel.log( 'Error loading tag area html', xhr, error, status );
-                        panel.trigger( 'error', _l( "Tagging failed" ), xhr, error, status );
+                        panel.trigger( 'error', panel, {}, {}, _l( "Tagging failed" ) );
                     },
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );

@@ -72,6 +72,10 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                 this.updateAfterDelay();
             }
         }, this );
+
+        this.hdas.bind( 'error', function( model, xhr, options, msg ){
+            this.trigger( 'error', model, xhr, options, msg );
+        }, this );
     },
 
     setOwnEventHandlers : function(){
@@ -176,20 +180,26 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         historyXhr.fail( function( xhr, status, error ){
             //TODO: use ajax.status handlers here
             // keep rolling on a bad gateway - server restart
-            if( xhr.status === 502 ){
+
+            //if( xhr.status === 0 && xhr.readyState === 0 ){
+
+            if( ( xhr.status === 0 && xhr.readyState === 0 )
+            ||  ( xhr.status === 502 ) ){
+
+            //if( xhr.status === 502 ){
+                history.log( 'Bad Gateway error. Retrying...' );
                 setTimeout( function(){
-                    history.log( 'Bad Gateway error. Retrying...' );
                     //TODO: someway to throw error on X tries
                     history.stateUpdater();
                 }, History.UPDATE_DELAY );
 
             // if not interruption by iframe reload
             //TODO: remove when iframes are removed
-            } else if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
+            } else {
                 history.log( 'stateUpdater error:', error, 'responseText:', xhr.responseText );
                 var msg = _l( 'An error occurred while getting updates from the server.' ) + ' '
                         + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                history.trigger( 'error', msg, xhr, status, error );
+                history.trigger( 'error', history, xhr, {}, msg );
             }
         });
     },
@@ -228,7 +238,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                         hdaIds, xhr, status, error, errorJson );
                     var msg = _l( 'An error occurred while getting dataset details from the server.' ) + ' '
                             + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                    history.trigger( 'error', msg, xhr, status, error );
+                    history.trigger( 'error', history, xhr, {}, msg );
                 }
             },
 
@@ -295,12 +305,13 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     fetchDisplayApplications : function( ids ){
         this.log( this + '.fetchDisplayApplications:', ids );
         var history = this,
+            display_app_url = 'history/get_display_application_links',
             // if any ids passed place them in the query string data
             data = ( ids && _.isArray( ids ) )?({ hda_ids : ids.join( ',' ) }):({});
 
         //TODO: hardcoded
         history.log( this + ': fetching display application data' );
-        jQuery.ajax( 'history/get_display_application_links', {
+        jQuery.ajax( display_app_url, {
             data : data,
             success : function( displayAppList, status, xhr ){
                 //history.hdas.set( data, { merge: true } ); // doesn't work - clears all other attributes
@@ -314,7 +325,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                     history.log( 'Error fetching display applications:', ids, xhr, status, error );
                     var msg = _l( 'An error occurred while getting display applications from the server.' ) + ' '
                             + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                    history.trigger( 'error', msg, xhr, status, error );
+                    history.trigger( 'error', history, xhr, { url: display_app_url }, msg );
                 }
             }
         });
@@ -322,7 +333,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
     toString : function(){
         var nameString = ( this.get( 'name' ) )?
-            ( ',' + this.get( 'name' ) ) : ( '' );
+            ( ', ' + this.get( 'name' ) ) : ( '' );
         return 'History(' + this.get( 'id' ) + nameString + ')';
     }
 });
