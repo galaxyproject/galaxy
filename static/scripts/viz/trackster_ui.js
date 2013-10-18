@@ -75,7 +75,7 @@ var TracksterUI = base.Base.extend({
                 });
 
                 // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null),
+                var overview_track_name = (view.overview_drawable ? view.overview_drawable.prefs.name : null),
                     viz_config = {
                         'view': view.to_dict(),
                         'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
@@ -88,7 +88,7 @@ var TracksterUI = base.Base.extend({
                     dataType: "json",
                     data: { 
                         'id'        : view.vis_id,
-                        'title'     : view.name,
+                        'title'     : view.prefs.name,
                         'dbkey'     : view.dbkey,
                         'type'      : 'trackster',
                         'vis_json'  : JSON.stringify(viz_config)
@@ -265,7 +265,7 @@ var TracksterUI = base.Base.extend({
             // Set overview.
             var overview_drawable;
             for (var i = 0; i < view.drawables.length; i++) {
-                if (view.drawables[i].name === overview_drawable_name) {
+                if (view.drawables[i].prefs.name === overview_drawable_name) {
                     view.set_overview(view.drawables[i]);
                     break;
                 }
