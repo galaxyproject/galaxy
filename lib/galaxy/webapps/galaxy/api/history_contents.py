@@ -3,6 +3,7 @@ API operations on the contents of a history.
 """
 
 from galaxy import web, util
+from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
@@ -166,13 +167,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'source'    = 'library'
             'content'   = [the encoded id from the library dataset]
             
-            copy from url:
-            'source'    = 'url'
-            'content'   = [the url of the dataset]
+            copy from HDA:
+            'source'    = 'hda'
+            'content'   = [the encoded id from the HDA]
+
+        ..note:
+            Currently, a user can only copy an HDA from a history that the user owns.
             
-            copy from file:
-            'source'    = 'upload'
-            'content'   = [the uploaded file content]
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
@@ -183,9 +184,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         # check parameters
         source  = payload.get('source', None)
         content = payload.get('content', None)
-        if source not in ['library', 'url', 'upload', 'history']:
+        if source not in ['library', 'hda'] or content is None:
             trans.response.status = 400
-            return "history_contents:create() : Please define the source ['library', 'url' or 'upload'] and the content."
+            return "Please define the source ('library' or 'hda') and the content."
         
         # retrieve history
         try:
@@ -213,19 +214,31 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.to_dict()
-        elif source == 'history':
+
+        elif source == 'hda':
             try:
-                hda = self.get_dataset(trans, content)
-                assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
-            except AssertionError, e:
-                trans.response.status=400
-                return "HistoryDatasetAssocation does not belong to current user"
-            except Exception, e:
-                return str(e)
-            data_copy=hda.copy(copy_children = True)
-            result=history.add_dataset(data_copy)
+                #NOTE: user currently only capable of copying one of their own datasets
+                hda = self.get_dataset( trans, content )
+
+            except ( exceptions.httpexceptions.HTTPRequestRangeNotSatisfiable,
+                     exceptions.httpexceptions.HTTPBadRequest ), id_exc:
+                # wot...
+                trans.response.status = 400
+                return str( id_exc )
+            except exceptions.MessageException, msg_exc:
+                #TODO: covers most but not all user exceptions, too generic (403 v.401)
+                trans.response.status = 403
+                return str( msg_exc )
+            except Exception, exc:
+                trans.response.status = 500
+                log.exception( "history: %s, source: %s, content: %s", history_id, source, content )
+                return str( exc )
+
+            data_copy=hda.copy( copy_children=True )
+            result=history.add_dataset( data_copy )
             trans.sa_session.flush()
             return result.to_dict()
+
         else:
             # other options
             trans.response.status = 501
