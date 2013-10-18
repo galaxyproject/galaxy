@@ -1,6 +1,7 @@
 """
 Custom exceptions for Galaxy
 """
+from paste import httpexceptions
 
 class MessageException( Exception ):
     """
