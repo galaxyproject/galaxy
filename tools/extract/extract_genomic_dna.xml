@@ -11,9 +11,9 @@
       #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
         -1 1,4,5,7 --gff
       #else:
-        -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol}
+        -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol},${input.metadata.nameCol}
       #end if
-            
+
       #if $seq_source.index_source == "cached":
         ## Genomic data from cache.
         -g ${GALAXY_DATA_INDEX_DIR}
@@ -52,8 +52,8 @@
       </data>
   </outputs>
   <requirements>
-      <requirement type="binary">faToTwoBit</requirement>
       <requirement type="package">ucsc_tools</requirement>
+      <requirement type="binary">faToTwoBit</requirement>
   </requirements>
   <tests>
     <test>

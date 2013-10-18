@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 usage: %prog $input $out_file1
-    -1, --cols=N,N,N,N: Columns for start, end, strand in input file
+    -1, --cols=N,N,N,N,N: Columns for start, end, strand in input file
     -d, --dbkey=N: Genome build of input file
     -o, --output_format=N: the data type of the output file
     -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc
@@ -54,7 +54,13 @@ def __main__():
     #
     options, args = doc_optparse.parse( __doc__ )
     try:
-        chrom_col, start_col, end_col, strand_col = parse_cols_arg( options.cols )
+        if len(options.cols.split(',')) == 5:
+            # BED file
+            chrom_col, start_col, end_col, strand_col, name_col = parse_cols_arg( options.cols )
+        else:
+            # gff file
+            chrom_col, start_col, end_col, strand_col = parse_cols_arg( options.cols )
+            name_col = False
         dbkey = options.dbkey
         output_format = options.output_format
         gff_format = options.gff
@@ -144,6 +150,7 @@ def __main__():
             start = feature.start
             end = feature.end
             strand = feature.strand
+            name = ""
         else:
             # Processing lines, either interval or GFF format.
             line = feature.rstrip( '\r\n' )
@@ -153,6 +160,8 @@ def __main__():
                     chrom = fields[chrom_col]
                     start = int( fields[start_col] )
                     end = int( fields[end_col] )
+                    if name_col:
+                        name = fields[name_col]
                     if gff_format:
                         start, end = gff_util.convert_gff_coords_to_bed( [start, end] )
                     if includes_strand_col:
@@ -237,13 +246,16 @@ def __main__():
             sequence = reverse_complement( sequence )
 
         if output_format == "fasta" :
-            l = len( sequence )        
+            l = len( sequence )
             c = 0
             if gff_format:
                 start, end = gff_util.convert_bed_coords_to_gff( [ start, end ] )
             fields = [dbkey, str( chrom ), str( start ), str( end ), strand]
             meta_data = "_".join( fields )
-            fout.write( ">%s\n" % meta_data )
+            if name.strip():
+                fout.write( ">%s %s\n" % (meta_data, name) )
+            else:
+                fout.write( ">%s\n" % meta_data )
             while c < l:
                 b = min( c + 50, l )
                 fout.write( "%s\n" % str( sequence[c:b] ) )
