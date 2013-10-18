@@ -758,7 +758,6 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             log.debug( error_message )
             repair_dict [ repository.name ] = error_message
     elif repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-        # TODO: this may cause problems if the repository is currently being installed.
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         # Reset the repository attributes to the New state for installation.
         if metadata:
@@ -793,7 +792,8 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )
             # Reset missing tool dependencies.
             for tool_dependency in repository.missing_tool_dependencies:
-                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
+                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR,
+                                               trans.model.ToolDependency.installation_status.INSTALLING ]:
                     tool_dependency_util.set_tool_dependency_attributes( trans,
                                                                          tool_dependency,
                                                                          trans.model.ToolDependency.installation_status.UNINSTALLED,

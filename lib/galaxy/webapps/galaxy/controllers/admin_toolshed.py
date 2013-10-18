@@ -1185,6 +1185,21 @@ class AdminToolshed( AdminGalaxy ):
                                     message=message,
                                     status=status )
 
+    @web.expose
+    @web.require_admin
+    def repair_tool_shed_repositories( self, trans, tool_shed_repositories, repo_info_dicts, **kwd  ):
+        """Repair specified tool shed repositories."""
+        # The received lists of tool_shed_repositories and repo_info_dicts are ordered.
+        for index, tool_shed_repository in enumerate( tool_shed_repositories ):
+            repo_info_dict = repo_info_dicts[ index ]
+            repair_dict = repository_util.repair_tool_shed_repository( trans,
+                                                                       tool_shed_repository,
+                                                                       encoding_util.tool_shed_encode( repo_info_dict ) )
+        tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='monitor_repository_installation',
+                                                          tool_shed_repository_ids=tsr_ids_for_monitoring ) )
+
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
         # Avoid caching
@@ -1205,21 +1220,6 @@ class AdminToolshed( AdminGalaxy ):
                                                                                  repository=repository ),
                                                                                  'utf-8' ) ) )
         return rval
-
-    @web.expose
-    @web.require_admin
-    def repair_tool_shed_repositories( self, trans, tool_shed_repositories, repo_info_dicts, **kwd  ):
-        """Repair specified tool shed repositories."""
-        # The received lists of tool_shed_repositories and repo_info_dicts are ordered.
-        for index, tool_shed_repository in enumerate( tool_shed_repositories ):
-            repo_info_dict = repo_info_dicts[ index ]
-            repair_dict = repository_util.repair_tool_shed_repository( trans,
-                                                                       tool_shed_repository,
-                                                                       encoding_util.tool_shed_encode( repo_info_dict ) )
-        tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                          action='monitor_repository_installation',
-                                                          tool_shed_repository_ids=tsr_ids_for_monitoring ) )
 
     @web.expose
     @web.require_admin

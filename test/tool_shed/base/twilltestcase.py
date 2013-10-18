@@ -969,7 +969,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( [ 'Metadata has been reset' ] )
         
     def reset_metadata_on_selected_repositories( self, repository_ids ):
-        self.visit_url( '/admin/reset_metadata_on_selected_repositories' )
+        self.visit_url( '/admin/reset_metadata_on_selected_repositories_in_tool_shed' )
         kwd = dict( repository_ids=repository_ids )
         self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
         

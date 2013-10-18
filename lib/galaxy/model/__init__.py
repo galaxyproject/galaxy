@@ -3679,7 +3679,11 @@ class ToolShedRepository( object ):
         """Return the repository's repository dependencies that are currently being installed."""
         required_repositories_being_installed = []
         for required_repository in self.repository_dependencies:
-            if required_repository.status == self.installation_status.INSTALLING:
+            if required_repository.status in [ self.installation_status.CLONING,
+                                               self.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
+                                               self.installation_status.INSTALLING_TOOL_DEPENDENCIES,
+                                               self.installation_status.LOADING_PROPRIETARY_DATATYPES,
+                                               self.installation_status.SETTING_TOOL_VERSIONS ]:
                 required_repositories_being_installed.append( required_repository )
         return required_repositories_being_installed
 

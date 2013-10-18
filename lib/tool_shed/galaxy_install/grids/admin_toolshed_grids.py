@@ -101,33 +101,7 @@ class InstalledRepositoryGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            status_label = tool_shed_repository.status
-            if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
-                                                trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                                                trans.model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                                                trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                                                trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
-                bgcolor = trans.model.ToolShedRepository.states.INSTALLING
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
-                                                  trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                bgcolor = trans.model.ToolShedRepository.states.UNINSTALLED
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
-                bgcolor = trans.model.ToolShedRepository.states.ERROR
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-                if tool_shed_repository.missing_repository_dependencies:
-                    bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing repository dependencies' % status_label
-                elif tool_shed_repository.missing_tool_dependencies:
-                    bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing tool dependencies' % status_label
-                else:
-                    bgcolor = trans.model.ToolShedRepository.states.OK
-            else:
-                bgcolor = trans.model.ToolShedRepository.states.ERROR
-            rval = '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
-            return rval
+            return suc.get_tool_shed_repository_status_label( trans, tool_shed_repository )
 
 
     class ToolShedColumn( grids.TextColumn ):
