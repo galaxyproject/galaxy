@@ -17,6 +17,7 @@ import galaxy.model
 
 log = logging.getLogger(__name__)
 
+
 class ToolParameter( object, Dictifiable ):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
@@ -172,9 +173,10 @@ class ToolParameter( object, Dictifiable ):
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
-
         tool_dict = super( ToolParameter, self ).to_dict()
-        tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        #TODO: removing html as it causes a lot of errors on subclasses - needs histories, etc.
+        #tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        tool_dict[ 'model_class' ] = self.__class__.__name__
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -193,6 +195,7 @@ class ToolParameter( object, Dictifiable ):
         else:
             return parameter_types[param_type]( tool, param )
 
+
 class TextToolParameter( ToolParameter ):
     """
     Parameter that can take on any text value.
@@ -210,12 +213,14 @@ class TextToolParameter( ToolParameter ):
         self.size = elem.get( 'size' )
         self.value = elem.get( 'value' )
         self.area = string_as_bool( elem.get( 'area', False ) )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         if value is None: value = self.value
         if self.area:
             return form_builder.TextArea( self.name, self.size, value )
         else:
             return form_builder.TextField( self.name, self.size, value )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
@@ -266,6 +271,7 @@ class IntegerToolParameter( TextToolParameter ):
         if isinstance( value, int ):
             value = str( value )
         return super( IntegerToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
+
     def from_html( self, value, trans=None, other_values={} ):
         try:
             return int( value )
@@ -273,12 +279,14 @@ class IntegerToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return ""
             raise ValueError( "An integer is required" )
+
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
             return ""
         else:
             return str( value )
+
     def to_python( self, value, app ):
         try:
             return int( value )
@@ -286,11 +294,13 @@ class IntegerToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return None
             raise err
+
     def get_initial_value( self, trans, context, history=None ):
         if self.value:
             return int( self.value )
         else:
             return None
+
 
 class FloatToolParameter( TextToolParameter ):
     """
@@ -334,10 +344,12 @@ class FloatToolParameter( TextToolParameter ):
                 raise ValueError( "A real number is required" )
         if self.min and self.max:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         if isinstance( value, float ):
             value = str( value )
         return super( FloatToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
+
     def from_html( self, value, trans=None, other_values={} ):
         try:
             return float( value )
@@ -345,12 +357,14 @@ class FloatToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return ""
             raise ValueError( "A real number is required" )
+
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
             return ""
         else:
             return str( value )
+
     def to_python( self, value, app ):
         try:
             return float( value )
@@ -358,11 +372,13 @@ class FloatToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return None
             raise err
+
     def get_initial_value( self, trans, context, history=None ):
         try:
             return float( self.value )
         except:
             return None
+
 
 class BooleanToolParameter( ToolParameter ):
     """
@@ -387,30 +403,38 @@ class BooleanToolParameter( ToolParameter ):
         self.truevalue = elem.get( 'truevalue', 'true' )
         self.falsevalue = elem.get( 'falsevalue', 'false' )
         self.checked = string_as_bool( elem.get( 'checked' ) )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
         if value is not None:
             checked = form_builder.CheckboxField.is_checked( value )
         return form_builder.CheckboxField( self.name, checked, refresh_on_change = self.refresh_on_change )
+
     def from_html( self, value, trans=None, other_values={} ):
         return form_builder.CheckboxField.is_checked( value )
+
     def to_html_value( self, value, app ):
         if value:
             return [ 'true', 'true' ]
         else:
             return [ 'true' ]
+
     def to_python( self, value, app ):
         return ( value == 'True' )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.checked
+
     def to_param_dict_string( self, value, other_values={} ):
         if value:
             return self.truevalue
         else:
             return self.falsevalue
+
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
+
 
 class FileToolParameter( ToolParameter ):
     """
@@ -431,8 +455,10 @@ class FileToolParameter( ToolParameter ):
         """
         ToolParameter.__init__( self, tool, elem )
         self.ajax = string_as_bool( elem.get( 'ajax-upload' ) )
+
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax = self.ajax, value = value )
+
     def from_html( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
@@ -450,11 +476,13 @@ class FileToolParameter( ToolParameter ):
                 local_filename = local_filename
             )
         return value
+
     def get_required_enctype( self ):
         """
         File upload elements require the multipart/form-data encoding
         """
         return "multipart/form-data"
+
     def to_string( self, value, app ):
         if value in [ None, '' ]:
             return None
@@ -467,6 +495,7 @@ class FileToolParameter( ToolParameter ):
             except:
                 return None
         raise Exception( "FileToolParameter cannot be persisted" )
+
     def to_python( self, value, app ):
         if value is None:
             return None
@@ -474,8 +503,10 @@ class FileToolParameter( ToolParameter ):
             return value
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
+
     def get_initial_value( self, trans, context, history=None ):
         return None
+
 
 class FTPFileToolParameter( ToolParameter ):
     """
@@ -486,35 +517,42 @@ class FTPFileToolParameter( ToolParameter ):
         Example: C{<param name="bins" type="file" />}
         """
         ToolParameter.__init__( self, tool, elem )
+
     @property
     def visible( self ):
         if self.tool.app.config.ftp_upload_dir is None or self.tool.app.config.ftp_upload_site is None:
             return False
         return True
+
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         if trans is None or trans.user is None:
             user_ftp_dir = None
         else:
             user_ftp_dir = trans.user_ftp_dir
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
+
     def from_html( self, value, trans=None, other_values={} ):
         try:
             assert type( value ) is list
         except:
             value = [ value ]
         return value
+
     def to_string( self, value, app ):
         if value in [ None, '' ]:
             return None
         elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
             return value
+
     def to_python( self, value, app ):
         if value is None:
             return None
         elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
             return value
+
     def get_initial_value( self, trans, context, history=None ):
         return None
+
 
 class HiddenToolParameter( ToolParameter ):
     """
@@ -532,10 +570,13 @@ class HiddenToolParameter( ToolParameter ):
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
         self.value = elem.get( 'value' )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
+
     def get_label( self ):
         return None
 
@@ -543,25 +584,32 @@ class HiddenToolParameter( ToolParameter ):
 ## can change, there needs to be a different way to specify this. I'm leaving
 ## it for now to avoid breaking any tools.
 
+
 class BaseURLToolParameter( ToolParameter ):
     """
     Returns a parameter the contains its value prepended by the
     current server base url. Used in all redirects.
     """
+
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
         self.value = elem.get( 'value', '' )
+
     def get_value( self, trans ):
         # url = trans.request.base + self.value
         url = url_for( self.value, qualified=True )
         return url
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.get_value( trans ) )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
+
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
+
 
 class SelectToolParameter( ToolParameter ):
     """
@@ -665,6 +713,7 @@ class SelectToolParameter( ToolParameter ):
                 selected = string_as_bool( option.get( "selected", False ) )
                 self.static_options.append( ( option.text or value, value, selected ) )
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
+
     def get_options( self, trans, other_values ):
         if self.options:
             return self.options.get_options( trans, other_values )
@@ -672,6 +721,7 @@ class SelectToolParameter( ToolParameter ):
             return eval( self.dynamic_options, self.tool.code_namespace, other_values )
         else:
             return self.static_options
+
     def get_legal_values( self, trans, other_values ):
         def _get_UnvalidatedValue_value( value ):
             if isinstance( value, UnvalidatedValue ):
@@ -683,6 +733,7 @@ class SelectToolParameter( ToolParameter ):
             return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
         else:
             return self.legal_values
+
     def get_html_field( self, trans=None, value=None, context={} ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
@@ -710,6 +761,7 @@ class SelectToolParameter( ToolParameter ):
                 selected = ( optval in value )
             field.add_option( text, optval, selected )
         return field
+
     def from_html( self, value, trans=None, context={} ):
         if self.need_late_validation( trans, context ):
             if self.multiple:
@@ -747,11 +799,13 @@ class SelectToolParameter( ToolParameter ):
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
             return value
+
     def to_html_value( self, value, app ):
         if isinstance( value, list ):
             return value
         else:
             return str( value )
+
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
@@ -769,6 +823,7 @@ class SelectToolParameter( ToolParameter ):
         if isinstance( value, list ):
             value = self.separator.join( value )
         return value
+
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
@@ -778,10 +833,12 @@ class SelectToolParameter( ToolParameter ):
             # breaks multiple selection
             return { "__class__": "RuntimeValue" }
         return value
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         if isinstance( value, dict ) and value.get( "__class__", None ) == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
+
     def need_late_validation( self, trans, context ):
         """
         Determine whether we need to wait to validate this parameters value
@@ -826,6 +883,7 @@ class SelectToolParameter( ToolParameter ):
                 return True
         # Dynamic, but all dependenceis are known and have values
         return False
+
     def get_initial_value( self, trans, context, history=None ):
         # More working around dynamic options for workflow
         if self.need_late_validation( trans, context ):
@@ -844,6 +902,7 @@ class SelectToolParameter( ToolParameter ):
         elif len( value ) == 1:
             value = value[0]
         return value
+
     def value_to_display_text( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             suffix = "\n(value not yet validated)"
@@ -863,6 +922,7 @@ class SelectToolParameter( ToolParameter ):
                 if v in value:
                     rval.append( t )
         return "\n".join( rval ) + suffix
+
     def get_dependencies( self ):
         """
         Get the *names* of the other params this param depends on.
@@ -876,17 +936,24 @@ class SelectToolParameter( ToolParameter ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
-        options = self.get_options( trans, [] )
-        value = options[0][1]
-        for option in options:
-            if option[2]:
-                # Found selected option.
-                value = option[1]
+        options = []
+        try:
+            options = self.get_options( trans, {} )
+        except AssertionError, assertion:
+            # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
+            #       required dependency in filter_options
+            #       associated DataToolParam in get_column_list
+            pass
 
-        d.update( {
-            'options': options,
-            'value': value
-        } )
+        d[ 'options' ] = options
+        if options:
+            value = options[0][1]
+            for option in options:
+                if option[2]:
+                    # Found selected option.
+                    value = option[1]
+            d[ 'value' ] = options
+
         return d
 
 
@@ -933,6 +1000,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def __init__( self, *args, **kwds ):
         super( GenomeBuildParameter, self ).__init__( *args, **kwds )
         self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
+
     def get_options( self, trans, other_values ):
         if not trans.history:
             yield 'unspecified', '?', False
@@ -940,10 +1008,30 @@ class GenomeBuildParameter( SelectToolParameter ):
             last_used_build = trans.history.genome_build
             for dbkey, build_name in trans.db_builds:
                 yield build_name, dbkey, ( dbkey == last_used_build )
+
     def get_legal_values( self, trans, other_values ):
         if not trans.history:
             return set( '?' )
         return set( dbkey for dbkey, _ in trans.db_builds )
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
+        d = ToolParameter.to_dict( self, trans )
+
+        # Get options, value - options is a generator here, so compile to list
+        options = list( self.get_options( trans, {} ) )
+        value = options[0][1]
+        for option in options:
+            if option[2]:
+                # Found selected option.
+                value = option[1]
+
+        d.update({
+            'options': options,
+            'value': value
+        })
+        return d
+
 
 class ColumnListParameter( SelectToolParameter ):
     """
@@ -1081,10 +1169,13 @@ class ColumnListParameter( SelectToolParameter ):
                 return UnvalidatedValue( self.default_value )
             return self.default_value
         return SelectToolParameter.get_initial_value( self, trans, context )
+
     def get_legal_values( self, trans, other_values ):
         return set( self.get_column_list( trans, other_values ) )
+
     def get_dependencies( self ):
         return [ self.data_ref ]
+
     def need_late_validation( self, trans, context ):
         if super( ColumnListParameter, self ).need_late_validation( trans, context ):
             return True
@@ -1245,7 +1336,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             call_other_values.update( other_values.dict )
         return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
 
-
     def get_options( self, trans=None, value=None, other_values={} ):
         if self.is_dynamic:
             if self.dynamic_options:
@@ -1353,6 +1443,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             else:
                 rval = sanitize_param( rval )
         return rval
+
     def get_initial_value( self, trans, context, history=None ):
         def recurse_options( initial_values, options ):
             for option in options:
@@ -1407,8 +1498,25 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         return self.filtered.keys()
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
+        d = ToolParameter.to_dict( self, trans )
+
+        options = []
+        try:
+            options = self.get_options( trans, {} )
+        except KeyError, key_err:
+            # will sometimes error if self.is_dynamic and self.filtered
+            #   bc we dont/cant fill out other_values above ({})
+            pass
+
+        d[ 'options' ] = options;
+        return d
+
+
 class DummyDataset( object ):
     pass
+
 
 class DataToolParameter( ToolParameter ):
     # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
@@ -1720,6 +1828,7 @@ class DataToolParameter( ToolParameter ):
             ref = ref()
         return ref
 
+
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
     Hidden parameter that behaves as a DataToolParameter. As with all hidden
@@ -1845,8 +1954,10 @@ class UnvalidatedValue( object ):
     """
     def __init__( self, value ):
         self.value = value
+
     def __str__( self ):
         return str( self.value )
+
 
 class RuntimeValue( object ):
     """

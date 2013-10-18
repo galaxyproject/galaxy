@@ -1,3 +1,5 @@
+import urllib
+
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
@@ -44,8 +46,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         GET /api/tools/{tool_id}
         Returns tool information, including parameters and inputs.
         """
+        io_details   = util.string_as_bool( kwd.get( 'io_details', False ) )
+        link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
         try:
-            return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
+            id = urllib.unquote_plus( id )
+            tool = self.app.toolbox.tools_by_id.get( id, None )
+            if not tool:
+                trans.response.status = 404
+                return { 'error': 'tool not found', 'id': id }
+            return tool.to_dict( trans, io_details=io_details, link_details=link_details )
+
         except Exception, exc:
             log.error( 'could not convert tool (%s) to dictionary: %s', id, str( exc ), exc_info=True )
             trans.response.status = 500
