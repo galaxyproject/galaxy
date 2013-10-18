@@ -1772,17 +1772,19 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                 if trans.webapp.name == 'tool_shed':
                     # We're in the tool shed.
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                    owner = str( repository.user.username )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
                 else:
                     # We're in Galaxy.
                     repository = suc.get_installed_tool_shed_repository( trans, repository_id )
+                    owner = str( repository.owner )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                     log.debug( message )
                     unsuccessful_count += 1
                 else:
-                    log.debug( "Successfully reset metadata on repository %s" % str( repository.name ) )
+                    log.debug( "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), owner ) )
                     successful_count += 1
             except:
                 log.exception( "Error attempting to reset metadata on repository %s", str( repository.name ) )

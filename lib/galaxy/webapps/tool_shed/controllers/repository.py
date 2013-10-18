@@ -42,6 +42,7 @@ eggs.require( 'mercurial' )
 
 from mercurial import commands
 from mercurial import hg
+from mercurial import mdiff
 from mercurial import patch
 from mercurial import ui
 
@@ -2856,11 +2857,19 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             ctx_child = ctx.children()[ 0 ]
         else:
             ctx_child = None
+        diffs = []
+        options_dict = suc.get_mercurial_default_options_dict( 'diff' )
+        # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
+        # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
+        options_dict[ 'maxfile' ] = suc.MAXDIFFSIZE
+        options_dict[ 'maxtotal' ] = suc.MAXDIFFSIZE
+        diffopts = mdiff.diffopts( **options_dict )
+        for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node(), opts=diffopts ):  
+            if len( diff ) > suc.MAXDIFFSIZE:    
+                diff = util.shrink_string_by_size( diff, suc.MAXDIFFSIZE )
+            diffs.append( suc.to_html_string( diff ) )
         modified, added, removed, deleted, unknown, ignored, clean = repo.status( node1=ctx_parent.node(), node2=ctx.node() )
         anchors = modified + added + removed + deleted + unknown + ignored + clean
-        diffs = []
-        for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            diffs.append( suc.to_html_string( diff ) )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, ctx_str, metadata_only=True )
         # For rendering the prev button.
         if ctx_parent:

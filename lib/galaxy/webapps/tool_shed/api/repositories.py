@@ -231,8 +231,11 @@ class RepositoriesController( BaseAPIController ):
                                        in addition to those repositories of type tool_dependency_definition.  This param is ignored
                                        if the current user is not an admin user, in which case this same restriction is automatic.
         :param encoded_ids_to_skip (optional): a list of encoded repository ids for repositories that should not be processed.
+        :param skip_file (optional): A local file name that contains the encoded repository ids associated with repositories to skip.
+                                     This param can be used as an alternative to the above encoded_ids_to_skip.
         """
         def handle_repository( trans, repository, results ):
+            log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
             repository_id = trans.security.encode_id( repository.id )
             try:
                 invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
@@ -240,12 +243,13 @@ class RepositoriesController( BaseAPIController ):
                     message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                     results[ 'unsuccessful_count' ] += 1
                 else:
-                    message = "Successfully reset metadata on repository %s" % str( repository.name )
+                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
                     results[ 'successful_count' ] += 1
             except Exception, e:
-                message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1
-            results[ 'repository_status' ].append( message )
+            status = '%s : %s' % ( str( repository.name ), message )
+            results[ 'repository_status' ].append( status )
             return results
         try:
             start_time = strftime( "%Y-%m-%d %H:%M:%S" )
@@ -255,6 +259,16 @@ class RepositoriesController( BaseAPIController ):
                             unsuccessful_count=0 )
             handled_repository_ids = []
             encoded_ids_to_skip = payload.get( 'encoded_ids_to_skip', [] )
+            skip_file = payload.get( 'skip_file', None )
+            if skip_file and os.path.exists( skip_file ) and not encoded_ids_to_skip:
+                # Load the list of encoded_ids_to_skip from the skip_file.
+                # Contents of file must be 1 encoded repository id per line.
+                lines = open( skip_file, 'rb' ).readlines()
+                for line in lines:
+                    if line.startswith( '#' ):
+                        # Skip comments.
+                        continue
+                    encoded_ids_to_skip.append( line.rstrip( '\n' ) )
             if trans.user_is_admin():
                 my_writable = util.asbool( payload.get( 'my_writable', False ) )
             else:
@@ -306,17 +320,18 @@ class RepositoriesController( BaseAPIController ):
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                 else:
-                    message = "Successfully reset metadata on repository %s" % str( repository.name )
+                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
             except Exception, e:
-                message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
-                
-            results[ 'repository_status' ].append( message )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
+            status = '%s : %s' % ( str( repository.name ), message )
+            results[ 'repository_status' ].append( status )
             return results
         try:
             repository_id = payload.get( 'repository_id', None )
             if repository_id is not None:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 start_time = strftime( "%Y-%m-%d %H:%M:%S" )
+                log.debug( "%s...resetting metadata on repository %s" % ( start_time, str( repository.name ) ) )
                 results = handle_repository( trans, start_time, repository )
                 stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
                 results[ 'stop_time' ] = stop_time

@@ -39,7 +39,9 @@ class HgController( BaseUIController ):
                         # Set metadata using the repository files on disk.
                         error_message, status = set_repository_metadata( trans, repository )
                         if status == 'ok' and error_message:
-                            log.debug( "Successfully reset metadata on repository %s, but encountered problem: %s" % ( repository.name, error_message ) )
+                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
+                                       ( str( repository.name ), str( repository.user.username ), error_message ) )
                         elif status != 'ok' and error_message:
-                            log.debug( "Error resetting metadata on repository %s: %s" % ( repository.name, error_message ) )
+                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" % \
+                                       ( str( repository.name ), str( repository.user.username ), error_message ) )
         return wsgi_app

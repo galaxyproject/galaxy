@@ -517,10 +517,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
                         message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                         results[ 'unsuccessful_count' ] += 1
                     else:
-                        message = "Successfully reset metadata on repository %s" % str( repository.name )
+                        message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.owner ) )
                         results[ 'successful_count' ] += 1
                 except Exception, e:
-                    message = "Error resetting metadata on repository %s: %s" % ( str( repository.name ), str( e ) )
+                    message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.owner ), str( e ) )
                     results[ 'unsuccessful_count' ] += 1
                 results[ 'repository_status' ].append( message )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
