@@ -4220,7 +4220,8 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
-        { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'height', type: 'int', default_value: 0, hidden: true }
     ] ),
     
     config_onchange: function() {
