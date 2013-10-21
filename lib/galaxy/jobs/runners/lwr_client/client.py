@@ -1,11 +1,9 @@
 import os
 import shutil
-import urllib
 import simplejson
 from simplejson import dumps
 from time import sleep
 
-from .destination import url_to_destination_params
 from .destination import submit_params
 
 CACHE_WAIT_SECONDS = 3
@@ -64,33 +62,20 @@ class Client(object):
         Galaxy job/task id.
     """
 
-    def __init__(self, destination_params, job_id, client_manager):
-        if isinstance(destination_params, str) or isinstance(destination_params, unicode):
-            destination_params = url_to_destination_params(destination_params)
-        self.remote_host = destination_params.get("url")
-        self.default_file_action = destination_params.get("default_file_action", "transfer")
-        self.action_config_path = destination_params.get("file_action_config", None)
+    def __init__(self, destination_params, job_id, job_manager_interface):
+        self.job_manager_interface = job_manager_interface
         self.destination_params = destination_params
-        assert self.remote_host != None, "Failed to determine url for LWR client."
-        self.private_key = destination_params.get("private_token", None)
         self.job_id = job_id
-        self.client_manager = client_manager
+
+        self.default_file_action = self.destination_params.get("default_file_action", "transfer")
+        self.action_config_path = self.destination_params.get("file_action_config", None)
+
+    def _raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
+        return self.job_manager_interface.execute(command, args, data, input_path, output_path)
 
     @property
     def _submit_params(self):
         return submit_params(self.destination_params)
-
-    def __build_url(self, command, args):
-        if self.private_key:
-            args["private_key"] = self.private_key
-        data = urllib.urlencode(args)
-        url = self.remote_host + command + "?" + data
-        return url
-
-    def _raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
-        url = self.__build_url(command, args)
-        response = self.client_manager.transport.execute(url, data=data, input_path=input_path, output_path=output_path)
-        return response
 
     @parseJson()
     def input_path(self, path, input_type, name=None):
@@ -147,24 +132,34 @@ class Client(object):
         """
         name = os.path.basename(path)
         output_type = self._get_output_type(name)
+
+        if output_type == "none":
+            # Just make sure the file was created.
+            if not os.path.exists(path):
+                raise OutputNotFoundException(path)
+            return
+
+        output_path = self.__output_path(path, name, working_directory, output_type)
+        self.__populate_output_path(name, output_path, output_type, action)
+
+    def __populate_output_path(self, name, output_path, output_type, action):
+        if action == 'transfer':
+            self.__raw_download_output(name, self.job_id, output_type, output_path)
+        elif action == 'copy':
+            lwr_path = self._output_path(name, self.job_id, output_type)['path']
+            self._copy(lwr_path, output_path)
+
+    def __output_path(self, path, name, working_directory, output_type):
+        """
+        Preconditions: output_type is not 'none'.
+        """
         if output_type == "direct":
             output_path = path
         elif output_type == "task":
             output_path = os.path.join(working_directory, name)
-        elif output_type == "none":
-            if action == "transfer":
-                raise OutputNotFoundException(path)
         else:
             raise Exception("Unknown output_type returned from LWR server %s" % output_type)
-        if action == 'transfer':
-            self.__raw_download_output(name, self.job_id, output_type, output_path)
-        elif output_type == 'none':
-            # Just make sure the file was created.
-            if not os.path.exists(path):
-                raise OutputNotFoundException(path)
-        elif action == 'copy':
-            lwr_path = self._output_path(name, self.job_id, output_type)['path']
-            self._copy(lwr_path, output_path)
+        return output_path
 
     def fetch_work_dir_output(self, source, working_directory, output_path, action='transfer'):
         """
@@ -197,11 +192,12 @@ class Client(object):
 
     @retry()
     def __raw_download_output(self, name, job_id, output_type, output_path):
-        self._raw_execute("download_output",
-                           {"name": name,
-                            "job_id": self.job_id,
-                            "output_type": output_type},
-                           output_path=output_path)
+        output_params = {
+            "name": name,
+            "job_id": self.job_id,
+            "output_type": output_type
+        }
+        self._raw_execute("download_output", output_params, output_path=output_path)
 
     def launch(self, command_line):
         """
@@ -247,7 +243,7 @@ class Client(object):
         """
         Return boolean indicating whether the job is complete.
         """
-        if response == None:
+        if response is None:
             response = self.raw_check_complete()
         return response["complete"] == "true"
 
@@ -294,8 +290,9 @@ class InputCachingClient(Client):
     Beta client that cache's staged files to prevent duplication.
     """
 
-    def __init__(self, destination_params, job_id, client_manager):
-        super(InputCachingClient, self).__init__(destination_params, job_id, client_manager)
+    def __init__(self, destination_params, job_id, job_manager_interface, client_cacher):
+        super(InputCachingClient, self).__init__(destination_params, job_id, job_manager_interface)
+        self.client_cacher = client_cacher
 
     @parseJson()
     def _upload_file(self, args, contents, input_path):
@@ -304,10 +301,10 @@ class InputCachingClient(Client):
             input_path = None
             return self._raw_execute(action, args, contents, input_path)
         else:
-            event_holder = self.client_manager.event_manager.acquire_event(input_path)
+            event_holder = self.client_cacher.acquire_event(input_path)
             cache_required = self.cache_required(input_path)
             if cache_required:
-                self.client_manager.queue_transfer(self, input_path)
+                self.client_cacher.queue_transfer(self, input_path)
             while not event_holder.failed:
                 available = self.file_available(input_path)
                 if available['ready']:

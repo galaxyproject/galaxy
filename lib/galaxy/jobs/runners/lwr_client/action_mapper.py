@@ -112,10 +112,11 @@ class RegexPathMapper(BasePathMapper):
         return self.pattern.match(path) is not None
 
 
-mappers = {'prefix': PrefixPathMapper,
-           'glob': GlobPathMapper,
-           'regex': RegexPathMapper,
-          }
+mappers = {
+    'prefix': PrefixPathMapper,
+    'glob': GlobPathMapper,
+    'regex': RegexPathMapper,
+}
 
 
 __all__ = [FileActionMapper]

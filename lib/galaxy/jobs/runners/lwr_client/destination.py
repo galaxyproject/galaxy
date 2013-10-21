@@ -55,5 +55,5 @@ def submit_params(destination_params):
     [('native_specification', '-q batch')]
     """
     return dict([(key[len(SUBMIT_PREFIX):], value)
-                  for key, value in (destination_params or {}).iteritems()
-                  if key.startswith(SUBMIT_PREFIX)])
+                 for key, value in (destination_params or {}).iteritems()
+                 if key.startswith(SUBMIT_PREFIX)])
