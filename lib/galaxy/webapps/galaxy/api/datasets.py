@@ -23,7 +23,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         trans.response.status = 501
         return 'not implemented'
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd ):
         """
         GET /api/datasets/{encoded_dataset_id}
@@ -243,7 +243,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
 
         return data
 
-    @web.expose_api_raw
+    @web.expose_api_raw_anonymous
     def display( self, trans, history_content_id, history_id,
                  preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
         """
