@@ -60,7 +60,7 @@ shed_tool_data_table_conf.xml
 job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
-config/visualizations/*.xml
+config/*
 static/welcome.html.*
 static/welcome.html
 
@@ -85,6 +85,7 @@ test/tool_shed/tmp/*
 .coverage
 htmlcov
 run_unit_tests.html
+test/unit/**.log
 
 # Project files
 *.kpf
@@ -96,8 +97,10 @@ run_unit_tests.html
 tool-data/shared/jars/
 
 # CSS build artifacts.
-*/variables.less
-static/style/blue/base_sprites.less
+sprite-*.less
+
+# Local node_modules directories
+node_modules
 
 # Testing
 selenium-server.jar

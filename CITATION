@@ -1,0 +1,54 @@
+If you use or extend Galaxy in your published work, please cite each of the
+following publications:
+
+- Goecks, J, Nekrutenko, A, Taylor, J and The Galaxy Team. "Galaxy: a
+  comprehensive approach for supporting accessible, reproducible, and
+  transparent computational research in the life sciences." 
+  Genome Biol. 2010 Aug 25;11(8):R86.
+
+- Blankenberg D, Von Kuster G, Coraor N, Ananda G, Lazarus R, Mangan M,
+  Nekrutenko A, Taylor J. "Galaxy: a web-based genome analysis tool for
+  experimentalists". Current Protocols in Molecular Biology. 
+  2010 Jan; Chapter 19:Unit 19.10.1-21.
+
+- Giardine B, Riemer C, Hardison RC, Burhans R, Elnitski L, Shah P, Zhang Y,
+  Blankenberg D, Albert I, Taylor J, Miller W, Kent WJ, Nekrutenko A. "Galaxy:
+  a platform for interactive large-scale genome analysis." 
+  Genome Research. 2005 Oct; 15(10):1451-5.
+
+See also: http://wiki.galaxyproject.org/CitingGalaxy
+
+
+
+BibTeX format:
+
+@article{goecks2010galaxy,
+  title={Galaxy: a comprehensive approach for supporting accessible, reproducible, and transparent computational research in the life sciences},
+  author={Goecks, Jeremy and Nekrutenko, Anton and Taylor, James and The Galaxy Team},
+  journal={Genome Biol},
+  volume={11},
+  number={8},
+  pages={R86},
+  year={2010}
+}
+
+@article{blankenberg2010galaxy,
+  title={Galaxy: A Web-Based Genome Analysis Tool for Experimentalists},
+  author={Blankenberg, Daniel and Kuster, Gregory Von and Coraor, Nathaniel and Ananda, Guruprasad and Lazarus, Ross and Mangan, Mary and Nekrutenko, Anton and Taylor, James},
+  journal={Current protocols in molecular biology},
+  pages={19--10},
+  year={2010},
+  publisher={John Wiley \& Sons, Inc.}
+}
+
+@article{giardine2005galaxy,
+  title={Galaxy: a platform for interactive large-scale genome analysis},
+  author={Giardine, Belinda and Riemer, Cathy and Hardison, Ross C and Burhans, Richard and Elnitski, Laura and Shah, Prachi and Zhang, Yi and Blankenberg, Daniel and Albert, Istvan and Taylor, James and Miller, Webb C and Kent, W James and Nekrutenko, Anton},
+  journal={Genome research},
+  volume={15},
+  number={10},
+  pages={1451--1455},
+  year={2005},
+  publisher={Cold Spring Harbor Lab}
+}
+

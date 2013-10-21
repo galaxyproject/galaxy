@@ -79,7 +79,7 @@ class TestDatatypeConverters( ShedTwillTestCase ):
                                  preview_strings_displayed=preview_strings_displayed,
                                  strings_displayed=strings_displayed,
                                  strings_not_displayed=strings_not_displayed,
-                                 post_submit_strings_displayed=[ repository.name, 'new' ],
+                                 post_submit_strings_displayed=[ repository.name, 'New' ],
                                  includes_tools_for_display_in_tool_panel=False )
         
     def test_0015_uninstall_and_verify_tool_panel_section( self ):

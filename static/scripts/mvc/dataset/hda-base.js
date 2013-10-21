@@ -46,18 +46,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.expanded = attributes.expanded || false;
 
         // re-rendering on any model changes
-        this.model.bind( 'change', function( event, changed ){
-            // find out if more has changed than just the display applications
-            //TODO: need a better handler for these sorts of partial rendering cases
-            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
-            if( nonDisplayAppChanges.length ){
-                // if it's more, render everything
+        this.model.bind( 'change', function( model, options ){
+            // if more than the display apps have changed: render everything
+            var nonDisplayAppChanges = _.omit( this.model.changedAttributes(), 'display_apps', 'display_types' );
+            if( _.keys( nonDisplayAppChanges ).length ){
                 this.render();
 
-            // if it's just the display links, and it's already expanded
+            // if just the display links, and it's already expanded: render the links only
             } else {
                 if( this.expanded ){
-                    // render the links only
                     this._render_displayApps();
                 }
             }
@@ -84,6 +81,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             initialRender = ( this.$el.children().size() === 0 );
 
         this.$el.attr( 'id', 'historyItemContainer-' + id );
+
+        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
+        // handle that here by removing previous view's tooltips
+        this.$el.find("[title]").tooltip( "destroy" );
 
         /** web controller urls for functions relating to this hda.
          *      These are rendered from urlTemplates using the model data. */
@@ -177,7 +178,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
-        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -249,8 +250,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.on_click = function(){
-                parent.frame_manager.frame_new({
-                    title   : "Data Viewer",
+                Galaxy.frame_manager.frame_new({
+                    title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
                     location: "center",
                     content : self.urls.display

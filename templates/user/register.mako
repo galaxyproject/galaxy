@@ -37,25 +37,82 @@
         subscribe_check_box = CheckboxField( 'subscribe' )
     %>
 
+<script type="text/javascript">
+	$(document).ready(function() {
+
+		function validateString(test_string, type) { 
+			var mail_re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+			//var mail_re_RFC822 = /^([^\x00-\x20\x22\x28\x29\x2c\x2e\x3a-\x3c\x3e\x40\x5b-\x5d\x7f-\xff]+|\x22([^\x0d\x22\x5c\x80-\xff]|\x5c[\x00-\x7f])*\x22)(\x2e([^\x00-\x20\x22\x28\x29\x2c\x2e\x3a-\x3c\x3e\x40\x5b-\x5d\x7f-\xff]+|\x22([^\x0d\x22\x5c\x80-\xff]|\x5c[\x00-\x7f])*\x22))*\x40([^\x00-\x20\x22\x28\x29\x2c\x2e\x3a-\x3c\x3e\x40\x5b-\x5d\x7f-\xff]+|\x5b([^\x0d\x5b-\x5d\x80-\xff]|\x5c[\x00-\x7f])*\x5d)(\x2e([^\x00-\x20\x22\x28\x29\x2c\x2e\x3a-\x3c\x3e\x40\x5b-\x5d\x7f-\xff]+|\x5b([^\x0d\x5b-\x5d\x80-\xff]|\x5c[\x00-\x7f])*\x5d))*$/;
+			var username_re = /^[a-z0-9\-]{3,255}$/;
+			if (type === 'email') {
+				return mail_re.test(test_string);
+			} else if (type === 'username'){
+				return username_re.test(test_string);
+			}
+		} 
+
+		function renderError(message) {
+		if ($(".errormessage").length === 1) {
+			$(".errormessage").html(message)
+		} else {
+			var div = document.createElement("div");
+			div.className = "errormessage"
+			div.innerHTML = message;
+			document.body.insertBefore(div, document.body.firstChild);
+			}
+		}
+
+		$('#registration').bind('submit', function(e) {
+			$('#send').attr('disabled', 'disabled');
+            
+            // we need this value to detect submitting at backend
+			var hidden_input = '<input type="hidden" id="create_user_button" name="create_user_button" value="Submit"/>';
+			$("#email_input").before(hidden_input);
+
+			var error_text_email= 'Please enter your valid email address';
+			var error_text_email_long= 'Email cannot be more than 255 characters in length';
+			var error_text_username_characters = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 3.';
+			var error_text_password_short = 'Please use a password of at least 6 characters';
+			var error_text_password_match = "Passwords don't match";
+
+		    var validForm = true;    
+		    
+		    var email = $('#email_input').val();
+		    var name = $('#name_input').val()
+		    if (email.length > 255){ renderError(error_text_email_long); validForm = false;}
+		    else if (!validateString(email,"email")){ renderError(error_text_email); validForm = false;}
+		    else if (!($('#password_input').val() === $('#password_check_input').val())){ renderError(error_text_password_match); validForm = false;}
+		    else if ($('#password_input').val().length < 6 ){ renderError(error_text_password_short); validForm = false;}
+		    else if (!(validateString(name,"username"))){ renderError(error_text_username_characters); validForm = false;}
+
+	   		if (!validForm) { 
+		        e.preventDefault();
+		        // reactivate the button if the form wasn't submitted
+		        $('#send').removeAttr('disabled');
+		        }
+			});
+	});
+
+</script>
     <div class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
-                <input type="text" name="email" value="${email | h}" size="40"/>
+                <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">
                 <label>Password:</label>
-                <input type="password" name="password" value="" size="40"/>
+                <input id="password_input" type="password" name="password" value="" size="40"/>
             </div>
             <div class="form-row">
                 <label>Confirm password:</label>
-                <input type="password" name="confirm" value="" size="40"/>
+                <input id="password_check_input" type="password" name="confirm" value="" size="40"/>
             </div>
             <div class="form-row">
                 <label>Public name:</label>
-                <input type="text" name="username" size="40" value="${username |h}"/>
+                <input id="name_input" type="text" name="username" size="40" value="${username |h}"/>
                 %if t.webapp.name == 'galaxy':
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information
@@ -103,10 +160,19 @@
                     <input type="hidden" name="user_type_fd_id" value="${trans.security.encode_id( user_type_form_definition.id )}"/>
                 %endif   
             %endif
+            <div id="for_bears">
+            If you see this, please leave following field blank. 
+            <input type="text" name="bear_field" size="1" value=""/>
+            </div>
             <div class="form-row">
-                <input type="submit" name="create_user_button" value="Submit"/>
+                <input type="submit" id="send" name="create_user_button" value="Submit"/>
             </div>
         </form>
+        %if registration_warning_message:
+        <div class="alert alert-danger" style="margin: 30px 12px 12px 12px;">
+            ${registration_warning_message}           
+        </div>
+        %endif
     </div>
 
 </%def>

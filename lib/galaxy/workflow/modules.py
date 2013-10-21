@@ -250,7 +250,6 @@ class ToolModule( WorkflowModule ):
                 module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
-            # module.post_job_actions = step.post_job_actions
             module.workflow_outputs = step.workflow_outputs
             pjadict = {}
             for pja in step.post_job_actions:

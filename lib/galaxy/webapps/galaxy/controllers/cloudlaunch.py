@@ -53,6 +53,8 @@ class CloudController(BaseUIController):
             kps = ec2_conn.get_all_key_pairs()
         except EC2ResponseError, e:
             log.error("Problem starting an instance: %s\n%s" % (e, e.body))
+            trans.response.status = 400
+            return e.error_message or "Instance failure, but no specific error was detected.  Please check your AWS Console."
         account_info['keypairs'] = [akp.name for akp in kps]
         #Existing Clusters
         s3_conn = S3Connection(key_id, secret, calling_format=OrdinaryCallingFormat())

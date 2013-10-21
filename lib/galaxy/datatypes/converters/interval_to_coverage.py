@@ -50,12 +50,12 @@ def main( interval, coverage ):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward+reverse > 0:
-                    coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]), 
+                    coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]),
                                    forward=forward, reverse=reverse)
             partitions = []
             forward_covs = []
             reverse_covs = []
-            
+
         start_index = bisect(partitions, record.start)
         forward = int(record.strand == "+")
         reverse = int(record.strand == "-")
@@ -74,43 +74,43 @@ def main( interval, coverage ):
         partitions.insert(end_index, record.end)
         forward_covs.insert(end_index, forward_covs[end_index-1] - forward )
         reverse_covs.insert(end_index, reverse_covs[end_index-1] - reverse )
-        
+
         if partitions:
             for partition in xrange(0, start_index):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward+reverse > 0:
-                    coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]), 
+                    coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]),
                                    forward=forward, reverse=reverse)
             partitions = partitions[start_index:]
             forward_covs = forward_covs[start_index:]
             reverse_covs = reverse_covs[start_index:]
-        
+
         lastchrom = chrom
-        
+
     # Finish the last chromosome
     if partitions:
         for partition in xrange(0, len(partitions)-1):
             forward = forward_covs[partition]
             reverse = reverse_covs[partition]
             if forward+reverse > 0:
-                coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]), 
+                coverage.write(chrom=chrom, position=xrange(partitions[partition],partitions[partition+1]),
                                forward=forward, reverse=reverse)
-    
+
 class CoverageWriter( object ):
     def __init__( self, out_stream=None, chromCol=0, positionCol=1, forwardCol=2, reverseCol=3 ):
         self.out_stream = out_stream
         self.reverseCol = reverseCol
         self.nlines = 0
-        positions = {str(chromCol):'%(chrom)s', 
-                     str(positionCol):'%(position)d', 
-                     str(forwardCol):'%(forward)d', 
+        positions = {str(chromCol):'%(chrom)s',
+                     str(positionCol):'%(position)d',
+                     str(forwardCol):'%(forward)d',
                      str(reverseCol):'%(reverse)d'}
-        if reverseCol < 0: 
+        if reverseCol < 0:
             self.template = "%(0)s\t%(1)s\t%(2)s\n" % positions
         else:
             self.template = "%(0)s\t%(1)s\t%(2)s\t%(3)s\n" % positions
-            
+
     def write(self, **kwargs ):
         if self.reverseCol < 0: kwargs['forward'] += kwargs['reverse']
         posgen = kwargs['position']
@@ -121,12 +121,12 @@ class CoverageWriter( object ):
     def close(self):
         self.out_stream.flush()
         self.out_stream.close()
-        
+
 if __name__ == "__main__":
     options, args = doc_optparse.parse( __doc__ )
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = [int(x)-1 for x in options.cols1.split(',')]
-        chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x)-1 for x in options.cols2.split(',')]      
+        chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x)-1 for x in options.cols2.split(',')]
         in_fname, out_fname = args
     except:
         doc_optparse.exception()
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                                chromCol = chr_col_2, positionCol = position_col_2,
                                forwardCol = forward_col_2, reverseCol = reverse_col_2, )
     temp_file.seek(0)
-    interval = io.NiceReaderWrapper( temp_file, 
+    interval = io.NiceReaderWrapper( temp_file,
                                      chrom_col=chr_col_1,
                                      start_col=start_col_1,
                                      end_col=end_col_1,

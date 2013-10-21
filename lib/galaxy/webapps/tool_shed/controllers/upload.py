@@ -100,7 +100,7 @@ class UploadController( BaseUIController ):
                     if isempty:
                         tar = None
                         istar = False
-                    else:                
+                    else:
                         # Determine what we have - a single file or an archive
                         try:
                             if ( isgzip or isbz2 ) and uncompress_file:
@@ -135,7 +135,7 @@ class UploadController( BaseUIController ):
                         # Move some version of the uploaded file to the load_point within the repository hierarchy.
                         if uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                            altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                            altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
                             if altered:
                                 tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                                 shutil.move( tmp_filename, full_path )
@@ -207,15 +207,20 @@ class UploadController( BaseUIController ):
                     else:
                         metadata_dict = {}
                     if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
-                        # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
-                        # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
-                        # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
-                        # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                        # Handle messaging for orphan tool dependencies.
-                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
-                        if orphan_message:
-                            message += orphan_message
+                        change_repository_type_message = tool_dependency_util.generate_message_for_repository_type_change( trans, repository )
+                        if change_repository_type_message:
+                            message += change_repository_type_message
                             status = 'warning'
+                        else:
+                            # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
+                            # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
+                            # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
+                            # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
+                            # Handle messaging for orphan tool dependencies.
+                            orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
+                            if orphan_message:
+                                message += orphan_message
+                                status = 'warning'
                     # Handle messaging for invalid tool dependencies.
                     invalid_tool_dependencies_message = tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:
@@ -241,6 +246,7 @@ class UploadController( BaseUIController ):
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,
+                                    changeset_revision=tip,
                                     url=url,
                                     commit_message=commit_message,
                                     uncompress_file=uncompress_file,
@@ -277,7 +283,7 @@ class UploadController( BaseUIController ):
                     uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
                     if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
                         if altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
@@ -338,7 +344,7 @@ class UploadController( BaseUIController ):
                 uploaded_file_name = os.path.join( full_path, filename )
                 if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )

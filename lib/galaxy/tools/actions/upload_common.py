@@ -112,7 +112,7 @@ def __new_history_upload( trans, uploaded_dataset, history=None, state=None ):
         history = trans.history
     hda = trans.app.model.HistoryDatasetAssociation( name = uploaded_dataset.name,
                                                      extension = uploaded_dataset.file_type,
-                                                     dbkey = uploaded_dataset.dbkey, 
+                                                     dbkey = uploaded_dataset.dbkey,
                                                      history = history,
                                                      create_dataset = True,
                                                      sa_session = trans.sa_session )

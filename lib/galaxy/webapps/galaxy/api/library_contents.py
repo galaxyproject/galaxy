@@ -19,8 +19,21 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     # TODO: Add parameter to only get top level of datasets/subfolders.
     def index( self, trans, library_id, **kwd ):
         """
-        GET /api/libraries/{encoded_library_id}/contents
-        Displays a collection (list) of library contents (files and folders).
+        index( self, trans, library_id, **kwd )
+        * GET /api/libraries/{library_id}/contents:
+            return a list of library files and folders
+
+        :type   library_id: str
+        :param  library_id: encoded id string of the library that contains this item
+
+        :rtype:     list
+        :returns:   list of dictionaries of the form:
+
+            * id:   the encoded id of the library item
+            * name: the 'libary path'
+                or relationship of the library item to the root
+            * type: 'file' or 'folder'
+            * url:  the url to get detailed information on the library item
         """
         rval = []
         current_user_roles = trans.get_current_user_roles()
@@ -40,8 +53,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                     can_access = trans.app.security_agent.can_access_dataset(
                         current_user_roles, ld.library_dataset_dataset_association.dataset )
                 if (admin or can_access) and not ld.deleted:
-                    log.debug( "type(folder): %s" % type( folder ) )
-                    log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
+                    #log.debug( "type(folder): %s" % type( folder ) )
+                    #log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
                     #log.debug( "attributes of folder: %s" % str(dir(folder)) )
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
@@ -59,13 +72,13 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
-        log.debug( "Root folder type: %s" % type( library.root_folder ) )
+        #log.debug( "Root folder type: %s" % type( library.root_folder ) )
         encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
         rval.append( dict( id = encoded_id,
                            type = 'folder',
                            name = '/',
                            url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
-        log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
+        #log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
             encoded_id = trans.security.encode_id( content.id )
@@ -80,21 +93,54 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):
         """
-        GET /api/libraries/{encoded_library_id}/contents/{encoded_content_id}
-        Displays information about a library content (file or folder).
+        show( self, trans, id, library_id, **kwd )
+        * GET /api/libraries/{library_id}/contents/{id}
+            return information about library file or folder
+
+        :type   id:         str
+        :param  id:         the encoded id of the library item to return
+        :type   library_id: str
+        :param  library_id: encoded id string of the library that contains this item
+
+        :rtype:     dict
+        :returns:   detailed library item information
+        .. seealso::
+            :func:`galaxy.model.LibraryDataset.to_dict` and
+            :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
         class_name, content_id = self.__decode_library_content_id( trans, id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
         else:
             content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
-        return self.encode_all_ids( trans, content.get_api_value( view='element' ) )
+        return self.encode_all_ids( trans, content.to_dict( view='element' ) )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
         """
-        POST /api/libraries/{encoded_library_id}/contents
-        Creates a new library content item (file or folder).
+        create( self, trans, library_id, payload, **kwd )
+        * POST /api/libraries/{library_id}/contents:
+            create a new library file or folder
+
+        To copy an HDA into a library send ``create_type`` of 'file' and
+        the HDA's encoded id in ``from_hda_id`` (and optionally ``ldda_message``).
+
+        :type   library_id: str
+        :param  library_id: encoded id string of the library that contains this item
+        :type   payload:    dict
+        :param  payload:    dictionary structure containing:
+
+            * folder_id:    the parent folder of the new item
+            * create_type:  the type of item to create ('file' or 'folder')
+            * from_hda_id:  (optional) the id of an accessible HDA to copy into the
+                library
+            * ldda_message: (optional) the new message attribute of the LDDA created
+            * extended_metadata: (optional) dub-dictionary containing any extended
+                metadata to associate with the item
+
+        :rtype:     dict
+        :returns:   a dictionary containing the id, name,
+            and 'show' url of the new item
         """
         create_type = None
         if 'create_type' not in payload:
@@ -126,7 +172,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if create_type == 'file' and from_hda_id:
             return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
 
-        #check for extended metadata, store it and pop it out of the param 
+        #check for extended metadata, store it and pop it out of the param
         #otherwise sanitize_param will have a fit
         ex_meta_payload = None
         if 'extended_metadata' in payload:
@@ -195,10 +241,10 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
     def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='' ):
         """
-        Copies hda `from_hda_id` to library folder `library_folder_id` optionally
-        adding `ldda_message` to the new ldda's `message`.
+        Copies hda ``from_hda_id`` to library folder ``library_folder_id`` optionally
+        adding ``ldda_message`` to the new ldda's ``message``.
 
-        `library_contents.create` will branch to this if called with 'from_hda_id'
+        ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in it's payload.
         """
         log.debug( '_copy_hda_to_library_folder: %s' %( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
@@ -220,7 +266,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
-            ldda_dict = ldda.get_api_value()
+            ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
 
         except Exception, exc:
@@ -236,10 +282,23 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         return rval
 
     @web.expose_api
-    def update( self, trans, id,  library_id, payload, **kwd ):
+    def update( self, trans, id, library_id, payload, **kwd ):
         """
-        PUT /api/libraries/{encoded_library_id}/contents/{encoded_content_type_and_id}
-        Sets relationships among items
+        update( self, trans, id, library_id, payload, **kwd )
+        * PUT /api/libraries/{library_id}/contents/{id}
+            create a ImplicitlyConvertedDatasetAssociation
+        .. seealso:: :class:`galaxy.model.ImplicitlyConvertedDatasetAssociation`
+
+        :type   id:         str
+        :param  id:         the encoded id of the library item to return
+        :type   library_id: str
+        :param  library_id: encoded id string of the library that contains this item
+        :type   payload:    dict
+        :param  payload:    dictionary structure containing::
+            'converted_dataset_id':
+
+        :rtype:     None
+        :returns:   None
         """
         if 'converted_dataset_id' in payload:
             converted_id = payload.pop( 'converted_dataset_id' )

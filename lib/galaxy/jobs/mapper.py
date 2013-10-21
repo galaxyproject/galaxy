@@ -1,6 +1,6 @@
 import logging
 import inspect
-import os 
+import os
 
 log = logging.getLogger( __name__ )
 
@@ -53,16 +53,16 @@ class JobRunnerMapper( object ):
                 rule_module_name = "galaxy.jobs.rules.%s" % fname[:-len(".py")]
                 names.append( rule_module_name )
         return names
-    
+
     def __invoke_expand_function( self, expand_function ):
         function_arg_names = inspect.getargspec( expand_function ).args
 
-        possible_args = { "job_id" : self.job_wrapper.job_id, 
+        possible_args = { "job_id" : self.job_wrapper.job_id,
                           "tool" : self.job_wrapper.tool,
                           "tool_id" : self.job_wrapper.tool.id,
                           "job_wrapper" : self.job_wrapper,
                           "app" : self.job_wrapper.app }
-        
+
         actual_args = {}
 
         # Populate needed args
@@ -82,7 +82,7 @@ class JobRunnerMapper( object ):
 
             if "user" in function_arg_names:
                 actual_args[ "user" ] = user
-                
+
             if "user_email" in function_arg_names:
                 actual_args[ "user_email" ] = user_email
 
@@ -109,7 +109,7 @@ class JobRunnerMapper( object ):
             for tool_id in self.job_wrapper.tool.all_ids:
                 if self.__last_rule_module_with_function( tool_id ):
                     expand_function_name = tool_id
-                    break                
+                    break
         return expand_function_name
 
     def __get_expand_function( self, expand_function_name ):
@@ -127,7 +127,7 @@ class JobRunnerMapper( object ):
             if hasattr( rule_module, function_name ):
                 return rule_module
         return None
-                
+
     def __handle_dynamic_job_destination( self, destination ):
         expand_type = destination.params.get('type', "python")
         if expand_type == "python":

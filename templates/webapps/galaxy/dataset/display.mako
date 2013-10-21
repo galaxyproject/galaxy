@@ -20,7 +20,7 @@
         require(['mvc/data'], function(data) {
             data.createTabularDatasetChunkedView(
                 // Dataset config. TODO: encode id.
-                _.extend( ${h.to_json_string( item.get_api_value() )}, 
+                _.extend( ${h.to_json_string( item.to_dict() )}, 
                         {
                             chunk_url: "${h.url_for( controller='/dataset', action='display', 
                                              dataset_id=trans.security.encode_id( item.id ))}",
@@ -52,10 +52,10 @@
 
 <%def name="render_item_links( data )">
     ## Provide links to save data and import dataset.
-    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk tooltip" title="Save dataset"></a>
+    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk" title="Save dataset"></a>
         <a 
             href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}"
-            class="icon-button import tooltip" 
+            class="icon-button import" 
             title="Import dataset"></a>
 </%def>
 

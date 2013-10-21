@@ -99,7 +99,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               "Galaxy's filtering tool for test 0000",
                               'user1', 
                               self.url.replace( 'http://', '' ), 
-                              installed_repository.installed_changeset_revision ]
+                              str( installed_repository.installed_changeset_revision ) ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
@@ -120,7 +120,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               "Galaxy's filtering tool for test 0000",
                               'user1', 
                               self.url.replace( 'http://', '' ), 
-                              installed_repository.installed_changeset_revision ]
+                              str( installed_repository.installed_changeset_revision ) ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )

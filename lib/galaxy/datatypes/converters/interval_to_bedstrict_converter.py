@@ -64,7 +64,7 @@ def __main__():
         force_num_columns = int( sys.argv[9] )
     except:
         force_num_columns = None
-    
+
     skipped_lines = 0
     first_skipped_line = None
     out = open( output_name,'w' )
@@ -88,32 +88,32 @@ def __main__():
                     break
                 #name (fields[3]) can be anything, no verification needed
                 if len( fields ) > 4:
-                    float( fields[4] ) #score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray). 
+                    float( fields[4] ) #score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
                     if len( fields ) > 5:
-                        assert fields[5] in [ '+', '-' ], 'Invalid strand' #strand - Defines the strand - either '+' or '-'. 
+                        assert fields[5] in [ '+', '-' ], 'Invalid strand' #strand - Defines the strand - either '+' or '-'.
                         if len( fields ) > 6:
-                            int( fields[6] ) #thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays). 
+                            int( fields[6] ) #thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
                             if len( fields ) > 7:
-                                int( fields[7] ) #thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays). 
-                                if len( fields ) > 8:  
+                                int( fields[7] ) #thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
+                                if len( fields ) > 8:
                                     if fields[8] != '0': #itemRgb - An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color of the data contained in this BED line. NOTE: It is recommended that a simple color scheme (eight colors or less) be used with this attribute to avoid overwhelming the color resources of the Genome Browser and your Internet browser.
                                         fields2 = fields[8].split( ',' )
                                         assert len( fields2 ) == 3, 'RGB value must be 0 or have length of 3'
                                         for field in fields2:
                                             int( field ) #rgb values are integers
                                     if len( fields ) > 9:
-                                        int( fields[9] ) #blockCount - The number of blocks (exons) in the BED line. 
+                                        int( fields[9] ) #blockCount - The number of blocks (exons) in the BED line.
                                         if len( fields ) > 10:
-                                            if fields[10] != ',': #blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount. 
+                                            if fields[10] != ',': #blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
                                                 fields2 = fields[10].rstrip( "," ).split( "," ) #remove trailing comma and split on comma
-                                                for field in fields2: 
+                                                for field in fields2:
                                                     int( field )
                                             if len( fields ) > 11:
-                                                if fields[11] != ',': #blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount. 
+                                                if fields[11] != ',': #blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
                                                     fields2 = fields[11].rstrip( "," ).split( "," ) #remove trailing comma and split on comma
                                                     for field in fields2:
                                                         int( field )
-            except: 
+            except:
                 strict_bed = False
                 break
             if force_num_columns is not None and len( fields ) != force_num_columns:
@@ -122,7 +122,7 @@ def __main__():
     else:
         strict_bed = False
     out.close()
-    
+
     if not strict_bed:
         skipped_lines = 0
         first_skipped_line = None

@@ -6,29 +6,23 @@ Dataproviders that use either:
         (e.g. parsing genomic regions from their source)
 """
 
-import pkg_resources
-pkg_resources.require( 'bx-python' )
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
 
-import galaxy.model
-import galaxy.datatypes
-import galaxy.datatypes.data
-
-#TODO: can't import these due to circular ref in model/registry
-#import galaxy.datatypes.binary
-#import galaxy.datatypes.tabular
-
-import exceptions
 import base
 import line
 import column
 import external
 
+from galaxy import eggs
+eggs.require( 'bx-python' )
+from bx import seq as bx_seq
+from bx import wiggle as bx_wig
+from bx import bbi as bx_bbi
+
 _TODO = """
 use bx as much as possible
-the use of DatasetInstance seems to create some import problems
 gff3 hierarchies
+
+change SamtoolsDataProvider to use pysam
 """
 
 import logging
@@ -50,11 +44,8 @@ class DatasetDataProvider( base.DataProvider ):
         """
         :param dataset: the Galaxy dataset whose file will be the source
         :type dataset: model.DatasetInstance
-
-        :raises exceptions.InvalidDataProviderSource: if not a DatsetInstance
         """
-        if not isinstance( dataset, galaxy.model.DatasetInstance ):
-            raise exceptions.InvalidDataProviderSource( "Data provider can only be used with a DatasetInstance" )
+        #precondition: dataset is a galaxy.model.DatasetInstance
         self.dataset = dataset
         # this dataset file is obviously the source
         #TODO: this might be a good place to interface with the object_store...
@@ -154,10 +145,10 @@ class DatasetDataProvider( base.DataProvider ):
         :returns: list of column indeces for the named columns.
         """
         region_column_names = ( 'chromCol', 'startCol', 'endCol' )
-        region_indeces = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
-        if check and not all( map( lambda i: i != None, indeces ) ):
-            raise ValueError( "Could not determine proper column indeces for chrom, start, end: %s" %( str( indeces ) ) )
-        return region_indeces
+        region_indices = [ self.get_metadata_column_index_by_name( name ) for name in region_column_names ]
+        if check and not all( map( lambda i: i != None, region_indices) ):
+            raise ValueError( "Could not determine proper column indices for chrom, start, end: %s" %( str( region_indices ) ) )
+        return region_indices
 
 
 class ConvertedDatasetDataProvider( DatasetDataProvider ):
@@ -615,13 +606,7 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
         """
         #TODO: into validate_source
 
-        #TODO: have to import these here due to circular ref in model/datatypes
-        import galaxy.datatypes.binary
-        import galaxy.datatypes.tabular
-        if( not( isinstance( dataset.datatype, galaxy.datatypes.tabular.Sam )
-        or       isinstance( dataset.datatype, galaxy.datatypes.binary.Bam ) ) ):
-            raise exceptions.InvalidDataProviderSource(
-                'dataset must be a Sam or Bam datatype: %s' %( str( dataset.datatype ) ) )
+        #precondition: dataset.datatype is a tabular.Sam or binary.Bam
         self.dataset = dataset
 
         options_dict = options_dict or {}
@@ -661,8 +646,9 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
         validated_flag_list = set([ flag for flag in options_string if flag in self.FLAGS_WO_ARGS ])
 
         # if sam add -S
-        if( ( isinstance( self.dataset.datatype, galaxy.datatypes.tabular.Sam )
-        and ( 'S' not in validated_flag_list ) ) ):
+        #TODO: not the best test in the world...
+        if( ( self.dataset.ext == 'sam' )
+        and ( 'S' not in validated_flag_list ) ):
             validated_flag_list.append( 'S' )
 
         if validated_flag_list:

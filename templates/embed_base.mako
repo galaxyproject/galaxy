@@ -30,8 +30,8 @@
     %>
     
     ## Links for importing and viewing an item.
-    <a href="${h.url_for( controller=item_controller, action='imp', id=trans.security.encode_id( item.id ) )}" title="Import ${item_display_name}" class="icon-button import tooltip"></a>
-    <a class="icon-button go-to-full-screen tooltip" href="${display_href}" title="Go to ${item_display_name}"></a>
+    <a href="${h.url_for( controller=item_controller, action='imp', id=trans.security.encode_id( item.id ) )}" title="Import ${item_display_name}" class="icon-button import"></a>
+    <a class="icon-button go-to-full-screen" href="${display_href}" title="Go to ${item_display_name}"></a>
 </%def>
 
 <%def name="render_title( item )">
@@ -43,14 +43,14 @@
         display_href = h.url_for( controller=item_controller, action='display_by_username_and_slug', username=item_user.username, slug=item_slug )
     %>
     <div style="float: left">
-        <a class="display_in_embed icon-button toggle-expand tooltip" item_id="${trans.security.encode_id( item.id )}" item_class="$item.__class__.__name__" href="${display_href}"
+        <a class="display_in_embed icon-button toggle-expand" item_id="${trans.security.encode_id( item.id )}" item_class="$item.__class__.__name__" href="${display_href}"
             title="Show ${item_display_name} content"></a>
-        <a class="toggle icon-button tooltip" href="${display_href}" title="Hide ${item_display_name} content"></a>
+        <a class="toggle icon-button" href="${display_href}" title="Hide ${item_display_name} content"></a>
     </div>
     <div style="float: right;">
         ${self.render_item_links( item )}
     </div>
-    <h4><a class="toggle-embed tooltip" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</a></h4>
+    <h4><a class="toggle-embed" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</a></h4>
     %if hasattr( item, "annotation") and item.annotation:
         <div class="annotation">${item.annotation}</div>
     %endif

@@ -35,6 +35,7 @@
             </p>
         </div>
         <table class="grid">
+            <% from tool_shed.util.shed_util_common import to_html_string %>
             %for stage in migration_stages_dict.keys():
                 <%
                     migration_command = 'sh ./scripts/migrate_tools/%04d_tools.sh' % stage
@@ -54,7 +55,7 @@
                 <tr>
                     <td bgcolor="#FFFFCC">
                         <div class="form-row">
-                            <p>${migration_info} <b>Run commands from the Galaxy installation directory!</b></p>
+                            <p>${to_html_string(migration_info)} <b>Run commands from the Galaxy installation directory!</b></p>
                             <p>
                                 %if tool_dependencies:
                                     This migration stage includes tools that have tool dependencies that can be automatically installed.  To install them, run:<br/>

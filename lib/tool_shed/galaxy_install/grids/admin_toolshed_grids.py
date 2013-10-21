@@ -3,70 +3,105 @@ import logging
 from galaxy import model, util
 from galaxy.web.framework.helpers import iff, grids
 from galaxy.model.orm import or_
+import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 
 log = logging.getLogger( __name__ )
+
+def generate_deprecated_repository_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        deprecated_tip_str = 'class="icon-button" title="This repository is deprecated in the Tool Shed"'
+    else:
+        deprecated_tip_str = ''
+    return '<img src="/static/images/icon_error_sml.gif" %s/>' % deprecated_tip_str
+
+def generate_includes_workflows_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        deprecated_tip_str = 'class="icon-button" title="This repository contains exported workflows"'
+    else:
+        deprecated_tip_str = ''
+    return '<img src="/static/images/fugue/gear.png" %s/>' % deprecated_tip_str
+
+def generate_latest_revision_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        latest_revision_tip_str = 'class="icon-button" title="This is the latest installable revision of this repository"'
+    else:
+        latest_revision_tip_str = ''
+    return '<img src="/static/june_2007_style/blue/ok_small.png" %s/>' % latest_revision_tip_str
+
+def generate_revision_updates_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        revision_updates_tip_str = 'class="icon-button" title="Updates are available in the Tool Shed for this revision"'
+    else:
+        revision_updates_tip_str = ''
+    return '<img src="/static/images/icon_warning_sml.gif" %s/>' % revision_updates_tip_str
+
+def generate_revision_upgrades_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        revision_upgrades_tip_str = 'class="icon-button" title="A newer installable revision is available for this repository"'
+    else:
+        revision_upgrades_tip_str = ''
+    return '<img src="/static/images/up.gif" %s/>' % revision_upgrades_tip_str
+
+def generate_unknown_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        unknown_tip_str = 'class="icon-button" title="Unable to get information from the Tool Shed"'
+    else:
+        unknown_tip_str = ''
+    return '<img src="/static/june_2007_style/blue/question-octagon-frame.png" %s/>' % unknown_tip_str
 
 
 class InstalledRepositoryGrid( grids.Grid ):
 
 
+    class ToolShedStatusColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, tool_shed_repository ):
+            if tool_shed_repository.tool_shed_status:
+                tool_shed_status_str = ''
+                if tool_shed_repository.is_deprecated_in_tool_shed:
+                    tool_shed_status_str += generate_deprecated_repository_img_str( include_mouse_over=True )
+                if tool_shed_repository.is_latest_installable_revision:
+                    tool_shed_status_str += generate_latest_revision_img_str( include_mouse_over=True )
+                if tool_shed_repository.revision_update_available:
+                    tool_shed_status_str += generate_revision_updates_img_str( include_mouse_over=True )
+                if tool_shed_repository.upgrade_available:
+                    tool_shed_status_str += generate_revision_upgrades_img_str( include_mouse_over=True )
+                if tool_shed_repository.includes_workflows:
+                    tool_shed_status_str += generate_includes_workflows_img_str( include_mouse_over=True )
+            else:
+                tool_shed_status_str = generate_unknown_img_str( include_mouse_over=True )
+            return tool_shed_status_str
+
+
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            if tool_shed_repository.update_available:
-                return '<div class="count-box state-color-running">%s</div>' % tool_shed_repository.name
-            return tool_shed_repository.name
+            return str( tool_shed_repository.name )
 
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return tool_shed_repository.description
+            return util.unicodify( tool_shed_repository.description )
 
 
     class OwnerColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return tool_shed_repository.owner
+            return str( tool_shed_repository.owner )
 
 
     class RevisionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return tool_shed_repository.changeset_revision
+            return str( tool_shed_repository.changeset_revision )
 
 
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            status_label = tool_shed_repository.status
-            if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
-                                                trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                                                trans.model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                                                trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                                                trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
-                bgcolor = trans.model.ToolShedRepository.states.INSTALLING
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
-                                                  trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                bgcolor = trans.model.ToolShedRepository.states.UNINSTALLED
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
-                bgcolor = trans.model.ToolShedRepository.states.ERROR
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
-            elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-                if tool_shed_repository.missing_repository_dependencies:
-                    bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing repository dependencies' % status_label
-                elif tool_shed_repository.missing_tool_dependencies:
-                    bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing tool dependencies' % status_label
-                else:
-                    bgcolor = trans.model.ToolShedRepository.states.OK
-            else:
-                bgcolor = trans.model.ToolShedRepository.states.ERROR
-            rval = '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
-            return rval
+            return suc.get_tool_shed_repository_status_label( trans, tool_shed_repository )
 
 
     class ToolShedColumn( grids.TextColumn ):
@@ -91,6 +126,8 @@ class InstalledRepositoryGrid( grids.Grid ):
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
     columns = [
+        ToolShedStatusColumn( "",
+                              attach_popup=False ),
         NameColumn( "Name",
                     key="name",
                     link=( lambda item: iff( item.status in [ model.ToolShedRepository.installation_status.CLONING ],
@@ -109,15 +146,23 @@ class InstalledRepositoryGrid( grids.Grid ):
                        visible=False,
                        filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    global_actions = []
-    operations = [ grids.GridOperation( "Get updates",
+    global_actions = [
+        grids.GridAction( "Update tool shed status",
+                          dict( controller='admin_toolshed', action='update_tool_shed_status_for_installed_repository', all_installed_repositories=True ) )
+    ]
+    operations = [ grids.GridOperation( "Update tool shed status",
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.status not in \
+                                        condition=( lambda item: not item.deleted ),
+                                        async_compatible=False,
+                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='update tool shed status' ) ),
+                   grids.GridOperation( "Get updates",
+                                        allow_multiple=False,
+                                        condition=( lambda item: not item.deleted and item.revision_update_available and item.status not in \
                                             [ model.ToolShedRepository.installation_status.ERROR, model.ToolShedRepository.installation_status.NEW ] ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='get updates' ) ),
@@ -149,7 +194,21 @@ class InstalledRepositoryGrid( grids.Grid ):
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.sa_session.query( self.model_class ) \
+                               .order_by( self.model_class.table.c.tool_shed,
+                                          self.model_class.table.c.name,
+                                          self.model_class.table.c.owner,
+                                          self.model_class.table.c.ctx_rev )
+
+    @property
+    def legend( self ):
+        legend_str = '%s&nbsp;&nbsp;Updates are available in the Tool Shed for this revision<br/>' % generate_revision_updates_img_str()
+        legend_str += '%s&nbsp;&nbsp;A newer installable revision is available for this repository<br/>' % generate_revision_upgrades_img_str()
+        legend_str += '%s&nbsp;&nbsp;This is the latest installable revision of this repository<br/>' % generate_latest_revision_img_str()
+        legend_str += '%s&nbsp;&nbsp;This repository is deprecated in the Tool Shed<br/>' % generate_deprecated_repository_img_str()
+        legend_str += '%s&nbsp;&nbsp;This repository contains exported workflows<br/>' % generate_includes_workflows_img_str()
+        legend_str += '%s&nbsp;&nbsp;Unable to get information from the Tool Shed<br/>' % generate_unknown_img_str()
+        return legend_str
 
 
 class RepositoryInstallationGrid( grids.Grid ):

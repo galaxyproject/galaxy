@@ -8,20 +8,20 @@ try:
     pkg_resources.require( "threadframe" )
 
 except:
-    
+
     import sys
     print >> sys.stderr, "No threadframe module, Heartbeat not available"
     Heartbeat = None
-    
+
 else:
-    
+
     import threading
     import threadframe
     import time
     import traceback
     import os
     import sys
-    
+
     def get_current_thread_object_dict():
         """
         Get a dictionary of all 'Thread' objects created via the threading
@@ -29,14 +29,14 @@ else:
         have a thread objects, only the main thread and any created via the
         'threading' module. Threads created via the low level 'thread' module
         will not be in the returned dictionary.
-        
+
         HACK: This mucks with the internals of the threading module since that
               module does not expose any way to match 'Thread' objects with
               intepreter thread identifiers (though it should).
         """
         rval = dict()
         # Acquire the lock and then union the contents of 'active' and 'limbo'
-        # threads into the return value. 
+        # threads into the return value.
         threading._active_limbo_lock.acquire()
         rval.update( threading._active )
         rval.update( threading._limbo )
@@ -96,12 +96,12 @@ else:
                 # Cleanup
                 self.file.close()
                 self.file_nonsleeping.close()
-        
+
         def shutdown( self ):
             self.should_stop = True
             self.wait_event.set()
             self.join()
-        
+
         def thread_is_sleeping ( self, last_stack_frame ):
             """
             Returns True if the given stack-frame represents a known
@@ -147,7 +147,7 @@ else:
                     return ( relative_filename, _line, _funcname, _text )
             # no "/lib/galaxy" code found, return the innermost frame
             return stack_frames[-1]
-        
+
         def print_nonsleeping( self, threads_object_dict ):
             print >> self.file_nonsleeping, "Non-Sleeping threads at %s:" % time.asctime()
             print >> self.file_nonsleeping

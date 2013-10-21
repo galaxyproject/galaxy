@@ -131,7 +131,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 if review.approved:
                     rval += '%s<br/>' % review.approved
             return rval
-            
+
     title = "All reviewed repositories"
     model_class = model.Repository
     template='/webapps/tool_shed/repository_review/grid.mako'
@@ -150,12 +150,12 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
         RatingColumn( "Rating", attach_popup=False ),
         ApprovedColumn( "Approved", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -189,7 +189,7 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                                 attach_popup=False,
                                                 key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -227,7 +227,7 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
                                                    attach_popup=False,
                                                    key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -264,7 +264,7 @@ class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
         RepositoriesWithReviewsGrid.RatingColumn( "Rating", attach_popup=False ),
         RepositoriesWithReviewsGrid.ApprovedColumn( "Approved", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -347,7 +347,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     # Override these
     default_filter = {}
     global_actions = []
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -379,12 +379,12 @@ class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
         RepositoriesWithReviewsGrid.ReviewersColumn( "Reviewers", attach_popup=False ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ 
+    operations = [
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
                              condition=( lambda item: not item.deleted ),
@@ -420,7 +420,7 @@ class RepositoriesWithNoToolTestsGrid( RepositoriesWithoutReviewsGrid ):
                                                    attach_popup=False,
                                                    key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,

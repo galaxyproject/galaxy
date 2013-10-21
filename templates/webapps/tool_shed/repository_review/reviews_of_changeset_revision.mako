@@ -6,7 +6,7 @@
 
 <%
     from tool_shed.grids.util import build_approved_select_field
-    from galaxy.webapps.tool_shed.util.container_util import STRSEP
+    from tool_shed.util.container_util import STRSEP
 
     if installable:
         installable_str = 'yes'
@@ -25,7 +25,7 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">

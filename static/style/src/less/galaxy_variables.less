@@ -1,0 +1,37 @@
+// Additional variables that are not used by bootstrap but are used
+// in Galaxy stylesheets 
+
+@base-bg: @white;
+@base-text-color: @black;
+@header-text-color: @base-text-color;
+
+@side-panel-bg: lighten(black,95%);
+@layout-border-color: darken(@border-default-color,15%);
+
+@form-heading-bg: @complement-color-3;
+@form-border: @complement-color-3;
+
+@table-heading-bg: @complement-color-3;
+@table-border: @complement-color-3;
+
+// Additional state colors
+
+@state-default-text: @gray-dark;
+@state-default-bg: @gray-lighter;
+@state-default-border: @border-default-color;
+
+@state-upload-border: @state-info-border;
+@state-upload-bg: @state-info-bg;
+
+@state-paused-border: #6666AA;
+@state-paused-bg: #d9edf7;
+
+@state-running-border: #AAAA66;
+@state-running-bg: #FFFFCC;
+
+@state-deleted-border: #330066;
+@state-deleted-bg: #3399FF;
+
+// Theme, expects tmp-site-config.less written by grunt
+@import "tmp-site-config.less";
+@import "theme/blue.less";

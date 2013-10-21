@@ -53,7 +53,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             parent_library = folder.parent_library
         except:
             folder = None
-            log.error( "FolderContentsController.index: Unable to retrieve folder %s" 
+            log.error( "FolderContentsController.index: Unable to retrieve folder %s"
                       % folder_id )
 
         # TODO: Find the API's path to this folder if necessary.

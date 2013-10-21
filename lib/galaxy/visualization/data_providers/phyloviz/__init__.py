@@ -39,5 +39,5 @@ class PhylovizDataProvider( BaseDataProvider ):
 
         rval[ "data" ] = jsonDicts
         rval[ "msg"] = parseMsg
-        
+
         return rval

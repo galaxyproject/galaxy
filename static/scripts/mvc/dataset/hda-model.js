@@ -245,7 +245,7 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
         for( var i=endingIndex; i>=0; i-- ){
             var hdaHid = this.at( i ).get( 'hid' );
             //this.log( i, 'hdaHid:', hdaHid );
-            if( hdaHid == hid ){
+            if( hdaHid === hid ){
                 //this.log( '\t match:', hdaHid, hid, ' returning:', i );
                 return i;
             }
@@ -295,24 +295,6 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
             }
         });
         return idList;
-    },
-
-    /** Set ea
-     *      Precondition: each data_array object must have an id
-     *  @param {Object[]} data_array    an array of attribute objects to update the models with
-     *  @see HistoryDatasetAssociation#set
-     */
-    set : function( data_array ){
-        var collection = this;
-        if( !data_array || !_.isArray( data_array ) ){ return; }
-
-        //TODO: remove when updated backbone >= 1.0
-        data_array.forEach( function( hda_data ){
-            var model = collection.get( hda_data.id );
-            if( model ){
-                model.set( hda_data );
-            }
-        });
     },
 
     /** Update (fetch) the data of the hdas with the given ids.

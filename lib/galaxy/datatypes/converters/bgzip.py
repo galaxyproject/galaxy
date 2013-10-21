@@ -19,13 +19,13 @@ def main():
     parser.add_option( '-P', '--preset', dest='preset' )
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
-    
+
     tmpfile = tempfile.NamedTemporaryFile()
     sort_params = None
-    
+
     if options.chrom_col and options.start_col and options.end_col:
-        sort_params = ["sort", 
-                        "-k%(i)s,%(i)s" % { 'i': options.chrom_col }, 
+        sort_params = ["sort",
+                        "-k%(i)s,%(i)s" % { 'i': options.chrom_col },
                         "-k%(i)i,%(i)in" % { 'i': options.start_col },
                         "-k%(i)i,%(i)in" % { 'i': options.end_col }
                       ]
@@ -40,9 +40,8 @@ def main():
     after_sort = subprocess.Popen(sort_params, stdin=grepped.stdout, stderr=subprocess.PIPE, stdout=tmpfile )
     grepped.stdout.close()
     output, err = after_sort.communicate()
-    
+
     ctabix.tabix_compress(tmpfile.name, output_fname, force=True)
-    
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     main()
-    

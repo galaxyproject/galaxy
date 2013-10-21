@@ -596,15 +596,19 @@ extend(FiltersManager.prototype, {
             $.getJSON(run_tool_url, url_params, function(response) {
                 if (response.error) {
                     // General error.
-                    show_modal("Filter Dataset",
-                               "Error running tool " + tool_id,
-                               { "Close" : hide_modal } );
+                    Galaxy.modal.show({
+                        title: "Filter Dataset",
+                        body : "Error running tool " + tool_id,
+                        buttons : { "Close" : Galaxy.modal.hide() }
+                    });
                 }
                 else if (filters.length === 0) {
                     // No more filters to run.
-                    show_modal("Filtering Dataset", 
-                               "Filter(s) are running on the complete dataset. Outputs are in dataset's history.", 
-                               { "Close" : hide_modal } );
+                    Galaxy.modal.show({
+                        title: "Filtering Dataset",
+                        body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
+                        buttons: { "Close" : Galaxy.modal.hide() }
+                    });
                 }
                 else {
                     // More filters to run.

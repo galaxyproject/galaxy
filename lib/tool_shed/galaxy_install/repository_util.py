@@ -4,15 +4,14 @@ import shutil
 import tempfile
 import threading
 from galaxy import tools
-from galaxy.util import asbool
 from galaxy.util import json
 from galaxy import util
 from galaxy import web
 from galaxy.model.orm import or_
-from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
+from tool_shed.util import container_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
@@ -23,9 +22,8 @@ from tool_shed.util import tool_util
 from xml.etree import ElementTree as XmlET
 
 from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -36,8 +34,8 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                            repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
     """
     Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
-    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  
-    
+    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.
+
     This method is called from Galaxy under three scenarios:
     1. During the tool shed repository installation process via the tool shed's get_repository_information() method.  In this case both the received
     repository and repository_metadata will be objects., but tool_dependencies and repository_dependencies will be None
@@ -84,8 +82,8 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                 requirements_dict[ 'changeset_revision' ] = changeset_revision
                 new_tool_dependencies[ dependency_key ] = requirements_dict
         tool_dependencies = new_tool_dependencies
-    # Cast unicode to string.
-    repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
+    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
+    repo_info_dict[ str( repository.name ) ] = ( repository.description,
                                                  str( repository_clone_url ),
                                                  str( changeset_revision ),
                                                  str( ctx_rev ),
@@ -101,50 +99,18 @@ def get_installed_repositories_from_repository_dependencies( trans, repository_d
             continue
         # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
         # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
-        try:
-            tool_shed, name, owner, changeset_revision, prior_installation_required = container_util.get_components_from_key( rd_key )
-        except:
-            tool_shed, name, owner, changeset_revision = container_util.get_components_from_key( rd_val )
+        repository_components_tuple = container_util.get_components_from_key( rd_key )
+        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+        tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
         installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
         if installed_repository not in installed_repositories:
             installed_repositories.append( installed_repository )
         for rd_val in rd_vals:
-            try:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = rd_val
-            except:
-                tool_shed, name, owner, changeset_revision = rd_val
+            tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
             installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
             if installed_repository not in installed_repositories:
                 installed_repositories.append( installed_repository )
     return installed_repositories
-
-def get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids ):
-    """
-    The order in which the prior_install_required_dict is processed is critical in order to ensure that the ultimate repository installation order is correctly
-    defined.  This method determines the next key / value pair from the received prior_install_required_dict that should be processed.
-    """
-    # Return the first key / value pair that is not yet processed and whose value is an empty list.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        if not value:
-            return key
-    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        all_contained = True
-        for required_repository_id in value:
-            if required_repository_id not in processed_tsr_ids:
-                all_contained = False
-                break
-        if all_contained:
-            return key
-    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
-    for key, value in prior_install_required_dict.items():
-        if key in processed_tsr_ids:
-            continue
-        return key
 
 def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     """
@@ -155,15 +121,15 @@ def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     prior_install_required_dict = {}
     for tsr_id in tsr_ids:
         prior_install_required_dict[ tsr_id ] = []
-    # inspect the repository dependencies for each repository about to be installed and populate the dictionary.
+    # Inspect the repository dependencies for each repository about to be installed and populate the dictionary.
     for repo_info_dict in repo_info_dicts:
-        repository, repository_dependencies = get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
+        repository, repository_dependencies = suc.get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
         if repository:
             encoded_repository_id = trans.security.encode_id( repository.id )
             if encoded_repository_id in tsr_ids:
                 # We've located the database table record for one of the repositories we're about to install, so find out if it has any repository
                 # dependencies that require prior installation.
-                prior_install_ids = get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_dependencies )
+                prior_install_ids = suc.get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies )
                 prior_install_required_dict[ encoded_repository_id ] = prior_install_ids
     return prior_install_required_dict
 
@@ -195,7 +161,7 @@ def get_repair_dict( trans, repository ):
                 # The installed_repository must be in the uninstalled state.  The structure of tool_panel_section_dict is:
                 # {<tool guid> : [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
                 # Here is an example:
-                # {"localhost:9009/repos/test/filter/Filter1/1.1.0": 
+                # {"localhost:9009/repos/test/filter/Filter1/1.1.0":
                 #    [{"id": "filter_and_sort", "name": "Filter and Sort", "tool_config": "filtering.xml", "version": ""}]}
                 # Currently all tools contained within an installed tool shed repository must be loaded into the same section in the tool panel, so we can
                 # get the section id of the first guid in the tool_panel_section_dict.  In the future, we'll have to handle different sections per guid.
@@ -215,7 +181,7 @@ def get_repair_dict( trans, repository ):
             else:
                 # The installed_repository must be in the installed state, so we can skip determining if it has tools that are displayed in a tool panel section
                 # since no changes will be made to it.
-                tool_panel_section_keys.append( None ) 
+                tool_panel_section_keys.append( None )
         else:
             tool_dependencies = None
             # The tools will be loaded outside of any sections in the tool panel.
@@ -243,24 +209,40 @@ def get_repair_dict( trans, repository ):
 
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
-    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-    metadata = repository_metadata.metadata
-    if 'tools' in metadata:
-        includes_tools = True
-    else:
-        includes_tools = False
-    includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-    if 'repository_dependencies' in metadata:
-        has_repository_dependencies = True
-    else:
-        has_repository_dependencies = False
-    if 'tool_dependencies' in metadata:
-        includes_tool_dependencies = True
-    else:
-        includes_tool_dependencies = False
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+    if not repository_metadata:
+        # The received changeset_revision is no longer installable, so get the next changeset_revision in the repository's changelog.
+        # This generally occurs only with repositories of type tool_dependency_definition.
+        next_downloadable_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if next_downloadable_changeset_revision:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, next_downloadable_changeset_revision )
+    if repository_metadata:
+        # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption is not valid we'll have to
+        # enhance the callers to handle repository_metadata values of None in the returned repo_info_dict.
+        metadata = repository_metadata.metadata
+        if 'tools' in metadata:
+            includes_tools = True
+        else:
+            includes_tools = False
+        includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
+        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+        repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+            suc.get_repository_dependency_types( repository_dependencies )
+        if 'tool_dependencies' in metadata:
+            includes_tool_dependencies = True
+        else:
+            includes_tool_dependencies = False
+    else:
+        # Here's where we may have to handle enhancements to the callers. See above comment.
+        includes_tools = False
+        has_repository_dependencies = False
+        has_repository_dependencies_only_if_compiling_contained_td = False
+        includes_tool_dependencies = False
+        includes_tools_for_display_in_tool_panel = False
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     repo_info_dict = create_repo_info_dict( trans=trans,
                                             repository_clone_url=repository_clone_url,
@@ -272,7 +254,8 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
                                             repository_metadata=repository_metadata,
                                             tool_dependencies=None,
                                             repository_dependencies=None )
-    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies
+    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_components_for_installation( encoded_tsr_id, encoded_tsr_ids, repo_info_dicts, tool_panel_section_keys ):
     """
@@ -286,38 +269,6 @@ def get_repository_components_for_installation( encoded_tsr_id, encoded_tsr_ids,
             tool_panel_section_key = tool_panel_section_keys[ index ]
             return repo_info_dict, tool_panel_section_key
     return None, None
-
-def get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict ):
-    """Return a tool_shed_repository record defined by the information in the received repo_info_dict."""
-    repository_name = repo_info_dict.keys()[ 0 ]
-    repo_info_tuple = repo_info_dict[ repository_name ]
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-        suc.get_repo_info_tuple_contents( repo_info_tuple )
-    tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
-    repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, repository_name, repository_owner, changeset_revision )
-    return repository, repository_dependencies
-
-def get_repository_ids_requiring_prior_install( trans, tsr_ids, repository_dependencies ):
-    """
-    Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received tsr_ids.  If so,
-    then determine whether that required repository should be installed prior to it's dependent repository.  Return a list of encoded repository
-    ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be installed prior to the dependent
-    repository associated with the received repository_dependencies.
-    """
-    prior_install_ids = []
-    if repository_dependencies:
-        for key, rd_tups in repository_dependencies.items():
-            if key in [ 'description', 'root_key' ]:
-                continue
-            for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
-                if asbool( prior_installation_required ):
-                    repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
-                    if repository:
-                        encoded_repository_id = trans.security.encode_id( repository.id )
-                        if encoded_repository_id in tsr_ids:
-                            prior_install_ids.append( encoded_repository_id )
-    return prior_install_ids
 
 def get_tool_shed_repository_ids( as_string=False, **kwd ):
     tsrid = kwd.get( 'tool_shed_repository_id', None )
@@ -338,7 +289,7 @@ def get_tool_shed_repository_ids( as_string=False, **kwd ):
     if as_string:
         ''
     return []
-            
+
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     changeset_revision_dict = {}
@@ -356,6 +307,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
             includes_tool_dependencies = update_dict.get( 'includes_tool_dependencies', False )
             includes_workflows = update_dict.get( 'includes_workflows', False )
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
+            has_repository_dependencies_only_if_compiling_contained_td = update_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
             changeset_revision = update_dict.get( 'changeset_revision', None )
             ctx_rev = update_dict.get( 'ctx_rev', None )
         changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
@@ -365,6 +317,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
         changeset_revision_dict[ 'includes_workflows' ] = includes_workflows
         changeset_revision_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+        changeset_revision_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = has_repository_dependencies_only_if_compiling_contained_td
         changeset_revision_dict[ 'changeset_revision' ] = changeset_revision
         changeset_revision_dict[ 'ctx_rev' ] = ctx_rev
     except Exception, e:
@@ -376,6 +329,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_tool_dependencies' ] = False
         changeset_revision_dict[ 'includes_workflows' ] = False
         changeset_revision_dict[ 'has_repository_dependencies' ] = False
+        changeset_revision_dict[ 'has_repository_dependencies_only_if_compiling_contained_td' ] = False
         changeset_revision_dict[ 'changeset_revision' ] = None
         changeset_revision_dict[ 'ctx_rev' ] = None
     return changeset_revision_dict
@@ -398,6 +352,10 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
                                                                                                updating_installed_repository=False,
                                                                                                persist=True )
     tool_shed_repository.metadata = metadata_dict
+    # Update the tool_shed_repository.tool_shed_status column in the database.
+    tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( trans.app, tool_shed_repository )
+    if tool_shed_status_dict:
+        tool_shed_repository.tool_shed_status = tool_shed_status_dict
     trans.sa_session.add( tool_shed_repository )
     trans.sa_session.flush()
     if 'tool_dependencies' in metadata_dict and not reinstalling:
@@ -472,7 +430,6 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
     install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
     new_tool_panel_section = installation_dict[ 'new_tool_panel_section' ]
     no_changes_checked = installation_dict[ 'no_changes_checked' ]
-    reinstalling = installation_dict[ 'reinstalling' ]
     repo_info_dicts = installation_dict[ 'repo_info_dicts' ]
     tool_panel_section = installation_dict[ 'tool_panel_section' ]
     tool_path = installation_dict[ 'tool_path' ]
@@ -482,7 +439,6 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
                                                                          tool_path=tool_path,
                                                                          tool_shed_url=tool_shed_url,
                                                                          repo_info_dicts=repo_info_dicts,
-                                                                         reinstalling=reinstalling,
                                                                          install_repository_dependencies=install_repository_dependencies,
                                                                          no_changes_checked=no_changes_checked,
                                                                          tool_panel_section=tool_panel_section,
@@ -548,7 +504,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
         try:
             tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
         except KeyError:
-            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.', 
+            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.',
                        str( tool_panel_section_key ) )
             tool_section = None
     else:
@@ -637,7 +593,7 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
     dependencies and tool dependencies.  The entries for missing dependencies are all None since they have previously been merged into the installed
     dependencies.  This method will merge the dependencies entries into a single container and return it for display.
     """
-    new_containers_dict = dict( readme_files=None, 
+    new_containers_dict = dict( readme_files=None,
                                 datatypes=None,
                                 missing_repository_dependencies=None,
                                 repository_dependencies=None,
@@ -671,13 +627,10 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
                     # Change the folder id so it won't confict with others being merged.
                     old_container_repository_dependencies_folder.id = folder_id
                     folder_id += 1
+                    repository_components_tuple = container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
+                    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                    name = components_list[ 1 ]
                     # Generate the label by retrieving the repository name.
-                    try:
-                        toolshed, name, owner, changeset_revision, prior_installation_required = \
-                            container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
-                    except ValueError:
-                        # For backward compatibility to the 12/20/12 Galaxy release.
-                        toolshed, name, owner, changeset_revision = container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
                     old_container_repository_dependencies_folder.label = str( name )
                     repository_dependencies_folder.folders.append( old_container_repository_dependencies_folder )
                 # Merge tool_dependencies.
@@ -722,10 +675,10 @@ def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_pan
     ordered_tool_panel_section_keys = []
     # Create a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
     # and whose associated repository must be installed prior to the repository associated with the tsr_id key.
-    prior_install_required_dict = get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts )
+    prior_install_required_dict = suc.get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
     processed_tsr_ids = []
     while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
-        tsr_id = get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
+        tsr_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
         processed_tsr_ids.append( tsr_id )
         # Create the ordered_tsr_ids, the ordered_repo_info_dicts and the ordered_tool_panel_section_keys lists.
         if tsr_id not in ordered_tsr_ids:
@@ -805,7 +758,6 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             log.debug( error_message )
             repair_dict [ repository.name ] = error_message
     elif repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-        # TODO: this may cause problems if the repository is currently being installed.
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         # Reset the repository attributes to the New state for installation.
         if metadata:
@@ -840,7 +792,8 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )
             # Reset missing tool dependencies.
             for tool_dependency in repository.missing_tool_dependencies:
-                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
+                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR,
+                                               trans.model.ToolDependency.installation_status.INSTALLING ]:
                     tool_dependency_util.set_tool_dependency_attributes( trans,
                                                                          tool_dependency,
                                                                          trans.model.ToolDependency.installation_status.UNINSTALLED,

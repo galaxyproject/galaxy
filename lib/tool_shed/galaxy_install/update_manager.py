@@ -26,29 +26,24 @@ class UpdateManager( object ):
     def __restarter( self ):
         log.info( 'Update manager restarter starting up...' )
         while self.running:
-            flush_needed = False
+            # Make a call to the tool shed for each installed repository to get the latest status information in the tool shed for the
+            # repository.  This information includes items like newer installable repository revisions, current revision updates, whether
+            # the repository revision is the latest installable revision, and whether the repository has been deprecated in the tool shed.
             for repository in self.sa_session.query( self.app.model.ToolShedRepository ) \
-                                             .filter( and_( self.app.model.ToolShedRepository.table.c.update_available == False,
-                                                            self.app.model.ToolShedRepository.table.c.deleted == False ) ):
-                if self.check_for_update( repository ):
-                    repository.update_available = True
-                    self.sa_session.add( repository )
-                    flush_needed = True
-            if flush_needed:
-                self.sa_session.flush()
+                                             .filter( self.app.model.ToolShedRepository.table.c.deleted == False ):
+                tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
+                if tool_shed_status_dict:
+                    if tool_shed_status_dict != repository.tool_shed_status:
+                        repository.tool_shed_status = tool_shed_status_dict
+                        self.sa_session.flush()
+                else:
+                    # The received tool_shed_status_dict is an empty dictionary, so coerce to None.
+                    tool_shed_status_dict = None
+                    if tool_shed_status_dict != repository.tool_shed_status:
+                        repository.tool_shed_status = tool_shed_status_dict
+                        self.sa_session.flush()
             self.sleeper.sleep( self.seconds_to_sleep )
-        log.info( 'Transfer job restarter shutting down...' )
-
-    def check_for_update( self, repository ):
-        tool_shed_url = suc.get_url_from_tool_shed( self.app, repository.tool_shed )
-        url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
-            ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
-        try:
-            text = common_util.tool_shed_get( self.app, tool_shed_url, url )
-        except Exception, e:
-            # The required tool shed may be unavailable.
-            text = 'False'
-        return string_as_bool( text )
+        log.info( 'Update manager restarter shutting down...' )
 
     def shutdown( self ):
         self.running = False
