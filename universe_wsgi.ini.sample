@@ -363,6 +363,13 @@ nglims_config_file = tool-data/nglims.yaml
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
 
+# Format string used when showing date and time information.
+# The string may contain:
+# - the directives used by Python time.strftime() function (see http://docs.python.org/2/library/time.html#time.strftime ),
+# - $locale (complete format string for the server locale),
+# - $iso8601 (complete format string as specified by ISO 8601 international standard).
+# pretty_datetime_format = $locale (UTC)
+
 # The URL of the page to display in Galaxy's middle pane when loaded. This can be 
 # an absolute or relative URL.
 #welcome_url = /static/welcome.html
