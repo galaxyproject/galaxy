@@ -54,19 +54,14 @@ for comptype in ( 'gz', 'bz2' ):
         os.unlink( tmpf )
     except OSError:
         pass
-ziptype = '32'
+ziptype = '64'
 tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
     archive.close()
     comptypes.append( 'zip' )
-    ziptype = '64'
 except RuntimeError:
     log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-except (TypeError, zipfile.LargeZipFile):
-    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-    comptypes.append( 'zip' )
 try:
     os.unlink( tmpf )
 except OSError:
