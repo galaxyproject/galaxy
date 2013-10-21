@@ -110,6 +110,14 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
+#DBTODO refactor these post-dist.
+def expose_api_raw_anonymous( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False, user_required=False )
+
 def expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
