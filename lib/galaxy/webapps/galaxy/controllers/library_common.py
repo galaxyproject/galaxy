@@ -54,18 +54,16 @@ for comptype in ( 'gz', 'bz2' ):
         os.unlink( tmpf )
     except OSError:
         pass
-tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
-    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-    archive.close()
+    import zlib
     comptypes.append( 'zip' )
-except RuntimeError:
-    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-try:
-    os.unlink( tmpf )
-except OSError:
+except ImportError:
     pass
-os.rmdir( tmpd )
+
+try:
+    os.rmdir( tmpd )
+except:
+    pass
 
 class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
     @web.json
