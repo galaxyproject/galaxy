@@ -113,7 +113,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.exception( e )
+            log.exception( msg )
             trans.response.status = 500
             return msg
 
@@ -148,7 +148,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         except Exception, e:
             msg = "Error in history API when switching current history: %s" % ( str( e ) )
-            log.exception( e )
+            log.exception( msg )
             trans.response.status = 500
             return msg
 
