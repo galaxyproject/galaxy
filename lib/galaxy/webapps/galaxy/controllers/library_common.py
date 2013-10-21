@@ -54,24 +54,16 @@ for comptype in ( 'gz', 'bz2' ):
         os.unlink( tmpf )
     except OSError:
         pass
-ziptype = '32'
-tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
-    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-    archive.close()
+    import zlib
     comptypes.append( 'zip' )
-    ziptype = '64'
-except RuntimeError:
-    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-except (TypeError, zipfile.LargeZipFile):
-    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-    comptypes.append( 'zip' )
-try:
-    os.unlink( tmpf )
-except OSError:
+except ImportError:
     pass
-os.rmdir( tmpd )
+
+try:
+    os.rmdir( tmpd )
+except:
+    pass
 
 class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
     @web.json
@@ -1831,14 +1823,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         tmpd = tempfile.mkdtemp()
                         util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
                         tmpf = os.path.join( tmpd, 'library_download.' + action )
-                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                        if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        elif ziptype == '64':
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        elif trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
                         else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:

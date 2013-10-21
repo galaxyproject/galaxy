@@ -6,6 +6,7 @@ import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
+from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util import parse_xml
@@ -311,6 +312,7 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
+        self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
