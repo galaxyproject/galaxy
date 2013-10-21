@@ -8,7 +8,7 @@
 %if users:
     <div class="toolForm">
             <div class="toolFormTitle">Users informations</div>
-            <table>
+            <table class="grid">
                 <thead><th>UID</th><th>email</th></thead>
                 <tbody>
                 %for user in users:

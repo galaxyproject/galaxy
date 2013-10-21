@@ -2,22 +2,12 @@
 Contains the user interface in the Universe class
 """
 
-import glob
 import logging
-import os
-import socket
-import string
-import random
 import pprint
 
 from galaxy import web
 from galaxy import util, model
-from galaxy.model.orm import and_
-from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password, transform_publicname
-from galaxy.util.json import from_json_string, to_json_string
-from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.form_builder import CheckboxField, build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 
 from inspect import getmembers
