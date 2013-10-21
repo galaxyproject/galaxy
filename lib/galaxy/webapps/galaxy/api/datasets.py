@@ -101,7 +101,6 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
 
         # If there is a chrom, check for data on the chrom.
         if chrom:
-            data_provider_registry = trans.app.data_provider_registry
             data_provider = trans.app.data_provider_registry.get_data_provider( trans,
                 original_dataset=dataset, source='index' )
             if not data_provider.has_data( chrom ):
