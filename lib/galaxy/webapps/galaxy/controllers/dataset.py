@@ -21,7 +21,6 @@ log = logging.getLogger( __name__ )
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
-ziptype = '64'
 tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )

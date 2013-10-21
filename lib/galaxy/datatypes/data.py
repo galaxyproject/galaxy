@@ -25,7 +25,6 @@ log = logging.getLogger(__name__)
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
-ziptype = '64'
 tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
@@ -229,10 +228,7 @@ class Data( object ):
                     tmpd = tempfile.mkdtemp()
                     util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
-                    if ziptype == '64':
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    else:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                     archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall( 'w|gz' )

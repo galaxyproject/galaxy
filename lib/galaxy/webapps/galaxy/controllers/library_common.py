@@ -54,7 +54,6 @@ for comptype in ( 'gz', 'bz2' ):
         os.unlink( tmpf )
     except OSError:
         pass
-ziptype = '64'
 tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
@@ -1826,14 +1825,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         tmpd = tempfile.mkdtemp()
                         util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
                         tmpf = os.path.join( tmpd, 'library_download.' + action )
-                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                        if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        elif ziptype == '64':
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        elif trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
                         else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
