@@ -27,7 +27,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         we want here. We could add a parameter to use the recursive
         style, but this is meant to act similar to an "ls" directory listing.
         """
-        folder_contents = []
+        folder_container = []
         current_user_roles = trans.get_current_user_roles()
 
 
@@ -100,7 +100,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             
         # Return the reversed path so it starts with the library node.
         full_path = build_path( folder )[::-1]
-
+        folder_container.append( dict( full_path = full_path ) )
+        folder_contents = []
         # Go through every item in the folder and include its meta-data.
         for content_item in load_folder_contents( folder ):
             return_item = {}
@@ -118,13 +119,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             return_item.update( dict( id = encoded_id,
                                type = content_item.api_type,
                                name = content_item.name,
-                               library_id = encoded_parent_library_id,
-                               full_path = full_path,
-                               url = url_for( 'folder_contents', folder_id=encoded_id ) ) )
+                               library_id = encoded_parent_library_id
+                                ) )
             folder_contents.append( return_item )
-        if len( folder_contents ) == 0:
-            folder_contents.append( dict( full_path = full_path ) )
-        return folder_contents
+        folder_container.append( dict( folder_contents = folder_contents ) )
+        return folder_container
 
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):

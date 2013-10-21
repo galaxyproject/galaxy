@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Data Library</title>
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.1.1/css/bootstrap.min.css">
+</head>
+<body>
+
+
+  <div class="container">
+    <h1>Data Library</h1>
+    <hr />
+    <div class="page"></div>
+  </div>
+
+<!-- LIBRARY LIST TEMPLATE -->
+  <script type="text/template" id="library-list-template">
+    <a href="#/new" class="btn btn-primary">New Library</a>
+    <hr />
+    <table class="table striped">
+      <thead>
+        <th>name</th>
+        <th>description</th>
+        <th>synopsis</th> 
+        <th></th>
+        <th></th>
+      </thead>
+      <tbody>
+        <% _.each(libraries, function(library) { %>
+          <tr>
+            <td><a href="#/folders/<%- library.id %>"><%- library.get('name') %></a></td>
+            <td><%= htmlEncode(library.get('description')) %></td>
+            <td><%= htmlEncode(library.get('synopsis')) %></td>
+            <td><a href="#/edit/<%= library.id %>" class="btn">Edit</td>
+            <td><button data-library-id="<%- library.id %>" class="btn btn-danger delete">Delete</button></td>
+          </tr>
+          <% }); %>
+      </tbody>
+    </table>
+  </script>
+
+<!-- LIBRARY EDIT/CREATE TEMPLATE   -->
+  <script type="text/template" id="library-edit-template">
+    <form class="library-edit-form">
+      <legend>Create Library</legend>
+      <label>Name of the Library</label>
+      <input type="text" name="name" />
+      <label>Description</label>
+      <input type="text" name="description" />
+      <label>Synopsis</label>
+      <input type="text" name="synopsis" />
+      <hr />
+      <button type="submit" class="btn">Create Library</button>
+    </form>
+  </script> 
+
+
+<!-- FOLDERS LIST TEMPLATE -->
+  <script type="text/template" id="folders-list-template">
+    <table class="table striped">
+      <thead>
+        <th>name</th>
+        <th>type</th>
+      </thead>
+      <tbody>
+        <% _.each(folders, function(folder) { %>
+          <tr>
+          <% if (folder.get('type') === 'folder') { %>
+            <td><a href="#/folders/<%- folder.id %>"><%- folder.get('name') %></a></td>
+          <% } else {  %>
+            <td><%- folder.get('name') %></td>
+          <% } %>    
+            <td><%= htmlEncode(folder.get('type')) %></td>
+          </tr>
+          <% }); %>
+      </tbody>
+    </table>
+  </script>
+
+
+  <script src="jquery-1.10.2.js" type="text/javascript"></script>
+  <script src="underscore.js" type="text/javascript"></script>
+  <script src="backbone.js" type="text/javascript"></script>
+
+
+  <script>
+
+  // ENCODE HTML
+    function htmlEncode(value){
+      return $('<div/>').text(value).html();
+    }
+
+    var api_key = 'e48b2b2589b242a50538f8f9fa8e5ee9';
+
+  // MODIFICATIONS DONE JUST BEFORE THE REQUEST ITSELF
+    $.ajaxPrefilter( function( options, originalOptions, jqXHR ) {
+      options.url = 'http://martenson.bx.psu.edu:8080' + options.url + '?key=' + api_key;
+    });
+
+  // SERIALIZE JSON
+    $.fn.serializeObject = function() {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+        if (o[this.name] !== undefined) {
+          if (!o[this.name].push) {
+            o[this.name] = [o[this.name]];
+          }
+          o[this.name].push(this.value || '');
+        } else {
+          o[this.name] = this.value || '';
+        }
+      });
+      return o;
+    };
+
+// LIBRARY
+    var Library = Backbone.Model.extend({
+      urlRoot: '/api/libraries'
+    });
+    var Libraries = Backbone.Collection.extend({
+      url: '/api/libraries'
+    });
+// FOLDER
+    var Folder = Backbone.Model.extend({
+      urlRoot: '/api/folders/'
+    })
+    var Folders = Backbone.Collection.extend({
+      model: Folder,
+      urlRoot: '/api/folders/'
+
+    })
+
+    var LibraryEditView = Backbone.View.extend({
+      el: '.page',
+      events: {
+        'submit .library-edit-form': 'saveLibrary'
+      },
+      saveLibrary: function (ev) {
+        var libraryDetails = $(ev.currentTarget).serializeObject();
+        var library = new Library();
+        library.save(libraryDetails, {
+          success: function (library) {
+            router.navigate('', {trigger: true})
+          }
+        });
+        console.log(libraryDetails);
+        return false;
+      },
+      render: function (options) {
+        var that = this;
+        if (options.id) {
+           this.library = new Library({id: options.id});
+            this.library.fetch({
+              success: function(library){
+                var template = _.template($('#library-edit-template').html(), {library: library});
+                that.$el.html(template);
+              }
+            });
+        } else {
+          var template = _.template($('#library-edit-template').html(), {user: null});
+          this.$el.html(template);
+        }
+      }
+    });
+
+
+    var LibraryListView = Backbone.View.extend({
+      el: '.page',
+      events: {
+        'click .delete' : 'deleteLibrary'
+      },
+      render: function () {
+        var that = this;
+        var libraries = new Libraries();
+        libraries.fetch({
+          success: function (libraries) {
+            var template = _.template($('#library-list-template').html(), {libraries: libraries.models});
+            that.$el.html(template);
+          }
+        })
+      },
+      deleteLibrary : function (ev) {
+        // DELETE /libraries/{id}
+        var id_to_delete = $(ev.target).attr('data-library-id');
+        var libraryToDelete = new Library({id: id_to_delete})
+        libraryToDelete.destroy({
+          success: function () {
+            libraryListView.render();
+          }
+        })
+        return false
+      },
+      createLibrary : function (ev) {
+        // PUT /libraries
+
+      }
+    });
+
+  
+    var FoldersListView = Backbone.View.extend({
+      el: '.page',
+      render: function (options) {
+        var that = this;
+        var folders = new Folders({id: options.id});
+        folders.url = folders.urlRoot + options.id + '/contents';
+        folders.fetch({
+          success: function (folders) {
+            var template = _.template($('#folders-list-template').html(), {folders: folders.models, id: options.id});
+            that.$el.html(template);
+          }
+        })
+      },
+    });
+
+
+    var libraryListView = new LibraryListView();
+    var libraryEditView = new LibraryEditView();
+    var foldersListView = new FoldersListView();
+
+
+    var Router = Backbone.Router.extend({
+      routes: {
+            "" :                                "home", 
+            "new" :                             "edit_library",
+            "edit/:id" :                        "edit_library",
+            "delete/:id" :                      "delete_library",
+            "folders/:id" :                     "folders"
+          }
+    });
+
+    var router = new Router;
+
+    router.on('route:home', function() {
+      // render libraries list
+      libraryListView.render();
+    })
+    router.on('route:edit_library', function(id) {
+      // render library edit form
+      libraryEditView.render({id: id});
+    })
+    router.on('route:delete_library', function() {
+      // render delete library form
+      libraryDeleteView.render();
+    }) 
+    // router.on('route:folders', function(parent_id, top_level) {
+    //   // render folders list
+    //   foldersListView.render({id: parent_id, top_level: true});
+    // })    
+    router.on('route:folders', function(id) {
+      // render folders list
+      foldersListView.render({id: id});
+    })
+
+    Backbone.history.start();
+  </script>
+
+
+</body>
+</html> 

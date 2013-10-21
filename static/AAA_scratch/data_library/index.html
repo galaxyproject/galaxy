@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Data Library</title>
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.1.1/css/bootstrap.min.css">
+</head>
+<body>
+
+
+  <div class="container">
+    <h1><a onclick="router.navigate('', {trigger: true})">Data Library</a></h1>
+    <hr />
+    <div class="page"></div>
+  </div>
+
+<!-- LIBRARY LIST TEMPLATE -->
+  <script type="text/template" id="library-list-template">
+    <table class="table striped">
+      <thead>
+        <th>name</th>
+        <th>description</th>
+        <th>synopsis</th> 
+        <th>model type</th> 
+        <th>id</th> 
+
+      </thead>
+      <tbody>
+        <% _.each(libraries, function(library) { %>
+          <tr>
+            <td><a href="#/folders/<%- library.id %>"><%- library.get('name') %></a></td>
+            <td><%= htmlEncode(library.get('description')) %></td>
+            <td><%= htmlEncode(library.get('synopsis')) %></td>
+            <td><%= htmlEncode(library.get('model_class')) %></td>
+            <td><a href="#/folders/<%- library.id %>"><%= htmlEncode(library.get('id')) %></a></td>
+          </tr>
+          <% }); %>
+      </tbody>
+    </table>
+  </script>
+
+
+<!-- FOLDERS LIST TEMPLATE -->
+  <script type="text/template" id="folder-content-template">
+    <table class="table striped">
+      <thead>
+        <th>name</th>
+        <th>type</th>
+        <th>parent id</th>
+        <th>id</th>
+        <th>library id</th>
+      </thead>
+      <tbody>
+        <% _.each(items, function(content_item) { %>
+          <tr>
+          <% if (content_item.get('type') === 'folder') { %>
+            <td><a href="#/folders/<%- content_item.id %>?library_id=<%- content_item.get('library_id') %>"><%- content_item.get('name') %></a></td>
+          <% } else {  %>
+            <td><%- content_item.get('name') %></td>
+          <% } %>    
+            <td><%= htmlEncode(content_item.get('type')) %></td>
+            <td><%= htmlEncode(content_item.get('parent_id')) %></td>
+            <td><a href="#/folders/<%- content_item.id %>"><%= htmlEncode(content_item.get('id')) %></a></td>
+            <td><a href="#/folders/<%- content_item.get('library_id') %>"><%= htmlEncode(content_item.get('library_id')) %></a></td>
+          </tr>
+          <% }); %>
+      </tbody>
+    </table>
+
+    <hr/>
+    <div>
+    <% if ( typeof libraries !== undefined ) { %>
+    <% _.each(libraries.models, function(library) { %>
+      <%- library.get('name') %> <br/>
+      <% }); %>
+    <% } else { %>
+      libraries are undefined
+      <% } %>
+    </div>
+  </script>
+
+
+  <script src="jquery-1.10.2.js" type="text/javascript"></script>
+  <script src="underscore.js" type="text/javascript"></script>
+  <script src="backbone.js" type="text/javascript"></script>
+  <script src="backbone.queryparams.js" type="text/javascript"></script>
+
+
+  <script>
+
+    // ENCODE HTML
+    function htmlEncode(value){
+      return $('<div/>').text(value).html();
+    }
+
+    // NESTED COLLECTIONS
+    function nestCollection(model, attributeName, nestedCollection) {
+      //setup nested references
+      for (var i = 0; i < nestedCollection.length; i++) {
+        model.attributes[attributeName][i] = nestedCollection.at(i).attributes;
+      }
+
+      //create empty arrays if none
+      nestedCollection.bind('add', function (initiative) {
+        if (!model.get(attributeName)) {
+          model.attributes[attributeName] = [];
+        }
+        model.get(attributeName).push(initiative.attributes);
+      });
+
+      nestedCollection.bind('remove', function (initiative) {
+        var updateObj = {};
+        updateObj[attributeName] = _.without(model.get(attributeName), initiative.attributes);
+        model.set(updateObj);
+      });
+      return nestedCollection;
+    }
+
+    var api_key = 'e48b2b2589b242a50538f8f9fa8e5ee9';
+
+  // MODIFICATIONS DONE JUST BEFORE THE REQUEST ITSELF
+    $.ajaxPrefilter( function( options, originalOptions, jqXHR ) {
+      options.url = 'http://martenson.bx.psu.edu:8080' + options.url + '?key=' + api_key;
+    });
+
+  // SERIALIZE JSON
+    $.fn.serializeObject = function() {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+        if (o[this.name] !== undefined) {
+          if (!o[this.name].push) {
+            o[this.name] = [o[this.name]];
+          }
+          o[this.name].push(this.value || '');
+        } else {
+          o[this.name] = this.value || '';
+        }
+      });
+      return o;
+    };
+
+    // LIBRARY
+    var Library = Backbone.Model.extend({
+      urlRoot: '/api/libraries',
+    });
+    var Libraries = Backbone.Collection.extend({
+      url: '/api/libraries',
+      model: Library
+    });
+
+    // ITEM
+    var Item = Backbone.Model.extend({
+    })
+
+    // FOLDER
+    var Folder = Backbone.Collection.extend({
+      model: Item      
+    })
+
+    // Container including metadata
+    var FolderContainer = Backbone.Model.extend({
+       defaults: {
+        folder: new Folder(),
+        full_path: "unknown",
+        urlRoot: "/api/folders/",
+        id: "unknown"
+      },
+      parse: function(obj) {
+          full_path = obj[0].full_path;
+          // update the inner collection
+          this.get("folder").reset(obj[1].folder_contents);
+
+          // this mightn't be necessary
+          // delete obj.folder;
+
+          return obj;
+        }
+    })
+
+    var LibraryListView = Backbone.View.extend({
+      el: '.page',
+      render: function () {
+        var that = this;
+        if (typeof libraries === "undefined") {
+          libraries = new Libraries();
+        }
+        libraries.fetch({
+          success: function (libraries) {
+            var template = _.template($('#library-list-template').html(), {libraries: libraries.models});
+            that.$el.html(template);
+          }
+        })
+      }
+    });
+
+  
+    var FolderContentView = Backbone.View.extend({
+      el: '.page',
+      render: function (options, params) {
+        var that = this;
+
+        var folderContainer = new FolderContainer({id: options.id});
+        folderContainer.url = folderContainer.attributes.urlRoot + options.id + '/contents';
+        // var folder = new Folder({id: options.id});
+
+        folderContainer.fetch({
+          success: function (container) {
+          folderContainer.attributes.folder = container.attributes.folder;
+          var template = _.template($('#folder-content-template').html(), {items: folderContainer.attributes.folder.models, id: options.id});
+          that.$el.html(template);
+          }
+        })
+
+        // folder.fetch({
+        //   success: function (folder) {
+        //   folderContainer.folder = folder;
+        //   var template = _.template($('#folder-content-template').html(), {items: folderContainer.folder.models, id: options.id});
+        //   that.$el.html(template);
+        //   }
+        // })
+
+        // var folder = new Folder({id: options.id});
+        // folder.url = folder.urlRoot + options.id + '/contents';
+        // folder.fetch({
+        //   success: function (folder) {
+        //     // console.log(JSON.stringify(folder))
+        //     //create the template
+        //     var template = _.template($('#folder-content-template').html(), {items: folder.models, id: options.id});
+        //     that.$el.html(template);
+        //   }
+        // })
+
+      },
+    });
+
+
+    var libraryListView = new LibraryListView();
+    var folderContentView = new FolderContentView();
+
+    var Router = Backbone.Router.extend({
+      routes: {
+            "" :                                "libraries", 
+            "folders/:id" :                     "folder_content"
+          }
+    });
+
+    var router = new Router;
+
+    router.on('route:libraries', function() {
+      // render libraries list
+      libraryListView.render();
+    })
+
+    router.on('route:folder_content', function(id, params) {
+      // render folder's content
+      folderContentView.render({id: id, params: params});
+    })
+
+    Backbone.history.start();
+  </script>
+
+
+</body>
+</html> 
