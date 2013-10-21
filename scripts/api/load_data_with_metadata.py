@@ -15,10 +15,34 @@ import shutil
 import sys
 import json
 import time
+import argparse
+
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit, display
 
-def main(api_key, api_url, in_folder, data_library):
+def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field=None):
+    data = {}
+    data['folder_id'] = library_folder_id
+    data['file_type'] = 'auto'
+    data['dbkey'] = ''
+    data['upload_option'] = 'upload_paths'
+    data['filesystem_paths'] = fullpath
+    data['create_type'] = 'file'
+    data['link_data_only'] = 'link_to_files'
+
+    handle = open( fullpath + ".json" )
+    smeta = handle.read()
+    handle.close()
+    ext_meta = json.loads(smeta)
+    data['extended_metadata'] = ext_meta
+    if uuid_field is not None and uuid_field in ext_meta:
+        data['uuid'] = ext_meta[uuid_field]
+
+    libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted = True)
+    print libset
+
+
+def main(api_key, api_url, in_folder, data_library, uuid_field=None):
     # Find/Create data library with the above name.  Assume we're putting datasets in the root folder '/'
     libs = display(api_key, api_url + 'libraries', return_formatted=False)
     library_id = None
@@ -28,7 +52,7 @@ def main(api_key, api_url, in_folder, data_library):
     if not library_id:
         lib_create_data = {'name':data_library}
         library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
-        library_id = library[0]['id']
+        library_id = library['id']
     folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted = False)
     for f in folders:
         if f['name'] == "/":
@@ -37,35 +61,24 @@ def main(api_key, api_url, in_folder, data_library):
         print "Failure to configure library destination."
         sys.exit(1)
 
-    for fname in os.listdir(in_folder):
-        fullpath = os.path.join(in_folder, fname)
-        if os.path.isfile(fullpath) and os.path.exists(fullpath + ".json"):
+    if os.path.isfile(in_folder):
+        if os.path.exists(in_folder + ".json"):
+            fullpath = os.path.abspath(in_folder)
             print "Loading", fullpath
-            data = {}
-            data['folder_id'] = library_folder_id
-            data['file_type'] = 'auto'
-            data['dbkey'] = ''
-            data['upload_option'] = 'upload_paths'
-            data['filesystem_paths'] = fullpath
-            data['create_type'] = 'file'
-
-            data['link_data_only'] = 'link_to_files'
-
-            handle = open( fullpath + ".json" )
-            smeta = handle.read()
-            handle.close()
-            data['extended_metadata'] = json.loads(smeta)
-            libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted = True)
-            print libset
+            load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
+    else:
+        for fname in os.listdir(in_folder):
+            fullpath = os.path.join(in_folder, fname)
+            if os.path.isfile(fullpath) and os.path.exists(fullpath + ".json"):
+                print "Loading", fullpath
+                load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
 
 if __name__ == '__main__':
-    try:
-        api_key = sys.argv[1]
-        api_url = sys.argv[2]
-        in_folder = sys.argv[3]
-        data_library = sys.argv[4]
-    except IndexError:
-        print 'usage: %s key url in_folder data_library' % os.path.basename( sys.argv[0] )
-        sys.exit( 1 )
-    main(api_key, api_url, in_folder, data_library )
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("api_key", help="API KEY")
+    parser.add_argument('api_url', help='API URL')
+    parser.add_argument("in_folder", help="Input Folder")
+    parser.add_argument("data_library", help="Data Library")
+    parser.add_argument("--uuid_field", help="UUID Field", default=None)
+    args = parser.parse_args()
+    main(args.api_key, args.api_url, args.in_folder, args.data_library, args.uuid_field)

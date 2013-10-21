@@ -2,18 +2,27 @@
 Binary classes
 """
 
-import data, logging, binascii
+import binascii
+import data
+import gzip
+import logging
+import os
+import shutil
+import struct
+import subprocess
+import tempfile
+import zipfile
+
+from urllib import urlencode, quote_plus
+from galaxy import eggs
+eggs.require( "bx-python" )
+
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
+
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
-from urllib import urlencode, quote_plus
-import zipfile, gzip
-import os, subprocess, tempfile
-import struct
+import dataproviders
 
 log = logging.getLogger(__name__)
 
@@ -66,6 +75,7 @@ class Binary( data.Data ):
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
 
+
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
@@ -85,9 +95,21 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+
+class GenericAsn1Binary( Binary ):
+    """Class for generic ASN.1 binary format"""
+    file_ext = "asn1-binary"
+
+Binary.register_unsniffable_binary_ext("asn1-binary")
+
+
+@dataproviders.decorators.has_dataproviders
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
+    track_type = "ReadTrack"
+    data_sources = { "data": "bai", "index": "bigwig" }
+
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 
     def _get_samtools_version( self ):
@@ -181,7 +203,7 @@ class Bam( Binary ):
         stderr = open( stderr_name ).read().strip()
         if stderr:
             if exit_code != 0:
-                shutil.rmtree( tmp_dir) #clean up 
+                shutil.rmtree( tmp_dir) #clean up
                 raise Exception, "Error Grooming BAM file contents: %s" % stderr
             else:
                 print stderr
@@ -209,7 +231,7 @@ class Bam( Binary ):
         stderr = open( stderr_name ).read().strip()
         if stderr:
             if exit_code != 0:
-                os.unlink( stderr_name ) #clean up 
+                os.unlink( stderr_name ) #clean up
                 raise Exception, "Error Setting BAM Metadata: %s" % stderr
             else:
                 print stderr
@@ -218,7 +240,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
-        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary. 
+        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
             header = gzip.open( filename ).read(4)
             if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
@@ -228,7 +250,7 @@ class Bam( Binary ):
             return False
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek  = "Binary bam alignments file" 
+            dataset.peek  = "Binary bam alignments file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -238,10 +260,91 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return "ReadTrack", { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
+
+    # ------------- Dataproviders
+    # pipe through samtools view
+    #ALSO: (as Sam)
+    # bam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
+    #TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
+    #TODO: incorporate samtools options to control output: regions first, then flags, etc.
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
+    def line_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.line.FilteredLineDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
+    def regex_line_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
+    def column_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.column.ColumnarDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        settings[ 'comment_char' ] = '@'
+        return dataproviders.column.DictDataProvider( samtools_source, **settings )
+
+    # these can't be used directly - may need BamColumn, BamDict (Bam metadata -> column/dict)
+    # OR - see genomic_region_dataprovider
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-column', dataproviders.column.ColumnarDataProvider.settings )
+    #def dataset_column_dataprovider( self, dataset, **settings ):
+    #    settings[ 'comment_char' ] = '@'
+    #    return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
+
+    #@dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    #def dataset_dict_dataprovider( self, dataset, **settings ):
+    #    settings[ 'comment_char' ] = '@'
+    #    return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
+    def header_dataprovider( self, dataset, **settings ):
+        # in this case we can use an option of samtools view to provide just what we need (w/o regex)
+        samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset, '-H' )
+        return dataproviders.line.RegexLineDataProvider( samtools_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', dataproviders.column.DictDataProvider.settings )
+    def id_seq_qual_dataprovider( self, dataset, **settings ):
+        settings[ 'indeces' ] = [ 0, 9, 10 ]
+        settings[ 'column_types' ] = [ 'str', 'str', 'str' ]
+        settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
+        return self.dict_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region', dataproviders.column.ColumnarDataProvider.settings )
+    def genomic_region_dataprovider( self, dataset, **settings ):
+        # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
+        #TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
+        #   or remove altogether...
+        #samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
+        #return dataproviders.dataset.GenomicRegionDataProvider( samtools_source, metadata_source=dataset,
+        #                                                        2, 3, 3, **settings )
+
+        # instead, set manually and use in-class column gen
+        settings[ 'indeces' ] = [ 2, 3, 3 ]
+        settings[ 'column_types' ] = [ 'str', 'int', 'int' ]
+        return self.column_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict', dataproviders.column.DictDataProvider.settings )
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
+        settings[ 'indeces' ] = [ 2, 3, 3 ]
+        settings[ 'column_types' ] = [ 'str', 'int', 'int' ]
+        settings[ 'column_names' ] = [ 'chrom', 'start', 'end' ]
+        return self.dict_dataprovider( dataset, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'samtools' )
+    def samtools_dataprovider( self, dataset, **settings ):
+        """Generic samtools interface - all options available through settings."""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
 
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
+
 
 class H5( Binary ):
     """Class describing an HDF5 file"""
@@ -249,7 +352,7 @@ class H5( Binary ):
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek  = "Binary h5 file" 
+            dataset.peek  = "Binary h5 file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -262,13 +365,14 @@ class H5( Binary ):
 
 Binary.register_unsniffable_binary_ext("h5")
 
+
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek  = "Binary scf sequence file" 
+            dataset.peek  = "Binary scf sequence file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -280,6 +384,7 @@ class Scf( Binary ):
             return "Binary scf sequence file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
 Binary.register_unsniffable_binary_ext("scf")
+
 
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
@@ -299,7 +404,7 @@ class Sff( Binary ):
             return False
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek  = "Binary sff file" 
+            dataset.peek  = "Binary sff file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -312,12 +417,16 @@ class Sff( Binary ):
 
 Binary.register_sniffable_binary_format("sff", "sff", Sff)
 
+
 class BigWig(Binary):
     """
     Accessing binary BigWig files from UCSC.
     The supplemental info in the paper has the binary details:
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
+    track_type = "LineTrack"
+    data_sources = { "data_standalone": "bigwig" }
+
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
         self._magic = 0x888FFC26
@@ -342,29 +451,33 @@ class BigWig(Binary):
             return dataset.peek
         except:
             return "Binary UCSC %s file (%s)" % ( self._name, data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return "LineTrack", {"data_standalone": "bigwig"}
 
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
+
 class BigBed(BigWig):
     """BigBed support from UCSC."""
+
+    data_sources = { "data_standalone": "bigbed" }
+
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-    def get_track_type( self ):
-        return "LineTrack", {"data_standalone": "bigbed"}
 
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
+
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
-    
+
     file_ext = "twobit"
-    
+
     def sniff(self, filename):
         try:
+            # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
+            if os.path.getsize(filename) < 16:
+                return False
             input = file(filename)
             magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
@@ -382,3 +495,5 @@ class TwoBit (Binary):
             return dataset.peek
         except:
             return "Binary TwoBit format nucleotide file (%s)" % (data.nice_size(dataset.get_size()))
+
+Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)

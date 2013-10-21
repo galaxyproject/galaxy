@@ -188,7 +188,14 @@ class FromParamToolOutputActionOption( ToolOutputActionOption ):
             assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
             value = value.get( ref_name )
         for attr_name in self.param_attribute:
-            value = getattr( value, attr_name )
+            # if the value is a list from a repeat tag you can access the first element of the repeat with
+            # artifical 'first' attribute_name. For example: .. param_attribute="first.input_mate1.ext"
+            if isinstance(value, list) and attr_name == 'first':
+                value = value[0]
+            elif isinstance(value, dict):
+                value = value[ attr_name ]
+            else:
+                value = getattr( value, attr_name )
         options = [ [ str( value ) ] ]
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
@@ -215,9 +222,13 @@ class FromDataTableOutputActionOption( ToolOutputActionOption ):
             self.offset = elem.get( 'offset', -1 )
             self.offset = int( self.offset )
         else:
+            self.options = []
             self.missing_tool_data_table_name = self.name
     def get_value( self, other_values ):
-        options = self.options
+        if self.options:
+            options = self.options
+        else:
+            options = []
         for filter in self.filters:
             options = filter.filter_options( options, other_values )
         try:

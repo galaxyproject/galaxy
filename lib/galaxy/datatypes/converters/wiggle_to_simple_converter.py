@@ -17,16 +17,16 @@ def stop_err( msg ):
     sys.exit()
 
 def main():
-    if len( sys.argv ) > 1: 
+    if len( sys.argv ) > 1:
         in_file = open( sys.argv[1] )
-    else: 
+    else:
         in_file = open( sys.stdin )
-    
+
     if len( sys.argv ) > 2:
         out_file = open( sys.argv[2], "w" )
     else:
         out_file = sys.stdout
-    
+
     try:
         for fields in bx.wiggle.IntervalReader( UCSCOutWrapper( in_file ) ):
             out_file.write( "%s\n" % "\t".join( map( str, fields ) ) )

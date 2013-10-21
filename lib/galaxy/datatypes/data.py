@@ -2,10 +2,12 @@ import logging
 import metadata
 import mimetypes
 import os
+import shutil
 import sys
 import tempfile
 import zipfile
 from cgi import escape
+from inspect import isclass
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
@@ -13,15 +15,11 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
+import dataproviders
+
 from galaxy import eggs
 eggs.require( "Paste" )
 import paste
-
-
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger(__name__)
 
@@ -61,6 +59,7 @@ class DataMeta( type ):
                 cls.metadata_spec.update( base.metadata_spec ) #add contents of metadata spec of base class to cls
         metadata.Statement.process( cls )
 
+@dataproviders.decorators.has_dataproviders
 class Data( object ):
     """
     Base class for all datatypes.  Implements basic interfaces as well
@@ -102,6 +101,12 @@ class Data( object ):
     primary_file_name = 'index'
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
+
+    # Trackster track type.
+    track_type = None
+
+    # Data sources.
+    data_sources = {}
 
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -226,6 +231,7 @@ class Data( object ):
                 if (params.do_action == 'zip'):
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
                     if ziptype == '64':
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
@@ -276,14 +282,14 @@ class Data( object ):
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -343,6 +349,7 @@ class Data( object ):
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
+        preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
@@ -448,12 +455,12 @@ class Data( object ):
         apply anyway.
         """
         try:
-            if type in self.get_display_types():
+            if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr ( self, self.supported_display_apps[type]['links_function'] ) ( dataset, type, app, base_url, **kwd )
         except:
             log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' \
                            % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
-        return []
+        return target_frame, []
     def get_converter_types(self, original_dataset, datatypes_registry):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
@@ -543,22 +550,28 @@ class Data( object ):
     def has_resolution(self):
         return False
 
-
-
+    def matches_any( self, target_datatypes ):
+        """
+        Check if this datatype is of any of the target_datatypes or is
+        a subtype thereof.
+        """
+        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
+        return isinstance( self, datatype_classes )
     def merge( split_files, output_file):
         """
-        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
-        but might be brittle. Need to revisit this.
+            Merge files with copy.copyfileobj() will not hit the
+            max argument limitation of cat. gz and bz2 files are also working.
         """
         if not split_files:
             raise ValueError('Asked to merge zero files as %s' % output_file)
         elif len(split_files) == 1:
-            cmd = 'mv -f %s %s' % ( split_files[0], output_file )
+            shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            fdst = open(output_file, 'wb')
+            for fsrc in split_files:
+                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
+            fdst.close()
+
     merge = staticmethod(merge)
 
     def get_visualizations( self, dataset ):
@@ -566,10 +579,43 @@ class Data( object ):
         Returns a list of visualizations for datatype.
         """
 
-        if hasattr( self, 'get_track_type' ):
+        if self.track_type:
             return [ 'trackster', 'circster' ]
         return []
 
+    # ------------- Dataproviders
+    def has_dataprovider( self, data_format ):
+        """
+        Returns True if `data_format` is available in `dataproviders`.
+        """
+        return ( data_format in self.dataproviders )
+
+    def dataprovider( self, dataset, data_format, **settings ):
+        """
+        Base dataprovider factory for all datatypes that returns the proper provider
+        for the given `data_format` or raises a `NoProviderAvailable`.
+        """
+        if self.has_dataprovider( data_format ):
+            return self.dataproviders[ data_format ]( self, dataset, **settings )
+        raise dataproviders.exceptions.NoProviderAvailable( self, data_format )
+
+    @dataproviders.decorators.dataprovider_factory( 'base' )
+    def base_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.base.DataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'chunk', dataproviders.chunk.ChunkDataProvider.settings )
+    def chunk_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.chunk.ChunkDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'chunk64', dataproviders.chunk.Base64ChunkDataProvider.settings )
+    def chunk64_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.chunk.Base64ChunkDataProvider( dataset_source, **settings )
+
+
+@dataproviders.decorators.has_dataproviders
 class Text( Data ):
     file_ext = 'txt'
     line_class = 'line'
@@ -739,12 +785,38 @@ class Text( Data ):
         f.close()
     split = classmethod(split)
 
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
+    def line_dataprovider( self, dataset, **settings ):
+        """
+        Returns an iterator over the dataset's lines (that have been `strip`ed)
+        optionally excluding blank lines and lines that start with a comment character.
+        """
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.line.FilteredLineDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
+    def regex_line_dataprovider( self, dataset, **settings ):
+        """
+        Returns an iterator over the dataset's lines
+        optionally including/excluding lines that match one or more regex filters.
+        """
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.line.RegexLineDataProvider( dataset_source, **settings )
+
+
+class GenericAsn1( Text ):
+    """Class for generic ASN.1 text format"""
+    file_ext = 'asn1'
+
+
 class LineCount( Text ):
     """
     Dataset contains a single line with a single integer that denotes the
     line count for a related dataset. Used for custom builds.
     """
     pass
+
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""
@@ -859,7 +931,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         text = "%s file" % file_type
     else:
         try:
-            text = unicode( '\n'.join( lines ), 'utf-8' )
+            text = util.unicodify( '\n'.join( lines ) )
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text

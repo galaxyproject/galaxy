@@ -2,27 +2,20 @@
 Coverage datatypes
 
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
 
-import logging, os, sys, time, tempfile, shutil
-import data
-from galaxy import util
-from galaxy.datatypes.sniff import *
-from galaxy.web import url_for
-from cgi import escape
-import urllib
-from bx.intervals.io import *
+import logging
+import math
+
+from galaxy import eggs
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
-import math
 
 log = logging.getLogger(__name__)
 
 class LastzCoverage( Tabular ):
     file_ext = "coverage"
-    
+
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="positionCol", default=2, desc="Position column", param=metadata.ColumnParameter )
     MetadataElement( name="forwardCol", default=3, desc="Forward or aggregate read column", param=metadata.ColumnParameter )
@@ -34,7 +27,7 @@ class LastzCoverage( Tabular ):
         Assumes we have a numpy file.
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
-        pkg_resources.require("numpy>=1.2.1")
+        eggs.require("numpy>=1.2.1")
         #from numpy.lib import format
         import numpy
 
@@ -51,7 +44,7 @@ class LastzCoverage( Tabular ):
         t_end = math.ceil( end / resolution )
         x = numpy.arange( t_start, t_end ) * resolution
         y = data[ t_start : t_end ]
-    
+
         return zip(x.tolist(), y.tolist())
 
     def get_track_resolution( self, dataset, start, end):

@@ -3,6 +3,7 @@ from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.util import inflector
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 import tool_shed.grids.admin_grids as admin_grids
 
 from galaxy import eggs
@@ -15,7 +16,7 @@ log = logging.getLogger( __name__ )
 
 
 class AdminController( BaseUIController, Admin ):
-    
+
     user_list_grid = admin_grids.UserGrid()
     role_list_grid = admin_grids.RoleGrid()
     group_list_grid = admin_grids.GroupGrid()
@@ -30,7 +31,7 @@ class AdminController( BaseUIController, Admin ):
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories',
@@ -76,7 +77,7 @@ class AdminController( BaseUIController, Admin ):
                 return self.undelete_repository( trans, **kwd )
         # The changeset_revision_select_field in the RepositoryGrid performs a refresh_on_change
         # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
-        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through
         # all of the received values to see which value is not the repository tip.  If we find it, we
         # know the refresh_on_change occurred, and we have the necessary repository id and change set
         # revision to pass on.
@@ -105,7 +106,7 @@ class AdminController( BaseUIController, Admin ):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = suc.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
                 repository = repository_metadata.repository
                 kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -118,12 +119,11 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) ).strip()
-        description = util.restore_text( params.get( 'description', '' ) ).strip()
-        if params.get( 'create_category_button', False ):
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        name = kwd.get( 'name', '' ).strip()
+        description = kwd.get( 'description', '' ).strip()
+        if kwd.get( 'create_category_button', False ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
@@ -150,12 +150,11 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def delete_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
-            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id. 
+            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
             ids = util.listify( id )
             count = 0
             deleted_repositories = ""
@@ -187,15 +186,14 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def delete_repository_metadata( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
                 trans.sa_session.delete( repository_metadata )
                 trans.sa_session.flush()
                 count += 1
@@ -212,10 +210,9 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
         if not id:
             message = "No category ids received for editing"
             trans.response.send_redirect( web.url_for( controller='admin',
@@ -223,14 +220,14 @@ class AdminController( BaseUIController, Admin ):
                                                        message=message,
                                                        status='error' ) )
         category = suc.get_category( trans, id )
-        if params.get( 'edit_category_button', False ):
-            new_name = util.restore_text( params.get( 'name', '' ) ).strip()
-            new_description = util.restore_text( params.get( 'description', '' ) ).strip()
+        if kwd.get( 'edit_category_button', False ):
+            new_name = kwd.get( 'name', '' ).strip()
+            new_description = kwd.get( 'description', '' ).strip()
             if category.name != new_name or category.description != new_description:
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and suc.get_category_by_name( trans, name ):
+                elif category.name != new_name and suc.get_category_by_name( trans, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -287,9 +284,8 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def regenerate_statistics( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if 'regenerate_statistics_button' in kwd:
             trans.app.shed_counter.generate_statistics()
             message = "Successfully regenerated statistics"
@@ -301,12 +297,12 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = suc.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
         repositories_select_field = suc.build_repository_ids_select_field( trans )
-        return trans.fill_template( '/webapps/tool_shed/admin/reset_metadata_on_selected_repositories.mako',
+        return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
                                     status=status )
@@ -314,9 +310,8 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def undelete_repository( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
@@ -331,7 +326,7 @@ class AdminController( BaseUIController, Admin ):
                         for repository_metadata in repository.metadata_revisions:
                             metadata = repository_metadata.metadata
                             if metadata:
-                                if suc.is_downloadable( metadata ):
+                                if metadata_util.is_downloadable( metadata ):
                                     repository_metadata.downloadable = True
                                     trans.sa_session.add( repository_metadata )
                         repository.deleted = False
@@ -357,9 +352,8 @@ class AdminController( BaseUIController, Admin ):
         # TODO: We should probably eliminate the Category.deleted column since it really makes no
         # sense to mark a category as deleted (category names and descriptions can be changed instead).
         # If we do this, and the following 2 methods can be eliminated.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -384,9 +378,8 @@ class AdminController( BaseUIController, Admin ):
         # This method should only be called for a Category that has previously been deleted.
         # Purging a deleted Category deletes all of the following from the database:
         # - RepoitoryCategoryAssociations where category_id == Category.id
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -413,9 +406,8 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )

@@ -7,8 +7,8 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <h3 align="center">Jobs in Error for ${month_label}&nbsp;${year_label}</h3>
-        <h4 align="center">Click Jobs in Error to view jobs in error for that day</h4>
+        <h4 align="center">Jobs in Error for ${month_label}&nbsp;${year_label}</h4>
+        <h5 align="center">Click Jobs to see their details</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="3">There are no jobs in the error state for ${month_label}&nbsp;${year_label}</td></tr>
@@ -16,7 +16,11 @@
                 <tr class="header">
                     <td>Day</td>
                     <td>Date</td>
-                    <td>Jobs in Error</td>
+                    %if is_user_jobs_only:
+    					<td>User Jobs in Error</td>
+					%else:
+	                    <td>User + Monitor Jobs in Error</td>
+	                %endif
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

@@ -15,11 +15,14 @@ import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
+from galaxy.visualization.registry import VisualizationsRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
+
+from galaxy.web.base import pluginframework
 
 import logging
 log = logging.getLogger( __name__ )
@@ -53,7 +56,7 @@ class UniverseApplication( object ):
         from tool_shed.galaxy_install.migrate.check import verify_tools
         verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
-        self.object_store = build_object_store_from_config(self.config)
+        self.object_store = build_object_store_from_config(self.config, fsmon=True)
         # Setup the database engine and ORM
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,
@@ -61,7 +64,8 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
                                    object_store = self.object_store,
-                                   trace_logger=self.trace_logger )
+                                   trace_logger=self.trace_logger,
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
         # Manage installed tool shed repositories.
         self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
@@ -90,7 +94,7 @@ class UniverseApplication( object ):
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=True )
+                                                     from_shed_config=False )
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
@@ -106,6 +110,8 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed.galaxy_install import update_manager
             self.update_manager = update_manager.UpdateManager( self )
+        else:
+            self.update_manager = None
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -118,6 +124,12 @@ class UniverseApplication( object ):
         load_history_imp_exp_tools( self.toolbox )
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
+        # visualizations registry: associates resources with visualizations, controls how to render
+        self.visualizations_registry = None
+        if self.config.visualizations_plugins_directory:
+            self.visualizations_registry = VisualizationsRegistry( self,
+                directories_setting=self.config.visualizations_plugins_directory,
+                template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
@@ -160,12 +172,15 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+        self.model.engine.dispose()
 
     def shutdown( self ):
         self.job_manager.shutdown()
         self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()
+        if self.update_manager:
+            self.update_manager.shutdown()
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.
@@ -177,6 +192,6 @@ class UniverseApplication( object ):
     def configure_fluent_log( self ):
         if self.config.fluent_log:
             from galaxy.util.log.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port ) 
+            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port )
         else:
             self.trace_logger = None

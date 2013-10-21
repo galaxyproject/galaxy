@@ -6,7 +6,9 @@ from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 log = logging.getLogger( __name__ )
 
+
 class InstallTestRepository( TwillTestCase ):
+
     def setUp( self ):
         # Security helper
         id_secret = os.environ.get( 'GALAXY_INSTALL_TEST_SECRET', 'changethisinproductiontoo' )
@@ -24,21 +26,22 @@ class InstallTestRepository( TwillTestCase ):
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
         self.home()
-    def initiate_installation_process( self, 
-                                       install_tool_dependencies=False, 
-                                       install_repository_dependencies=True, 
-                                       no_changes=True, 
+
+    def initiate_installation_process( self,
+                                       install_tool_dependencies=False,
+                                       install_repository_dependencies=True,
+                                       no_changes=True,
                                        new_tool_panel_section=None ):
         html = self.last_page()
-        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
-        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
-        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy 
+        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the
+        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
+        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy
         # admin_toolshed controller.
         install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id 
+            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id
             # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
             # comma-separated values.
             repository_ids = str( iri_ids )
@@ -49,8 +52,9 @@ class InstallTestRepository( TwillTestCase ):
                 ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_url( url )
             return util.listify( repository_ids )
-    def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True, 
-                            strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
+
+    def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True,
+                            strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[],
                             post_submit_strings_displayed=[], new_tool_panel_section=None, **kwd ):
         name = repository_info_dict[ 'name' ]
         owner = repository_info_dict[ 'owner' ]
@@ -59,23 +63,23 @@ class InstallTestRepository( TwillTestCase ):
         tool_shed_url = repository_info_dict[ 'tool_shed_url' ]
         preview_params = urllib.urlencode( dict( repository_id=encoded_repository_id, changeset_revision=changeset_revision ) )
         self.visit_url( '%s/repository/preview_tools_in_changeset?%s' % ( tool_shed_url, preview_params ) )
-        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id, 
+        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id,
                                                  changeset_revisions=changeset_revision,
                                                  galaxy_url=self.url ) )
-        # If the tool shed does not have the same hostname as the Galaxy server being used for these tests, 
-        # twill will not carry over previously set cookies for the Galaxy server when following the 
-        # install_repositories_by_revision redirect, so we have to include 403 in the allowed HTTP 
+        # If the tool shed does not have the same hostname as the Galaxy server being used for these tests,
+        # twill will not carry over previously set cookies for the Galaxy server when following the
+        # install_repositories_by_revision redirect, so we have to include 403 in the allowed HTTP
         # status codes and log in again.
         url = '%s/repository/install_repositories_by_revision?%s' % ( tool_shed_url, install_params )
         self.visit_url( url, allowed_codes=[ 200, 403 ] )
         self.logout()
         self.login( email='test@bx.psu.edu', username='test' )
-        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id, 
+        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id,
                                                  changeset_revisions=changeset_revision,
                                                  tool_shed_url=tool_shed_url ) )
         url = '/admin_toolshed/prepare_for_install?%s' % install_params
         self.visit_url( url )
-        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to 
+        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
         if 'install_tool_dependencies' in self.last_page():
             form = tc.browser.get_form( 'select_tool_panel_section' )
@@ -88,7 +92,15 @@ class InstallTestRepository( TwillTestCase ):
                 checkbox.selected = False
                 kwd[ 'install_tool_dependencies' ] = 'False'
         if 'install_repository_dependencies' in self.last_page():
-            kwd[ 'install_repository_dependencies' ] = str( install_repository_dependencies ).lower()
+            form = tc.browser.get_form( 'select_tool_panel_section' )
+            checkbox = form.find_control( id="install_repository_dependencies" )
+            checkbox.disabled = False
+            if install_repository_dependencies:
+                checkbox.selected = True
+                kwd[ 'install_repository_dependencies' ] = 'True'
+            else:
+                checkbox.selected = False
+                kwd[ 'install_repository_dependencies' ] = 'False'
         if 'shed_tool_conf' not in kwd:
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:
@@ -97,12 +109,14 @@ class InstallTestRepository( TwillTestCase ):
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
+
     def visit_url( self, url, allowed_codes=[ 200 ] ):
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
-            ( return_code, ', '.join( str( code ) for code in allowed_codes ) ) 
+            ( return_code, ', '.join( str( code ) for code in allowed_codes ) )
         return new_url
+
     def wait_for_repository_installation( self, repository_ids ):
         final_states = [ model.ToolShedRepository.installation_status.ERROR,
                          model.ToolShedRepository.installation_status.INSTALLED ]
@@ -121,12 +135,34 @@ class InstallTestRepository( TwillTestCase ):
                                               ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )
-    def uninstall_repository( self, installed_repository ):
+
+    def uninstall_repository( self, installed_repository, deactivate_only=False ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_url( url )
-        tc.fv ( 1, "remove_from_disk", 'true' )
+        if deactivate_only:
+            tc.fv ( 1, "remove_from_disk", 'false' )
+        else:
+            tc.fv ( 1, "remove_from_disk", 'true' )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        strings_displayed.append( 'has been uninstalled' )
+        if deactivate_only:
+            strings_displayed.append( 'has been deactivated' )
+        else:
+            strings_displayed.append( 'has been uninstalled' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
-
+        # Get all tool dependencies that are in an error state and uninstall them explicitly, so that the next installation attempt
+        # may succeed.
+        error_state = model.ToolDependency.installation_status.ERROR
+        tool_dependencies = test_db_util.get_tool_dependencies_for_installed_repository( installed_repository.id, status=error_state )
+        if len( tool_dependencies ) > 0:
+            encoded_tool_dependency_ids = [ self.security.encode_id( tool_dependency.id ) for tool_dependency in tool_dependencies ]
+            self.uninstall_tool_dependencies( self.security.encode_id( installed_repository.id ), encoded_tool_dependency_ids )
+        
+    def uninstall_tool_dependencies( self, encoded_repository_id, encoded_tool_dependency_ids ):
+        tool_dependency_ids = ','.join( encoded_tool_dependency_ids )
+        url = '/admin_toolshed/uninstall_tool_dependencies?repository_id=%s&inst_td_ids=%s&operation=uninstall' % \
+            ( encoded_repository_id, tool_dependency_ids )
+        self.visit_url( url )
+        tc.fv( 'uninstall_tool_dependencies', 'tool_dependency_ids', tool_dependency_ids )
+        tc.submit( 'uninstall_tool_dependencies_button' )
+        

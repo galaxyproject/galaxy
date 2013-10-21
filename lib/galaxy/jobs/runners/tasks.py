@@ -9,12 +9,13 @@ import os, errno
 from time import sleep
 
 from galaxy.jobs import TaskWrapper
+from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'TaskedJobRunner' ]
 
-class TaskedJobRunner( object ):
+class TaskedJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -25,18 +26,20 @@ class TaskedJobRunner( object ):
         self._init_worker_threads()
 
     def queue_job( self, job_wrapper ):
-        super( LocalJobRunner, self ).queue_job( job_wrapper )
-        if not job_wrapper.is_ready:
+        # prepare the job
+        if not self.prepare_job( job_wrapper ):
             return
 
-        stderr = stdout = ''
+        # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
+
+        stderr = stdout = ''
 
         # Persist the destination
         job_wrapper.set_job_destination(job_wrapper.job_destination)
 
         # This is the job's exit code, which will depend on the tasks'
-        # exit code. The overall job's exit code will be one of two values: 
+        # exit code. The overall job's exit code will be one of two values:
         # o if the job is successful, then the last task scanned will be
         #   used to determine the exit code. Note that this is not the same
         #   thing as the last task to complete, which could be added later.
@@ -56,8 +59,8 @@ class TaskedJobRunner( object ):
                 job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
                 return
             tasks = splitter.do_split(job_wrapper)
-            # Not an option for now.  Task objects don't *do* anything 
-            # useful yet, but we'll want them tracked outside this thread 
+            # Not an option for now.  Task objects don't *do* anything
+            # useful yet, but we'll want them tracked outside this thread
             # to do anything.
             # if track_tasks_in_database:
             task_wrappers = []
@@ -73,21 +76,21 @@ class TaskedJobRunner( object ):
             count_complete = 0
             sleep_time = 1
             # sleep/loop until no more progress can be made. That is when
-            # all tasks are one of { OK, ERROR, DELETED }. If a task  
+            # all tasks are one of { OK, ERROR, DELETED }. If a task
             completed_states = [ model.Task.states.OK, \
                                  model.Task.states.ERROR, \
                                  model.Task.states.DELETED ]
 
-            # TODO: Should we report an error (and not merge outputs) if 
-            # one of the subtasks errored out?  Should we prevent any that 
+            # TODO: Should we report an error (and not merge outputs) if
+            # one of the subtasks errored out?  Should we prevent any that
             # are pending from being started in that case?
-            # SM: I'm 
-            # If any task has an error, then we will stop all of them 
+            # SM: I'm
+            # If any task has an error, then we will stop all of them
             # immediately. Tasks that are in the QUEUED state will be
-            # moved to the DELETED state. The task's runner should 
-            # ignore tasks that are not in the QUEUED state. 
+            # moved to the DELETED state. The task's runner should
+            # ignore tasks that are not in the QUEUED state.
             # Deleted tasks are not included right now.
-            # 
+            #
             while tasks_complete is False:
                 count_complete = 0
                 tasks_complete = True
@@ -120,7 +123,7 @@ class TaskedJobRunner( object ):
         #run the metadata setting script here
         #this is terminate-able when output dataset/job is deleted
         #so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
+        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
                                                                             set_extension = True,
                                                                             kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
@@ -183,10 +186,10 @@ class TaskedJobRunner( object ):
         #       - If the task is queued, then mark it as deleted
         #         so that the runner will not run it later. (It would
         #         be great to remove stuff from a runner's queue before
-        #         the runner picks it up, but that isn't possible in 
+        #         the runner picks it up, but that isn't possible in
         #         most APIs.)
-        #       - If the task is running, then tell the runner 
-        #         (via the dispatcher) to cancel the task. 
+        #       - If the task is running, then tell the runner
+        #         (via the dispatcher) to cancel the task.
         #       - Else the task is new or waiting (which should be
         #         impossible) or in an error or deleted state already,
         #         so skip it.
@@ -198,19 +201,19 @@ class TaskedJobRunner( object ):
             task = task_wrapper.get_task()
             task_state = task.get_state()
             if ( model.Task.states.QUEUED == task_state ):
-                log.debug( "_cancel_job for job %d: Task %d is not running; setting state to DELETED" 
+                log.debug( "_cancel_job for job %d: Task %d is not running; setting state to DELETED"
                          % ( job.get_id(), task.get_id() ) )
                 task_wrapper.change_state( task.states.DELETED )
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
         # have been picked up by a runner but not marked as running.
-        # So wait a few seconds so that we can eliminate such tasks once they 
+        # So wait a few seconds so that we can eliminate such tasks once they
         # are running.
         sleep(5)
         for task_wrapper in task_wrappers:
             if ( model.Task.states.RUNNING == task_wrapper.get_state() ):
                 task = task_wrapper.get_task()
-                log.debug( "_cancel_job for job %d: Stopping running task %d" 
+                log.debug( "_cancel_job for job %d: Stopping running task %d"
                          % ( job.get_id(), task.get_id() ) )
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop( task )
 

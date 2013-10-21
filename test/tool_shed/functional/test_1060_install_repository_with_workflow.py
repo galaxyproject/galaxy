@@ -137,7 +137,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  'Test 0060 Workflow Features',
                                  install_tool_dependencies=False,
-                                 includes_tools=False )
+                                 includes_tools_for_display_in_tool_panel=False )
     def test_0030_import_workflow_from_installed_repository( self ):
         '''Import the workflow from the installed repository and verify that it appears in the list of all workflows.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( workflow_repository_name, common.test_user_1_name )

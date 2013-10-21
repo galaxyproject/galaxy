@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys, shutil, tempfile, re
+from ConfigParser import SafeConfigParser
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -86,6 +87,39 @@ def get_webapp_global_conf():
         global_conf.update( get_static_settings() )
     return global_conf
 
+def generate_config_file( input_filename, output_filename, config_items ):
+    '''
+    Generate a config file with the configuration that has been defined for the embedded web application.
+    This is mostly relevant when setting metadata externally, since the script for doing that does not
+    have access to app.config.
+    ''' 
+    cp = SafeConfigParser()
+    cp.read( input_filename )
+    config_items_by_section = []
+    for label, value in config_items:
+        found = False
+        # Attempt to determine the correct section for this configuration option.
+        for section in cp.sections():
+            if cp.has_option( section, label ):
+                config_tuple = section, label, value
+                config_items_by_section.append( config_tuple )
+                found = True
+                continue
+        # Default to app:main if no section was found.
+        if not found:
+            config_tuple = 'app:main', label, value
+            config_items_by_section.append( config_tuple )
+    print( config_items_by_section )
+    # Replace the default values with the provided configuration.
+    for section, label, value in config_items_by_section:
+        
+        if cp.has_option( section, label ):
+            cp.remove_option( section, label )
+        cp.set( section, label, str( value ) )
+    fh = open( output_filename, 'w' )
+    cp.write( fh )
+    fh.close()
+
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
     plug_loader = test_config.plugins.prepareTestLoader( loader )
@@ -129,7 +163,7 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml' )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
@@ -145,6 +179,9 @@ def main():
     shed_tool_data_table_config = 'shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
+    galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
+    if galaxy_test_tmp_dir is None:
+        galaxy_test_tmp_dir = tempfile.mkdtemp()
     
     if start_server:
         psu_production = False
@@ -185,7 +222,6 @@ def main():
                            cluster_files_directory = cluster_files_directory,
                            job_working_directory = job_working_directory,
                            outputs_to_working_directory = 'True',
-                           set_metadata_externally = 'True',
                            static_enabled = 'False',
                            debug = 'False',
                            track_jobs_in_database = 'True',
@@ -194,71 +230,88 @@ def main():
                            default_cluster_job_runner = default_cluster_job_runner )
             psu_production = True
         else:
+            tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+            # Configure the database path.
             if 'GALAXY_TEST_DBPATH' in os.environ:
-                db_path = os.environ['GALAXY_TEST_DBPATH']
+                galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
             else: 
-                tempdir = tempfile.mkdtemp()
-                db_path = os.path.join( tempdir, 'database' )
-            file_path = os.path.join( db_path, 'files' )
-            new_file_path = os.path.join( db_path, 'tmp' )
+                galaxy_db_path = os.path.join( tempdir, 'database' )
+            # Configure the paths Galaxy needs to  test tools.
+            file_path = os.path.join( galaxy_db_path, 'files' )
+            new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
+            job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
-                database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+                database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe.sqlite' )
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
-                os.makedirs( dir )
+                if not os.path.exists( dir ):
+                    os.makedirs( dir )
             except OSError:
                 pass
 
     # ---- Build Application -------------------------------------------------- 
     app = None 
     if start_server:
-        global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
+        kwargs = dict( admin_users = 'test@bx.psu.edu',
+                       allow_library_path_paste = True,
+                       allow_user_creation = True,
+                       allow_user_deletion = True,
+                       database_connection = database_connection,
+                       datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                       file_path = file_path,
+                       id_secret = 'changethisinproductiontoo',
+                       job_queue_workers = 5,
+                       job_working_directory = job_working_directory,
+                       library_import_dir = library_import_dir,
+                       log_destination = "stdout",
+                       new_file_path = new_file_path,
+                       running_functional_tests = True,
+                       shed_tool_data_table_config = shed_tool_data_table_config,
+                       template_path = "templates",
+                       test_conf = "test.conf",
+                       tool_config_file = tool_config_file,
+                       tool_data_table_config_path = tool_data_table_config_path,
+                       tool_path = tool_path,
+                       tool_parse_help = False,
+                       update_integrated_tool_panel = False,
+                       use_heartbeat = False,
+                       user_library_import_dir = user_library_import_dir )
         if psu_production:
-            global_conf = None
+            kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
+            kwargs[ 'database_engine_option_pool_size' ] = '10'
         if tool_dependency_dir is not None:
             kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
         if use_distributed_object_store:
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
+        # If the user has passed in a path for the .ini file, do not overwrite it.
+        galaxy_config_file = os.environ.get( 'GALAXY_TEST_INI_FILE', None )
+        if not galaxy_config_file:
+            galaxy_config_file = os.path.join( galaxy_test_tmp_dir, 'functional_tests_wsgi.ini' )
+            config_items = []
+            for label in kwargs:
+                config_tuple = label, kwargs[ label ]
+                config_items.append( config_tuple )
+            # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
+            generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+        # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
+        kwargs[ 'global_conf' ] = get_webapp_global_conf()
+        kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
+        kwargs[ 'config_file' ] = galaxy_config_file
         # Build the Universe Application
-        app = UniverseApplication( job_queue_workers = 5,
-                                   id_secret = 'changethisinproductiontoo',
-                                   template_path = "templates",
-                                   database_connection = database_connection,
-                                   database_engine_option_pool_size = '10',
-                                   file_path = file_path,
-                                   new_file_path = new_file_path,
-                                   tool_path = tool_path,
-                                   update_integrated_tool_panel = False,
-                                   tool_config_file = tool_config_file,
-                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                   tool_parse_help = False,
-                                   test_conf = "test.conf",
-                                   tool_data_table_config_path = tool_data_table_config_path,
-                                   shed_tool_data_table_config = shed_tool_data_table_config,
-                                   log_destination = "stdout",
-                                   use_heartbeat = False,
-                                   allow_user_creation = True,
-                                   allow_user_deletion = True,
-                                   admin_users = 'test@bx.psu.edu',
-                                   allow_library_path_paste = True,
-                                   library_import_dir = library_import_dir,
-                                   user_library_import_dir = user_library_import_dir,
-                                   global_conf = global_conf,
-                                   running_functional_tests=True,
-                                   **kwargs )
+        app = UniverseApplication( **kwargs )
         log.info( "Embedded Universe application started" )
 
     # ---- Run webserver ------------------------------------------------------
     server = None
     
     if start_server:
-        webapp = buildapp.app_factory( get_webapp_global_conf(), app=app,
+        webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
             use_translogger=False, static_enabled=STATIC_ENABLED )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )

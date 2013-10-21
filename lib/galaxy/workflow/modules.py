@@ -1,15 +1,22 @@
+"""
+Modules used in building workflows
+"""
+
+import logging
 import re
+
 from elementtree.ElementTree import Element
-from galaxy import web
-from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
+
 import galaxy.tools
-from galaxy.util.bunch import Bunch
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy import web
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-import logging
+from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
+from galaxy.util.bunch import Bunch
+from galaxy.util.json import from_json_string, to_json_string
 
 log = logging.getLogger( __name__ )
+
 
 class WorkflowModule( object ):
 
@@ -24,6 +31,7 @@ class WorkflowModule( object ):
         Create a new instance of the module with default state
         """
         return Class( trans )
+
     @classmethod
     def from_dict( Class, trans, d ):
         """
@@ -31,6 +39,7 @@ class WorkflowModule( object ):
         dictionary `d`.
         """
         return Class( trans )
+
     @classmethod
     def from_workflow_step( Class, trans, step ):
         return Class( trans )
@@ -44,10 +53,13 @@ class WorkflowModule( object ):
 
     def get_type( self ):
         return self.type
+
     def get_name( self ):
         return self.name
+
     def get_tool_id( self ):
         return None
+
     def get_tooltip( self, static_path='' ):
         return None
 
@@ -55,14 +67,19 @@ class WorkflowModule( object ):
 
     def get_state( self ):
         return None
+
     def get_errors( self ):
         return None
+
     def get_data_inputs( self ):
         return []
+
     def get_data_outputs( self ):
         return []
+
     def update_state( self ):
         pass
+
     def get_config_form( self ):
         raise TypeError( "Abstract method" )
 
@@ -77,17 +94,22 @@ class WorkflowModule( object ):
 
     def get_runtime_inputs( self ):
         raise TypeError( "Abstract method" )
+
     def get_runtime_state( self ):
         raise TypeError( "Abstract method" )
+
     def encode_runtime_state( self, trans, state ):
         raise TypeError( "Abstract method" )
+
     def decode_runtime_state( self, trans, string ):
         raise TypeError( "Abstract method" )
+
     def update_runtime_state( self, trans, state, values ):
         raise TypeError( "Abstract method" )
 
     def execute( self, trans, state ):
         raise TypeError( "Abstract method" )
+
 
 class InputDataModule( WorkflowModule ):
     type = "data_input"
@@ -98,12 +120,14 @@ class InputDataModule( WorkflowModule ):
         module = Class( trans )
         module.state = dict( name="Input Dataset" )
         return module
+
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
         state = from_json_string( d["tool_state"] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
         return module
+
     @classmethod
     def from_workflow_step( Class, trans, step ):
         module = Class( trans )
@@ -165,6 +189,7 @@ class InputDataModule( WorkflowModule ):
     def execute( self, trans, state ):
         return None, dict( output=state.inputs['input'])
 
+
 class ToolModule( WorkflowModule ):
 
     type = "tool"
@@ -176,6 +201,7 @@ class ToolModule( WorkflowModule ):
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
+        self.version_changes = []
         if self.tool:
             self.errors = None
         else:
@@ -194,6 +220,8 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
+            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, d.get('tool_version', 'Unspecified'), module.get_tool_version()) )
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
@@ -212,11 +240,16 @@ class ToolModule( WorkflowModule ):
             if tool:
                 tool_id = tool.id
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
+            if step.config:
+                # This step has its state saved in the config field due to the
+                # tool being previously unavailable.
+                return module_factory.from_dict(trans, from_json_string(step.config), secure=False)
             module = Class( trans, tool_id )
             module.state = galaxy.tools.DefaultToolState()
+            if step.tool_version and (step.tool_version != module.tool.version):
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
-            # module.post_job_actions = step.post_job_actions
             module.workflow_outputs = step.workflow_outputs
             pjadict = {}
             for pja in step.post_job_actions:
@@ -279,6 +312,7 @@ class ToolModule( WorkflowModule ):
 
     def get_data_inputs( self ):
         data_inputs = []
+
         def callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( input, DataToolParameter ):
                 data_inputs.append( dict(
@@ -286,6 +320,7 @@ class ToolModule( WorkflowModule ):
                     label=prefixed_label,
                     multiple=input.multiple,
                     extensions=input.extensions ) )
+
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
 
@@ -331,6 +366,7 @@ class ToolModule( WorkflowModule ):
 
         make_runtime_key = incoming.get( 'make_runtime', None )
         make_buildtime_key = incoming.get( 'make_buildtime', None )
+
         def item_callback( trans, key, input, value, error, old_value, context ):
             # Dummy value for Data parameters
             if isinstance( input, DataToolParameter ):
@@ -347,6 +383,7 @@ class ToolModule( WorkflowModule ):
                 return value, None
             else:
                 return value, error
+
         # Update state using incoming values
         errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
         self.errors = errors or None
@@ -363,6 +400,7 @@ class ToolModule( WorkflowModule ):
             input_connections_by_name = {}
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
+
         def callback( input, value, prefixed_name, prefixed_label ):
             replacement = None
             if isinstance( input, DataToolParameter ):
@@ -372,9 +410,12 @@ class ToolModule( WorkflowModule ):
                     else:
                         replacement = DummyDataset()
             return replacement
+
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
+
 class WorkflowModuleFactory( object ):
+
     def __init__( self, module_types ):
         self.module_types = module_types
 

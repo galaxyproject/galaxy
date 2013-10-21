@@ -3,12 +3,12 @@
  *      or a simple text element displaying the human readable size used.
  *  @name UserQuotaMeter
  *
- *  @augments BaseModel
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var UserQuotaMeter = BaseView.extend( LoggableMixin ).extend(
+var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends UserQuotaMeter.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -111,10 +111,12 @@ var UserQuotaMeter = BaseView.extend( LoggableMixin ).extend(
         // otherwise, render percent of quota (and warning, error)
         } else {
             meterHtml = this._render_quota();
+            //TODO: add the original text for unregistered quotas
+            //tooltip = "Your disk quota is %s.  You can increase your quota by registering a Galaxy account."
         }
         
         this.$el.html( meterHtml );
-        //this.log( this + '.$el:', this.$el );
+        this.$el.find( '.quota-meter-text' ).tooltip();
         return this;
     },
 

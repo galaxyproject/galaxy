@@ -11,20 +11,20 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
-User_table = Table( "galaxy_user", metadata, autoload=True )
-HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
+metadata = MetaData()
 
-def boolean_false():
-   if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-       return False
-   elif migrate_engine.name == 'sqlite':
-       return 0
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
-              
-def upgrade():
+def upgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
+    User_table = Table( "galaxy_user", metadata, autoload=True )
+    HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
+    def boolean_false():
+       if migrate_engine.name == 'postgresql' or migrate_engine.name == 'mysql':
+           return False
+       elif migrate_engine.name == 'sqlite':
+           return 0
+       else:
+           raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name)
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
@@ -57,5 +57,6 @@ def upgrade():
         i.create()
     except Exception, e:
         log.debug( "Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

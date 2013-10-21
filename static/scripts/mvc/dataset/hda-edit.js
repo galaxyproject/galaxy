@@ -50,14 +50,16 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             purge_link.attr( 'href', [ "javascript", "void(0)" ].join( ':' ) );
             purge_link.click( function( event ){
                 //TODO??: confirm?
-                var ajaxPromise = jQuery.ajax( purge_url );
-                ajaxPromise.success( function( message, status, responseObj ){
+                var xhr = jQuery.ajax( purge_url );
+                xhr.success( function( message, status, responseObj ){
                     hdaView.model.set( 'purged', true );
+                    hdaView.trigger( 'purged', hdaView );
                 });
-                ajaxPromise.error( function( error, status, message ){
+                xhr.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                    view.trigger( 'error',
+                        hdaView, xhr, { url: purge_url }, _l( "Unable to purge this dataset" ) );
                 });
             });
         }
@@ -99,8 +101,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
-        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;
@@ -136,7 +138,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     _render_deleteButton : function(){
         // don't show delete if...
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.deleteButton = null;
             return null;
@@ -151,7 +154,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'delete',
             on_click    : function() {
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
-                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly
                 // on the model.
                 $.ajax({
                     url: delete_url,
@@ -159,11 +162,13 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     error: function() {
                         // Something went wrong, so show HDA again.
                         // TODO: an error notification would be good.
+                        self.trigger( 'error', self, null, null, { url: delete_url }, _l( 'deletion failed' ) );
                         self.$el.show();
                     },
                     success: function() {
                         // FIXME: setting model attribute causes re-rendering, which is unnecessary.
                         //self.$el.remove();
+
                         self.model.set({ deleted: true });
                     }
                 });
@@ -237,8 +242,25 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_visualizationsButton : function(){
+        var visualizations = this.model.get( 'visualizations' );
+        if( ( !this.model.hasData() )
+        ||  ( _.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        //TODO: this is a bridge to allow the framework to be switched off
+        // remove this fn and use the other when fully integrated
+        if( _.isObject( visualizations[0] ) ){
+            return this._render_visualizationsFrameworkButton( visualizations );
+        }
+
+        if( !this.urls.visualization ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
         var dbkey = this.model.get( 'dbkey' ),
-            visualizations = this.model.get( 'visualizations' ),
             visualization_url = this.urls.visualization,
             popup_menu_dict = {},
             params = {
@@ -248,17 +270,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
-        if( !( this.model.hasData() )
-        ||  !( visualizations && visualizations.length )
-        ||  !( visualization_url ) ){
-            this.visualizationsButton = null;
-            return null;
-        }
-        
         // render the icon from template
         this.visualizationsButton = new IconButtonView({ model : new IconButton({
             title       : _l( 'Visualize' ),
-            href        : visualization_url,
+            href        : this.urls.visualization,
             icon_class  : 'chart_curve'
         })});
         var $icon = this.visualizationsButton.render().$el;
@@ -276,8 +291,14 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 case 'scatterplot':
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
-                    return function(){
-                        window.parent.location = visualization_url + '/' + visualization + '?' + $.param( params ); };
+                    return function(){// add widget
+                        Galaxy.frame_manager.frame_new(
+                        {
+                            title    : "Visualization",
+                            type     : "url",
+                            content  : visualization_url + '/' + visualization + '?' + $.param( params )
+                        });
+                    };
             }
         }
 
@@ -294,6 +315,40 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
+        }
+        return $icon;
+    },
+
+    /** Render an icon-button or popupmenu of links based on the applicable visualizations
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_visualizationsFrameworkButton : function( visualizations ){
+        if( !( this.model.hasData() )
+        ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        // render the icon from template
+        this.visualizationsButton = new IconButtonView({ model : new IconButton({
+            title       : _l( 'Visualize' ),
+            icon_class  : 'chart_curve'
+        })});
+        var $icon = this.visualizationsButton.render().$el;
+        $icon.addClass( 'visualize-icon' ); // needed?
+
+        // No need for popup menu because there's a single visualization.
+        if( _.keys( visualizations ).length === 1 ) {
+            $icon.attr( 'title', _.keys( visualizations )[0] );
+            $icon.attr( 'href', _.values( visualizations )[0] );
+
+        // >1: Populate menu dict with visualization fns, make the popupmenu
+        } else {
+            var popup_menu_options = [];
+            _.each( visualizations, function( linkData ) {
+                popup_menu_options.push( linkData );
+            });
+            var popup = new PopupMenu( $icon, popup_menu_options );
         }
         return $icon;
     },
@@ -369,7 +424,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/tags.js
         return $( HDAEditView.templates.tagArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
 
     /** Render area to display annotation.
@@ -382,7 +437,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: move to mvc/annotations.js
         return $( HDAEditView.templates.annotationArea(
             _.extend( this.model.toJSON(), { urls: this.urls } )
-        ));
+        ).trim() );
     },
     
     // ......................................................................... state body renderers
@@ -403,6 +458,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function( parent ){
+        //TODO: should call super somehow and insert the needed...
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
 
@@ -433,7 +489,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         parent.append( this._render_tagArea() );
         parent.append( this._render_annotationArea() );
         
-        parent.append( this._render_displayApps() );
+        parent.append( this._render_displayAppArea() );
+        this._render_displayApps( parent );
         parent.append( this._render_peek() );
     },
 
@@ -453,7 +510,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '.tag-area' ),
+        var view = this,
+            tagArea = this.$el.find( '.tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
@@ -463,10 +521,13 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, status, error ){
+                        view.log( "Tagging failed", xhr, status, error );
+                        view.trigger( 'error', view, xhr, { url: view.urls.tags.get }, _l( "Tagging failed" ) );
+                    },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });
@@ -478,7 +539,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             tagArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
@@ -487,7 +548,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     loadAndDisplayAnnotation : function( event ){
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayAnnotation', event );
-        var annotationArea = this.$el.find( '.annotation-area' ),
+        var view = this,
+            annotationArea = this.$el.find( '.annotation-area' ),
             annotationElem = annotationArea.find( '.annotation-elt' ),
             setAnnotationUrl = this.urls.annotation.set;
 
@@ -497,13 +559,17 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){ alert( _l( "Annotations failed" ) ); },
+                    error: function( xhr, status, message ){
+                        view.log( "Annotation failed", xhr, status, message );
+                        view.trigger( 'error',
+                            view, xhr, { url: view.urls.annotation.get }, _l( "Annotation failed" ) );
+                    },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
                         }
                         annotationElem.html( htmlFromAjax );
-                        annotationArea.find(".tooltip").tooltip();
+                        annotationArea.find("[title]").tooltip();
                         
                         async_save_text(
                             annotationElem.attr("id"), annotationElem.attr("id"),
@@ -521,7 +587,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             annotationArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
 
     // ......................................................................... UTILTIY
@@ -549,9 +615,15 @@ HDAEditView.templates = {
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
 function create_scatterplot_action_fn( url, params ){
     action = function() {
-        var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
-            final_url = url + '/scatterplot?' + $.param(params);
-        galaxy_main.attr( 'src', final_url );
+        // add widget
+        Galaxy.frame_manager.frame_new(
+        {
+            title      : "Scatterplot",
+            type       : "url",
+            content    : url + '/scatterplot?' + $.param(params),
+            location   : 'center'
+        });
+
         //TODO: this needs to go away
         $( 'div.popmenu-wrapper' ).remove();
         return false;
@@ -567,48 +639,77 @@ function create_scatterplot_action_fn( url, params ){
  *  @returns function that displays modal, loads trackster
  */
 //TODO: should be imported from trackster.js
-function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
-    return function() {
-        var listTracksParams = {};
-        if (dbkey){
-            // list_tracks seems to use 'f-dbkey' (??)
-            listTracksParams[ 'f-dbkey' ] = dbkey;
-        }
-        $.ajax({
-            url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
-            dataType: "html",
-            error: function() { alert( _l( "Could not add this dataset to browser" ) + '.' ); },
-            success: function(table_html) {
-                var parent = window.parent;
-
-                parent.show_modal( _l( "View Data in a New or Saved Visualization" ), "", {
-                    "Cancel": function() {
-                        parent.hide_modal();
-                    },
-                    "View in saved visualization": function() {
-                        // Show new modal with saved visualizations.
-                        parent.show_modal( _l( "Add Data to Saved Visualization" ), table_html, {
-                            "Cancel": function() {
-                                parent.hide_modal();
+//TODO: This function is redundant and also exists in data.js
+    // create action
+    function create_trackster_action_fn (vis_url, dataset_params, dbkey) {
+        return function() {
+            var listTracksParams = {};
+            if (dbkey){
+                // list_tracks seems to use 'f-dbkey' (??)
+                listTracksParams[ 'f-dbkey' ] = dbkey;
+            }
+            $.ajax({
+                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                dataType: "html",
+                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+                    parent.Galaxy.modal.show({
+                        title   : "View Data in a New or Saved Visualization",
+                        buttons :{
+                            "Cancel": function(){
+                                parent.Galaxy.modal.hide();
                             },
-                            "Add to visualization": function() {
-                                $(parent.document).find('input[name=id]:checked').each(function() {
-                                    var vis_id = $(this).val();
-                                    dataset_params.id = vis_id;
-                                    parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                            "View in saved visualization": function(){
+                                // Show new modal with saved visualizations.
+                                parent.Galaxy.modal.show(
+                                {
+                                    title: "Add Data to Saved Visualization",
+                                    body: table_html,
+                                    buttons :{
+                                        "Cancel": function(){
+                                            parent.Galaxy.modal.hide();
+                                        },
+                                        "Add to visualization": function(){
+                                            $(parent.document).find('input[name=id]:checked').each(function(){
+                                                // hide
+                                                parent.Galaxy.modal.hide();
+                                                
+                                                var vis_id = $(this).val();
+                                                dataset_params.id = vis_id;
+                                        
+                                                // add widget
+                                                parent.Galaxy.frame_manager.frame_new({
+                                                    title    : "Trackster",
+                                                    type     : "url",
+                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            },
+                            "View in new visualization": function(){
+                                // hide
+                                parent.Galaxy.modal.hide();
+                                
+                                var url = vis_url + "/trackster?" + $.param(dataset_params);
+
+                                // add widget
+                                parent.Galaxy.frame_manager.frame_new({
+                                    title    : "Trackster",
+                                    type     : "url",
+                                    content  : url
                                 });
                             }
-                        });
-                    },
-                    "View in new visualization": function() {
-                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
-                    }
-                });
-            }
-        });
-        return false;
-    };
-}
+                        }
+                    });
+                }
+            });
+            return false;
+        };
+    }
+
 
 //==============================================================================
 //return {

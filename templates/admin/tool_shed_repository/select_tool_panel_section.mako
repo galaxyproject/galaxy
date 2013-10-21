@@ -60,7 +60,14 @@
 </div>
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install' )}" method="post" >
+            <div class="form-row">
+                <input type="hidden" name="includes_tools" value="${includes_tools}" />
+                <input type="hidden" name="includes_tool_dependencies" value="${includes_tool_dependencies}" />
+                <input type="hidden" name="includes_tools_for_display_in_tool_panel" value="${includes_tools_for_display_in_tool_panel}" />
+                <input type="hidden" name="tool_shed_url" value="${tool_shed_url}" />
+                <input type="hidden" name="encoded_repo_info_dicts" value="${encoded_repo_info_dicts}" />
+            </div>
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
@@ -78,7 +85,7 @@
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
+                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
                 <div style="clear: both"></div>
             %endif
             %if shed_tool_conf_select_field:

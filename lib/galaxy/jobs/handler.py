@@ -10,7 +10,7 @@ from Queue import Queue, Empty
 
 from sqlalchemy.sql.expression import and_, or_, select, func
 
-from galaxy import util, model
+from galaxy import model
 from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper, JobDestination
 
 log = logging.getLogger( __name__ )
@@ -84,12 +84,25 @@ class JobHandlerQueue( object ):
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
         the database and requeues or cleans up as necessary.  Only run as the
         job handler starts.
+        In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        for job in self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+        jobs_at_startup = []
+        if self.app.config.user_activation_on:
+                jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                                  .outerjoin( model.User ) \
                                   .filter( ( ( model.Job.state == model.Job.states.NEW ) \
                                              | ( model.Job.state == model.Job.states.RUNNING ) \
                                              | ( model.Job.state == model.Job.states.QUEUED ) ) \
-                                           & ( model.Job.handler == self.app.config.server_name ) ):
+                                           & ( model.Job.handler == self.app.config.server_name ) \
+                                           & or_( ( model.Job.user_id == None ),( model.User.active == True ) ) ).all()
+        else:
+            jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                              .filter( ( ( model.Job.state == model.Job.states.NEW ) \
+                                         | ( model.Job.state == model.Job.states.RUNNING ) \
+                                         | ( model.Job.state == model.Job.states.QUEUED ) ) \
+                                       & ( model.Job.handler == self.app.config.server_name ) ).all()
+                
+        for job in jobs_at_startup:
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
@@ -105,7 +118,10 @@ class JobHandlerQueue( object ):
                 # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
                 # TODO: test me extensively
                 job_wrapper = JobWrapper( job, self )
-                job_wrapper.set_job_destination(self.dispatcher.url_to_destination(job.job_runner_name), job.job_runner_external_id)
+                job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
+                if job_destination.id is None:
+                    job_destination.id = 'legacy_url'
+                job_wrapper.set_job_destination(job_destination, job.job_runner_external_id)
                 self.dispatcher.recover( job, job_wrapper )
                 log.info('(%s) Converted job from a URL to a destination and recovered' % (job.id))
             elif job.job_runner_name is None:
@@ -143,8 +159,9 @@ class JobHandlerQueue( object ):
         over all new and waiting jobs to check the state of the jobs each
         depends on. If the job has dependencies that have not finished, it
         it goes to the waiting queue. If the job has dependencies with errors,
-        it is marked as having errors and removed from the queue. Otherwise,
-        the job is dispatched.
+        it is marked as having errors and removed from the queue. If the job 
+        belongs to an inactive user it is ignored.
+        Otherwise, the job is dispatched.
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
@@ -170,7 +187,17 @@ class JobHandlerQueue( object ):
                                      (model.LibraryDatasetDatasetAssociation.deleted == True),
                                      (model.Dataset.state != model.Dataset.states.OK),
                                      (model.Dataset.deleted == True)))).subquery()
-            jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+            if self.app.config.user_activation_on:
+                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+                        .outerjoin( model.User ) \
+                        .filter(and_((model.Job.state == model.Job.states.NEW),
+                                    or_((model.Job.user_id == None),(model.User.active == True)),
+                                     (model.Job.handler == self.app.config.server_name),
+                                     ~model.Job.table.c.id.in_(hda_not_ready),
+                                     ~model.Job.table.c.id.in_(ldda_not_ready))) \
+                        .order_by(model.Job.id).all()
+            else:
+                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
                                  (model.Job.handler == self.app.config.server_name),
                                  ~model.Job.table.c.id.in_(hda_not_ready),
@@ -561,7 +588,7 @@ class DefaultJobDispatcher( object ):
         try:
             return self.job_runners[runner_name].url_to_destination(url)
         except Exception, e:
-            log.exception("Unable to convert legacy job runner URL to job destination, destination will be the '%s' runner with no params: %s" % (runner_name, e))
+            log.exception("Unable to convert legacy job runner URL '%s' to job destination, destination will be the '%s' runner with no params: %s" % (url, runner_name, e))
             return JobDestination(runner=runner_name)
 
     def put( self, job_wrapper ):
@@ -582,14 +609,14 @@ class DefaultJobDispatcher( object ):
         Stop the given job. The input variable job may be either a Job or a Task.
         """
         # The Job and Task classes have been modified so that their accessors
-        # will return the appropriate value. 
+        # will return the appropriate value.
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
         if ( isinstance( job, model.Job ) ):
             log.debug( "Stopping job %d:", job.get_id() )
         elif( isinstance( job, model.Task ) ):
-            log.debug( "Stopping job %d, task %d" 
+            log.debug( "Stopping job %d, task %d"
                      % ( job.get_job().get_id(), job.get_id() ) )
         else:
             log.debug( "Unknown job to stop" )
@@ -602,7 +629,7 @@ class DefaultJobDispatcher( object ):
             if ( isinstance( job, model.Job ) ):
                 log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
             elif ( isinstance( job, model.Task ) ):
-                log.debug( "Stopping job %d, task %d in %s runner" 
+                log.debug( "Stopping job %d, task %d in %s runner"
                          % ( job.get_job().get_id(), job.get_id(), runner_name ) )
             try:
                 self.job_runners[runner_name].stop_job( job )

@@ -12,6 +12,7 @@
       <option value="U">Underscores</option>
       <option value="P">Pipes</option>
       <option value="Co">Colons</option>
+      <option value="Sc">Semicolons</option>
     </param>
     <param format="txt" name="input" type="data" label="in Dataset"/>
   </inputs>

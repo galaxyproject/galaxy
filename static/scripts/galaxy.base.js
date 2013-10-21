@@ -12,7 +12,7 @@
         window.requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
               timeToCall);
             lastTime = currTime + timeToCall;
             return id;
@@ -66,11 +66,14 @@ $.fn.makeAbsolute = function(rebase) {
 };
 
 /**
- *  Sets up popupmenu rendering and binds options functions to the appropriate links
+ * Sets up popupmenu rendering and binds options functions to the appropriate links.
+ * initial_options is a dict with text describing the option pointing to either (a) a 
+ * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the 
+ * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
 function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
-        This allows options to be changed at a later time 
+        This allows options to be changed at a later time
     */
     var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
@@ -82,7 +85,7 @@ function make_popupmenu(button_element, initial_options) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
         
-        // Need setTimeouts so clicks don't interfere with each other        
+        // Need setTimeouts so clicks don't interfere with each other
         setTimeout( function() {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $( "<ul class='dropdown-menu' id='" + button_element.attr('id') + "-menu'></ul>" );
@@ -92,7 +95,9 @@ function make_popupmenu(button_element, initial_options) {
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    menu_element.append( $("<li></li>").append( $("<a href='#'></a>").html(k).click(v) ) );
+                    // Action can be either an anonymous function and a mapped dict.
+                    var action = v.action || v;
+                    menu_element.append( $("<li></li>").append( $("<a>").attr("href", v.url).html(k).click(action) ) );
                 } else {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
@@ -154,7 +159,6 @@ function make_popup_menus( parent ) {
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
-                // why do we need the DOM (mixed with jq)?
                 link_dom = link.get(0),
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
@@ -165,31 +169,21 @@ function make_popup_menus( parent ) {
                 options[ link.text() ] = null;
                 
             } else {
-                options[ link.text() ] = function() {
+                options[ link.text() ] = {
+                    url: href,
+                    action: function() {
 
-                    // if theres confirm text, send the dialog
-                    if ( !confirmtext || confirm( confirmtext ) ) {
-                        var f;
-                        // relocate the center panel
-                        if ( target == "_parent" ) {
-                            window.parent.location = href;
-                            
-                        // relocate the entire window
-                        } else if ( target == "_top" ) {
-                            window.top.location = href;
-                            
-                        //??...wot?
-                        } else if ( target == "demo" ) {
-                            // Http request target is a window named
-                            // demolocal on the local box
-                            if ( f === undefined || f.closed ) {
-                                f = window.open( href,target );
-                                f.creator = self;
+                        // if theres confirm text, send the dialog
+                        if ( !confirmtext || confirm( confirmtext ) ) {
+                            // link.click() doesn't use target for some reason, 
+                            // so manually do it here. 
+                            if (target) {
+                                window.open(href, target);
                             }
-                            
-                        // relocate this panel
-                        } else {
-                            window.location = href;
+                            // For all other links, do the default action.
+                            else {
+                                link.click();
+                            }
                         }
                     }
                 };
@@ -239,6 +233,14 @@ function naturalSort(a, b) {
     return 0;
 }
 
+$.fn.refresh_select2 = function() {
+    var select_elt = $(this);
+    var options = { width: "resolve",
+                    closeOnSelect: !select_elt.is("[MULTIPLE]")
+                  };
+    return select_elt.select2( options );
+}
+
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length, max_length, select_elts) {
     // To do replace, the select2 plugin must be loaded.
@@ -255,7 +257,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         max_length = 3000;
     }
 
-    var select_elts = select_elts || $('select');
+    select_elts = select_elts || $('select');
 
     select_elts.each( function() {
         var select_elt = $(this);
@@ -270,20 +272,18 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         }
 
         /* Replaced jQuery.autocomplete with select2, notes:
-         * - multiple selects are supported 
+         * - multiple selects are supported
          * - the original element is updated with the value, convert_to_values should not be needed
          * - events are fired when updating the original element, so refresh_on_change should just work
          *
-         * - should we still sort dbkey fields here? 
+         * - should we still sort dbkey fields here?
          */
-        
-        select_elt.select2( { width: "resolve" } );
-
+        select_elt.refresh_select2();
     });
 }
 
 /**
- * Make an element with text editable: (a) when user clicks on text, a textbox/area 
+ * Make an element with text editable: (a) when user clicks on text, a textbox/area
  * is provided for editing; (b) when enter key pressed, element's text is set and on_finish
  * is called.
  */
@@ -330,12 +330,14 @@ $.fn.make_text_editable = function(config_dict) {
             input_elt, button_elt;
             
         if (use_textarea) {
-            input_elt = $("<textarea/>").attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text)).keyup(function(e) {
-                if (e.keyCode === 27) {
-                    // Escape key.
-                    set_text(cur_text);
-                }
-            });
+            input_elt = $("<textarea/>")
+                .attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text))
+                .keyup(function(e) {
+                    if (e.keyCode === 27) {
+                        // Escape key.
+                        set_text(cur_text);
+                    }
+                });
             button_elt = $("<button/>").text("Done").click(function() {
                 set_text(input_elt.val());
                 // Return false so that click does not propogate to container.
@@ -355,7 +357,7 @@ $.fn.make_text_editable = function(config_dict) {
                     set_text($(this).val());
                 }
             });
-        }               
+        }
                                 
         // Replace text with input object(s) and focus & select.
         container.text("");
@@ -378,10 +380,11 @@ $.fn.make_text_editable = function(config_dict) {
     return container;
 };
 
-/** 
+/**
  * Edit and save text asynchronously.
  */
-function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
+function async_save_text( click_to_edit_elt, text_elt_id, save_url,
+                          text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish ) {
     // Set defaults if necessary.
     if (num_cols === undefined) {
         num_cols = 30;
@@ -391,7 +394,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live("click", function() {
+    $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -425,7 +428,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                 $.ajax({
                     url: save_url,
                     data: ajax_data,
-                    error: function() { 
+                    error: function() {
                         alert( "Text editing for elt " + text_elt_id + " failed" );
                         // TODO: call finish or no? For now, let's not because error occurred.
                     },
@@ -458,6 +461,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
 }
 
 function init_history_items(historywrapper, noinit, nochanges) {
+    //NOTE: still needed for non-panel history views
 
     var action = function() {
         // Load saved state and show as necessary
@@ -484,37 +488,38 @@ function init_history_items(historywrapper, noinit, nochanges) {
             var id = this.id,
                 body = $(this).children( "div.historyItemBody" ),
                 peek = body.find( "pre.peek" );
-            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" ).click( function() {
-                var prefs;
-                if ( body.is(":visible") ) {
-                    // Hiding stuff here
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
-                    body.slideUp( "fast" );
-                    
-                    if (!nochanges) { // Ignore embedded item actions
-                        // Save setting
-                        prefs = $.jStorage.get("history_expand_state");
-                        if (prefs) {
-                            delete prefs[id];
+            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" )
+                .click( function() {
+                    var prefs;
+                    if ( body.is(":visible") ) {
+                        // Hiding stuff here
+                        if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
+                        body.slideUp( "fast" );
+
+                        if (!nochanges) { // Ignore embedded item actions
+                            // Save setting
+                            prefs = $.jStorage.get("history_expand_state");
+                            if (prefs) {
+                                delete prefs[id];
+                                $.jStorage.set("history_expand_state", prefs);
+                            }
+                        }
+                    } else {
+                        // Showing stuff here
+                        body.slideDown( "fast", function() {
+                            if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); }
+                        });
+
+                        if (!nochanges) {
+                            // Save setting
+                            prefs = $.jStorage.get("history_expand_state");
+                            if (!prefs) { prefs = {}; }
+                            prefs[id] = true;
                             $.jStorage.set("history_expand_state", prefs);
                         }
                     }
-                } else {
-                    // Showing stuff here
-                    body.slideDown( "fast", function() { 
-                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    
-                    if (!nochanges) {
-                        // Save setting
-                        prefs = $.jStorage.get("history_expand_state");
-                        if (!prefs) { prefs = {}; }
-                        prefs[id] = true;
-                        $.jStorage.set("history_expand_state", prefs);
-                    }
-                }
-                return false;
-            });
+                    return false;
+                });
         });
         
         // Generate 'collapse all' link
@@ -548,7 +553,7 @@ function commatize( number ) {
 
 // Reset tool search to start state.
 function reset_tool_search( initValue ) {
-    // Function may be called in top frame or in tool_menu_frame; 
+    // Function may be called in top frame or in tool_menu_frame;
     // in either case, get the tool menu frame.
     var tool_menu_frame = $("#galaxy_tools").contents();
     if (tool_menu_frame.length === 0) {
@@ -564,7 +569,7 @@ function reset_tool_search( initValue ) {
     tool_menu_frame.find(".toolTitle").show();
     tool_menu_frame.find(".toolPanelLabel").show();
     tool_menu_frame.find(".toolSectionWrapper").each( function() {
-        if ($(this).attr('id') != 'recently_used_wrapper') {
+        if ($(this).attr('id') !== 'recently_used_wrapper') {
             // Default action.
             $(this).show();
         } else if ($(this).hasClass("user_pref_visible")) {
@@ -659,14 +664,14 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+
     // Tooltips
-    // if ( $.fn.tipsy ) {
-    //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
-    //     // initialize each separately.
-    //     $(".tooltip").tipsy( { gravity: 's' } );
-    // }
     if ( $.fn.tooltip ) {
-        $(".tooltip").tooltip( { placement: 'top' } );
+        // Put tooltips below items in panel header so that they do not overlap masthead.
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
+        
+        // Default tooltip location to be above item.
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();

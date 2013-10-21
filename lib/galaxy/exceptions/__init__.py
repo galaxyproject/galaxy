@@ -1,6 +1,7 @@
 """
 Custom exceptions for Galaxy
 """
+from paste import httpexceptions
 
 class MessageException( Exception ):
     """
@@ -20,6 +21,10 @@ class ItemAccessibilityException( MessageException ):
 
 class ItemOwnershipException( MessageException ):
     pass
+
+class ActionInputError( MessageException ):
+    def __init__( self, err_msg, type="error" ):
+        super( ActionInputError, self ).__init__( err_msg, type )
 
 class ObjectNotFound( Exception ):
     """ Accessed object was not found """

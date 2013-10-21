@@ -1,7 +1,8 @@
 import os, logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
-from tool_shed.util.shed_util_common import get_repository_by_name_and_owner, set_repository_metadata
+from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
+from tool_shed.util.metadata_util import set_repository_metadata
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -23,9 +24,9 @@ class HgController( BaseUIController ):
             hgwebapp = hgwebdir( hgweb_config )
             return hgwebapp
         wsgi_app = wsgiapplication( make_web_app )
-        if hg_version >= '2.2.3' and cmd == 'pushkey':                
+        if hg_version >= '2.2.3' and cmd == 'pushkey':
             # When doing an "hg push" from the command line, the following commands, in order, will be retrieved from environ, depending
-            # upon the mercurial version being used.  In mercurial version 2.2.3, section 15.2. Command changes includes a new feature: 
+            # upon the mercurial version being used.  In mercurial version 2.2.3, section 15.2. Command changes includes a new feature:
             # pushkey: add hooks for pushkey/listkeys (see http://mercurial.selenic.com/wiki/WhatsNew#Mercurial_2.2.3_.282012-07-01.29).
             # We require version 2.2.3 since the pushkey hook was added in that version.
             # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey
@@ -38,7 +39,9 @@ class HgController( BaseUIController ):
                         # Set metadata using the repository files on disk.
                         error_message, status = set_repository_metadata( trans, repository )
                         if status == 'ok' and error_message:
-                            log.debug( "Successfully reset metadata on repository %s, but encountered problem: %s" % ( repository.name, error_message ) )
+                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
+                                       ( str( repository.name ), str( repository.user.username ), error_message ) )
                         elif status != 'ok' and error_message:
-                            log.debug( "Error resetting metadata on repository %s: %s" % ( repository.name, error_message ) )
+                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" % \
+                                       ( str( repository.name ), str( repository.user.username ), error_message ) )
         return wsgi_app

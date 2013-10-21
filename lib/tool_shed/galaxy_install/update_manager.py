@@ -1,15 +1,18 @@
 """
 Determine if installed tool shed repositories have updates available in their respective tool sheds.
 """
-import threading, urllib2, logging
+import logging
+import threading
 from galaxy.util import string_as_bool
-import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from galaxy.model.orm import and_
 
 log = logging.getLogger( __name__ )
 
+
 class UpdateManager( object ):
+
     def __init__( self, app ):
         self.app = app
         self.sa_session = self.app.model.context.current
@@ -18,49 +21,46 @@ class UpdateManager( object ):
         self.sleeper = Sleeper()
         self.restarter = threading.Thread( target=self.__restarter )
         self.restarter.start()
-        self.seconds_to_sleep = app.config.hours_between_check * 3600
+        self.seconds_to_sleep = int( app.config.hours_between_check * 3600 )
+
     def __restarter( self ):
         log.info( 'Update manager restarter starting up...' )
         while self.running:
-            flush_needed = False
+            # Make a call to the tool shed for each installed repository to get the latest status information in the tool shed for the
+            # repository.  This information includes items like newer installable repository revisions, current revision updates, whether
+            # the repository revision is the latest installable revision, and whether the repository has been deprecated in the tool shed.
             for repository in self.sa_session.query( self.app.model.ToolShedRepository ) \
-                                             .filter( and_( self.app.model.ToolShedRepository.table.c.update_available == False,
-                                                            self.app.model.ToolShedRepository.table.c.deleted == False ) ):
-                if self.check_for_update( repository ):
-                    repository.update_available = True
-                    self.sa_session.add( repository )
-                    flush_needed = True
-            if flush_needed:
-                self.sa_session.flush()
+                                             .filter( self.app.model.ToolShedRepository.table.c.deleted == False ):
+                tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
+                if tool_shed_status_dict:
+                    if tool_shed_status_dict != repository.tool_shed_status:
+                        repository.tool_shed_status = tool_shed_status_dict
+                        self.sa_session.flush()
+                else:
+                    # The received tool_shed_status_dict is an empty dictionary, so coerce to None.
+                    tool_shed_status_dict = None
+                    if tool_shed_status_dict != repository.tool_shed_status:
+                        repository.tool_shed_status = tool_shed_status_dict
+                        self.sa_session.flush()
             self.sleeper.sleep( self.seconds_to_sleep )
-        log.info( 'Transfer job restarter shutting down...' )
-    def check_for_update( self, repository ):
-        tool_shed_url = suc.get_url_from_repository_tool_shed( self.app, repository )
-        url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
-            ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
-        try:
-            response = urllib2.urlopen( url )
-            text = response.read()
-            response.close()
-        except Exception, e:
-            # The required tool shed may be unavailable.
-            text = 'False'
-        return string_as_bool( text )
+        log.info( 'Update manager restarter shutting down...' )
+
     def shutdown( self ):
         self.running = False
         self.sleeper.wake()
 
+
 class Sleeper( object ):
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless*
-    the notify method is called (from a different thread).
-    """
+    """Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method is called (from a different thread)."""
+
     def __init__( self ):
         self.condition = threading.Condition()
+
     def sleep( self, seconds ):
         self.condition.acquire()
         self.condition.wait( seconds )
         self.condition.release()
+
     def wake( self ):
         self.condition.acquire()
         self.condition.notify()

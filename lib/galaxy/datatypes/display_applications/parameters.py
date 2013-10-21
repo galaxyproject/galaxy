@@ -10,9 +10,9 @@ DEFAULT_DATASET_NAME = 'dataset'
 
 class DisplayApplicationParameter( object ):
     """ Abstract Class for Display Application Parameters """
-    
+
     type = None
-    
+
     @classmethod
     def from_elem( cls, elem, link ):
         param_type = elem.get( 'type', None )
@@ -28,6 +28,7 @@ class DisplayApplicationParameter( object ):
         self.viewable = string_as_bool( elem.get( 'viewable', 'False' ) ) #only allow these to be viewed via direct url when explicitly set to viewable
         self.strip = string_as_bool( elem.get( 'strip', 'False' ) )
         self.strip_https = string_as_bool( elem.get( 'strip_https', 'False' ) )
+        self.allow_override = string_as_bool( elem.get( 'allow_override', 'False' ) ) # Passing query param app_<name>=<value> to dataset controller allows override if this is true.
     def get_value( self, other_values, dataset_hash, user_hash, trans ):
         raise Exception, 'Unimplemented'
     def prepare( self, other_values, dataset_hash, user_hash, trans ):
@@ -41,9 +42,9 @@ class DisplayApplicationParameter( object ):
 
 class DisplayApplicationDataParameter( DisplayApplicationParameter ):
     """ Parameter that returns a file_name containing the requested content """
-    
+
     type = 'data'
-    
+
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
         self.extensions = elem.get( 'format', None )
@@ -112,7 +113,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
         return False
     def ready( self, other_values ):
         value = self._get_dataset_like_object( other_values )
-        if value: 
+        if value:
             if value.state == value.states.OK:
                 return True
             elif value.state == value.states.ERROR:
@@ -121,12 +122,12 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
 
 class DisplayApplicationTemplateParameter( DisplayApplicationParameter ):
     """ Parameter that returns a string containing the requested content """
-    
+
     type = 'template'
-    
+
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
-        self.text = elem.text
+        self.text = elem.text or ''
     def get_value( self, other_values, dataset_hash, user_hash, trans ):
         value = fill_template( self.text, context = other_values )
         if self.strip:
@@ -153,7 +154,7 @@ class DisplayParameterValueWrapper( object ):
         if self.parameter.guess_mime_type:
             mime, encoding = mimetypes.guess_type( self._url )
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None ) 
+                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
             if mime:
                 return mime
         return 'text/plain'
@@ -163,7 +164,7 @@ class DisplayParameterValueWrapper( object ):
         if self.parameter.strip_https and base_url[ : 5].lower() == 'https':
             base_url = "http%s" % base_url[ 5: ]
         return "%s%s" % ( base_url,
-                          url_for( controller='/dataset',
+                          url_for( controller='dataset',
                                    action="display_application",
                                    dataset_id=self._dataset_hash,
                                    user_id=self._user_hash,
@@ -192,7 +193,7 @@ class DisplayDataValueWrapper( DisplayParameterValueWrapper ):
         if self.parameter.guess_mime_type:
             mime, encoding = mimetypes.guess_type( self._url )
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None ) 
+                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
             if mime:
                 return mime
         if hasattr( self.value, 'get_mime' ):

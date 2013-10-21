@@ -1,5 +1,5 @@
-<%! 
-    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter 
+<%!
+    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
 %>
 
@@ -16,7 +16,7 @@
         %endif
         <td style="padding: 0;">
             %if isinstance(column, TextColumn):
-                <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
+                <form class="text-filter-form" column_key="${column.key}" action="${url(dict())}" method="get" >
                     ## Carry forward filtering criteria with hidden inputs.
                     %for temp_column in grid.columns:
                         %if temp_column.key in cur_filter_dict:
@@ -30,7 +30,6 @@
                             %endif
                         %endif
                     %endfor
-                    
                     ## Print current filtering criteria and links to delete.
                     <span id="${column.key}-filtering-criteria">
                         %if column.key in cur_filter_dict:
@@ -40,7 +39,7 @@
                                     <span class='text-filter-val'>
                                         ${cur_filter_dict[column.key]}
                                         <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                                        <a href="${url( filter_all.get_url_args() )}"><span class="delete-search-icon" /></a>                                
+                                        <a href="${url(filter_all.get_url_args())}"><span class="delete-search-icon" /></a>
                                     </span>
                                 %endif
                             %elif isinstance( column_filter, list ):
@@ -54,7 +53,7 @@
                                             del new_filter[ i ]
                                             new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
                                         %>
-                                        <a href="${url( new_column_filter.get_url_args() )}"><span class="delete-search-icon" /></a>
+                                        <a href="${url(new_column_filter.get_url_args())}"><span class="delete-search-icon" /></a>
                                     </span>
                                 %endfor
                             %endif
@@ -91,7 +90,7 @@
                             <span class="categorical-filter ${column.key}-filter current-filter">${filter.label}</span>
                         %else:
                             <span class="categorical-filter ${column.key}-filter">
-                                <a href="${url( filter.get_url_args() )}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
+                                <a href="${url(filter.get_url_args())}" filter_key="${filter_key}" filter_val="${filter_arg}">${filter.label}</a>
                             </span>
                         %endif
                     %endfor
@@ -103,8 +102,26 @@
 
 ## Print grid search/filtering UI.
 <%def name="render_grid_filters( grid, render_advanced_search=True )">
+    <%
+        # Show advanced search if flag set or if there are filters for advanced search fields.
+        advanced_search_display = "none"
+        if 'advanced-search' in kwargs and kwargs['advanced-search'] in ['True', 'true']:
+            advanced_search_display = "block"
+
+        for column in grid.columns:
+            if column.filterable == "advanced":
+                ## Show div if current filter has value that is different from the default filter.
+                if column.key in cur_filter_dict and column.key in default_filter_dict and \
+                    cur_filter_dict[column.key] != default_filter_dict[column.key]:
+                        advanced_search_display = "block"
+
+        # do not show standard search if showing adv.
+        standard_search_display = "block"
+        if advanced_search_display == "block":
+            standard_search_display = "none"
+    %>
     ## Standard search.
-    <div id="standard-search">
+    <div id="standard-search" style="display: ${standard_search_display};">
         <table>
             <tr><td style="padding: 0;">
                 <table>
@@ -119,7 +136,7 @@
                 ## Clear the standard search.
                 ##|
                 ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>
+                ##<a href="${url(filter_all.get_url_args())}">Clear All</a>
                 
                 ## Only show advanced search if there are filterable columns.
                 <%
@@ -133,37 +150,24 @@
                 %>
                 %if show_advanced_search_link:
                     <% args = { "advanced-search" : True } %>
-                    <a href="${url( args )}" class="advanced-search-toggle">Advanced Search</a>
+                    <a href="${url(args)}" class="advanced-search-toggle">Advanced Search</a>
                 %endif
             </td></tr>
         </table>
     </div>
     
     ## Advanced search.
-    <%
-        # Show advanced search if flag set or if there are filters for advanced search fields.
-        advanced_search_display = "none"
-        if 'advanced-search' in kwargs and kwargs['advanced-search'] in ['True', 'true']:
-            advanced_search_display = "block"
-            
-        for column in grid.columns:
-            if column.filterable == "advanced":
-                ## Show div if current filter has value that is different from the default filter.
-                if column.key in cur_filter_dict and column.key in default_filter_dict and \
-                    cur_filter_dict[column.key] != default_filter_dict[column.key]:
-                        advanced_search_display = "block"
-    %>
     <div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
         <table>
             <tr><td style="text-align: left" colspan="100">
                 <% args = { "advanced-search" : False } %>
-                <a href="${url( args )}" class="advanced-search-toggle">Close Advanced Search</a>
+                <a href="${url(args)}" class="advanced-search-toggle">Close Advanced Search</a>
                 ## Link to clear all filters.
                 ##|
                 ##<%
                 ##    no_filter = GridColumnFilter("Clear All", default_filter_dict)
                 ##%>
-                ##<a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
+                ##<a href="${url(no_filter.get_url_args())}">${no_filter.label}</a>
             </td></tr>
             %for column in grid.columns:            
                 %if column.filterable == "advanced":
@@ -171,7 +175,7 @@
                     %if column.key in cur_filter_dict and column.key in default_filter_dict and \
                         cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         <script type="text/javascript">
-                            $('#advanced-search').css("display", "none");
+                            $('#advanced-search').css("display", "block");
                         </script>
                     %endif
             

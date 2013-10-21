@@ -1,7 +1,7 @@
 """
 Migration script to add an inheritable column to the following tables:
 library_info_association, library_folder_info_association.
-Also, in case of sqlite check if the previous migration script deleted the 
+Also, in case of sqlite check if the previous migration script deleted the
 request table and if so, restore the table.
 """
 
@@ -14,18 +14,25 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
+def get_false_value(migrate_engine):
+    if migrate_engine.name == 'sqlite':
+        return '0'
+    else:
+        return 'false'
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
-    
+
     #
-    # In case of sqlite, check if the previous migration script deleted the 
+    # In case of sqlite, check if the previous migration script deleted the
     # request table and if so, restore the table.
     #
     if migrate_engine.name == 'sqlite':
         if not migrate_engine.has_table('request'):
-            # load the tables referenced in foreign keys 
+            # load the tables referenced in foreign keys
             metadata.reflect(only=['form_values', 'request_type', 'galaxy_user'])
             # create a temporary table
             Request_table = Table( 'request', metadata,
@@ -41,29 +48,30 @@ def upgrade():
             try:
                 Request_table.create()
             except Exception, e:
-                log.debug( "Creating request table failed: %s" % str( e ) )  
+                log.debug( "Creating request table failed: %s" % str( e ) )
 
     metadata.reflect()
-    
+
     LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )
     c = Column( "inheritable", Boolean, index=True, default=False )
-    c.create( LibraryInfoAssociation_table )
+    c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_inheritable')
     assert c is LibraryInfoAssociation_table.c.inheritable
-    cmd = "UPDATE library_info_association SET inheritable = false"
+    cmd = "UPDATE library_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Setting value of column inheritable to false in library_info_association failed: %s" % ( str( e ) ) )
-    
+
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
     c = Column( "inheritable", Boolean, index=True, default=False )
-    c.create( LibraryFolderInfoAssociation_table )
+    c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_inheritable')
     assert c is LibraryFolderInfoAssociation_table.c.inheritable
-    cmd = "UPDATE library_folder_info_association SET inheritable = false"
+    cmd = "UPDATE library_folder_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Setting value of column inheritable to false in library_folder_info_association failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

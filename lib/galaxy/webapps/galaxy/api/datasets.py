@@ -1,15 +1,18 @@
 """
 API operations on the contents of a dataset.
 """
-import logging, os, string, shutil, urllib, re, socket
-from galaxy import util, datatypes, jobs, web, util
+from galaxy import web
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
+from galaxy.datatypes import dataproviders
 
+import logging
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
+class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin,
+                          UsesHistoryDatasetAssociationMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -17,15 +20,15 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         GET /api/datasets
         Lists datasets.
         """
-        pass
-        
+        trans.response.status = 501
+        return 'not implemented'
+
     @web.expose_api
-    def show( self, trans, id, hda_ldda='hda', data_type=None, **kwd ):
+    def show( self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd ):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
-        
         # Get dataset.
         try:
             dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=id )
@@ -37,22 +40,28 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             if data_type == 'state':
                 rval = self._dataset_state( trans, dataset )
             elif data_type == 'converted_datasets_state':
-                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ), 
+                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ),
                                                        is_true( kwd.get( 'retry', False ) ) )
             elif data_type == 'data':
                 rval = self._data( trans, dataset, **kwd )
             elif data_type == 'features':
                 rval = self._search_features( trans, dataset, kwd.get( 'query' ) )
             elif data_type == 'raw_data':
-                rval = self._raw_data( trans, dataset, **kwd )
+                rval = self._raw_data( trans, dataset, provider, **kwd )
             elif data_type == 'track_config':
                 rval = self.get_new_track_config( trans, dataset )
             elif data_type == 'genome_data':
                 rval = self._get_genome_data( trans, dataset, kwd.get('dbkey', None) )
             else:
-                # Default: return dataset as API value.
-                rval = dataset.get_api_value()
-                
+                # Default: return dataset as dict.
+                if hda_ldda == 'hda':
+                    rval = self.get_hda_dict( trans, dataset )
+                    # add these to match api/history_contents.py, show
+                    rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
+                    rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
+                else:
+                    rval = dataset.to_dict()
+
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
@@ -60,23 +69,24 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         return rval
 
     def _dataset_state( self, trans, dataset, **kwargs ):
-        """ Returns state of dataset. """
-            
+        """
+        Returns state of dataset.
+        """
         msg = self.check_dataset_state( trans, dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
 
         return msg
-        
+
     def _converted_datasets_state( self, trans, dataset, chrom=None, retry=False ):
         """
-        Init-like method that returns state of dataset's converted datasets. 
+        Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-            
+
         # Get datasources and check for messages (which indicate errors). Retry if flag is set.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
@@ -88,11 +98,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 return self._converted_datasets_state( trans, dataset, chrom )
             else:
                 return msg
-            
+
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider_registry = trans.app.data_provider_registry
-            data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                original_dataset=dataset, source='index' )
             if not data_provider.has_data( chrom ):
                 return dataset.conversion_messages.NO_DATA
 
@@ -101,7 +112,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
 
     def _search_features( self, trans, dataset, query ):
         """
-        Returns features, locations in dataset that match query. Format is a 
+        Returns features, locations in dataset that match query. Format is a
         list of features; each feature is a list itself: [name, location]
         """
         if dataset.can_convert_to( "fli" ):
@@ -110,74 +121,94 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 data_provider = FeatureLocationIndexDataProvider( converted_dataset=converted_dataset )
                 if data_provider:
                     return data_provider.get_data( query )
-        
+
         return []
-        
-    
+
     def _data( self, trans, dataset, chrom, low, high, start_val=0, max_vals=None, **kwargs ):
         """
         Provides a block of data from a dataset.
         """
-    
         # Parameter check.
         if not chrom:
             return dataset.conversion_messages.NO_DATA
-        
+
         # Dataset check.
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-            
+
         # Get datasources and check for essages.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         return_message = self._get_highest_priority_msg( messages_list )
         if return_message:
             return return_message
-            
+
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
-        # Handle histogram mode uniquely for now:
         data_provider_registry = trans.app.data_provider_registry
+
+        # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, detail_cutoff=0, draw_cutoff=0, **kwargs )
-            if summary == "detail":
-                # Use maximum level of detail--2--to get summary data no matter the resolution.
-                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], level=2, detail_cutoff=0, draw_cutoff=0 )
-            return summary
+            return indexer.get_data( chrom, low, high, **kwargs )
 
-        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
-            # Only check for summary_tree if it's Auto mode (which is the default)
-            # 
-            # Have to choose between indexer and data provider
+        # TODO:
+        # (1) add logic back in for no_detail
+        # (2) handle scenario where mode is Squish/Pack but data requested is large, so reduced data needed to be returned.
+
+        # If mode is Auto, need to determine what type of data to return.
+        if mode == "Auto":
+            # Get stats from indexer.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
-            if summary is None:
-                return { 'dataset_type': indexer.dataset_type, 'data': None }
-                
-            if summary == "draw":
-                kwargs["no_detail"] = True # meh
-                extra_info = "no_detail"
-            elif summary != "detail":
-                return summary
-        
+            stats = indexer.get_data( chrom, low, high, stats=True )
+
+            # If stats were requested, return them.
+            if 'stats' in kwargs:
+                if stats[ 'data' ][ 'max' ] == 0:
+                    return { 'dataset_type': indexer.dataset_type, 'data': None }
+                else:
+                    return stats
+
+            # Stats provides features/base and resolution is bases/pixel, so
+            # multiplying them yields features/pixel.
+            features_per_pixel = stats[ 'data' ][ 'max' ] * float( kwargs[ 'resolution' ] )
+
+            # Use heuristic based on features/pixel and region size to determine whether to
+            # return coverage data. When zoomed out and region is large, features/pixel
+            # is determining factor. However, when sufficiently zoomed in and region is
+            # small, coverage data is no longer provided.
+            if int( high ) - int( low ) > 50000 and features_per_pixel > 1000:
+                return indexer.get_data( chrom, low, high )
+
+        #
+        # Provide individual data points.
+        #
+
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
-        
+
         # Allow max_vals top be data provider set if not passed
         if max_vals is None:
             max_vals = data_provider.get_default_max_vals()
 
+        # Get reference sequence for region; this is used by providers for aligned reads.
+        ref_seq = None
+        if dataset.dbkey:
+            data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
+            if data_dict:
+                ref_seq = data_dict[ 'data' ]
+
         # Get and return data from data_provider.
-        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
+        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
+                                         ref_seq=ref_seq, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
-    def _raw_data( self, trans, dataset, **kwargs ):
+    def _raw_data( self, trans, dataset, provider=None, **kwargs ):
         """
-        Uses original (raw) dataset to return data. This method is useful 
+        Uses original (raw) dataset to return data. This method is useful
         when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
@@ -185,21 +216,43 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-    
+
+        registry = trans.app.data_provider_registry
+
+        # allow the caller to specifiy which provider is used
+        #   pulling from the original providers if possible, then the new providers
+        if provider:
+            if provider in registry.dataset_type_name_to_data_provider:
+                data_provider = registry.dataset_type_name_to_data_provider[ provider ]( dataset )
+
+            elif dataset.datatype.has_dataprovider( provider ):
+                kwargs = dataset.datatype.dataproviders[ provider ].parse_query_string_settings( kwargs )
+                # use dictionary to allow more than the data itself to be returned (data totals, other meta, etc.)
+                return {
+                    'data': list( dataset.datatype.dataprovider( dataset, provider, **kwargs ) )
+                }
+
+            else:
+                raise dataproviders.exceptions.NoProviderAvailable( dataset.datatype, provider )
+
+        # no provider name: look up by datatype
+        else:
+            data_provider = registry.get_data_provider( trans, raw=True, original_dataset=dataset )
+
         # Return data.
-        data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
         data = data_provider.get_data( **kwargs )
 
         return data
 
     @web.expose_api_raw
-    def display( self, trans, history_content_id, history_id, preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
+    def display( self, trans, history_content_id, history_id,
+                 preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
         """
         # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
-        hda_dict = {}
+        rval = ''
         try:
             # for anon users:
             #TODO: check login_required?
@@ -216,6 +269,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     check_ownership=True, check_accessible=True, deleted=False )
                 hda = self.get_history_dataset_association( trans, history, history_content_id,
                     check_ownership=True, check_accessible=True )
-        except:
-            raise
-        return hda.datatype.display_data(trans, hda, preview, filename, to_ext, chunk, **kwd)
+
+            rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **kwd )
+
+        except Exception, exception:
+            log.error( "Error getting display data for dataset (%s) from history (%s): %s",
+                       history_content_id, history_id, str( exception ), exc_info=True )
+            trans.response.status = 500
+            rval = ( "Could not get display data for dataset: " + str( exception ) )
+
+        return rval

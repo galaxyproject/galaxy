@@ -35,14 +35,15 @@ for tool in tool_list :
       for line in open("tools/"+tool) :
          if line.find("<tool ") != -1 and line.find("id") != -1 :
             keys = line.strip().split('\"')
-            n = 0
             tool_info = dict()
             tool_info["desc"] = ''
-            while n < len(keys) :
-               if keys[n].find("id") != -1 : tool_info["id"] = keys[n+1].replace(' ', '_')
-               if keys[n].find("name") != -1 : tool_info["name"] = keys[n+1]
-               if keys[n].find("description") != -1 : tool_info["desc"] = keys[n+1]
-               n = n + 1
+            for n in range(len(keys)-1):
+               if " id=" in keys[n]:
+                  tool_info["id"] = keys[n+1].replace(' ', '_')
+               if " name=" in keys[n]:
+                  tool_info["name"] = keys[n+1]
+               if " description=" in keys[n]:
+                  tool_info["desc"] = keys[n+1]
             tool_infos.append(tool_info)
             break
 

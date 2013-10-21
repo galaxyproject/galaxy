@@ -1,16 +1,13 @@
 """
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
-import os
-import tool_shed.util.shed_util
+import os, logging
 import tool_shed.util.shed_util_common
+import tool_shed.util.datatype_util
 from galaxy.model.orm import and_
+from tool_shed.util import xml_util
 
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+log = logging.getLogger( __name__ )
 
 class InstalledRepositoryManager( object ):
     def __init__( self, app ):
@@ -23,9 +20,10 @@ class InstalledRepositoryManager( object ):
         self.installed_repository_dicts = []
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
-            tree = ElementTree.parse( tool_config )
+            tree, error_message = xml_util.parse_xml( tool_config )
+            if tree is None:
+                return None
             root = tree.getroot()
-            ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )
             if tool_path:
                 ts = tool_shed.util.shed_util_common.clean_tool_shed_url( tool_shed_repository.tool_shed )
@@ -45,13 +43,12 @@ class InstalledRepositoryManager( object ):
                                                    .order_by( self.model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
-                installed_repository_dict = tool_shed.util.shed_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
+                installed_repository_dict = tool_shed.util.datatype_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
                 if installed_repository_dict:
                     self.installed_repository_dicts.append( installed_repository_dict )
     def load_proprietary_converters_and_display_applications( self, deactivate=False ):
         for installed_repository_dict in self.installed_repository_dicts:
             if installed_repository_dict[ 'converter_path' ]:
-                tool_shed.util.shed_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
+                tool_shed.util.datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
-                tool_shed.util.shed_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
-           
+                tool_shed.util.datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )

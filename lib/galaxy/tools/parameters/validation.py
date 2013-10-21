@@ -23,11 +23,11 @@ class Validator( object ):
         return validator_types[type].from_element( param, elem )
     def validate( self, value, history=None ):
         raise TypeError( "Abstract Method" )
-        
+
 class RegexValidator( Validator ):
     """
     Validator that evaluates a regular expression
-    
+
     >>> from galaxy.tools.parameters import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="text" size="10" value="10">
@@ -47,16 +47,16 @@ class RegexValidator( Validator ):
     def __init__( self, message, expression ):
         self.message = message
         # Compile later. RE objects used to not be thread safe. Not sure about
-        # the sre module. 
-        self.expression = expression  
+        # the sre module.
+        self.expression = expression
     def validate( self, value, history=None ):
         if re.match( self.expression, value ) is None:
             raise ValueError( self.message )
-        
+
 class ExpressionValidator( Validator ):
     """
     Validator that evaluates a python expression using the value
-    
+
     >>> from galaxy.tools.parameters import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="text" size="10" value="10">
@@ -84,11 +84,11 @@ class ExpressionValidator( Validator ):
             if self.substitute_value_in_message:
                 message = message % value
             raise ValueError( message )
-            
+
 class InRangeValidator( Validator ):
     """
     Validator that ensures a number is in a specific range
-    
+
     >>> from galaxy.tools.parameters import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="integer" size="10" value="10">
@@ -108,15 +108,15 @@ class InRangeValidator( Validator ):
         return cls( elem.get( 'message', None ), elem.get( 'min', '-inf' ), elem.get( 'max', '+inf' ) )
     def __init__( self, message, range_min, range_max ):
         self.min = float( range_min )
-        self.max = float( range_max )  
+        self.max = float( range_max )
         # Remove unneeded 0s and decimal from floats to make message pretty.
         self_min_str = str( self.min ).rstrip( '0' ).rstrip( '.' )
         self_max_str = str( self.max ).rstrip( '0' ).rstrip( '.' )
         self.message = message or "Value must be between %s and %s" % ( self_min_str, self_max_str )
     def validate( self, value, history=None ):
         if not( self.min <= float( value ) <= self.max ):
-            raise ValueError( self.message )   
-        
+            raise ValueError( self.message )
+
 class LengthValidator( Validator ):
     """
     Validator that ensures the length of the provided string (value) is in a specific range
@@ -143,7 +143,7 @@ class LengthValidator( Validator ):
         return cls( elem.get( 'message', None ), elem.get( 'min', None ), elem.get( 'max', None ) )
     def __init__( self, message, length_min, length_max ):
         self.message = message
-        if length_min is not None: 
+        if length_min is not None:
             length_min = int( length_min )
         if length_max is not None:
             length_max = int( length_max )
@@ -293,18 +293,31 @@ class MetadataInDataTableColumnValidator( Validator ):
         if line_startswith:
             line_startswith = line_startswith.strip()
         return cls( tool_data_table, metadata_name, metadata_column, message, line_startswith )
+
     def __init__( self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
+        self._data_table_content_version = None
+        self._tool_data_table = tool_data_table
         if isinstance( metadata_column, basestring ):
             metadata_column = tool_data_table.columns[ metadata_column ]
-        for fields in tool_data_table.get_fields():
-            if metadata_column < len( fields ):
-                self.valid_values.append( fields[ metadata_column ] )
+        self._metadata_column = metadata_column
+        self._load_values()
+
+    def _load_values( self ):
+        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields()
+        self.valid_values = []
+        for fields in data_fields:
+            if self._metadata_column < len( fields ):
+                self.valid_values.append( fields[ self._metadata_column ] )
+
     def validate( self, value, history = None ):
         if not value: return
         if hasattr( value, "metadata" ):
+            if not self._tool_data_table.is_current_version( self._data_table_content_version ):
+                log.debug( 'MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name )
+                self._load_values()
             if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
         raise ValueError( self.message )
@@ -321,7 +334,7 @@ validator_types = dict( expression=ExpressionValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
                         dataset_ok_validator=DatasetOkValidator )
-                        
+
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys

@@ -54,12 +54,12 @@ TODO:
  *      panel (current right hand panel).
  *  @name HistoryPanel
  *
- *  @augments BaseView
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
+var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends HistoryPanel.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -75,7 +75,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** event map
      */
     events : {
-        'click #history-tag'            : 'loadAndDisplayTags'
+        'click #history-tag'            : 'loadAndDisplayTags',
+        'click #message-container'      : 'removeMessage'
     },
 
     // ......................................................................... SET UP
@@ -84,7 +85,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
      *  @config {Object} urlTemplates.history nested object containing url templates for this view
      *  @config {Object} urlTemplates.hda nested object containing url templates for HDAViews
      *  @throws 'needs urlTemplates' if urlTemplates.history or urlTemplates.hda aren't present
-     *  @see PersistantStorage
+     *  @see PersistentStorage
      *  @see Backbone.View#initialize
      */
     initialize : function( attributes ){
@@ -94,7 +95,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         // set up url templates
         //TODO: prob. better to put this in class scope (as the handlebars templates), but...
-        //  they're added to GalaxyPaths on page load (after this file is loaded)
+        //  they're added to galaxy_config on page load (after this file is loaded)
         if( !attributes.urlTemplates ){         throw( this + ' needs urlTemplates on initialize' ); }
         if( !attributes.urlTemplates.history ){ throw( this + ' needs urlTemplates.history on initialize' ); }
         if( !attributes.urlTemplates.hda ){     throw( this + ' needs urlTemplates.hda on initialize' ); }
@@ -104,18 +105,59 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
 
+        this._setUpEventHandlers();
+
+        // set up instance vars
+        /** map of hda model ids to hda views */
+        this.hdaViews = {};
+        /** map web controller urls for history related actions */
+        this.urls = {};
+    },
+
+    errorHandler : function( model, xhr, options, msg ){
+        // let 'lost contact' errors fail silently
+        if( xhr && (  ( xhr.status === 0 && xhr.readyState === 0 )
+                   || ( xhr.status === 502 ) ) ){
+            this.log( 'lost contact with server', model, xhr, options, msg );
+            return;
+        }
+
+        // otherwise display a message
+        msg = msg ||  _l( 'An error occurred while getting updates from the server.' ) + ' '
+                    + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+        this.displayMessage( 'error', msg );
+    },
+
+    refresh : function() {
+        // TODO: refresh content without reloading frame
+        window.location = window.location;
+    },
+
+    _setUpEventHandlers : function(){
+        // ---- model
         // don't need to re-render entire model on all changes, just render disk size when it changes
         //this.model.bind( 'change', this.render, this );
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
 
+        // don't need to re-render entire model on all changes, just render disk size when it changes
+        this.model.bind( 'error', function( model, xhr, options, msg ){
+            this.errorHandler( model, xhr, options, msg );
+            this.model.attributes.error = undefined;
+        }, this );
+
+        // ---- hdas
         // bind events from the model's hda collection
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
 
         // when a hda model is (un)deleted or (un)hidden, re-render entirely
-        //TODO??: purged
-        //TODO??: could be more selective here
         this.model.hdas.bind( 'change:deleted', this.handleHdaDeletionChange, this );
+        // when an hda is purge the disk size changes
+        this.model.hdas.bind( 'change:purged', function( hda ){
+            // hafta get the new nice-size w/o the purged hda
+            //TODO: any beter way?
+            this.model.fetch();
+        }, this );
 
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
@@ -126,38 +168,31 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             }
         }, this );
 
-        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
-        //  then: refresh the panel
-        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
-            if( hda.get( 'force_history_refresh' ) ){
-                window.location.reload();
-            }
-        }, this );
+        // ---- self
+        this.bind( 'error', function( model, xhr, options, msg ){
+            this.errorHandler( model, xhr, options, msg );
+        });
 
-        //this.bind( 'all', function(){
-        //    this.log( arguments );
-        //}, this );
-
-        // set up instance vars
-        /** map of hda model ids to hda views */
-        this.hdaViews = {};
-        /** map web controller urls for history related actions */
-        this.urls = {};
+        if( this.logger ){
+            this.bind( 'all', function( event ){
+                this.log( this + '', arguments );
+            }, this );
+        }
     },
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
      *  @param {Object} initiallyExpanded
      *  @param {Boolean} show_deleted whether to show deleted HDAs (overrides stored)
      *  @param {Boolean} show_hidden
-     *  @see PersistantStorage
+     *  @see PersistentStorage
      */
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
         //this.log( '_setUpWebStorage, initiallyExpanded:', initiallyExpanded,
         //    'show_deleted:', show_deleted, 'show_hidden', show_hidden );
 
-        // data that needs to be persistant over page refreshes
+        // data that needs to be persistent over page refreshes
         //  (note the key function which uses the history id as well)
-        this.storage = new PersistantStorage( 'HistoryView.' + this.model.get( 'id' ), {
+        this.storage = new PersistentStorage( 'HistoryView.' + this.model.get( 'id' ), {
             //TODOL initiallyExpanded only works on first load right now
             expandedHdas : {},
             show_deleted : false,
@@ -187,6 +222,14 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.show_hidden  = this.storage.get( 'show_hidden' );
         //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
         this.log( this + ' (init\'d) storage:', this.storage.get() );
+    },
+
+    clearWebStorage : function(){
+        for( var key in sessionStorage ){
+            if( key.indexOf( 'HistoryView.' ) === 0 ){
+                sessionStorage.removeItem( key );
+            }
+        }
     },
 
     /** Add an hda to this history's collection
@@ -248,7 +291,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
-        newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
+        newRender.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
@@ -349,6 +392,9 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         hdaView.bind( 'body-collapsed', function( id ){
             historyView.storage.get( 'expandedHdas' ).deleteKey( id );
         });
+        hdaView.bind( 'error', function( model, xhr, options, msg ){
+            historyView.errorHandler( model, xhr, options, msg );
+        });
     },
 
     /** Set up HistoryPanel js/widget behaviours
@@ -404,7 +450,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     },
 
     /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistant storage
+     *      (1) storing the new value in the persistent storage
      *      (2) re-rendering the history
      * @returns {Boolean} new show_deleted setting
      */
@@ -415,7 +461,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     },
 
     /** Handle the user toggling the deleted visibility by:
-     *      (1) storing the new value in the persistant storage
+     *      (1) storing the new value in the persistent storage
      *      (2) re-rendering the history
      * @returns {Boolean} new show_hidden setting
      */
@@ -439,7 +485,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '#history-tag-area' ),
+        var panel = this,
+            tagArea = this.$el.find( '#history-tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
         this.log( '\t tagArea', tagArea, ' tagElt', tagElt );
 
@@ -451,11 +498,14 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: view.urls.tag,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, error, status ) {
+                        panel.log( 'Error loading tag area html', xhr, error, status );
+                        panel.trigger( 'error', panel, {}, {}, _l( "Tagging failed" ) );
+                    },
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
+                        tagElt.find("[title]").tooltip();
                         tagArea.slideDown("fast");
                     }
                 });
@@ -472,6 +522,78 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     },
 
     // ......................................................................... MISC
+    /** Display a message in the top of the panel.
+     *  @param {String} type    type of message ('done', 'error', 'warning')
+     *  @param {String} msg     the message to display
+     */
+    displayMessage : function( type, msg ){
+        var $msgContainer = this.$el.find( '#message-container' ),
+            $msg = $( '<div/>' ).addClass( type + 'message' ).text( msg );
+        $msgContainer.html( $msg );
+    },
+
+    /** Remove a message from the panel.
+     */
+    removeMessage : function(){
+        var $msgContainer = this.$el.find( '#message-container' );
+        $msgContainer.html( null );
+    },
+
+    /** Scrolls the panel to the top.
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToTop : function(){
+        $( document ).scrollTop( 0 );
+        return this;
+    },
+
+    /** Scrolls the panel (the enclosing container - in gen., the page) so that some object
+     *      is displayed in the vertical middle.
+     *      NOTE: if no size is given the panel will scroll to objTop (putting it at the top).
+     *  @param {Number} objTop  the top offset of the object to view
+     *  @param {Number} objSize the size of the object to view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollIntoView : function( where, size ){
+        if( !size ){
+            $( document ).scrollTop( where );
+            return this;
+        }
+        // otherwise, place the object in the vertical middle
+        var viewport = window,
+            panelContainer = this.$el.parent(),
+            containerHeight = $( viewport ).innerHeight(),
+            middleOffset = ( containerHeight / 2 ) - ( size / 2 );
+
+        $( panelContainer ).scrollTop( where - middleOffset );
+        return this;
+    },
+
+    /** Scrolls the panel to show the HDA with the given id.
+     *  @param {String} id  the id of HDA to scroll into view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToId : function( id ){
+        // do nothing if id not found
+        if( ( !id ) || ( !this.hdaViews[ id ] ) ){
+            return this;
+        }
+        var $viewEl = this.hdaViews[ id ].$el;
+        this.scrollIntoView( $viewEl.offset().top, $viewEl.outerHeight() );
+        return this;
+    },
+
+    /** Scrolls the panel to show the HDA with the given hid.
+     *  @param {Integer} hid    the hid of HDA to scroll into view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToHid : function( hid ){
+        var hda = this.model.hdas.getByHid( hid );
+        // do nothing if hid not found
+        if( !hda ){ return this; }
+        return this.scrollToId( hda.id );
+    },
+
     /** Return a string rep of the history
      */
     toString    : function(){

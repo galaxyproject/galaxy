@@ -1,6 +1,17 @@
-<%inherit file="/webapps/galaxy/base_panels.mako"/>
-<%namespace file="/message.mako" import="render_msg" />
+<%!
+#This is a hack, we should restructure templates to avoid this.
+def inherit(context):
+    if context.get('trans').webapp.name == 'galaxy':
+        return '/webapps/galaxy/base_panels.mako'
+    elif context.get('trans').webapp.name == 'tool_shed':
+        return '/webapps/tool_shed/base_panels.mako'
+    else:
+        return '/base.mako'
+%>
 
+<%inherit file="${inherit(context)}"/>
+
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="init()">
 <%
@@ -28,6 +39,14 @@
 </%def>
 
 <%def name="body()">
+    <script type="text/javascript">
+        $(function(){
+            //HACK: should happen before we get to this page - _before_ logged out of session
+            if( top.Galaxy && top.Galaxy.currUser ){
+                top.Galaxy.currUser.clearSessionStorage();
+            }
+        });
+    </script>
     %if message:
         ${render_msg( message, status )}
     %endif

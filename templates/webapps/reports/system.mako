@@ -83,7 +83,7 @@
                     </td>
                     <td>${time_ago( dataset.update_time )}</td>
                     <td>${dataset.deleted}</td>
-                    <td>${dataset.file_size}</td>
+                    <td>${nice_size( dataset.file_size, True )}</td>
                 </tr>
                 <% ctr += 1 %>
             %endfor

@@ -3,9 +3,11 @@
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
-    self.message_box_visible=False
+    self.message_box_visible = app.config.message_box_visible
+    self.show_inactivity_warning = False
+    if trans.webapp.name == 'galaxy' and trans.user:
+        self.show_inactivity_warning = ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) )
     self.overlay_visible=False
-    self.message_box_class=""
     self.active_view=None
     self.body_class=""
     self.require_javascript=False
@@ -27,12 +29,6 @@
             right: 0 !important;
         %endif
     }
-    %if self.message_box_visible:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
     </style>
 </%def>
 
@@ -52,13 +48,15 @@
 
     ${h.js(
         'libs/jquery/jquery',
-        'libs/json2',
+        'libs/jquery/jquery.migrate',
+        'libs/jquery/select2',
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
         'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
-        'galaxy.base'
+        'galaxy.base',
+        'libs/require'
     )}
 
     ${h.templates(
@@ -70,6 +68,19 @@
     )}
 
     <script type="text/javascript">
+        ## global configuration object
+        var galaxy_config =
+        {
+            root: '${h.url_for( "/" )}'
+        };
+
+        ## load additional style sheet
+        if (window != window.top)
+            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+
+        // start a Galaxy namespace for objects created
+        window.Galaxy = window.Galaxy || {};
+
         // console protection
         window.console = window.console || {
             log     : function(){},
@@ -80,17 +91,23 @@
             assert  : function(){}
         };
 
-        // Set up needed paths.
-        var galaxy_paths = new GalaxyPaths({
-            root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}',
-            
-            tool_url: '${h.url_for( controller="/api/tools" )}',
-            history_url: '${h.url_for( controller="/api/histories" )}',
-            
-            datasets_url: '${h.url_for( controller="/api/datasets" )}',
-            sweepster_url: '${h.url_for( controller="/visualization", action="sweepster" )}',
-            visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
+        ## configure require
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts') }",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/backbone/backbone": { exports: "Backbone" },
+                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+            }
+        });
+        
+        ## load galaxy js-modules
+        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload'], function(master, frame, modal, upload)
+        {
+            Galaxy.master = new master.GalaxyMaster();
+            Galaxy.frame_manager = new frame.GalaxyFrameManager();
+            Galaxy.modal = new modal.GalaxyModal();
+            ##Galaxy.upload = new upload.GalaxyUpload();
         });
     </script>
 </%def>
@@ -226,13 +243,13 @@
         overlay_class = ""
     %>
 
-    <div id="overlay" ${display}>
-
-        <div id="overlay-background" class="modal-backdrop fade ${overlay_class}"></div>
-
-        <div id="dialog-box" class="modal dialog-box" border="0" ${display}>
+    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
+        <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
+        <div id="top-modal-dialog" class="modal-dialog">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <span><h3 class='title'>${title}</h3></span>
+                    <button type='button' class='close' style="display: none;">&times;</button>
+                    <h4 class='title'>${title}</h4>
                 </div>
                 <div class="modal-body">${content}</div>
                 <div class="modal-footer">
@@ -240,20 +257,21 @@
                     <div class="extra_buttons" style=""></div>
                     <div style="clear: both;"></div>
                 </div>
+            </div>
         </div>
-    
     </div>
-</%def>
-
-## Messagebox
-<%def name="message_box_content()">
 </%def>
 
 ## Document
 <html>
+    <!--base_panels.mako-->
     ${self.init()}    
     <head>
-        <title>${self.title()}</title>
+        %if app.config.brand:
+            <title>${self.title()} / ${app.config.brand}</title>
+        %else:
+            <title>${self.title()}</title>
+        %endif
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ## For mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
@@ -263,7 +281,15 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="full-content ${self.body_class}">
+    <%
+    body_class = self.body_class
+    if self.message_box_visible:
+        body_class += " has-message-box"
+    if self.show_inactivity_warning:
+        body_class += " has-inactivity-box"
+    %>
+
+    <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">
@@ -274,20 +300,21 @@
                 </div>
             </noscript>
         %endif
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
+        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
             ## Background displays first
             <div id="background"></div>
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top">
-                <div class="masthead-inner navbar-inner">
-                    ${self.masthead()}
+            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
+                ${self.masthead()}
+            </div>
+            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
+                ${app.config.message_box_content}
+            </div>
+            %if self.show_inactivity_warning:
+                <div id="inactivebox" class="panel-warning-message">
+                    ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
-            </div>
-            <div id="messagebox" class="panel-${self.message_box_class}-message">
-                %if self.message_box_visible:
-                    ${self.message_box_content()}
-                %endif
-            </div>
+            %endif
             ${self.overlay(visible=self.overlay_visible)}
             %if self.has_left_panel:
                 <div id="left">

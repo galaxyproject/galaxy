@@ -23,7 +23,7 @@ class BaseField(object):
 class TextField(BaseField):
     """
     A standard text input box.
-    
+
     >>> print TextField( "foo" ).get_html()
     <input type="text" name="foo" size="10" value="">
     >>> print TextField( "bins", size=4, value="default" ).get_html()
@@ -34,15 +34,19 @@ class TextField(BaseField):
         self.size = int( size or 10 )
         self.value = value or ""
     def get_html( self, prefix="", disabled=False ):
+        value = self.value
+        if not isinstance( value, basestring ):
+            value = str( value )
+        value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
-            % ( prefix, self.name, self.size, escape( str( self.value ),  quote=True ), self.get_disabled_str( disabled ) ) )
+            % ( prefix, self.name, self.size, escape( value,  quote=True ), self.get_disabled_str( disabled ) ) )
     def set_size(self, size):
         self.size = int( size )
-        
+
 class PasswordField(BaseField):
     """
     A password input box. text appears as "******"
-    
+
     >>> print PasswordField( "foo" ).get_html()
     <input type="password" name="foo" size="10" value="">
     >>> print PasswordField( "bins", size=4, value="default" ).get_html()
@@ -61,7 +65,7 @@ class PasswordField(BaseField):
 class TextArea(BaseField):
     """
     A standard text area box.
-    
+
     >>> print TextArea( "foo" ).get_html()
     <textarea name="foo" rows="5" cols="25"></textarea>
     >>> print TextArea( "bins", size="4x5", value="default" ).get_html()
@@ -85,7 +89,7 @@ class TextArea(BaseField):
 class CheckboxField(BaseField):
     """
     A checkbox (boolean input)
-    
+
     >>> print CheckboxField( "foo" ).get_html()
     <input type="checkbox" id="foo" name="foo" value="true"><input type="hidden" name="foo" value="true">
     >>> print CheckboxField( "bar", checked="yes" ).get_html()
@@ -96,7 +100,7 @@ class CheckboxField(BaseField):
         self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
         self.refresh_on_change = refresh_on_change
         self.refresh_on_change_values = refresh_on_change_values or []
-        if self.refresh_on_change: 
+        if self.refresh_on_change:
             self.refresh_on_change_text = ' refresh_on_change="true" '
             if self.refresh_on_change_values:
                 self.refresh_on_change_text = '%s refresh_on_change_values="%s" ' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
@@ -133,7 +137,7 @@ class CheckboxField(BaseField):
 class FileField(BaseField):
     """
     A file upload input.
-    
+
     >>> print FileField( "foo" ).get_html()
     <input type="file" name="foo">
     >>> print FileField( "foo", ajax = True ).get_html()
@@ -157,7 +161,7 @@ class FTPFileField(BaseField):
     An FTP file upload input.
     """
     thead = '''
-        <table id="grid-table" class="grid"> 
+        <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>
                     <th id="select-header"></th>
@@ -217,7 +221,7 @@ class FTPFileField(BaseField):
 class HiddenField(BaseField):
     """
     A hidden field.
-    
+
     >>> print HiddenField( "foo", 100 ).get_html()
     <input type="hidden" name="foo" value="100">
     """
@@ -230,7 +234,7 @@ class HiddenField(BaseField):
 class SelectField(BaseField):
     """
     A select field.
-    
+
     >>> t = SelectField( "foo", multiple=True )
     >>> t.add_option( "tuti", 1 )
     >>> t.add_option( "fruity", "x" )
@@ -239,7 +243,7 @@ class SelectField(BaseField):
     <option value="1">tuti</option>
     <option value="x">fruity</option>
     </select>
-    
+
     >>> t = SelectField( "bar" )
     >>> t.add_option( "automatic", 3 )
     >>> t.add_option( "bazooty", 4, selected=True )
@@ -248,7 +252,7 @@ class SelectField(BaseField):
     <option value="3">automatic</option>
     <option value="4" selected>bazooty</option>
     </select>
-    
+
     >>> t = SelectField( "foo", display="radio" )
     >>> t.add_option( "tuti", 1 )
     >>> t.add_option( "fruity", "x" )
@@ -278,7 +282,7 @@ class SelectField(BaseField):
         self.display = display
         self.refresh_on_change = refresh_on_change
         self.refresh_on_change_values = refresh_on_change_values or []
-        if self.refresh_on_change: 
+        if self.refresh_on_change:
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:
                 self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, escape( ",".join( self.refresh_on_change_values ), quote=True ) )
@@ -300,7 +304,12 @@ class SelectField(BaseField):
             rval.append ( '<div class="checkUncheckAllPlaceholder" checkbox_name="%s%s"></div>' % ( prefix, self.name ) ) #placeholder for the insertion of the Select All/Unselect All buttons
         for text, value, selected in self.options:
             style = ""
-            escaped_value = escape( str( value ), quote=True )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            text = unicodify( text )
+            escaped_value = escape( unicodify( value ), quote=True )
             uniq_id = "%s%s|%s" % (prefix, self.name, escaped_value)
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
@@ -308,7 +317,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( str( text ), quote=True ) ) )
+                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
     def get_html_radio( self, prefix="", disabled=False ):
@@ -335,7 +344,7 @@ class SelectField(BaseField):
                            uniq_id,
                            text ) )
             ctr += 1
-        return unicodify( "\n".join( rval ) )    
+        return unicodify( "\n".join( rval ) )
     def get_html_default( self, prefix="", disabled=False ):
         if self.multiple:
             multiple = " multiple"
@@ -351,11 +360,17 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " selected"
                 last_selected_value = value
+                if not isinstance( last_selected_value, basestring ):
+                    last_selected_value = str( last_selected_value )
             else:
                 selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( escape( str( value ), quote=True ), selected_text, escape( str( text ), quote=True ) ) )
+            if not isinstance( value, basestring ):
+                value = str( value )
+            if not isinstance( text, basestring ):
+                text = str( text )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % escape( str( last_selected_value ), quote=True )
+            last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
         rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
                      ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
@@ -391,14 +406,14 @@ class SelectField(BaseField):
 class DrillDownField( BaseField ):
     """
     A hierarchical select field, which allows users to 'drill down' a tree-like set of options.
-    
+
     >>> t = DrillDownField( "foo", multiple=True, display="checkbox", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option1" >Option 1
     </div>
@@ -406,9 +421,9 @@ class DrillDownField( BaseField ):
     <input type="checkbox" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option3" >Option 3
     </div>
@@ -427,9 +442,9 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option1" >Option 1
     </div>
@@ -437,9 +452,9 @@ class DrillDownField( BaseField ):
     <input type="radio" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option3" >Option 3
     </div>
@@ -473,7 +488,7 @@ class DrillDownField( BaseField ):
         self.display = display
         self.refresh_on_change = refresh_on_change
         self.refresh_on_change_values = refresh_on_change_values
-        if self.refresh_on_change: 
+        if self.refresh_on_change:
             self.refresh_on_change_text = ' refresh_on_change="true"'
             if self.refresh_on_change_values:
                 self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
@@ -501,10 +516,10 @@ class DrillDownField( BaseField ):
                 html.append( '<div class="form-row-input">')
                 drilldown_group_id = "%s-%s" % ( base_id, hexlify( option['value'] ) )
                 if option['options']:
-                    html.append( '<span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
+                    html.append( '<div><span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
                 html.append( '<input type="%s" name="%s%s" value="%s" %s>%s' % ( self.display, prefix, self.name, escaped_option_value, selected, option['name']) )
                 if option['options']:
-                    html.append( '<div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
+                    html.append( '</div><div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
                     recurse_options( html, option['options'], drilldown_group_id, expanded_options )
                     html.append( '</div>')
                 html.append( '</div>')
@@ -516,7 +531,7 @@ class DrillDownField( BaseField ):
         recurse_options( rval, self.options, drilldown_id, expanded_options )
         rval.append( '</div>' )
         return unicodify( '\n'.join( rval ) )
-    
+
 class AddressField(BaseField):
     @staticmethod
     def fields():
@@ -542,8 +557,8 @@ class AddressField(BaseField):
             for a in self.user.addresses:
                 add_ids.append( str( a.id ) )
         add_ids.append( 'new' )
-        self.select_address = SelectField( self.name, 
-                                           refresh_on_change=True, 
+        self.select_address = SelectField( self.name,
+                                           refresh_on_change=True,
                                            refresh_on_change_values=add_ids )
         if self.value == 'none':
             self.select_address.add_option( 'Select one', 'none', selected=True )
@@ -565,9 +580,9 @@ class AddressField(BaseField):
         if self.value == 'new':
             self.select_address.add_option( 'Add a new address', 'new', selected=True )
             for field_name, label, help_text in self.fields():
-                add_field = TextField( self.name + '_' + field_name, 
+                add_field = TextField( self.name + '_' + field_name,
                                       40,
-                                      restore_text( self.params.get( self.name + '_' + field_name, ''  ) ) ) 
+                                      restore_text( self.params.get( self.name + '_' + field_name, ''  ) ) )
                 address_html += '''
                                 <div class="form-row">
                                     <label>%s</label>
@@ -578,7 +593,7 @@ class AddressField(BaseField):
                                     <div class="toolParamHelp" style="clear: both;">
                                         %s
                                     </div>
-                                    ''' % help_text      
+                                    ''' % help_text
                 address_html += '''
                                 </div>
                                 '''
@@ -677,7 +692,7 @@ class HistoryField( BaseField ):
             return self.value
         else:
             return '-'
-            
+
 class LibraryField( BaseField ):
     def __init__( self, name, value=None, trans=None ):
         self.name = name
@@ -712,7 +727,7 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
     Build a SelectField given a set of objects.  The received params are:
 
     - objs: the set of objects used to populate the option list
-    - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.  
+    - label_attr: the attribute of each obj (e.g., name, email, etc ) whose value is used to populate each option label.
 
         - If the string 'self' is passed as label_attr, each obj in objs is assumed to be a string, so the obj itself is used
 
@@ -735,19 +750,12 @@ def build_select_field( trans, objs, label_attr,  select_field_name, initial_val
         refresh_on_change_values = values
     else:
         refresh_on_change_values = []
-    select_field = SelectField( name=select_field_name, 
+    select_field = SelectField( name=select_field_name,
                                 multiple=multiple,
                                 display=display,
-                                refresh_on_change=refresh_on_change, 
+                                refresh_on_change=refresh_on_change,
                                 refresh_on_change_values=refresh_on_change_values,
                                 size=size )
-    if display is None and initial_value == 'none':
-        # Only insert an initial "Select one" option if we are not displaying check boxes
-        # or radio buttons and we have not received an initial_value other than 'none'.
-        if selected_value == initial_value:
-            select_field.add_option( 'Select one', initial_value, selected=True )
-        else:
-            select_field.add_option( 'Select one', initial_value )
     for obj in objs:
         if label_attr == 'self':
             # Each obj is a string

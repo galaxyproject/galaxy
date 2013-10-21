@@ -178,7 +178,7 @@ var NumberFilter = function(obj_dict) {
                                                         filter.manager.alpha_filter = null;
                                                         filter.transparency_icon.removeClass("active");
                                                     }
-                                                    filter.manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw({ force: true, clear_after: true });
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     this.height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
@@ -195,7 +195,7 @@ var NumberFilter = function(obj_dict) {
                                                         filter.manager.height_filter = null;
                                                         filter.height_icon.removeClass("active");
                                                     }
-                                                    filter.manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw({ force: true, clear_after: true });
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     filter.parent_div.hover( function() { 
@@ -265,7 +265,7 @@ extend(NumberFilter.prototype, {
         var self = this;
         setTimeout(function() {
             if (values[0] === self.low && values[1] === self.high) {
-                self.manager.track.request_draw(true, true);
+                self.manager.track.request_draw({ force: true, clear_after: true });
             }
         }, 25);
          
@@ -596,15 +596,19 @@ extend(FiltersManager.prototype, {
             $.getJSON(run_tool_url, url_params, function(response) {
                 if (response.error) {
                     // General error.
-                    show_modal("Filter Dataset",
-                               "Error running tool " + tool_id,
-                               { "Close" : hide_modal } );
+                    Galaxy.modal.show({
+                        title: "Filter Dataset",
+                        body : "Error running tool " + tool_id,
+                        buttons : { "Close" : Galaxy.modal.hide() }
+                    });
                 }
                 else if (filters.length === 0) {
                     // No more filters to run.
-                    show_modal("Filtering Dataset", 
-                               "Filter(s) are running on the complete dataset. Outputs are in dataset's history.", 
-                               { "Close" : hide_modal } );
+                    Galaxy.modal.show({
+                        title: "Filtering Dataset",
+                        body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
+                        buttons: { "Close" : Galaxy.modal.hide() }
+                    });
                 }
                 else {
                     // More filters to run.

@@ -1,0 +1,34 @@
+<tool id="CONVERTER_bed_gff_or_vcf_to_bigwig_0" name="Convert BED, GFF, or VCF to BigWig" version="1.0.0" hidden="true">
+    <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package">bedtools</requirement>
+    </requirements>
+    <command>
+        ## Remove comments and sort by chromosome.
+        grep -v '^#' $input | sort -k1,1 | 
+
+        ## Generate coverage bedgraph.
+        bedtools genomecov -bg -i stdin -g $chromInfo
+
+        ## Only use split option for bed and gff/gff3/gtf.
+        #if $input.ext in [ 'bed', 'gff', 'gff3', 'gtf' ]:
+            -split
+        #end if
+
+        ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
+        ## should only be used on systems with large RAM.
+        ## | wigToBigWig stdin $chromInfo $output
+
+        ## This can be used anywhere.
+        > temp.bg ; bedGraphToBigWig temp.bg $chromInfo $output
+    </command>
+    <inputs>
+        <param format="bed,gff,vcf" name="input" type="data" label="Choose input file"/>
+    </inputs>
+    <outputs>
+        <data format="bigwig" name="output"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

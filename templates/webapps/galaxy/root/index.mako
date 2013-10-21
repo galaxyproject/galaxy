@@ -1,15 +1,30 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
+<%namespace file="/root/tool_menu.mako" import="*" />
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css("tool_menu")}
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${tool_menu_javascripts()}
+</%def>
+
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}
+
     <script type="text/javascript">
     // Set up GalaxyAsync object.
     var galaxy_async = new GalaxyAsync();
-    galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
+    galaxy_async.set_func_url( galaxy_async.set_user_pref,
+        "${h.url_for( controller='user', action='set_user_pref_async' )}");
     
+    // set up history options menu
     $(function(){
         // Init history options.
-        $("#history-options-button").css( "position", "relative" );
+        //$("#history-options-button").css( "position", "relative" );
         var popupmenu = PopupMenu.make_popupmenu( $("#history-options-button"), {
             "${_("History Lists")}": null,
             "${_("Saved Histories")}": function() {
@@ -40,9 +55,29 @@
             "${_("Resume Paused Jobs")}": function() {
                 galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
             },
+            "${_("Collapse Expanded Datasets")}": function() {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                }
+            },
+            "${_("Include Deleted Datasets")}": function( clickEvent, thisMenuOption ) {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowDeleted();
+                }
+            },
+            "${_("Include Hidden Datasets")}": function( clickEvent, thisMenuOption ) {
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowHidden();
+                }
+            },
             "${_("Unhide Hidden Datasets")}": function() {
                 if ( confirm( "Really unhide all hidden datasets?" ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='unhide_datasets', current=True )}";
+                }
+            },
+            "${_("Delete Hidden Datasets")}": function() {
+                if ( confirm( "Really delete all hidden datasets?" ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='delete_hidden_datasets')}";
                 }
             },
             "${_("Purge Deleted Datasets")}": function() {
@@ -71,6 +106,8 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
+        // since we need to communicate state of hpanel with the options menu, cache the popupmenu here
+        Galaxy.historyOptionsMenu = popupmenu;
 
         // Fix iFrame scrolling on iOS
         if( navigator.userAgent.match( /(iPhone|iPod|iPad)/i ) ) {
@@ -106,8 +143,8 @@
             ${n_('Tools')}
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: hidden;">
-        <iframe name="galaxy_tools" id="galaxy_tools" src="${h.url_for( controller='root', action='tool_menu' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
+    <div class="unified-panel-body" style="overflow: auto">
+        ${render_tool_menu()}
     </div>
 </%def>
 
@@ -118,17 +155,18 @@
     if trans.app.config.require_login and not trans.user:
         center_url = h.url_for( controller='user', action='login' )
     elif tool_id is not None:
-        center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )
+        center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True, **params )
     elif workflow_id is not None:
         center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
     elif m_c is not None:
         center_url = h.url_for( controller=m_c, action=m_a )
     else:
-        center_url = h.url_for( '/static/welcome.html' )
+        center_url = h.url_for( controller="root", action="welcome" )
     %>
     
     <div style="position: absolute; width: 100%; height: 100%">
-        <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
+        <iframe name="galaxy_main" id="galaxy_main" frameborder="0"
+                style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
     </div>
 
 </%def>
@@ -150,6 +188,9 @@
         </div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">
-        <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%;" src="${h.url_for( controller='root', action='history' )}"></iframe>
+    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0"
+                style="position: absolute; margin: 0; border: 0 none; height: 100%;"
+                src="${h.url_for( controller='root', action='history' )}">
+        </iframe>
     </div>
 </%def>

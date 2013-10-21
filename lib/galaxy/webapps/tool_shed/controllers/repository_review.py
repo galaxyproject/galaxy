@@ -3,9 +3,11 @@ from galaxy import web, util
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField, CheckboxField
 from sqlalchemy.sql.expression import func
-from galaxy.webapps.tool_shed.util import common_util
-from galaxy.webapps.tool_shed.util.container_util import STRSEP
+from galaxy.model.orm import and_
+from galaxy.webapps.tool_shed.util import ratings_util
+from tool_shed.util.container_util import STRSEP
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import review_util
 from galaxy.util.odict import odict
 import tool_shed.grids.repository_review_grids as repository_review_grids
 import tool_shed.grids.util as grids_util
@@ -16,25 +18,26 @@ from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
-    
-class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
-    
+
+class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
+
     component_grid = repository_review_grids.ComponentGrid()
+    repositories_ready_for_review_grid = repository_review_grids.RepositoriesReadyForReviewGrid()
     repositories_reviewed_by_me_grid = repository_review_grids.RepositoriesReviewedByMeGrid()
     repositories_with_reviews_grid = repository_review_grids.RepositoriesWithReviewsGrid()
     repositories_without_reviews_grid = repository_review_grids.RepositoriesWithoutReviewsGrid()
     repository_reviews_by_user_grid = repository_review_grids.RepositoryReviewsByUserGrid()
     reviewed_repositories_i_own_grid = repository_review_grids.ReviewedRepositoriesIOwnGrid()
+    repositories_with_no_tool_tests_grid = repository_review_grids.RepositoriesWithNoToolTestsGrid()
 
     @web.expose
     @web.require_login( "approve repository review" )
     def approve_repository_review( self, trans, **kwd ):
         # The value of the received id is the encoded review id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         encoded_review_id = kwd[ 'id' ]
-        review = suc.get_review( trans, encoded_review_id )
+        review = review_util.get_review( trans, encoded_review_id )
         if kwd.get( 'approve_repository_review_button', False ):
             approved_select_field_name = '%s%sapproved' % ( encoded_review_id, STRSEP )
             approved_select_field_value = str( kwd[ approved_select_field_name ] )
@@ -65,10 +68,9 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "browse review" )
     def browse_review( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        review = suc.get_review( trans, kwd[ 'id' ] )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        review = review_util.get_review( trans, kwd[ 'id' ] )
         repository = review.repository
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
@@ -97,16 +99,15 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "create component" )
     def create_component( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        name = util.restore_text( params.get( 'name', '' ) )
-        description = util.restore_text( params.get( 'description', '' ) )
-        if params.get( 'create_component_button', False ):
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        name = kwd.get( 'name', '' )
+        description = kwd.get( 'description', '' )
+        if kwd.get( 'create_component_button', False ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif suc.get_component_by_name( trans, name ):
+            elif review_util.get_component_by_name( trans, name ):
                 message = 'A component with that name already exists'
                 status = 'error'
             else:
@@ -129,9 +130,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.require_login( "create review" )
     def create_review( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         previous_review_id = kwd.get( 'previous_review_id', None )
@@ -140,15 +140,15 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
             if changeset_revision:
                 # Make sure there is not already a review of the revision by the user.
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if suc.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                               repository_id=repository_id,
-                                                                               changeset_revision=changeset_revision,
-                                                                               user_id=trans.security.encode_id( trans.user.id ) ):
+                if review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                       repository_id=repository_id,
+                                                                                       changeset_revision=changeset_revision,
+                                                                                       user_id=trans.security.encode_id( trans.user.id ) ):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
-                    if not create_without_copying and not previous_review_id and suc.has_previous_repository_reviews( trans, repository, changeset_revision ):
+                    if not create_without_copying and not previous_review_id and review_util.has_previous_repository_reviews( trans, repository, changeset_revision ):
                         return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                           action='select_previous_review',
                                                                           **kwd ) )
@@ -166,7 +166,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                             trans.sa_session.add( review )
                             trans.sa_session.flush()
                             if previous_review_id:
-                                review_to_copy = suc.get_review( trans, previous_review_id )
+                                review_to_copy = review_util.get_review( trans, previous_review_id )
                                 self.copy_review( trans, review_to_copy, review )
                             review_id = trans.security.encode_id( review.id )
                             message = "Begin your review of revision <b>%s</b> of repository <b>%s</b>." \
@@ -193,19 +193,18 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "edit component" )
     def edit_component( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        id = kwd.get( 'id', None )
         if not id:
             message = "No component ids received for editing"
             trans.response.send_redirect( web.url_for( controller='admin',
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        component = suc.get_component( trans, id )
-        if params.get( 'edit_component_button', False ):
-            new_description = util.restore_text( params.get( 'description', '' ) ).strip()
+        component = review_util.get_component( trans, id )
+        if kwd.get( 'edit_component_button', False ):
+            new_description = kwd.get( 'description', '' ).strip()
             if component.description != new_description:
                 component.description = new_description
                 trans.sa_session.add( component )
@@ -225,13 +224,12 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.require_login( "edit review" )
     def edit_review( self, trans, **kwd ):
         # The value of the received id is the encoded review id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         review_id = kwd.get( 'id', None )
-        review = suc.get_review( trans, review_id )
+        review = review_util.get_review( trans, review_id )
         components_dict = odict()
-        for component in suc.get_components( trans ):
+        for component in review_util.get_components( trans ):
             components_dict[ component.name ] = dict( component=component, component_review=None )
         repository = review.repository
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
@@ -281,8 +279,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                             approved = str( v )
                         elif component_review_attr == 'rating':
                             rating = int( str( v ) )
-                component = suc.get_component( trans, component_id )
-                component_review = suc.get_component_review_by_repository_review_id_component_id( trans, review_id, component_id )
+                component = review_util.get_component( trans, component_id )
+                component_review = review_util.get_component_review_by_repository_review_id_component_id( trans, review_id, component_id )
                 if component_review:
                     # See if the existing component review should be updated.
                     if component_review.comment != comment or \
@@ -312,9 +310,12 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                 if flushed:
                     # Update the repository rating value to be the average of all component review ratings.
                     average_rating = trans.sa_session.query( func.avg( trans.model.ComponentReview.table.c.rating ) ) \
-                                                     .filter( trans.model.ComponentReview.table.c.repository_review_id == review.id ) \
+                                                     .filter( and_( trans.model.ComponentReview.table.c.repository_review_id == review.id,
+                                                                    trans.model.ComponentReview.table.c.deleted == False,
+                                                                    trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA ) ) \
                                                      .scalar()
-                    review.rating = int( average_rating )
+                    if average_rating is not None:
+                        review.rating = int( average_rating )
                     trans.sa_session.add( review )
                     trans.sa_session.flush()
                     # Update the information in components_dict.
@@ -368,12 +369,36 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         return self.component_grid( trans, **kwd )
 
     @web.expose
+    @web.require_login( "manage repositories ready for review" )
+    def manage_repositories_ready_for_review( self, trans, **kwd ):
+        """
+        A repository is ready to be reviewed if one of the following conditions is met:
+        1) It contains no tools
+        2) It contains tools the tools_functionally_correct flag is set to True.  This implies that the repository metadata revision was installed and tested
+           by the Tool Shed's install and test framework.
+        """
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='create_review',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        message = 'Any of these repositories that contain tools have been installed into Galaxy and proven to be functionally correct by executing the tests defined '
+        message += 'for each tool.  Repositories that do not contain tools have not been installed into Galaxy. '
+        kwd[ 'message' ] = message
+        kwd[ 'status' ] = 'warning'
+        return self.repositories_ready_for_review_grid( trans, **kwd )
+
+    @web.expose
     @web.require_login( "manage repositories reviewed by me" )
     def manage_repositories_reviewed_by_me( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         if 'operation' in kwd:
             kwd[ 'mine' ] = True
             return trans.response.send_redirect( web.url_for( controller='repository_review',
@@ -381,6 +406,28 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                               **kwd ) )
         self.repositories_reviewed_by_me_grid.title = 'Repositories reviewed by me'
         return self.repositories_reviewed_by_me_grid( trans, **kwd )
+
+    @web.expose
+    @web.require_login( "manage repositories with invalid tests" )
+    def manage_repositories_with_invalid_tests( self, trans, **kwd ):
+        """
+        Display a list of repositories that contain tools, have not yet been reviewed, and have invalid functional tests.  Tests are defined as
+        invalid if they are missing from the tool config or if defined test data is not included in the repository.
+        """
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='create_review',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        message = 'These repositories contain tools with missing functional tests or test data.  '
+        kwd[ 'message' ] = message
+        kwd[ 'status' ] = 'warning'
+        return self.repositories_with_no_tool_tests_grid( trans, **kwd )
 
     @web.expose
     @web.require_login( "manage repositories with reviews" )
@@ -417,9 +464,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.require_login( "manage repository reviews" )
     def manage_repository_reviews( self, trans, mine=False, **kwd ):
         # The value of the received id is the encoded repository id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if repository_id:
             repository = suc.get_repository_in_tool_shed( trans, repository_id )
@@ -435,7 +481,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                     rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
                     if changeset_revision in reviewed_revision_hashes:
                         # Find the review for this changeset_revision
-                        repository_reviews = suc.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+                        repository_reviews = review_util.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
                         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -465,9 +511,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.require_login( "manage repository reviews of revision" )
     def manage_repository_reviews_of_revision( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
@@ -475,7 +520,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
-        reviews = suc.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+        reviews = review_util.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository_review/reviews_of_changeset_revision.mako',
                                     repository=repository,
                                     changeset_revision=changeset_revision,
@@ -488,14 +533,13 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "repository reviews by user" )
     def repository_reviews_by_user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
 
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             # The value of the received id is the encoded review id.
-            review = suc.get_review( trans, kwd[ 'id' ] )
+            review = review_util.get_review( trans, kwd[ 'id' ] )
             repository = review.repository
             kwd[ 'id' ] = trans.security.encode_id( repository.id )
             if operation == "inspect repository revisions":
@@ -515,9 +559,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "reviewed repositories i own" )
     def reviewed_repositories_i_own( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -535,13 +578,12 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     @web.require_login( "select previous review" )
     def select_previous_review( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-        previous_reviews_dict = suc.get_previous_repository_reviews( trans, repository, changeset_revision )
+        previous_reviews_dict = review_util.get_previous_repository_reviews( trans, repository, changeset_revision )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository_review/select_previous_review.mako',
                                     repository=repository,

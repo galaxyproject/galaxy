@@ -4,7 +4,7 @@ API operations on annotations.
 import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin 
+from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 import galaxy.datatypes
@@ -27,7 +27,7 @@ class BaseAnnotationsController( BaseAPIController, UsesAnnotations, UsesHistory
 
 
     @web.expose_api
-    def create( self, trans, payload, **kwd ):        
+    def create( self, trans, payload, **kwd ):
         if "text" not in payload:
             return ""
         idnum = kwd[self.tagged_item_id]

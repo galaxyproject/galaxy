@@ -1,5 +1,5 @@
 """
-Tool Parameter specific sanitizing. 
+Tool Parameter specific sanitizing.
 """
 
 import logging
@@ -11,9 +11,9 @@ log = logging.getLogger( __name__ )
 class ToolParameterSanitizer( object ):
     """
     Handles tool parameter specific sanitizing.
-    
+
     >>> from elementtree.ElementTree import XML
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML( 
+    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
     ... '''
     ... <sanitizer invalid_char="">
     ...   <valid initial="string.letters"/>
@@ -22,7 +22,7 @@ class ToolParameterSanitizer( object ):
     >>> sanitizer.sanitize_param( ''.join( sorted( [ c for c in string.printable ] ) ) ) == ''.join( sorted( [ c for c in string.letters ] ) )
     True
     >>> slash = chr( 92 )
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML( 
+    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
     ... '''
     ... <sanitizer>
     ...   <valid initial="none">
@@ -40,11 +40,11 @@ class ToolParameterSanitizer( object ):
     >>> [ c for c in sanitizer.sanitize_param( text ) ] == [ slash, slash, slash, '"', '$', 'r', 'm', '&', '#', '!' ]
     True
     """
-    
+
     VALID_PRESET = { 'default':( string.letters + string.digits +" -=_.()/+*^,:?!" ), 'none':'' }
     MAPPING_PRESET = { 'default':galaxy.util.mapped_chars, 'none':{} }
     DEFAULT_INVALID_CHAR = 'X'
-    
+
     #class methods
     @classmethod
     def from_element( cls, elem ):
@@ -85,9 +85,9 @@ class ToolParameterSanitizer( object ):
                     if map_source is not None and map_key in rval._mapped_chars:
                         del rval._mapped_chars[ map_key ]
                 else:
-                    log.debug( 'Invalid action tag in mapping: %s' % action_elem.tag )        
+                    log.debug( 'Invalid action tag in mapping: %s' % action_elem.tag )
         return rval
-    
+
     @classmethod
     def get_valid_by_name( cls, name ):
         rval = []
@@ -105,7 +105,7 @@ class ToolParameterSanitizer( object ):
                 log.debug( 'Invalid preset name specified: %s' % split_name )
             rval.extend( [ val for val in value if val not in rval ] )
         return rval
-    
+
     @classmethod
     def get_mapping_by_name( cls, name ):
         rval = {}
@@ -117,20 +117,20 @@ class ToolParameterSanitizer( object ):
                 log.debug( 'Invalid preset name specified: %s' % split_name )
         return rval
     #end class methods
-    
+
     def __init__( self ):
         self._valid_chars = [] #List of valid characters
         self._mapped_chars = {} #Replace a char with a any number of characters
         self._invalid_char = self.DEFAULT_INVALID_CHAR #Replace invalid characters with this character
         self.sanitize = True #Simply pass back the passed in value
-    
+
     def restore_text( self, text ):
         """Restores sanitized text"""
         if self.sanitize:
             for key, value in self._mapped_chars.iteritems():
                 text = text.replace( value, key )
         return text
-    
+
     def restore_param( self, value ):
         if self.sanitize:
             if isinstance( value, basestring ):
@@ -140,7 +140,7 @@ class ToolParameterSanitizer( object ):
             else:
                 raise Exception, 'Unknown parameter type (%s:%s)' % ( type( value ), value )
         return value
-    
+
     def sanitize_text( self, text ):
         """Restricts the characters that are allowed in a text"""
         if not self.sanitize:
@@ -154,7 +154,7 @@ class ToolParameterSanitizer( object ):
             else:
                 rval.append( self._invalid_char )
         return ''.join( rval )
-    
+
     def sanitize_param( self, value ):
         """Clean incoming parameters (strings or lists)"""
         if not self.sanitize:

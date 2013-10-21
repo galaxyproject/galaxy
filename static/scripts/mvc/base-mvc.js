@@ -1,5 +1,5 @@
 /**
- * Simple base model for any visible element. Includes useful attributes and ability 
+ * Simple base model for any visible element. Includes useful attributes and ability
  * to set and track visibility.
  */
 var BaseModel = Backbone.RelationalModel.extend({
@@ -38,7 +38,7 @@ var BaseView = Backbone.View.extend({
         } else {
             this.$el.show();
         }
-    }    
+    }
 });
 
 
@@ -79,7 +79,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
     log : function(){
         if( this.logger ){
             var log = this.logger.log;
-            if( typeof this.logger.log == 'object' ){
+            if( typeof this.logger.log === 'object' ){
                 log = Function.prototype.bind.call( this.logger.log, this.logger );
             }
             return log.apply( this.logger, arguments );
@@ -89,92 +89,9 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
 };
 
 
-// =============================================================================
-/** @class string localizer (and global short form alias)
- *
- *  @example
- *  // set with either:
- *      GalaxyLocalization.setLocalizedString( original, localized )
- *      GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
- *  // get with either:
- *      GalaxyLocalization.localize( string )
- *      _l( string )
- *
- *  @constructs
- */
-//TODO: move to Galaxy.Localization (maybe galaxy.base.js)
-var GalaxyLocalization = jQuery.extend( {}, {
-    /** shortened, alias reference to GalaxyLocalization.localize */
-    ALIAS_NAME : '_l',
-    /** map of available localized strings (english -> localized) */
-    localizedStrings : {},
-
-    /** Set a single English string -> localized string association, or set an entire map of those associations
-     *  @param {String or Object} str_or_obj english (key) string or a map of english -> localized strings
-     *  @param {String} localized string if str_or_obj was a string
-     */
-    setLocalizedString : function( str_or_obj, localizedString ){
-        //console.debug( this + '.setLocalizedString:', str_or_obj, localizedString );
-        var self = this;
-        
-        // DRY non-duplicate assignment function
-        var setStringIfNotDuplicate = function( original, localized ){
-            // do not set if identical - strcmp expensive but should only happen once per page per word
-            if( original !== localized ){
-                self.localizedStrings[ original ] = localized;
-            }
-        };
-        
-        if( jQuery.type( str_or_obj ) === "string" ){
-            setStringIfNotDuplicate( str_or_obj, localizedString );
-        
-        } else if( jQuery.type( str_or_obj ) === "object" ){
-            jQuery.each( str_or_obj, function( key, val ){
-                //console.debug( 'key=>val', key, '=>', val );
-                // could recurse here but no reason
-                setStringIfNotDuplicate( key, val );
-            });
-            
-        } else {
-            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' + 
-                   ' given: ' + str_or_obj );
-        }
-    },
-    
-    /** Attempt to get a localized string for strToLocalize. If not found, return the original strToLocalize.
-     * @param {String} strToLocalize the string to localize
-     * @returns either the localized string if found or strToLocalize if not found
-     */
-    localize : function( strToLocalize ){
-        //console.debug( this + '.localize:', strToLocalize );
-
-        //// uncomment this section to cache strings that need to be localized but haven't been
-        //if( !_.has( this.localizedStrings, strToLocalize ) ){
-        //    //console.debug( 'localization NOT found:', strToLocalize );
-        //    if( !this.nonLocalized ){ this.nonLocalized = {}; }
-        //    this.nonLocalized[ strToLocalize ] = false;
-        //}
-
-        // return the localized version if it's there, the strToLocalize if not
-        return this.localizedStrings[ strToLocalize ] || strToLocalize;
-    },
-    
-    /** String representation. */
-    toString : function(){ return 'GalaxyLocalization'; }
-});
-
-// global localization alias
-window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocalization.localize( str ); };
-
-//TEST: setLocalizedString( string, string ), _l( string )
-//TEST: setLocalizedString( hash ), _l( string )
-//TEST: setLocalizedString( string === string ), _l( string )
-//TEST: _l( non assigned string )
-
-
 //==============================================================================
 /**
- *  @class persistant storage adapter.
+ *  @class persistent storage adapter.
  *      Provides an easy interface to object based storage using method chaining.
  *      Allows easy change of the storage engine used (h5's local storage?).
  *  @augments StorageRecursionHelper
@@ -194,17 +111,21 @@ window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocaliza
  *  });
  *  @constructor
  */
-var PersistantStorage = function( storageKey, storageDefaults ){
+var PersistentStorage = function( storageKey, storageDefaults ){
     if( !storageKey ){
-        throw( "PersistantStorage needs storageKey argument" );
+        throw( "PersistentStorage needs storageKey argument" );
     }
     storageDefaults = storageDefaults || {};
 
     // ~constants for the current engine
-    //TODO:?? this would be greatly simplified if we're IE9+ only (setters/getters)
-    var STORAGE_ENGINE_GETTER       = jQuery.jStorage.get,
-        STORAGE_ENGINE_SETTER       = jQuery.jStorage.set,
-        STORAGE_ENGINE_KEY_DELETER  = jQuery.jStorage.deleteKey;
+    var STORAGE_ENGINE = sessionStorage,
+        STORAGE_ENGINE_GETTER = function sessionStorageGet( key ){
+            return JSON.parse( this.getItem( key ) );
+        },
+        STORAGE_ENGINE_SETTER = function sessionStorageSet( key, val ){
+            return this.setItem( key, JSON.stringify( val ) );
+        },
+        STORAGE_ENGINE_KEY_DELETER  = function sessionStorageDel( key ){ return this.removeItem( key ); };
 
     /** Inner, recursive, private class for method chaining access.
      *  @name StorageRecursionHelper
@@ -263,36 +184,34 @@ var PersistantStorage = function( storageKey, storageDefaults ){
     //??: more readable to make another class?
     var returnedStorage = {};
         // attempt to get starting data from engine...
-        data = STORAGE_ENGINE_GETTER( storageKey );
+        data = STORAGE_ENGINE_GETTER.call( STORAGE_ENGINE, storageKey );
 
     // ...if that fails, use the defaults (and store them)
-    if( data === null ){
-        //console.debug( 'no previous data. using defaults...' );
+    if( data === null || data === undefined ){
         data = jQuery.extend( true, {}, storageDefaults );
-        STORAGE_ENGINE_SETTER( storageKey, data );
+        STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, data );
     }
 
     // the object returned by this constructor will be a modified StorageRecursionHelper
     returnedStorage = new StorageRecursionHelper( data );
-
-    jQuery.extend( returnedStorage, /**  @lends PersistantStorage.prototype */{
+    jQuery.extend( returnedStorage, /**  @lends PersistentStorage.prototype */{
         /** The base case for save()'s upward recursion - save everything to storage.
          *  @private
          *  @param {Any} newData data object to save to storage
          */
         _save : function( newData ){
             //console.debug( returnedStorage, '._save:', JSON.stringify( returnedStorage.get() ) );
-            return STORAGE_ENGINE_SETTER( storageKey, returnedStorage.get() );
+            return STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, returnedStorage.get() );
         },
         /** Delete function to remove the entire base data object from the storageEngine.
          */
         destroy : function(){
             //console.debug( returnedStorage, '.destroy:' );
-            return STORAGE_ENGINE_KEY_DELETER( storageKey );
+            return STORAGE_ENGINE_KEY_DELETER.call( STORAGE_ENGINE, storageKey );
         },
         /** String representation.
          */
-        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
+        toString : function(){ return 'PersistentStorage(' + storageKey + ')'; }
     });
     
     return returnedStorage;

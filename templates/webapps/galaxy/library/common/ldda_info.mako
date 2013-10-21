@@ -100,6 +100,13 @@
             ${ldda.get_size( nice_size=True )}
             <div style="clear: both"></div>
         </div>
+        %if ldda.dataset.uuid:
+        <div class="form-row">
+            <label>UUID:</label>
+            ${ldda.dataset.uuid}
+            <div style="clear: both"></div>
+        </div>
+        %endif
         %if ldda.tool_version:
             <div class="form-row">
                 <label>Tool version:</label>
@@ -165,6 +172,13 @@
                     <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
                 </div>
+            </div>
+        %endif
+        %if ldda.extended_metadata:
+            <div class="form-row">
+                <label>Extended Metadata:</label>
+                <pre>${util.pretty_print_json(ldda.extended_metadata.data)}</pre>
+                <div style="clear: both"></div>
             </div>
         %endif
         %if trans.user_is_admin() and cntrller == 'library_admin':

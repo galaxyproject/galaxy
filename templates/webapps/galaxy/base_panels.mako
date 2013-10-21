@@ -4,7 +4,54 @@
 <%def name="title()">Galaxy</%def>
 
 <%def name="javascripts()">
-    ${parent.javascripts()}
+${parent.javascripts()}
+
+<!-- quota meter -->
+${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+</%def>
+
+<%def name="get_user_json()">
+<%
+    """Bootstrapping user API JSON"""
+    #TODO: move into common location (poss. BaseController)
+    if trans.user:
+        user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                                             'total_disk_usage': float } )
+        user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+    else:
+        usage = 0
+        percent = None
+        try:
+            usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
+            percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
+        except AssertionError, assertion:
+            # no history for quota_agent.get_usage assertion
+            pass
+        user_dict = {
+            'total_disk_usage'      : int( usage ),
+            'nice_total_disk_usage' : util.nice_size( usage ),
+            'quota_percent'         : percent
+        }
+%>
+${h.to_json_string( user_dict )}
+</%def>
+
+<%def name="late_javascripts()">
+${parent.late_javascripts()}
+<script type="text/javascript">
+
+    // start a Galaxy namespace for objects created
+    window.Galaxy = window.Galaxy || {};
+
+    // set up the quota meter (And fetch the current user data from trans)
+    Galaxy.currUser = new User( ${get_user_json()} );
+    Galaxy.quotaMeter = new UserQuotaMeter({
+        model   : Galaxy.currUser,
+        el      : $( document ).find( '.quota-meter-container' )
+    }).render();
+
+</script>
 </%def>
 
 ## Masthead
@@ -14,9 +61,9 @@
     <div style="position: relative; right: -50%; float: left;">
     <div style="display: block; position: relative; right: 50%;">
 
-    <ul class="nav" border="0" cellspacing="0">
+    <ul class="nav navbar-nav" border="0" cellspacing="0">
     
-    <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
+    <%def name="tab( id, display, href, onclick=False, target='_parent', visible=True, extra_class='', menu_options=None )">
         ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
         ## that are options in the menu.
     
@@ -53,7 +100,11 @@
                                 ${menu_item[0]}
                             %elif len ( menu_item ) == 2:
                                 <% name, link = menu_item %>
-                                <a href="${link}">${name}</a>
+                                %if onclick:
+                                    <a href="${link}" onclick="Galaxy.frame_manager.frame_new({title: '${name}', type: 'url', content: '${link}'}); return false;">${name}</a>
+                                %else:
+                                    <a href="${link}">${name}</a>
+                                %endif
                             %else:
                                 <% name, link, target = menu_item %>
                                 <a target="${target}" href="${link}">${name}</a>
@@ -71,7 +122,7 @@
     
     ## Workflow tab.
     ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
-    
+
     ## 'Shared Items' or Libraries tab.
     <%
         menu_options = [ 
@@ -95,13 +146,15 @@
         tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
     %>
 
+
+                                    
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' ) ],
-                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
+                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' )],
+                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' )]
                        ]
-        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )
+        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list' ), menu_options=menu_options, onclick=True )
     %>
 
     ## Cloud menu.
@@ -120,15 +173,16 @@
     ## Help tab.
     <%
         menu_options = []
-        qa_url = app.config.get( "qa_url", None )
-        if qa_url:
-            menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
+        if app.config.biostar_url:
+            menu_options = [ [_('Galaxy Q&A Site'), h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy' ), "_blank" ],
+                             [_('Ask a question'), h.url_for( controller='biostar', action='biostar_question_redirect' ), "_blank" ] ]
         menu_options.extend( [
-            [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
-            [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],
-            [_('Galaxy wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/" ), "_blank" ],
-            [_('Video tutorials (screencasts)'), app.config.get( "screencasts_url", "http://galaxycast.org" ), "_blank" ],
-            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.g2.bx.psu.edu/Citing%20Galaxy" ), "_blank" ]
+            [_('Support'), app.config.get( "support_url", "http://wiki.galaxyproject.org/Support" ), "_blank" ],
+            [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/usegalaxy/" ), "_blank" ],
+            [_('Mailing Lists'), app.config.get( "mailing_lists", "http://wiki.galaxyproject.org/MailingLists" ), "_blank" ],
+            [_('Videos'), app.config.get( "videos_url", "http://vimeo.com/galaxyproject" ), "_blank" ],
+            [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
+            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.galaxyproject.org/CitingGalaxy" ), "_blank" ]
         ] )
         if app.config.get( 'terms_url', None ) is not None:
             menu_options.append( [_('Terms and Conditions'), app.config.get( 'terms_url', None ), '_blank'] )
@@ -157,10 +211,7 @@
         else:
             menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
-            if app.config.require_login:
-                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
-            else:
-                logout_url = h.url_for( controller='/user', action='logout' )
+            logout_url = h.url_for( controller='/user', action='logout' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
@@ -183,7 +234,7 @@
     </div>
     
     ## Logo, layered over tabs to be clickable
-    <div class="title">
+    <div class="navbar-brand">
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy
@@ -193,44 +244,6 @@
         </a>
     </div>
 
-    ## Quota meter
-    <%
-        bar_style = "quota-meter-bar"
-        usage = 0
-        percent = 0
-        quota = None
-        try:
-            usage = trans.app.quota_agent.get_usage( trans=trans )
-            quota = trans.app.quota_agent.get_quota( trans.user )
-            percent = trans.app.quota_agent.get_percent( usage=usage, quota=quota )
-            if percent is not None:
-                if percent >= 100:
-                    bar_style += " quota-meter-bar-error"
-                elif percent >= 85:
-                    bar_style += " quota-meter-bar-warn"
-            else:
-                percent = 0
-        except AssertionError:
-            pass # Probably no history yet
-        tooltip = None
-        if not trans.user and quota and trans.app.config.allow_user_creation:
-            if trans.app.quota_agent.default_registered_quota is None or trans.app.quota_agent.default_unregistered_quota < trans.app.quota_agent.default_registered_quota:
-                tooltip = "Your disk quota is %s.  You can increase your quota by registering a Galaxy account." % util.nice_size( quota )
-    %>
+    <div class="quota-meter-container"></div>
 
-    <div class="quota-meter-container">
-        %if tooltip:
-        <div id="quota-meter" class="quota-meter tooltip" title="${tooltip}">
-        %else:
-        <div id="quota-meter" class="quota-meter">
-        %endif
-            <div id="quota-meter-bar" class="${bar_style}" style="width: ${percent}px;"></div>
-            %if quota is not None:
-                <div id="quota-meter-text" class="quota-meter-text">Using ${percent}%</div>
-            %else:
-                <div id="quota-meter-text" class="quota-meter-text">Using ${util.nice_size( usage )}</div>
-            %endif
-        </div>
-    </div>
-    
 </%def>

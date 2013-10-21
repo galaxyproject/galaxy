@@ -51,4 +51,3 @@ else
 fi
 
 echo "'run_functional_tests.sh help'                  for help"
-echo "Note: galaxy test framework uses tool_conf.xml.sample, not tool_conf.xml"

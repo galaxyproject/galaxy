@@ -39,7 +39,7 @@
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
+                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
             %endif
             %if shed_tool_conf_select_field:
                 <div class="form-row">
@@ -66,7 +66,7 @@
             %else:
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
             %endif
-            %if includes_tools:
+            %if includes_tools_for_display_in_tool_panel:
                 <div style="clear: both"></div>
                 <div class="form-row">
                     ${no_changes_check_box.get_html()}

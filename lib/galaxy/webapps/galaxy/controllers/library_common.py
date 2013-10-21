@@ -1,17 +1,27 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, urllib2
-from galaxy.web.base.controller import *
-from galaxy import util, jobs
-from galaxy.datatypes import sniff
-from galaxy.security import RBACAgent
-from galaxy.util.json import to_json_string
-from galaxy.tools.actions import upload_common
-from galaxy.model.orm import *
-from galaxy.util.streamball import StreamBall
-from galaxy.util import inflector
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
-import logging, tempfile, zipfile, tarfile, os, sys, operator
+import glob
+import logging
+import operator
+import os
+import os.path
+import string
+import sys
+import tarfile
+import tempfile
+import urllib
+import urllib2
+import zipfile
+from galaxy import util, web
+from galaxy.web import url_for
 from galaxy.eggs import require
 from galaxy.security import Action
+from galaxy.tools.actions import upload_common
+from galaxy.util import inflector
+from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.streamball import StreamBall
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.model.orm import and_, eagerload_all
+
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
@@ -26,11 +36,6 @@ try:
 except ImportError, e:
     whoosh_search_enabled = False
     schema = None
-
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger( __name__ )
 
@@ -68,7 +73,7 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
+class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -94,7 +99,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return rval
 
     @web.expose
-    def browse_library( self, trans, cntrller, **kwd ):
+    def browse_library( self, trans, cntrller='library', **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -531,6 +536,39 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.flush()
             message = "Information updated for library dataset '%s'." % ldda.name
             status = 'done'
+        elif params.get( 'change_extended_metadata', False):
+            em_string = util.restore_text( params.get("extended_metadata", "") )
+            if len(em_string):
+                payload = None
+                try:
+                    payload = from_json_string(em_string)
+                except Exception, e:
+                    message = 'Invalid JSON input'
+                    status = 'error'
+                if payload is not None:
+                    if ldda is not None:
+                        ex_obj = self.get_item_extended_metadata_obj(trans, ldda)
+                        if ex_obj is not None:
+                            self.unset_item_extended_metadata_obj(trans, ldda)
+                            self.delete_extended_metadata(trans, ex_obj)
+                        ex_obj = self.create_extended_metadata(trans, payload)
+                        self.set_item_extended_metadata_obj(trans, ldda, ex_obj)
+                        message = "Updated Extended metadata '%s'." % ldda.name
+                        status = 'done'
+                    else:
+                        message = "LDDA not found"
+                        status = 'error'
+            else:
+                if ldda is not None:
+                    ex_obj = self.get_item_extended_metadata_obj(trans, ldda)
+                    if ex_obj is not None:
+                        self.unset_item_extended_metadata_obj(trans, ldda)
+                        self.delete_extended_metadata(trans, ex_obj)
+                message = "Deleted Extended metadata '%s'." % ldda.name
+                status = 'done'
+
+
+
         if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
             # Copy dbkey into metadata, for backwards compatability
             # This looks like it does nothing, but getting the dbkey
@@ -576,7 +614,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                .all()
         else:
             associated_hdas = []
-            associated_lddas = [] 
+            associated_lddas = []
         # See if we have any associated templates
         widgets = []
         widget_fields_have_contents = False
@@ -911,7 +949,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                                        default_action=default_action,
                                                                        created_ldda_ids=created_ldda_ids,
                                                                        show_deleted=show_deleted,
-                                                                       message=util.sanitize_text( message ), 
+                                                                       message=util.sanitize_text( message ),
                                                                        status='done' ) )
                 else:
                     created_ldda_ids = ''
@@ -930,8 +968,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                            status=status ) )
         # Note: if the upload form was submitted due to refresh_on_change for a form field, we cannot re-populate
         # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
-        # attribute of the html input file type field is typically ignored by browsers as a security precaution. 
-        
+        # attribute of the html input file type field is typically ignored by browsers as a security precaution.
+
         # See if we have any inherited templates.
         if not info_association:
             info_association, inherited = folder.get_info_association( inherited=True )
@@ -941,10 +979,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             # Retain contents of widget fields when form was submitted via refresh_on_change.
             widgets = self.populate_widgets_from_kwd( trans, widgets, **kwd )
             template_id = str( info_association.template.id )
-        
+
         # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
         file_formats = trans.app.datatypes_registry.upload_file_formats
+
         dbkeys = trans.app.genomes.get_dbkeys( trans )
+        dbkeys.sort( key=lambda dbkey: dbkey[0].lower() )
+
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         if history is not None:
@@ -1070,11 +1111,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
         job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
+        uuid_str =  params.get( 'uuid', None )
+        file_type = params.file_type
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1089,13 +1133,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         uploaded_dataset.path = path
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
-        uploaded_dataset.file_type = params.file_type
+        uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.dbkey
         uploaded_dataset.space_to_tab = params.space_to_tab
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
         uploaded_dataset.link_data_only = link_data_only
+        uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
             # Since we are not copying the file into Galaxy's managed
@@ -1105,6 +1150,16 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
+        dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
+        files = dir_response[0]
+        if not files:
+            return dir_response
+        uploaded_datasets = []
+        for file in files:
+            name = os.path.basename( file )
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
+        return uploaded_datasets, 200, None
+    def _get_server_dir_files( self, params, full_dir, import_dir_desc ):
         files = []
         try:
             for entry in os.listdir( full_dir ):
@@ -1139,50 +1194,59 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             message = "The directory '%s' contains no valid files" % full_dir
             response_code = 400
             return None, response_code, message
-        uploaded_datasets = []
-        for file in files:
-            name = os.path.basename( file )
-            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
-        return uploaded_datasets, 200, None
+        return files, None, None
     def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
+        preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
+        uploaded_datasets = []
+        (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
+        if _response_code:
+            return (uploaded_datasets, _response_code, _message)
+        for (path, name, folder) in files_and_folders:
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch, folder ) )
+        return uploaded_datasets, 200, None
+
+    def _get_path_files_and_folders( self, params, preserve_dirs ):
+        problem_response = self._check_path_paste_params( params )
+        if problem_response:
+            return problem_response
+        files_and_folders = []
+        for (line, path) in self._paths_list( params ):
+            line_files_and_folders = self._get_single_path_files_and_folders( line, path, preserve_dirs )
+            files_and_folders.extend( line_files_and_folders )
+        return files_and_folders, None, None
+
+    def _get_single_path_files_and_folders(self, line, path, preserve_dirs):
+        files_and_folders = []
+        if os.path.isfile( path ):
+            name = os.path.basename( path )
+            files_and_folders.append((path, name, None))
+        for basedir, dirs, files in os.walk( line ):
+            for file in files:
+                file_path = os.path.abspath( os.path.join( basedir, file ) )
+                if preserve_dirs:
+                    in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
+                else:
+                    in_folder = None
+                files_and_folders.append((file_path, file, in_folder))
+        return files_and_folders
+    def _paths_list(self, params):
+        return [ (l.strip(), os.path.abspath(l.strip())) for l in params.filesystem_paths.splitlines() if l.strip() ]
+
+    def _check_path_paste_params(self, params):
         if params.get( 'filesystem_paths', '' ) == '':
             message = "No paths entered in the upload form"
             response_code = 400
             return None, response_code, message
-        preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
-        # locate files
         bad_paths = []
-        uploaded_datasets = []
-        for line in [ l.strip() for l in params.filesystem_paths.splitlines() if l.strip() ]:
-            path = os.path.abspath( line )
+        for (_, path) in self._paths_list( params ):
             if not os.path.exists( path ):
                 bad_paths.append( path )
-                continue
-            # don't bother processing if we're just going to return an error
-            if not bad_paths:
-                if os.path.isfile( path ):
-                    name = os.path.basename( path )
-                    uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch ) )
-                for basedir, dirs, files in os.walk( line ):
-                    for file in files:
-                        file_path = os.path.abspath( os.path.join( basedir, file ) )
-                        if preserve_dirs:
-                            in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
-                        else:
-                            in_folder = None
-                        uploaded_datasets.append( self.make_library_uploaded_dataset( trans,
-                                                                                      cntrller,
-                                                                                      params,
-                                                                                      file,
-                                                                                      file_path,
-                                                                                      'path_paste',
-                                                                                      library_bunch,
-                                                                                      in_folder ) )
         if bad_paths:
             message = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
             response_code = 400
             return None, response_code, message
-        return uploaded_datasets, 200, None
+        return None
+
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
@@ -1268,7 +1332,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
                     dataset_names.append( ldda.name )
                     if not replace_dataset:
-                        # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+                        # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new
                         # LDDA and LibraryDataset.
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda )
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda.library_dataset )
@@ -1405,8 +1469,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
             if option_value not in do_not_include_values:
                 upload_refresh_on_change_values.append( option_value )
-        upload_option_select_list = SelectField( 'upload_option', 
-                                                 refresh_on_change=True, 
+        upload_option_select_list = SelectField( 'upload_option',
+                                                 refresh_on_change=True,
                                                  refresh_on_change_values=upload_refresh_on_change_values )
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
             if option_value not in do_not_include_values:
@@ -1440,7 +1504,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-        params = util.Params( kwd )        
+        params = util.Params( kwd )
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
@@ -1466,7 +1530,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
             try:
                 return open( ldda.file_name )
-            except: 
+            except:
                 message = 'This dataset contains no content'
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
@@ -1778,13 +1842,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w|' )
+                            archive = StreamBall( 'w|' )
                             outext = 'tar'
                         else:
-                            archive = util.streamball.StreamBall( 'w|gz' )
+                            archive = StreamBall( 'w|gz' )
                             outext = 'tgz'
                     elif action == 'tbz':
-                        archive = util.streamball.StreamBall( 'w|bz2' )
+                        archive = StreamBall( 'w|bz2' )
                         outext = 'tbz2'
                     elif action == 'ngxzip':
                         archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
@@ -1824,7 +1888,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         if is_composite:
                             # need to add all the components from the extra_files_path to the zip
                             if zpathext == '':
-                                zpath = '%s.html' % zpath # fake the real nature of the html file 
+                                zpath = '%s.html' % zpath # fake the real nature of the html file
                             try:
                                 archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
                             except IOError:
@@ -1832,7 +1896,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                 log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
                                 message = "Unable to create archive for download, please report this error"
                                 status = 'error'
-                                continue                                
+                                continue
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
@@ -1853,7 +1917,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                 error = True
                                 log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
                                 message = "Unable to create archive for download, please report this error"
-                                status = 'error'                            
+                                status = 'error'
                     if not error:
                         if library_id:
                             lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
@@ -1908,13 +1972,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                         use_panels=use_panels,
                                         message=message,
                                         status=status )
-            
+
     @web.expose
     def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_id='', target_history_ids='', new_history_name='', **kwd ):
         # This method is called from one of the following places:
         # - a menu option for a library dataset ( ldda_ids is a single ldda id )
         # - a menu option for a library folder ( folder_id has a value )
-        # - a select list option for acting on multiple selected datasets within a library 
+        # - a select list option for acting on multiple selected datasets within a library
         #   ( ldda_ids is a comma separated string of ldda ids )
         # - a menu option for a library dataset search result set ( ldda_ids is a comma separated string of ldda ids )
         params = util.Params( kwd )
@@ -2086,9 +2150,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         # This method is called from one of the following places:
         # - a menu option for a library dataset ( item_type is 'ldda' and item_id is a single ldda id )
         # - a menu option for a library folder ( item_type is 'folder' and item_id is a single folder id )
-        # - a select list option for acting on multiple selected datasets within a library ( item_type is 
+        # - a select list option for acting on multiple selected datasets within a library ( item_type is
         #   'ldda' and item_id is a comma separated string of ldda ids )
-        # - a menu option for a library dataset search result set ( item_type is 'ldda' and item_id is a 
+        # - a menu option for a library dataset search result set ( item_type is 'ldda' and item_id is a
         #   comma separated string of ldda ids )
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -2414,10 +2478,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 status = 'error'
             if not_authorized_items:
                 message += 'You are not authorized to undelete %d %s.  ' % ( not_authorized_items, inflector.cond_plural( not_authorized_items, item_desc ) )
-                status = 'error'  
+                status = 'error'
             if purged_items:
                 message += '%d %s marked purged, so cannot be undeleted.  ' % ( purged_items, inflector.cond_plural( purged_items, item_desc ) )
-                status = 'error'  
+                status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                               action='browse_libraries',
@@ -2492,7 +2556,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         if isinstance( item, trans.model.LibraryDataset ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
             if not ( is_admin or \
-                     ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and 
+                     ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and
                        trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
                 message = "You are not authorized to manage permissions on library dataset (%s)." % library_dataset.name
                 if cntrller == 'api':
@@ -2555,13 +2619,13 @@ def map_library_datasets_to_lddas( trans, lib_datasets ):
     there will be no entry in the return hash.
     '''
     # Get a list of the LibraryDatasets' ids so that we can pass it along to
-    # a query to retrieve the LDDAs. This eliminates querying for each 
+    # a query to retrieve the LDDAs. This eliminates querying for each
     # LibraryDataset.
     lib_dataset_ids = [ x.library_dataset_dataset_association_id for x in lib_datasets ]
     lddas = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
                             .filter( trans.app.model.LibraryDatasetDatasetAssociation.id.in_( lib_dataset_ids ) ) \
                             .all()
-    
+
     # Map the LibraryDataset to the returned LDDAs:
     ret_lddas = {}
     for ldda in lddas:
@@ -2570,34 +2634,25 @@ def map_library_datasets_to_lddas( trans, lib_datasets ):
 
 def datasets_for_lddas( trans, lddas ):
     '''
-    Given a list of LDDAs, return a list of Datasets for them. 
+    Given a list of LDDAs, return a list of Datasets for them.
     '''
     dataset_ids = [ x.dataset_id for x in lddas ]
     datasets = trans.sa_session.query( trans.app.model.Dataset ) \
                                .filter( trans.app.model.Dataset.id.in_( dataset_ids ) ) \
                                .all()
-    return datasets 
+    return datasets
 
 def active_folders_and_library_datasets( trans, folder ):
-    # SM: TODO: Eliminate timing code
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
-    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2607,11 +2662,8 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
-               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:
@@ -2681,7 +2733,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
     response.close()
-    lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+    lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
@@ -2706,7 +2758,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 if ldda:
                     lddas.append( ldda )
             lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

@@ -13,20 +13,20 @@ class GenomesController( BaseAPIController ):
     """
     RESTful controller for interactions with genome data.
     """
-    
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/genomes: returns a list of installed genomes
-        """        
-        
-        return self.app.genomes.get_dbkeys( trans )
+        """
+
+        return self.app.genomes.get_dbkeys( trans, **kwd )
 
     @web.json
     def show( self, trans, id, num=None, chrom=None, low=None, high=None, **kwd ):
         """
         GET /api/genomes/{id}
-        
+
         Returns information about build <id>
         """
 
@@ -37,38 +37,44 @@ class GenomesController( BaseAPIController ):
         # Return info.
         rval = None
         if reference:
-            rval = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high, **kwd )
+            rval = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high )
         else:
             rval = self.app.genomes.chroms( trans, dbkey=id, num=num, chrom=chrom, low=low )
         return rval
-    
+
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
         POST /api/genomes
         Download and/or index a genome.
-        
+
         Parameters::
-        
-            dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
-            ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
-            ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
-            url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
-            source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
+            liftover        None or array of liftover url partial paths
+            dbkey           DB key of the build to download
             indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
+            longname        a more descriptive name for the genome
             func            Allowed values:
                             'download'  Download and index
                             'index'     Index only
-
         Returns::
-        
             If no error:
             dict( status: 'ok', job: <job ID> )
-        
+
             If error:
             dict( status: 'error', error: <error message> )
-        
+
         """
+        #??: Planned?
+        #Parameters::
+        #    dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
+        #    ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
+        #    ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
+        #    url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
+        #    source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
+        #    indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
+        #    func            Allowed values:
+        #                    'download'  Download and index
+        #                    'index'     Index only
         params = util.Params( payload )
         from galaxy.web.controllers.data_admin import build_param_dict as massage
         paramdict = massage( params, trans )

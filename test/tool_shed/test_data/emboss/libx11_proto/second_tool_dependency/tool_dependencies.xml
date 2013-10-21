@@ -1,0 +1,23 @@
+<tool_dependency>
+    <package name="libx11" version="1.5.0">
+        <install version="1.0">
+            <actions>
+                <!-- This is a comment -->
+                <action type="download_by_url">ftp://ftp.x.org/pub/X11R7.7/src/proto/xproto-7.0.23.tar.bz2</action>
+                <action type="shell_command">./configure --prefix=$INSTALL_DIR</action>
+                <action type="shell_command">make &amp;&amp; make install</action>
+                <action type="set_environment">
+                    <environment_variable name="X11_INCLUDE_DIR" action="set_to">$INSTALL_DIR/include</environment_variable>
+                </action>
+                <action type="download_file" extract="true">ftp://ftp.x.org/pub/X11R7.7/src/lib/libX11-1.5.0.tar.bz2</action>
+                <action type="change_directory">libX11-1.5.0</action>
+                <action type="shell_command">./configure --prefix=$INSTALL_DIR CFLAGS='-I$INSTALL_DIR/include'</action>
+                <action type="shell_command">make &amp;&amp; make install</action>
+                <action type="set_environment">
+                    <environment_variable name="X11_LIB_DIR" action="set_to">$INSTALL_DIR/lib</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>Xlib is an X Window System protocol client library written in the C programming language. It contains functions for interacting with an X server. These functions allow programmers to write programs without knowing the details of the protocol. Few applications use Xlib directly; rather, they employ other libraries that use Xlib functions to provide widget toolkits.</readme>
+    </package>
+</tool_dependency>

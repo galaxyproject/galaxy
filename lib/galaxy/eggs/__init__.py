@@ -149,7 +149,7 @@ class Egg( object ):
             env = get_env() # reset the global Environment object now that we've obtained a new egg
         return rval
     def unpack_if_needed( self ):
-        meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )    
+        meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )
         if meta.has_metadata( 'not-zip-safe' ):
             unpack_zipfile( self.distribution.location, self.distribution.location + "-tmp" )
             os.remove( self.distribution.location )
@@ -378,7 +378,7 @@ class GalaxyConfig( object ):
                 return True
         else:
             try:
-                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres://" ),
+                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
                          "MySQL_python":    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
                          "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "drmaa":           lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
@@ -387,8 +387,8 @@ class GalaxyConfig( object ):
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
-                         "ctypes":          lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] == ( 2, 4 ),
-                         "pysam":           lambda: check_pysam()
+                         "pysam":           lambda: check_pysam(),
+                         "PyRods":          lambda: self.config.get( "app:main", "object_store" ) == "irods"
                        }.get( egg_name, lambda: True )()
             except:
                 return False

@@ -9,6 +9,9 @@ my @in = ();
 my @out = ();
 my $command = "";
 my $field = 0;
+my $start = 0;
+my $end = 0;
+my $i = 0;
 
 # a wrapper for cut for use in galaxy
 # cutWrapper.pl [filename] [columns] [delim] [output]
@@ -20,6 +23,13 @@ foreach ( split /,/, $ARGV[1] ) {
   if (m/^c\d{1,}$/i) {
     push (@columns, $_);
     $columns[@columns-1] =~s/c//ig;
+  } elsif (m/^c\d{1,}-c\d{1,}$/i) {
+    ($start, $end)  = split(/-/, $_);
+    $start =~ s/c//ig;
+    $end =~ s/c//ig;
+    for $i ($start .. $end) {
+       push (@columns, $i); 
+    }
   }
 }
 

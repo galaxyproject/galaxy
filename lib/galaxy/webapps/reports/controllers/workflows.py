@@ -1,10 +1,10 @@
 import calendar, operator, os, socket
-from datetime import *
+from datetime import datetime, date, timedelta
 from time import mktime, strftime, localtime
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import *
+from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
@@ -79,8 +79,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                      model_class=model.User,
                      visible=False ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -157,7 +157,7 @@ class Workflows( BaseUIController ):
                        group_by = [ 'user_email' ],
                        order_by = [ sa.desc( 'total_workflows' ), 'user_email' ] )
         for row in q.execute():
-            workflows.append( ( row.user_email, 
+            workflows.append( ( row.user_email,
                                 row.total_workflows ) )
         return trans.fill_template( '/webapps/reports/workflows_per_user.mako', workflows=workflows, message=message )
     @web.expose
@@ -174,7 +174,7 @@ class Workflows( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():
-            workflows.append( ( row.date.strftime( "%Y-%m" ), 
+            workflows.append( ( row.date.strftime( "%Y-%m" ),
                                 row.total_workflows,
                                 row.date.strftime( "%B" ),
                                 row.date.strftime( "%Y" ) ) )

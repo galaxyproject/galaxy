@@ -1,14 +1,7 @@
 <%inherit file="/base.mako"/>
 
-<style>
-/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
-.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-</style>
-
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.autocomplete" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
@@ -81,6 +74,10 @@
             });
             $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
+                // The destroy on the following line is temporary and prevents
+                // select2 use on Input Dataset Steps, but allows elsewhere.  We
+                // need a new widget to better handle pairwise matching.
+                select.select2("destroy");
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.
                 select.closest('.form-row').children('label').append(
@@ -88,7 +85,7 @@
                         if ($(this).hasClass('disabled')) return;
                         toggle_multiinput(select);
                         select.focus();
-                    }).attr('original-title',
+                    }).attr('title',
                             'Enable/disable selection of multiple input ' +
                             'files. Each selected file will have an ' +
                             'instance of the workflow.').tooltip({placement: 'bottom'})
@@ -138,13 +135,15 @@
             $(function(){
                 $(".multi-mode").each(function(){
                     if($(this).val() == "matched") { 
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon" title="This input is linked and will be run in matched order with other input datasets (ex: use this for matching forward and reverse reads)."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display")));
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     } else {
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon" title="This input is not linked and each selection will be run against *all* other inputs."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display"))); 
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     }
                 });
                 $("span.mode-icon").click(function(){
@@ -385,6 +384,22 @@ if wf_parms:
 </div>
 %endif
 
+%if step_version_changes:
+    <div class="infomessage">
+        The following tools are beinge executed with a different version from
+        what was available when this workflow was last saved because the
+        previous version is no longer available for use on this galaxy
+        instance.
+        To upgrade your workflow and dismiss this message simply edit the
+        workflow and re-save it to update the stored tool version.
+        <ul>
+            %for vc in step_version_changes:
+                <li>${vc}</li>
+            %endfor
+        </ul>
+    </div>
+%endif
+
 %if workflow.annotation:
     <div class="workflow-annotation">${workflow.annotation}</div>
     <hr/>
@@ -505,6 +520,6 @@ if wf_parms:
     <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
 </p>
     %endif
-<input type="submit" name="run_workflow" value="Run workflow" />
+<input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
 %endif

@@ -1,5 +1,8 @@
-import os, logging,  shutil
+import os
+import logging
+import shutil
 import inspect
+
 from galaxy import model, util
 
 
@@ -19,8 +22,10 @@ def do_split (job_wrapper):
         split_inputs = [x.strip() for x in split_inputs.split(",")]
 
     shared_inputs=parallel_settings.get("shared_inputs")
+    auto_shared_inputs = False
     if shared_inputs is None:
         shared_inputs = []
+        auto_shared_inputs = True
     else:
         shared_inputs = [x.strip() for x in shared_inputs.split(",")]
     illegal_inputs = [x for x in shared_inputs if x in split_inputs]
@@ -45,6 +50,8 @@ def do_split (job_wrapper):
             type_to_input_map.setdefault(input.dataset.datatype,  []).append(input.name)
         elif input.name in shared_inputs:
             pass # pass original file name
+        elif auto_shared_inputs:
+            shared_inputs.append(input.name)
         else:
             log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
             log.exception(log_error)
@@ -129,7 +136,7 @@ def do_merge( job_wrapper,  task_wrappers):
                 output_dataset = outputs[output][0]
                 output_type = output_dataset.datatype
                 output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
-                # Just include those files f in the output list for which the 
+                # Just include those files f in the output list for which the
                 # file f exists; some files may not exist if a task fails.
                 output_files = [ f for f in output_files if os.path.exists(f) ]
                 if output_files:

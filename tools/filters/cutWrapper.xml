@@ -1,4 +1,4 @@
-<tool id="Cut1" name="Cut" version="1.0.1">
+<tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
   <command interpreter="perl">cutWrapper.pl $input "$columnList" $delimiter $out_file1</command>
   <inputs>
@@ -141,6 +141,12 @@
       <param name="input" value="1.bed"/>
       <output name="out_file1" file="eq-cut.dat"/>
     </test>
+    <test>
+      <param name="columnList" value="c1,c4,c2-c3" />
+      <param name="delimiter" value="T" />
+      <param name="input" value="1.bed" />
+      <output name="out_file1" file="eq-cut.dat" />
+    </test>
   </tests>
   <help>
 
@@ -190,6 +196,11 @@ Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
 
    + 0 gene1 chr1 
    + 0 gene2 chr2
+
+**cut** on columns "**c1-c3**" will return::
+
+   chr1 10   1000 
+   chr2 100  1500
 
 
 **cut** on columns "**c8,c7,c4**" will return::

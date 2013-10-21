@@ -2,33 +2,36 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
-import os
-import sys
-import pwd
 import time
 import copy
-import random
-import logging
 import datetime
+import galaxy
+import logging
+import os
+import pwd
+import random
+import re
+import shutil
+import subprocess
+import sys
 import threading
 import traceback
-import subprocess
-
-import galaxy
-from galaxy import util, model
-from galaxy.util.bunch import Bunch
-from galaxy.datatypes.tabular import *
-from galaxy.datatypes.interval import *
-# tabular/interval imports appear to be unused.  Clean up?
+from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.util.json import from_json_string
-from galaxy.util.expressions import ExpressionContext
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.exceptions import ObjectInvalid
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
+from galaxy.util.json import from_json_string
+from galaxy.util import unicodify
+from .output_checker import check_output
 
 log = logging.getLogger( __name__ )
+
+DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
+DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
 
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
@@ -86,7 +89,7 @@ class JobToolConfiguration( Bunch ):
 
 class JobConfiguration( object ):
     """A parser and interface to advanced job management features.
-    
+
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
     DEFAULT_NWORKERS = 4
@@ -126,7 +129,12 @@ class JobConfiguration( object ):
             for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
                 if plugin.get('type') == 'runner':
                     workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
-                    self.runner_plugins.append(dict(id=plugin.get('id'), load=plugin.get('load'), workers=int(workers)))
+                    runner_kwds = self.__get_params(plugin)
+                    runner_info = dict(id=plugin.get('id'),
+                                       load=plugin.get('load'),
+                                       workers=int(workers),
+                                       kwds=runner_kwds)
+                    self.runner_plugins.append(runner_info)
                 else:
                     log.error('Unknown plugin type: %s' % plugin.get('type'))
         # Load tasks if configured
@@ -174,7 +182,7 @@ class JobConfiguration( object ):
         if tools is not None:
             for tool in self.__findall_with_required(tools, 'tool'):
                 # There can be multiple definitions with identical ids, but different params
-                id = tool.get('id')
+                id = tool.get('id').lower()
                 if id not in self.tools:
                     self.tools[id] = list()
                 self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
@@ -480,7 +488,7 @@ class JobConfiguration( object ):
                     log.warning("Job runner classes must be subclassed from BaseJobRunner, %s has bases: %s" % (id, runner_class.__bases__))
                     continue
                 try:
-                    rval[id] = runner_class( self.app, runner['workers'] )
+                    rval[id] = runner_class( self.app, runner[ 'workers' ], **runner.get( 'kwds', {} ) )
                 except TypeError:
                     log.warning( "Job runner '%s:%s' has not been converted to a new-style runner" % ( module_name, class_name ) )
                     rval[id] = runner_class( self.app )
@@ -575,7 +583,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
-        self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination )
+        self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination, self.app.job_config )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
@@ -606,7 +614,7 @@ class JobWrapper( object ):
 
         Calling this method for the first time causes the dynamic runner to do
         its calculation, if any.
-        
+
         :returns: ``JobDestination``
         """
         return self.job_runner_mapper.get_job_destination(self.params)
@@ -670,21 +678,15 @@ class JobWrapper( object ):
             special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
         if special:
             out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
-            
+
         # These can be passed on the command line if wanted as $__user_*__
-        if job.history and job.history.user:
-            user_id = '%d' % job.history.user.id
-            user_email = str(job.history.user.email)
-            user_name = str(job.history.user.username)
-        else:
-            user_id = 'Anonymous'
-            user_email = 'Anonymous'
-            user_name = 'Anonymous'
-        incoming['__user_id__'] = incoming['userId'] = user_id
-        incoming['__user_email__'] = incoming['userEmail'] = user_email
-        incoming['__user_name__'] = user_name
+        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
@@ -771,14 +773,14 @@ class JobWrapper( object ):
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
-            if ( len( stdout ) > 32768 ):
-                stdout = stdout[:32768]
-                log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
-            job.stdout = stdout 
-            if ( len( stderr ) > 32768 ):
-                stderr = stderr[:32768]
-                log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
-            job.stderr = stderr  
+            if ( len( stdout ) > DATABASE_MAX_STRING_SIZE ):
+                stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            job.stdout = stdout
+            if ( len( stderr ) > DATABASE_MAX_STRING_SIZE ):
+                stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            job.stderr = stderr
             # Let the exit code be Null if one is not provided:
             if ( exit_code != None ):
                 job.exit_code = exit_code
@@ -833,7 +835,7 @@ class JobWrapper( object ):
         log.warning('set_runner() is deprecated, use set_job_destination()')
         self.set_job_destination(self.job_destination, external_id)
 
-    def set_job_destination(self, job_destination, external_id):
+    def set_job_destination(self, job_destination, external_id=None ):
         """
         Persist job destination params in the database for recovery.
 
@@ -856,11 +858,14 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
 
-        # TODO: After failing here, consider returning from the function. 
+        # TODO: After failing here, consider returning from the function.
         try:
             self.reclaim_ownership()
         except:
@@ -877,13 +882,16 @@ class JobWrapper( object ):
             return self.fail( job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code )
 
         # Check the tool's stdout, stderr, and exit code for errors, but only
-        # if the job has not already been marked as having an error. 
+        # if the job has not already been marked as having an error.
         # The job's stdout and stderr will be set accordingly.
+
+        # We set final_job_state to use for dataset management, but *don't* set
+        # job.state until after dataset collection to prevent history issues
         if job.states.ERROR != job.state:
             if ( self.check_tool_output( stdout, stderr, tool_exit_code, job )):
-                job.state = job.states.OK
+                final_job_state = job.states.OK
             else:
-                job.state = job.states.ERROR
+                final_job_state = job.states.ERROR
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -903,27 +911,43 @@ class JobWrapper( object ):
                     if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
+                        # Prior to fail we need to set job.state
+                        job.state = final_job_state
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-        job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
 
-        
+        job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                trynum = 0
+                while trynum < self.app.config.retry_job_output_collection:
+                    try:
+                        # Attempt to short circuit NFS attribute caching
+                        os.stat( dataset.dataset.file_name )
+                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                        trynum = self.app.config.retry_job_output_collection
+                    except ( OSError, ObjectNotFound ), e:
+                        trynum += 1
+                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                        time.sleep( 2 ) 
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
+                dataset.info = (dataset.info or '')
+                if context['stdout'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+                if context['stderr'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
+                if 'uuid' in context:
+                    dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
-                # TODO: The context['stderr'] holds stderr's contents. An error
-                # only really occurs if the job also has an error. So check the
-                # job's state:
-                if job.states.ERROR == job.state:
+                if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
                 elif dataset.has_data():
@@ -935,17 +959,9 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset,
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.app.config.set_metadata_externally or \
-                     ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
-                       and self.app.config.retry_metadata_internally ):
+                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
                         dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
-                    # TODO: The context['stderr'] used to indicate that there
-                    # was an error. Now we must rely on the job's state instead;
-                    # that indicates whether the tool relied on stderr to indicate
-                    # the state or whether the tool used exit codes and regular
-                    # expressions to do so. So we use 
-                    # job.state == job.states.ERROR to replace this same test.
-                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != job.state: 
+                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         #load metadata from file
@@ -975,10 +991,7 @@ class JobWrapper( object ):
                     if dataset.ext == 'auto':
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
-            # TODO: job.states.ERROR == job.state now replaces checking
-            # stderr for a problem:
-            #if context['stderr']:
-            if job.states.ERROR == job.state:
+            if job.states.ERROR == final_job_state:
                 log.debug( "setting dataset state to ERROR" )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
@@ -1001,15 +1014,15 @@ class JobWrapper( object ):
         # will now be seen by the user.
         self.sa_session.flush()
         # Save stdout and stderr
-        if len( job.stdout ) > 32768:
-            log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stdout = job.stdout[:32768]
-        if len( job.stderr ) > 32768:
-            log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stderr = job.stderr[:32768]
+        if len( job.stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stdout = util.shrink_string_by_size( job.stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( job.stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stderr = util.shrink_string_by_size( job.stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
-        # is either incorrect or has the wrong semantics. 
+        # is either incorrect or has the wrong semantics.
         if None != tool_exit_code:
             job.exit_code = tool_exit_code
         # custom post process setup
@@ -1048,172 +1061,25 @@ class JobWrapper( object ):
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+
+        # Finally set the job state.  This should only happen *after* all
+        # dataset creation, and will allow us to eliminate force_history_refresh.
+        job.state = final_job_state
         self.sa_session.flush()
+
         log.debug( 'job %d ended' % self.job_id )
         if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
             self.cleanup()
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
-        """
-        Check the output of a tool - given the stdout, stderr, and the tool's
-        exit code, return True if the tool exited succesfully and False 
-        otherwise. No exceptions should be thrown. If this code encounters
-        an exception, it returns True so that the workflow can continue;
-        otherwise, a bug in this code could halt workflow progress. 
-        Note that, if the tool did not define any exit code handling or
-        any stdio/stderr handling, then it reverts back to previous behavior:
-        if stderr contains anything, then False is returned.
-        Note that the job id is just for messages.
-        """
-        # By default, the tool succeeded. This covers the case where the code 
-        # has a bug but the tool was ok, and it lets a workflow continue.
-        success = True 
-
-        try:
-            # Check exit codes and match regular expressions against stdout and 
-            # stderr if this tool was configured to do so.
-            # If there is a regular expression for scanning stdout/stderr,
-            # then we assume that the tool writer overwrote the default 
-            # behavior of just setting an error if there is *anything* on
-            # stderr. 
-            if ( len( self.tool.stdio_regexes ) > 0 or
-                 len( self.tool.stdio_exit_codes ) > 0 ):
-                # Check the exit code ranges in the order in which
-                # they were specified. Each exit_code is a StdioExitCode
-                # that includes an applicable range. If the exit code was in
-                # that range, then apply the error level and add a message.
-                # If we've reached a fatal error rule, then stop.
-                max_error_level = galaxy.tools.StdioErrorLevel.NO_ERROR
-                if tool_exit_code != None:
-                    for stdio_exit_code in self.tool.stdio_exit_codes:
-                        if ( tool_exit_code >= stdio_exit_code.range_start and 
-                             tool_exit_code <= stdio_exit_code.range_end ):
-                            # Tack on a generic description of the code 
-                            # plus a specific code description. For example,
-                            # this might prepend "Job 42: Warning (Out of Memory)\n".
-                            code_desc = stdio_exit_code.desc
-                            if ( None == code_desc ):
-                                code_desc = ""
-                            tool_msg = ( "%s: Exit code %d (%s)" % (
-                                         galaxy.tools.StdioErrorLevel.desc( stdio_exit_code.error_level ),
-                                         tool_exit_code,
-                                         code_desc ) )
-                            log.info( "Job %s: %s" % (job.get_id_tag(), tool_msg) )
-                            stderr = tool_msg + "\n" + stderr
-                            max_error_level = max( max_error_level, 
-                                                   stdio_exit_code.error_level )
-                            if ( max_error_level >= 
-                                 galaxy.tools.StdioErrorLevel.FATAL ):
-                                break
-    
-                if max_error_level < galaxy.tools.StdioErrorLevel.FATAL:
-                    # We'll examine every regex. Each regex specifies whether
-                    # it is to be run on stdout, stderr, or both. (It is 
-                    # possible for neither stdout nor stderr to be scanned,
-                    # but those regexes won't be used.) We record the highest
-                    # error level, which are currently "warning" and "fatal".
-                    # If fatal, then we set the job's state to ERROR.
-                    # If warning, then we still set the job's state to OK
-                    # but include a message. We'll do this if we haven't seen 
-                    # a fatal error yet
-                    for regex in self.tool.stdio_regexes:
-                        # If ( this regex should be matched against stdout )
-                        #   - Run the regex's match pattern against stdout
-                        #   - If it matched, then determine the error level.
-                        #       o If it was fatal, then we're done - break.
-                        # Repeat the stdout stuff for stderr.
-                        # TODO: Collapse this into a single function.
-                        if ( regex.stdout_match ):
-                            regex_match = re.search( regex.match, stdout, 
-                                                     re.IGNORECASE )
-                            if ( regex_match ):
-                                rexmsg = self.regex_err_msg( regex_match, regex)
-                                log.info( "Job %s: %s" 
-                                        % ( job.get_id_tag(), rexmsg ) )
-                                stdout = rexmsg + "\n" + stdout
-                                max_error_level = max( max_error_level, 
-                                                       regex.error_level )
-                                if ( max_error_level >= 
-                                     galaxy.tools.StdioErrorLevel.FATAL ):
-                                    break
-
-                        if ( regex.stderr_match ):
-                            regex_match = re.search( regex.match, stderr,
-                                                     re.IGNORECASE )
-                            if ( regex_match ):
-                                rexmsg = self.regex_err_msg( regex_match, regex)
-                                log.info( "Job %s: %s" 
-                                        % ( job.get_id_tag(), rexmsg ) )
-                                stderr = rexmsg + "\n" + stderr
-                                max_error_level = max( max_error_level, 
-                                                       regex.error_level )
-                                if ( max_error_level >= 
-                                     galaxy.tools.StdioErrorLevel.FATAL ):
-                                    break
-    
-                # If we encountered a fatal error, then we'll need to set the
-                # job state accordingly. Otherwise the job is ok:
-                if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
-                    success = False 
-                else:
-                    success = True 
-    
-            # When there are no regular expressions and no exit codes to check,
-            # default to the previous behavior: when there's anything on stderr
-            # the job has an error, and the job is ok otherwise. 
-            else:
-                # TODO: Add in the tool and job id: 
-                log.debug( "Tool did not define exit code or stdio handling; "
-                         + "checking stderr for success" )
-                if stderr:
-                    success = False 
-                else:
-                    success = True 
-
-        # On any exception, return True.
-        except:
-            tb = traceback.format_exc()
-            log.warning( "Tool check encountered unexpected exception; "
-                       + "assuming tool was successful: " + tb )
-            success = True
-        
-        # Store the modified stdout and stderr in the job:
-        if None != job:
-            job.stdout = stdout
-            job.stderr = stderr
-
-        return success
-
-    def regex_err_msg( self, match, regex ):
-        """
-        Return a message about the match on tool output using the given
-        ToolStdioRegex regex object. The regex_match is a MatchObject
-        that will contain the string matched on.
-        """
-        # Get the description for the error level: 
-        err_msg = galaxy.tools.StdioErrorLevel.desc( regex.error_level ) + ": "
-        # If there's a description for the regular expression, then use it.
-        # Otherwise, we'll take the first 256 characters of the match.
-        if None != regex.desc:
-            err_msg += regex.desc
-        else:
-            mstart = match.start()
-            mend = match.end()
-            err_msg += "Matched on "
-            # TODO: Move the constant 256 somewhere else besides here.
-            if mend - mstart > 256:
-                err_msg += match.string[ mstart : mstart+256 ] + "..."
-            else:
-                err_msg += match.string[ mstart: mend ] 
-        return err_msg
+        return check_output( self.tool, stdout, stderr, tool_exit_code, job )
 
     def cleanup( self ):
         # remove temporary files
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
@@ -1465,6 +1331,20 @@ class JobWrapper( object ):
             self.__galaxy_system_pwent = pwd.getpwuid(os.getuid())
         return self.__galaxy_system_pwent
 
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. This is the normal case,
+        just copy these files directly to the ulimate destination.
+        """
+        return output_path
+    
+    @property
+    def requires_setting_metadata( self ):
+        if self.tool:
+            return self.tool.requires_setting_metadata
+        return False
+
+
 class TaskWrapper(JobWrapper):
     """
     Extension of JobWrapper intended for running tasks.
@@ -1483,7 +1363,7 @@ class TaskWrapper(JobWrapper):
         self.status = task.states.NEW
 
     def can_split( self ):
-        # Should the job handler split this job up? TaskWrapper should 
+        # Should the job handler split this job up? TaskWrapper should
         # always return False as the job has already been split.
         return False
 
@@ -1554,6 +1434,12 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        for config_filename in config_filenames:
+            config_contents = open(config_filename, "r").read()
+            for k, v in fnames.iteritems():
+                config_contents = config_contents.replace(k, v)
+            open(config_filename, "w").write(config_contents)
+
         # FIXME: Build the param file (might return None, DEPRECATED)
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line
@@ -1624,9 +1510,12 @@ class TaskWrapper(JobWrapper):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # This may have ended too soon
-        log.debug( 'task %s for job %d ended; exit code: %d' 
-                 % (self.task_id, self.job_id, 
+        log.debug( 'task %s for job %d ended; exit code: %d'
+                 % (self.task_id, self.job_id,
                     tool_exit_code if tool_exit_code != None else -256 ) )
         # default post job setup_external_metadata
         self.sa_session.expunge_all()
@@ -1641,21 +1530,21 @@ class TaskWrapper(JobWrapper):
             self.fail( task.info )
             return
 
-        # Check what the tool returned. If the stdout or stderr matched 
+        # Check what the tool returned. If the stdout or stderr matched
         # regular expressions that indicate errors, then set an error.
         # The same goes if the tool's exit code was in a given range.
         if ( self.check_tool_output( stdout, stderr, tool_exit_code, task ) ):
             task.state = task.states.OK
-        else: 
+        else:
             task.state = task.states.ERROR
 
         # Save stdout and stderr
-        if len( stdout ) > 32768:
-            log.error( "stdout for task %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stdout = stdout[:32768]
-        if len( stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stderr = stderr[:32768]
+        if len( stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stdout for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
@@ -1685,6 +1574,15 @@ class TaskWrapper(JobWrapper):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
+
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. These must be copied with
+        the same basenme as the path for the ultimate output destination. This is
+        required in the task case so they can be merged.
+        """
+        return os.path.join( self.working_directory, os.path.basename( output_path ) )
+
 
 class NoopQueue( object ):
     """

@@ -19,7 +19,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -28,36 +28,32 @@ def display_migration_details():
     print "2) a new string type column named 'bar_code' to the 'sample' table"
     print "========================================"
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
+    Request_table = Table( "request", metadata, autoload=True )
+    Sample_table = Table( "sample", metadata, autoload=True )
     metadata.reflect()
     # Add 1 column to the request table
-    try:
-        Request_table = Table( "request", metadata, autoload=True )
-    except NoSuchTableError:
-        Request_table = None
-        log.debug( "Failed loading table request" )
-    if Request_table:
+    if Request_table is not None:
         try:
-            col = Column( "submitted", Boolean, index=True, default=False )
-            col.create( Request_table )
+            col = Column( 'submitted', Boolean, default=False )
+            col.create( Request_table)
+            #col.create( Request_table, index_name='ix_request_submitted')
             assert col is Request_table.c.submitted
         except Exception, e:
             log.debug( "Adding column 'submitted' to request table failed: %s" % ( str( e ) ) )
+
     # Add 1 column to the sample table
-    try:
-        Sample_table = Table( "sample", metadata, autoload=True )
-    except NoSuchTableError:
-        Sample_table = None
-        log.debug( "Failed loading table sample" )
-    if Sample_table:
+    if Sample_table is not None:
         try:
             col = Column( "bar_code", TrimmedString( 255 ), index=True )
-            col.create( Sample_table )
+            col.create( Sample_table, index_name='ix_sample_bar_code')
             assert col is Sample_table.c.bar_code
         except Exception, e:
             log.debug( "Adding column 'bar_code' to sample table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

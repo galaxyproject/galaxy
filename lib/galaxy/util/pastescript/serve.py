@@ -11,9 +11,9 @@
 #   http://www.mems-exchange.org/software/qp/
 #   From lib/site.py
 
-# Galaxy originally used PasteScript and PasteDeploy for application 
-# loading, to maintain compatibility we've internalized some of that 
-# code here, stripping out uneeded functionality. 
+# Galaxy originally used PasteScript and PasteDeploy for application
+# loading, to maintain compatibility we've internalized some of that
+# code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
 import ConfigParser
@@ -101,13 +101,6 @@ class BoolOptionParser(optparse.OptionParser):
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-# if sys.version_info >= (2, 6):
-#     from logging.config import fileConfig
-# else:
-#     # Use our custom fileConfig -- 2.5.1's with a custom Formatter class
-#     # and less strict whitespace (which were incorporated into 2.6's)
-#     from paste.script.util.logging_config import fileConfig
-
 class BadCommand(Exception):
 
     def __init__(self, message, exit_code=2):
@@ -174,7 +167,7 @@ class Command(object):
 
     def run(self, args):
         self.parse_args(args)
-        
+
         # Setup defaults:
         for name, default in [('verbose', 0),
                               ('quiet', 0),
@@ -250,7 +243,7 @@ class Command(object):
     ########################################
     ## Utility methods
     ########################################
-        
+
     def pad(self, s, length, dir='left'):
         if len(s) >= length:
             return s
@@ -267,7 +260,7 @@ class Command(object):
                         overwrite=False):
         """
         Create a standard ``OptionParser`` instance.
-        
+
         Typically used like::
 
             class MyCommand(Command):
@@ -491,7 +484,7 @@ class ServeCommand(Command):
     _monitor_environ_key = 'PASTE_MONITOR_SHOULD_RUN'
 
     possible_subcommands = ('start', 'stop', 'restart', 'status')
-    
+
     def command(self):
         if self.options.stop_daemon:
             return self.stop_daemon()
@@ -646,7 +639,7 @@ class ServeCommand(Command):
             self.logging_file_config(log_fn)
 
         server = loadserver(server_spec, name=server_name, relative_to=base, global_conf=vars)
-        
+
         app = loadapp( app_spec, name=app_name, relative_to=base, global_conf=vars)
 
         if self.verbose > 0:
@@ -857,7 +850,7 @@ class ServeCommand(Command):
             os.initgroups(user, gid)
         else:
             os.setgroups([e.gr_gid for e in grp.getgrall()
-                          if user in e.gr_mem] + [gid]) 
+                          if user in e.gr_mem] + [gid])
         if gid:
             os.setgid(gid)
         if uid:

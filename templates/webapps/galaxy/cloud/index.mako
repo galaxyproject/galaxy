@@ -13,40 +13,8 @@
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging" )}
     <style type="text/css">
-    #new_history_p{
-        line-height:2.5em;
-        margin:0em 0em .5em 0em;
-    }
-    #new_history_cbx{
-        margin-right:.5em;
-    }
-    #new_history_input{
-        display:none;
-        line-height:1em;
-    }
-    #ec_button_container{
-        float:right;
-    }
     #hidden_options{
         display:none;
-    }
-    div.toolForm{
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    div.toolFormTitle{
-        cursor:pointer;
-    }
-    .title_ul_text{
-        text-decoration:underline;
-    }
-    .step-annotation {
-        margin-top: 0.25em;
-        font-weight: normal;
-        font-size: 97%;
-    }
-    .workflow-annotation {
-        margin-bottom: 1em;
     }
     #loading_indicator{
             position:fixed;
@@ -80,6 +48,8 @@
                 secret_el = $("#id_secret");
                 key_el = $("#id_key_id");
                 if (secret_el.val().length === 40 && key_el.val().length === 20){
+                    //Clear errors
+                    $('.errormessage').remove()
                     //Submit these to get_account_info, unhide fields, and update as appropriate
                     $.ajax({type: "POST",
                             url: ACCOUNT_URL,
@@ -106,41 +76,49 @@
                                         kplist.append($('<option/>').val(keypair).text(keypair));
                                     });
                                     $('#hidden_options').show('fast');
+                                },
+                            error: function(jqXHR, textStatus, errorThrown){
+                                 //Show error message
+                                 $('#launchFormContainer').prepend('<div class="errormessage">' + errorThrown + " : " + jqXHR.responseText + '</div>');
+                                 //Hide the options form
+                                 $('#hidden_options').hide('fast');
                                 }
                             });
                 }
             });
-            $('#loading_indicator').ajaxStart(function(){
-                $(this).show('fast');
+            $(document).ajaxStart(function(){
+                $('#loading_indicator').show('fast');
             }).ajaxStop(function(){
-                $(this).hide('fast');
+                $('#loading_indicator').hide('fast');
             });
             $('form').ajaxForm({
                     type: 'POST',
                     dataType: 'json',
                     beforeSubmit: function(data, form){
-                        if ($('#id_password').val() != $('#id_password_confirm').val()){
-                            //Passwords don't match.
-                            form.prepend('<div class="errormessage">Passwords do not match</div>');
-                            return false;
-                        }else{
-                            //Clear errors
-                            $('.errormessage').remove()
-                            //Hide the form, show pending box with spinner.
-                            $('#launchFormContainer').hide('fast');
-                            $('#responsePanel').show('fast');
-                        }
-                        //Dig up zone info for selected cluster, set hidden input.
-                        //This is not necessary to present to the user though the interface may prove useful.
+                        // Dig up zone info for selected cluster, set hidden input.
+                        // This is not necessary to present to the user though the interface may prove useful.
                         var ei_val = _.find(data, function(f_obj){return f_obj.name === 'existing_instance'});
                         if( ei_val && (ei_val.value !== "New Cluster")){
                             var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.name === ei_val.value});
                             var zdata = _.find(data, function(f_obj){return f_obj.name === 'zone'});
                             zdata.value = cluster.zone;
+                        }else if($('#id_cluster_name').val() === ''){
+                            // If we're not using an existing cluster, this must be set.
+                            form.prepend('<div class="errormessage">You must specify a cluster name</div>');
+                            return false;
                         }
+                        if ($('#id_password').val() != $('#id_password_confirm').val()){
+                            //Passwords don't match.
+                            form.prepend('<div class="errormessage">Passwords do not match</div>');
+                            return false;
+                        }
+                        // Lastly, clear errors and flip to the response panel.
+                        $('.errormessage').remove()
+                        $('#launchFormContainer').hide('fast');
+                        $('#responsePanel').show('fast');
                     },
                     success: function(data){
-                        //Success Message, link to key download if required, link to server itself.
+                        // Success Message, link to key download if required, link to server itself.
                         $('#launchPending').hide('fast');
                         //Set appropriate fields (dns, key, ami) and then display.
                         if(data.kp_material_tag){
@@ -175,39 +153,44 @@
         <div class="page-container" style="padding: 10px;">
         <div id="loading_indicator"></div>
             <h2>Launch a Galaxy Cloud Instance</h2>
-              <div id="launchFormContainer" class="toolForm">
+              <div id="launchFormContainer">
                     <form id="cloudlaunch_form" action="${h.url_for( controller='/cloudlaunch', action='launch_instance')}" method="post">
 
-                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret Key ID, and Secret Key.  Galaxy will use
-                    these to present appropriate options for launching your cluster.   Note that using this form to
-                    launch computational resources in the Amazon Cloud will result in   costs to the account indicated
-                    above.  See <a href="http://aws.amazon.com/ec2/pricing/">Amazon's pricing</a> for more information.
-                    options for launching your cluster.</p> </p>
+                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret
+                    Key ID, and Secret Key.  Galaxy will use these to present
+                    appropriate options for launching your cluster.  Note that
+                    using this form to launch computational resources in the
+                    Amazon Cloud will result in costs to the account indicated
+                    above.
+                    See <a href="http://aws.amazon.com/ec2/pricing/">Amazon's
+                    pricing</a> for more information.</p>
 
                     <div class="form-row">
                         <label for="id_key_id">Key ID</label>
-                        <input type="text" size="30" maxlength="20" name="key_id" id="id_key_id" value=""/><br/>
+                        <input type="text" size="30" maxlength="20" name="key_id" id="id_key_id" value="" tabindex="1"/><br/>
                         <div class="toolParamHelp">
-                            This is the text string that uniquely identifies your account, found in the 
+                            This is the text string that uniquely identifies your account, found in the
                             <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security Credentials section of the AWS Console</a>.
                         </div>
                     </div>
 
                     <div class="form-row">
                         <label for="id_secret">Secret Key</label>
-                        <input type="text" size="50" maxlength="40" name="secret" id="id_secret" value=""/><br/>
+                        <input type="text" size="50" maxlength="40" name="secret" id="id_secret" value="" tabindex="2"/><br/>
                         <div class="toolParamHelp">
                             This is your AWS Secret Key, also found in the <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security
 Credentials section of the AWS Console</a>.  </div>
                     </div>
 
                     <div id="hidden_options">
+                        %if not share_string:
                         <div id='existing_instance_wrapper' style="display:none;" class="form-row">
                                 <label for="id_existing_instance">Instances in your account</label>
-                                <select name="existing_instance" id="id_existing_instance">
+                                <select name="existing_instance" id="id_existing_instance" style="min-width: 228px">
                                 </select>
                                 <input id='id_zone' type='hidden' name='zone' value=''/>
                         </div>
+                        %endif
                         <div id='cluster_name_wrapper' class="form-row">
                             <label for="id_cluster_name">Cluster Name</label>
                             <input type="text" size="40" class="text-and-autocomplete-select" name="cluster_name" id="id_cluster_name"/><br/>
@@ -229,7 +212,7 @@ Credentials section of the AWS Console</a>.  </div>
 
                         <div class="form-row">
                             <label for="id_keypair">Key Pair</label>
-                            <select name="keypair" id="id_keypair">
+                            <select name="keypair" id="id_keypair" style="min-width: 228px">
                                 <option name="Create" value="cloudman_keypair">cloudman_keypair</option>
                             </select>
                         </div>
@@ -242,6 +225,14 @@ Credentials section of the AWS Console</a>.  </div>
                             <label for="id_share_string">Instance Share String (optional)</label>
                             <input type="text" size="120" name="share_string" id="id_share_string"/><br/>
                         </div>
+                        %endif
+
+                        %if ami:
+                            <input type='hidden' name='ami' value='${ami}'/>
+                        %endif
+
+                        %if bucket_default:
+                            <input type='hidden' name='bucket_default' value='${bucket_default}'/>
                         %endif
 
                         <div class="form-row">
@@ -262,7 +253,7 @@ Credentials section of the AWS Console</a>.  </div>
                         </div>
                     </form>
                 </div>
-                <div id="responsePanel" class="toolForm" style="display:none;">
+                <div id="responsePanel" style="display:none;">
                         <div id="launchPending">Launch Pending, please be patient.</div>
                         <div id="launchSuccess" style="display:none;">
                             <div id="keypairInfo" style="display:none;margin-bottom:20px;">

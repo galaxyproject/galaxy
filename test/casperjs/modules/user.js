@@ -1,11 +1,4 @@
 // =================================================================== module object, exports
-/** Creates a new user module object.
- *  @exported
- */
-exports.create = function createUser( spaceghost ){
-    return new User( spaceghost );
-};
-
 /** User object constructor.
  *  @param {SpaceGhost} spaceghost a spaceghost instance
  */
@@ -15,12 +8,21 @@ var User = function User( spaceghost ){
 };
 exports.User = User;
 
+/** Creates a new user module object.
+ *  @exported
+ */
+exports.create = function createUser( spaceghost ){
+    return new User( spaceghost );
+};
+
 User.prototype.toString = function toString(){
     return this.spaceghost + '.User';
 };
 
 
 // =================================================================== INTERNAL
+var xpath = require( 'casper' ).selectXPath;
+
 /** Tests registering a new user on the Galaxy instance by submitting the registration form.
  *      NOTE: this version does NOT throw an error on a bad registration.
  *      It is meant for testing the registration functionality and, therefore, is marked as private.
@@ -36,26 +38,26 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
             email   : email,
             password: password,
             // default username to first part of email
-            username:( !username && email.match( /^\w*/ ) )?( email.match( /^\w*/ ) ):( username ),
+            username:( !username && email.match( /^\w*/ ) )?( email.match( /^\w*/ )[0] ):( username ),
             // default confirm: duplicate of password
             confirm : ( confirm !== undefined )?( confirm ):( password )
         };
 
-    spaceghost.debug( 'registering user:\n' + spaceghost.jsonStr( userInfo ) );
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.register );
+        this.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        this.clickLabel( spaceghost.data.labels.masthead.userMenu.register );
 
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainBeforeRegister(){
-            spaceghost.debug( 'submitting registration... ' + spaceghost.getCurrentUrl() );
-            spaceghost.fill( spaceghost.selectors.registrationPage.form, userInfo, false );
+        this.withMainPanel( function mainBeforeRegister(){
+            spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') registering user:\n'
+                + spaceghost.jsonStr( userInfo ) );
+            this.fill( spaceghost.data.selectors.registrationPage.form, userInfo, false );
             // need manual submit (not a normal html form)
-            spaceghost.click( xpath( spaceghost.selectors.registrationPage.submit_xpath ) );
+            this.click( xpath( spaceghost.data.selectors.registrationPage.submit_xpath ) );
         });
 
         //// debugging
-        //spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterRegister(){
-        //    var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterRegister(){
+        //    var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
         //    spaceghost.debug( 'post registration message:\n' + spaceghost.jsonStr( messageInfo ) );
         //});
     });
@@ -68,7 +70,7 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
  *  @param {String} email       the users email address
  *  @param {String} password    the users password
  */
-User.prototype._submitLogin = function logoutUser( email, password ){
+User.prototype._submitLogin = function _submitLogin( email, password ){
     var spaceghost = this.spaceghost,
         loginInfo = {
         //NOTE: keys are used as name selectors in the fill fn - must match the names of the inputs
@@ -77,22 +79,21 @@ User.prototype._submitLogin = function logoutUser( email, password ){
         };
 
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
 
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.login );
-
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainBeforeLogin(){
+        spaceghost.withMainPanel( function mainBeforeLogin(){
             spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') logging in user:\n'
                 + spaceghost.jsonStr( loginInfo ) );
-            spaceghost.fill( spaceghost.selectors.loginPage.form, loginInfo, false );
-            spaceghost.click( xpath( spaceghost.selectors.loginPage.submit_xpath ) );
+            spaceghost.fill( spaceghost.data.selectors.loginPage.form, loginInfo, false );
+            spaceghost.click( xpath( spaceghost.data.selectors.loginPage.submit_xpath ) );
         });
 
         //// debugging
-        //spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterLogin(){
+        //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterLogin(){
         //    //TODO: prob. could use a more generalized form of this for url breakdown/checking
-        //    if( spaceghost.getCurrentUrl().search( spaceghost.selectors.loginPage.url_regex ) != -1 ){
-        //        var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        //    if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
+        //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
         //        spaceghost.debug( 'post login message:\n' + spaceghost.jsonStr( messageInfo ) );
         //    }
         //});
@@ -108,17 +109,17 @@ User.prototype._submitLogin = function logoutUser( email, password ){
  *  @returns {SpaceGhost} the spaceghost instance (for chaining)
  */
 User.prototype.registerUser = function registerUser( email, password, username ){
+    //TODO: callback
     var spaceghost = this.spaceghost;
     this._submitRegistration( email, password, username );
-    spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterRegister(){
-            var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
-            spaceghost.debug( 'post registration message:\n' + this.jsonStr( messageInfo ) );
+    spaceghost.withMainPanel( function mainAfterRegister(){
+        var messageInfo = this.getElementInfo( spaceghost.data.selectors.messages.all );
+        this.debug( 'post registration message:\n' + this.jsonStr( this.quickInfo( messageInfo ) ) );
 
-            if( messageInfo.attributes[ 'class' ] === 'errormessage' ){
-                throw new spaceghost.GalaxyError( 'RegistrationError: ' + messageInfo.html );
-            }
-        });
+        if( messageInfo.attributes[ 'class' ] === 'errormessage' ){
+            this.warning( 'Registration failed: ' + messageInfo.text );
+            throw new spaceghost.GalaxyError( 'RegistrationError: ' + messageInfo.text );
+        }
     });
     return spaceghost;
 };
@@ -130,18 +131,18 @@ User.prototype.registerUser = function registerUser( email, password, username )
  */
 User.prototype.login = function login( email, password ){
     var spaceghost = this.spaceghost;
+
     this._submitLogin( email, password );
-    spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterLogin(){
-            if( spaceghost.getCurrentUrl().search( spaceghost.selectors.loginPage.url_regex ) != -1 ){
-                var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
-                if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
-                    throw new spaceghost.GalaxyError( 'LoginError: ' + messageInfo.html );
-                }
+    spaceghost.withMainPanel( function mainAfterLogin(){
+        if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) !== -1 ){
+            var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
+            if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
+                this.warning( 'Login failed: ' + messageInfo.text );
+                throw new spaceghost.GalaxyError( 'LoginError: ' + messageInfo.text );
             }
-        });
+        }
         if( spaceghost.user.loggedInAs() === email ){
-            spaceghost.debug( 'logged in as ' + email );
+            spaceghost.info( 'logged in as ' + email );
         }
     });
     return spaceghost;
@@ -154,7 +155,8 @@ User.prototype.loggedInAs = function loggedInAs(){
     var spaceghost = this.spaceghost,
         userEmail = '';
     try {
-        var loggedInInfo = spaceghost.getElementInfo( xpath( spaceghost.selectors.masthead.userMenu.userEmail_xpath ) );
+        var loggedInInfo = spaceghost.getElementInfo(
+            xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ) );
         userEmail = loggedInInfo.text;
     } catch( err ){
         spaceghost.error( err );
@@ -166,12 +168,13 @@ User.prototype.loggedInAs = function loggedInAs(){
 /** Log out the current user
  *  @returns {SpaceGhost} the spaceghost instance (for chaining)
  */
-User.prototype.logout = function logoutUser(){
+User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
+        this.info( 'user logging out' );
         //TODO: handle already logged out
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.logout );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
     });
     return spaceghost;
 };
@@ -194,6 +197,63 @@ User.prototype.loginOrRegisterUser = function loginOrRegisterUser( email, passwo
     return spaceghost;
 };
 
+// ------------------------------------------------------------------- Admin
+/** Gets the admin user data from spaceghost if set and checks the universe_wsgi.ini file for the email.
+ *  @returns {Object|null} the admin data object (email, pasword, username)
+ *      or null if no admin is set in both the universe_wsgi.ini and spaceghost.
+ */
+User.prototype.getAdminData = function getAdminData(){
+    //TODO: this might be better inside sg
+    // check for the setting in sg and the universe_wsgi.ini file
+    var adminData = this.spaceghost.options.adminUser,
+        iniAdminEmails = this.spaceghost.getUniverseSetting( 'admin_users' );
+    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ) ):( null );
+
+    //TODO: seems like we only need the wsgi setting - that's the only thing we can't change
+    if( adminData ){
+        if( iniAdminEmails.indexOf( adminData.email ) !== -1 ){ return adminData; }
+
+    // if not set in options, but there are entries in the ini and a default admin pass:
+    //  return the first email with the default pass
+    //  Hopefully this is no less secure than the user/pwd in twilltestcase
+    } else if( iniAdminEmails.length && this.spaceghost.options.adminPassword ){
+        return { email: iniAdminEmails[0], password: this.spaceghost.options.adminPassword };
+    }
+
+    return null;
+};
+
+/** Logs in the admin user (if available) as the current user.
+ *      Note: logs out any other current users.
+ *  @throws {GalaxyError} err   if specified user is not admin or no admin found
+ *  @returns {SpaceGhost} the spaceghost instance (for chaining)
+ */
+User.prototype.loginAdmin = function loginAdmin(){
+    this.spaceghost.then( function(){
+        var adminData = this.user.getAdminData();
+        if( !adminData ){
+            throw new this.GalaxyError( 'No admin users found' );
+        }
+        this.info( 'logging in administrator' );
+        return this.user.loginOrRegisterUser( adminData.email, adminData.password );
+    });
+};
+
+/** Is the currently logged in user an admin?
+ *  @returns {Boolean} true if the currently logged in user is admin, false if not.
+ */
+User.prototype.userIsAdmin = function userIsAdmin(){
+    // simple test of whether the Admin tab is displayed in the masthead
+    return this.spaceghost.jumpToTop( function(){
+        if( this.visible( this.data.selectors.masthead.adminLink ) ){
+            return true;
+        }
+        return false;
+    });
+};
+
+
+// ------------------------------------------------------------------- Utility
 /** Gets a psuedo-random (unique?) email based on the time stamp.
  *      Helpful for testing registration.
  *  @param {String} username    email user (defaults to 'test')
@@ -205,5 +265,4 @@ User.prototype.getRandomEmail = function getRandomEmail( username, domain ){
     domain = domain || 'test.test';
     return username + Date.now() + '@' + domain;
 };
-
 

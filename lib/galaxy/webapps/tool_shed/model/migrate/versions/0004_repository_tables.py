@@ -22,8 +22,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 Repository_table = Table( "repository", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -49,9 +48,10 @@ RepositoryCategoryAssociation_table = Table( "repository_category_association", 
     Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
     Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Repository_table.create()
@@ -65,8 +65,10 @@ def upgrade():
         RepositoryCategoryAssociation_table.create()
     except Exception, e:
         log.debug( "Creating repository_category_association table failed: %s" % str( e ) )
-def downgrade():
+
+def downgrade(migrate_engine):
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Repository_table.drop()

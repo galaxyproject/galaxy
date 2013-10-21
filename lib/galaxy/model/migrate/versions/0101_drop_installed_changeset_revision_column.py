@@ -19,9 +19,10 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -29,11 +30,12 @@ def upgrade():
     except NoSuchTableError:
         ToolDependency_table = None
         log.debug( "Failed loading table tool_dependency" )
-    if ToolDependency_table:
+    if ToolDependency_table is not None:
         try:
             col = ToolDependency_table.c.installed_changeset_revision
             col.drop()
         except Exception, e:
             log.debug( "Dropping column 'installed_changeset_revision' from tool_dependency table failed: %s" % ( str( e ) ) )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

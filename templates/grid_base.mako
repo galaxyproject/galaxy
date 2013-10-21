@@ -13,6 +13,7 @@
 %>
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/display_common.mako" import="render_message" />
+<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 
 <%def name="init()">
 <%
@@ -53,47 +54,13 @@
 
 <%def name="grid_javascripts()">
     ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating", "galaxy.grids" )}
+    ${handle_refresh_frames()}
+    
     <script type="text/javascript">
-        ## TODO: Can this be moved into base.mako? Also, this is history-specific grid code.
-        %if refresh_frames:
-            %if 'masthead' in refresh_frames:            
-                ## Refresh masthead == user changes (backward compatibility)
-                if ( parent.user_changed ) {
-                    %if trans.user:
-                        parent.user_changed( "${trans.user.email}", ${int( app.config.is_admin_user( trans.user ) )} );
-                    %else:
-                        parent.user_changed( null, false );
-                    %endif
-                }
-            %endif
-            %if 'history' in refresh_frames:
-                if ( parent.frames && parent.frames.galaxy_history ) {
-                    parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
-                    if ( parent.force_right_panel ) {
-                        parent.force_right_panel( 'show' );
-                    }
-                }
-                else {
-                    // TODO: redirecting to root should be done on the server side so that page
-                    // does not have to load.
-                     
-                    // No history frame, so refresh to root to see history.
-                    window.top.location.href = "${h.url_for( controller='root' )}";
-                }
-            %endif
-            %if 'tools' in refresh_frames:
-                if ( parent.frames && parent.frames.galaxy_tools ) {
-                    parent.frames.galaxy_tools.location.href="${h.url_for( controller='root', action='tool_menu')}";
-                    if ( parent.force_left_panel ) {
-                        parent.force_left_panel( 'show' );
-                    }
-                }
-            %endif
-        %endif
-
+        
         // Needed URLs for grid history searching.
-        var history_tag_autocomplete_url = "${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='History' )}",
-            history_name_autocomplete_url = "${h.url_for( controller='history', action='name_autocomplete_data' )}";
+        var history_tag_autocomplete_url = "${url( controller='tag', action='tag_autocomplete_data', item_class='History' )}",
+            history_name_autocomplete_url = "${url( controller='history', action='name_autocomplete_data' )}";
 
         //
         // Create grid object.
@@ -119,7 +86,7 @@
 
         // Create grid.
         var grid = new Grid({
-            url_base: '${h.url_for()}',
+            url_base: '${trans.request.path_url}',
             async: is_true('${grid.use_async}'),
             async_ops: async_ops,
             categorical_filters: categorical_filters,
@@ -127,15 +94,22 @@
             sort_key: '${sort_key}',
             show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
             cur_page: ${cur_page_num},
+            // persistent page="all"
+            //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
             num_pages: ${num_pages}
         });
 
         // Initialize grid objects on load.
         // FIXME: use a grid view object eventually.
         $(document).ready(function() {
+            
+            // strip protocol and domain
+            var url = grid.get('url_base');
+            url = url.replace(/^.*\/\/[^\/]+/, '');
+            grid.set('url_base', url);
+            
             init_grid_elements();
             init_grid_controls();
-            
             // Initialize text filters to select text on click and use normal font when user is typing.
             $('input[type=text]').each(function() {
                 $(this).click(function() { $(this).select(); } )
@@ -197,13 +171,13 @@
             <ul class="manage-table-actions">
                 %if len( grid.global_actions ) < 3:
                     %for action in grid.global_actions:
-                        <li><a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a></li>
+                        <li><a class="action-button" href="${url( **action.url_args )}">${action.label}</a></li>
                     %endfor
                 %else:
                     <li><a class="action-button" id="action-8675309-popup" class="menubutton">Actions</a></li>
                     <div popupmenu="action-8675309-popup">
                         %for action in grid.global_actions:
-                            <a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a>
+                            <a class="action-button" href="${url( **action.url_args )}">${action.label}</a>
                         %endfor
                     </div>
                 %endif
@@ -459,12 +433,14 @@
     ## Grid operations for multiple items.
     %if show_item_checkboxes:
         <tr>
+            ## place holder for multiple operation commands
+            <input type="hidden" id="operation" name="operation" value="">
             <td></td>
             <td colspan="100">
                 For <span class="grid-selected-count"></span> selected ${items_plural}:
                 %for operation in grid.operations:
                     %if operation.allow_multiple:
-                        <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                        <input type="button" value="${operation.label}" class="action-button" onclick="submit_operation(this, '${operation.confirm}')">
                     %endif
                 %endfor
             </td>
@@ -484,6 +460,13 @@
             %endfor
         </td>
     </tr>
+    %endif
+    %if grid.legend:
+        <tr>
+            <td colspan="100">
+                ${grid.legend}
+            </td>
+         </tr>
     %endif
 </%def>
 

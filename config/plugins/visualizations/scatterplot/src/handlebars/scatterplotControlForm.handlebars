@@ -1,0 +1,46 @@
+{{! main layout }}
+
+<div class="scatterplot-container chart-container tabbable tabs-left">
+    {{! tab buttons/headers using Bootstrap }}
+    <ul class="nav nav-tabs">
+        {{! start with the data controls as the displayed tab }}
+        <li class="active"><a href="#data-control" data-toggle="tab" class="tooltip"
+            title="Use this tab to change which data are used">Data Controls</a></li>
+        <li><a href="#chart-control" data-toggle="tab" class="tooltip"
+            title="Use this tab to change how the chart is drawn">Chart Controls</a></li>
+        <li><a href="#stats-display" data-toggle="tab" class="tooltip"
+            title="This tab will display overall statistics for your data">Statistics</a></li>
+        <li><a href="#chart-display" data-toggle="tab" class="tooltip"
+            title="This tab will display the chart">Chart</a>
+            {{! loading indicator - initially hidden }}
+            <div id="loading-indicator" style="display: none;">
+                <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
+                <span class="loading-message">{{message}}</span>
+            </div>
+        </li>
+    </ul>
+
+    {{! data form, chart config form, stats, and chart all get their own tab }}
+    <div class="tab-content">
+        {{! ---------------------------- tab for data settings form }}
+        <div id="data-control" class="tab-pane active">
+            {{! rendered separately }}
+        </div>
+    
+        {{! ---------------------------- tab for chart graphics control form }}
+        <div id="chart-control" class="tab-pane">
+            {{! rendered separately }}
+        </div>
+
+        {{! ---------------------------- tab for data statistics }}
+        <div id="stats-display" class="tab-pane">
+            {{! rendered separately }}
+        </div>
+
+        {{! ---------------------------- tab for actual chart }}
+        <div id="chart-display" class="tab-pane">
+            {{! chart rendered separately }}
+        </div>
+
+    </div>{{! end .tab-content }}
+</div>{{! end .chart-control }}

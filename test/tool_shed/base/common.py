@@ -32,7 +32,7 @@ ${dependency_lines}
 </repositories>
 '''
 
-new_repository_dependencies_line = '''    <repository toolshed="${toolshed_url}" name="${repository_name}" owner="${owner}" changeset_revision="${changeset_revision}" />'''
+new_repository_dependencies_line = '''    <repository toolshed="${toolshed_url}" name="${repository_name}" owner="${owner}" changeset_revision="${changeset_revision}"${prior_installation_required} />'''
 
 # Set a 3 minute timeout for repository installation. This should be sufficient, since we're not installing tool dependencies.
 repository_installation_timeout = 180

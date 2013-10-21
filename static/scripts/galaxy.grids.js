@@ -255,7 +255,8 @@ function init_grid_elements() {
     });
     
     // Initialize ratings.
-    $('.community_rating_star').rating({});
+    if ($('.community_rating_star').length !== 0)
+        $('.community_rating_star').rating({});
     
     // Initialize item menu operations.
     make_popup_menus();
@@ -472,7 +473,7 @@ function update_grid(maintain_page_links) {
         go_to_URL();
         return;
     }
-    
+
     // If there's an operation, do POST; otherwise, do GET.
     var method = (grid.get('operation') ? "POST" : "GET" );
     $('.loading-elt-overlay').show(); // Show overlay to indicate loading and prevent user actions.
@@ -541,4 +542,28 @@ function check_all_items() {
         }
     }
     init_grid_elements();
+}
+
+
+// confirmation/submission of operation request
+function submit_operation(selected_button, confirmation_text)
+{
+    // verify in any item is selected
+    var number_of_checked_ids = $('input[name="id"]:checked').length;
+    if (!number_of_checked_ids > 0)
+        return false;
+    
+    // show confirmation box
+    if (confirmation_text != 'None' && confirmation_text != '')
+        if(!confirm(confirmation_text))
+            return false;
+    
+    // set up hidden field to parse the command/operation to controller
+    $('#operation').val(selected_button.value);
+    
+    // submit form
+    selected_button.form.submit();
+    
+    // return
+    return true;
 }

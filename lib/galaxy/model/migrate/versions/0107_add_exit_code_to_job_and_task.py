@@ -13,8 +13,7 @@ log = logging.getLogger( __name__ )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 # There was a bug when only one column was used for both tables,
 # so create separate columns.
@@ -25,10 +24,11 @@ def display_migration_details():
     print ""
     print "This migration script adds a 'handler' column to the Job table."
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Add the exit_code column to the Job table.
     try:
         job_table = Table( "job", metadata, autoload=True )
@@ -37,7 +37,7 @@ def upgrade():
     except Exception, e:
         print str(e)
         log.error( "Adding column 'exit_code' to job table failed: %s" % str( e ) )
-        return 
+        return
 
     # Add the exit_code column to the Task table.
     try:
@@ -47,12 +47,13 @@ def upgrade():
     except Exception, e:
         print str(e)
         log.error( "Adding column 'exit_code' to task table failed: %s" % str( e ) )
-        return 
-                                
-def downgrade():
+        return
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
-    
-    # Drop the Job table's exit_code column. 
+
+    # Drop the Job table's exit_code column.
     try:
         job_table = Table( "job", metadata, autoload=True )
         exit_code_col = job_table.c.exit_code
@@ -60,7 +61,7 @@ def downgrade():
     except Exception, e:
         log.debug( "Dropping 'exit_code' column from job table failed: %s" % ( str( e ) ) )
 
-    # Drop the Job table's exit_code column. 
+    # Drop the Job table's exit_code column.
     try:
         task_table = Table( "task", metadata, autoload=True )
         exit_code_col = task_table.c.exit_code

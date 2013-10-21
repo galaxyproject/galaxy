@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="libx11" version="1.5.0">
+        <repository name="package_x11_client_1_5_proto_7_0_0470" owner="user1" prior_installation_required="True" />
+    </package>
+    <package name="emboss" version="5.0.0">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/EMBOSS-5.0.0.tar.gz</action>
+                <action type="set_environment_for_install">
+                    <repository name="package_x11_client_1_5_proto_7_0_0470" owner="user1" prior_installation_required="True">
+                        <package name="libx11" version="1.5.0" />
+                    </repository>
+                </action>
+                <action type="template_command">
+                    #if env.get('X11_LIB_DIR', False) and env.get('X11_INCLUDE_DIR', False):
+                        ./configure --prefix=$env.INSTALL_DIR --x-includes=$env.X11_INCLUDE_DIR --x-libraries=$env.X11_LIB_DIR
+                    #else:
+                        ./configure --prefix=$env.INSTALL_DIR
+                    #end if
+                </action>
+                <action type="shell_command">make &amp;&amp; make install</action>
+                <action extract="true" type="download_file">ftp://emboss.open-bio.org/pub/EMBOSS/old/5.0.0/PHYLIP-3.6b.tar.gz</action>
+                <action type="change_directory">PHYLIP-3.6b</action>
+                <action type="template_command">
+                    #if env.get('X11_LIB_DIR', False) and env.get('X11_INCLUDE_DIR', False):
+                        ./configure --prefix=$env.INSTALL_DIR --x-includes=$env.X11_INCLUDE_DIR --x-libraries=$env.X11_LIB_DIR CFLAGS='-I$env.INSTALL_DIR/include'
+                    #else:
+                        ./configure --prefix=$env.INSTALL_DIR
+                    #end if
+                </action>
+                <action type="shell_command">make &amp;&amp; make install</action>
+                <action type="set_environment">
+                    <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+These links provide information for building the Emboss package in most environments.
+
+System requirements
+http://emboss.sourceforge.net/download/#Requirements
+
+Platform-dependent notes
+http://emboss.sourceforge.net/download/#Platforms
+        </readme>
+    </package>
+</tool_dependency>

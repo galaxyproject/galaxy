@@ -15,8 +15,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -24,10 +23,12 @@ def display_migration_details():
     print "column, specifically 'qual' is chaged to be 'qual454'."
     print "========================================"
 
-HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
 
-def upgrade():
+def upgrade(migrate_engine):
     display_migration_details()
+    metadata.bind = migrate_engine
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
@@ -54,5 +55,6 @@ def upgrade():
     except Exception, e:
         log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass
