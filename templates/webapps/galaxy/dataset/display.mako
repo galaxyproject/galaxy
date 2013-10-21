@@ -18,6 +18,12 @@
         });
 
         require(['mvc/data'], function(data) {
+            // 
+            // Use tabular data display progressively by deleting data from page body
+            // and then showing dataset view.
+            // 
+            $('.page-body').children().remove();
+
             data.createTabularDatasetChunkedView(
                 // Dataset config. TODO: encode id.
                 _.extend( ${h.to_json_string( item.to_dict() )}, 
@@ -59,10 +65,10 @@
             title="Import dataset"></a>
 </%def>
 
+## Renders dataset content. Function is used to render data in stand-along page and to provide content for embedded datasets as well.
 <%def name="render_item( data, data_to_render )">
-    ## Chunkable data is rendered in JavaScript above; render unchunkable data below.
     ${ render_deleted_data_message( data ) }
-    %if not data.datatype.CHUNKABLE and data_to_render:
+    %if data_to_render:
         %if truncated:
             <div class="warningmessagelarge">
                  This dataset is large and only the first megabyte is shown below. | 

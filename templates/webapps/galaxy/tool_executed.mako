@@ -8,9 +8,9 @@
 <script type="text/javascript">
   var inside_galaxy_frameset = false;
 
-  if ( parent.frames && parent.frames.galaxy_history ) {
-      parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history' )}";
-      inside_galaxy_frameset = true;
+  // refresh the history panel to include any new datasets created by the tool
+  if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+        top.Galaxy.currHistoryPanel.refreshHdas();
   }
 
   %if trans.user:  

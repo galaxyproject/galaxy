@@ -1,6 +1,6 @@
-//define([
-//    "../mvc/base-mvc"
-//], function(){
+define([
+    "mvc/dataset/hda-model"
+], function( hdaModel ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -21,6 +21,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
     // values from api (may need more)
     defaults : {
+        model_class     : 'History',
         id              : null,
         name            : 'Unnamed History',
         state           : 'new',
@@ -29,312 +30,169 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         deleted : false
     },
 
-    //TODO: hardcoded
-    urlRoot: 'api/histories/',
-    /** url for fetch */
-    url : function(){
-        // api location of history resource
-        return this.urlRoot + this.get( 'id' );
+    // ........................................................................ urls
+    urlRoot: 'api/histories',
+
+    renameUrl : function(){
+//TODO: just use this.save()
+        var id = this.get( 'id' );
+        if( !id ){ return undefined; }
+        return '/history/rename_async?id=' + this.get( 'id' );
+    },
+    annotateUrl : function(){
+        var id = this.get( 'id' );
+        if( !id ){ return undefined; }
+        return '/history/annotate_async?id=' + this.get( 'id' );
+    },
+    tagUrl : function(){
+        var id = this.get( 'id' );
+        if( !id ){ return undefined; }
+        return '/tag/get_tagging_elt_async?item_id=' + this.get( 'id' ) + '&item_class=History';
     },
 
+    // ........................................................................ set up/tear down
     /** Set up the hdas collection
-     *  @param {Object} initialSettings model data for this History
-     *  @param {Object[]} initialHdas array of model data for this History's HDAs
+     *  @param {Object} historyJSON model data for this History
+     *  @param {Object[]} hdaJSON   array of model data for this History's HDAs
      *  @see BaseModel#initialize
      */
-    initialize : function( initialSettings, initialHdas, logger ){
-        logger = logger || null;
-        this.log( this + ".initialize:", initialSettings, initialHdas );
+    initialize : function( historyJSON, hdaJSON, options ){
+        options = options || {};
+        this.logger = options.logger || null;
+        this.log( this + ".initialize:", historyJSON, hdaJSON, options );
 
         /** HDACollection of the HDAs contained in this history. */
-        this.hdas = new HDACollection();
-        /** the setTimeout id for any updater currently set */
-        this.updateTimeoutId = null;
-
-        // if we've got hdas passed in the constructor, load them and set up updates if needed
-        if( initialHdas && _.isArray( initialHdas ) ){
-            this.hdas.add( initialHdas );
-            this.checkForUpdates();
-            //TODO: don't call if force_history_refresh
-            if( this.hdas.length > 0 ){
-                this.fetchDisplayApplications();
-            }
+        this.hdas = new hdaModel.HDACollection( hdaJSON || [], { historyId: this.get( 'id' )});
+        // if we've got hdas passed in the constructor, load them
+        if( hdaJSON && _.isArray( hdaJSON ) ){
+            this.hdas.reset( hdaJSON );
         }
-        this.setHdaEventHandlers();
-        this.setOwnEventHandlers();
+
+        this._setUpListeners();
+        this._installAjaxErrorHandler( this.ajaxErrorHandler );
+
+        // set up update timeout if needed
+        this.checkForUpdates();
     },
 
-    setHdaEventHandlers : function(){
-        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
-        //  then: refresh the panel
-        this.hdas.bind( 'state:ready', function( hda, newState, oldState ){
-            if( hda.get( 'force_history_refresh' ) ){
-                this.updateAfterDelay();
+    _setUpListeners : function(){
+        // hda collection listening
+        if( this.hdas ){
+            this.listenTo( this.hdas, 'error', function(){
+                //this.ajaxErrorHandler.apply( this, arguments );
+                this.trigger.apply( this, [ 'error:hdas' ].concat( jQuery.makeArray( arguments ) ) );
+            });
+        }
+        // if the model's id changes ('current' or null -> an actual id), update the hdas history_id
+        this.on( 'change:id', function( model, newId ){
+            if( this.hdas ){
+                this.hdas.historyId = newId;
             }
         }, this );
 
-        this.hdas.bind( 'error', function( model, xhr, options, msg ){
-            this.trigger( 'error', model, xhr, options, msg );
-        }, this );
+        // debugging events
+        //if( this.logger ){
+        //    this.on( 'all', function( event ){
+        //        this.log( this + '', arguments );
+        //    }, this );
+        //}
     },
 
-    setOwnEventHandlers : function(){
-        if( this.logger ){
-            this.bind( 'all', function( event ){
-                this.log( this + '', arguments );
-            }, this );
-        }
+    //TODO: see base-mvc
+    //onFree : function(){
+    //    if( this.hdas ){
+    //        this.hdas.free();
+    //    }
+    //},
+
+    // ........................................................................ common queries
+    hasUser : function(){
+        var user = this.get( 'user' );
+        return !!( user && user.id );
     },
 
-    // reduce the state_ids map of hda id lists -> a single list of ids
-    //...ugh - seems roundabout; necessary because the history doesn't have a straightforward list of ids
-    //  (and history_contents/index curr returns a summary only)
-    hdaIdsFromStateIds : function(){
-        return _.reduce( _.values( this.get( 'state_ids' ) ), function( reduction, currIdList ){
-            return reduction.concat( currIdList );
-        });
+    // ........................................................................ ajax
+    // override to add ajax error event
+    //TODO: into mixin/base
+    _installAjaxErrorHandler : function( handler ){
+        this.sync = function _sync( method, model, options ){
+            return Backbone.Model.prototype.sync.call( model, method, model, options )
+                .fail( function( xhr, status, message ){
+                    handler.call( model, model, xhr, options, method );
+                });
+        };
     },
 
-    updateAfterDelay : function(){
-        var history = this;
-        this.updateTimeoutId = setTimeout( function(){
-            history.updateTimeoutId = null;
-            history.stateUpdater();
-        }, History.UPDATE_DELAY );
-        return this.updateTimeoutId;
+    ajaxErrorHandler : function( model, xhr, options, method ){
     },
 
-    isRunning : function(){
-        var historyState = this.get( 'state' );
-        // set up to keep pulling if this history in run/queue state
-        //note: the state strings btwn history & hda are shared on the server (or a subset of)
-        return ( ( historyState === HistoryDatasetAssociation.STATES.RUNNING )
-               ||( historyState === HistoryDatasetAssociation.STATES.QUEUED ) );
-    },
+    // get the history's state from it's cummulative ds states, delay + update if needed
+    // events: ready
+    checkForUpdates : function( onReadyCallback ){
+        //console.info( 'checkForUpdates' )
 
-    isReady : function(){
-        return !this.isRunning();
-    },
+        // get overall History state from collection, run updater if History has running/queued hdas
+        // boiling it down on the client to running/not
+        if( this.hdas.running().length ){
+            this.setUpdateTimeout();
 
-    checkForUpdates : function(){
-        // set up to keep pulling if this history in run/queue state
-        if( this.isRunning() ){
-            this.updateAfterDelay();
-
-        // otherwise, we're now in a 'ready' state (no hdas running)
         } else {
             this.trigger( 'ready' );
+            if( _.isFunction( onReadyCallback ) ){
+                onReadyCallback.call( this );
+            }
         }
         return this;
     },
 
-    findHdasToUpdate : function(){
-        var history = this,
-            state_ids = history.get( 'state_ids' ),
-            changedIds = [];
+    setUpdateTimeout : function( delay ){
+        //TODO: callbacks?
+        delay = delay || History.UPDATE_DELAY;
+        var history = this;
 
-        // get a list of hda ids for hdas we need to get more info on
-        _.each( state_ids, function( list, stateAccrdToHistory ){
-            _.each( list, function( id ){
-                var hda = history.hdas.get( id );
-                // if the id is not in the current hda list
-                //  or the state doesn't match the state rpt. by the history - save that id
-                if( !hda || hda.get( 'state' ) !== stateAccrdToHistory ){
-                    changedIds.push( id );
-                }
-            });
-        });
-        return changedIds;
+        // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
+        this.clearUpdateTimeout();
+        this.updateTimeoutId = setTimeout( function(){
+            history.refresh();
+        }, delay );
+        return this.updateTimeoutId;
     },
 
-    // fetch new data for this history,
-    //  compare the state_ids from that with the current list and fetch updates for new or changed hdas
-    //  if the history still has non-ready hdas, set up to run this again in some interval of time
+    clearUpdateTimeout : function(){
+        if( this.updateTimeoutId ){
+            clearTimeout( this.updateTimeoutId );
+            this.updateTimeoutId = null;
+        }
+    },
+
+    // update this history, find any hda's running/queued, update ONLY those that have changed states,
+    //  set up to run this again in some interval of time
     // events: ready
-    stateUpdater : function(){
-        //TODO: we need to get states from one location: history_contents (right now it's both history and contents)
-        var history = this,
-            oldState = this.get( 'state' ),
-            historyXhr = this.fetch();
+    refresh : function( detailIds, options ){
+        //console.info( 'refresh:', detailIds, this.hdas );
+        detailIds = detailIds || [];
+        options = options || {};
+        var history = this;
 
-        // pull from the history api
-        historyXhr.done( function( newHistoryModel ){
-            //this.log( 'historyApiRequest, response:', response );
-            history.set( newHistoryModel );
-            history.log( 'current history state:', history.get( 'state' ), '(was)', oldState,
-                'new size:', history.get( 'nice_size' ) );
-
-            // send the changed ids (if any) to dataset collection to have them fetch their own model changes
-            var hdaIdsToUpdate = history.findHdasToUpdate();
-            if( hdaIdsToUpdate.length ){
-                // simplify with empty promise when no ids
-                history.fetchHdaUpdates( hdaIdsToUpdate )
-                    .done( function( models ){
-                        history.checkForUpdates();
-                    });
-            } else {
-                history.checkForUpdates();
-            }
-
-        });
-        historyXhr.fail( function( xhr, status, error ){
-            //TODO: use ajax.status handlers here
-            // keep rolling on a bad gateway - server restart
-
-            //if( xhr.status === 0 && xhr.readyState === 0 ){
-
-            if( ( xhr.status === 0 && xhr.readyState === 0 )
-            ||  ( xhr.status === 502 ) ){
-
-            //if( xhr.status === 502 ){
-                history.log( 'Bad Gateway error. Retrying...' );
-                setTimeout( function(){
-                    //TODO: someway to throw error on X tries
-                    history.stateUpdater();
-                }, History.UPDATE_DELAY );
-
-            // if not interruption by iframe reload
-            //TODO: remove when iframes are removed
-            } else {
-                history.log( 'stateUpdater error:', error, 'responseText:', xhr.responseText );
-                var msg = _l( 'An error occurred while getting updates from the server.' ) + ' '
-                        + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                history.trigger( 'error', history, xhr, {}, msg );
-            }
-        });
-    },
-
-    /** Update the models in the hdas collection that match the ids given by getting their data
-     *      via the api/AJAX. If a model exists in the collection, set will be used with the new data.
-     *      If it's not in the collection, addHdas will be used to create it.
-     *  @param {String[]} hdaIds an array of the encoded ids of the hdas to get from the server.
-     */
-    fetchHdaUpdates : function( hdaIds ){
-        //TODO:?? move to collection? still need proper url
-        var history = this,
-            xhr = jQuery.ajax({
-            url     : this.url() + '/contents?' + jQuery.param({ ids : hdaIds.join(',') }),
-
-            /** @inner */
-            error   : function( xhr, status, error ){
-                if( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ){ return; }
-
-                var errorJson = JSON.parse( xhr.responseText );
-                if( _.isArray( errorJson ) ){
-
-                    // just for debugging/reporting purposes
-                    var grouped = _.groupBy( errorJson, function( hdaData ){
-                        if( _.has( hdaData, 'error' ) ){ return 'errored'; }
-                        return 'ok';
-                    });
-                    history.log( 'fetched, errored datasets:', grouped.errored );
-
-                    // the server already formats the error'd hdas in proper hda-model form
-                    //  so we're good to send these on
-                    history.updateHdas( errorJson );
-
-                } else {
-                    history.log( 'Error updating hdas from api history contents',
-                        hdaIds, xhr, status, error, errorJson );
-                    var msg = _l( 'An error occurred while getting dataset details from the server.' ) + ' '
-                            + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                    history.trigger( 'error', history, xhr, {}, msg );
-                }
-            },
-
-            /** when the proper models for the requested ids are returned,
-             *      either update existing or create new entries in the hdas collection
-             *  @inner
-             */
-            success : function( hdaDataList, status, xhr ){
-                history.log( history + '.fetchHdaUpdates, success:', status, xhr );
-                history.updateHdas( hdaDataList );
-            }
+        options.data = options.data || {};
+        if( detailIds.length ){
+            options.data.details = detailIds.join( ',' );
+        }
+        var xhr = this.hdas.fetch( options );
+        xhr.done( function( hdaModels ){
+            //this.trigger( 'hdas-refreshed', this, hdaModels );
+            history.checkForUpdates(function(){
+                // fetch the history after an update in order to recalc history size
+                //TODO: move to event?
+                this.fetch();
+            });
         });
         return xhr;
     },
 
-    /** Update the models in the hdas collection from the data given.
-     *      If a model exists in the collection, set will be used with the new data.
-     *      If it's not in the collection, addHdas will be used to create it.
-     *  @param {Object[]} hdaDataList an array of the model data used to update.
-     */
-    updateHdas : function( hdaDataList ){
-        var history = this,
-            // models/views that need to be created
-            hdasToAdd = [];
-        history.log( history + '.updateHdas:', hdaDataList );
-
-        _.each( hdaDataList, function( hdaData, index ){
-            var existingModel = history.hdas.get( hdaData.id );
-            // if this model exists already, update it
-            if( existingModel ){
-                history.log( 'found existing model in list for id ' + hdaData.id + ', updating...:' );
-                existingModel.set( hdaData );
-
-            // if this model is new and isn't in the hda collection, cache it to be created
-            } else {
-                history.log( 'NO existing model for id ' + hdaData.id + ', creating...:' );
-                hdasToAdd.push( hdaData );
-            }
-        });
-        if( hdasToAdd.length ){
-            history.addHdas( hdasToAdd );
-        }
-    },
-
-    /** Add multiple hda models to the hdas collection from an array of hda data.
-     */
-    addHdas : function( hdaDataList ){
-        //TODO: this is all probably easier if hdas is a relation
-        var history = this;
-        //TODO:?? what about hidden? deleted?
-        _.each( hdaDataList, function( hdaData, index ){
-            var indexFromHid = history.hdas.hidToCollectionIndex( hdaData.hid );
-            hdaData.history_id = history.get( 'id' );
-            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid, silent: true });
-        });
-        // fire only once
-        history.hdas.trigger( 'add', hdaDataList );
-    },
-
-    /** Update (from controller) the display application link data of the hdas with the given ids.
-     *  @param {String[]} ids an array of hda ids to update (optional, defaults to all hdas)
-     *  @returns {HistoryDatasetAssociation[]} hda models that were updated
-     */
-    fetchDisplayApplications : function( ids ){
-        this.log( this + '.fetchDisplayApplications:', ids );
-        var history = this,
-            display_app_url = 'history/get_display_application_links',
-            // if any ids passed place them in the query string data
-            data = ( ids && _.isArray( ids ) )?({ hda_ids : ids.join( ',' ) }):({});
-
-        //TODO: hardcoded
-        history.log( this + ': fetching display application data' );
-        jQuery.ajax( display_app_url, {
-            data : data,
-            success : function( displayAppList, status, xhr ){
-                //history.hdas.set( data, { merge: true } ); // doesn't work - clears all other attributes
-                _.each( displayAppList, function( displayAppData ){
-                    var hda = history.hdas.get( displayAppData.id );
-                    if( hda ){ hda.set( displayAppData ); }
-                });
-            },
-            error : function( xhr, status, error ){
-                if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                    history.log( 'Error fetching display applications:', ids, xhr, status, error );
-                    var msg = _l( 'An error occurred while getting display applications from the server.' ) + ' '
-                            + _l( 'Please contact a Galaxy administrator if the problem persists.' );
-                    history.trigger( 'error', history, xhr, { url: display_app_url }, msg );
-                }
-            }
-        });
-    },
-
+    // ........................................................................ misc
     toString : function(){
-        var nameString = ( this.get( 'name' ) )?
-            ( ', ' + this.get( 'name' ) ) : ( '' );
-        return 'History(' + this.get( 'id' ) + nameString + ')';
+        return 'History(' + this.get( 'id' ) + ',' + this.get( 'name' ) + ')';
     }
 });
 
@@ -343,6 +201,74 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
  *  this is the amount of time between update checks from the server
  */
 History.UPDATE_DELAY = 4000;
+
+/** Get data for a history then it's hdas using a sequential ajax call, return a deferred to receive both */
+History.getHistoryData = function getHistoryData( historyId, options ){
+    options = options || {};
+    var hdaDetailIds = options.hdaDetailIds || [];
+    //console.debug( 'getHistoryData:', historyId, options );
+
+    var df = jQuery.Deferred(),
+        historyJSON = null;
+
+    function getHistory( id ){
+        // get the history data
+        //return jQuery.ajax( '/generate_json_error' );
+        return jQuery.ajax( '/api/histories/' + historyId );
+    }
+    function countHdasFromHistory( historyData ){
+        // get the number of hdas accrd. to the history
+        if( !historyData || !historyData.state_ids ){ return 0; }
+        return _.reduce( historyData.state_ids, function( memo, list, state ){
+            return memo + list.length;
+        }, 0 );
+    }
+    function getHdas( historyData ){
+        // get the hda data
+        // if no hdas accrd. to history: return empty immed.
+        if( !countHdasFromHistory( historyData ) ){ return []; }
+        // if there are hdas accrd. to history: get those as well
+        if( _.isFunction( hdaDetailIds ) ){
+            hdaDetailIds = hdaDetailIds( historyData );
+        }
+        var data = ( hdaDetailIds.length )?( { details : hdaDetailIds.join( ',' ) } ):( {} );
+        return jQuery.ajax( '/api/histories/' + historyData.id + '/contents', { data: data });
+        //return jQuery.ajax( '/generate_json_error' );
+    }
+
+    // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
+    //  chain the api calls - getting history first then hdas
+
+    var historyFn = options.historyFn || getHistory,
+        hdaFn = options.hdaFn || getHdas;
+
+    // chain ajax calls: get history first, then hdas
+    var historyXHR = historyFn( historyId );
+    historyXHR.done( function( json ){
+        // set outer scope var here for use below
+        historyJSON = json;
+        df.notify({ status: 'history data retrieved', historyJSON: historyJSON });
+    });
+    historyXHR.fail( function( xhr, status, message ){
+        // call reject on the outer deferred to allow it's fail callback to run
+        //console.warn( 'getHistoryData.localFailHandler (history)', xhr, status, message );
+        df.reject( xhr, 'loading the history' );
+    });
+
+    var hdaXHR = historyXHR.then( hdaFn );
+    hdaXHR.then( function( hdaJSON ){
+        df.notify({ status: 'dataset data retrieved', historyJSON: historyJSON, hdaJSON: hdaJSON });
+        // we've got both: resolve the outer scope deferred
+        df.resolve( historyJSON, hdaJSON );
+    });
+    hdaXHR.fail( function( xhr, status, message ){
+        // call reject on the outer deferred to allow it's fail callback to run
+        //console.warn( 'getHistoryData.localFailHandler (hdas)', xhr, status, message );
+        df.reject( xhr, 'loading the datasets', { history: historyJSON } );
+    });
+
+    return df;
+};
 
 
 //==============================================================================
@@ -365,7 +291,7 @@ var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend(
 });
 
 //==============================================================================
-//return {
-//    History           : History,
-//    HistoryCollection : HistoryCollection,
-//};});
+return {
+    History           : History,
+    HistoryCollection : HistoryCollection
+};});
