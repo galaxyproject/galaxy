@@ -1,13 +1,5 @@
 <%inherit file="../grid_base.mako"/>
 
-<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
-
-<%def name="grid_javascripts()">
-    ${parent.grid_javascripts()}
-
-    ${handle_refresh_frames()}
-</%def>
-
 <%def name="grid_body( grid )">
     ${self.make_grid( grid )}
     <br/>

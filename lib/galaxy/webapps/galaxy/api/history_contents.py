@@ -59,22 +59,21 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     encoded_hda_id = trans.security.encode_id( hda.id )
                     if encoded_hda_id in ids:
                         #TODO: share code with show
-                        try:
-                            hda_dict = self.get_hda_dict( trans, hda )
-                            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-                            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-                            rval.append( hda_dict )
-
-                        except Exception, exc:
-                            # don't fail entire list if hda err's, record and move on
-                            log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
-                                history_id, encoded_hda_id, type( exc ), str( exc ), exc_info=True )
-                            rval.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+                        rval.append( self._detailed_hda_dict( trans, hda ) )
 
             # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
+                details = kwd.get( 'details', None ) or []
+                if details and details != 'all':
+                    details = util.listify( details )
+
                 for hda in history.datasets:
-                    rval.append( self._summary_hda_dict( trans, history_id, hda ) )
+                    encoded_hda_id = trans.security.encode_id( hda.id )
+                    if( ( encoded_hda_id in details )
+                    or  ( details == 'all' ) ):
+                        rval.append( self._detailed_hda_dict( trans, hda ) )
+                    else:
+                        rval.append( self._summary_hda_dict( trans, history_id, hda ) )
 
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
@@ -85,7 +84,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return rval
 
     #TODO: move to model or Mixin
-    def _summary_hda_dict( self, trans, history_id, hda ):
+    def _summary_hda_dict( self, trans, encoded_history_id, hda ):
         """
         Returns a dictionary based on the HDA in summary form::
             {
@@ -99,10 +98,31 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         encoded_id = trans.security.encode_id( hda.id )
         return {
             'id'    : encoded_id,
+            'history_id' : encoded_history_id,
             'name'  : hda.name,
             'type'  : api_type,
-            'url'   : url_for( 'history_content', history_id=history_id, id=encoded_id, ),
+            'state'  : hda.state,
+            'deleted': hda.deleted,
+            'visible': hda.visible,
+            'hid'   : hda.hid,
+            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
         }
+
+    def _detailed_hda_dict( self, trans, hda ):
+        """
+        Detailed dictionary of hda values.
+        """
+        try:
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+            return hda_dict
+
+        except Exception, exc:
+            # catch error here - returning a briefer hda_dict with an error attribute
+            log.exception( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                hda.history_id, hda.id, type( exc ), str( exc ) )
+            return self.get_hda_dict_with_error( trans, hda=hda, error_msg=str( exc ) )
 
     @web.expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
@@ -244,7 +264,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.response.status = 501
             return
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def update( self, trans, history_id, id, payload, **kwd ):
         """
         update( self, trans, history_id, id, payload, **kwd )
@@ -269,10 +289,28 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         changed = {}
         try:
-            hda = self.get_dataset( trans, id,
-                check_ownership=True, check_accessible=True, check_state=True )
-            # validation handled here and some parsing, processing, and conversion
-            payload = self._validate_and_parse_update_payload( payload )
+            # anon user
+            if trans.user == None:
+                if history_id != trans.security.encode_id( trans.history.id ):
+                    trans.response.status = 401
+                    return { 'error': 'Anonymous users cannot edit histories other than their current history' }
+
+                anon_allowed_payload = {}
+                if 'deleted' in payload:
+                    anon_allowed_payload[ 'deleted' ] = payload[ 'deleted' ]
+                if 'visible' in payload:
+                    anon_allowed_payload[ 'visible' ] = payload[ 'visible' ]
+
+                payload = self._validate_and_parse_update_payload( anon_allowed_payload )
+                hda = self.get_dataset( trans, id, check_ownership=False, check_accessible=False, check_state=True )
+                if hda.history != trans.history:
+                    trans.response.status = 401
+                    return { 'error': 'Anonymous users cannot edit datasets outside their current history' }
+
+            else:
+                payload = self._validate_and_parse_update_payload( payload )
+                hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=True )
+
             # additional checks here (security, etc.)
             changed = self.set_hda_from_dict( trans, hda, payload )
 

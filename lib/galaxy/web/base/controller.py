@@ -633,11 +633,11 @@ class UsesHistoryDatasetAssociationMixin:
 
         # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
         # expensive
-        if( ( hda.state in [ 'running', 'queued' ] )
-        and ( hda.creating_job and hda.creating_job.tool_id ) ):
-            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-            if tool_used and tool_used.force_history_refresh:
-                hda_dict[ 'force_history_refresh' ] = True
+        #if( ( hda.state in [ 'running', 'queued' ] )
+        #and ( hda.creating_job and hda.creating_job.tool_id ) ):
+        #    tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+        #    if tool_used and tool_used.force_history_refresh:
+        #        hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
 
@@ -653,13 +653,14 @@ class UsesHistoryDatasetAssociationMixin:
             'accessible': False
         })
 
-    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+    def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
         return trans.security.encode_dict_ids({
-            'id'        : hda.id,
-            'history_id': hda.history.id,
-            'hid'       : hda.hid,
-            'name'      : hda.name,
-            'error'     : error_msg
+            'id'        : hda.id if hda else id,
+            'history_id': hda.history.id if hda else history_id,
+            'hid'       : hda.hid if hda else '(unknown)',
+            'name'      : hda.name if hda else '(unknown)',
+            'error'     : error_msg,
+            'state'     : trans.model.Dataset.states.NEW
         })
 
     def get_display_apps( self, trans, hda ):

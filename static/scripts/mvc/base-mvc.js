@@ -7,31 +7,30 @@ var BaseModel = Backbone.RelationalModel.extend({
         name: null,
         hidden: false
     },
-    
+
     show: function() {
         this.set("hidden", false);
     },
-    
+
     hide: function() {
         this.set("hidden", true);
     },
-    
+
     is_visible: function() {
         return !this.attributes.hidden;
     }
 });
 
-
 /**
  * Base view that handles visibility based on model's hidden attribute.
  */
 var BaseView = Backbone.View.extend({
-    
+
     initialize: function() {
         this.model.on("change:hidden", this.update_visible, this);
         this.update_visible();
     },
-    
+
     update_visible: function() {
         if( this.model.attributes.hidden ){
             this.$el.hide();
@@ -120,7 +119,8 @@ var PersistentStorage = function( storageKey, storageDefaults ){
     // ~constants for the current engine
     var STORAGE_ENGINE = sessionStorage,
         STORAGE_ENGINE_GETTER = function sessionStorageGet( key ){
-            return JSON.parse( this.getItem( key ) );
+            var item = this.getItem( key );
+            return ( item !== null )?( JSON.parse( this.getItem( key ) ) ):( null );
         },
         STORAGE_ENGINE_SETTER = function sessionStorageSet( key, val ){
             return this.setItem( key, JSON.stringify( val ) );
@@ -182,7 +182,7 @@ var PersistentStorage = function( storageKey, storageDefaults ){
     }
 
     //??: more readable to make another class?
-    var returnedStorage = {};
+    var returnedStorage = {},
         // attempt to get starting data from engine...
         data = STORAGE_ENGINE_GETTER.call( STORAGE_ENGINE, storageKey );
 
@@ -216,3 +216,63 @@ var PersistentStorage = function( storageKey, storageDefaults ){
     
     return returnedStorage;
 };
+
+
+//==============================================================================
+function LoadingIndicator( $where ){
+    var self = this,
+        $indicator;
+
+    function setPosition(){
+        // even tho pos is 'fixed' - give illusion of width 100% and margin by manually setting width, offset
+        var padding = 4,
+            width = $indicator.parent().width() || $where.width(),
+            offset = $indicator.parent().offset() || $where.offset();
+
+        $indicator.outerWidth( width - ( padding * 2 ) );
+        // have to use css top, left and not offset (wont work when indicator is hidden)
+        $indicator.css({ top: offset.top + padding + 'px' , left: offset.left + padding + 'px' });
+    }
+
+    function render(){
+        var $spinner = $( '<span class="fa-icon-spinner fa-icon-spin fa-icon-large"></span>')
+                .css({ 'color' : 'grey', 'font-size' : '16px' });
+        var $message = $( '<i>loading...</i>' )
+                .css({ 'color' : 'grey', 'margin-left' : '8px' });
+        $indicator = $( '<div/>' ).addClass( 'loading-indicator' )
+            .css({
+                'position'          : 'fixed',
+                'padding'           : '4px',
+                'text-align'        : 'center',
+                'background-color'  : 'white',
+                'opacity'           : '0.85',
+                'border-radius'     : '3px'
+            })
+            .append( $spinner, $message )
+            //NOTE: insert as sibling to $where
+            .insertBefore( $where );
+        setPosition();
+        return $indicator.hide();
+    }
+
+    self.show = function( speed, callback ){
+        speed = speed || 'fast';
+        setPosition();
+        $indicator.fadeIn( speed, callback );
+        // not using full fadeOut allows using scroll to still work
+        //$whatIsLoading.fadeTo( speed, 0.0001, callback );
+        return self;
+    };
+
+    self.hide = function( speed, callback ){
+        speed = speed || 'fast';
+        //$whatIsLoading.fadeTo( speed, 1.0, function(){
+        //    if( callback ){ callback(); }
+        //});
+        $indicator.fadeOut( speed, callback );
+        return self;
+    };
+    $indicator = render();
+    return self;
+}
+

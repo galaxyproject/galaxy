@@ -97,6 +97,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 # Most recent active history for user sessions, not deleted
                 history = trans.user.galaxy_sessions[0].histories[-1].history
 
+            elif history_id == "current":
+                history = trans.get_history( create=True )
+
             else:
                 history = self.get_history( trans, history_id, check_ownership=False,
                                             check_accessible=True, deleted=deleted )
@@ -110,7 +113,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.exception( msg, exc_info=True )
+            log.exception( e )
             trans.response.status = 500
             return msg
 
@@ -174,7 +177,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+        #item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+        item = self.get_history_dict( trans, new_history )
         item['url'] = url_for( 'history', id=item['id'] )
 
         #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
