@@ -1,7 +1,6 @@
-//define([
-//    "../mvc/base-mvc"
-//], function(){
-
+define([
+    "mvc/dataset/hda-model"
+], function( hdaModel ){
 /* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
@@ -22,6 +21,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     tagName     : "div",
     className   : "historyItemContainer",
 
+    fxSpeed     : 'fast',
+
     // ......................................................................... SET UP
     /** Set up the view, cache url templates, bind listeners
      *  @param {Object} attributes
@@ -38,33 +39,20 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             this._render_showParamsButton
         ];
         
-        // cache urlTemplates (gen. provided by GalaxyPaths) to urls
-        if( !attributes.urlTemplates ){ throw( 'HDAView needs urlTemplates on initialize' ); }
-        this.urlTemplates = attributes.urlTemplates;
-
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
+        this._setUpListeners();
+    },
 
+    _setUpListeners : function(){
         // re-rendering on any model changes
-        this.model.bind( 'change', function( model, options ){
-            // if more than the display apps have changed: render everything
-            var nonDisplayAppChanges = _.omit( this.model.changedAttributes(), 'display_apps', 'display_types' );
-            if( _.keys( nonDisplayAppChanges ).length ){
-                this.render();
+        this.model.on( 'change', this.render, this );
 
-            // if just the display links, and it's already expanded: render the links only
-            } else {
-                if( this.expanded ){
-                    this._render_displayApps();
-                }
-            }
-        }, this );
-
-        //this.bind( 'all', function( event ){
+        //this.on( 'all', function( event ){
         //    this.log( event );
         //}, this );
     },
-   
+
     // ......................................................................... RENDER MAIN
     /** Render this HDA, set up ui.
      *  @fires rendered:ready when rendered and NO running HDAs
@@ -82,9 +70,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         this.$el.attr( 'id', 'historyItemContainer-' + id );
 
-        /** web controller urls for functions relating to this hda.
-         *      These are rendered from urlTemplates using the model data. */
-        this.urls = this._renderUrls( this.urlTemplates, this.model.toJSON() );
+        //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
+        // handle that here by removing previous view's tooltips
+        this.$el.find("[title]").tooltip( "destroy" );
+
+        /** web controller urls for functions relating to this hda. */
+        this.urls = this.model.urls();
 
         itemWrapper
             .addClass( 'historyItemWrapper' ).addClass( 'historyItem' )
@@ -100,9 +91,9 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         itemWrapper.append( this.body );
 
         // transition...
-        this.$el.fadeOut( 'fast', function(){
+        this.$el.fadeOut( this.fxSpeed, function(){
             view.$el.children().remove();
-            view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
+            view.$el.append( itemWrapper ).fadeIn( view.fxSpeed, function(){
                 view.log( view + ' rendered:', view.$el );
 
                 var renderedEventName = 'rendered';
@@ -117,55 +108,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
-    /** render the urls for this hda using the model data and the url templates from initialize.
-     *  @param {Object} urlTemplates a map (or nested map) of underscore templates (currently, anyhoo)
-     *  @param {Object} modelJson data from the model
-     *  @returns {Object} the templated urls
-     */
-    _renderUrls : function( urlTemplates, modelJson ){
-        var hdaView = this,
-            urls = {};
-        _.each( urlTemplates, function( urlTemplateOrObj, urlKey ){
-            // object == nested templates: recurse
-            if( _.isObject( urlTemplateOrObj ) ){
-                urls[ urlKey ] = hdaView._renderUrls( urlTemplateOrObj, modelJson );
-
-            // string == template:
-            } else {
-                // meta_down load is a special case (see renderMetaDownloadUrls)
-                //TODO: should be a better (gen.) way to handle this case
-                if( urlKey === 'meta_download' ){
-                    urls[ urlKey ] = hdaView._renderMetaDownloadUrls( urlTemplateOrObj, modelJson );
-
-                } else {
-                    try {
-                        urls[ urlKey ] = _.template( urlTemplateOrObj, modelJson );
-                    } catch( Error ){
-                        throw( hdaView + '._renderUrls error: ' + Error +
-                               '\n rendering:' + urlTemplateOrObj +
-                               '\n with ' + JSON.stringify( modelJson ) );
-                    }
-                }
-            }
-        });
-        return urls;
-    },
-
-    /** there can be more than one meta_file (e.g. bam index) to download,
-     *      so return a list of url and file_type for each
-     *  @param {Object} urlTemplate underscore templates for meta download urls
-     *  @param {Object} modelJson data from the model
-     *  @returns {Object} url and filetype for each meta file
-     */
-    _renderMetaDownloadUrls : function( urlTemplate, modelJson ){
-        return _.map( modelJson.meta_files, function( meta_file ){
-            return {
-                url         : _.template( urlTemplate, { id: modelJson.id, file_type: meta_file.file_type }),
-                file_type   : meta_file.file_type
-            };
-        });
-    },
-
     /** set up js behaviors, event handlers for elements within the given container
      *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
      */
@@ -174,7 +116,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
-        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -214,8 +156,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     _render_displayButton : function(){
         // don't show display if not viewable or not accessible
         // (do show if in error, running)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;
@@ -233,7 +175,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
         // disable if still uploading
-        } else if( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD ){
+        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
             displayBtnData.enabled = false;
             displayBtnData.title = _l( 'This dataset must finish uploading before it can be viewed' );
 
@@ -246,8 +188,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.on_click = function(){
-                parent.frame_manager.frame_new({
-                    title   : "Data Viewer",
+                Galaxy.frame_manager.frame_new({
+                    title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
                     location: "center",
                     content : self.urls.display
@@ -402,40 +344,40 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         body.html( '' );
         //TODO: not a fan of this dispatch
         switch( this.model.get( 'state' ) ){
-            case HistoryDatasetAssociation.STATES.NEW :
+            case hdaModel.HistoryDatasetAssociation.STATES.NEW :
                 this._render_body_new( body );
                 break;
-            case HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
+            case hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body );
                 break;
-            case HistoryDatasetAssociation.STATES.UPLOAD :
+            case hdaModel.HistoryDatasetAssociation.STATES.UPLOAD :
                 this._render_body_uploading( body );
                 break;
-            case HistoryDatasetAssociation.STATES.PAUSED:
+            case hdaModel.HistoryDatasetAssociation.STATES.PAUSED:
                 this._render_body_paused( body );
                 break;
-            case HistoryDatasetAssociation.STATES.QUEUED :
+            case hdaModel.HistoryDatasetAssociation.STATES.QUEUED :
                 this._render_body_queued( body );
                 break;
-            case HistoryDatasetAssociation.STATES.RUNNING :
+            case hdaModel.HistoryDatasetAssociation.STATES.RUNNING :
                 this._render_body_running( body );
                 break;
-            case HistoryDatasetAssociation.STATES.ERROR :
+            case hdaModel.HistoryDatasetAssociation.STATES.ERROR :
                 this._render_body_error( body );
                 break;
-            case HistoryDatasetAssociation.STATES.DISCARDED :
+            case hdaModel.HistoryDatasetAssociation.STATES.DISCARDED :
                 this._render_body_discarded( body );
                 break;
-            case HistoryDatasetAssociation.STATES.SETTING_METADATA :
+            case hdaModel.HistoryDatasetAssociation.STATES.SETTING_METADATA :
                 this._render_body_setting_metadata( body );
                 break;
-            case HistoryDatasetAssociation.STATES.EMPTY :
+            case hdaModel.HistoryDatasetAssociation.STATES.EMPTY :
                 this._render_body_empty( body );
                 break;
-            case HistoryDatasetAssociation.STATES.FAILED_METADATA :
+            case hdaModel.HistoryDatasetAssociation.STATES.FAILED_METADATA :
                 this._render_body_failed_metadata( body );
                 break;
-            case HistoryDatasetAssociation.STATES.OK :
+            case hdaModel.HistoryDatasetAssociation.STATES.OK :
                 this._render_body_ok( body );
                 break;
             default:
@@ -587,27 +529,44 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires body-expanded when a body has been expanded
      *  @fires body-collapsed when a body has been collapsed
      */
-    toggleBodyVisibility : function( event, expanded ){
+    toggleBodyVisibility : function( event, expand ){
         var hdaView = this;
-        this.expanded = ( expanded === undefined )?( !this.body.is( ':visible' ) ):( expanded );
-        //this.log( 'toggleBodyVisibility, expanded:', expanded, '$body:', $body );
-
-        if( this.expanded ){
-            hdaView._render_body_html( hdaView.body );
-            this.body.slideDown( 'fast', function(){
-                hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
-            });
+        expand = ( expand === undefined )?( !this.body.is( ':visible' ) ):( expand );
+        if( expand ){
+            if( this.model.inReadyState() && !this.model.hasDetails() ){
+                var xhr = this.model.fetch();
+                xhr.done( function( model ){
+                    hdaView.expandBody();
+                });
+            } else {
+                this.expandBody();
+            }
         } else {
-            this.body.slideUp( 'fast', function(){
-                hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
-            });
+            this.collapseBody();
         }
+    },
+
+    expandBody : function(){
+        var hdaView = this;
+        hdaView._render_body_html( hdaView.body );
+        this.body.slideDown( hdaView.fxSpeed, function(){
+            hdaView.expanded = true;
+            hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+        });
+    },
+
+    collapseBody : function(){
+        var hdaView = this;
+        this.body.slideUp( hdaView.fxSpeed, function(){
+            hdaView.expanded = false;
+            hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
+        });
     },
 
     // ......................................................................... DELETION
     remove : function( callback ){
         var hdaView = this;
-        this.$el.fadeOut( 'fast', function(){
+        this.$el.fadeOut( hdaView.fxSpeed, function(){
             hdaView.$el.remove();
             hdaView.off();
             if( callback ){ callback(); }
@@ -634,6 +593,6 @@ HDABaseView.templates = {
 };
 
 //==============================================================================
-//return {
-//    HDABaseView  : HDABaseView,
-//};});
+return {
+    HDABaseView  : HDABaseView,
+};});

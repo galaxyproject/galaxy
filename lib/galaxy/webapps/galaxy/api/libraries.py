@@ -11,7 +11,7 @@ from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 log = logging.getLogger( __name__ )
 
 class LibrariesController( BaseAPIController ):
-    
+
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
         """
@@ -28,7 +28,7 @@ class LibrariesController( BaseAPIController ):
         :returns:   list of dictionaries containing library information
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
         """
-        log.debug( "LibrariesController.index: enter" )
+#         log.debug( "LibrariesController.index: enter" )
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = util.string_as_bool( deleted )
         if deleted:
@@ -49,7 +49,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         rval = []
         for library in query:
-            item = library.dictify()
+            item = library.to_dict()
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
@@ -73,7 +73,7 @@ class LibrariesController( BaseAPIController ):
         :returns:   detailed library information
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
-        log.debug( "LibraryContentsController.show: enter" )
+#         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
         deleted = util.string_as_bool( deleted )
         try:
@@ -87,7 +87,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise HTTPBadRequest( detail='Invalid library id ( %s ) specified.' % id )
-        item = library.dictify( view='element' )
+        item = library.to_dict( view='element' )
         #item['contents_url'] = url_for( 'contents', library_id=library_id )
         item['contents_url'] = url_for( 'library_contents', library_id=library_id )
         return item
@@ -162,4 +162,4 @@ class LibrariesController( BaseAPIController ):
         library.deleted = True
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.dictify( view='element', value_mapper={ 'id' : trans.security.encode_id } )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id } )

@@ -28,13 +28,13 @@ class LocalJobRunner( BaseJobRunner ):
 
         #create a local copy of os.environ to use as env for subprocess.Popen
         self._environ = os.environ.copy()
-        
+
         # put lib into the PYTHONPATH for subprocesses
         if 'PYTHONPATH' in self._environ:
             self._environ['PYTHONPATH'] = '%s:%s' % ( self._environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
         else:
             self._environ['PYTHONPATH'] = os.path.abspath( 'lib' )
-        
+
         #Set TEMP if a valid temp value is not already set
         if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
             self._environ[ 'TEMP' ] = tempfile.gettempdir()
@@ -42,16 +42,31 @@ class LocalJobRunner( BaseJobRunner ):
         super( LocalJobRunner, self ).__init__( app, nworkers )
         self._init_worker_threads()
 
+    def __command_line( self, job_wrapper ):
+        """
+        """
+        command_line = job_wrapper.runner_command_line
+
+        ## slots would be cleaner name, but don't want deployers to see examples and think it
+        ## is going to work with other job runners.
+        slots = job_wrapper.job_destination.params.get( "local_slots", None )
+        command_line = command_line.lstrip( " ;" )
+        if slots:
+            command_line = 'export GALAXY_SLOTS="%d"; export GALAXY_SLOTS_CONFIGURED="1"; %s' % ( int( slots ), command_line )
+        else:
+            command_line = 'export GALAXY_SLOTS="1"; %s' % command_line
+        return command_line
+
     def queue_job( self, job_wrapper ):
         # prepare the job
         if not self.prepare_job( job_wrapper ):
             return
 
         stderr = stdout = ''
-        exit_code = 0 
+        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
+        command_line = self.__command_line( job_wrapper )
 
         job_id = job_wrapper.get_id_tag()
 
@@ -59,9 +74,9 @@ class LocalJobRunner( BaseJobRunner ):
             log.debug( '(%s) executing: %s' % ( job_id, command_line ) )
             stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
             stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
-            proc = subprocess.Popen( args = command_line, 
-                                     shell = True, 
-                                     cwd = job_wrapper.working_directory, 
+            proc = subprocess.Popen( args = command_line,
+                                     shell = True,
+                                     cwd = job_wrapper.working_directory,
                                      stdout = stdout_file,
                                      stderr = stderr_file,
                                      env = self._environ,

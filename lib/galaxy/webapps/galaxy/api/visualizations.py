@@ -24,11 +24,11 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
     """
     RESTful controller for interactions with visualizations.
     """
-    
+
     @web.expose_api
     def index( self, trans, **kwargs ):
         """
-        GET /api/visualizations: 
+        GET /api/visualizations:
         """
         #TODO: search for vizsesses that apply to an object (sending model class and id? - how to do this?)
         rval = []
@@ -65,7 +65,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
             log.exception( 'visualizations index failed: %s' %( str( exception ) ) )
 
         return rval
-        
+
     @web.json
     def show( self, trans, id, **kwargs ):
         """
@@ -104,7 +104,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
             log.exception( 'visualization show failed (%s): %s' %( id, str( exception ) ) )
 
         return rval
-        
+
     @web.expose_api
     def create( self, trans, payload, **kwargs ):
         """
@@ -212,7 +212,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             'id', 'model_class'
-            #TODO: fill out when we create dictify, get_dict, whatevs
+            #TODO: fill out when we create to_dict, get_dict, whatevs
         )
         #TODO: deleted
         #TODO: importable

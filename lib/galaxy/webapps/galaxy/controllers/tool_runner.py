@@ -61,6 +61,7 @@ class ToolRunner( BaseUIController ):
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
+            trans.response.status = 404
             return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
         if tool.require_login and not trans.user:
             message = "You must be logged in to use this tool."
@@ -98,22 +99,6 @@ class ToolRunner( BaseUIController ):
                                     **vars )
 
     @web.expose
-    def display_tool_help_image_in_repository( self, trans, **kwd ):
-        repository_id = kwd.get( 'repository_id', None )
-        image_file = kwd.get( 'image_file', None )
-        if repository_id and image_file:
-            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_files_directory( trans.app ) )
-            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
-            if os.path.exists( default_path ):
-                return open( default_path, 'r' )
-            else:
-                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
-                if os.path.exists( path_to_file ):
-                    return open( path_to_file, 'r' )
-        return None
-
-    @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):
         """
         Given a HistoryDatasetAssociation id, find the job and that created
@@ -137,7 +122,7 @@ class ToolRunner( BaseUIController ):
         #only allow rerunning if user is allowed access to the dataset.
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
             error( "You are not allowed to access this dataset" )
-        # Get the associated job, if any. 
+        # Get the associated job, if any.
         job = data.creating_job
         if not job:
             raise Exception("Failed to get job information for dataset hid %d" % data.hid)
@@ -182,15 +167,15 @@ class ToolRunner( BaseUIController ):
         except:
             raise Exception( "Failed to get parameters for dataset id %d " % data.id )
         upgrade_messages = tool.check_and_update_param_values( params_objects, trans, update_values=False )
-        # Need to remap dataset parameters. Job parameters point to original 
-        # dataset used; parameter should be the analygous dataset in the 
+        # Need to remap dataset parameters. Job parameters point to original
+        # dataset used; parameter should be the analygous dataset in the
         # current history.
         history = trans.get_history()
         hda_source_dict = {} # Mapping from HDA in history to source HDAs.
         for hda in history.datasets:
             source_hda = hda.copied_from_history_dataset_association
             while source_hda:#should this check library datasets as well?
-                #FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories, 
+                #FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories,
                 #but is still less than perfect when eg individual datasets are copied between histories
                 if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
                     hda_source_dict[ source_hda ] = hda
@@ -246,7 +231,7 @@ class ToolRunner( BaseUIController ):
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
-    
+
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:
@@ -340,4 +325,5 @@ class ToolRunner( BaseUIController ):
         <p><b>Please do not use your browser\'s "stop" or "reload" buttons until the upload is complete, or it may be interrupted.</b></p>
         <p>You may safely continue to use Galaxy while the upload is in progress.  Using "stop" and "reload" on pages other than Galaxy is also safe.</p>
         """
+        #return trans.show_message( msg, refresh_frames=[ 'history' ] )
         return trans.show_message( msg )

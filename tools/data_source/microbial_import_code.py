@@ -80,7 +80,7 @@ def load_microbial_data( GALAXY_DATA_INDEX_DIR, sep='\t' ):
     return microbe_info
 
 #post processing, set build for data and add additional data to history
-from galaxy import datatypes, config, jobs, tools
+from galaxy import datatypes, config, tools
 from shutil import copyfile
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
@@ -144,10 +144,10 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             try:
                 copyfile(filepath,newdata.file_name)
                 newdata.info = newdata.name
-                newdata.state = jobs.JOB_OK
+                newdata.state = newdata.states.OK
             except:
                 newdata.info = "The requested file is missing from the system."
-                newdata.state = jobs.JOB_ERROR
+                newdata.state = newdata.states.ERROR
             newdata.dbkey = dbkey
             newdata.init_meta()
             newdata.set_peek()

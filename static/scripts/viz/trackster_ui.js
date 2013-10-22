@@ -62,9 +62,9 @@ var TracksterUI = base.Base.extend({
                 }
             },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
-                // Show saving dialog box
-                show_modal("Saving...", "progress");
-                                    
+                // show dialog
+                Galaxy.modal.show({title: "Saving...", body: "progress" });
+                
                 // Save bookmarks.
                 var bookmarks = [];
                 $(".bookmark").each(function() { 
@@ -75,7 +75,7 @@ var TracksterUI = base.Base.extend({
                 });
 
                 // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null),
+                var overview_track_name = (view.overview_drawable ? view.overview_drawable.prefs.name : null),
                     viz_config = {
                         'view': view.to_dict(),
                         'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
@@ -88,23 +88,34 @@ var TracksterUI = base.Base.extend({
                     dataType: "json",
                     data: { 
                         'id'        : view.vis_id,
-                        'title'     : view.name,
+                        'title'     : view.prefs.name,
                         'dbkey'     : view.dbkey,
                         'type'      : 'trackster',
                         'vis_json'  : JSON.stringify(viz_config)
                     }
                 }).success(function(vis_info) {
-                    hide_modal();
+                    Galaxy.modal.hide();
                     view.vis_id = vis_info.vis_id;
                     view.has_changes = false;
 
                     // Needed to set URL when first saving a visualization.
                     window.history.pushState({}, "", vis_info.url + window.location.hash);
-                })
-                .error(function() { 
-                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", { "Close" : hide_modal } );
+                }).error(function() {
+                    // show dialog
+                    Galaxy.modal.show({
+                        title   : "Could Not Save",
+                        body    : "Could not save visualization. Please try again later.",
+                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
+                    });
                 });
-            } }
+            } },
+            {
+                icon_class: 'cross-circle',
+                title: 'Close',
+                on_click: function() {
+                    window.location = galaxy_config.root + 'visualization';
+                }
+            }
         ], 
         { 
             tooltip_config: { placement: 'bottom' }
@@ -119,43 +130,54 @@ var TracksterUI = base.Base.extend({
     add_bookmarks: function() {
         var self = this,
             baseURL = this.baseURL;
-        show_modal( "Select dataset for new bookmarks", "progress" );
+        
+        // show modal while loading history
+        Galaxy.modal.show({title: "Select dataset for new bookmarks", body: "progress" });
+                
         $.ajax({
             url: this.baseURL + "/visualization/list_histories",
             data: { "f-dbkey": view.dbkey },
             error: function() { alert( "Grid failed" ); },
             success: function(table_html) {
-                show_modal(
-                    "Select dataset for new bookmarks",
-                    table_html, {
-                        "Cancel": function() {
-                            hide_modal();
+               
+                // show modal to select bookmarks
+                Galaxy.modal.show(
+                {
+                    title   : "Select dataset for new bookmarks",
+                    body    : table_html,
+                    buttons :
+                    {
+                        "Cancel": function()
+                        {
+                            Galaxy.modal.hide();
                         },
-                        "Insert": function() {
+                        
+                        "Insert": function()
+                        {
                             // Just use the first selected
-                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function(){
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function()
+                            {
                                 var data, id = $(this).val();
-                                    if ($(this).attr("name") === "id") {
-                                        data = { hda_id: id };
-                                    } else {
-                                        data = { ldda_id: id};
-                                    }
+                                if ($(this).attr("name") === "id")
+                                    data = { hda_id: id };
+                                else
+                                    data = { ldda_id: id};
 
-                                    $.ajax({
-                                        url: this.baseURL + "/visualization/bookmarks_from_dataset",
-                                        data: data,
-                                        dataType: "json"
-                                    }).then( function(data) {
-                                        for( i = 0; i < data.data.length; i++ ) {
-                                            var row = data.data[i];
-                                            self.add_bookmark( row[0], row[1] );
-                                        }
-                                    });
+                                $.ajax({
+                                    url: this.baseURL + "/visualization/bookmarks_from_dataset",
+                                    data: data,
+                                    dataType: "json"
+                                }).then( function(data) {
+                                    for( i = 0; i < data.data.length; i++ ) {
+                                        var row = data.data[i];
+                                        self.add_bookmark( row[0], row[1] );
+                                    }
+                                });
                             });
-                            hide_modal();
+                            Galaxy.modal.hide();
                         }
                     }
-                );
+                });
             }
         });
     },
@@ -243,7 +265,7 @@ var TracksterUI = base.Base.extend({
             // Set overview.
             var overview_drawable;
             for (var i = 0; i < view.drawables.length; i++) {
-                if (view.drawables[i].name === overview_drawable_name) {
+                if (view.drawables[i].prefs.name === overview_drawable_name) {
                     view.set_overview(view.drawables[i]);
                     break;
                 }

@@ -25,7 +25,7 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">

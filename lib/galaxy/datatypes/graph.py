@@ -34,14 +34,9 @@ class Xgmml( xml.GenericXml ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is XML or not, should probably actually check if it is a real xgmml file....
+        Returns false and the user must manually set.
         """
-        line = ''
-        with open( filename ) as handle:
-            line = handle.readline()
-
-        #TODO - Is there a more robust way to do this?
-        return line.startswith( '<?xml ' )
+        return False
 
     @staticmethod
     def merge( split_files, output_file ):
@@ -85,19 +80,9 @@ class Sif( tabular.Tabular ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is SIF
+        Returns false and the user must manually set.
         """
-        line = ''
-        with open( filename ) as infile:
-            correct = True
-            for line in infile:
-                if not line.strip():
-                    continue
-                tlen = len( line.split( "\t" ) )
-                # may contain 1 or >= 3 columns
-                if tlen == 2:
-                    correct = False
-        return correct
+        return False
 
     @staticmethod
     def merge( split_files, output_file ):
@@ -115,6 +100,12 @@ class Rdf( xml.GenericXml ):
     Resource Description Framework format (http://www.w3.org/RDF/).
     """
     file_ext = "rdf"
+
+    def sniff( self, filename ):
+        """
+        Returns false and the user must manually set.
+        """
+        return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""

@@ -3,7 +3,7 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
         html, body {
             background-color: #fff;
@@ -322,9 +322,8 @@
         %endif
 
         %if trans.app.config.biostar_url:
-            <!-- BioStar links -->
-            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
-            <!-- End of BioStar links -->
+            ## BioStar links
+            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign" title="Ask a question about this tool"></a></span>
         %endif
         </div>
         <div class="toolFormBody">

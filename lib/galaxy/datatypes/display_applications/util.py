@@ -10,7 +10,7 @@ def encode_dataset_user( trans, dataset, user ):
         user_hash = 'None'
     else:
         user_hash = str( user.id )
-        # Pad to a multiple of 8 with leading "!" 
+        # Pad to a multiple of 8 with leading "!"
         user_hash = ( "!" * ( 8 - len( user_hash ) % 8 ) ) + user_hash
         cipher = Blowfish.new( str( dataset.create_time ) )
         user_hash = cipher.encrypt( user_hash ).encode( 'hex' )

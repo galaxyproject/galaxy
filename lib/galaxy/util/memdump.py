@@ -8,15 +8,15 @@ try:
     pkg_resources.require( "guppy" )
 
 except:
-    
+
     import sys
     print >> sys.stderr, "No guppy module, Memdump not available"
     Memdump = None
-    
+
 else:
-    
+
     import os, sys, signal, time, guppy
-    
+
     class Memdump( object ):
         def __init__( self, signum=signal.SIGUSR1, fname="memdump.log" ):
             self.fname = fname

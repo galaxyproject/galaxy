@@ -262,7 +262,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         """
         if self.limit != None and self.num_data_returned >= self.limit:
             return None
-        
+
         last_block = self.assemble_current_block()
         self.num_data_read += 1
 

@@ -4,7 +4,7 @@ from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField, CheckboxField
 from sqlalchemy.sql.expression import func
 from galaxy.model.orm import and_
-from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.util.container_util import STRSEP
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import review_util
@@ -18,9 +18,9 @@ from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
-    
-class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
-    
+
+class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
+
     component_grid = repository_review_grids.ComponentGrid()
     repositories_ready_for_review_grid = repository_review_grids.RepositoriesReadyForReviewGrid()
     repositories_reviewed_by_me_grid = repository_review_grids.RepositoriesReviewedByMeGrid()

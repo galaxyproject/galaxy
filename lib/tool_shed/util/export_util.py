@@ -245,7 +245,7 @@ def get_repository_attributes_and_sub_elements( repository, archive_name ):
     attributes[ 'username' ] = str( repository.user.username )
     # Don't coerce description or long description from unicode to string because the fields are free text.
     sub_elements[ 'description' ] = repository.description
-    sub_elements[ 'long_description' ] = repository.long_description 
+    sub_elements[ 'long_description' ] = repository.long_description
     sub_elements[ 'archive' ] = archive_name
     # Keep track of Category associations.
     categories = []

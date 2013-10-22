@@ -23,25 +23,12 @@ import paste
 
 log = logging.getLogger(__name__)
 
-tmpd = tempfile.mkdtemp()
-comptypes=[]
-ziptype = '32'
-tmpf = os.path.join( tmpd, 'compression_test.zip' )
+comptypes=[]  # Is this being used anywhere, why was this here? -JohnC
 try:
-    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-    archive.close()
+    import zlib
     comptypes.append( 'zip' )
-    ziptype = '64'
-except RuntimeError:
-    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-except (TypeError, zipfile.LargeZipFile):    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-    comptypes.append( 'zip' )
-try:
-    os.unlink( tmpf )
-except OSError:
+except ImportError:
     pass
-os.rmdir( tmpd )
 
 
 # Valid first column and strand column values vor bed, other formats
@@ -233,10 +220,7 @@ class Data( object ):
                     tmpd = tempfile.mkdtemp()
                     util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
-                    if ziptype == '64':
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    else:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                     archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall( 'w|gz' )
@@ -282,14 +266,14 @@ class Data( object ):
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream

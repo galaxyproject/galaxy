@@ -72,6 +72,7 @@
       <option value="0.8">0.8</option>
       <option value="0.9">0.9</option>
       <option value="1.0">1.0</option>
+      <validator type="no_options" message="You must select at least one value" />
     </param>
     <param name="detection_thresh" type="select" multiple="true" label="Detection thresholds">
       <option value="0.001">0.001</option>
@@ -102,6 +103,7 @@
       <option value="0.8">0.8</option>
       <option value="0.9">0.9</option>
       <option value="1.0">1.0</option>
+      <validator type="no_options" message="You must select at least one value" />
     </param>
     <param name="summary_out" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Include a (text) summary file for all the simulations" />
 <!--    <param name="sim_results" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output all tabular simulation results" help="Number of polymorphisms times number of detection thresholds"/>

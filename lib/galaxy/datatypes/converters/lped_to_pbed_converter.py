@@ -15,7 +15,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Galaxy %s tool output - see http://g2.trac.bx.psu.edu/" />
+<meta name="generator" content="Galaxy %s tool output - see http://getgalaxy.org" />
 <title></title>
 <link rel="stylesheet" href="/static/style/base.css" type="text/css" />
 </head>
@@ -29,7 +29,7 @@ def timenow():
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
 def getMissval(inped=''):
-   """ 
+   """
    read some lines...ugly hack - try to guess missing value
    should be N or 0 but might be . or -
    """
@@ -43,18 +43,18 @@ def getMissval(inped=''):
         try:
           l = f.readline()
         except:
-          break 
+          break
         ll = l.split()[6:] # ignore pedigree stuff
         for c in ll:
             if commonmissvals.get(c,None):
-               missval = c 
+               missval = c
                f.close()
                return missval
-   if not missval: 
+   if not missval:
        missval = 'N' # punt
-   close(f) 
+   close(f)
    return missval
-   
+
 def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):
     """
     """
@@ -104,7 +104,7 @@ def main():
     f.write("</div></body></html>")
     f.close()
 
-  
+
 
 if __name__ == "__main__":
    main()

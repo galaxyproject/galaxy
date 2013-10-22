@@ -1,6 +1,7 @@
-//define([
-//    "../mvc/base-mvc"
-//], function(){
+define([
+    "mvc/dataset/hda-model",
+    "mvc/dataset/hda-base"
+], function( hdaModel, hdaBase ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
@@ -10,7 +11,7 @@
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
+var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 /** @lends HDAEditView.prototype */{
 
     // ......................................................................... SET UP
@@ -22,7 +23,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#initialize
      */
     initialize  : function( attributes ){
-        HDABaseView.prototype.initialize.call( this, attributes );
+        hdaBase.HDABaseView.prototype.initialize.call( this, attributes );
+        this.hasUser = attributes.hasUser;
 
         /** list of rendering functions for the default, primary icon-buttons. */
         this.defaultPrimaryActionButtonRenderers = [
@@ -37,32 +39,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
      */
     _setUpBehaviors : function( $container ){
-        //TODO: ideally this would be a DELETE call to the api
-        //  using purge async for now
-        HDABaseView.prototype._setUpBehaviors.call( this, $container );
-
-        // use purge_async with an ajax call
-        var hdaView = this,
-            purge_url = this.urls.purge,
-            purge_link = $container.find( '#historyItemPurger-' + this.model.get( 'id' ) );
-        if( purge_link ){
-            //TODO: remove href from template
-            purge_link.attr( 'href', [ "javascript", "void(0)" ].join( ':' ) );
-            purge_link.click( function( event ){
-                //TODO??: confirm?
-                var ajaxPromise = jQuery.ajax( purge_url );
-                ajaxPromise.success( function( message, status, responseObj ){
-                    hdaView.model.set( 'purged', true );
-                    hdaView.trigger( 'purged', hdaView );
-                });
-                ajaxPromise.error( function( error, status, message ){
-                    //TODO: Exception messages are hidden within error page
-                    //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    hdaView.trigger( 'error', _l( "Unable to purge this dataset" ), error, status, message );
-                });
-            });
-        }
-        //TODO: same with undelete_async
+        hdaBase.HDABaseView.prototype._setUpBehaviors.call( this, $container );
+        //var hdaView = this;
     },
 
     // ......................................................................... RENDER WARNINGS
@@ -73,7 +51,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_warnings : function(){
         // jQ errs on building dom with whitespace - if there are no messages, trim -> ''
-        return $( jQuery.trim( HDABaseView.templates.messages(
+        return $( jQuery.trim( hdaBase.HDABaseView.templates.messages(
             _.extend( this.model.toJSON(), { urls: this.urls } )
         )));
     },
@@ -100,9 +78,9 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;
             return null;
@@ -137,42 +115,26 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     _render_deleteButton : function(){
         // don't show delete if...
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.deleteButton = null;
             return null;
         }
         
         var self = this,
+            id = 'historyItemDeleter-' + self.model.get( 'id' ),
             delete_url = self.urls[ 'delete' ],
             deleteBtnData = {
-            title       : _l( 'Delete' ),
-            href        : delete_url,
-            id          : 'historyItemDeleter-' + this.model.get( 'id' ),
-            icon_class  : 'delete',
-            on_click    : function() {
-                // Delete the dataset on the server and update HDA + view depending on success/failure.
-                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly
-                // on the model.
-                $.ajax({
-                    url: delete_url,
-                    type: 'POST',
-                    error: function() {
-                        // Something went wrong, so show HDA again.
-                        // TODO: an error notification would be good.
-                        self.$el.show();
-                    },
-                    success: function() {
-                        // FIXME: setting model attribute causes re-rendering, which is unnecessary.
-                        //self.$el.remove();
-                        self.model.set({ deleted: true });
-                    }
-                });
-
-                // Return false so that anchor action (page reload) does not happen.
-                //return false;
-            }
+                title       : _l( 'Delete' ),
+                href        : delete_url,
+                id          : id,
+                icon_class  : 'delete',
+                on_click    : function() {
+                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
+                    self.$el.find( '.menu-button.delete' ).trigger( 'mouseout' );
+                    self.model[ 'delete' ]();
+                }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
@@ -199,7 +161,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             //TODO: use HDABaseView and select/replace base on this switch
             _.extend( modelData, { dbkey_unknown_and_editable : true });
         }
-        return HDABaseView.templates.hdaSummary( modelData );
+        return hdaBase.HDABaseView.templates.hdaSummary( modelData );
     },
 
     // ......................................................................... primary actions
@@ -207,7 +169,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_errButton : function(){
-        if( this.model.get( 'state' ) !== HistoryDatasetAssociation.STATES.ERROR ){
+        if( this.model.get( 'state' ) !== hdaModel.HistoryDatasetAssociation.STATES.ERROR ){
             this.errButton = null;
             return null;
         }
@@ -289,7 +251,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
                     return function(){// add widget
-                        parent.frame_manager.frame_new(
+                        Galaxy.frame_manager.frame_new(
                         {
                             title    : "Visualization",
                             type     : "url",
@@ -375,8 +337,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     //TODO: these should be a sub-MV
     _render_tagButton : function(){
         //TODO: check for User
-        if( !( this.model.hasData() )
-        ||   ( !this.urls.tags.get ) ){
+        if( !this.hasUser || !this.urls.tags.get ){
             this.tagButton = null;
             return null;
         }
@@ -396,8 +357,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     //TODO: these should be a sub-MV
     _render_annotateButton : function(){
         //TODO: check for User
-        if( !( this.model.hasData() )
-        ||   ( !this.urls.annotation.get ) ){
+        if( !this.hasUser || !this.urls.annotation.get ){
             this.annotateButton = null;
             return null;
         }
@@ -414,8 +374,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     /** Render area to display tags.
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: into sub-MV
-    //TODO: check for User
+//TODO: into sub-MV
+//TODO: check for User
     _render_tagArea : function(){
         if( !this.urls.tags.set ){ return null; }
         //TODO: move to mvc/tags.js
@@ -427,8 +387,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     /** Render area to display annotation.
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: into sub-MV
-    //TODO: check for User
+//TODO: into sub-MV
+//TODO: check for User
     _render_annotationArea : function(){
         if( !this.urls.annotation.get ){ return null; }
         //TODO: move to mvc/annotations.js
@@ -444,7 +404,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_error
      */
     _render_body_error : function( parent ){
-        HDABaseView.prototype._render_body_error.call( this, parent );
+        hdaBase.HDABaseView.prototype._render_body_error.call( this, parent );
         var primaryActions = parent.find( '#primary-actions-' + this.model.get( 'id' ) );
         primaryActions.prepend( this._render_errButton() );
     },
@@ -495,11 +455,21 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     /** event map */
     events : {
         'click .historyItemTitle'           : 'toggleBodyVisibility',
+        'click .historyItemUndelete'        : function( ev ){ this.model.undelete(); return false; },
+        'click .historyItemUnhide'          : function( ev ){ this.model.unhide();   return false; },
+        'click .historyItemPurge'           : 'confirmPurge',
+
         'click a.icon-button.tags'          : 'loadAndDisplayTags',
         'click a.icon-button.annotate'      : 'loadAndDisplayAnnotation'
     },
     
     // ......................................................................... STATE CHANGES / MANIPULATION
+    confirmPurge : function _confirmPurge( ev ){
+        //TODO: confirm dialog
+        this.model.purge({ url: this.urls.purge });
+        return false;
+    },
+
     /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
     //TODO: into sub-MV
@@ -520,32 +490,32 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     url: this.urls.tags.get,
                     error: function( xhr, status, error ){
                         view.log( "Tagging failed", xhr, status, error );
-                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                        view.trigger( 'error', view, xhr, {}, _l( "Tagging failed" ) );
                     },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
-                        tagElt.find(".tooltip").tooltip();
-                        tagArea.slideDown("fast");
+                        tagElt.find("[title]").tooltip();
+                        tagArea.slideDown( view.fxSpeed );
                     }
                 });
             } else {
                 // Tag element is filled; show.
-                tagArea.slideDown("fast");
+                tagArea.slideDown( view.fxSpeed );
             }
         } else {
             // Hide.
-            tagArea.slideUp("fast");
+            tagArea.slideUp( view.fxSpeed );
         }
         return false;
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
-    //TODO: into sub-MV
     loadAndDisplayAnnotation : function( event ){
-        //TODO: this is a drop in from history.mako - should use MV as well
+//TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayAnnotation', event );
-        var annotationArea = this.$el.find( '.annotation-area' ),
+        var view = this,
+            annotationArea = this.$el.find( '.annotation-area' ),
             annotationElem = annotationArea.find( '.annotation-elt' ),
             setAnnotationUrl = this.urls.annotation.set;
 
@@ -557,30 +527,30 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     url: this.urls.annotation.get,
                     error: function(){
                         view.log( "Annotation failed", xhr, status, error );
-                        view.trigger( 'error', _l( "Annotation failed" ), xhr, status, error );
+                        view.trigger( 'error', view, xhr, {}, _l( "Annotation failed" ) );
                     },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
                         }
                         annotationElem.html( htmlFromAjax );
-                        annotationArea.find(".tooltip").tooltip();
+                        annotationArea.find("[title]").tooltip();
                         
                         async_save_text(
                             annotationElem.attr("id"), annotationElem.attr("id"),
                             setAnnotationUrl,
                             "new_annotation", 18, true, 4
                         );
-                        annotationArea.slideDown("fast");
+                        annotationArea.slideDown( view.fxSpeed );
                     }
                 });
             } else {
-                annotationArea.slideDown("fast");
+                annotationArea.slideDown( view.fxSpeed );
             }
             
         } else {
             // Hide.
-            annotationArea.slideUp("fast");
+            annotationArea.slideUp( view.fxSpeed );
         }
         return false;
     },
@@ -611,7 +581,7 @@ HDAEditView.templates = {
 function create_scatterplot_action_fn( url, params ){
     action = function() {
         // add widget
-        parent.frame_manager.frame_new(
+        Galaxy.frame_manager.frame_new(
         {
             title      : "Scatterplot",
             type       : "url",
@@ -634,69 +604,79 @@ function create_scatterplot_action_fn( url, params ){
  *  @returns function that displays modal, loads trackster
  */
 //TODO: should be imported from trackster.js
-function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
-    return function() {
-        var listTracksParams = {};
-        if (dbkey){
-            // list_tracks seems to use 'f-dbkey' (??)
-            listTracksParams[ 'f-dbkey' ] = dbkey;
-        }
-        $.ajax({
-            url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
-            dataType: "html",
-            error: function() { alert( _l( "Could not add this dataset to browser" ) + '.' ); },
-            success: function(table_html) {
-                var parent = window.parent;
-
-                parent.show_modal( _l( "View Data in a New or Saved Visualization" ), "", {
-                    "Cancel": function() {
-                        parent.hide_modal();
-                    },
-                    "View in saved visualization": function() {
-                        // Show new modal with saved visualizations.
-                        parent.show_modal( _l( "Add Data to Saved Visualization" ), table_html, {
-                            "Cancel": function() {
-                                parent.hide_modal();
+//TODO: This function is redundant and also exists in data.js
+    // create action
+    function create_trackster_action_fn (vis_url, dataset_params, dbkey) {
+        return function() {
+            var listTracksParams = {};
+            if (dbkey){
+                // list_tracks seems to use 'f-dbkey' (??)
+                listTracksParams[ 'f-dbkey' ] = dbkey;
+            }
+            $.ajax({
+                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                dataType: "html",
+                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+                    parent.Galaxy.modal.show({
+                        title   : "View Data in a New or Saved Visualization",
+                        buttons :{
+                            "Cancel": function(){
+                                parent.Galaxy.modal.hide();
                             },
-                            "Add to visualization": function() {
-                                $(parent.document).find('input[name=id]:checked').each(function() {
-                                    var vis_id = $(this).val();
-                                    dataset_params.id = vis_id;
+                            "View in saved visualization": function(){
+                                // Show new modal with saved visualizations.
+                                parent.Galaxy.modal.show(
+                                {
+                                    title: "Add Data to Saved Visualization",
+                                    body: table_html,
+                                    buttons :{
+                                        "Cancel": function(){
+                                            parent.Galaxy.modal.hide();
+                                        },
+                                        "Add to visualization": function(){
+                                            $(parent.document).find('input[name=id]:checked').each(function(){
+                                                // hide
+                                                parent.Galaxy.modal.hide();
+                                                
+                                                var vis_id = $(this).val();
+                                                dataset_params.id = vis_id;
+                                        
+                                                // add widget
+                                                parent.Galaxy.frame_manager.frame_new({
+                                                    title    : "Trackster",
+                                                    type     : "url",
+                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            },
+                            "View in new visualization": function(){
+                                // hide
+                                parent.Galaxy.modal.hide();
+                                
+                                var url = vis_url + "/trackster?" + $.param(dataset_params);
 
-                                    // hide modal
-                                    parent.hide_modal();
-
-                                    // add widget
-                                    parent.frame_manager.frame_new(
-                                    {
-                                        title    : "Trackster",
-                                        type     : "url",
-                                        content  : vis_url + "/trackster?" + $.param(dataset_params)
-                                    });
+                                // add widget
+                                parent.Galaxy.frame_manager.frame_new({
+                                    title    : "Trackster",
+                                    type     : "url",
+                                    content  : url
                                 });
                             }
-                        });
-                    },
-                    "View in new visualization": function() {
-                        // hide modal
-                        parent.hide_modal();
+                        }
+                    });
+                }
+            });
+            return false;
+        };
+    }
 
-                        // add widget
-                        parent.frame_manager.frame_new(
-                        {
-                            title    : "Trackster",
-                            type     : "url",
-                            content  : vis_url + "/trackster?" + $.param(dataset_params)
-                        });
-                    }
-                });
-            }
-        });
-        return false;
-    };
-}
 
 //==============================================================================
-//return {
-//    HDAView  : HDAView,
-//};});
+return {
+    HDAEditView  : HDAEditView,
+};});

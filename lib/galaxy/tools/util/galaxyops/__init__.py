@@ -8,7 +8,7 @@ def warn( msg ):
     # don't need both a warn and a fail...
     print >> sys.stderr, msg
     sys.exit( 1 )
-    
+
 def fail( msg ):
     print >> sys.stderr, msg
     sys.exit( 1 )

@@ -30,9 +30,9 @@ class PopulatedExternalServiceAction( object ):
 
 class ExternalServiceAction( object ):
     """ Abstract Class for External Service Actions """
-    
+
     type = None
-    
+
     @classmethod
     def from_elem( cls, elem, parent ):
         action_type = elem.get( 'type', None )
@@ -63,7 +63,7 @@ class ExternalServiceAction( object ):
     def populate_action( self, param_dict ):
         return PopulatedExternalServiceAction( self, param_dict )
     def handle_action( self, completed_action, param_dict, trans ):
-        handled_results = [] 
+        handled_results = []
         for handled_result in self.result_handlers:
             handled_results.append( handled_result.handle_result( completed_action, param_dict, trans ) )
         return handled_results
@@ -102,9 +102,9 @@ class ExternalServiceValueResult( ExternalServiceResult ):
 
 class ExternalServiceWebAPIAction( ExternalServiceAction ):
     """ Action that accesses an external Web API and provides handlers for the requested content """
-    
+
     type = 'web_api'
-    
+
     class ExternalServiceWebAPIActionRequest( object ):
         def __init__( self, elem, parent ):
             self.target = elem.get( 'target', '_blank' )
@@ -117,7 +117,7 @@ class ExternalServiceWebAPIAction( ExternalServiceAction ):
             method = self.method
             url = self.url.build_template( param_dict ).strip()
             return ExternalServiceWebAPIActionResult( name, param_dict, url, method, target )
-    
+
     def __init__( self, elem, parent ):
         ExternalServiceAction.__init__( self, elem, parent )
         self.web_api_request = self.ExternalServiceWebAPIActionRequest( elem.find( 'request' ), parent )
@@ -141,9 +141,9 @@ class ExternalServiceWebAction( ExternalServiceAction ):
 
 class ExternalServiceTemplateAction( ExternalServiceAction ):
     """ Action that redirects to an external URL """
-    
+
     type = 'template'
-    
+
     def __init__( self, elem, parent ):
         ExternalServiceAction.__init__( self, elem, parent )
         self.template = Template( elem.find( 'template' ), parent )

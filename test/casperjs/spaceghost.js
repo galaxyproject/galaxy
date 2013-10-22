@@ -1109,7 +1109,7 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
  */
 SpaceGhost.prototype.data = {
     selectors : {
-        tooltipBalloon          : '.bs-tooltip',
+        tooltipBalloon          : '.tooltip',
 
         editableText            : '.editable-text',
         editableTextInput       : 'input#renaming-active',

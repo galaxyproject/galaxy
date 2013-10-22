@@ -110,6 +110,14 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
+#DBTODO refactor these post-dist.
+def expose_api_raw_anonymous( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False, user_required=False )
+
 def expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
@@ -270,7 +278,7 @@ class WebApplication( base.WebApplication ):
 
     def add_ui_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseUIController
@@ -294,7 +302,7 @@ class WebApplication( base.WebApplication ):
 
     def add_api_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseAPIController
@@ -341,6 +349,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+            
+        
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -348,6 +358,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # If an error message is set here, it's sent back using
             # trans.show_error in the response -- in expose_api.
             self.error_message = self._authenticate_api( session_cookie )
+        elif self.app.name == "reports":
+            self.galaxy_session = None
         else:
             #This is a web request, get or create session.
             self._ensure_valid_session( session_cookie )
@@ -842,10 +854,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if not self.galaxy_session.user:
             return self.new_history()
 
-        # Look for default history that (a) has default name + is not deleted and 
-        # (b) has no datasets. If suitable history found, use it; otherwise, create 
+        # Look for default history that (a) has default name + is not deleted and
+        # (b) has no datasets. If suitable history found, use it; otherwise, create
         # new history.
-        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by( 
+        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by(
                                 user=self.galaxy_session.user,
                                 name=self.app.model.History.default_name,
                                 deleted=False )
@@ -855,7 +867,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 # Found suitable default history.
                 default_history = history
                 break
-            
+
         # Set or create hsitory.
         if default_history:
             history = default_history

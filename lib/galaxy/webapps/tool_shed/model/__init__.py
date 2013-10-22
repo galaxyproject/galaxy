@@ -4,7 +4,7 @@ import os
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.model.item_attrs import DictifiableMixin
+from galaxy.model.item_attrs import Dictifiable
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -19,7 +19,7 @@ class APIKeys( object ):
     pass
 
 
-class User( object, DictifiableMixin ):
+class User( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'email' )
     dict_element_visible_keys = ( 'id', 'email', 'username' )
 
@@ -61,7 +61,7 @@ class User( object, DictifiableMixin ):
         return 0
 
 
-class Group( object, DictifiableMixin ):
+class Group( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name' )
 
@@ -70,11 +70,11 @@ class Group( object, DictifiableMixin ):
         self.deleted = False
 
 
-class Role( object, DictifiableMixin ):
+class Role( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
-    types = Bunch( 
+    types = Bunch(
         PRIVATE = 'private',
         SYSTEM = 'system',
         USER = 'user',
@@ -109,15 +109,15 @@ class GroupRoleAssociation( object ):
 
 class GalaxySession( object ):
 
-    def __init__( self, 
-                  id=None, 
-                  user=None, 
-                  remote_host=None, 
-                  remote_addr=None, 
-                  referer=None, 
-                  current_history=None, 
-                  session_key=None, 
-                  is_valid=False, 
+    def __init__( self,
+                  id=None,
+                  user=None,
+                  remote_host=None,
+                  remote_addr=None,
+                  referer=None,
+                  current_history=None,
+                  session_key=None,
+                  is_valid=False,
                   prev_session_id=None ):
         self.id = id
         self.user = user
@@ -130,7 +130,7 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 
-class Repository( object, DictifiableMixin ):
+class Repository( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
     dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
                                  'deprecated' )
@@ -154,8 +154,9 @@ class Repository( object, DictifiableMixin ):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
 
-    def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
+    def allow_push( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        return repo.ui.config( 'web', 'allow_push' )
 
     def can_change_type( self, app ):
         # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
@@ -175,31 +176,17 @@ class Repository( object, DictifiableMixin ):
                 return True
         return False
 
-    def dictify( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        if 'user_id' in rval:
-            rval[ 'owner' ] = self.user.username
-        return rval
-
     def get_changesets_for_setting_metadata( self, app ):
         type_class = self.get_type_class( app )
         return type_class.get_changesets_for_setting_metadata( app, self )
 
     def get_type_class( self, app ):
         return app.repository_types_registry.get_class_by_label( self.type )
+
+    def is_new( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return tip_ctx.rev() < 0
 
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
@@ -208,19 +195,6 @@ class Repository( object, DictifiableMixin ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )
-
-    def tip( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        return str( repo.changectx( repo.changelog.tip() ) )
-
-    def is_new( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        tip_ctx = repo.changectx( repo.changelog.tip() )
-        return tip_ctx.rev() < 0
-
-    def allow_push( self, app ):
-        repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        return repo.ui.config( 'web', 'allow_push' )
 
     def set_allow_push( self, app, usernames, remove_auth='' ):
         allow_push = util.listify( self.allow_push( app ) )
@@ -243,15 +217,25 @@ class Repository( object, DictifiableMixin ):
                 fp.write( line )
         fp.close()
 
+    def tip( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
+        return str( repo.changectx( repo.changelog.tip() ) )
 
-class RepositoryMetadata( object, DictifiableMixin ):
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( Repository, self ).to_dict( view=view, value_mapper=value_mapper )
+        if 'user_id' in rval:
+            rval[ 'owner' ] = self.user.username
+        return rval
+
+
+class RepositoryMetadata( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
-                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
+                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'time_last_tested' )
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
                                  'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
                                  'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
-    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
+    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False,
                   missing_test_components=None, tools_functionally_correct=False, do_not_test=False, test_install_error=False, time_last_tested=None,
                   tool_test_results=None, has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
                   includes_workflows=False ):
@@ -269,6 +253,7 @@ class RepositoryMetadata( object, DictifiableMixin ):
         self.time_last_tested = time_last_tested
         self.tool_test_results = tool_test_results
         self.has_repository_dependencies = has_repository_dependencies
+        # We don't consider the special case has_repository_dependencies_only_if_compiling_contained_td here.
         self.includes_datatypes = includes_datatypes
         self.includes_tools = includes_tools
         self.includes_tool_dependencies = includes_tool_dependencies
@@ -283,28 +268,8 @@ class RepositoryMetadata( object, DictifiableMixin ):
                     return True
         return False
 
-    def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
 
-    def dictify( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
-
-
-class SkipToolTest( object, DictifiableMixin ):
+class SkipToolTest( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
     dict_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
 
@@ -315,27 +280,10 @@ class SkipToolTest( object, DictifiableMixin ):
         self.comment = comment
 
     def as_dict( self, value_mapper=None ):
-        return self.dictify( view='element', value_mapper=value_mapper )
-
-    def dictify( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
+        return self.to_dict( view='element', value_mapper=value_mapper )
 
 
-class RepositoryReview( object, DictifiableMixin ):
+class RepositoryReview( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     dict_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes' )
@@ -347,7 +295,7 @@ class RepositoryReview( object, DictifiableMixin ):
         self.rating = rating
         self.deleted = deleted
 
-class ComponentReview( object, DictifiableMixin ):
+class ComponentReview( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     dict_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
@@ -389,7 +337,7 @@ class RepositoryRatingAssociation( ItemRatingAssociation ):
         self.repository = repository
 
 
-class Category( object, DictifiableMixin ):
+class Category( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
 
@@ -428,6 +376,23 @@ class ItemTagAssociation( object ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
+
+
+class PostJobAction( object ):
+
+    def __init__( self, action_type, workflow_step, output_name = None, action_arguments = None):
+        self.action_type = action_type
+        self.output_name = output_name
+        self.action_arguments = action_arguments
+        self.workflow_step = workflow_step
+
+
+class StoredWorkflowAnnotationAssociation( object ):
+    pass
+
+
+class WorkflowStepAnnotationAssociation( object ):
+    pass
 
 
 class Workflow( object ):

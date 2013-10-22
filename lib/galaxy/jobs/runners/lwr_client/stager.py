@@ -1,6 +1,11 @@
-
-import os
+from os.path import abspath, basename, join, exists
+from os import listdir, sep
 from re import findall
+
+from .action_mapper import FileActionMapper
+
+from logging import getLogger
+log = getLogger(__name__)
 
 
 class JobInputs(object):
@@ -61,7 +66,7 @@ class JobInputs(object):
             Full path to directory to search.
 
         """
-        pattern = r"(%s%s\S+)" % (directory, os.sep)
+        pattern = r"(%s%s\S+)" % (directory, sep)
         referenced_files = set()
         for input_contents in self.__items():
             referenced_files.update(findall(pattern, input_contents))
@@ -94,6 +99,52 @@ class JobInputs(object):
         items = [self.rewritten_command_line]
         items.extend(self.rewritten_config_files.values())
         return items
+
+
+class TransferTracker(object):
+
+    def __init__(self, client, job_inputs):
+        self.client = client
+        self.action_mapper = FileActionMapper(client)
+        self.job_inputs = job_inputs
+        self.file_renames = {}
+
+    def handle_transfer(self, path, type, name=None, contents=None):
+        if contents:
+            # If contents loaded in memory, no need to write out file and copy,
+            # just transfer.
+            action = ('transfer', )
+        else:
+            if not exists(path):
+                message = "handle_tranfer called on non-existent file - [%s]" % path
+                log.warn(message)
+                raise Exception(message)
+            action = self.__action(path, type)
+
+        if action[0] in ['transfer', 'copy']:
+            response = self.client.put_file(path, type, name=name, contents=contents)
+            self.register_rewrite(path, response['path'], type, force=True)
+        elif action[0] == 'none':
+            # No action for this file.
+            pass
+        else:
+            raise Exception("Unknown action type (%s) encountered for path (%s)" % (action[0], path))
+
+    def register_rewrite(self, local_path, remote_path, type, force=False):
+        action = self.__action(local_path, type)
+        if action[0] in ['transfer', 'copy'] or force:
+            self.file_renames[local_path] = remote_path
+
+    def rewrite_input_paths(self):
+        """
+        For each file that has been transferred and renamed, updated
+        command_line and configfiles to reflect that rewrite.
+        """
+        for local_path, remote_path in self.file_renames.iteritems():
+            self.job_inputs.rewrite_paths(local_path, remote_path)
+
+    def __action(self, path, type):
+        return self.action_mapper.action(path, type)
 
 
 class FileStager(object):
@@ -130,14 +181,14 @@ class FileStager(object):
         self.output_files = output_files
         self.tool_id = tool.id
         self.tool_version = tool.version
-        self.tool_dir = os.path.abspath(tool.tool_dir)
+        self.tool_dir = abspath(tool.tool_dir)
         self.working_directory = working_directory
 
         # Setup job inputs, these will need to be rewritten before
         # shipping off to remote LWR server.
         self.job_inputs = JobInputs(self.command_line, self.config_files)
 
-        self.file_renames = {}
+        self.transfer_tracker = TransferTracker(client, self.job_inputs)
 
         self.__handle_setup()
         self.__initialize_referenced_tool_files()
@@ -173,8 +224,7 @@ class FileStager(object):
 
     def __upload_tool_files(self):
         for referenced_tool_file in self.referenced_tool_files:
-            tool_upload_response = self.client.upload_tool_file(referenced_tool_file)
-            self.file_renames[referenced_tool_file] = tool_upload_response['path']
+            self.transfer_tracker.handle_transfer(referenced_tool_file, 'tool')
 
     def __upload_input_files(self):
         for input_file in self.input_files:
@@ -183,61 +233,58 @@ class FileStager(object):
 
     def __upload_input_file(self, input_file):
         if self.job_inputs.path_referenced(input_file):
-            input_upload_response = self.client.upload_input(input_file)
-            self.file_renames[input_file] = input_upload_response['path']
+            if exists(input_file):
+                self.transfer_tracker.handle_transfer(input_file, 'input')
+            else:
+                message = "LWR: __upload_input_file called on empty or missing dataset." + \
+                          " So such file: [%s]" % input_file
+                log.debug(message)
 
     def __upload_input_extra_files(self, input_file):
         # TODO: Determine if this is object store safe and what needs to be
         # done if it is not.
         files_path = "%s_files" % input_file[0:-len(".dat")]
-        if os.path.exists(files_path) and self.job_inputs.path_referenced(files_path):
-            for extra_file in os.listdir(files_path):
-                extra_file_path = os.path.join(files_path, extra_file)
-                relative_path = os.path.basename(files_path)
-                extra_file_relative_path = os.path.join(relative_path, extra_file)
-                response = self.client.upload_extra_input(extra_file_path, extra_file_relative_path)
-                self.file_renames[extra_file_path] = response['path']
+        if exists(files_path) and self.job_inputs.path_referenced(files_path):
+            for extra_file in listdir(files_path):
+                extra_file_path = join(files_path, extra_file)
+                relative_path = basename(files_path)
+                extra_file_relative_path = join(relative_path, extra_file)
+                self.transfer_tracker.handle_transfer(extra_file_path, 'input_extra', name=extra_file_relative_path)
 
     def __upload_working_directory_files(self):
         # Task manager stages files into working directory, these need to be
         # uploaded if present.
-        for working_directory_file in os.listdir(self.working_directory):
-            path = os.path.join(self.working_directory, working_directory_file)
-            working_file_response = self.client.upload_working_directory_file(path)
-            self.file_renames[path] = working_file_response['path']
+        for working_directory_file in listdir(self.working_directory):
+            path = join(self.working_directory, working_directory_file)
+            self.transfer_tracker.handle_transfer(path, 'work_dir')
 
     def __initialize_output_file_renames(self):
         for output_file in self.output_files:
-            self.file_renames[output_file] = r'%s%s%s' % (self.new_outputs_directory,
-                                                         self.remote_path_separator,
-                                                         os.path.basename(output_file))
+            remote_path = r'%s%s%s' % (self.new_outputs_directory, self.remote_path_separator, basename(output_file))
+            self.transfer_tracker.register_rewrite(output_file, remote_path, 'output')
 
     def __initialize_task_output_file_renames(self):
         for output_file in self.output_files:
-            name = os.path.basename(output_file)
-            self.file_renames[os.path.join(self.working_directory, name)] = r'%s%s%s' % (self.new_working_directory,
-                                                                                         self.remote_path_separator,
-                                                                                         name)
+            name = basename(output_file)
+            task_file = join(self.working_directory, name)
+            remote_path = r'%s%s%s' % (self.new_working_directory, self.remote_path_separator, name)
+            self.transfer_tracker.register_rewrite(task_file, remote_path, 'output_task')
 
     def __initialize_config_file_renames(self):
         for config_file in self.config_files:
-            self.file_renames[config_file] = r'%s%s%s' % (self.new_configs_drectory,
-                                                         self.remote_path_separator,
-                                                         os.path.basename(config_file))
-
-    def __rewrite_paths(self, contents):
-        new_contents = contents
-        for local_path, remote_path in self.file_renames.iteritems():
-            new_contents = new_contents.replace(local_path, remote_path)
-        return new_contents
+            remote_path = r'%s%s%s' % (self.new_configs_drectory, self.remote_path_separator, basename(config_file))
+            self.transfer_tracker.register_rewrite(config_file, remote_path, 'config')
 
     def __handle_rewrites(self):
-        for local_path, remote_path in self.file_renames.iteritems():
-            self.job_inputs.rewrite_paths(local_path, remote_path)
+        """
+        For each file that has been transferred and renamed, updated
+        command_line and configfiles to reflect that rewrite.
+        """
+        self.transfer_tracker.rewrite_input_paths()
 
     def __upload_rewritten_config_files(self):
         for config_file, new_config_contents in self.job_inputs.rewritten_config_files.iteritems():
-            self.client.upload_config_file(config_file, new_config_contents)
+            self.client.put_file(config_file, input_type='config', contents=new_config_contents)
 
     def get_rewritten_command_line(self):
         """
@@ -245,6 +292,49 @@ class FileStager(object):
         for remote host.
         """
         return self.job_inputs.rewritten_command_line
+
+
+def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files):
+    """
+    """
+    action_mapper = FileActionMapper(client)
+    download_failure_exceptions = []
+    if job_completed_normally:
+        for source_file, output_file in work_dir_outputs:
+            try:
+                action = action_mapper.action(output_file, 'output')
+                client.fetch_work_dir_output(source_file, working_directory, output_file, action[0])
+            except Exception, e:
+                download_failure_exceptions.append(e)
+            # Remove from full output_files list so don't try to download directly.
+            output_files.remove(output_file)
+        for output_file in output_files:
+            try:
+                action = action_mapper.action(output_file, 'output')
+                client.fetch_output(output_file, working_directory=working_directory, action=action[0])
+            except Exception, e:
+                download_failure_exceptions.append(e)
+    return __clean(download_failure_exceptions, cleanup_job, client)
+
+
+def __clean(download_failure_exceptions, cleanup_job, client):
+    failed = (len(download_failure_exceptions) > 0)
+    if not failed or cleanup_job == "always":
+        try:
+            client.clean()
+        except:
+            log.warn("Failed to cleanup remote LWR job")
+    return failed
+
+
+def submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory):
+    """
+    """
+    file_stager = FileStager(client, tool, command_line, config_files, input_files, output_files, working_directory)
+    rebuilt_command_line = file_stager.get_rewritten_command_line()
+    job_id = file_stager.job_id
+    client.launch(rebuilt_command_line)
+    return job_id
 
 
 def _read(path):
@@ -257,3 +347,5 @@ def _read(path):
         return input.read()
     finally:
         input.close()
+
+__all__ = [submit_job, finish_job]

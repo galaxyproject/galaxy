@@ -7,7 +7,11 @@
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner"/>
-        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
+        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner">
+          <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
+          <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
+          <!-- <param id="transport">curl</param> -->
+        </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
     </plugins>
@@ -46,6 +50,10 @@
             <param id="url">https://windowshost.examle.com:8913/</param>
             <!-- If set, private_token must match token remote LWR server configured with. -->
             <param id="private_token">123456789changeme</param>
+            <!-- Uncomment the following statement to disable file staging (e.g.
+                 if there is a shared file system between Galaxy and the LWR 
+                 server). -->
+            <!-- <param id="default_file_action">none</param> -->
         </destination>
         <destination id="ssh_torque" runner="cli">
             <param id="shell_plugin">SecureShell</param>

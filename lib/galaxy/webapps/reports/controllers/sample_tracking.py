@@ -79,8 +79,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                      model_class=model.User,
                      visible=False ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -157,7 +157,7 @@ class SampleTracking( BaseUIController ):
                        group_by = [ 'user_email' ],
                        order_by = [ sa.desc( 'total' ), 'user_email' ] )
         for row in q.execute():
-            requests.append( ( row.user_email, 
+            requests.append( ( row.user_email,
                                row.total ) )
         return trans.fill_template( '/webapps/reports/requests_per_user.mako', requests=requests, message=message )
     @web.expose
@@ -174,7 +174,7 @@ class SampleTracking( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         requests = []
         for row in q.execute():
-            requests.append( ( row.date.strftime( "%Y-%m" ), 
+            requests.append( ( row.date.strftime( "%Y-%m" ),
                                row.total,
                                row.date.strftime( "%B" ),
                                row.date.strftime( "%Y" ) ) )

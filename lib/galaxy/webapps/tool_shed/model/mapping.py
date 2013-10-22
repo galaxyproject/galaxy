@@ -1,6 +1,6 @@
 """
 Details of how the data model objects are mapped onto the relational database
-are encapsulated here. 
+are encapsulated here.
 """
 import logging
 log = logging.getLogger( __name__ )
@@ -24,7 +24,7 @@ context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=Tr
 context.current = Session
 
 # NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the 
+#   It is currently difficult to have the timestamps calculated by the
 #   database in a portable way, so we're doing it in the client. This
 #   also saves us from needing to postfetch on postgres. HOWEVER: it
 #   relies on the client's clock being set correctly, so if clustering
@@ -67,7 +67,7 @@ Role.table = Table( "role", metadata,
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-UserGroupAssociation.table = Table( "user_group_association", metadata, 
+UserGroupAssociation.table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -200,16 +200,16 @@ Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ), 
+    Column( "name", TrimmedString(255) ),
     UniqueConstraint( "name" ) )
 
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
-mapper( User, User.table, 
+mapper( User, User.table,
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
 
-mapper( APIKeys, APIKeys.table, 
+mapper( APIKeys, APIKeys.table,
     properties = {} )
 
 mapper( Group, Group.table,
@@ -227,7 +227,7 @@ mapper( UserGroupAssociation, UserGroupAssociation.table,
 mapper( UserRoleAssociation, UserRoleAssociation.table,
     properties=dict(
         user=relation( User, backref="roles" ),
-        non_private_roles=relation( User, 
+        non_private_roles=relation( User,
                                     backref="non_private_roles",
                                     primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
         role=relation( Role ) ) )
@@ -249,7 +249,7 @@ mapper( Category, Category.table,
                                             primaryjoin=( Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id ),
                                             secondaryjoin=( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) ) ) )
 
-mapper( Repository, Repository.table, 
+mapper( Repository, Repository.table,
     properties = dict(
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),

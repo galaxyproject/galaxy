@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 def load_history_imp_exp_tools( toolbox ):
     """ Adds tools for importing/exporting histories to archives. """
-    # Use same process as that used in load_external_metadata_tool; see that 
+    # Use same process as that used in load_external_metadata_tool; see that
     # method for why create tool description files on the fly.
     tool_xml_text = """
         <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
@@ -27,7 +27,7 @@ def load_history_imp_exp_tools( toolbox ):
           </outputs>
         </tool>
     """
-        
+
     # Load export tool.
     tmp_name = tempfile.NamedTemporaryFile()
     tmp_name.write( tool_xml_text )
@@ -35,15 +35,15 @@ def load_history_imp_exp_tools( toolbox ):
     history_exp_tool = toolbox.load_tool( tmp_name.name )
     toolbox.tools_by_id[ history_exp_tool.id ] = history_exp_tool
     log.debug( "Loaded history export tool: %s", history_exp_tool.id )
-    
+
     # Load import tool.
     tool_xml = os.path.join( os.getcwd(), "lib/galaxy/tools/imp_exp/imp_history_from_archive.xml" )
     history_imp_tool = toolbox.load_tool( tool_xml )
     toolbox.tools_by_id[ history_imp_tool.id ] = history_imp_tool
     log.debug( "Loaded history import tool: %s", history_imp_tool.id )
-    
+
 class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
-    """ 
+    """
         Class provides support for performing jobs that import a history from
         an archive.
     """
@@ -51,19 +51,19 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         self.app = app
         self.job_id = job_id
         self.sa_session = self.app.model.context
-        
+
     def cleanup_after_job( self ):
         """ Set history, datasets, and jobs' attributes and clean up archive directory. """
-        
+
         #
         # Helper methods.
         #
-        
+
         def file_in_dir( file_path, a_dir ):
             """ Returns true if file is in directory. """
             abs_file_path = os.path.abspath( file_path )
             return os.path.split( abs_file_path )[0] == a_dir
-            
+
         def read_file_contents( file_path ):
             """ Read contents of a file. """
             fp = open( file_path, 'rb' )
@@ -78,24 +78,24 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 pass
             fp.close()
             return file_contents
-            
+
         def get_tag_str( tag, value ):
             """ Builds a tag string for a tag, value pair. """
             if not value:
                 return tag
             else:
                 return tag + ":" + value
-        
+
         #
         # Import history.
         #
-        
+
         jiha = self.sa_session.query( model.JobImportHistoryArchive ).filter_by( job_id=self.job_id ).first()
         if jiha:
             try:
                 archive_dir = jiha.archive_dir
                 user = jiha.job.user
-            
+
                 #
                 # Create history.
                 #
@@ -112,7 +112,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 self.sa_session.add( new_history )
                 jiha.history = new_history
                 self.sa_session.flush()
-                    
+
                 # Add annotation, tags.
                 if user:
                     self.add_item_annotation( self.sa_session, user, new_history, history_attrs[ 'annotation' ] )
@@ -128,7 +128,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 datasets_attrs_file_name = os.path.join( archive_dir, 'datasets_attrs.txt')
                 datasets_attr_str = read_file_contents( datasets_attrs_file_name )
                 datasets_attrs = from_json_string( datasets_attr_str )
-            
+
                 # Get counts of how often each dataset file is used; a file can
                 # be linked to multiple dataset objects (HDAs).
                 datasets_usage_counts = {}
@@ -138,11 +138,11 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     if ( temp_dataset_file_name not in datasets_usage_counts ):
                         datasets_usage_counts[ temp_dataset_file_name ] = 0
                     datasets_usage_counts[ temp_dataset_file_name ] += 1
-            
+
                 # Create datasets.
                 for dataset_attrs in datasets_attrs:
                     metadata = dataset_attrs['metadata']
-    
+
                     # Create dataset and HDA.
                     hda = model.HistoryDatasetAssociation( name = dataset_attrs['name'].encode( 'utf-8' ),
                                                            extension = dataset_attrs['extension'],
@@ -152,7 +152,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                                            designation = dataset_attrs['designation'],
                                                            visible = dataset_attrs['visible'],
                                                            dbkey = metadata['dbkey'],
-                                                           metadata = metadata, 
+                                                           metadata = metadata,
                                                            history = new_history,
                                                            create_dataset = True,
                                                            sa_session = self.sa_session )
@@ -165,7 +165,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
                     #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
-    
+
                     # Do security check and move/copy dataset data.
                     temp_dataset_file_name = \
                         os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
@@ -176,7 +176,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     else:
                         datasets_usage_counts[ temp_dataset_file_name ] -= 1
                         shutil.copyfile( temp_dataset_file_name, hda.file_name )
-    
+
                     # Set tags, annotations.
                     if user:
                         self.add_item_annotation( self.sa_session, user, hda, dataset_attrs[ 'annotation' ] )
@@ -189,29 +189,29 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
 
                     # Although metadata is set above, need to set metadata to recover BAI for BAMs.
                     if hda.extension == 'bam':
-                        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app( 
-                            self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id, 
+                        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app(
+                            self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id,
                             new_history.id, jiha.job.user, incoming={ 'input1': hda }, overwrite=False
                         )
-    
+
                 #
                 # Create jobs.
                 #
-    
+
                 # Read jobs attributes.
                 jobs_attr_file_name = os.path.join( archive_dir, 'jobs_attrs.txt')
                 jobs_attr_str = read_file_contents( jobs_attr_file_name )
-    
+
                 # Decode jobs attributes.
                 def as_hda( obj_dct ):
-                    """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by 
+                    """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get( '__HistoryDatasetAssociation__', False ):
                             return self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=obj_dct['hid'] ).first()
                     return obj_dct
                 jobs_attrs = from_json_string( jobs_attr_str, object_hook=as_hda )
-    
+
                 # Create each job.
                 for job_attrs in jobs_attrs:
                     imported_job = model.Job()
@@ -225,7 +225,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     imported_job.imported = True
                     self.sa_session.add( imported_job )
                     self.sa_session.flush()
-        
+
                     class HistoryDatasetAssociationIDEncoder( simplejson.JSONEncoder ):
                         """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
                         def default( self, obj ):
@@ -233,12 +233,12 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                             if isinstance( obj, model.HistoryDatasetAssociation ):
                                 return obj.id
                             return simplejson.JSONEncoder.default( self, obj )
-                            
+
                     # Set parameters. May be useful to look at metadata.py for creating parameters.
                     # TODO: there may be a better way to set parameters, e.g.:
                     #   for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
                     #       job.add_parameter( name, value )
-                    # to make this work, we'd need to flesh out the HDA objects. The code below is 
+                    # to make this work, we'd need to flesh out the HDA objects. The code below is
                     # relatively similar.
                     for name, value in job_attrs[ 'params' ].items():
                         # Transform parameter values when necessary.
@@ -249,9 +249,9 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                             value = input_hda.id
                         #print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
                         imported_job.add_parameter( name, to_json_string( value, cls=HistoryDatasetAssociationIDEncoder ) )
-            
+
                     # TODO: Connect jobs to input datasets.
-        
+
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs[ 'output_datasets' ]:
                         #print "%s job has output dataset %i" % (imported_job.id, output_hid)
@@ -259,36 +259,36 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                         .filter_by( history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
-                        
+
                     self.sa_session.flush()
 
                 # Done importing.
                 new_history.importing = False
                 self.sa_session.flush()
-                        
+
                 # Cleanup.
                 if os.path.exists( archive_dir ):
-                    shutil.rmtree( archive_dir )                    
+                    shutil.rmtree( archive_dir )
             except Exception, e:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
 
 class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
-    """ 
+    """
         Class provides support for performing jobs that export a history to an
-        archive. 
+        archive.
     """
     def __init__( self, job_id ):
         self.job_id = job_id
-        
+
     # TODO: should use db_session rather than trans in this method.
     def setup_job( self, trans, jeha, include_hidden=False, include_deleted=False ):
-        """ Perform setup for job to export a history into an archive. Method generates 
+        """ Perform setup for job to export a history into an archive. Method generates
             attribute files for export, sets the corresponding attributes in the jeha
             object, and returns a command line for running the job. The command line
-            includes the command, inputs, and options; it does not include the output 
+            includes the command, inputs, and options; it does not include the output
             file because it must be set at runtime. """
-            
+
         #
         # Helper methods/classes.
         #
@@ -301,7 +301,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 tag_user_value = to_unicode( tag.user_value )
                 tags[ tag_user_tname ] = tag_user_value
             return tags
-            
+
         def prepare_metadata( metadata ):
             """ Prepare metatdata for exporting. """
             for name, value in metadata.items():
@@ -310,7 +310,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 if isinstance( value, trans.app.model.MetadataFile ):
                     del metadata[ name ]
             return metadata
-            
+
         class HistoryDatasetAssociationEncoder( simplejson.JSONEncoder ):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
             def default( self, obj ):
@@ -338,12 +338,12 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 if isinstance( obj, UnvalidatedValue ):
                     return obj.__str__()
                 return simplejson.JSONEncoder.default( self, obj )
-        
+
         #
         # Create attributes/metadata files for export.
-        #   
+        #
         temp_output_dir = tempfile.mkdtemp()
-    
+
         # Write history attributes to file.
         history = jeha.history
         history_attrs = {
@@ -362,7 +362,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         history_attrs_out.write( to_json_string( history_attrs ) )
         history_attrs_out.close()
         jeha.history_attrs_filename = history_attrs_filename
-                            
+
         # Write datasets' attributes to file.
         datasets = self.get_history_datasets( trans, history )
         included_datasets = []
@@ -396,7 +396,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             if not job_hda.creating_job_associations:
                 # No viable HDA found.
                 continue
-    
+
             # Get the job object.
             job = None
             for assoc in job_hda.creating_job_associations:
@@ -405,9 +405,9 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             if not job:
                 # No viable job.
                 continue
-        
+
             jobs_dict[ job.id ] = job
-        
+
         # Get jobs' attributes.
         jobs_attrs = []
         for id, job in jobs_dict.items():
@@ -415,7 +415,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'tool_id' ] = job.tool_id
             job_attrs[ 'tool_version' ] = job.tool_version
             job_attrs[ 'state' ] = job.state
-                            
+
             # Get the job's parameters
             try:
                 params_objects = job.get_param_values( trans.app )
@@ -427,9 +427,9 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             for name, value in params_objects.items():
                 params_dict[ name ] = value
             job_attrs[ 'params' ] = params_dict
-    
+
             # -- Get input, output datasets. --
-            
+
             input_datasets = []
             for assoc in job.input_datasets:
                 # Optional data inputs will not have a dataset.
@@ -438,25 +438,25 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'input_datasets' ] = input_datasets
             output_datasets = [ assoc.dataset.hid for assoc in job.output_datasets ]
             job_attrs[ 'output_datasets' ] = output_datasets
-    
+
             jobs_attrs.append( job_attrs )
-    
+
         jobs_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         jobs_attrs_out = open( jobs_attrs_filename, 'w' )
         jobs_attrs_out.write( to_json_string( jobs_attrs, cls=HistoryDatasetAssociationEncoder ) )
         jobs_attrs_out.close()
         jeha.jobs_attrs_filename = jobs_attrs_filename
-        
+
         #
         # Create and return command line for running tool.
         #
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "python %s %s %s %s %s" % ( 
+        return "python %s %s %s %s %s" % (
             os.path.join( os.path.abspath( os.getcwd() ), "lib/galaxy/tools/imp_exp/export_history.py" ), \
             options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename )
-                                    
+
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """
         # Get jeha for job.
@@ -472,4 +472,4 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 shutil.rmtree( temp_dir )
             except Exception, e:
                 log.debug( 'Error deleting directory containing attribute files (%s): %s' % ( temp_dir, e ) )
-                
+

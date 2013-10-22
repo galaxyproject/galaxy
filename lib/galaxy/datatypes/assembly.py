@@ -168,7 +168,7 @@ class Velvet( Html ):
 
     def regenerate_primary_file(self,dataset):
         """
-        cannot do this until we are setting metadata 
+        cannot do this until we are setting metadata
         """
         log.debug( "Velvet log info  %s" % 'JJ regenerate_primary_file')
         gen_msg = ''

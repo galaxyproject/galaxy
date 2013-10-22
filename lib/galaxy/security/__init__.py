@@ -27,7 +27,7 @@ class RBACAgent:
         LIBRARY_MANAGE = Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
         # Request type permissions
         REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to this request type to only users having associated role", "restrict" )
-        
+
     )
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
@@ -113,7 +113,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if permitted_actions:
             self.permitted_actions = permitted_actions
         # List of "library_item" objects and their associated permissions and info template objects
-        self.library_item_assocs = ( 
+        self.library_item_assocs = (
             ( self.model.Library, self.model.LibraryPermissions ),
             ( self.model.LibraryFolder, self.model.LibraryFolderPermissions ),
             ( self.model.LibraryDataset, self.model.LibraryDatasetPermissions ),
@@ -205,7 +205,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     for ura2 in user.roles:
                         if admin_controller or self.ok_to_display( trans.user, ura2.role ):
                             roles.add( ura2.role )
-                # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
+                # Each role also potentially has groups which, in turn, have members ( users ).  We need to
                 # find all roles that each group's members have.
                 for gra in role.groups:
                     group = gra.group
@@ -236,9 +236,9 @@ class GalaxyRBACAgent( RBACAgent ):
         specific action on an item, which must be one of:
         Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
         """
-        # SM: Note that calling get_item_actions will emit a query. 
+        # SM: Note that calling get_item_actions will emit a query.
         item_actions = self.get_item_actions( action, item )
-            
+
         if not item_actions:
             return action.model == 'restrict'
         ret_val = False
@@ -264,22 +264,22 @@ class GalaxyRBACAgent( RBACAgent ):
         # TODO: Make this work for other classes besides lib_datasets.
         # That should be as easy as checking the type and writing a query for each;
         # we're avoiding using the SQLAlchemy backrefs because they can cause lots
-        # of queries to be generated.  
+        # of queries to be generated.
         #
         # Originally, get_item_actions did:
         # return [ permission for permission in item.actions if permission.action == action.action ]
-        # The "item" can be just about anything with permissions, and referencing 
+        # The "item" can be just about anything with permissions, and referencing
         # item.actions causes the item's permissions to be retrieved.
         # This method will retrieve all permissions for all "items" and only
         # return the permissions associated with that given action.
-        # We initialize the permissions list to be empty; we will return an 
+        # We initialize the permissions list to be empty; we will return an
         # empty list by default.
         #
         # If the dataset id has no corresponding action in its permissions,
         # then the returned permissions will not carry an entry for the dataset.
-        ret_permissions = {} 
-        if ( len( permission_items ) > 0 ): 
-            # SM: NB: LibraryDatasets became Datasets for some odd reason. 
+        ret_permissions = {}
+        if ( len( permission_items ) > 0 ):
+            # SM: NB: LibraryDatasets became Datasets for some odd reason.
             if ( isinstance( permission_items[0], trans.model.LibraryDataset ) ):
                 ids = [ item.library_dataset_id for item in permission_items ]
                 permissions = trans.sa_session.query( trans.model.LibraryDatasetPermissions ) \
@@ -289,12 +289,12 @@ class GalaxyRBACAgent( RBACAgent ):
 
                 # Massage the return data. We will return a list of permissions
                 # for each library dataset. So we initialize the return list to
-                # have an empty list for each dataset. Then each permission is 
+                # have an empty list for each dataset. Then each permission is
                 # appended to the right lib dataset.
                 # TODO: Consider eliminating the initialization and just return
                 # empty values for each library dataset id.
                 for item in permission_items:
-                    ret_permissions[ item.library_dataset_id ] = [] 
+                    ret_permissions[ item.library_dataset_id ] = []
                 for permission in permissions:
                     ret_permissions[ permission.library_dataset_id ].append( permission )
             elif ( isinstance( permission_items[0], trans.model.Dataset ) ):
@@ -306,17 +306,17 @@ class GalaxyRBACAgent( RBACAgent ):
 
                 # Massage the return data. We will return a list of permissions
                 # for each library dataset. So we initialize the return list to
-                # have an empty list for each dataset. Then each permission is 
+                # have an empty list for each dataset. Then each permission is
                 # appended to the right lib dataset.
                 # TODO: Consider eliminating the initialization and just return
                 # empty values for each library dataset id.
                 for item in permission_items:
-                    ret_permissions[ item.id ] = [] 
+                    ret_permissions[ item.id ] = []
                 for permission in permissions:
                     ret_permissions[ permission.dataset_id ].append( permission )
 
         # Test that we get the same response from get_item_actions each item:
-        test_code = False 
+        test_code = False
         if test_code:
             try:
                 log.debug( "get_actions_for_items: Test start" )
@@ -325,19 +325,19 @@ class GalaxyRBACAgent( RBACAgent ):
                     new_result = ret_permissions[ item.library_dataset_id ]
                     # For now, just test against LibraryDatasetIds; other classes
                     # are not tested yet.
-                    if len( base_result ) == len( new_result ): 
+                    if len( base_result ) == len( new_result ):
                         common_result = set(base_result).intersection( new_result )
                         if len( common_result ) == len( base_result ):
-                            log.debug( "Match on permissions for id %d" % 
+                            log.debug( "Match on permissions for id %d" %
                                        item.library_dataset_id )
                         # TODO: Fix this failure message:
                         else:
                             log.debug( "Error: dataset %d; originally: %s; now: %s"
-                                     % ( item.library_dataset_id, 
+                                     % ( item.library_dataset_id,
                                          base_result, new_result ) )
                     else:
                         log.debug( "Error: dataset %d: had %d entries, now %d entries"
-                                 % ( item.library_dataset_id, len( base_result ), 
+                                 % ( item.library_dataset_id, len( base_result ),
                                      len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
             except Exception, e:
@@ -349,8 +349,8 @@ class GalaxyRBACAgent( RBACAgent ):
     def allow_action_on_libitems( self, trans, user_roles, action, items ):
         """
         This should be the equivalent of allow_action defined on multiple items.
-        It is meant to specifically replace allow_action for multiple 
-        LibraryDatasets, but it could be reproduced or modified for 
+        It is meant to specifically replace allow_action for multiple
+        LibraryDatasets, but it could be reproduced or modified for
         allow_action's permitted classes - Dataset, Library, LibraryFolder, and
         LDDAs.
         """
@@ -360,11 +360,11 @@ class GalaxyRBACAgent( RBACAgent ):
         # Change item to lib_dataset or vice-versa.
         for item in items:
             if all_items_actions.has_key( item.id ):
-                item_actions = all_items_actions[ item.id ] 
+                item_actions = all_items_actions[ item.id ]
 
-                if self.permitted_actions.DATASET_ACCESS == action: 
+                if self.permitted_actions.DATASET_ACCESS == action:
                     ret_allow_action[ item.id ] = True
-                    for item_action in item_actions: 
+                    for item_action in item_actions:
                         if item_action.role not in user_roles:
                             ret_allow_action[ item.id ] = False
                             break
@@ -386,7 +386,7 @@ class GalaxyRBACAgent( RBACAgent ):
 
         # Test it: the result for each dataset should match the result for
         # allow_action:
-        test_code = False 
+        test_code = False
         if test_code:
             log.debug( "allow_action_for_items: test start" )
             for item in items:
@@ -405,7 +405,7 @@ class GalaxyRBACAgent( RBACAgent ):
         '''
         For the given list of datasets, return a mapping of the datasets' ids
         to whether they can be accessed by the user or not. The datasets input
-        is expected to be a simple list of Dataset objects. 
+        is expected to be a simple list of Dataset objects.
         '''
         datasets_public_map = self.datasets_are_public( trans, datasets )
         datasets_allow_action_map = self.allow_action_on_libitems( trans, user_roles, self.permitted_actions.DATASET_ACCESS, datasets )
@@ -417,8 +417,8 @@ class GalaxyRBACAgent( RBACAgent ):
     def dataset_permission_map_for_access( self, trans, user_roles, libitems ):
         '''
         For a given list of library items (e.g., Datasets), return a map of the
-        datasets' ids to whether they can have permission to use that action 
-        (e.g., "access" or "modify") on the dataset. The libitems input is 
+        datasets' ids to whether they can have permission to use that action
+        (e.g., "access" or "modify") on the dataset. The libitems input is
         expected to be a simple list of library items, such as Datasets or
         LibraryDatasets.
         NB: This is currently only usable for Datasets; it was intended to
@@ -431,28 +431,28 @@ class GalaxyRBACAgent( RBACAgent ):
         # TODO: This only works for Datasets; other code is using X_is_public,
         # so this will have to be rewritten to support other items.
         libitems_public_map = self.datasets_are_public( trans, libitems )
-        libitems_allow_action_map = self.allow_action_on_libitems( 
+        libitems_allow_action_map = self.allow_action_on_libitems(
             trans, user_roles, self.permitted_actions.DATASET_ACCESS, libitems )
         can_access = {}
         for libitem in libitems:
             can_access[ libitem.id ] = libitems_public_map[ libitem.id ] or libitems_allow_action_map[ libitem.id ]
         return can_access
 
-    def item_permission_map_for_modify( self, trans, user_roles, libitems ): 
-        return self.allow_action_on_libitems( 
+    def item_permission_map_for_modify( self, trans, user_roles, libitems ):
+        return self.allow_action_on_libitems(
             trans, user_roles, self.permitted_actions.LIBRARY_MODIFY, libitems )
 
-    def item_permission_map_for_manage( self, trans, user_roles, libitems ): 
-        return self.allow_action_on_libitems( 
+    def item_permission_map_for_manage( self, trans, user_roles, libitems ):
+        return self.allow_action_on_libitems(
             trans, user_roles, self.permitted_actions.LIBRARY_MANAGE, libitems )
 
-    def item_permission_map_for_add( self, trans, user_roles, libitems ): 
-        return self.allow_action_on_libitems( 
+    def item_permission_map_for_add( self, trans, user_roles, libitems ):
+        return self.allow_action_on_libitems(
             trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems )
 
     def can_access_dataset( self, user_roles, dataset ):
-        # SM: dataset_is_public will access dataset.actions, which is a 
-        # backref that causes a query to be made to DatasetPermissions 
+        # SM: dataset_is_public will access dataset.actions, which is a
+        # backref that causes a query to be made to DatasetPermissions
         retval = self.dataset_is_public( dataset ) or self.allow_action( user_roles, self.permitted_actions.DATASET_ACCESS, dataset )
         return retval
 
@@ -471,7 +471,7 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
                                                                                       .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
                                                                                                      trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
-        # Filter to get libraries accessible by the current user.  Get both 
+        # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for library in trans.sa_session.query( trans.model.Library ) \
                                        .filter( and_( trans.model.Library.table.c.deleted == False,
@@ -597,7 +597,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return role
     def get_private_user_role( self, user, auto_create=False ):
         role = self.sa_session.query( self.model.Role ) \
-                              .filter( and_( self.model.Role.table.c.name == user.email, 
+                              .filter( and_( self.model.Role.table.c.name == user.email,
                                              self.model.Role.table.c.type == self.model.Role.types.PRIVATE ) ) \
                               .first()
         if not role:
@@ -608,7 +608,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return role
     def get_sharing_roles( self, user ):
         return self.sa_session.query( self.model.Role ) \
-                              .filter( and_( ( self.model.Role.table.c.name ).like( "Sharing role for: %" + user.email + "%" ), 
+                              .filter( and_( ( self.model.Role.table.c.name ).like( "Sharing role for: %" + user.email + "%" ),
                                              self.model.Role.table.c.type == self.model.Role.types.SHARING ) )
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private = False ):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
@@ -766,7 +766,7 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
                                                                                       .filter( and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
                                                                                                      trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
-        # Filter to get libraries accessible by the current user.  Get both 
+        # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for request_type in trans.sa_session.query( trans.model.RequestType ) \
                                             .filter( and_( trans.model.RequestType.table.c.deleted == False,
@@ -887,11 +887,11 @@ class GalaxyRBACAgent( RBACAgent ):
     def datasets_are_public( self, trans, datasets ):
         '''
         Given a transaction object and a list of Datasets, return
-        a mapping from Dataset ids to whether the Dataset is public 
+        a mapping from Dataset ids to whether the Dataset is public
         or not. All Dataset ids should be returned in the mapping's keys.
         '''
-        # We go the other way around from dataset_is_public: we start with 
-        # all datasets being marked as public. If there is an access action 
+        # We go the other way around from dataset_is_public: we start with
+        # all datasets being marked as public. If there is an access action
         # associated with the dataset, then we mark it as nonpublic:
         datasets_public = {}
         dataset_ids = [ dataset.id for dataset in datasets ]
@@ -906,7 +906,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # Every dataset returned has "access" privileges associated with it,
         # so it's not public.
         for permission in access_data_perms:
-            datasets_public[ permission.dataset_id ] = False 
+            datasets_public[ permission.dataset_id ] = False
         return datasets_public
 
 
@@ -927,7 +927,7 @@ class GalaxyRBACAgent( RBACAgent ):
         msg = ''
         permissions = {}
         # accessible will be True only if at least 1 user has every role in DATASET_ACCESS_in
-        accessible = False 
+        accessible = False
         # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set of roles returned from
         # get_legitimate_roles()
         legitimate = False
@@ -971,7 +971,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     else:
                         legitimate = True
                 if len( in_roles ) > 1:
-                    # At least 1 user must have every role associated with the access 
+                    # At least 1 user must have every role associated with the access
                     # permission on this dataset, or the dataset is not accessible.
                     # Since we have more than 1 role, none of them can be private.
                     for role in in_roles:
@@ -981,7 +981,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 if len( in_roles ) == 1:
                     accessible = True
                 else:
-                    # At least 1 user must have every role associated with the access 
+                    # At least 1 user must have every role associated with the access
                     # permission on this dataset, or the dataset is not accessible.
                     in_roles_set = set()
                     for role in in_roles:
@@ -1046,7 +1046,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     ( target_library_item.__class__, target_library_item.__class__.__name__ )
     def get_permitted_libraries( self, trans, user, actions ):
         """
-        This method is historical (it is not currently used), but may be useful again at some 
+        This method is historical (it is not currently used), but may be useful again at some
         point.  It returns a dictionary whose keys are library objects and whose values are a
         comma-separated string of folder ids.  This method works with the show_library_item()
         method below, and it returns libraries for which the received user has permission to
@@ -1100,8 +1100,8 @@ class GalaxyRBACAgent( RBACAgent ):
     def get_showable_folders( self, user, roles, library_item, actions_to_check, hidden_folder_ids=[], showable_folders=[] ):
         """
         This method must be sent an instance of Library(), all the folders of which are scanned to determine if
-        user is allowed to perform any action in actions_to_check. The param hidden_folder_ids, if passed, should 
-        contain a list of folder IDs which was generated when the library was previously scanned 
+        user is allowed to perform any action in actions_to_check. The param hidden_folder_ids, if passed, should
+        contain a list of folder IDs which was generated when the library was previously scanned
         using the same actions_to_check. A list of showable folders is generated. This method scans the entire library.
         """
         if isinstance( library_item, self.model.Library ):

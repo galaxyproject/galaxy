@@ -2,18 +2,27 @@ import re
 
 VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )
+#  Basic regular expression to check email validity.
+VALID_EMAIL_RE = re.compile( "[^@]+@[^@]+\.[^@]+" )
 FILL_CHAR = '-'
 
 def validate_email( trans, email, user=None, check_dup=True ):
+    """
+    Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
+    """
     message = ''
     if user and user.email == email:
-        return message 
-    if len( email ) == 0 or "@" not in email or "." not in email:
-        message = "Enter a real email address"
+        return message
+    if not( VALID_EMAIL_RE.match( email ) ):
+        message = "Please enter your real email address."
     elif len( email ) > 255:
-        message = "Email address exceeds maximum allowable length"
+        message = "Email address exceeds maximum allowable length."
     elif check_dup and trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
-        message = "User with that email already exists"
+        message = "User with that email already exists."
+    #  If the blacklist is not empty filter out the disposable domains.
+    elif trans.app.config.blacklist_content is not None:
+        if email.split('@')[1] in trans.app.config.blacklist_content:
+            message = "Please enter your permanent email address."
     return message
 
 def validate_publicname( trans, publicname, user=None ):
@@ -28,7 +37,7 @@ def validate_publicname( trans, publicname, user=None ):
             return "Public name must be at least 3 characters in length"
     else:
         if len( publicname ) < 4:
-            return "Public name must be at least 4 characters in length"   
+            return "Public name must be at least 4 characters in length"
     if len( publicname ) > 255:
         return "Public name cannot be more than 255 characters in length"
     if not( VALID_PUBLICNAME_RE.match( publicname ) ):

@@ -2,7 +2,7 @@
 """
 PUT/update script to update appropriate values in a repository_metadata table record in the Tool Shed.
 
-usage: tool_shed_repository_revision_update.py key url key1=value1 key2=value2 ... 
+usage: tool_shed_repository_revision_update.py key url key1=value1 key2=value2 ...
 """
 
 import os, sys
@@ -18,7 +18,7 @@ to_json_string = simplejson.dumps
 from_json_string = simplejson.loads
 
 data = {}
-for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:      
+for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:
     """
     This example script will properly handle updating the value of one or more of the following RepositoryMetadata attributes:
     tools_functionally_correct, do_not_test, tool_test_results

@@ -6,8 +6,10 @@ import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
-from galaxy.util import string_as_bool, listify, parse_xml
-
+from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.util import string_as_bool
+from galaxy.util import listify
+from galaxy.util import parse_xml
 from galaxy import eggs
 import pkg_resources
 
@@ -63,10 +65,15 @@ class Configuration( object ):
         elif 'tool_config_files' in kwargs:
             tcf = kwargs[ 'tool_config_files' ]
         else:
-            tcf = 'tool_conf.xml'
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
+            tcf = 'tool_conf.xml,shed_tool_conf.xml'
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
+
+        self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
+        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
@@ -114,6 +121,7 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
         self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
@@ -132,9 +140,27 @@ class Configuration( object ):
         self.admin_users = kwargs.get( "admin_users", "" )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
+        self.activation_email = kwargs.get( 'activation_email', None )
+        self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
+        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.terms_url = kwargs.get( 'terms_url', None )
+        self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        #  Get the disposable email domains blacklist file and its contents
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
+        if self.blacklist_location is not None:
+            self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
+            try:
+                with open( self.blacklist_file ) as blacklist:
+                    self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
+            except IOError:
+                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.smtp_ssl = kwargs.get( 'smtp_ssl', None )
         self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', 'None' )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
@@ -175,7 +201,7 @@ class Configuration( object ):
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -209,6 +235,8 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
+        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key= kwargs.get( 'aws_access_key', None )
@@ -225,9 +253,14 @@ class Configuration( object ):
         self.os_is_secure = string_as_bool( kwargs.get( 'os_is_secure', True ) )
         self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
+        self.object_store_config_file = kwargs.get( 'object_store_config_file', None )
+        if self.object_store_config_file is not None:
+            self.object_store_config_file = resolve_path( self.object_store_config_file, self.root )
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
+        self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
+        self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
@@ -279,7 +312,8 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
-        # Experimental: This will not be enabled by default and will hide 
+        self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
+        # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
@@ -291,15 +325,13 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # PLUGINS:
-        self.plugin_frameworks = []
-        # visualization framework
+        # visualization plugin framework
         self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):
         """
-        Sentry URL with private key removed for use in client side scripts, 
+        Sentry URL with private key removed for use in client side scripts,
         sentry server will need to be configured to accept events
         """
         if self.sentry_dsn:
@@ -369,6 +401,7 @@ class Configuration( object ):
                     self.nginx_upload_store, \
                     './static/genetrack/plots', \
                     self.whoosh_index_dir, \
+                    self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
@@ -432,8 +465,8 @@ def configure_logging( config ):
     """
     # Get root logger
     root = logging.getLogger()
-    # PasteScript will have already configured the logger if the 
-    # 'loggers' section was found in the config file, otherwise we do 
+    # PasteScript will have already configured the logger if the
+    # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
     if not config.global_conf_parser.has_section( "loggers" ):
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
@@ -465,3 +498,4 @@ def configure_logging( config ):
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
         root.addHandler( sentry_handler )
+

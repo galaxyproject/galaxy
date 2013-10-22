@@ -191,7 +191,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         }
 
         // set up behaviours
-        this.$el.find( '.tooltip' ).tooltip();
+        this.$el.find( '[title]' ).tooltip();
 
         // uncomment any of the following to have that tab show on initial load (for testing)
         //this.$el.find( 'ul.nav' ).find( 'a[href="#data-control"]' ).tab( 'show' );

@@ -10,7 +10,7 @@ def resolve_path( path, root ):
     if not( os.path.isabs( path ) ):
         path = os.path.join( root, path )
     return path
-      
+
 class ConfigurationError( Exception ):
     pass
 
@@ -21,7 +21,7 @@ class Configuration( object ):
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
-        self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_engine_options = get_database_engine_options( kwargs )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -102,7 +102,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -110,9 +110,9 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
-    
-    
+
+

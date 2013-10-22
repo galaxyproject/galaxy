@@ -1,7 +1,7 @@
 """
 Expression evaluation support.
 
-For the moment this depends on python's eval. In the future it should be 
+For the moment this depends on python's eval. In the future it should be
 replaced with a "safe" parser.
 """
 

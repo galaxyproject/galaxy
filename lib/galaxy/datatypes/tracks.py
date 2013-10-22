@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class GeneTrack( binary.Binary ):
     file_ext = "genetrack"
-    
+
     def __init__(self, **kwargs):
         super( GeneTrack, self ).__init__( **kwargs )
         # self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )

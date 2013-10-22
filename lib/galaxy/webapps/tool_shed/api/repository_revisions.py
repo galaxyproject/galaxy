@@ -11,13 +11,6 @@ import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
-def default_value_mapper( trans, repository_metadata ):
-    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
-                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
-    if repository_metadata.time_last_tested:
-        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
-    return value_mapper
-
 
 class RepositoryRevisionsController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repository revisions."""
@@ -27,7 +20,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         POST /api/repository_revisions/export
         Creates and saves a gzip compressed tar archive of a repository and optionally all of it's repository dependencies.
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
@@ -127,8 +120,8 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                repository_metadata_dict = repository_metadata.dictify( view='collection',
-                                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
+                repository_metadata_dict = repository_metadata.to_dict( view='collection',
+                                                                        value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=trans.security.encode_id( repository_metadata.id ) )
@@ -145,13 +138,13 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
         Displays information about a repository_metadata record in the Tool Shed.
-        
+
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -188,8 +181,15 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )
         return repository_metadata_dict
+    
+    def __get_value_mapper( self, trans, repository_metadata ):
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'repository_id' : trans.security.encode_id }
+        if repository_metadata.time_last_tested is not None:
+            value_mapper[ 'time_last_tested' ] = time_ago 
+        return value_mapper
