@@ -249,7 +249,8 @@ def execute_uninstall_method( app, deactivate_only=False ):
     sa_session = app.model.context.current
     repositories_to_uninstall = sa_session.query( app.model.ToolShedRepository ).all()
     for repository in repositories_to_uninstall:
-        if repository.status == app.model.ToolShedRepository.installation_status.UNINSTALLED:
+        if repository.status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED,
+                                  app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
             continue
         if repository.status not in [ app.model.ToolShedRepository.installation_status.UNINSTALLED,
                                       app.model.ToolShedRepository.installation_status.ERROR,
