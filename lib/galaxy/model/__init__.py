@@ -203,8 +203,8 @@ class User( object, Dictifiable ):
 
 
 class Job( object, Dictifiable ):
-    dict_collection_visible_keys = [ 'id'  ]
-    dict_element_visible_keys = [ 'id' ]
+    dict_collection_visible_keys = [ 'id', 'state', 'exit_code'  ]
+    dict_element_visible_keys = [ 'id', 'state', 'exit_code' ]
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -1751,6 +1751,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
 
+        if hda.copied_from_library_dataset_dataset_association is not None:
+            rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
+            
         if hda.history is not None:
             rval['history_id'] = hda.history.id
 

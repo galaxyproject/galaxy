@@ -107,6 +107,8 @@ class ViewQueryBaseClass(object):
                     if operator == "=":
                         #print field.sqlalchemy_field == right, field.sqlalchemy_field, right
                         self.query = self.query.filter( field.sqlalchemy_field == right )
+                    elif operator == "!=":
+                        self.query = self.query.filter( field.sqlalchemy_field != right )                        
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
                     else:
@@ -171,6 +173,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
         'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
         'parent_library_id' : ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
+        'data_type' :  ViewField('data_type', sqlalchemy_field=LibraryDatasetDatasetAssociation.extension)
     }
 
     def search(self, trans):
@@ -294,8 +297,11 @@ class HistoryDatasetView(ViewQueryBaseClass):
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
         'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
-        'tag' : ViewField("tag", handler=history_dataset_handle_tag)
-
+        'tag' : ViewField("tag", handler=history_dataset_handle_tag),
+        'copied_from_ldda_id' : ViewField("copied_from_ldda_id", 
+            sqlalchemy_field=HistoryDatasetAssociation.copied_from_library_dataset_dataset_association_id,
+            id_decode=True),
+        'deleted' : ViewField('deleted', sqlalchemy_field=HistoryDatasetAssociation.deleted)
     }
 
     def search(self, trans):
@@ -416,6 +422,20 @@ def job_input_hda_filter(view, left, operator, right):
         )
     )
 
+def job_input_ldda_filter(view, left, operator, right):
+    view.do_query = True
+    alias = aliased( JobToInputLibraryDatasetAssociation )
+    param_name = re.sub(r'^input_ldda.', '', left)
+    view.query = view.query.filter(
+        and_(
+            Job.id == alias.job_id,
+            alias.name == param_name,
+            alias.ldda_id == right
+        )
+    )
+
+
+
 def job_output_hda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased( JobToOutputDatasetAssociation )
@@ -433,7 +453,9 @@ class JobView(ViewQueryBaseClass):
     DOMAIN = "job"
     FIELDS = {
         'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
+        'state' : ViewField('state', sqlalchemy_field=Job.state),
         'param' : ViewField('param', handler=job_param_filter),
+        'input_ldda' : ViewField('input_ldda', handler=job_input_ldda_filter, id_decode=True),
         'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
         'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
     }
@@ -499,11 +521,12 @@ value_word = (
 comparison = ( '=' -> '='
     | '>' -> '>'
     | '<' -> '<'
+    | '!=' -> '!='
     | '>=' -> '>='
     | '<=' -> '<='
     | 'like' -> 'like'
     )
-quote_word = "'" not_quote+:x "'" -> "".join(x)
+quote_word = "'" not_quote*:x "'" -> "".join(x)
 not_quote = anything:x ?(x != "'") -> x
 not_dquote = anything:x ?(x != '"') -> x
 """
