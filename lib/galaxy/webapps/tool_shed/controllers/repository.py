@@ -2741,6 +2741,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                     trans.security.encode_id( repository.id ),
+                                                                                     changeset_revision )
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
             tool_shed_status_dict = {}
@@ -2751,21 +2754,24 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
             else:
                 next_installable_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                if next_installable_revision:
-                    tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
+                if repository_metadata is None:
+                    if next_installable_revision:
+                        tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
+                    else:
+                        tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
                 else:
-                    tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
+                    if next_installable_revision:
+                        tool_shed_status_dict[ 'latest_installable_revision' ] = 'False'
+                    else:
+                        tool_shed_status_dict[ 'latest_installable_revision' ] = 'True'
             # Handle revision updates.
             if changeset_revision == repository.tip( trans.app ):
                 tool_shed_status_dict[ 'revision_update' ] = 'False'
             else:
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                         trans.security.encode_id( repository.id ),
-                                                                                         changeset_revision )
-                if repository_metadata:
-                    tool_shed_status_dict[ 'revision_update' ] = 'False'
-                else:
+                if repository_metadata is None:
                     tool_shed_status_dict[ 'revision_update' ] = 'True'
+                else:
+                    tool_shed_status_dict[ 'revision_update' ] = 'False'
             # Handle revision upgrades.
             ordered_metadata_changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             num_metadata_revisions = len( ordered_metadata_changeset_revisions )
