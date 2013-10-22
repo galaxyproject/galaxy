@@ -46,7 +46,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
     _setUpListeners : function(){
         // re-rendering on any model changes
-        this.model.on( 'change', this.render, this );
+        this.model.on( 'change', function( model, options ){
+            // if the model moved into the ready state and is expanded without details, fetch those details
+            if( this.model.changedAttributes().state && this.model.inReadyState()
+            &&  this.expanded && !this.model.hasDetails() ){
+                this.model.fetch(); // will render automatically (due to lines below)
+            } else {
+                this.render();
+            }
+        }, this );
 
         //this.on( 'all', function( event ){
         //    this.log( event );

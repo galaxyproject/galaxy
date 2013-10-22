@@ -157,7 +157,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     errorHandler : function( model, xhr, options, msg, details ){
         var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
 
-        if( xhr && xhr.status === 502 ){
+        if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
+
+        } else if( xhr && xhr.status === 502 ){
 
         } else {
             // it's possible to have a triggered error before the message container is rendered - wait for it to show

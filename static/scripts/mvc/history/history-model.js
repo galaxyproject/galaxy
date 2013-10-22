@@ -69,17 +69,19 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         }
 
         this._setUpListeners();
-        this._installAjaxErrorHandler( this.ajaxErrorHandler );
 
         // set up update timeout if needed
         this.checkForUpdates();
     },
 
     _setUpListeners : function(){
+        this.on( 'error', function( model, xhr, options, msg, details ){
+            this.errorHandler( model, xhr, options, msg, details );
+        });
+
         // hda collection listening
         if( this.hdas ){
             this.listenTo( this.hdas, 'error', function(){
-                //this.ajaxErrorHandler.apply( this, arguments );
                 this.trigger.apply( this, [ 'error:hdas' ].concat( jQuery.makeArray( arguments ) ) );
             });
         }
@@ -105,6 +107,11 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     //    }
     //},
 
+    errorHandler : function( model, xhr, options, msg, details ){
+        // clear update timeout on model err
+        this.clearUpdateTimeout();
+    },
+
     // ........................................................................ common queries
     hasUser : function(){
         var user = this.get( 'user' );
@@ -112,20 +119,6 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ ajax
-    // override to add ajax error event
-    //TODO: into mixin/base
-    _installAjaxErrorHandler : function( handler ){
-        this.sync = function _sync( method, model, options ){
-            return Backbone.Model.prototype.sync.call( model, method, model, options )
-                .fail( function( xhr, status, message ){
-                    handler.call( model, model, xhr, options, method );
-                });
-        };
-    },
-
-    ajaxErrorHandler : function( model, xhr, options, method ){
-    },
-
     // get the history's state from it's cummulative ds states, delay + update if needed
     // events: ready
     checkForUpdates : function( onReadyCallback ){
