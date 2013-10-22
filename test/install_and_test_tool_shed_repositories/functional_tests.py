@@ -253,14 +253,15 @@ def execute_uninstall_method( app, deactivate_only=False ):
             continue
         if repository.status not in [ app.model.ToolShedRepository.installation_status.UNINSTALLED,
                                       app.model.ToolShedRepository.installation_status.ERROR,
-                                      app.model.ToolShedRepository.installation_status.INSTALLED ]:
+                                      app.model.ToolShedRepository.installation_status.INSTALLED,
+                                      app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
             repository.status = app.model.ToolShedRepository.installation_status.ERROR
             sa_session.add( repository )
             sa_session.flush()
         name = str( repository.name )
         owner = str( repository.owner )
         changeset_revision = str( repository.installed_changeset_revision )
-        log.debug( 'Changeset revision %s of repository %s queued for uninstallation.', changeset_revision, name )
+        log.debug( 'Changeset revision %s of %s repository %s queued for uninstallation.', changeset_revision, repository.status, name )
         repository_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         # Generate a test method to uninstall this repository through the embedded Galaxy application's web interface.
         test_install_repositories.generate_uninstall_method( repository_dict, deactivate_only )
