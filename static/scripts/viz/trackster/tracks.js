@@ -3384,9 +3384,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
 
         // -- Update track, tile heights based on new tile. --
+
+        tile_element.css('height', 'auto');
         
-        // Update max height based on current tile's canvas.
-        this.max_height_px = Math.max(this.max_height_px, $(tile.canvas).height());
+        // Update max height based on current tile's height.
+        this.max_height_px = Math.max(this.max_height_px, tile_element.height());
         
         // Update height for all tiles based on max height.
         tile_element.parent().children().css("height", this.max_height_px + "px");
