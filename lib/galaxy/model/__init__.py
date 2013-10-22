@@ -203,8 +203,8 @@ class User( object, Dictifiable ):
 
 
 class Job( object, Dictifiable ):
-    dict_collection_visible_keys = [ 'id'  ]
-    dict_element_visible_keys = [ 'id' ]
+    dict_collection_visible_keys = [ 'id', 'state', 'exit_code'  ]
+    dict_element_visible_keys = [ 'id', 'state', 'exit_code' ]
 
     """
     A job represents a request to run a tool given input datasets, tool
