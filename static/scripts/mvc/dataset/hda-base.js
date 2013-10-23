@@ -5,7 +5,7 @@ define([
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
- * 
+ *
  *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
@@ -23,7 +23,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
     fxSpeed     : 'fast',
 
-    // ......................................................................... SET UP
+    // ......................................................................... set up
     /** Set up the view, cache url templates, bind listeners
      *  @param {Object} attributes
      *  @config {Object} urlTemplates nested object containing url templates for this view
@@ -44,13 +44,17 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this._setUpListeners();
     },
 
+    /** event listeners */
     _setUpListeners : function(){
+
         // re-rendering on any model changes
         this.model.on( 'change', function( model, options ){
-            // if the model moved into the ready state and is expanded without details, fetch those details
+
+            // if the model moved into the ready state and is expanded without details, fetch those details now
             if( this.model.changedAttributes().state && this.model.inReadyState()
             &&  this.expanded && !this.model.hasDetails() ){
                 this.model.fetch(); // will render automatically (due to lines below)
+
             } else {
                 this.render();
             }
@@ -61,7 +65,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         //}, this );
     },
 
-    // ......................................................................... RENDER MAIN
+    // ......................................................................... render main
     /** Render this HDA, set up ui.
      *  @fires rendered:ready when rendered and NO running HDAs
      *  @fires rendered when rendered and running HDAs
@@ -122,7 +126,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     _setUpBehaviors : function( $container ){
         $container = $container || this.$el;
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        //TODO: we can potentially skip this step and call popupmenu directly on the download button
         make_popup_menus( $container );
         $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
@@ -213,13 +216,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_titleLink : function(){
-        return $( jQuery.trim( HDABaseView.templates.titleLink(
-            //TODO?? does this need urls?
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        )));
+        return $( jQuery.trim( HDABaseView.templates.titleLink( this.model.toJSON() )));
     },
 
-    // ......................................................................... RENDER BODY
+    // ......................................................................... body
     /** Render the data/metadata summary (format, size, misc info, etc.).
      *  @returns {jQuery} rendered DOM
      */
@@ -283,7 +283,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** Render links to external genome display applications (igb, gbrowse, etc.).
      *  @param {jQuery} $parent  the jq node to search for .display-apps and render into to (defaults to this.$el)
      */
-    //TODO: not a fan of the style on these
+//TODO: move into visualization button
     _render_displayApps : function( $parent ){
         $parent = $parent || this.$el;
         var $displayAppsDiv = $parent.find( 'div.display-apps' ),
@@ -310,7 +310,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** Render the data peek.
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: curr. pre-formatted into table on the server side - may not be ideal/flexible
     _render_peek : function(){
         var peek = this.model.get( 'peek' );
         if( !peek ){ return null; }
@@ -326,74 +325,38 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** Render the enclosing div of the hda body and, if expanded, the html in the body
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: only render these on expansion (or already expanded)
     _render_body : function(){
-        var body = $( '<div/>' )
+        var $body = $( '<div/>' )
             .attr( 'id', 'info-' + this.model.get( 'id' ) )
             .addClass( 'historyItemBody' )
             .attr( 'style', 'display: none' );
 
         if( this.expanded ){
             // only render the body html if it's being shown
-            this._render_body_html( body );
-            //TODO: switch back when jq -> 1.9
-            //body.show();
-            body.css( 'display', 'block' );
+            this._render_body_html( $body );
+            $body.show();
         }
-        return body;
+        return $body;
     },
 
     /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
      *  @param {jQuery} body the body element to append the html to
      */
-    //TODO: only render these on expansion (or already expanded)
-    _render_body_html : function( body ){
+    _render_body_html : function( $body ){
         //this.log( this + '_render_body' );
-        body.html( '' );
-        //TODO: not a fan of this dispatch
-        switch( this.model.get( 'state' ) ){
-            case hdaModel.HistoryDatasetAssociation.STATES.NEW :
-                this._render_body_new( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
-                this._render_body_not_viewable( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.UPLOAD :
-                this._render_body_uploading( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.PAUSED:
-                this._render_body_paused( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.QUEUED :
-                this._render_body_queued( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.RUNNING :
-                this._render_body_running( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.ERROR :
-                this._render_body_error( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.DISCARDED :
-                this._render_body_discarded( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.SETTING_METADATA :
-                this._render_body_setting_metadata( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.EMPTY :
-                this._render_body_empty( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.FAILED_METADATA :
-                this._render_body_failed_metadata( body );
-                break;
-            case hdaModel.HistoryDatasetAssociation.STATES.OK :
-                this._render_body_ok( body );
-                break;
-            default:
-                //??: no body?
-                body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
+        $body.empty();
+
+        var modelState = this.model.get( 'state' );
+        // cheesy get function by assumed matching name
+        var renderFnName = '_render_body_' + modelState,
+            renderFn = this[ renderFnName ];
+        if( _.isFunction( renderFn ) ){
+            this[ renderFnName ]( $body );
+        } else {
+            $body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
         }
-        body.append( '<div style="clear: both"></div>' );
-        this._setUpBehaviors( body );
+        $body.append( '<div style="clear: both"></div>' );
+        this._setUpBehaviors( $body );
     },
 
     /** Render a new dataset - this should be a transient state that's never shown
@@ -408,15 +371,14 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** Render inaccessible, not-owned by curr user.
      *  @param {jQuery} parent DOM to which to append this body
      */
-    _render_body_not_viewable : function( parent ){
-        //TODO: revisit - still showing display, edit, delete (as common) - that CAN'T be right
-        parent.append( $( '<div>' + _l( 'You do not have permission to view dataset' ) + '</div>' ) );
+    _render_body_noPermission : function( parent ){
+        parent.append( $( '<div>' + _l( 'You do not have permission to view this dataset' ) + '</div>' ) );
     },
     
     /** Render an HDA still being uploaded.
      *  @param {jQuery} parent DOM to which to append this body
      */
-    _render_body_uploading : function( parent ){
+    _render_body_upload : function( parent ){
         parent.append( $( '<div>' + _l( 'Dataset is uploading' ) + '</div>' ) );
     },
         
@@ -432,7 +394,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_paused: function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to resume' ) + '</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is paused. '
+                        + 'Use the "Resume Paused Jobs" in the history menu to resume' ) + '</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         
@@ -477,8 +440,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_empty : function( parent ){
-        //TODO: replace i with dataset-misc-info class
-        //?? why are we showing the file size when we know it's zero??
         parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
@@ -487,7 +448,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_failed_metadata : function( parent ){
-        //TODO: the css for this box is broken (unlike the others)
         // add a message box about the failure at the top of the body...
         parent.append( $( HDABaseView.templates.failedMetadata(
             _.extend( this.model.toJSON(), { urls: this.urls } )
@@ -504,7 +464,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         parent.append( this._render_hdaSummary() );
 
         // return shortened form if del'd
-        //TODO: is this correct? maybe only on purged
         if( this.model.isDeletedOrPurged() ){
             parent.append( this._render_primaryActionButtons([
                 this._render_downloadButton,
@@ -525,44 +484,55 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         parent.append( this._render_peek() );
     },
     
-    // ......................................................................... EVENTS
+    // ......................................................................... events
     /** event map */
     events : {
+        // expand the body when the title is clicked
         'click .historyItemTitle'           : 'toggleBodyVisibility'
     },
 
-    /** Render an HDA that's done running and where everything worked.
+    /** Show or hide the body/details of an HDA.
+     *      note: if the model does not have detailed data, fetch that data before showing the body
      *  @param {Event} event the event that triggered this (@link HDABaseView#events)
      *  @param {Boolean} expanded if true, expand; if false, collapse
      *  @fires body-expanded when a body has been expanded
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expand ){
-        var hdaView = this;
         expand = ( expand === undefined )?( !this.body.is( ':visible' ) ):( expand );
         if( expand ){
-            if( this.model.inReadyState() && !this.model.hasDetails() ){
-                var xhr = this.model.fetch();
-                xhr.done( function( model ){
-                    hdaView.expandBody();
-                });
-            } else {
-                this.expandBody();
-            }
+            this.expandBody();
         } else {
             this.collapseBody();
         }
     },
 
+    /** Render and show the full, detailed body of this view including extra data and controls.
+     *  @fires body-expanded when a body has been expanded
+     */
     expandBody : function(){
         var hdaView = this;
-        hdaView._render_body_html( hdaView.body );
-        this.body.slideDown( hdaView.fxSpeed, function(){
-            hdaView.expanded = true;
-            hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
-        });
+
+        function _renderBodyAndExpand(){
+            hdaView._render_body_html( hdaView.body );
+            hdaView.body.slideDown( hdaView.fxSpeed, function(){
+                hdaView.expanded = true;
+                hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+            });
+        }
+        // fetch first if no details in the model
+        if( this.model.inReadyState() && !this.model.hasDetails() ){
+            this.model.fetch().done( function( model ){
+                _renderBodyAndExpand();
+            });
+        } else {
+            _renderBodyAndExpand();
+        }
     },
 
+    /** Hide the body/details of an HDA.
+     *  @fires body-collapsed when a body has been collapsed
+     */
     collapseBody : function(){
         var hdaView = this;
         this.body.slideUp( hdaView.fxSpeed, function(){
@@ -571,7 +541,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
 
-    // ......................................................................... DELETION
+    // ......................................................................... removal
+    /** Remove this view's html from the DOM and remove all event listeners.
+     *  @param {Function} callback  an optional function called when removal is done
+     */
     remove : function( callback ){
         var hdaView = this;
         this.$el.fadeOut( hdaView.fxSpeed, function(){
@@ -581,7 +554,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
 
-    // ......................................................................... MISC
+    // ......................................................................... misc
+    /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
         return 'HDABaseView(' + modelString + ')';
@@ -602,5 +576,5 @@ HDABaseView.templates = {
 
 //==============================================================================
 return {
-    HDABaseView  : HDABaseView,
+    HDABaseView  : HDABaseView
 };});

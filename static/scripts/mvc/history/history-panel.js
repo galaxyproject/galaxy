@@ -16,20 +16,14 @@ TODO:
     meta:
         css/html class/id 'item' -> hda
         add classes, ids on empty divs
-        events (local/ui and otherwise)
-            list in docs as well
-        require.js
         convert function comments to jsDoc style, complete comments
         move inline styles into base.less
-        watch the magic strings
-        watch your globals
     
     feature creep:
         lineage
         hide button
         show permissions in info
         show shared/sharing status on ds, history
-        maintain scroll position on refresh (storage?)
         selection, multi-select (and actions common to selected (ugh))
         searching
         sorting, re-shuffling
@@ -58,13 +52,14 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     tagName             : 'div',
     className           : 'history-panel',
 
-    //fxSpeed             : 'fast',
+    /** (in ms) that jquery effects will use */
     fxSpeed             : 300,
 
-    /** event map
-     */
+    /** event map */
     events : {
         'click #history-tag'            : 'loadAndDisplayTags',
+        // allow (error) messages to be clicked away
+//TODO: switch to common close (X) idiom
         'click #message-container'      : 'clearMessages'
     },
 
@@ -107,6 +102,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
     },
 
+    /** create any event listeners for the panel
+     *  @fires: rendered:initial    on the first render
+     *  @fires: empty-history       when switching to a history with no HDAs or creating a new history
+     */
     _setUpListeners : function(){
         // ---- event handlers for self
         this.on( 'error', function( model, xhr, options, msg, details ){
@@ -154,13 +153,24 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //},
 
     // ........................................................................ error handling
+    /** Event listener to handle errors (from the panel, the history, or the history's HDAs)
+     *  @param {Model or View} model    the (Backbone) source of the error
+     *  @param {XMLHTTPRequest} xhr     any ajax obj. assoc. with the error
+     *  @param {Object} options         the options map commonly used with bbone ajax
+     *  @param {String} msg             optional message passed to ease error location
+     *  @param {Object} msg             optional object containing error details
+     */
     errorHandler : function( model, xhr, options, msg, details ){
         var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
 
+        // interrupted ajax
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
 
+        // bad gateway
         } else if( xhr && xhr.status === 502 ){
+//TODO: gmail style 'reconnecting in Ns'
 
+        // otherwise, show an error message inside the panel
         } else {
             // it's possible to have a triggered error before the message container is rendered - wait for it to show
             if( !this.$el.find( '#message-container' ).is( ':visible' ) ){
@@ -173,6 +183,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
     },
 
+    /** Parse an error event into an Object usable by displayMessage based on the parameters
+     *      note: see errorHandler for more info on params
+     */
     _parseErrorMessage : function( model, xhr, options, msg, details ){
         var user = Galaxy.currUser,
             // add the args (w/ some extra info) into an obj
@@ -199,12 +212,92 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return parsed;
     },
 
+    /** Modify an error message to be fancy and wear a monocle. */
     _bePolite : function( msg ){
         msg = msg || _l( 'An error occurred while getting updates from the server' );
         return msg + '. ' + _l( 'Please contact a Galaxy administrator if the problem persists.' );
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
+
+    //NOTE: all the following fns replace the existing history model with a new model
+    // (in the following 'details' refers to the full set of hda api data (urls, display_apps, misc_info, etc.)
+    //  - hdas w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
+
+    /** (re-)loads the user's current history & hdas w/ details */
+    // implemented as a 'fresh start' or for when there is no model (intial panel render)
+    loadCurrentHistory : function( attributes ){
+        var panel = this;
+        return this.loadHistoryWithHDADetails( 'current', attributes )
+            .then(function( historyData, hdaData ){
+                panel.trigger( 'current-history', panel );
+            });
+    },
+
+    /** loads a history & hdas w/ details and makes them the current history */
+    switchToHistory : function( historyId, attributes ){
+        //console.info( 'switchToHistory:', historyId, attributes );
+        var panel = this,
+            historyFn = function(){
+                // make this current and get history data with one call
+                return jQuery.post( galaxy_config.root + 'api/histories/' + historyId + '/set_as_current' );
+            };
+        return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
+            .then(function( historyData, hdaData ){
+                panel.trigger( 'switched-history', panel );
+            });
+    },
+
+    /** creates a new history on the server and sets it as the user's current history */
+    createNewHistory : function( attributes ){
+        var panel = this,
+            historyFn = function(){
+                // get history data from posting a new history (and setting it to current)
+                return jQuery.post( galaxy_config.root + 'api/histories', { current: true });
+            };
+        // id undefined bc there is no historyId yet - the server will provide
+        //  (no need for details - nothing expanded in new history)
+        return this.loadHistory( undefined, attributes, historyFn )
+            .then(function( historyData, hdaData ){
+                panel.trigger( 'new-history', panel );
+            });
+    },
+
+    /** loads a history & hdas w/ details (but does not make them the current history) */
+    loadHistoryWithHDADetails : function( historyId, attributes, historyFn, hdaFn ){
+        //console.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
+        var panel = this,
+            // will be called to get hda ids that need details from the api
+            hdaDetailIds = function( historyData ){
+                return panel.getExpandedHdaIds( historyData.id );
+            };
+        return this.loadHistory( historyId, attributes, historyFn, hdaFn, hdaDetailIds );
+    },
+
+    /** loads a history & hdas w/ NO details (but does not make them the current history) */
+    loadHistory : function( historyId, attributes, historyFn, hdaFn, hdaDetailIds ){
+        this.trigger( 'loading-history', this );
+        attributes = attributes || {};
+        var panel = this;
+        //console.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
+        var xhr = historyModel.History.getHistoryData( historyId, {
+                historyFn       : historyFn,
+                hdaFn           : hdaFn,
+                hdaDetailIds    : attributes.initiallyExpanded || hdaDetailIds
+            });
+        //console.debug( 'xhr:', xhr );
+        return this._loadHistoryFromXHR( xhr, attributes )
+            .fail( function( xhr, where, history ){
+                // throw an error up for the error handler
+                panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
+                    { historyId: historyId, history: history || {} });
+            })
+            .always( function(){
+                // bc hideLoadingIndicator relies on this firing
+                panel.trigger( 'loading-done', panel );
+            });
+    },
+
     /** given an xhr that will provide both history and hda data, pass data to set model or handle xhr errors */
     _loadHistoryFromXHR : function( xhr, attributes ){
         var panel = this;
@@ -246,84 +339,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
-    //NOTE: all the following fns replace the existing history model with a new model
-    // (in the following 'details' refers to the full set of hda api data (urls, display_apps, misc_info, etc.)
-    //  - hdas w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
-
-    /** loads a history & hdas w/ NO details (but does not make them the current history) */
-    loadHistory : function( historyId, attributes, historyFn, hdaFn, hdaDetailIds ){
-        this.trigger( 'loading-history', this );
-        attributes = attributes || {};
-        var panel = this;
-        //console.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
-        var xhr = historyModel.History.getHistoryData( historyId, {
-                historyFn       : historyFn,
-                hdaFn           : hdaFn,
-                hdaDetailIds    : attributes.initiallyExpanded || hdaDetailIds
-            });
-        //console.debug( 'xhr:', xhr );
-        return this._loadHistoryFromXHR( xhr, attributes )
-            .fail( function( xhr, where, history ){
-                // throw an error up for the error handler
-                panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
-                    { historyId: historyId, history: history || {} });
-            })
-            .always( function(){
-                // bc hideLoadingIndicator relies on this firing
-                panel.trigger( 'loading-done', panel );
-            });
-    },
-
-    /** loads a history & hdas w/ details (but does not make them the current history) */
-    loadHistoryWithHDADetails : function( historyId, attributes, historyFn, hdaFn ){
-        //console.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
-        var panel = this,
-            // will be called to get hda ids that need details from the api
-            hdaDetailIds = function( historyData ){
-                return panel.getExpandedHdaIds( historyData.id );
-            };
-        return this.loadHistory( historyId, attributes, historyFn, hdaFn, hdaDetailIds );
-    },
-
-    /** loads a history & hdas w/ details and makes them the current history */
-    switchToHistory : function( historyId, attributes ){
-        //console.info( 'switchToHistory:', historyId, attributes );
-        var panel = this,
-            historyFn = function(){
-                // make this current and get history data with one call
-                return jQuery.post( galaxy_config.root + 'api/histories/' + historyId + '/set_as_current' );
-            };
-        return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
-            .then(function( historyData, hdaData ){
-                panel.trigger( 'switched-history', panel );
-            });
-    },
-
-    /** (re-)loads the user's current history & hdas w/ details */
-    // implemented as a 'fresh start' or for when there is no model (intial panel render)
-    loadCurrentHistory : function( attributes ){
-        var panel = this;
-        return this.loadHistoryWithHDADetails( 'current', attributes )
-            .then(function( historyData, hdaData ){
-                panel.trigger( 'current-history', panel );
-            });
-    },
-
-    /** creates a new history on the server and sets it as the user's current history */
-    createNewHistory : function( attributes ){
-        var panel = this,
-            historyFn = function(){
-                // get history data from posting a new history (and setting it to current)
-                return jQuery.post( galaxy_config.root + 'api/histories', { current: true });
-            };
-        // id undefined bc there is no historyId yet - the server will provide
-        //  (no need for details - nothing expanded in new history)
-        return this.loadHistory( undefined, attributes, historyFn )
-            .then(function( historyData, hdaData ){
-                panel.trigger( 'new-history', panel );
-            });
-    },
-
     // alias to the model. Updates the hda list only (not the history)
     refreshHdas : function( detailIds, options ){
         if( this.model ){
@@ -334,15 +349,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     // ------------------------------------------------------------------------ browser stored prefs
-    //TODO: simplify
-
-    /** key string to store each histories settings under */
-    _getStorageKey : function( id ){
-        if( !id ){
-            throw new Error( '_getStorageKey needs valid id: ' + id );
-        }
-        return ( 'history:' + id );
-    },
+//TODO: simplify
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
      *  @param {Object} initiallyExpanded
@@ -359,7 +366,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // data that needs to be persistent over page refreshes
         //  (note the key function which uses the history id as well)
         this.storage = new PersistentStorage( this._getStorageKey( this.model.get( 'id' ) ), {
-            //TODO: initiallyExpanded only works on first load right now
             expandedHdas : {},
             show_deleted : false,
             show_hidden  : false
@@ -393,6 +399,15 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.log( this + ' (init\'d) storage:', this.storage.get() );
     },
 
+    /** key string to store each histories settings under */
+    _getStorageKey : function( id ){
+        if( !id ){
+            throw new Error( '_getStorageKey needs valid id: ' + id );
+        }
+        return ( 'history:' + id );
+    },
+
+    /** clear all stored history panel data */
     clearWebStorage : function(){
         for( var key in sessionStorage ){
             if( key.indexOf( 'HistoryView.' ) === 0 ){
@@ -401,6 +416,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
     },
 
+    /** get all stored data as an Object for a history with the given id */
     getStoredOptions : function( historyId ){
         if( !historyId || historyId === 'current' ){
             return ( this.storage )?( this.storage.get() ):( {} );
@@ -410,12 +426,14 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return ( item === null )?( {} ):( JSON.parse( item ) );
     },
 
+    /** get all the map of expaneded hda ids for the given history id */
     getExpandedHdaIds : function( historyId ){
         var expandedHdas = this.getStoredOptions( historyId ).expandedHdas;
         return (( _.isEmpty( expandedHdas ) )?( [] ):( _.keys( expandedHdas ) ));
     },
 
     // ------------------------------------------------------------------------ history/hda event listening
+    /** listening for history and HDA events */
     _setUpModelEventHandlers : function(){
         // ---- history
         // on a model error - bounce it up to the panel and remove it from the model
@@ -454,7 +472,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.model.hdas.on( 'state:ready', function( hda, newState, oldState ){
             if( ( !hda.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                this.removeHdaView( hda.get( 'id' ) );
+                this.removeHdaView( this.hdaViews[ hda.id ] );
             }
         }, this );
 
@@ -491,7 +509,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         ]);
     },
 
-//TODO: use this below in renderItems
+    /** Create an HDA view for the given HDA (but leave attachment for addHdaView above)
+     *  @param {HistoryDatasetAssociation} hda
+     */
     createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
             expanded = this.storage.get( 'expandedHdas' ).get( hdaId ),
@@ -506,12 +526,31 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return hdaView.render();
     },
 
+    /** Set up HistoryPanel listeners for HDAView events. Currently binds:
+     *      HDAView#body-visible, HDAView#body-hidden to store expanded states
+     *  @param {HDAView} hdaView HDAView (base or edit) to listen to
+     */
+    _setUpHdaListeners : function( hdaView ){
+        var historyView = this;
+        // maintain a list of hdas whose bodies are expanded
+        hdaView.on( 'body-expanded', function( id ){
+            historyView.storage.get( 'expandedHdas' ).set( id, true );
+        });
+        hdaView.on( 'body-collapsed', function( id ){
+            historyView.storage.get( 'expandedHdas' ).deleteKey( id );
+        });
+//TODO: remove?
+        hdaView.on( 'error', function( model, xhr, options, msg ){
+            historyView.errorHandler( model, xhr, options, msg );
+        });
+    },
+
     /** If this hda is deleted and we're not showing deleted hdas, remove the view
      *  @param {HistoryDataAssociation} the hda to check
      */
     handleHdaDeletionChange : function( hda ){
         if( hda.get( 'deleted' ) && !this.storage.get( 'show_deleted' ) ){
-            this.removeHdaView( hda.get( 'id' ) );
+            this.removeHdaView( this.hdaViews[ hda.id ] );
         } // otherwise, the hdaView rendering should handle it
     },
 
@@ -520,22 +559,21 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     handleHdaVisibleChange : function( hda ){
         if( hda.hidden() && !this.storage.get( 'show_hidden' ) ){
-            this.removeHdaView( hda.get( 'id' ) );
+            this.removeHdaView( this.hdaViews[ hda.id ] );
         } // otherwise, the hdaView rendering should handle it
     },
 
     /** Remove a view from the panel and if the panel is now empty, re-render
      *  @param {Int} the id of the hdaView to remove
      */
-    removeHdaView : function( id ){
-        //console.debug( 'removeHdaView' );
-        var panel = this,
-            hdaView = this.hdaViews[ id ];
+    removeHdaView : function( hdaView ){
         if( !hdaView ){ return; }
 
+        var panel = this;
         hdaView.$el.fadeOut( panel.fxSpeed, function(){
+            hdaView.off();
             hdaView.remove();
-            delete panel.hdaViews[ id ];
+            delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
                 panel.$el.find( '#emptyHistoryMessage' ).fadeIn( panel.fxSpeed );
             }
@@ -544,10 +582,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
     // ------------------------------------------------------------------------ panel rendering
     /** Render urls, historyPanel body, and hdas (if any are shown)
+     *  @fires: rendered    when the panel is attached and fully visible
      *  @see Backbone.View#render
      */
-    /** event rendered triggered when the panel rendering is complete */
-    /** event rendered:initial triggered when the FIRST panel rendering is complete */
     render : function( callback ){
         var panel = this,
             $newRender;
@@ -579,11 +616,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 //TODO: ideally, these would be set up before the fade in (can't because of async save text)
                 panel._setUpBehaviours();
                 if( callback ){ callback.call( this ); }
+                panel.trigger( 'rendered', this );
             }
         ]);
         return this;
     },
 
+    /** render with history data */
     renderModel : function( ){
         var $newRender = $( '<div/>' );
         // render the main template, tooltips
@@ -601,7 +640,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return $newRender;
     },
 
+    /** render with no history data */
     renderWithoutModel : function( ){
+        // we'll always need the message container
         var $newRender = $( '<div/>' ),
             $msgContainer = $( '<div/>' ).attr( 'id', 'message-container' )
                 .css({ 'margin-left': '4px', 'margin-right': '4px' });
@@ -624,42 +665,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             );
 
         _.each( visibleHdas, function( hda ){
-            var hdaId = hda.get( 'id' ),
-                expanded = historyView.storage.get( 'expandedHdas' ).get( hdaId );
-
-            historyView.hdaViews[ hdaId ] = new historyView.HDAView({
-                    model           : hda,
-                    expanded        : expanded,
-                    hasUser         : historyView.model.hasUser(),
-                    logger          : historyView.logger
-                });
-            historyView._setUpHdaListeners( historyView.hdaViews[ hdaId ] );
-
             // render it (NOTE: reverse order, newest on top (prepend))
-            //TODO: by default send a reverse order list (although this may be more efficient - it's more confusing)
-            $whereTo.prepend( historyView.hdaViews[ hdaId ].render().$el );
+            $whereTo.prepend( historyView.createHdaView( hda ).$el );
         });
         return visibleHdas.length;
-    },
-
-    /** Set up HistoryPanel listeners for HDAView events. Currently binds:
-     *      HDAView#body-visible, HDAView#body-hidden to store expanded states
-     *  @param {HDAView} hdaView HDAView (base or edit) to listen to
-     */
-    _setUpHdaListeners : function( hdaView ){
-        var historyView = this;
-        // maintain a list of hdas whose bodies are expanded
-        hdaView.on( 'body-expanded', function( id ){
-            historyView.storage.get( 'expandedHdas' ).set( id, true );
-        });
-        hdaView.on( 'body-collapsed', function( id ){
-            historyView.storage.get( 'expandedHdas' ).deleteKey( id );
-        });
-//TODO: remove?
-        hdaView.on( 'error', function( model, xhr, options, msg ){
-//TODO: change to modal?
-            historyView.errorHandler( model, xhr, options, msg );
-        });
     },
 
     /** Set up HistoryPanel js/widget behaviours
@@ -770,6 +779,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ loading indicator
+    /** hide the panel and display a loading indicator (in the panel's parent) when history model's are switched */
     showLoadingIndicator : function( msg, speed, callback ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         if( !this.indicator ){
@@ -783,6 +793,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
     },
 
+    /** hide the loading indicator */
     hideLoadingIndicator : function( speed, callback ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         if( this.indicator ){
@@ -816,6 +827,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return $msgContainer.html( $msg );
     },
 
+    /** convert msg and details into modal options usable by Galaxy.modal */
     messageToModalOptions : function( type, msg, details ){
         // only error is fleshed out here
         var panel = this,
@@ -860,10 +872,12 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ scrolling
+    /** get the current scroll position of the panel in its parent */
     scrollPosition : function(){
         return this.$el.parent().scrollTop();
     },
 
+    /** set the current scroll position of the panel in its parent */
     scrollTo : function( pos ){
         this.$el.parent().scrollTop( pos );
     },
@@ -925,6 +939,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
     // ........................................................................ external objects/MVC
     //TODO: remove quota meter from panel and remove this
+    /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
     connectToQuotaMeter : function( quotaMeter ){
         if( !quotaMeter ){
             return this;
@@ -942,25 +957,26 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
+//TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
     /** Show the over quota message (which happens to be in the history panel).
      */
-//TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
     showQuotaMessage : function(){
         var msg = this.$el.find( '#quota-message-container' );
         //this.log( this + ' showing quota message:', msg, userData );
         if( msg.is( ':hidden' ) ){ msg.slideDown( this.fxSpeed ); }
     },
 
+//TODO: this seems more like a per user message than a history message
     /** Hide the over quota message (which happens to be in the history panel).
      */
-//TODO: this seems more like a per user message than a history message
     hideQuotaMessage : function(){
         var msg = this.$el.find( '#quota-message-container' );
         //this.log( this + ' hiding quota message:', msg, userData );
         if( !msg.is( ':hidden' ) ){ msg.slideUp( this.fxSpeed ); }
     },
 
-    //TODO: move show_deleted/hidden into panel from opt menu and remove this
+//TODO: move show_deleted/hidden into panel from opt menu and remove this
+    /** add listeners to an external options menu (templates/webapps/galaxy/root/index.mako) */
     connectToOptionsMenu : function( optionsMenu ){
         if( !optionsMenu ){
             return this;

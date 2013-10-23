@@ -53,41 +53,42 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         misc_info           : ''
     },
 
-    /** fetch location of this history in the api */
+    /** fetch location of this HDA's history in the api */
     urlRoot: 'api/histories/',
+    /** full url spec. for this HDA */
     url : function(){
         return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
     },
     
+    /** controller urls assoc. with this HDA */
     urls : function(){
         var id = this.get( 'id' );
         if( !id ){ return {}; }
         var urls = {
-            'delete'    : galaxy_config.root + 'datasets/' + id + '/delete_async',
-            'purge'     : galaxy_config.root + 'datasets/' + id + '/purge_async',
-            'unhide'    : galaxy_config.root + 'datasets/' + id + '/unhide',
-            'undelete'  : galaxy_config.root + 'datasets/' + id + '/undelete',
+            'purge'         : galaxy_config.root + 'datasets/' + id + '/purge_async',
 
-            'display'   : galaxy_config.root + 'datasets/' + id + '/display/?preview=True',
-            'download'  : galaxy_config.root + 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
-            'edit'      : galaxy_config.root + 'datasets/' + id + '/edit',
-            'report_error': galaxy_config.root + 'dataset/errors?id=' + id,
-            'rerun'     : galaxy_config.root + 'tool_runner/rerun?id=' + id,
-            'show_params': galaxy_config.root + 'datasets/' + id + '/show_params',
-            'visualization': galaxy_config.root + 'visualization',
+            'display'       : galaxy_config.root + 'datasets/' + id + '/display/?preview=True',
+            'download'      : galaxy_config.root + 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
+            'edit'          : galaxy_config.root + 'datasets/' + id + '/edit',
+            'report_error'  : galaxy_config.root + 'dataset/errors?id=' + id,
+            'rerun'         : galaxy_config.root + 'tool_runner/rerun?id=' + id,
+            'show_params'   : galaxy_config.root + 'datasets/' + id + '/show_params',
+            'visualization' : galaxy_config.root + 'visualization',
 
             'annotation': { 'get': galaxy_config.root + 'dataset/get_annotation_async?id=' + id,
                             'set': galaxy_config.root + 'dataset/annotate_async?id=' + id },
-            'tags'      : { 'get': galaxy_config.root + 'tag/get_tagging_elt_async?item_id=' + id + '&item_class=HistoryDatasetAssociation',
-                            'set': galaxy_config.root + 'tag/retag?item_id=' + id + '&item_class=HistoryDatasetAssociation' }
+            'tags'      : { 'get': galaxy_config.root + 'tag/get_tagging_elt_async?item_id='
+                                    + id + '&item_class=HistoryDatasetAssociation',
+                            'set': galaxy_config.root + 'tag/retag?item_id='
+                                    + id + '&item_class=HistoryDatasetAssociation' }
         };
-        //'meta_download': '/dataset/get_metadata_file?hda_id=%3C%25%3D+id+%25%3E&metadata_name=%3C%25%3D+file_type+%25%3E',
+        // download links to assoc. metadata files (bam indeces, etc.)
         var meta_files = this.get( 'meta_files' );
         if( meta_files ){
             urls.meta_download = _.map( meta_files, function( meta_file ){
                 return {
-                    //url         : _.template( urlTemplate, { id: modelJson.id, file_type: meta_file.file_type }),
-                    url         : galaxy_config.root + 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name=' + meta_file.file_type,
+                    url         : galaxy_config.root + 'dataset/get_metadata_file?hda_id='
+                                    + id + '&metadata_name=' + meta_file.file_type,
                     file_type   : meta_file.file_type
                 };
             });
@@ -110,6 +111,9 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         this._setUpListeners();
     },
 
+    /** set up any event listeners
+     *  event: state:ready  fired when this HDA moves into a ready state
+     */
     _setUpListeners : function(){
         // if the state has changed and the new state is a ready state, fire an event
         this.on( 'change:state', function( currModel, newState ){
@@ -121,8 +125,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ common queries
-    /** Is this hda deleted or purged?
-     */
+    /** Is this hda deleted or purged? */
     isDeletedOrPurged : function(){
         return ( this.get( 'deleted' ) || this.get( 'purged' ) );
     },
@@ -132,7 +135,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
      *  @param {Boolean} show_deleted are we showing deleted hdas?
      *  @param {Boolean} show_hidden are we showing hidden hdas?
      */
-    //TODO: too many 'visible's
     isVisible : function( show_deleted, show_hidden ){
         var isVisible = true;
         if( ( !show_deleted )
@@ -146,6 +148,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         return isVisible;
     },
     
+    /** the more common alias of visible */
     hidden : function(){
         return !this.get( 'visible' );
     },
@@ -158,33 +161,37 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         return ( this.isDeletedOrPurged() || ready );
     },
 
+    /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
         //?? this may not be reliable
         return _.has( this.attributes, 'genome_build' );
     },
 
-    /** Convenience function to match hda.has_data.
-     */
+    /** Convenience function to match hda.has_data. */
     hasData : function(){
-        //TODO:?? is this equivalent to all possible hda.has_data calls?
         return ( this.get( 'file_size' ) > 0 );
     },
 
     // ........................................................................ ajax
+    /** save this HDA, _Mark_ing it as deleted (just a flag) */
     'delete' : function _delete( options ){
         return this.save( { deleted: true }, options );
     },
+    /** save this HDA, _Mark_ing it as undeleted */
     undelete : function _undelete( options ){
         return this.save( { deleted: false }, options );
     },
 
+    /** save this HDA as not visible */
     hide : function _hide( options ){
         return this.save( { visible: false }, options );
     },
+    /** save this HDA as visible */
     unhide : function _uhide( options ){
         return this.save( { visible: true }, options );
     },
 
+    /** purge this HDA and remove the underlying dataset file from the server's fs */
     purge : function _purge( options ){
         //TODO: ideally this would be a DELETE call to the api
         //  using purge async for now
@@ -210,10 +217,15 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ sorting/filtering
+    /** what attributes of an HDA will be used in a search */
     searchKeys : [
         'name', 'file_ext', 'genome_build', 'misc_blurb', 'misc_info', 'annotation', 'tags'
     ],
 
+    /** search this HDA for the string searchFor
+     *  @param {String} searchFor   look for this string in all attributes listed in searchKeys (above) using indexOf
+     *  @returns {Array} an array of attribute keys where searchFor was found
+     */
     search : function( searchFor ){
         var model = this;
         searchFor = searchFor.toLowerCase();
@@ -223,13 +235,16 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         });
     },
 
+    /** alias of search, but returns a boolean
+     *  @param {String} matchesWhat   look for this string in all attributes listed in searchKeys (above) using indexOf
+     *  @returns {Boolean} was matchesWhat found in any attributes
+     */
     matches : function( matchesWhat ){
         return !!this.search( matchesWhat ).length;
     },
 
     // ........................................................................ misc
-    /** String representation
-     */
+    /** String representation */
     toString : function(){
         var nameAndId = this.get( 'id' ) || '';
         if( this.get( 'name' ) ){
@@ -274,6 +289,7 @@ HistoryDatasetAssociation.STATES = {
     ERROR               : 'error'
 };
 
+/** states that are in a final state (the underlying job is complete) */
 HistoryDatasetAssociation.READY_STATES = [
     HistoryDatasetAssociation.STATES.NEW,
     HistoryDatasetAssociation.STATES.OK,
@@ -285,6 +301,7 @@ HistoryDatasetAssociation.READY_STATES = [
     HistoryDatasetAssociation.STATES.ERROR
 ];
 
+/** states that will change (the underlying job is not finished) */
 HistoryDatasetAssociation.NOT_READY_STATES = [
     HistoryDatasetAssociation.STATES.UPLOAD,
     HistoryDatasetAssociation.STATES.QUEUED,
@@ -306,7 +323,10 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output
     //logger              : console,
+
+    /** root api url */
     urlRoot : galaxy_config.root + 'api/histories',
+    /** complete api url */
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
     },
@@ -331,6 +351,9 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
         return this.map( function( hda ){ return hda.id; });
     },
 
+    /** Get hdas that are not ready
+     *  @returns array of HDAs
+     */
     notReady : function(){
         return this.filter( function( hda ){
             return !hda.inReadyState();
@@ -370,11 +393,13 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ ajax
+    /** fetch detailed model data for all HDAs in this collection */
     fetchAllDetails : function(){
         return this.fetch({ data : { details : 'all' } });
     },
 
     // ........................................................................ sorting/filtering
+    /** return a new collection of HDAs whose attributes contain the substring matchesWhat */
     matches : function( matchesWhat ){
         return this.filter( function( hda ){
             return hda.matches( matchesWhat );

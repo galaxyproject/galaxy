@@ -14,7 +14,7 @@ define([
 var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 /** @lends HDAEditView.prototype */{
 
-    // ......................................................................... SET UP
+    // ......................................................................... set up
     /** Set up the view, cache url templates, bind listeners.
      *      Overrides HDABaseView.initialize to change default actions (adding re-run).
      *  @param {Object} attributes
@@ -43,7 +43,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         //var hdaView = this;
     },
 
-    // ......................................................................... RENDER WARNINGS
+    // ......................................................................... render warnings
     /** Render any hda warnings including: is deleted, is purged, is hidden.
      *      Overrides _render_warnings to include links to further actions (undelete, etc.)).
      *  @returns {Object} the templated urls
@@ -71,13 +71,14 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return buttonDiv;
     },
     
+//TODO: move titleButtons into state renderers, remove state checks in the buttons
+
     /** Render icon-button to edit the attributes (format, permissions, etc.) this hda.
      *  @returns {jQuery} rendered DOM
      */
     _render_editButton : function(){
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
-        //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
         if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
@@ -114,7 +115,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_deleteButton : function(){
         // don't show delete if...
-        //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
         if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
@@ -147,7 +147,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return this.deleteButton.render().$el;
     },
 
-    // ......................................................................... RENDER BODY
+    // ......................................................................... render body
     /** Render the data/metadata summary (format, size, misc info, etc.).
      *      Overrides _render_hdaSummary to include edit link in dbkey.
      *  @see HDABaseView#_render_hdaSummary
@@ -158,7 +158,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
-            //TODO: use HDABaseView and select/replace base on this switch
             _.extend( modelData, { dbkey_unknown_and_editable : true });
         }
         return hdaBase.HDABaseView.templates.hdaSummary( modelData );
@@ -238,10 +237,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         var $icon = this.visualizationsButton.render().$el;
         $icon.addClass( 'visualize-icon' ); // needed?
 
-        //TODO: make this more concise
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
-
         /** @inner */
         function create_viz_action( visualization ) {
             switch( visualization ){
@@ -269,7 +266,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // >1: Populate menu dict with visualization fns, make the popupmenu
         } else {
             _.each( visualizations, function( visualization ) {
-                //TODO: move to utils
                 var titleCaseVisualization = visualization.charAt( 0 ).toUpperCase() + visualization.slice( 1 );
                 popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
@@ -334,9 +330,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     /** Render icon-button to load and display tagging html.
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: these should be a sub-MV
     _render_tagButton : function(){
-        //TODO: check for User
         if( !this.hasUser || !this.urls.tags.get ){
             this.tagButton = null;
             return null;
@@ -354,9 +348,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     /** Render icon-button to load and display annotation html.
      *  @returns {jQuery} rendered DOM
      */
-    //TODO: these should be a sub-MV
     _render_annotateButton : function(){
-        //TODO: check for User
         if( !this.hasUser || !this.urls.annotation.get ){
             this.annotateButton = null;
             return null;
@@ -368,33 +360,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'annotate'
         })});
         return this.annotateButton.render().$el;
-    },
-    
-    // ......................................................................... other elements
-    /** Render area to display tags.
-     *  @returns {jQuery} rendered DOM
-     */
-//TODO: into sub-MV
-//TODO: check for User
-    _render_tagArea : function(){
-        if( !this.urls.tags.set ){ return null; }
-        //TODO: move to mvc/tags.js
-        return $( HDAEditView.templates.tagArea(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        ).trim() );
-    },
-
-    /** Render area to display annotation.
-     *  @returns {jQuery} rendered DOM
-     */
-//TODO: into sub-MV
-//TODO: check for User
-    _render_annotationArea : function(){
-        if( !this.urls.annotation.get ){ return null; }
-        //TODO: move to mvc/annotations.js
-        return $( HDAEditView.templates.annotationArea(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        ).trim() );
     },
     
     // ......................................................................... state body renderers
@@ -415,7 +380,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function( parent ){
-        //TODO: should call super somehow and insert the needed...
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
 
@@ -451,7 +415,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         parent.append( this._render_peek() );
     },
 
-    // ......................................................................... EVENTS
+    // ......................................................................... events
     /** event map */
     events : {
         'click .historyItemTitle'           : 'toggleBodyVisibility',
@@ -463,16 +427,28 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         'click a.icon-button.annotate'      : 'loadAndDisplayAnnotation'
     },
     
-    // ......................................................................... STATE CHANGES / MANIPULATION
+    /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){
-        //TODO: confirm dialog
+//TODO: confirm dialog
         this.model.purge({ url: this.urls.purge });
         return false;
     },
 
+    // ......................................................................... tags
+    /** Render area to display tags.
+     *  @returns {jQuery} rendered DOM
+     */
+//TODO: into sub-MV
+    _render_tagArea : function(){
+        if( !this.hasUser || !this.urls.tags.set ){ return null; }
+        return $( HDAEditView.templates.tagArea(
+            _.extend( this.model.toJSON(), { urls: this.urls } )
+        ).trim() );
+    },
+
     /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
-    //TODO: into sub-MV
+//TODO: into sub-MV
     loadAndDisplayTags : function( event ){
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
@@ -507,6 +483,18 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             tagArea.slideUp( view.fxSpeed );
         }
         return false;
+    },
+
+    // ......................................................................... annotations
+    /** Render area to display annotation.
+     *  @returns {jQuery} rendered DOM
+     */
+//TODO: into sub-MV
+    _render_annotationArea : function(){
+        if( !this.hasUser || !this.urls.annotation.get ){ return null; }
+        return $( HDAEditView.templates.annotationArea(
+            _.extend( this.model.toJSON(), { urls: this.urls } )
+        ).trim() );
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
@@ -555,7 +543,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return false;
     },
 
-    // ......................................................................... UTILTIY
+    // ......................................................................... misc
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
@@ -678,5 +666,5 @@ function create_scatterplot_action_fn( url, params ){
 
 //==============================================================================
 return {
-    HDAEditView  : HDAEditView,
+    HDAEditView  : HDAEditView
 };});
