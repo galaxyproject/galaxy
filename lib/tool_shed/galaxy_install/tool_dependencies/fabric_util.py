@@ -375,6 +375,68 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
                             if return_code:
                                 return
+                elif action_type == 'setup_ruby_environment':
+                    # setup an Ruby environment
+                    # <action type="setup_ruby_environment">
+                    #       <repository name="package_ruby_2_0" owner="bgruening">
+                    #           <package name="ruby" version="2.0" />
+                    #       </repository>
+                    #       <!-- allow downloading and installing an Ruby package from http://rubygems.org/ -->
+                    #       <package>protk</package>
+                    #       <package>protk=1.2.4</package>
+                    #       <package>http://url-to-some-gem-file.de/protk.gem</package>
+                    # </action>
+                    if action_dict.get( 'env_shell_file_paths', False ):
+                        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                    else:
+                        log.warning( 'Missing Ruby environment. Please check if your specified Ruby installation exists.' )
+                        return
+
+                    dir = os.path.curdir
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
+                        with settings( warn_only=True ):
+                            for (gem, gem_version) in action_dict[ 'ruby_packages' ]:
+                                if os.path.isfile( gem ):
+                                    # we assume a local shipped gem file
+                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                            gem install --local %s''' % ( gem )
+                                elif gem.find('://') != -1:
+                                    # we assume a URL to a gem file
+                                    url = gem
+                                    gem_name = url.split( '/' )[ -1 ]
+                                    td_common_util.url_download( work_dir, gem_name, url, extract=False )
+                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                            gem install --local %s ''' % ( gem_name )
+                                else:
+                                    # gem file from rubygems.org with or without version number
+                                    if gem_version:
+                                        # version number was specified
+                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                            gem install %s --version "=%s"''' % ( gem, gem_version)
+                                    else:
+                                        # no version number given
+                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                            gem install %s''' % ( gem )
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
+
+                            # Ruby libraries are installed to $INSTALL_DIR (install_dir), we now set the GEM_PATH path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            modify_env_command_dict = dict( name="GEM_PATH", action="prepend_to", value=install_dir )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
+                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">

@@ -631,6 +631,46 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'r_packages' ] = r_packages
             else:
                 continue
+        elif action_type == 'setup_ruby_environment':
+            # setup an Ruby environment
+            # <action type="setup_ruby_environment">
+            #       <repository name="package_ruby_2_0" owner="bgruening">
+            #           <package name="ruby" version="2.0" />
+            #       </repository>
+            #       <!-- allow downloading and installing an Ruby package from http://rubygems.org/ -->
+            #       <package>protk</package>
+            #       <package>protk=1.2.4</package>
+            #       <package>http://url-to-some-gem-file.de/protk.gem</package>
+            # </action>
+            
+            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+            if all_env_shell_file_paths:
+                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            ruby_packages = list()
+            for env_elem in action_elem:
+                if env_elem.tag == 'package':
+                    """
+                        A valid gem definition can be:
+                            protk=1.2.4
+                            protk
+                            ftp://ftp.gruening.de/protk.gem
+                    """
+                    gem_token = env_elem.text.strip().split('=')
+                    if len(gem_token) == 2:
+                        # version string
+                        gem_name = gem_token[0]
+                        gem_version = gem_token[1]
+                        ruby_packages.append( [gem_name, gem_version] )
+                    else:
+                        # gem name for rubygems.org without version number
+                        gem = env_elem.text.strip()
+                        ruby_packages.append( [gem, None] )
+
+            if ruby_packages:
+                action_dict[ 'ruby_packages' ] = ruby_packages
+            else:
+                continue
         elif action_type == 'make_install':
             # make; make install; allow providing make options
             if action_elem.text:
