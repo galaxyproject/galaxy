@@ -613,10 +613,13 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'configure_opts' ] = configure_opts
         elif action_type == 'setup_r_environment':
             # setup an R environment
-            # <action type="setup_r_environment" name="package_r_3_0_1" owner="bgruening">
-            #   <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+            # <action type="setup_r_environment">
+            #       <repository name="package_r_3_0_1" owner="bgruening">
+            #           <package name="R" version="3.0.1" />
+            #       </repository>
+            #       <!-- allow installing an R packages -->
+            #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
             # </action>
-            
             env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
 
             all_env_shell_file_paths.extend( env_shell_file_paths )
