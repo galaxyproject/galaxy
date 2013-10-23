@@ -207,7 +207,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     function getHistory( id ){
         // get the history data
         //return jQuery.ajax( '/generate_json_error' );
-        return jQuery.ajax( '/api/histories/' + historyId );
+        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
     }
     function countHdasFromHistory( historyData ){
         // get the number of hdas accrd. to the history
@@ -225,7 +225,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
             hdaDetailIds = hdaDetailIds( historyData );
         }
         var data = ( hdaDetailIds.length )?( { details : hdaDetailIds.join( ',' ) } ):( {} );
-        return jQuery.ajax( '/api/histories/' + historyData.id + '/contents', { data: data });
+        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
         //return jQuery.ajax( '/generate_json_error' );
     }
 

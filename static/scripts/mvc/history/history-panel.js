@@ -291,7 +291,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
-                return jQuery.post( '/api/histories/' + historyId + '/set_as_current' );
+                return jQuery.post( galaxy_config.root + 'api/histories/' + historyId + '/set_as_current' );
             };
         return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
             .then(function( historyData, hdaData ){
@@ -314,7 +314,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var panel = this,
             historyFn = function(){
                 // get history data from posting a new history (and setting it to current)
-                return jQuery.post( '/api/histories', { current: true });
+                return jQuery.post( galaxy_config.root + 'api/histories', { current: true });
             };
         // id undefined bc there is no historyId yet - the server will provide
         //  (no need for details - nothing expanded in new history)
