@@ -17,28 +17,3 @@
     </div>
 </div>
 </script>
-
-<script type="text/template" class="template-ui" id="template-popupmenu-menu">
-<ul id="{{ id }}-menu" class="dropdown-menu">
-{{#if options.length }}
-    {{#each options }}
-        {{#if divider }}
-            <li class="divider"></li>
-        {{else}}
-            {{#if header }}
-                <li class="head"><a href=""javascript:void(0);">{{{ html }}}</a></li>
-            {{else}}
-                {{!NOTE: changed from # to void fn }}
-                <li><a href="{{#if href }}{{ href }}{{else}}javascript:void(0);{{/if}}"
-                    {{#if href }}target="{{ target }}"{{/if}} class="popupmenu-option">
-                        {{#if checked }}<span class="fa-icon-ok"></span>{{/if}}
-                        {{{ html }}}
-                </a></li>
-            {{/if}}
-        {{/if}}
-    {{/each}}
-{{else}}
-    <li>No Options.</li>
-{{/if}}
-</ul>
-</script>
