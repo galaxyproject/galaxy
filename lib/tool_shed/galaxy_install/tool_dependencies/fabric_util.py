@@ -341,10 +341,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 elif action_type == 'setup_r_environment':
                     # setup an R environment
                     # <action type="setup_r_environment">
-                    #   <r_base  name="package_r_3_0_1" owner="bgruening" />
+                    #       <repository name="package_r_3_0_1" owner="bgruening">
+                    #           <package name="R" version="3.0.1" />
+                    #       </repository>
+                    #       <!-- allow installing an R packages -->
+                    #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
                     # </action>
-                    # allow downloading and installing an R package
-                    # <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+
                     if action_dict.get( 'env_shell_file_paths', False ):
                         install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                     else:
@@ -371,8 +374,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
                             # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
                             modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
-                            modify_env_command = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+
                             if return_code:
                                 return
                 elif action_type == 'setup_ruby_environment':
