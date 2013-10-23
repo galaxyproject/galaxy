@@ -31,23 +31,23 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ urls
-    urlRoot: 'api/histories',
+    urlRoot: galaxy_config.root + 'api/histories',
 
     renameUrl : function(){
 //TODO: just use this.save()
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/history/rename_async?id=' + this.get( 'id' );
+        return galaxy_config.root + 'history/rename_async?id=' + this.get( 'id' );
     },
     annotateUrl : function(){
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/history/annotate_async?id=' + this.get( 'id' );
+        return galaxy_config.root + 'history/annotate_async?id=' + this.get( 'id' );
     },
     tagUrl : function(){
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/tag/get_tagging_elt_async?item_id=' + this.get( 'id' ) + '&item_class=History';
+        return galaxy_config.root + 'tag/get_tagging_elt_async?item_id=' + this.get( 'id' ) + '&item_class=History';
     },
 
     // ........................................................................ set up/tear down
@@ -276,7 +276,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
-    urlRoot : 'api/histories'
+    urlRoot : galaxy_config.root + 'api/histories'
     
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output
