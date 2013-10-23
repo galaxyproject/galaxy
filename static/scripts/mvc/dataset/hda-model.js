@@ -63,23 +63,23 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         var id = this.get( 'id' );
         if( !id ){ return {}; }
         var urls = {
-            'delete'    : '/datasets/' + id + '/delete_async',
-            'purge'     : '/datasets/' + id + '/purge_async',
-            'unhide'    : '/datasets/' + id + '/unhide',
-            'undelete'  : '/datasets/' + id + '/undelete',
+            'delete'    : galaxy_config.root + 'datasets/' + id + '/delete_async',
+            'purge'     : galaxy_config.root + 'datasets/' + id + '/purge_async',
+            'unhide'    : galaxy_config.root + 'datasets/' + id + '/unhide',
+            'undelete'  : galaxy_config.root + 'datasets/' + id + '/undelete',
 
-            'display'   : '/datasets/' + id + '/display/?preview=True',
-            'download'  : '/datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
-            'edit'      : '/datasets/' + id + '/edit',
-            'report_error': '/dataset/errors?id=' + id,
-            'rerun'     : '/tool_runner/rerun?id=' + id,
-            'show_params': '/datasets/' + id + '/show_params',
-            'visualization': '/visualization',
+            'display'   : galaxy_config.root + 'datasets/' + id + '/display/?preview=True',
+            'download'  : galaxy_config.root + 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
+            'edit'      : galaxy_config.root + 'datasets/' + id + '/edit',
+            'report_error': galaxy_config.root + 'dataset/errors?id=' + id,
+            'rerun'     : galaxy_config.root + 'tool_runner/rerun?id=' + id,
+            'show_params': galaxy_config.root + 'datasets/' + id + '/show_params',
+            'visualization': galaxy_config.root + 'visualization',
 
-            'annotation': { 'get': '/dataset/get_annotation_async?id=' + id,
-                            'set': '/dataset/annotate_async?id=' + id },
-            'tags'      : { 'get': '/tag/get_tagging_elt_async?item_id=' + id + '&item_class=HistoryDatasetAssociation',
-                            'set': '/tag/retag?item_id=' + id + '&item_class=HistoryDatasetAssociation' }
+            'annotation': { 'get': galaxy_config.root + 'dataset/get_annotation_async?id=' + id,
+                            'set': galaxy_config.root + 'dataset/annotate_async?id=' + id },
+            'tags'      : { 'get': galaxy_config.root + 'tag/get_tagging_elt_async?item_id=' + id + '&item_class=HistoryDatasetAssociation',
+                            'set': galaxy_config.root + 'tag/retag?item_id=' + id + '&item_class=HistoryDatasetAssociation' }
         };
         //'meta_download': '/dataset/get_metadata_file?hda_id=%3C%25%3D+id+%25%3E&metadata_name=%3C%25%3D+file_type+%25%3E',
         var meta_files = this.get( 'meta_files' );
@@ -87,7 +87,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
             urls.meta_download = _.map( meta_files, function( meta_file ){
                 return {
                     //url         : _.template( urlTemplate, { id: modelJson.id, file_type: meta_file.file_type }),
-                    url         : '/dataset/get_metadata_file?hda_id=' + id + '&metadata_name=' + meta_file.file_type,
+                    url         : galaxy_config.root + 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name=' + meta_file.file_type,
                     file_type   : meta_file.file_type
                 };
             });
@@ -306,7 +306,7 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output
     //logger              : console,
-    urlRoot : '/api/histories',
+    urlRoot : galaxy_config.root + 'api/histories',
     url : function(){
         return this.urlRoot + '/' + this.historyId + '/contents';
     },
