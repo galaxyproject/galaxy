@@ -278,7 +278,7 @@ class RepositoriesController( BaseAPIController ):
                 encoded_id = trans.security.encode_id( repository.id )
                 if encoded_id in encoded_ids_to_skip:
                     log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
-                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                               ( str( repository.id ), str( encoded_ids_to_skip ) ) )
                 elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             # Now reset metadata on all remaining repositories.
@@ -286,7 +286,7 @@ class RepositoriesController( BaseAPIController ):
                 encoded_id = trans.security.encode_id( repository.id )
                 if encoded_id in encoded_ids_to_skip:
                     log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
-                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                               ( str( repository.id ), str( encoded_ids_to_skip ) ) )
                 elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
