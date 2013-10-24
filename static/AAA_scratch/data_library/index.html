@@ -1,10 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Data Library</title>
-  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.1.1/css/bootstrap.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Bootstrap -->
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
 </head>
+
 <body>
 
 
@@ -16,7 +19,7 @@
 
 <!-- LIBRARY LIST TEMPLATE -->
   <script type="text/template" id="library-list-template">
-    <table class="table striped">
+    <table class="table table-striped">
       <thead>
         <th>name</th>
         <th>description</th>
@@ -42,45 +45,47 @@
 
 <!-- FOLDERS LIST TEMPLATE -->
   <script type="text/template" id="folder-content-template">
-    <table class="table striped">
+
+          <% _.each(path, function(path_item) { %>
+            <% if (path_item[0] != id) { %>
+              <a href='#/folders/<%- path_item[0] %>'><%- path_item[1] %></a> |
+            <% } else { %>
+              <%- path_item[1] %>
+            <% } %>
+          <% }); %>
+
+    <table class="table table-hover table-condensed">
       <thead>
+        <th style="text-align: center; width: 20px; "><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>
         <th>name</th>
         <th>type</th>
-        <th>parent id</th>
-        <th>id</th>
-        <th>library id</th>
       </thead>
       <tbody>
         <% _.each(items, function(content_item) { %>
-          <tr>
+          <tr class="folder_row" id="<%- content_item.id %>">
+            <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>
           <% if (content_item.get('type') === 'folder') { %>
-            <td><a href="#/folders/<%- content_item.id %>?library_id=<%- content_item.get('library_id') %>"><%- content_item.get('name') %></a></td>
+            <td><a href="#/folders/<%- content_item.id %>"><%- content_item.get('name') %></a>
+            <% if (content_item.get('item_count') === 0) { %>
+              <span class="muted">(empty folder)</span>
+            <% } %>
+            </td>
           <% } else {  %>
             <td><%- content_item.get('name') %></td>
           <% } %>    
             <td><%= htmlEncode(content_item.get('type')) %></td>
-            <td><%= htmlEncode(content_item.get('parent_id')) %></td>
-            <td><a href="#/folders/<%- content_item.id %>"><%= htmlEncode(content_item.get('id')) %></a></td>
-            <td><a href="#/folders/<%- content_item.get('library_id') %>"><%= htmlEncode(content_item.get('library_id')) %></a></td>
           </tr>
           <% }); %>
       </tbody>
     </table>
 
-    <hr/>
-    <div>
-    <% if ( typeof libraries !== undefined ) { %>
-    <% _.each(libraries.models, function(library) { %>
-      <%- library.get('name') %> <br/>
-      <% }); %>
-    <% } else { %>
-      libraries are undefined
-      <% } %>
-    </div>
+
   </script>
 
 
+  <script src="require.js"></script>
   <script src="jquery-1.10.2.js" type="text/javascript"></script>
+  <script src="js/bootstrap.min.js"></script>
   <script src="underscore.js" type="text/javascript"></script>
   <script src="backbone.js" type="text/javascript"></script>
   <script src="backbone.queryparams.js" type="text/javascript"></script>
@@ -88,32 +93,25 @@
 
   <script>
 
+ // configure require
+  //      require.config({
+  //          baseUrl: "/",
+  //          shim: {
+  //              "libs/underscore": { exports: "_" },
+  //              "libs/backbone/backbone": { exports: "Backbone" },
+  //              "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+  //          }
+  //      });
+
+  // require(['galaxy.modal'], function(modal)
+  //       {
+  //           Galaxy.modal = new modal.GalaxyModal();
+  //       });
+
+
     // ENCODE HTML
     function htmlEncode(value){
       return $('<div/>').text(value).html();
-    }
-
-    // NESTED COLLECTIONS
-    function nestCollection(model, attributeName, nestedCollection) {
-      //setup nested references
-      for (var i = 0; i < nestedCollection.length; i++) {
-        model.attributes[attributeName][i] = nestedCollection.at(i).attributes;
-      }
-
-      //create empty arrays if none
-      nestedCollection.bind('add', function (initiative) {
-        if (!model.get(attributeName)) {
-          model.attributes[attributeName] = [];
-        }
-        model.get(attributeName).push(initiative.attributes);
-      });
-
-      nestedCollection.bind('remove', function (initiative) {
-        var updateObj = {};
-        updateObj[attributeName] = _.without(model.get(attributeName), initiative.attributes);
-        model.set(updateObj);
-      });
-      return nestedCollection;
     }
 
     var api_key = 'e48b2b2589b242a50538f8f9fa8e5ee9';
@@ -167,13 +165,10 @@
         id: "unknown"
       },
       parse: function(obj) {
-          full_path = obj[0].full_path;
+          this.full_path = obj[0].full_path;
+          // this.folder.reset(obj[1].folder_contents);
           // update the inner collection
           this.get("folder").reset(obj[1].folder_contents);
-
-          // this mightn't be necessary
-          // delete obj.folder;
-
           return obj;
         }
     })
@@ -197,41 +192,39 @@
   
     var FolderContentView = Backbone.View.extend({
       el: '.page',
+      events: {
+        'click #select-all-checkboxes' : 'selectAll',
+        'click .folder_row' : 'selectClicked'
+      },
       render: function (options, params) {
         var that = this;
 
         var folderContainer = new FolderContainer({id: options.id});
         folderContainer.url = folderContainer.attributes.urlRoot + options.id + '/contents';
-        // var folder = new Folder({id: options.id});
 
         folderContainer.fetch({
           success: function (container) {
-          folderContainer.attributes.folder = container.attributes.folder;
-          var template = _.template($('#folder-content-template').html(), {items: folderContainer.attributes.folder.models, id: options.id});
+          // folderContainer.attributes.folder = container.attributes.folder;
+          var template = _.template($('#folder-content-template').html(), {path: folderContainer.full_path, items: folderContainer.attributes.folder.models, id: options.id});
           that.$el.html(template);
           }
         })
-
-        // folder.fetch({
-        //   success: function (folder) {
-        //   folderContainer.folder = folder;
-        //   var template = _.template($('#folder-content-template').html(), {items: folderContainer.folder.models, id: options.id});
-        //   that.$el.html(template);
-        //   }
-        // })
-
-        // var folder = new Folder({id: options.id});
-        // folder.url = folder.urlRoot + options.id + '/contents';
-        // folder.fetch({
-        //   success: function (folder) {
-        //     // console.log(JSON.stringify(folder))
-        //     //create the template
-        //     var template = _.template($('#folder-content-template').html(), {items: folder.models, id: options.id});
-        //     that.$el.html(template);
-        //   }
-        // })
-
       },
+      selectAll : function (ev) {
+         var selected = ev.target.checked;
+         // Iterate each checkbox
+         $(':checkbox').each(function () { this.checked = selected; });
+      },
+      selectClicked : function (ev) {
+        var checkbox = $("#" + ev.target.parentElement.id).find(':checkbox')
+        if (checkbox[0] != undefined) {
+          if (checkbox[0].checked){
+            checkbox[0].checked = '';
+          } else {
+            checkbox[0].checked = 'selected';
+          }
+        }
+      }
     });
 
 
@@ -258,8 +251,7 @@
     })
 
     Backbone.history.start();
+
   </script>
-
-
 </body>
 </html> 

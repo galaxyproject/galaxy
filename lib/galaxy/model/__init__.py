@@ -1835,7 +1835,7 @@ class Library( object, Dictifiable ):
         return name
 
 class LibraryFolder( object, Dictifiable ):
-    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description

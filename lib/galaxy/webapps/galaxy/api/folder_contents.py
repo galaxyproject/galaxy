@@ -15,41 +15,36 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     Class controls retrieval, creation and updating of folder contents.
     """
 
+    def load_folder_contents( self, trans, folder ):
+        """
+        Loads all contents of the folder (folders and data sets) but only in the first level.
+        """
+        current_user_roles = trans.get_current_user_roles()
+        is_admin = trans.user_is_admin()
+        content_items = []
+        for subfolder in folder.active_folders:
+            if not is_admin:
+                can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+            if (is_admin or can_access) and not subfolder.deleted:
+                subfolder.api_type = 'folder'
+                content_items.append( subfolder )
+        for dataset in folder.datasets:
+            if not is_admin:
+                can_access = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
+            if (is_admin or can_access) and not dataset.deleted:
+                dataset.api_type = 'file'
+                content_items.append( dataset )
+        return content_items
+
     @web.expose_api
     def index( self, trans, folder_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/contents
-        
         Displays a collection (list) of a folder's contents (files and folders).
-        
-        The /api/library_contents/{encoded_library_id}/contents
-        lists everything in a library recursively, which is not what
-        we want here. We could add a parameter to use the recursive
-        style, but this is meant to act similar to an "ls" directory listing.
+        Encoded folder ID is prepended with 'F' if it is a folder as opposed to a data set which does not have it.
         """
         folder_container = []
         current_user_roles = trans.get_current_user_roles()
-
-
-        def load_folder_contents( folder ):
-            """
-            Load contents of the folder (folders and datasets).
-            """
-            admin = trans.user_is_admin()
-            rval = []
-            for subfolder in folder.active_folders:
-                if not admin:
-                    can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-                if (admin or can_access) and not subfolder.deleted:
-                    subfolder.api_type = 'folder'
-                    rval.append( subfolder )
-            for ld in folder.datasets:
-                if not admin:
-                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
-                if (admin or can_access) and not ld.deleted:
-                    ld.api_type = 'file'
-                    rval.append( ld )
-            return rval
 
         try:
             decoded_folder_id = trans.security.decode_id( folder_id[-16:] )
@@ -59,69 +54,68 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
-#             log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX folder.parent_library" + str(folder.parent_library.id))
-#             log.debug("XXXXXXXXXXXXXXXXXXXXXXXXXXX folder.parent_id" + str(folder.parent_id))
             parent_library = folder.parent_library
         except:
             folder = None
-            log.error( "FolderContentsController.index: Unable to retrieve folder %s"
-                      % folder_id )
+            log.error( "FolderContentsController.index: Unable to retrieve folder with ID: %s" % folder_id )
 
-        # TODO: Find the API's path to this folder if necessary.
-        # This was needed in recursive descent, but it's not needed
-        # for "ls"-style content checking:
-        if not folder or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+        # We didn't find the folder or user does not have an access to it.
+        if not folder:
             trans.response.status = 400
             return "Invalid folder id ( %s ) specified." % str( folder_id )
-        # TODO MARTEN Can it be that predecessors of current folder have different access rights? aka user shouldn't see them?
         
-        # Search the path upwards and load the whole route of names and ids for breadcrumb purposes.
+        if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+            log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, folder.id ) )
+            trans.response.status = 400
+            return "Invalid folder id ( %s ) specified." % str( folder_id )
+        
         path_to_root = []
-        
         def build_path ( folder ):
+            """
+            Search the path upwards recursively and load the whole route of names and ids for breadcrumb purposes.
+            """
             path_to_root = []
             # We are almost in root
-            log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id: " + str( folder.parent_id ) )
-            log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_library.id: " + str( folder.parent_library.id ) )
             if folder.parent_id is None:
                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING: " + str( folder.name ) )
-                path_to_root.append( ( folder.id, folder.name ) )
+                path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
 #                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_library.id )
 #                 path_to_root.append( ( upper_folder.id, upper_folder.name ) )
             else:
             # We add the current folder and traverse up one folder.
                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ADDING THIS FOLDER AND TRAVERSING UP:  " + str( folder.name ) )
-                path_to_root.append( ( folder.id, folder.name ) )
+                path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
                 path_to_root.extend( build_path( upper_folder ) )
-#             path_to_root = path_to_root.reverse()
-#             return path_to_root[::-1]
             return path_to_root
             
         # Return the reversed path so it starts with the library node.
         full_path = build_path( folder )[::-1]
         folder_container.append( dict( full_path = full_path ) )
+        
         folder_contents = []
         # Go through every item in the folder and include its meta-data.
-        for content_item in load_folder_contents( folder ):
+        for content_item in self.load_folder_contents( trans, folder ):
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
             
             # For folder return also hierarchy values
             if content_item.api_type == 'folder':
-                encoded_parent_library_id = trans.security.encode_id( content_item.parent_library.id )
+#                 encoded_parent_library_id = trans.security.encode_id( content_item.parent_library.id )
                 encoded_id = 'F' + encoded_id
-                if content_item.parent_id is not None: # Return folder's parent id for browsing back.
-                    encoded_parent_id = 'F' + trans.security.encode_id( content_item.parent_id )
-                    return_item.update ( dict ( parent_id = encoded_parent_id ) )
+#                 if content_item.parent_id is not None: # Return folder's parent id for browsing back.
+#                     encoded_parent_id = 'F' + trans.security.encode_id( content_item.parent_id )
+                last_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                return_item.update ( dict ( item_count = content_item.item_count, last_updated = last_updated ) )
             
             # For every item return also the default meta-data
             return_item.update( dict( id = encoded_id,
                                type = content_item.api_type,
-                               name = content_item.name,
-                               library_id = encoded_parent_library_id
+                               name = content_item.name
+                               
                                 ) )
             folder_contents.append( return_item )
+        # Put the data in the container
         folder_container.append( dict( folder_contents = folder_contents ) )
         return folder_container
 
