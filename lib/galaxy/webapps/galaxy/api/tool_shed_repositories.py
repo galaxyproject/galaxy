@@ -267,8 +267,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if shed_tool_conf:
             # Get the tool_path setting.
             index, shed_conf_dict = suc.get_shed_tool_conf_dict( trans.app, shed_tool_conf )
-            # BUG, FIXME: Shed config dict does not exist in this context
-            tool_path = shed_config_dict[ 'tool_path' ]
+            tool_path = shed_conf_dict[ 'tool_path' ]
         else:
             # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
             for shed_config_dict in trans.app.toolbox.shed_tool_confs:
