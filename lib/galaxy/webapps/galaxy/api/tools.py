@@ -119,14 +119,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get( 'out_data', {} ).values()
+        output_datasets = vars.get( 'out_data', {} ).iteritems()
         rval = {
             "outputs": []
         }
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
-        for output in output_datasets:
+        for output_name, output in output_datasets:
             output_dict = output.to_dict()
+            #add the output name back into the output data structure
+            #so it's possible to figure out which newly created elements 
+            #correspond with which tool file outputs 
+            output_dict['output_name'] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
 
