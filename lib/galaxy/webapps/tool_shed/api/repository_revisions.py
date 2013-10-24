@@ -43,7 +43,6 @@ class RepositoryRevisionsController( BaseAPIController ):
         if not changeset_revision:
             raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
         export_repository_dependencies = payload.get( 'export_repository_dependencies', False )
-        download_dir = payload.get( 'download_dir', '/tmp' )
         try:
             # We'll currently support only gzip-compressed tar archives.
             file_type = 'gz'
@@ -167,7 +166,6 @@ class RepositoryRevisionsController( BaseAPIController ):
             flush_needed = False
             for key, new_value in payload.items():
                 if hasattr( repository_metadata, key ):
-                    old_value = getattr( repository_metadata, key )
                     setattr( repository_metadata, key, new_value )
                     if key in [ 'tools_functionally_correct', 'time_last_tested' ]:
                         # Automatically update repository_metadata.time_last_tested.
@@ -186,10 +184,10 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )
         return repository_metadata_dict
-    
+
     def __get_value_mapper( self, trans, repository_metadata ):
         value_mapper = { 'id' : trans.security.encode_id,
                          'repository_id' : trans.security.encode_id }
         if repository_metadata.time_last_tested is not None:
-            value_mapper[ 'time_last_tested' ] = time_ago 
+            value_mapper[ 'time_last_tested' ] = time_ago
         return value_mapper
