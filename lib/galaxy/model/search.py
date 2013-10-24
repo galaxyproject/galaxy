@@ -35,7 +35,7 @@ from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssoci
 History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation,
 StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
 ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
-JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion)
+JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion )
 
 from galaxy.util.json import to_json_string
 from sqlalchemy import and_
