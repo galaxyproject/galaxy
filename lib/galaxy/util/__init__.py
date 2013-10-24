@@ -176,9 +176,9 @@ def xml_element_to_dict( elem ):
                 sub_elem_dict[ key ].append( value )
         for key, value in sub_elem_dict.iteritems():
             if len( value ) == 1:
-                rval[ elem.tag ][ k ] = value[0]
+                rval[ elem.tag ][ key ] = value[0]
             else:
-                rval[ elem.tag ][ k ] = value
+                rval[ elem.tag ][ key ] = value
     if elem.attrib:
         for key, value in elem.attrib.iteritems():
             rval[ elem.tag ][ "@%s" % key ] = value
