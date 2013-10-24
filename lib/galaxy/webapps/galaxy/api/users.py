@@ -4,7 +4,7 @@ API operations on User objects.
 import logging
 from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 from galaxy import util, web
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
 
@@ -22,27 +22,19 @@ class UserAPIController( BaseAPIController ):
         query = trans.sa_session.query( trans.app.model.User )
         deleted = util.string_as_bool( deleted )
         if deleted:
-            route = 'deleted_user'
             query = query.filter( trans.app.model.User.table.c.deleted == True )
             # only admins can see deleted users
             if not trans.user_is_admin():
                 return []
-
         else:
-            route = 'user'
             query = query.filter( trans.app.model.User.table.c.deleted == False )
             # special case: user can see only their own user
             if not trans.user_is_admin():
                 item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                item['url'] = url_for( route, id=item['id'] )
-                item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
                 return [item]
-
         for user in query:
             item = user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             #TODO: move into api_values
-            item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
-            item['url'] = url_for( route, id=item['id'] )
             rval.append( item )
         return rval
 
