@@ -10,8 +10,10 @@ from galaxy.web.base.controller import (BaseAPIController, url_for,
 
 log = logging.getLogger( __name__ )
 
+
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems ):
+
     @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
@@ -44,11 +46,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
                 #TODO:?? is secure?
                 history = trans.history
-
             # otherwise, check permissions for the history first
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
-
             # if ids, return _FULL_ data (as show) for each id passed
             if ids:
                 ids = ids.split( ',' )
@@ -57,7 +57,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         rval.append( self._detailed_hda_dict( trans, hda ) )
-
             # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
                 details = kwd.get( 'details', None ) or []
@@ -71,13 +70,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                         rval.append( self._detailed_hda_dict( trans, hda ) )
                     else:
                         rval.append( self._summary_hda_dict( trans, history_id, hda ) )
-
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
             log.error( rval + ": %s, %s" % ( type( e ), str( e ) ), exc_info=True )
             trans.response.status = 500
-
         return rval
 
     #TODO: move to model or Mixin
@@ -114,7 +111,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
             return hda_dict
-
         except Exception, exc:
             # catch error here - returning a briefer hda_dict with an error attribute
             log.exception( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
@@ -149,24 +145,20 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 #TODO: dataset/hda by id (from history) OR check_ownership for anon user
                 hda = self.get_history_dataset_association( trans, history, id,
                     check_ownership=False, check_accessible=True )
-
             else:
                 #TODO: do we really need the history?
                 history = self.get_history( trans, history_id,
                     check_ownership=True, check_accessible=True, deleted=False )
                 hda = self.get_history_dataset_association( trans, history, id,
                     check_ownership=True, check_accessible=True )
-
             hda_dict = self.get_hda_dict( trans, hda )
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
             log.error( msg, exc_info=True )
             trans.response.status = 500
             return msg
-
         return hda_dict
 
     @web.expose_api
@@ -183,28 +175,25 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             copy from library:
             'source'    = 'library'
             'content'   = [the encoded id from the library dataset]
-            
+
             copy from HDA:
             'source'    = 'hda'
             'content'   = [the encoded id from the HDA]
 
         ..note:
             Currently, a user can only copy an HDA from a history that the user owns.
-            
+
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
-        
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
-        
         # check parameters
         source  = payload.get('source', None)
         content = payload.get('content', None)
         if source not in ['library', 'hda'] or content is None:
             trans.response.status = 400
             return "Please define the source ('library' or 'hda') and the content."
-        
         # retrieve history
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
@@ -212,10 +201,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # no way to tell if it failed bc of perms or other (all MessageExceptions)
             trans.response.status = 500
             return str( e )
-
         # copy from library dataset
         if source == 'library':
-        
             # get library data set
             try:
                 ld = self.get_library_dataset( trans, content, check_ownership=False, check_accessible=False )
@@ -226,17 +213,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 return str( e )
             except Exception, e:
                 return str( e )
-
             # insert into history
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.to_dict()
-
         elif source == 'hda':
             try:
                 #NOTE: user currently only capable of copying one of their own datasets
                 hda = self.get_dataset( trans, content )
-
             except ( exceptions.httpexceptions.HTTPRequestRangeNotSatisfiable,
                      exceptions.httpexceptions.HTTPBadRequest ), id_exc:
                 # wot...
@@ -250,12 +234,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 trans.response.status = 500
                 log.exception( "history: %s, source: %s, content: %s", history_id, source, content )
                 return str( exc )
-
             data_copy=hda.copy( copy_children=True )
             result=history.add_dataset( data_copy )
             trans.sa_session.flush()
             return result.to_dict()
-
         else:
             # other options
             trans.response.status = 501
@@ -291,27 +273,22 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if history_id != trans.security.encode_id( trans.history.id ):
                     trans.response.status = 401
                     return { 'error': 'Anonymous users cannot edit histories other than their current history' }
-
                 anon_allowed_payload = {}
                 if 'deleted' in payload:
                     anon_allowed_payload[ 'deleted' ] = payload[ 'deleted' ]
                 if 'visible' in payload:
                     anon_allowed_payload[ 'visible' ] = payload[ 'visible' ]
-
                 payload = self._validate_and_parse_update_payload( anon_allowed_payload )
                 hda = self.get_dataset( trans, id, check_ownership=False, check_accessible=False, check_state=True )
                 if hda.history != trans.history:
                     trans.response.status = 401
                     return { 'error': 'Anonymous users cannot edit datasets outside their current history' }
-
             else:
                 payload = self._validate_and_parse_update_payload( payload )
                 hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=True )
-
             # get_dataset can return a string during an error
             if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
                 changed = self.set_hda_from_dict( trans, hda, payload )
-
         except Exception, exception:
             log.error( 'Update of history (%s), HDA (%s) failed: %s',
                         history_id, id, str( exception ), exc_info=True )
@@ -323,7 +300,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 trans.response.status = 500
             return { 'error': str( exception ) }
-
         return changed
 
     @web.expose_api
@@ -352,22 +328,18 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         purge = False
         if kwd.get( 'payload', None ):
             purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
-
         rval = { 'id' : id }
         try:
             hda = self.get_dataset( trans, id,
                 check_ownership=True, check_accessible=True, check_state=True )
             hda.deleted = True
-
             if purge:
                 if not trans.app.config.allow_user_dataset_purge:
                     raise exceptions.httpexceptions.HTTPForbidden(
                         detail='This instance does not allow user dataset purging' )
-
                 hda.purged = True
                 trans.sa_session.add( hda )
                 trans.sa_session.flush()
-
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
@@ -376,12 +348,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                         pass
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
-
                 rval[ 'purged' ] = True
-
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
-
         except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
@@ -393,7 +362,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                            id, str( kwd ), str( exc ) )
             trans.response.status = 500
             rval.update({ 'error': str( exc ) })
-
         return rval
 
     def _validate_and_parse_update_payload( self, payload ):
@@ -416,7 +384,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'metadata_dbkey', 'metadata_column_names', 'metadata_column_types', 'metadata_columns',
             'metadata_comment_lines', 'metadata_data_lines'
         )
-
         validated_payload = {}
         for key, val in payload.items():
             # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
