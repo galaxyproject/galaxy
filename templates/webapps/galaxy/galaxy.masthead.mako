@@ -232,7 +232,7 @@ ${h.to_json_string( user_dict )}
     <div class="quota-meter-container"></div>
     
     <!-- quota meter -->
-    ${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+    ${h.templates( "helpers-common-templates" )}
     ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
     <script type="text/javascript">
 

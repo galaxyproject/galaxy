@@ -492,10 +492,9 @@ var BaseView = Backbone.View.extend({
  */
 var ToolLinkView = BaseView.extend({
     tagName: 'div',
-    template: Handlebars.templates.tool_link,
-    
+
     render: function() {
-        this.$el.append( this.template(this.model.toJSON()) );
+        this.$el.append( Handlebars.templates.tool_link(this.model.toJSON()) );
         return this;
     }
 });
@@ -519,14 +518,15 @@ var ToolSectionLabelView = BaseView.extend({
 var ToolSectionView = BaseView.extend({
     tagName: 'div',
     className: 'toolSectionWrapper',
-    template: Handlebars.templates.panel_section,
+    
     initialize: function() {
         BaseView.prototype.initialize.call(this);
         this.model.on("change:open", this.update_open, this);
     },
+
     render: function() {
         // Build using template.
-        this.$el.append( this.template(this.model.toJSON()) );
+        this.$el.append( Handlebars.templates.panel_section(this.model.toJSON()) );
         
         // Add tools to section.
         var section_body = this.$el.find(".toolSectionBody");
@@ -574,7 +574,6 @@ var ToolSearchView = Backbone.View.extend({
     tagName: 'div',
     id: 'tool-search',
     className: 'bar',
-    template: Handlebars.templates.tool_search,
     
     events: {
         'click': 'focus_and_select',
@@ -583,7 +582,7 @@ var ToolSearchView = Backbone.View.extend({
     },
     
     render: function() {
-        this.$el.append( this.template(this.model.toJSON()) );
+        this.$el.append( Handlebars.templates.tool_search(this.model.toJSON()) );
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
@@ -684,11 +683,10 @@ var ToolPanelView = Backbone.View.extend({
  */
 var ToolFormView = Backbone.View.extend({
     className: 'toolForm',
-    template: Handlebars.templates.tool_form,
     
     render: function() {
         this.$el.children().remove();
-        this.$el.append( this.template(this.model.toJSON()) );
+        this.$el.append( Handlebars.templates.tool_form(this.model.toJSON()) );
     }
 });
 

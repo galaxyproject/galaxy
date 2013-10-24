@@ -278,7 +278,7 @@ var GalaxyUpload = Backbone.View.extend(
         sy.addClass(this.state.success);
         
         // update galaxy history
-        Galaxy.currHistoryPanel.refresh();
+        Galaxy.currHistoryPanel.refreshHdas();
     },
     
     // error

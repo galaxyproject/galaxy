@@ -4304,7 +4304,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // Add summary/sample labels if needed and not already included.
         var sample_names = this.dataset.get_metadata('sample_names');
-        if (line_track_tiles.length === 0 && this.prefs.show_labels && sample_names) {
+        if (line_track_tiles.length === 0 && this.prefs.show_labels && sample_names && sample_names.length > 1) {
             var font_size;
 
             // Add and/or style labels.

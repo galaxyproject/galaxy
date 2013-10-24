@@ -311,8 +311,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 payload = self._validate_and_parse_update_payload( payload )
                 hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=True )
 
-            # additional checks here (security, etc.)
-            changed = self.set_hda_from_dict( trans, hda, payload )
+            # get_dataset can return a string during an error
+            if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
+                changed = self.set_hda_from_dict( trans, hda, payload )
 
         except Exception, exception:
             log.error( 'Update of history (%s), HDA (%s) failed: %s',

@@ -249,10 +249,10 @@ def execute_uninstall_method( app, deactivate_only=False ):
     sa_session = app.model.context.current
     repositories_to_uninstall = sa_session.query( app.model.ToolShedRepository ).all()
     for repository in repositories_to_uninstall:
-        if repository.status == app.model.ToolShedRepository.installation_status.UNINSTALLED:
+        if repository.status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED,
+                                  app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
             continue
-        if repository.status not in [ app.model.ToolShedRepository.installation_status.UNINSTALLED,
-                                      app.model.ToolShedRepository.installation_status.ERROR,
+        if repository.status not in [ app.model.ToolShedRepository.installation_status.ERROR,
                                       app.model.ToolShedRepository.installation_status.INSTALLED ]:
             repository.status = app.model.ToolShedRepository.installation_status.ERROR
             sa_session.add( repository )
@@ -260,7 +260,7 @@ def execute_uninstall_method( app, deactivate_only=False ):
         name = str( repository.name )
         owner = str( repository.owner )
         changeset_revision = str( repository.installed_changeset_revision )
-        log.debug( 'Changeset revision %s of repository %s queued for uninstallation.', changeset_revision, name )
+        log.debug( 'Changeset revision %s of %s repository %s queued for uninstallation.', changeset_revision, repository.status, name )
         repository_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         # Generate a test method to uninstall this repository through the embedded Galaxy application's web interface.
         test_install_repositories.generate_uninstall_method( repository_dict, deactivate_only )
@@ -1153,11 +1153,10 @@ def main():
                     repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
                 except:
                     log.exception( 'Unable to uninstall, no installed repository found.' )
-                    continue
-                test_result = dict( tool_shed=repository.tool_shed,
-                                    name=repository.name,
-                                    owner=repository.owner,
-                                    changeset_revision=repository.changeset_revision,
+                test_result = dict( tool_shed=galaxy_tool_shed_url,
+                                    name=repository_info_dict[ 'name' ],
+                                    owner=repository_info_dict[ 'owner' ],
+                                    changeset_revision=repository_info_dict[ 'changeset_revision' ],
                                     error_message=extract_log_data( result, from_tool_test=False ) )
                 repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
                 params[ 'tools_functionally_correct' ] = False
@@ -1168,7 +1167,11 @@ def main():
                                       repository_status,
                                       repository_info_dict,
                                       params )
-                success = execute_uninstall_method( app, deactivate_only )
+                try:
+                    success = execute_uninstall_method( app, deactivate_only )
+                except:
+                    log.exception( 'Encountered error attempting to uninstall %s.', repository_info_dict[ 'name' ] )
+                    success = False
                 if not success:
                     log.error( 'Repository %s failed to uninstall.', repository_info_dict[ 'name' ] )
                 repositories_failed_install.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )

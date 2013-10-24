@@ -603,9 +603,9 @@
 </%def>
 
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
-                
     <%
         from galaxy.util import asbool
+        from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -623,14 +623,15 @@
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""
-
         if trans.webapp.name == 'galaxy':
             if row_is_header:
                 cell_type = 'th'
             else:
                 cell_type = 'td'
         else:
+            # We're in the tool shed.
             cell_type = 'td'
+            rd = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
     %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -658,7 +659,11 @@
             </${cell_type}>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
+                %if rd:
+                    <a class="view-info" href="${h.url_for( controller='repository', action='view_or_manage_repository', id=trans.security.encode_id( rd.id ), changeset_revision=changeset_revision )}">Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b></a>${prior_installation_required_str}
+                %else:
+                    Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
+                %endif
             </td>
         %endif
     </tr>

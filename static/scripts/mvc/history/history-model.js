@@ -13,7 +13,6 @@ define([
  */
 var History = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends History.prototype */{
-    //TODO: bind change events from items and collection to this (itemLengths, states)
 
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output
@@ -31,29 +30,33 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ urls
-    urlRoot: 'api/histories',
+    urlRoot: galaxy_config.root + 'api/histories',
 
+    /** url for changing the name of the history */
     renameUrl : function(){
 //TODO: just use this.save()
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/history/rename_async?id=' + this.get( 'id' );
+        return galaxy_config.root + 'history/rename_async?id=' + this.get( 'id' );
     },
+    /** url for changing the annotation of the history */
     annotateUrl : function(){
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/history/annotate_async?id=' + this.get( 'id' );
+        return galaxy_config.root + 'history/annotate_async?id=' + this.get( 'id' );
     },
+    /** url for changing the tags of the history */
     tagUrl : function(){
         var id = this.get( 'id' );
         if( !id ){ return undefined; }
-        return '/tag/get_tagging_elt_async?item_id=' + this.get( 'id' ) + '&item_class=History';
+        return galaxy_config.root + 'tag/get_tagging_elt_async?item_id=' + this.get( 'id' ) + '&item_class=History';
     },
 
     // ........................................................................ set up/tear down
-    /** Set up the hdas collection
+    /** Set up the model
      *  @param {Object} historyJSON model data for this History
      *  @param {Object[]} hdaJSON   array of model data for this History's HDAs
+     *  @param {Object} options     any extra settings including logger
      *  @see BaseModel#initialize
      */
     initialize : function( historyJSON, hdaJSON, options ){
@@ -69,17 +72,24 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         }
 
         this._setUpListeners();
-        this._installAjaxErrorHandler( this.ajaxErrorHandler );
 
+        /** cached timeout id for the HDA updater */
+        this.updateTimeoutId = null;
         // set up update timeout if needed
         this.checkForUpdates();
     },
 
+    /** set up any event listeners for this history including those to the contained HDAs
+     *  events: error:hdas  if an error occurred with the HDA collection
+     */
     _setUpListeners : function(){
+        this.on( 'error', function( model, xhr, options, msg, details ){
+            this.errorHandler( model, xhr, options, msg, details );
+        });
+
         // hda collection listening
         if( this.hdas ){
             this.listenTo( this.hdas, 'error', function(){
-                //this.ajaxErrorHandler.apply( this, arguments );
                 this.trigger.apply( this, [ 'error:hdas' ].concat( jQuery.makeArray( arguments ) ) );
             });
         }
@@ -105,34 +115,29 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     //    }
     //},
 
+    /** event listener for errors. Generally errors are handled outside this model */
+    errorHandler : function( model, xhr, options, msg, details ){
+        // clear update timeout on model err
+        this.clearUpdateTimeout();
+    },
+
     // ........................................................................ common queries
+    /** is this model already associated with a user? */
     hasUser : function(){
         var user = this.get( 'user' );
         return !!( user && user.id );
     },
 
     // ........................................................................ ajax
-    // override to add ajax error event
-    //TODO: into mixin/base
-    _installAjaxErrorHandler : function( handler ){
-        this.sync = function _sync( method, model, options ){
-            return Backbone.Model.prototype.sync.call( model, method, model, options )
-                .fail( function( xhr, status, message ){
-                    handler.call( model, model, xhr, options, method );
-                });
-        };
-    },
-
-    ajaxErrorHandler : function( model, xhr, options, method ){
-    },
-
-    // get the history's state from it's cummulative ds states, delay + update if needed
-    // events: ready
+    /** does the HDA collection indicate they're still running and need to be updated later? delay + update if needed
+     *  @param {Function} onReadyCallback   function to run when all HDAs are in the ready state
+     *  events: ready
+     */
     checkForUpdates : function( onReadyCallback ){
         //console.info( 'checkForUpdates' )
 
         // get overall History state from collection, run updater if History has running/queued hdas
-        // boiling it down on the client to running/not
+        //  boiling it down on the client to running/not
         if( this.hdas.running().length ){
             this.setUpdateTimeout();
 
@@ -145,8 +150,8 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         return this;
     },
 
+    /** create a timeout (after UPDATE_DELAY or delay ms) to refetch the HDA collection. Clear any prev. timeout */
     setUpdateTimeout : function( delay ){
-        //TODO: callbacks?
         delay = delay || History.UPDATE_DELAY;
         var history = this;
 
@@ -158,6 +163,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         return this.updateTimeoutId;
     },
 
+    /** clear the timeout and the cached timeout id */
     clearUpdateTimeout : function(){
         if( this.updateTimeoutId ){
             clearTimeout( this.updateTimeoutId );
@@ -165,25 +171,26 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         }
     },
 
-    // update this history, find any hda's running/queued, update ONLY those that have changed states,
-    //  set up to run this again in some interval of time
-    // events: ready
+    /* update the HDA collection getting full detailed model data for any hda whose id is in detailIds
+     *  set up to run this again in some interval of time
+     *  @param {String[]} detailIds list of HDA ids to get detailed model data for
+     *  @param {Object} options     std. backbone fetch options map
+     */
     refresh : function( detailIds, options ){
         //console.info( 'refresh:', detailIds, this.hdas );
         detailIds = detailIds || [];
         options = options || {};
         var history = this;
 
+        // add detailIds to options as CSV string
         options.data = options.data || {};
         if( detailIds.length ){
             options.data.details = detailIds.join( ',' );
         }
         var xhr = this.hdas.fetch( options );
         xhr.done( function( hdaModels ){
-            //this.trigger( 'hdas-refreshed', this, hdaModels );
-            history.checkForUpdates(function(){
-                // fetch the history after an update in order to recalc history size
-                //TODO: move to event?
+            history.checkForUpdates( function(){
+                // fetch the history inside onReadyCallback in order to recalc history size
                 this.fetch();
             });
         });
@@ -214,7 +221,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     function getHistory( id ){
         // get the history data
         //return jQuery.ajax( '/generate_json_error' );
-        return jQuery.ajax( '/api/histories/' + historyId );
+        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
     }
     function countHdasFromHistory( historyData ){
         // get the number of hdas accrd. to the history
@@ -232,7 +239,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
             hdaDetailIds = hdaDetailIds( historyData );
         }
         var data = ( hdaDetailIds.length )?( { details : hdaDetailIds.join( ',' ) } ):( {} );
-        return jQuery.ajax( '/api/histories/' + historyData.id + '/contents', { data: data });
+        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
         //return jQuery.ajax( '/generate_json_error' );
     }
 
@@ -283,7 +290,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
-    urlRoot : 'api/histories'
+    urlRoot : galaxy_config.root + 'api/histories'
     
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output

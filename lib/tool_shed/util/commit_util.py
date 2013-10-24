@@ -318,22 +318,23 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
     return revised, elem, error_message
 
-def handle_set_environment_for_install( trans, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
+def handle_repository_dependency_sub_elem( trans, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
+    # This method populates the toolshed and changeset_revision attributes for each of the following.
     # <action type="set_environment_for_install">
-    #     <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0">
-    #        <package name="eigen" version="2.0.17" />
-    #     </repository>
-    # </action>
+    # <action type="setup_r_environment">
+    # <action type="setup_ruby_environment">
     for repo_index, repo_elem in enumerate( action_elem ):
-        revised, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
-        if error_message:
-            exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-            raise Exception( exception_message )
-        if revised:
-            action_elem[ repo_index ] = repository_elem
-            package_altered = True
-            if not altered:
-                altered = True
+        # Make sure to skip comments and tags that are not <repository>.
+        if repo_elem.tag == 'repository':
+            revised, repository_elem, error_message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
+            if error_message:
+                exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                raise Exception( exception_message )
+            if revised:
+                action_elem[ repo_index ] = repository_elem
+                package_altered = True
+                if not altered:
+                    altered = True
     if package_altered:
         actions_elem[ action_index ] = action_elem
     return package_altered, altered, actions_elem
@@ -402,29 +403,28 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                     last_actions_elem[ last_actions_elem_package_index ] = last_actions_elem_package_elem
                                                     actions_group_elem[ last_actions_index ] = last_actions_elem
                                             else:        
-                                                last_actions_elem_action_type = last_actions_elem.get( 'type' )
-                                                if last_actions_elem_action_type == 'set_environment_for_install':
-                                                    last_actions_package_altered, altered, last_actions_elem = \
-                                                        handle_set_environment_for_install( trans,
-                                                                                            last_actions_package_altered,
-                                                                                            altered,
-                                                                                            actions_group_elem,
-                                                                                            last_actions_index,
-                                                                                            last_actions_elem,
-                                                                                            unpopulate=unpopulate )
+                                                # Inspect the sub elements of last_actions_elem to locate all <repository> tags and
+                                                # populate them with toolshed and changeset_revision attributes if necessary.
+                                                last_actions_package_altered, altered, last_actions_elem = \
+                                                    handle_repository_dependency_sub_elem( trans,
+                                                                                           last_actions_package_altered,
+                                                                                           altered,
+                                                                                           actions_group_elem,
+                                                                                           last_actions_index,
+                                                                                           last_actions_elem,
+                                                                                           unpopulate=unpopulate )
                             elif actions_elem.tag == 'actions':
                                 # We are not in an <actions_group> tag set, so we must be in an <actions> tag set.
                                 for action_index, action_elem in enumerate( actions_elem ):
-                                    
-                                    action_type = action_elem.get( 'type' )
-                                    if action_type == 'set_environment_for_install':
-                                        package_altered, altered, actions_elem = handle_set_environment_for_install( trans,
-                                                                                                                     package_altered,
-                                                                                                                     altered,
-                                                                                                                     actions_elem,
-                                                                                                                     action_index,
-                                                                                                                     action_elem,
-                                                                                                                     unpopulate=unpopulate )
+                                    # Inspect the sub elements of last_actions_elem to locate all <repository> tags and populate them with
+                                    # toolshed and changeset_revision attributes if necessary.
+                                    package_altered, altered, actions_elem = handle_repository_dependency_sub_elem( trans,
+                                                                                                                    package_altered,
+                                                                                                                    altered,
+                                                                                                                    actions_elem,
+                                                                                                                    action_index,
+                                                                                                                    action_elem,
+                                                                                                                    unpopulate=unpopulate )
                             if package_altered:
                                 package_elem[ actions_index ] = actions_elem
                     if package_altered:

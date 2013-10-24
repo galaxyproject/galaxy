@@ -54,7 +54,7 @@
         else:
             can_download = False
 
-        if ( is_admin or ( trans.user and trans.user == repository.user ) ) and not repository.deleted and not repository.deprecated and not is_new:
+        if ( is_admin or can_push ) and not repository.deleted and not repository.deprecated and not is_new:
             can_reset_all_metadata = True
         else:
             can_reset_all_metadata = False

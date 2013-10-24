@@ -1,5 +1,6 @@
 import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
 from galaxy import util
+from StringIO import StringIO
 
 try:
     import Image as PIL
@@ -53,20 +54,15 @@ def check_binary( name, file_path=True ):
     if file_path:
         temp = open( name, "U" )
     else:
-        temp = name
+        temp = StringIO( name )
     chars_read = 0
-    for chars in temp:
-        for char in chars:
-            chars_read += 1
+    try:
+        for char in temp.read( 100 ):
             if util.is_binary( char ):
                 is_binary = True
                 break
-            if chars_read > 100:
-                break
-        if chars_read > 100:
-            break
-    if file_path:
-        temp.close()
+    finally:
+        temp.close( )
     return is_binary
 
 def check_gzip( file_path ):

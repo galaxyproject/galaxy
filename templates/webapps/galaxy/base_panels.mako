@@ -7,7 +7,7 @@
 ${parent.javascripts()}
 
 <!-- quota meter -->
-${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.templates( "helpers-common-templates" )}
 ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 </%def>
 

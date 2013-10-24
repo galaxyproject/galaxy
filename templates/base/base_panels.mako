@@ -56,14 +56,7 @@
         'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
         'galaxy.base',
-        'libs/require'
-    )}
-
-    ${h.templates(
-        "template-popupmenu-menu"
-    )}
-
-    ${h.js(
+        'libs/require',
         "mvc/ui"
     )}
 
