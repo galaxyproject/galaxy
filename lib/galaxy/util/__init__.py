@@ -2,24 +2,29 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
+import binascii, errno, grp, logging, os, pickle, random, re, shutil, smtplib, stat, string, sys, tempfile, threading
 from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
 
 from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'docutils' )
+eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-pkg_resources.require( 'elementtree' )
+eggs.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 
-pkg_resources.require( "wchartype" )
+eggs.require( "wchartype" )
 import wchartype
+
+from inflection import Inflector, English
+inflector = Inflector(English)
+
+eggs.require( "simplejson" )
+import simplejson
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -34,12 +39,6 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = 'utf-8'
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
-
-from inflection import Inflector, English
-inflector = Inflector(English)
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 def is_multi_byte( chars ):
     for char in chars:
@@ -946,5 +945,5 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__], verbose=False)
