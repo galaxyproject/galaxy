@@ -38,7 +38,6 @@ class RepositoriesController( BaseAPIController ):
         try:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-            encoded_repository_id = trans.security.encode_id( repository.id )
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
             ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
