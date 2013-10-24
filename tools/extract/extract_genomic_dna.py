@@ -142,7 +142,8 @@ def __main__():
         if isinstance( feature, ( Header, Comment ) ):
             line_count += 1
             continue
-            
+
+        name = ""
         if gff_format and interpret_features:
             # Processing features.
             gff_util.convert_gff_coords_to_bed( feature )
@@ -150,7 +151,6 @@ def __main__():
             start = feature.start
             end = feature.end
             strand = feature.strand
-            name = ""
         else:
             # Processing lines, either interval or GFF format.
             line = feature.rstrip( '\r\n' )

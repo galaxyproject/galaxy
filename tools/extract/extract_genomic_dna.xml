@@ -60,7 +60,7 @@
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
       <param name="interpret_features" value="yes"/>
       <param name="index_source" value="cached"/>
-      <param name="out_format" value="fasta"/>   
+      <param name="out_format" value="fasta"/>
       <output name="out_file1" file="extract_genomic_dna_out1.fasta" />
     </test>
     <test>
