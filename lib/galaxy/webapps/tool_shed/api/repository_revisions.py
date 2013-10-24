@@ -5,7 +5,7 @@ from tool_shed.util import metadata_util
 from galaxy import web
 from galaxy import util
 from galaxy.model.orm import and_, not_, select
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.util import export_util
 import tool_shed.util.shed_util_common as suc
 
