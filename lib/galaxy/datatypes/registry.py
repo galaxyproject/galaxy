@@ -547,8 +547,11 @@ class Registry( object ):
                                     display_app.id = tool_dict[ 'guid' ]
                                     break
                         if deactivate:
-                            del self.display_applications[ display_app.id ]
-                            del self.datatypes_by_extension[ extension ].display_applications[ display_app.id ]
+                            if display_app.id in self.display_applications:
+                                del self.display_applications[ display_app.id ]
+                            if extension in self.datatypes_by_extension:
+                                if display_app.id in self.datatypes_by_extension[ extension ].display_applications:
+                                    del self.datatypes_by_extension[ extension ].display_applications[ display_app.id ]
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.remove( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Deactivated display application '%s' for datatype '%s'." % ( display_app.id, extension ) )
