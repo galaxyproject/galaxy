@@ -44,7 +44,7 @@ def is_multi_byte( chars ):
     for char in chars:
         try:
             char = unicode( char )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError:
             # Probably binary
             return False
         if wchartype.is_asian( char ) or \
@@ -736,7 +736,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
         name = names.next()
         file = os.path.join(dir, prefix + name)
         try:
-            linked_path = os.link( src, file )
+            os.link( src, file )
             return (os.path.abspath(file))
         except OSError, e:
             if e.errno == errno.EEXIST:
