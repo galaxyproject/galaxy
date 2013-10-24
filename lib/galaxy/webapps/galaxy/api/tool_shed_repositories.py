@@ -13,6 +13,8 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import workflow_util
+from tool_shed.util import tool_util
+
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
