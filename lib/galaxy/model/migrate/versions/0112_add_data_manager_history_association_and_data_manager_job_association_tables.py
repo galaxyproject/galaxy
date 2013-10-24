@@ -19,7 +19,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+
+metadata = MetaData()
 
 DataManagerHistoryAssociation_table = Table( "data_manager_history_association", metadata,
     Column( "id", Integer, primary_key=True),
@@ -37,8 +38,9 @@ DataManagerJobAssociation_table = Table( "data_manager_job_association", metadat
     Column( "data_manager_id", TEXT, index=True )
     )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         DataManagerHistoryAssociation_table.create()
@@ -52,7 +54,8 @@ def upgrade():
         log.debug( "Creating data_manager_job_association table failed: %s" % str( e ) )
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         DataManagerHistoryAssociation_table.drop()

@@ -102,8 +102,26 @@
 
 ## Print grid search/filtering UI.
 <%def name="render_grid_filters( grid, render_advanced_search=True )">
+    <%
+        # Show advanced search if flag set or if there are filters for advanced search fields.
+        advanced_search_display = "none"
+        if 'advanced-search' in kwargs and kwargs['advanced-search'] in ['True', 'true']:
+            advanced_search_display = "block"
+
+        for column in grid.columns:
+            if column.filterable == "advanced":
+                ## Show div if current filter has value that is different from the default filter.
+                if column.key in cur_filter_dict and column.key in default_filter_dict and \
+                    cur_filter_dict[column.key] != default_filter_dict[column.key]:
+                        advanced_search_display = "block"
+
+        # do not show standard search if showing adv.
+        standard_search_display = "block"
+        if advanced_search_display == "block":
+            standard_search_display = "none"
+    %>
     ## Standard search.
-    <div id="standard-search">
+    <div id="standard-search" style="display: ${standard_search_display};">
         <table>
             <tr><td style="padding: 0;">
                 <table>
@@ -139,19 +157,6 @@
     </div>
     
     ## Advanced search.
-    <%
-        # Show advanced search if flag set or if there are filters for advanced search fields.
-        advanced_search_display = "none"
-        if 'advanced-search' in kwargs and kwargs['advanced-search'] in ['True', 'true']:
-            advanced_search_display = "block"
-            
-        for column in grid.columns:
-            if column.filterable == "advanced":
-                ## Show div if current filter has value that is different from the default filter.
-                if column.key in cur_filter_dict and column.key in default_filter_dict and \
-                    cur_filter_dict[column.key] != default_filter_dict[column.key]:
-                        advanced_search_display = "block"
-    %>
     <div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
         <table>
             <tr><td style="text-align: left" colspan="100">
@@ -170,7 +175,7 @@
                     %if column.key in cur_filter_dict and column.key in default_filter_dict and \
                         cur_filter_dict[column.key] != default_filter_dict[column.key]:
                         <script type="text/javascript">
-                            $('#advanced-search').css("display", "none");
+                            $('#advanced-search').css("display", "block");
                         </script>
                     %endif
             

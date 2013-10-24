@@ -10,7 +10,7 @@ from elementtree.ElementTree import XML
 log = logging.getLogger( __name__ )
 
 class FormDefinitionAPIController( BaseAPIController ):
-    
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
@@ -23,7 +23,7 @@ class FormDefinitionAPIController( BaseAPIController ):
         query = trans.sa_session.query( trans.app.model.FormDefinition )#.filter( trans.app.model.FormDefinition.table.c.deleted == False )
         rval = []
         for form_definition in query:
-            item = form_definition.get_api_value( value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
+            item = form_definition.to_dict( value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
             item['url'] = url_for( 'form', id=trans.security.encode_id( form_definition.id ) )
             rval.append( item )
         return rval
@@ -47,7 +47,7 @@ class FormDefinitionAPIController( BaseAPIController ):
         if not form_definition or not trans.user_is_admin():
             trans.response.status = 400
             return "Invalid form definition id ( %s ) specified." % str( form_definition_id )
-        item = form_definition.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
+        item = form_definition.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
         item['url'] = url_for( 'form', id=form_definition_id )
         return item
 
@@ -69,6 +69,6 @@ class FormDefinitionAPIController( BaseAPIController ):
         trans.sa_session.add( form_definition )
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( form_definition.id )
-        item = form_definition.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
+        item = form_definition.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
         item['url'] = url_for( 'form', id=encoded_id )
         return [ item ]

@@ -19,10 +19,14 @@ sys.path = new_path
 from galaxy import eggs
 
 import pkg_resources
+pkg_resources.require( "decorator" )
+pkg_resources.require( "Tempita" )
 pkg_resources.require( "sqlalchemy-migrate" )
 pkg_resources.require( "SQLAlchemy" )
 
 from ConfigParser import SafeConfigParser
+
+from galaxy.model.orm import dialect_to_egg
 
 log = logging.getLogger( __name__ )
 
@@ -54,11 +58,6 @@ elif cp.has_option( "app:main", "database_file" ):
 else:
     db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
 
-dialect_to_egg = {
-    "sqlite" : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql" : "MySQL_python"
-}
 dialect = ( db_url.split( ':', 1 ) )[0]
 try:
     egg = dialect_to_egg[dialect]

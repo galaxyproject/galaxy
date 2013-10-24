@@ -52,7 +52,7 @@ def pgcalc( sa_session, id ):
     sql = """
            UPDATE galaxy_user
               SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
-                                  FROM (  SELECT d.total_size
+                                  FROM (  SELECT DISTINCT ON (d.id) d.total_size, d.id
                                             FROM history_dataset_association hda
                                                  JOIN history h ON h.id = hda.history_id
                                                  JOIN dataset d ON hda.dataset_id = d.id
@@ -62,7 +62,7 @@ def pgcalc( sa_session, id ):
                                                  AND d.purged = false
                                                  AND d.id NOT IN (SELECT dataset_id
                                                                     FROM library_dataset_dataset_association)
-                                        GROUP BY d.id) sizes)
+                                         ) sizes)
             WHERE id = :id
         RETURNING disk_usage;
     """
@@ -76,7 +76,7 @@ def quotacheck( sa_session, users, engine ):
     sa_session.refresh( user )
     current = user.get_disk_usage()
     print user.username, '<' + user.email + '>:',
-    if engine != 'postgres':
+    if engine not in ( 'postgres', 'postgresql' ):
         new = user.calculate_disk_usage()
         sa_session.refresh( user )
         # usage changed while calculating, do it again
@@ -94,7 +94,7 @@ def quotacheck( sa_session, users, engine ):
             print '+%s' % ( nice_size( new - current ) )
         else:
             print '-%s' % ( nice_size( current - new ) )
-        if not options.dryrun and engine != 'postgres':
+        if not options.dryrun and engine not in ( 'postgres', 'postgresql' ):
             user.set_disk_usage( new )
             sa_session.add( user )
             sa_session.flush()

@@ -18,9 +18,15 @@
         });
 
         require(['mvc/data'], function(data) {
+            // 
+            // Use tabular data display progressively by deleting data from page body
+            // and then showing dataset view.
+            // 
+            $('.page-body').children().remove();
+
             data.createTabularDatasetChunkedView(
                 // Dataset config. TODO: encode id.
-                _.extend( ${h.to_json_string( item.get_api_value() )}, 
+                _.extend( ${h.to_json_string( item.to_dict() )}, 
                         {
                             chunk_url: "${h.url_for( controller='/dataset', action='display', 
                                              dataset_id=trans.security.encode_id( item.id ))}",
@@ -52,16 +58,17 @@
 
 <%def name="render_item_links( data )">
     ## Provide links to save data and import dataset.
-    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk tooltip" title="Save dataset"></a>
+    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk" title="Save dataset"></a>
         <a 
             href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}"
-            class="icon-button import tooltip" 
+            class="icon-button import" 
             title="Import dataset"></a>
 </%def>
 
+## Renders dataset content. Function is used to render data in stand-along page and to provide content for embedded datasets as well.
 <%def name="render_item( data, data_to_render )">
-    ## Chunkable data is rendered in JavaScript above; render unchunkable data below.
-    %if not data.datatype.CHUNKABLE and data_to_render:
+    ${ render_deleted_data_message( data ) }
+    %if data_to_render:
         %if truncated:
             <div class="warningmessagelarge">
                  This dataset is large and only the first megabyte is shown below. | 
@@ -75,6 +82,17 @@
     %endif
 </%def>
 
+<%def name="render_deleted_data_message( data )">
+    %if data.deleted:
+        <div class="errormessagelarge" id="deleted-data-message">
+            You are viewing a deleted dataset.
+            %if data.history and data.history.user == trans.get_user():
+                <br />
+                <a href="#" onclick="$.ajax( {type: 'GET', cache: false, url: '${h.url_for( controller='dataset', action='undelete_async', dataset_id=trans.security.encode_id( data.id ) )}', dataType: 'text', contentType: 'text/html', success: function( data, textStatus, jqXHR ){ if (data == 'OK' ){ $( '#deleted-data-message' ).slideUp( 'slow' ) } else { alert( 'Undelete failed.' ) } }, error: function( data, textStatus, jqXHR ){ alert( 'Undelete failed.' ); } } );">Undelete</a>
+            %endif
+        </div>
+    %endif
+</%def>
 
 <%def name="center_panel()">
     <div class="unified-panel-header" unselectable="on">

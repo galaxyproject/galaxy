@@ -78,13 +78,13 @@ def main():
             if len( fields ) < 4:
                 continue
 
-            # Process line    
+            # Process line
             name_loc_dict[ fields[3] ] = {
                 'contig': fields[0],
                 'start': int( fields[1] ),
                 'end': int ( fields[2] )
             }
-        
+
     # Create sorted list of entries.
     out = open( out_fname, 'w' )
     max_len = 0
@@ -95,7 +95,7 @@ def main():
         if len( entry ) > max_len:
             max_len = len( entry )
         entries.append( entry )
-    
+
     # Write padded entries.
     out.write( str( max_len + 1 ).ljust( max_len ) + '\n' )
     for entry in entries:

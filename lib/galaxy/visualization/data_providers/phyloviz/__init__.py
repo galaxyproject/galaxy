@@ -1,3 +1,4 @@
+
 """ Data providers code for PhyloViz """
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
@@ -38,6 +39,5 @@ class PhylovizDataProvider( BaseDataProvider ):
 
         rval[ "data" ] = jsonDicts
         rval[ "msg"] = parseMsg
-        
-        return rval
 
+        return rval

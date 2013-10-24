@@ -19,7 +19,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 # New table to log cleanup events
 CleanupEvent_table = Table( "cleanup_event", metadata,
@@ -81,7 +81,8 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table( "cle
     Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
     Column( "icda_id", Integer, ForeignKey( "implicitly_converted_dataset_association.id" ), index=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -98,7 +99,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.drop()

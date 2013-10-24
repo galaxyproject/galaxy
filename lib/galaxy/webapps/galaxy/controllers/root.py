@@ -1,63 +1,45 @@
 """
 Contains the main interface in the Universe class
 """
+import cgi
 import os
 import urllib
-import cgi
 
-from paste.httpexceptions import HTTPNotFound
+from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
-from galaxy.web.base.controller import BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin
+from galaxy import web
+from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy import util, web
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
+from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.util.json import to_json_string
-#from galaxy.model.orm import *
+
+from galaxy.util.debugging import SimpleProfiler
 
 import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     """Controller class that maps to the url root of Galaxy (i.e. '/')."""
-    
+
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
         """Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
-    
+
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
-        """Called on the root url to display the main Galaxy page.
+        """
+        Called on the root url to display the main Galaxy page.
         """
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
                                     m_c=m_c, m_a=m_a,
                                     params=kwd )
-        
+
     ## ---- Tool related -----------------------------------------------------
-    @web.expose
-    def tool_menu( self, trans ):
-        """Renders the tool panel of the Galaxy UI.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
-        toolbox = self.get_toolbox()
-        ## Get most recently used tools.
-        # recent_tools = []
-        # if trans.user:
-        #     for row in trans.sa_session.query( self.app.model.Job.tool_id ) \
-        #                                 .filter( self.app.model.Job.user == trans.user ) \
-        #                                 .order_by( self.app.model.Job.create_time.desc() ):
-        #         tool_id = row[0]
-        #         a_tool = toolbox.get_tool( tool_id )
-        #         if a_tool and not a_tool.hidden and a_tool not in recent_tools:
-        #             recent_tools.append( a_tool )
-        #             ## TODO: make number of recently used tools a user preference.
-        #             if len( recent_tools ) == 5:
-        #                 break
-        return trans.fill_template( '/root/tool_menu.mako', toolbox=toolbox )
 
     @web.json
     def tool_search( self, trans, **kwd ):
@@ -67,7 +49,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         Data are returned in JSON format.
         """
         query = kwd.get( 'query', '' )
-        tags = util.listify( kwd.get( 'tags[]', [] ) )
+        tags = listify( kwd.get( 'tags[]', [] ) )
         trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
         results = []
         if tags:
@@ -115,65 +97,78 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         trans.response.set_content_type('text/xml')
         return trans.fill_template_mako( "root/history_as_xml.mako",
                                           history=history,
-                                          show_deleted=util.string_as_bool( show_deleted ),
-                                          show_hidden=util.string_as_bool( show_hidden ) )
+                                          show_deleted=string_as_bool( show_deleted ),
+                                          show_hidden=string_as_bool( show_hidden ) )
 
-    @web.expose
-    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
-        """Display the current history, creating a new history if necessary.
-
-        NOTE: No longer accepts "id" or "template" options for security reasons.
-        """
-        if as_xml:
-            return self.history_as_xml( trans,
-                show_deleted=util.string_as_bool( show_deleted ), show_hidden=util.string_as_bool( show_hidden ) )
-
-        # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = util.string_as_bool_or_none( show_deleted )
-        show_purged  = show_deleted
-        show_hidden  = util.string_as_bool_or_none( show_hidden )
-        params = util.Params( kwd )
-        message = params.get( 'message', '' )
-        #TODO: ugh...
-        message = message if message != 'None' else ''
-        status = params.get( 'status', 'done' )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
-
-        def err_msg( where=None ):
-            where = where if where else 'getting the history data from the server'
-            err_msg = ( 'An error occurred %s. '
-                      + 'Please contact a Galaxy administrator if the problem persists.' ) %( where )
-            return err_msg, 'error'
-
+    def _get_current_history_data( self, trans ):
         history_dictionary = {}
         hda_dictionaries   = []
+
         try:
             history = trans.get_history( create=True )
             hdas = self.get_history_datasets( trans, history,
                 show_deleted=True, show_hidden=True, show_purged=True )
 
             for hda in hdas:
+                hda_dict = {}
                 try:
-                    hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+                    hda_dict = self.get_hda_dict( trans, hda )
 
                 except Exception, exc:
                     # don't fail entire list if hda err's, record and move on
                     log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+                    hda_dict = self.get_hda_dict_with_error( trans, hda, str( exc ) )
+
+                hda_dictionaries.append( hda_dict )
 
             # re-use the hdas above to get the history data...
             history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
 
         except Exception, exc:
-            log.error( 'Error bootstrapping history for user %d: %s', trans.user.id, str( exc ), exc_info=True )
-            message, status = err_msg()
+            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
+            message = ( 'An error occurred getting the history data from the server. '
+                      + 'Please contact a Galaxy administrator if the problem persists.' )
             history_dictionary[ 'error' ] = message
 
-        return trans.stream_template_mako( "root/history.mako",
-            history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
-            show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status )
+        return {
+            'history'   : history_dictionary,
+            'hdas'      : hda_dictionaries
+        }
+
+    @web.expose
+    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
+        """
+        Display the current history in it's own page or as xml.
+        """
+        if as_xml:
+            return self.history_as_xml( trans,
+                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
+
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
+
+        # get all datasets server-side, client-side will get flags and render appropriately
+        show_deleted = string_as_bool_or_none( show_deleted )
+        show_purged  = show_deleted
+        show_hidden  = string_as_bool_or_none( show_hidden )
+
+        history_dictionary = {}
+        hda_dictionaries   = []
+        try:
+            history_data = self._get_current_history_data( trans )
+            history_dictionary = history_data[ 'history' ]
+            hda_dictionaries   = history_data[ 'hdas' ]
+
+        except Exception, exc:
+            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
+            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. '
+                                            + 'Please contact a Galaxy administrator if the problem persists.' )
+
+        return trans.fill_template_mako( "root/history.mako",
+            history = history_dictionary, hdas = hda_dictionaries,
+            show_deleted=show_deleted, show_hidden=show_hidden )
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
@@ -198,7 +193,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
             try:
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:
                 return "Dataset id '%s' is invalid" % str( id )
         if data:
@@ -314,7 +309,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     def history_import( self, trans, id=None, confirm=False, **kwd ):
         #TODO: unused?
         #TODO: unencoded id
-        msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
         if not id:
@@ -438,7 +432,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 if not history:
                     # If we haven't retrieved a history, use the current one
                     history = trans.get_history()
-                p = util.Params( kwd )
+                p = Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     in_roles = p.get( k + '_in', [] )
@@ -466,7 +460,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             old_data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             new_data = old_data.copy()
             ## new_data.parent = None
-            ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
             history.add_dataset(new_data)
             trans.sa_session.add( new_data )
@@ -474,6 +467,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] )
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
+
+    @web.expose
+    def welcome( self, trans ):
+        welcome_url = trans.app.config.welcome_url
+        return trans.response.send_redirect( url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):
@@ -510,7 +508,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             rval[ k ] = kwd[k]
             try:
                 if rval[ k ] in [ 'true', 'True', 'false', 'False' ]:
-                    rval[ k ] = util.string_as_bool( rval[ k ] )
+                    rval[ k ] = string_as_bool( rval[ k ] )
                 rval[ k ] = float( rval[ k ] )
                 rval[ k ] = int( rval[ k ] )
             except:
@@ -518,7 +516,22 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         return rval
 
     @web.expose
-    def generate_error( self, trans ):
+    def generate_error( self, trans, code=500 ):
         """Raises an exception (debugging).
         """
+        trans.response.status = code
         raise Exception( "Fake error!" )
+
+    @web.json
+    def generate_json_error( self, trans, code=500 ):
+        """Raises an exception (debugging).
+        """
+        try:
+            code = int( code )
+        except Exception, exc:
+            code = 500
+
+        if code == 502:
+            raise HTTPBadGateway()
+        trans.response.status = code
+        return { 'error': 'Fake error!' }

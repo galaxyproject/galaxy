@@ -1,4 +1,3 @@
-
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -163,6 +162,46 @@
     </script>
 </%def>
 
+<%def name="render_repository_type_select_field( repository_type_select_field, render_help=True )">
+    <div class="form-row">
+        <label>Repository type:</label>
+        <%
+            from tool_shed.repository_types import util
+            options = repository_type_select_field.options
+            repository_types = []
+            for option_tup in options:
+                repository_types.append( option_tup[ 1 ] )
+            render_as_text = len( options ) == 1
+            if render_as_text:
+                repository_type = options[ 0 ][ 0 ]
+        %>
+        %if render_as_text:
+            ${repository_type | h}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    This repository's type cannot be changed because its contents are valid only for its current type or it has been cloned.
+                </div>
+            %endif
+        %else:
+            ${repository_type_select_field.get_html()}
+            %if render_help:
+                <div class="toolParamHelp" style="clear: both;">
+                    Select the repository type based on the following criteria.
+                    <ul>
+                        %if util.UNRESTRICTED in repository_types:
+                            <li><b>Unrestricted</b> - contents can be any set of valid Galaxy utilities or files
+                        %endif
+                        %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
+                            <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml
+                        %endif
+                    </ul>
+                </div>
+            %endif
+        %endif
+        <div style="clear: both"></div>
+    </div>
+</%def>         
+            
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
@@ -179,7 +218,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False )">
+<%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( folder.id )
         
@@ -220,10 +259,12 @@
                 elif folder.label in [ 'Installed repository dependencies', 'Repository dependencies', 'Missing repository dependencies' ]:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
-                    elif folder.label not in [ 'Installed repository dependencies' ]:
+                    elif folder.label not in [ 'Installed repository dependencies' ] and folder.parent.label not in [ 'Installation errors' ]:
                         folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
+                elif folder.label == 'Installation errors':
+                    folder_label = "%s<i> - no functional tests were run for any tools in this changeset revision</i>" % folder_label
                 elif folder.label == 'Invalid repository dependencies':
                     folder_label = "%s<i> - click the repository dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Invalid tool dependencies':
@@ -235,7 +276,8 @@
                     else:
                         folder_label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder_label
                 elif folder.invalid_tools:
-                    folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
+                    if trans.webapp.name == 'tool_shed':
+                        folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
@@ -273,7 +315,7 @@
         %>
     %endif
     %for sub_folder in folder.folders:
-        ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False )}
+        ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for readme in folder.readme_files:
         ${render_readme( readme, pad, my_row, row_counter )}
@@ -295,16 +337,16 @@
     %if folder.valid_tools:
         %for index, tool in enumerate( folder.valid_tools ):
             <% row_is_header = index == 0 %>
-            ${render_tool( tool, pad, my_row, row_counter, row_is_header )}
+            ${render_tool( tool, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %for invalid_tool in folder.invalid_tools:
-        ${render_invalid_tool( invalid_tool, pad, my_row, row_counter )}
+        ${render_invalid_tool( invalid_tool, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %if folder.workflows:
         %for index, workflow in enumerate( folder.workflows ):
             <% row_is_header = index == 0 %>
-            ${render_workflow( workflow, pad, my_row, row_counter, row_is_header )}
+            ${render_workflow( workflow, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.datatypes:
@@ -325,6 +367,51 @@
             ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
         %endfor
     %endif
+    %if folder.test_environments:
+        %for test_environment in folder.test_environments:
+            ${render_test_environment( test_environment, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.failed_tests:
+        %for failed_test in folder.failed_tests:
+            ${render_failed_test( failed_test, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.not_tested:
+        %for not_tested in folder.not_tested:
+            ${render_not_tested( not_tested, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.passed_tests:
+        %for passed_test in folder.passed_tests:
+            ${render_passed_test( passed_test, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.missing_test_components:
+        %for missing_test_component in folder.missing_test_components:
+            ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.installation_errors:
+        %for installation_error in folder.installation_errors:
+            ${render_folder( installation_error, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.tool_dependency_installation_errors:
+        %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
+            ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
+        %endfor
+    %endif 
+    %if folder.repository_installation_errors:
+        %for repository_installation_error in folder.repository_installation_errors:
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False )}
+        %endfor
+    %endif 
+    %if folder.current_repository_installation_errors:
+        %for repository_installation_error in folder.current_repository_installation_errors:
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True )}
+        %endfor
+    %endif 
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -339,7 +426,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rd-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">${datatype.extension | h}</${cell_type}>
         <${cell_type}>${datatype.type | h}</${cell_type}>
         <${cell_type}>${datatype.mimetype | h}</${cell_type}>
@@ -351,22 +438,25 @@
     %>
 </%def>
 
-<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
-    <%
-        encoded_id = trans.security.encode_id( data_manager.id )
-        if row_is_header:
-            cell_type = 'th'
-        else:
-            cell_type = 'td'
+<%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
+    <% 
+        from tool_shed.util.shed_util_common import to_html_string
+        encoded_id = trans.security.encode_id( failed_test.id )
     %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
-        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
-        <${cell_type}>${data_manager.version | h}</${cell_type}>
-        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+        id="libraryItem-rft-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
+                <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
+                <tr><td><b>Stderr:</b> <br/>${ to_html_string( failed_test.stderr ) }</td></tr>
+                <tr><td><b>Traceback:</b> <br/>${ to_html_string( failed_test.traceback ) }</td></tr>
+            </table>
+        </td>
     </tr>
     <%
         my_row = row_counter.count
@@ -386,7 +476,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-ridm-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.index | h}</${cell_type}>
         <${cell_type}>${data_manager.error | h}</${cell_type}>
     </tr>
@@ -404,7 +494,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rird-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             ${ invalid_repository_dependency.error | h }
         </td>
@@ -415,16 +505,16 @@
     %>
 </%def>
 
-<%def name="render_invalid_tool( invalid_tool, pad, parent, row_counter, valid=True )">
+<%def name="render_invalid_tool( invalid_tool, pad, parent, row_counter, valid=True, render_repository_actions_for='tool_shed' )">
     <% encoded_id = trans.security.encode_id( invalid_tool.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rit-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             %if trans.webapp.name == 'tool_shed' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
-                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
+                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">
                     ${invalid_tool.tool_config | h}
                 </a>
             %else:
@@ -443,22 +533,48 @@
         encoded_id = trans.security.encode_id( invalid_tool_dependency.id )
     %>
     <style type="text/css">
-        #readme_table{ table-layout:fixed;
-                       width:100%;
-                       overflow-wrap:normal;
-                       overflow:hidden;
-                       border:0px; 
-                       word-break:keep-all;
-                       word-wrap:break-word;
-                       line-break:strict; }
+        #invalid_td_table{ table-layout:fixed;
+                           width:100%;
+                           overflow-wrap:normal;
+                           overflow:hidden;
+                           border:0px; 
+                           word-break:keep-all;
+                           word-wrap:break-word;
+                           line-break:strict; }
     </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-ritd-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            ${ invalid_tool_dependency.error | h }
+            <table id="invalid_td_table">
+                <tr><td>${ invalid_tool_dependency.error | h }</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( missing_test_component.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rmtc-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${missing_test_component.tool_version | h}</td></tr>
+                <tr><td><b>Tool guid:</b> ${missing_test_component.tool_guid | h}</td></tr>
+                <tr><td><b>Missing components:</b> <br/>${missing_test_component.missing_components | h}</td></tr>
+            </table>
         </td>
     </tr>
     <%
@@ -468,28 +584,15 @@
 </%def>
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
-    <%
-        from tool_shed.util.shed_util_common import to_safe_string
-        encoded_id = trans.security.encode_id( readme.id )
-    %>
-    <style type="text/css">
-        #readme_table{ table-layout:fixed;
-                       width:100%;
-                       overflow-wrap:normal;
-                       overflow:hidden;
-                       border:0px; 
-                       word-break:keep-all;
-                       word-wrap:break-word;
-                       line-break:strict; }
-    </style>
+    <% encoded_id = trans.security.encode_id( readme.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
-            parent="${parent}"
+            parent="${parent}" 
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="readme_table">
-                <tr><td>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+            <table id="readme_files">
+                <tr><td>${ readme.text }</td></tr>
             </table>
         </td>
     </tr>
@@ -502,6 +605,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
                 
     <%
+        from galaxy.util import asbool
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -515,7 +619,7 @@
         repository_name = str( repository_dependency.repository_name )
         repository_owner = str( repository_dependency.repository_owner )
         changeset_revision = str( repository_dependency.changeset_revision )
-        if prior_installation_required:
+        if asbool( str( repository_dependency.prior_installation_required ) ):
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""
@@ -532,7 +636,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rrd-${encoded_id}">
         %if trans.webapp.name == 'galaxy':
             <${cell_type} style="padding-left: ${pad+20}px;">
                 %if row_is_header:
@@ -564,7 +668,131 @@
     %>
 </%def>
 
-<%def name="render_tool( tool, pad, parent, row_counter, row_is_header )">
+<%def name="render_table_wrap_style( table_id )">
+    <style type="text/css">
+        table.${table_id}{ table-layout:fixed;
+                           width:100%;
+                           overflow-wrap:normal;
+                           overflow:hidden;
+                           border:0px; 
+                           word-break:keep-all;
+                           word-wrap:break-word;
+                           line-break:strict; }
+        ul{ list-style-type: disc;
+            padding-left: 20px; }
+    </style>
+</%def>
+
+<%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( installation_error.id )
+    %>
+    ${render_table_wrap_style( "td_install_error_table" )}
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rtdie-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="td_install_error_table">
+                <tr bgcolor="#FFFFCC">
+                    <th>Type</th><th>Name</th><th>Version</th>
+                </tr>
+                <tr>
+                    <td>${installation_error.name | h}</td>
+                    <td>${installation_error.type | h}</td>
+                    <td>${installation_error.version | h}</td>
+                </tr>
+                <tr><th>Error</th></tr>
+                <tr><td colspan="3">${installation_error.error_message | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+    <%
+        encoded_id = trans.security.encode_id( installation_error.id )
+    %>
+    ${render_table_wrap_style( "rd_install_error_table" )}
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rrie-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="rd_install_error_table">
+                %if not is_current_repository:
+                    <tr bgcolor="#FFFFCC">
+                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
+                    </tr>
+                    <tr>
+                        <td>${installation_error.tool_shed | h}</td>
+                        <td>${installation_error.name | h}</td>
+                        <td>${installation_error.owner | h}</td>
+                        <td>${installation_error.changeset_revision | h}</td>
+                    </tr>
+                %endif
+                <tr><th>Error</th></tr>
+                <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( not_tested.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rnt-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr><td>${not_tested.reason | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( passed_test.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rpt-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
+                <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_tool( tool, pad, parent, row_counter, row_is_header, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( tool.id )
         if row_is_header:
@@ -576,7 +804,7 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rt-${encoded_id}">
         %if row_is_header:
             <th style="padding-left: ${pad+20}px;">${tool.name | h}</th>
         %else:
@@ -584,10 +812,10 @@
                 %if tool.repository_id:
                     %if trans.webapp.name == 'tool_shed':
                         <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
-                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision )}">${tool.name | h}</a>
+                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
                         </div>
                         <div popupmenu="tool-${encoded_id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
                         </div>
                     %else:
                         %if tool.repository_installation_status == trans.model.ToolShedRepository.installation_status.INSTALLED:
@@ -613,6 +841,7 @@
 
 <%def name="render_tool_dependency( tool_dependency, pad, parent, row_counter, row_is_header )">
     <%
+        from galaxy.util import string_as_bool
         encoded_id = trans.security.encode_id( tool_dependency.id )
         is_missing = tool_dependency.installation_status not in [ 'Installed' ]
         if row_is_header:
@@ -624,17 +853,17 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rtd-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${tool_dependency.name | h}
             %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
-                %if tool_dependency.repository_id and tool_dependency.installation_status == 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name | h}
                     </a>
-                %elif tool_dependency.installation_status != 'Installed':
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                %elif tool_dependency.installation_status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
                 %else:
@@ -656,13 +885,19 @@
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
         <${cell_type}>
             %if trans.webapp.name == 'galaxy':
-                %if is_missing:
-                    ${tool_dependency.installation_status | h}
-                %elif tool_dependency.install_dir:
-                    ${tool_dependency.install_dir | h}
-                %endif
+                ${tool_dependency.installation_status | h}
             %else:
-                ${tool_dependency.is_orphan | h}
+                %if row_is_header:
+                    ${tool_dependency.is_orphan | h}
+                %else:
+                    <%
+                        if string_as_bool( str( tool_dependency.is_orphan ) ):
+                            is_orphan = 'yes'
+                        else:
+                            is_orphan = 'no'
+                    %>
+                    ${is_orphan | h}
+                %endif
             %endif
         </${cell_type}>
     </tr>
@@ -672,7 +907,57 @@
     %>
 </%def>
 
-<%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_test_environment( test_environment, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( test_environment.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rte-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="test_environment">
+                <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
+                <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
+                <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
+                <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>
+                <tr><td><b>Galaxy revision:</b> ${test_environment.galaxy_revision | h}</td></tr>
+                <tr><td><b>Galaxy database version:</b> ${test_environment.galaxy_database_version | h}</td></tr>
+                <tr><td><b>Tool shed revision:</b> ${test_environment.tool_shed_revision | h}</td></tr>
+                <tr><td><b>Tool shed database version:</b> ${test_environment.tool_shed_database_version | h}</td></tr>
+                <tr><td><b>Tool shed mercurial version:</b> ${test_environment.tool_shed_mercurial_version | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rvdm-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
+        <${cell_type}>${data_manager.version | h}</${cell_type}>
+        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode
         encoded_id = trans.security.encode_id( workflow.id )
@@ -692,12 +977,12 @@
         %if parent is not None:
             parent="${parent}"
         %endif
-        id="libraryItem-${encoded_id}">
+        id="libraryItem-rw-${encoded_id}">
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${workflow.workflow_name | h}
             %elif trans.webapp.name == 'tool_shed' and encoded_repository_metadata_id:
-                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id )}">${workflow.workflow_name | h}</a>
+                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id, render_repository_actions_for=render_repository_actions_for )}">${workflow.workflow_name | h}</a>
             %elif trans.webapp.name == 'galaxy' and encoded_repository_id:
                 <a href="${h.url_for( controller='admin_toolshed', action='view_workflow', workflow_name=encoded_workflow_name, repository_id=encoded_repository_id )}">${workflow.workflow_name | h}</a>
             %else:
@@ -714,7 +999,7 @@
     %>
 </%def>
 
-<%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False )">
+<%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode
 
@@ -723,18 +1008,20 @@
         has_workflows = metadata and 'workflows' in metadata
         
         datatypes_root_folder = containers_dict.get( 'datatypes', None )
-        invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         invalid_repository_dependencies_root_folder = containers_dict.get( 'invalid_repository_dependencies', None )
+        invalid_tool_dependencies_root_folder = containers_dict.get( 'invalid_tool_dependencies', None )
+        invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
+        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         readme_files_root_folder = containers_dict.get( 'readme_files', None )
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
-        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
-        invalid_tool_dependencies_root_folder = containers_dict.get( 'invalid_tool_dependencies', None )
+        test_environment_root_folder = containers_dict.get( 'test_environment', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
-        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
+        tool_test_results_root_folder = containers_dict.get( 'tool_test_results', None )
+        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
-        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
-        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
         has_dependencies = \
@@ -754,6 +1041,8 @@
                 return str( self.count )
     %>
     %if readme_files_root_folder:
+        ${render_table_wrap_style( "readme_files" )}
+        <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
             <div class="toolFormBody">
@@ -823,27 +1112,27 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
-                        ${render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if invalid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
-                        ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if valid_data_managers_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_data_managers">
                         ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if invalid_data_managers_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_data_managers">
                         ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
@@ -851,7 +1140,7 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="workflows">
-                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if datatypes_root_folder:
@@ -861,6 +1150,20 @@
                         ${render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
+            </div>
+        </div>
+    %endif
+    %if tool_test_results_root_folder:
+        ${render_table_wrap_style( "test_environment" )}
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormTitle">Automated tool test results</div>
+            <div class="toolFormBody">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">
+                    ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
             </div>
         </div>
     %endif

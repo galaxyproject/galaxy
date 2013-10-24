@@ -109,7 +109,7 @@
         encoded_hda_id = trans.security.encode_id( hda.id )
         %>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
-        <tr><td>Created:</td><td>${hda.create_time.strftime("%b %d, %Y")}</td></tr>
+        <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format)}</td></tr>
         ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
@@ -122,6 +122,9 @@
         <tr><td>API ID:</td><td>${encoded_hda_id}</td></tr>
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+        %endif
+        %if job and job.command_line and trans.user_is_admin():
+            <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
         %endif
 </table>
 <br />
@@ -153,7 +156,9 @@
     <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
 
     % for dep in inherit_chain:
-    <div style="font-size: 36px; text-align: center;">&uarr;</div>
-    <div class="inherit">${dep[0].name | h}<br/>${dep[1]}</div>
+        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+        <div class="inherit">
+            '${dep[0].name | h}' in ${dep[1]}<br/>
+        </div>
     % endfor
 

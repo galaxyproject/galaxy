@@ -56,7 +56,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               uncompress_file=False,
                               remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded tool_dependencies.xml.',
-                              strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool' ], 
+                              strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
             self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
 
@@ -232,7 +232,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                  category_name,
                                  install_tool_dependencies=True, 
                                  preview_strings_displayed=preview_strings_displayed,
-                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'new' ],
+                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'New' ],
                                  includes_tools_for_display_in_tool_panel=True )
  
     def test_0050_verify_installed_repositories( self ):
@@ -262,13 +262,9 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Verify that the generated env.sh contains the right data.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
         tool_repository = test_db_util.get_installed_repository_by_name_owner( bwa_package_repository_name, common.test_user_1_name )
-        env_sh_path = os.path.join( self.galaxy_tool_dependency_dir, 
-                                    'bwa', 
-                                    '0.5.9', 
-                                    base_repository.owner, 
-                                    base_repository.name, 
-                                    base_repository.installed_changeset_revision, 
-                                    'env.sh' )
+        env_sh_path = self.get_env_sh_path( tool_dependency_name='bwa', 
+                                            tool_dependency_version='0.5.9', 
+                                            repository=base_repository )
         assert os.path.exists( env_sh_path ), 'env.sh was not generated in %s for this dependency.' % env_sh_path
         contents = file( env_sh_path, 'r' ).read()
         if tool_repository.installed_changeset_revision not in contents:

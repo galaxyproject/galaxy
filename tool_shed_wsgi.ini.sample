@@ -12,6 +12,8 @@ host = 127.0.0.1
 
 use_threadpool = true
 threadpool_workers = 10
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
 
 # ---- Galaxy Webapps Community Interface -------------------------------------------------
 
@@ -87,6 +89,11 @@ sendmail_path = /usr/sbin/sendmail
 
 # Use the new iframe / javascript based layout
 use_new_layout = true
+
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
 
 # Serving static files (needed if running standalone)
 static_enabled = True

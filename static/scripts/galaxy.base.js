@@ -66,7 +66,10 @@ $.fn.makeAbsolute = function(rebase) {
 };
 
 /**
- *  Sets up popupmenu rendering and binds options functions to the appropriate links
+ * Sets up popupmenu rendering and binds options functions to the appropriate links.
+ * initial_options is a dict with text describing the option pointing to either (a) a 
+ * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the 
+ * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
 function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
@@ -92,7 +95,9 @@ function make_popupmenu(button_element, initial_options) {
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    menu_element.append( $("<li></li>").append( $("<a href='#'></a>").html(k).click(v) ) );
+                    // Action can be either an anonymous function and a mapped dict.
+                    var action = v.action || v;
+                    menu_element.append( $("<li></li>").append( $("<a>").attr("href", v.url).html(k).click(action) ) );
                 } else {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
@@ -154,7 +159,6 @@ function make_popup_menus( parent ) {
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
-                // why do we need the DOM (mixed with jq)?
                 link_dom = link.get(0),
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
@@ -165,31 +169,21 @@ function make_popup_menus( parent ) {
                 options[ link.text() ] = null;
                 
             } else {
-                options[ link.text() ] = function() {
+                options[ link.text() ] = {
+                    url: href,
+                    action: function() {
 
-                    // if theres confirm text, send the dialog
-                    if ( !confirmtext || confirm( confirmtext ) ) {
-                        var f;
-                        // relocate the center panel
-                        if ( target === "_parent" ) {
-                            window.parent.location = href;
-                            
-                        // relocate the entire window
-                        } else if ( target === "_top" ) {
-                            window.top.location = href;
-                            
-                        //??...wot?
-                        } else if ( target === "demo" ) {
-                            // Http request target is a window named
-                            // demolocal on the local box
-                            if ( f === undefined || f.closed ) {
-                                f = window.open( href,target );
-                                f.creator = self;
+                        // if theres confirm text, send the dialog
+                        if ( !confirmtext || confirm( confirmtext ) ) {
+                            // link.click() doesn't use target for some reason, 
+                            // so manually do it here. 
+                            if (target) {
+                                window.open(href, target);
                             }
-                            
-                        // relocate this panel
-                        } else {
-                            window.location = href;
+                            // For all other links, do the default action.
+                            else {
+                                link.click();
+                            }
                         }
                     }
                 };
@@ -400,7 +394,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).live("click", function() {
+    $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
         if ( $("#renaming-active").length > 0) {
             return;
@@ -670,14 +664,14 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+
     // Tooltips
-    // if ( $.fn.tipsy ) {
-    //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
-    //     // initialize each separately.
-    //     $(".tooltip").tipsy( { gravity: 's' } );
-    // }
     if ( $.fn.tooltip ) {
-        $(".tooltip").tooltip( { placement: 'top' } );
+        // Put tooltips below items in panel header so that they do not overlap masthead.
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
+        
+        // Default tooltip location to be above item.
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();
@@ -704,10 +698,5 @@ $(document).ready( function() {
         }
         return anchor;
     });
-
-    // Auto Focus on first item on form
-    if ( $("*:focus").html() == null ) {
-        $(":input:not([type=hidden]):visible:enabled:first").focus();
-    }
 
 });

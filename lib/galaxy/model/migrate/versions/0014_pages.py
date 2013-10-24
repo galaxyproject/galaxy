@@ -14,7 +14,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 Page_table = Table( "page", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -36,25 +36,39 @@ PageRevision_table = Table( "page_revision", metadata,
     Column( "content", TEXT )
     )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
+        if migrate_engine.name == 'mysql':
+            # Strip slug index prior to creation so we can do it manually.
+            slug_index = None
+            for ix in Page_table.indexes:
+                if ix.name == 'ix_page_slug':
+                    slug_index = ix
+            Page_table.indexes.remove(slug_index)
         Page_table.create()
-    except:
+        if migrate_engine.name == 'mysql':
+            # Create slug index manually afterward.
+            i = Index( "ix_page_slug", Page_table.c.slug, mysql_length = 200)
+            i.create()
+    except Exception, ex:
+        log.debug(ex)
         log.debug( "Could not create page table" )
     try:
         PageRevision_table.create()
     except:
         log.debug( "Could not create page_revision table" )
-    
+
     # Add 1 column to the user table
     User_table = Table( "galaxy_user", metadata, autoload=True )
     col = Column( 'username', String(255), index=True, unique=True, default=False )
-    col.create( User_table )
+    col.create( User_table, index_name='ix_user_username', unique_name='username' )
     assert col is User_table.c.username
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     Page_table.drop()
     PageRevision_table.drop()

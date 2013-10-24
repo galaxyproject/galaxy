@@ -45,13 +45,19 @@
 <!-- ---------------------------------------------------------------------- SUMMARY INFO (ok state) -->
 <script type="text/template" class="template-hda" id="template-hda-hdaSummary">
 <div class="hda-summary">
-    {{ misc_blurb }}<br />
-    {{#local}}format: {{/local}}<span class="{{ data_type }}">{{ data_type }}</span>,
-    {{#local}}database: {{/local}}
-    {{#if dbkey_unknown_and_editable }}
-        <a class="metadata-dbkey" href="{{ urls.edit }}" target="galaxy_main">{{ metadata_dbkey }}</a>
-    {{else}}
-        <span class="metadata-dbkey {{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
+    {{#if misc_blurb }}
+        {{ misc_blurb }}<br />
+    {{/if}}
+    {{#if data_type }}
+        {{#local}}format: {{/local}}<span class="{{ data_type }}">{{ data_type }}</span>,
+    {{/if}}
+    {{#if metadata_dbkey }}
+        {{#local}}database: {{/local}}
+        {{#if dbkey_unknown_and_editable }}
+            <a class="metadata-dbkey" href="{{ urls.edit }}" target="galaxy_main">{{ metadata_dbkey }}</a>
+        {{else}}
+            <span class="metadata-dbkey {{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
+        {{/if}}
     {{/if}}
 </div>
 {{#if misc_info}}
@@ -72,7 +78,6 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 <!-- ---------------------------------------------------------------------- DOWNLOAD POPUP -->
 <script type="text/template" class="template-hda" id="template-hda-downloadLinks">
 {{#if urls.meta_download}}
-{{! this will be built using a popupmenu }}
 <div popupmenu="dataset-{{ id }}-popup">
     <a class="action-button" href="{{ urls.download }}">{{#local}}Download Dataset{{/local}}</a>
     <a>{{#local}}Additional Files{{/local}}</a>
@@ -81,11 +86,11 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
     {{/each}}
 </div>
 <div style="float:left;" class="menubutton split popup" id="dataset-{{ id }}-popup">
-    <a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
+    <a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk"></a>
 </div>
 {{else}}
 {{! otherwise a simple icon button }}
-<a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
+<a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk"></a>
 {{/if}}
 </script>
 
@@ -106,7 +111,7 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 {{! TODO: move to mvc/annotations.js templates, editable-text }}
 <div id="{{ id }}-annotation-area" class="annotation-area" style="display: none;">
     <strong>{{#local}}Annotation{{/local}}:</strong>
-    <div id="{{ id }}-anotation-elt" class="annotation-elt tooltip editable-text"
+    <div id="{{ id }}-anotation-elt" class="annotation-elt editable-text"
          style="margin: 1px 0px 1px 0px" title="{{#local}}Edit dataset annotation{{/local}}">
     </div>
 </div>

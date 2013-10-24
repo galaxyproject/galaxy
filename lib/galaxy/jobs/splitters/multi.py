@@ -1,5 +1,8 @@
-import os, logging,  shutil
+import os
+import logging
+import shutil
 import inspect
+
 from galaxy import model, util
 
 
@@ -133,7 +136,7 @@ def do_merge( job_wrapper,  task_wrappers):
                 output_dataset = outputs[output][0]
                 output_type = output_dataset.datatype
                 output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
-                # Just include those files f in the output list for which the 
+                # Just include those files f in the output list for which the
                 # file f exists; some files may not exist if a task fails.
                 output_files = [ f for f in output_files if os.path.exists(f) ]
                 if output_files:

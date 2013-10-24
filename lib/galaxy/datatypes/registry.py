@@ -2,7 +2,7 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os, sys, tempfile, threading, logging, imp
-import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex, graph
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
@@ -121,6 +121,8 @@ class Registry( object ):
                         # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.
                         self.log.debug( "Removing datatype with extension '%s' from the registry." % extension )
                         del self.datatypes_by_extension[ extension ]
+                        if extension in self.upload_file_formats:
+                            self.upload_file_formats.remove( extension )
                         can_process_datatype = False
                     else:
                         can_process_datatype = ( extension and ( dtype or type_extension ) ) and ( extension not in self.datatypes_by_extension or override )
@@ -165,7 +167,7 @@ class Registry( object ):
                         self.mimetypes_by_extension[ extension ] = mimetype
                         if datatype_class.track_type:
                             self.available_tracks.append( extension )
-                        if display_in_upload:
+                        if display_in_upload and extension not in self.upload_file_formats:
                             self.upload_file_formats.append( extension )
                         # Max file size cut off for setting optional metadata
                         self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
@@ -271,11 +273,11 @@ class Registry( object ):
             self.to_xml_file()
         # Default values.
         if not self.datatypes_by_extension:
-            self.datatypes_by_extension = { 
+            self.datatypes_by_extension = {
                 'ab1'         : binary.Ab1(),
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
-                'bed'         : interval.Bed(), 
+                'bed'         : interval.Bed(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
@@ -287,7 +289,7 @@ class Registry( object ):
                 'gff'         : interval.Gff(),
                 'gff3'        : interval.Gff3(),
                 'genetrack'   : tracks.GeneTrack(),
-                'interval'    : interval.Interval(), 
+                'interval'    : interval.Interval(),
                 'laj'         : images.Laj(),
                 'lav'         : sequence.Lav(),
                 'maf'         : sequence.Maf(),
@@ -295,7 +297,7 @@ class Registry( object ):
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
-                'sam'         : tabular.Sam(), 
+                'sam'         : tabular.Sam(),
                 'scf'         : binary.Scf(),
                 'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
@@ -304,11 +306,11 @@ class Registry( object ):
                 'wig'         : interval.Wiggle(),
                 'xml'         : xml.GenericXml(),
             }
-            self.mimetypes_by_extension = { 
+            self.mimetypes_by_extension = {
                 'ab1'         : 'application/octet-stream',
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
-                'bed'         : 'text/plain', 
+                'bed'         : 'text/plain',
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'eland'       : 'application/octet-stream',
@@ -318,7 +320,7 @@ class Registry( object ):
                 'gtf'         : 'text/plain',
                 'gff'         : 'text/plain',
                 'gff3'        : 'text/plain',
-                'interval'    : 'text/plain', 
+                'interval'    : 'text/plain',
                 'laj'         : 'text/plain',
                 'lav'         : 'text/plain',
                 'maf'         : 'text/plain',
@@ -357,7 +359,7 @@ class Registry( object ):
                 interval.Wiggle(),
                 images.Html(),
                 sequence.Axt(),
-                interval.Bed(), 
+                interval.Bed(),
                 interval.CustomTrack(),
                 interval.Gtf(),
                 interval.Gff(),
@@ -379,6 +381,36 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
+
+    def get_datatype_class_by_name( self, name ):
+        """
+        Return the datatype class where the datatype's `type` attribute
+        (as defined in the datatype_conf.xml file) contains `name`.
+        """
+        #TODO: too roundabout - would be better to generate this once as a map and store in this object
+        found_class = None
+        for ext, datatype_obj in self.datatypes_by_extension.items():
+            datatype_obj_class = datatype_obj.__class__
+            datatype_obj_class_str = str( datatype_obj_class )
+            #print datatype_obj_class_str
+            if name in datatype_obj_class_str:
+                return datatype_obj_class
+        return None
+        # these seem to be connected to the dynamic classes being generated in this file, lines 157-158
+        #   they appear when a one of the three are used in inheritance with subclass="True"
+        #TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
+
+        #remap = {
+        #    'galaxy.datatypes.registry.Tabular'   : galaxy.datatypes.tabular.Tabular,
+        #    'galaxy.datatypes.registry.Text'      : galaxy.datatypes.data.Text,
+        #    'galaxy.datatypes.registry.Binary'    : galaxy.datatypes.binary.Binary
+        #}
+        #datatype_str = str( datatype )
+        #if datatype_str in remap:
+        #    datatype = remap[ datatype_str ]
+        #
+        #return datatype
+
     def get_available_tracks(self):
         return self.available_tracks
     def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
@@ -397,7 +429,7 @@ class Registry( object ):
         except KeyError:
             builder = data.Text()
         return builder
-    def change_datatype(self, data, ext, set_meta = True ):
+    def change_datatype(self, data, ext):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
@@ -405,10 +437,6 @@ class Registry( object ):
         if data.has_data():
             data.set_size()
             data.init_meta( copy_from=data )
-            if set_meta:
-                #metadata is being set internally
-                data.set_meta( overwrite = False )
-                data.set_peek()
         return data
     def old_change_datatype(self, data, ext):
         """Creates and returns a new datatype based on an existing data and an extension"""
@@ -422,7 +450,7 @@ class Registry( object ):
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
         to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
         app's toolbox.
-        """   
+        """
         if installed_repository_dict:
             # Load converters defined by datatypes_conf.xml included in installed tool shed repository.
             converters = self.proprietary_converters
@@ -546,7 +574,7 @@ class Registry( object ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
-        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file 
+        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file
         tool_xml_text = """
             <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>
@@ -587,7 +615,7 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
+            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset

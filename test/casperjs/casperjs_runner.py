@@ -176,7 +176,14 @@ class CasperJSTestCase( unittest.TestCase ):
             err_string = ( "%s\n%s" %( get_msg( last_error ),
                 self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
 
-        # if we couldn't parse json from what's returned on the error, raise a vanilla exc
+        # if we couldn't parse json from what's returned on the error, dump stdout
+        except ValueError, val_err:
+            if str( val_err ) == 'No JSON object could be decoded':
+                log.debug( '(error parsing returned JSON from casperjs, dumping stdout...)\n:%s', stdout_output )
+            else:
+                raise
+
+        # otherwise, raise a vanilla exc
         except Exception, exc:
             log.debug( '(failed to parse error returned from %s: %s)', _PATH_TO_HEADLESS, str( exc ) )
             return HeadlessJSJavascriptError(
@@ -316,7 +323,7 @@ class Test_01_User( CasperJSTestCase ):
         self.run_js_script( 'registration-tests.js' )
 
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
-        #TODO: have run_js_script return other persistant fixture data (uploaded files, etc.)
+        #TODO: have run_js_script return other persistent fixture data (uploaded files, etc.)
 
     def test_20_login( self ):
         """User log in tests.
@@ -360,6 +367,14 @@ class Test_04_HDAs( CasperJSTestCase ):
         """
         self.run_js_script( 'hda-state-tests.js' )
 
+
+class Test_05_API( CasperJSTestCase ):
+    """Tests for API functionality and security.
+    """
+    def test_00_history_api( self ):
+        """Test history API.
+        """
+        self.run_js_script( 'api-history-tests.js' )
 
 
 # ==================================================================== MAIN

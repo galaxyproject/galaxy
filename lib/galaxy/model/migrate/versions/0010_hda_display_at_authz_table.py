@@ -5,7 +5,7 @@ If using mysql, this script will display the following error, which is corrected
 migration script:
 
 history_dataset_association_display_at_authorization table failed:  (OperationalError)
-(1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'  
+(1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'
 is too long
 """
 from sqlalchemy import *
@@ -29,8 +29,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -51,19 +50,21 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.create()
     except Exception, e:
-        log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )  
+        log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.drop()
     except Exception, e:
-        log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )  
+        log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )

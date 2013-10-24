@@ -38,25 +38,24 @@
 
     ${h.js(
         "libs/jquery/jquery",
+        "libs/jquery/jquery.migrate",
         "libs/jquery/select2",
-        "libs/json2",
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
-        "galaxy.base"
-    )}
-
-    ${h.templates(
-        "template-popupmenu-menu"
-    )}
-
-    ${h.js(
+        "galaxy.base",
         "mvc/ui"
     )}
 
     <script type="text/javascript">
+        ## global configuration object
+        var galaxy_config =
+        {
+            root: '${h.url_for( "/" )}'
+        };
+
         // console protection
         window.console = window.console || {
             log     : function(){},
@@ -66,13 +65,19 @@
             error   : function(){},
             assert  : function(){}
         };
-
-        // Set up needed paths.
-        var galaxy_paths = new GalaxyPaths({
-            root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}'
-        });
     </script>
+
+    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
+        <script type="text/javascript">
+            $(document).ready( function() {
+                // Auto Focus on first item on form
+                if ( $("*:focus").html() == null ) {
+                    $(":input:not([type=hidden]):visible:enabled:first").focus();
+                }
+            });
+        </script>
+    %endif
+
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

@@ -24,7 +24,7 @@ class ManualDataTransferPlugin( DataTransfer ):
             user_name = external_service.form_values.content[ 'user_name' ]
             password = external_service.form_values.content[ 'password' ]
             # TODO: In the future, we may want to implement a way for the user to associate a selected file with one of
-            # the run outputs configured in the <run_details><results> section of the external service config file.  The 
+            # the run outputs configured in the <run_details><results> section of the external service config file.  The
             # following was a first pass at implementing something (the datatype was included in the sample_dataset_dict),
             # but without a way for the user to associate stuff it's useless.  However, allowing the user this ability may
             # open a can of worms, so maybe we shouldn't do it???

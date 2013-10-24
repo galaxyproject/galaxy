@@ -21,11 +21,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
     c = Column( "tool_versions", JSONType, nullable=True )
@@ -35,8 +35,9 @@ def upgrade():
         assert c is RepositoryMetadata_table.c.tool_versions
     except Exception, e:
         print "Adding tool_versions column to the repository_metadata table failed: %s" % str( e )
-    
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop new_repo_alert column from galaxy_user table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )

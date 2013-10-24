@@ -30,7 +30,7 @@ class RequestsAPIController( BaseAPIController ):
                                     .all()
         rval = []
         for request in query:
-            item = request.get_api_value()
+            item = request.to_dict()
             item['url'] = url_for( 'requests', id=trans.security.encode_id( request.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             if trans.user_is_admin():
@@ -55,7 +55,7 @@ class RequestsAPIController( BaseAPIController ):
         if not request or not ( trans.user_is_admin() or request.user.id == trans.user.id ):
             trans.response.status = 400
             return "Invalid request id ( %s ) specified." % str( request_id )
-        item = request.get_api_value()
+        item = request.to_dict()
         item['url'] = url_for( 'requests', id=trans.security.encode_id( request.id ) )
         item['id'] = trans.security.encode_id( item['id'] )
         item['user'] = request.user.email
@@ -91,12 +91,12 @@ class RequestsAPIController( BaseAPIController ):
             trans.response.status = 400
             return "Invalid request id ( %s ) specified." % str( request_id )
         # check update type
-        if update_type == 'request_state': 
+        if update_type == 'request_state':
             return self.__update_request_state( trans, encoded_request_id=id )
 
     def __update_request_state( self, trans, encoded_request_id ):
         requests_common_cntrller = trans.webapp.controllers['requests_common']
-        status, output = requests_common_cntrller.update_request_state( trans, 
-                                                                        cntrller='api', 
+        status, output = requests_common_cntrller.update_request_state( trans,
+                                                                        cntrller='api',
                                                                         request_id=encoded_request_id )
         return status, output

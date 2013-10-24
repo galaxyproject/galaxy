@@ -1,8 +1,7 @@
 <%def name="common_misc_javascripts()">
     <script type="text/javascript">
-        function checkAllFields( name )
+        function checkAllFields( chkAll, name )
         {
-            var chkAll = document.getElementById( 'checkAll' );
             var checks = document.getElementsByTagName( 'input' );
             var boxLength = checks.length;
             var allChecked = false;
@@ -11,9 +10,9 @@
             {
                 for ( i=0; i < boxLength; i++ )
                 {
-                    if ( checks[i].name.indexOf( name ) != -1 )
+                    if ( checks[ i ].name.indexOf( name ) != -1 )
                     {
-                       checks[i].checked = true;
+                       checks[ i ].checked = true;
                     }
                 }
             }
@@ -21,12 +20,33 @@
             {
                 for ( i=0; i < boxLength; i++ )
                 {
-                    if ( checks[i].name.indexOf( name ) != -1 )
+                    if ( checks[ i ].name.indexOf( name ) != -1 )
                     {
-                       checks[i].checked = false
+                       checks[ i ].checked = false;
                     }
                 }
             }
+        }
+
+        function checkAllRepositoryIdFields()
+        {
+            var chkAll = document.getElementById( 'checkAll' );
+            var name = 'repository_ids';
+            checkAllFields( chkAll, name );
+        }
+
+        function checkAllInstalledToolDependencyIdFields()
+        {
+            var chkAll = document.getElementById( 'checkAllInstalled' );
+            var name = 'inst_td_ids';
+            checkAllFields( chkAll, name );
+        }
+
+        function checkAllUninstalledToolDependencyIdFields()
+        {
+            var chkAll = document.getElementById( 'checkAllUninstalled' );
+            var name = 'uninstalled_tool_dependency_ids';
+            checkAllFields( chkAll, name );
         }
     </script>
 </%def>

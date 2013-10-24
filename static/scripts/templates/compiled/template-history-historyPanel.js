@@ -1,14 +1,14 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
 templates['template-history-historyPanel'] = template(function (Handlebars,depth0,helpers,partials,data) {
-  this.compilerInfo = [2,'>= 1.0.0-rc.3'];
-helpers = helpers || Handlebars.helpers; data = data || {};
+  this.compilerInfo = [4,'>= 1.0.0'];
+helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
   var buffer = "", stack1, stack2, options, self=this, functionType="function", blockHelperMissing=helpers.blockHelperMissing, escapeExpression=this.escapeExpression;
 
 function program1(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div id=\"history-name\" class=\"tooltip editable-text\"\n                title=\"";
+  buffer += "\n            <div id=\"history-name\" class=\"editable-text\"\n                title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(2, program2, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
@@ -30,7 +30,7 @@ function program2(depth0,data) {
 function program4(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div id=\"history-name\" class=\"tooltip\"\n                title=\"";
+  buffer += "\n            <div id=\"history-name\"\n                title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(5, program5, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
@@ -58,13 +58,13 @@ function program7(depth0,data) {
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n                class=\"icon-button tags tooltip\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n            <a id=\"history-annotate\" title=\"";
+  buffer += "\"\n                class=\"icon-button tags\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n            <a id=\"history-annotate\" title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(10, program10, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n                class=\"icon-button annotate tooltip\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n            ";
+  buffer += "\"\n                class=\"icon-button annotate\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n            ";
   return buffer;
   }
 function program8(depth0,data) {
@@ -94,7 +94,7 @@ function program12(depth0,data) {
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += ":</strong>\n            <div id=\"history-annotation-container\">\n            <div id=\"history-annotation\" class=\"tooltip editable-text\"\n                title=\"";
+  buffer += ":</strong>\n            <div id=\"history-annotation-container\">\n            <div id=\"history-annotation\" class=\"editable-text\"\n                title=\"";
   options = {hash:{},inverse:self.noop,fn:self.program(17, program17, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }

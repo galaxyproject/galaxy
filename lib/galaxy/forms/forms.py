@@ -28,7 +28,7 @@ class FormDefinitionFactory( object ):
         #Create new FormDefinitionCurrent
         if form_definition_current is None:
             form_definition_current = FormDefinitionCurrent()
-        
+
         rval = FormDefinition( name=name, desc=description, form_type=self.form_types[form_type], form_definition_current=form_definition_current, layout=layout, fields=fields )
         form_definition_current.latest_form = rval
         return rval
@@ -125,7 +125,7 @@ class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
         rval = super( FormDefinitionTextFieldFactory, self ).from_elem( elem, layout=layout )
         rval['type'] = self.__get_stored_field_type( string_as_bool( elem.get( 'area', 'false' ) ) )
         return rval
-    
+
 class FormDefinitionPasswordFieldFactory( FormDefinitionFieldFactory ):
     type = 'password'
     def __get_stored_field_type( self ):
@@ -144,7 +144,7 @@ class FormDefinitionPasswordFieldFactory( FormDefinitionFieldFactory ):
         rval = super( FormDefinitionPasswordFieldFactory, self ).from_elem( elem, layout=layout )
         rval['type'] = self.__get_stored_field_type()
         return rval
-    
+
 class FormDefinitionAddressFieldFactory( FormDefinitionFieldFactory ):
     type = 'address'
     def __get_stored_field_type( self ):

@@ -1,4 +1,5 @@
 """
+# May 2013 ross added check for bogus gz extension - fastqc gets confused
 # added sanitizer for user supplied name
 # removed shell and make cl a sequence for Popen call
 # ross lazarus August 10 2012 in response to anon insecurity report
@@ -23,7 +24,28 @@ import subprocess
 import optparse
 import shutil
 import tempfile
-from rgutils import getFileString
+import zipfile
+import gzip
+
+
+def getFileString(fpath, outpath):
+    """
+    format a nice file size string
+    """
+    size = ''
+    fp = os.path.join(outpath, fpath)
+    s = '? ?'
+    if os.path.isfile(fp):
+        n = float(os.path.getsize(fp))
+        if n > 2**20:
+            size = ' (%1.1f MB)' % (n/2**20)
+        elif n > 2**10:
+            size = ' (%1.1f KB)' % (n/2**10)
+        elif n > 0:
+            size = ' (%d B)' % (int(n))
+        s = '%s %s' % (fpath, size) 
+    return s
+
 
 class FastQC():
     """wrapper
@@ -56,7 +78,31 @@ class FastQC():
             cl.append('--contaminants=%s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
-        fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))
+        infname = self.opts.inputfilename
+        linf = infname.lower()
+        trimext = False
+        # decompression at upload currently does NOT remove this now bogus ending - fastqc will barf
+        # patched may 29 2013 until this is fixed properly
+        if ( linf.endswith('.gz') or linf.endswith('.gzip') ): 
+            f = gzip.open(self.opts.input)
+            try:
+               testrow = f.readline()
+            except:
+               trimext = True
+            f.close()
+        elif linf.endswith('bz2'):
+           f = bz2.open(self.opts.input,'rb')
+           try:
+              f.readline()
+           except:
+              trimext = True
+           f.close()
+        elif linf.endswith('.zip'):
+           if not zipfile.is_zipfile(self.opts.input):
+              trimext = True
+        if trimext:
+           infname = os.path.splitext(infname)[0]
+        fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(infname))
         link_name = os.path.join(self.opts.outputdir, fastqinfilename)
         os.symlink(self.opts.input, link_name)
         cl.append(link_name)        
@@ -120,7 +166,7 @@ class FastQC():
                  res.append('<tr><td><a href="%s">%s</a></td></tr>\n' % (fn,getFileString(fn, self.opts.outputdir)))
         res.append('</table>\n') 
         res.append('<a href="http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/">FastQC documentation and full attribution is here</a><br/><hr/>\n')
-        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://rgenetics.org for details and licensing\n</div>')
+        res.append('FastQC was run by Galaxy using the rgenetics rgFastQC wrapper - see http://bitbucket.org/rgenetics for details and licensing\n</div>')
         res.append(footer)
         fixed = rep[:bodyindex] + res + rep[bodyindex:]
         return fixed # with our additions

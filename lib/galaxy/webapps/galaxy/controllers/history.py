@@ -1,21 +1,19 @@
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.datatypes.data import nice_size
-from galaxy import model, util
-from galaxy.util.odict import odict
-from galaxy.model.mapping import desc
-from galaxy.model.orm import *
-from galaxy.model.item_attrs import *
-from galaxy.util.json import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.tools.parameters.basic import UnvalidatedValue
-from galaxy.tools.actions import upload_common
-from galaxy.tags.tag_handler import GalaxyTagHandler
-from sqlalchemy.sql.expression import ClauseElement, func
-from sqlalchemy.sql import select
-import webhelpers, logging, operator, os, tempfile, subprocess, shutil, tarfile
-from datetime import datetime
+import logging
 from cgi import escape
+
+import galaxy.util
+from galaxy import model
+from galaxy import web
+from galaxy.datatypes.data import nice_size
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.model.orm import and_, eagerload_all, func
+from galaxy.util import Params
+from galaxy.util.odict import odict
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import error, url_for
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger( __name__ )
 
@@ -237,7 +235,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                                                   show_deleted=history.deleted,
                                                                   use_panels=False ) )
                     #return self.view( trans, id=kwargs['id'], show_deleted=history.deleted, use_panels=False )
-            history_ids = util.listify( kwargs.get( 'id', [] ) )
+            history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
             refresh_history = False
@@ -311,7 +309,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # If deleting the current history, make a new current.
                 if history == trans.get_history():
                     deleted_current = True
-                    trans.new_history()
                 trans.log_event( "History (%s) marked as deleted" % history.name )
                 n_deleted += 1
             if purge and trans.app.config.allow_user_dataset_purge:
@@ -341,6 +338,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
         if deleted_current:
+            #note: this needs to come after commits above or will use an empty history that was deleted above
+            trans.get_or_create_default_history()
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
         return ( status, " ".join( message_parts ) )
@@ -395,10 +394,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
-        msg = util.restore_text( kwargs.get( 'msg', '' ) )
+        msg = galaxy.util.restore_text( kwargs.get( 'msg', '' ) )
         status = message = None
         if 'operation' in kwargs:
-            ids = util.listify( kwargs.get( 'id', [] ) )
+            ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             operation = kwargs['operation'].lower()
             if operation == "view":
                 # Display history.
@@ -528,7 +527,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
                         trans.sa_session.add( hda.dataset )
                     except:
                         log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
@@ -564,14 +563,23 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history.purged = True
             self.sa_session.add( history )
             self.sa_session.flush()
-        # Regardless of whether it was previously deleted, we make a new history active
-        trans.new_history()
+        for hda in history.datasets:
+            # Not all datasets have jobs associated with them (e.g., datasets imported from libraries).
+            if hda.creating_job_associations:
+                # HDA has associated job, so try marking it deleted.
+                job = hda.creating_job_associations[0].job
+                if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
+                    # No need to check other outputs since the job's parent history is this history
+                    job.mark_deleted( trans.app.config.track_jobs_in_database )
+                    trans.app.job_manager.job_stop_queue.put( job.id )
+        # Regardless of whether it was previously deleted, get or create default history.
+        trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
     @web.expose
     def unhide_datasets( self, trans, current=False, ids=None ):
         """Unhide the datasets in the active history -- this does not require a logged in user."""
-        if not ids and util.string_as_bool( current ):
+        if not ids and galaxy.util.string_as_bool( current ):
             histories = [ trans.get_history() ]
             refresh_frames = ['history']
         else:
@@ -585,7 +593,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.expose
     def resume_paused_jobs( self, trans, current=False, ids=None ):
         """Resume paused jobs the active history -- this does not require a logged in user."""
-        if not ids and util.string_as_bool( current ):
+        if not ids and galaxy.util.string_as_bool( current ):
             histories = [ trans.get_history() ]
             refresh_frames = ['history']
         else:
@@ -619,10 +627,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             assert history.user == trans.user
         # Rename
-        history.name = sanitize_html( new_name )
+        new_name = sanitize_html( new_name )
+        history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
-        return history.name
+        return new_name
 
     @web.expose
     @web.require_login( "use Galaxy histories" )
@@ -724,10 +733,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             'include_hidden' : include_hidden,
             'include_deleted' : include_deleted }
         history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        url = url_for( controller='history', action="export_archive", id=id, qualified=True )
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
-                                    <a href='%(u)s'>%(u)s</a>" \
-                                    % ( { 'n' : history.name, 'u' : url_for(controller='history', action="export_archive", id=id, qualified=True ) } ) )
+                                    <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
 
     @web.expose
     @web.json
@@ -739,7 +748,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return_dict = {
             "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+            "link" : url_for(controller='history', action="display_by_username_and_slug",
+                username=history.user.username, slug=history.slug ) }
         return return_dict
 
     @web.expose
@@ -871,10 +881,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         and ( not history_to_view.importable ) ):
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
-        show_deleted = util.string_as_bool( show_deleted )
+        show_deleted = galaxy.util.string_as_bool( show_deleted )
         datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
         try:
-            use_panels = util.string_as_bool( use_panels )
+            use_panels = galaxy.util.string_as_bool( use_panels )
         except:
             pass # already a bool
         return trans.stream_template_mako( "history/view.mako",
@@ -924,7 +934,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         session = trans.sa_session
         # Id values take precedence over histories passed in; last resort is current history.
         if id:
-            ids = util.listify( id )
+            ids = galaxy.util.listify( id )
             if ids:
                 histories = [ self.get_history( trans, history_id ) for history_id in ids ]
         elif not histories:
@@ -979,17 +989,17 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # If a history contains both datasets that can be shared and others that cannot be shared with the desired user,
         # then the entire history is shared, and the protected datasets will be visible, but inaccessible ( greyed out )
         # in the copyd history
-        params = util.Params( kwd )
+        params = Params( kwd )
         user = trans.get_user()
         # TODO: we have too many error messages floating around in here - we need
         # to incorporate the messaging system used by the libraries that will display
         # a message on any page.
-        err_msg = util.restore_text( params.get( 'err_msg', '' ) )
+        err_msg = galaxy.util.restore_text( params.get( 'err_msg', '' ) )
         if not email:
             if not id:
                 # Default to the current history
                 id = trans.security.encode_id( trans.history.id )
-            id = util.listify( id )
+            id = galaxy.util.listify( id )
             send_to_err = err_msg
             histories = []
             for history_id in id:
@@ -1097,13 +1107,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if not id:
             # Default to the current history
             id = trans.security.encode_id( trans.history.id )
-        id = util.listify( id )
+        id = galaxy.util.listify( id )
         send_to_err = ""
         histories = []
         for history_id in id:
             histories.append( self.get_history( trans, history_id ) )
         send_to_users = []
-        for email_address in util.listify( email ):
+        for email_address in galaxy.util.listify( email ):
             email_address = email_address.strip()
             if email_address:
                 if email_address == user.email:
@@ -1265,8 +1275,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if not history.user:
                 return trans.show_error_message( "You must save your history before renaming it." )
             id = trans.security.encode_id( history.id )
-        id = util.listify( id )
-        name = util.listify( name )
+        id = galaxy.util.listify( id )
+        name = galaxy.util.listify( name )
         histories = []
         cur_names = []
         for history_id in id:
@@ -1298,18 +1308,18 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "copy shared Galaxy history" )
     def copy( self, trans, id=None, **kwd ):
         """Copy one or more histories"""
-        params = util.Params( kwd )
+        params = Params( kwd )
         # If copy_choice was not specified, display form passing along id
         # argument
         copy_choice = params.get( 'copy_choice', None )
         if not copy_choice:
             return trans.fill_template( "/history/copy.mako", id_argument=id )
-            
+
         # Extract histories for id argument, defaulting to current
         if id is None:
             histories = [ trans.history ]
         else:
-            ids = util.listify( id )
+            ids = galaxy.util.listify( id )
             histories = []
             for history_id in ids:
                 history = self.get_history( trans, history_id, check_ownership=False )
@@ -1344,7 +1354,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history = self.get_history( trans, hist_id )
         trans.set_history( history )
         return trans.response.send_redirect( url_for( "/" ) )
-        
+
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
 
@@ -1360,7 +1370,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             #TODO: allow id for more flexibility? (the following doesn't work if anonymous...)
             #history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=None )
             if hda_ids:
-                unencoded_hda_ids = [ trans.security.decode_id( hda_id ) for hda_id in util.listify( hda_ids ) ]
+                unencoded_hda_ids = [ trans.security.decode_id( hda_id ) for hda_id in galaxy.util.listify( hda_ids ) ]
             #TODO: this gets all - should narrow query by using hda_ids here - no way with this current method
             hdas = self.get_history_datasets( trans, history, show_deleted=False, show_hidden=True, show_purged=False )
 

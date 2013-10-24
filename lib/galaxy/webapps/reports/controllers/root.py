@@ -1,4 +1,4 @@
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController, web
 import logging
 log = logging.getLogger( __name__ )
 

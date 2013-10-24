@@ -1,5 +1,5 @@
 """
-Tool Input Translation. 
+Tool Input Translation.
 """
 
 import logging
@@ -11,10 +11,10 @@ class ToolInputTranslator( object ):
     """
     Handles Tool input translation.
     This is used for data source tools
-    
+
     >>> from galaxy.util import Params
     >>> from elementtree.ElementTree import XML
-    >>> translator = ToolInputTranslator.from_element( XML( 
+    >>> translator = ToolInputTranslator.from_element( XML(
     ... '''
     ... <request_param_translation>
     ...  <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
@@ -57,7 +57,7 @@ class ToolInputTranslator( object ):
             missing = req_param.get( "missing" )
             value_trans = {}
             append_param = None
-            
+
             value_trans_elem = req_param.find( 'value_translation' )
             if value_trans_elem:
                 for value_elem in value_trans_elem.findall( 'value' ):
@@ -65,10 +65,10 @@ class ToolInputTranslator( object ):
                     galaxy_value = value_elem.get( "galaxy_value" )
                     if None not in [ remote_value, galaxy_value ]:
                         value_trans[ remote_value ] = galaxy_value
-            
+
             append_param_elem = req_param.find( "append_param" )
             if append_param_elem:
-                separator = append_param_elem.get( 'separator', ',' ) 
+                separator = append_param_elem.get( 'separator', ',' )
                 first_separator = append_param_elem.get( 'first_separator', None )
                 join_str = append_param_elem.get( 'join', '=' )
                 append_dict = {}
@@ -78,11 +78,11 @@ class ToolInputTranslator( object ):
                     if None not in [ value_name, value_missing ]:
                         append_dict[ value_name ] = value_missing
                 append_param = Bunch( separator = separator, first_separator = first_separator, join_str = join_str, append_dict = append_dict )
-            
+
             rval.param_trans_dict[ remote_name ] = Bunch( galaxy_name = galaxy_name, missing = missing, value_trans = value_trans, append_param = append_param  )
-        
+
         return rval
-    
+
     def __init__( self ):
         self.param_trans_dict = {}
 

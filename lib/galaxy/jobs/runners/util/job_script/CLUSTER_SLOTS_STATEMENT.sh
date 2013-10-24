@@ -1,0 +1,11 @@
+export GALAXY_SLOTS_CONFIGURED="1"
+if [ -n "$SLURM_JOB_NUM_NODES" ]; then
+    GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"
+elif [ -n "$NSLOTS" ]; then
+    GALAXY_SLOTS="$NSLOTS"
+elif [ -f "$PBS_NODEFILE" ]; then
+    GALAXY_SLOTS=`wc -l < $PBS_NODEFILE`
+else
+    GALAXY_SLOTS="1"
+    unset GALAXY_SLOTS_CONFIGURED
+fi
