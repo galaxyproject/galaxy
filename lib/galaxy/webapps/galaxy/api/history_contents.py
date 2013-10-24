@@ -2,15 +2,12 @@
 API operations on the contents of a history.
 """
 
-from galaxy import web, util
-from galaxy import exceptions
-from galaxy.web.base.controller import BaseAPIController, url_for
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
-from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
-from galaxy.datatypes import sniff
-
-import os
 import logging
+from galaxy import exceptions, util, web
+from galaxy.web.base.controller import (BaseAPIController, url_for,
+        UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin,
+        UsesLibraryMixinItems)
+
 log = logging.getLogger( __name__ )
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
@@ -354,7 +351,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         # a request body is optional here
         purge = False
         if kwd.get( 'payload', None ):
-            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
 
         rval = { 'id' : id }
         try:
@@ -389,7 +386,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
             raise
-        except exceptions.httpexceptions.HTTPException, http_exc:
+        except exceptions.httpexceptions.HTTPException:
             raise
         except Exception, exc:
             log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
