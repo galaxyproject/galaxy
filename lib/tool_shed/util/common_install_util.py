@@ -483,7 +483,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                            app.model.ToolDependency.installation_status.ERROR ]:
                             installed_tool_dependencies.append( tool_dependency )
         elif elem.tag == 'set_environment':
-            env_var_name = env_var_elem.get( 'name', None )
+            env_var_name = elem.get( 'name', None )
             if env_var_name:
                 # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
                 attr_tup = ( env_var_name, None, 'set_environment' )
