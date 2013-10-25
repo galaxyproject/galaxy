@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.2">
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.3">
   <description>using coordinates from assembled/unassembled genomes</description>
   <command interpreter="python">
       extract_genomic_dna.py $input $out_file1 -o $out_format -d $dbkey 
@@ -166,14 +166,14 @@ If the input dataset is::
 
 Extracting sequences with **FASTA** output data type returns::
 
-    &gt;hg17_chr7_127475281_127475310_+
+    &gt;hg17_chr7_127475281_127475310_+ NM_000230
     GTAGGAATCGCAGCGCCAGCGGTTGCAAG
-    &gt;hg17_chr7_127485994_127486166_+
+    &gt;hg17_chr7_127485994_127486166_+ NM_000230
     GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCG
     GATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATC
     CAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAG
     GATCAATGACATTTCACACACG
-    &gt;hg17_chr7_127486011_127486166_+
+    &gt;hg17_chr7_127486011_127486166_+ D49487
     TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGG
     CCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGA
     CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
