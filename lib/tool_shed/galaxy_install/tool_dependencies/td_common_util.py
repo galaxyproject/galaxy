@@ -43,31 +43,15 @@ class CompressedFile( object ):
                     os.makedirs( extraction_path )
                 self.archive.extractall( extraction_path )
         else:
-            # Sort filenames within the archive by length, because if the shortest path entry in the archive is a directory,
-            # and the next entry has the directory prepended, then everything following that entry must be within that directory.
-            # For example, consider tarball for BWA 0.5.9:
-            # bwa-0.5.9.tar.bz2:
-            #                     bwa-0.5.9/
-            #                     bwa-0.5.9/bwt.c
-            #                     bwa-0.5.9/bwt.h
-            #                     bwa-0.5.9/Makefile
-            #                     bwa-0.5.9/bwt_gen/
-            #                     bwa-0.5.9/bwt_gen/Makefile
-            #                     bwa-0.5.9/bwt_gen/bwt_gen.c
-            #                     bwa-0.5.9/bwt_gen/bwt_gen.h
-            # When sorted by length, one sees a directory at the root of the tarball, and all other tarball contents as
-            # children of that directory.
-            filenames = sorted( [ self.getname( item ) for item in contents ], cmp=lambda a,b: cmp( len( a ), len( b ) ) )
-            parent_name = filenames[ 0 ]
-            parent = self.getmember( parent_name )
-            first_child = filenames[ 1 ]
-            if first_child.startswith( parent_name ) and parent is not None and self.isdir( parent ):
-                if self.getname( parent ) == self.file_name:
-                    self.archive.extractall( os.path.join( path ) )
-                    extraction_path = os.path.join( path, self.file_name )
-                else:
-                    self.archive.extractall( os.path.join( path ) )
-                    extraction_path = os.path.join( path, self.getname( parent ) )
+            # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
+            # or self.isdir() returns True, the archive contains a single directory with the desired contents.
+            # Otherwise, it contains multiple files and/or directories at the root of the archive.
+            common_prefix = os.path.commonprefix( [ self.getname( item ) for item in contents ] )
+            if len( common_prefix ) >= 1 and not common_prefix.endswith( os.sep ) and self.isdir( self.getmember( common_prefix ) ):
+                common_prefix += os.sep
+            if common_prefix.endswith( os.sep ):
+                self.archive.extractall( os.path.join( path ) )
+                extraction_path = os.path.join( path, common_prefix )
             else:
                 extraction_path = os.path.join( path, self.file_name )
                 if not os.path.exists( extraction_path ):
