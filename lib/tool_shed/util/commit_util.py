@@ -257,7 +257,7 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     # Make sure we're looking at a valid repository_dependencies.xml file.
     tree, error_message = xml_util.parse_xml( repository_dependencies_config )
     if tree is None:
-        return False, None
+        return False, None, error_message
     root = tree.getroot()
     if root.tag == 'repositories':
         for index, elem in enumerate( root ):
@@ -265,14 +265,14 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
                 revised, elem, error_message = handle_repository_dependency_elem( trans, elem, unpopulate=unpopulate )
                 if error_message:
-                    exception_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-                    raise Exception( exception_message )
+                    error_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
+                    return False, None, error_message
                 if revised:
                     root[ index ] = elem
                     if not altered:
                         altered = True
-        return altered, root
-    return False, None
+        return altered, root, error_message
+    return False, None, error_message
 
 def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />

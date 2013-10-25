@@ -142,7 +142,9 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 # See if we have a repository dependencies defined.
                 if name == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, full_path, unpopulate=True )
+                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans, full_path, unpopulate=True )
+                    if error_message:
+                        return None, error_message
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem, use_indent=True )
                         shutil.move( tmp_filename, full_path )
