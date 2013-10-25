@@ -102,9 +102,9 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
 
 def generate_message_for_invalid_tool_dependencies( metadata_dict ):
     """
-    Due to support for orphan tool dependencies (which are always valid) tool dependency definitions can only be invalid if they include a definition for a complex
-    repository dependency and the repository dependency definition is invalid.  This method retrieves the error message associated with the invalid tool dependency
-    for display in the caller.
+    Tool dependency definitions can only be invalid if they include a definition for a complex repository dependency and the repository
+    dependency definition is invalid.  This method retrieves the error message associated with the invalid tool dependency for display
+    in the caller.
     """
     message = ''
     if metadata_dict:
@@ -118,38 +118,63 @@ def generate_message_for_invalid_tool_dependencies( metadata_dict ):
 
 def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict ):
     """
-    The introduction of the support for orphan tool dependency definitions in tool shed repositories has resulted in the inability
-    to define an improperly configured tool dependency definition / tool config requirements tag combination as an invalid tool
-    dependency.  This is certainly a weakness which cannot be correctly handled since now the only way to categorize a tool dependency
-    as invalid is if it consists of a complex repository dependency that is invalid.  Any tool dependency definition other than those
-    is considered valid but perhaps an orphan due to it's actual invalidity.
+    The designation of a ToolDependency into the "orphan" category has evolved over time, and is significantly restricted since the
+    introduction of the TOOL_DEPENDENCY_DEFINITION repository type.  This designation is still critical, however, in that it handles
+    the case where a repository contains both tools and a tool_dependencies.xml file, but the definition in the tool_dependencies.xml
+    file is in no way related to anything defined by any of the contained tool's requirements tag sets.  This is important in that it
+    is often a result of a typo (e.g., dependency name or version) that differs between the tool dependency definition within the
+    tool_dependencies.xml file and what is defined in the tool config's <requirements> tag sets.  In these cases, the user should be
+    presented with a warning message, and this warning message is is in fact displayed if the following is_orphan attribute is True.
+    This is tricky because in some cases it may be intentional, and tool dependencies that are categorized as "orphan" are in fact valid.
     """
+    has_orphan_package_dependencies = False
+    has_orphan_set_environment_dependencies = False
     message = ''
+    package_orphans_str = ''
+    set_environment_orphans_str = ''
+    # Tool dependencies are categorized as orphan only if the repository contains tools.
     if metadata_dict:
-        orphan_tool_dependencies = metadata_dict.get( 'orphan_tool_dependencies', None )
-        if orphan_tool_dependencies:
-            if 'tools' in metadata_dict or 'invalid_tools' in metadata_dict:
-                for td_key, requirements_dict in orphan_tool_dependencies.items():
-                    if td_key == 'set_environment':
-                        # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
-                        message += "The settings for <b>name</b> and <b>type</b> from a contained tool configuration file's <b>requirement</b> tag "
-                        message += "does not match the information for the following tool dependency definitions in the <b>tool_dependencies.xml</b> "
-                        message += "file, so these tool dependencies have no relationship with any tools within this repository.<br/>"
-                        for env_requirements_dict in requirements_dict:
-                            name = env_requirements_dict[ 'name' ]
-                            type = env_requirements_dict[ 'type' ]
-                            message += "<b>* name:</b> %s, <b>type:</b> %s<br/>" % ( str( name ), str( type ) )
-                    else:
-                        # "R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
-                        message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration file's "
-                        message += "<b>requirement</b> tag does not match the information for the following tool dependency definitions in the "
-                        message += "<b>tool_dependencies.xml</b> file, so these tool dependencies have no relationship with any tools within "
-                        message += "this repository.<br/>"
-                        name = requirements_dict[ 'name' ]
-                        type = requirements_dict[ 'type' ]
-                        version = requirements_dict[ 'version' ]
-                        message += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % ( str( name ), str( type ), str( version ) )
-                    message += "<br/>"
+        tools = metadata_dict.get( 'tools', [] )
+        invalid_tools = metadata_dict.get( 'invalid_tools', [] )
+        tool_dependencies = metadata_dict.get( 'tool_dependencies', {} )
+        # The use of the orphan_tool_dependencies category in metadata has been deprecated, but we still need to check in case
+        # the metadata is out of date.
+        orphan_tool_dependencies = metadata_dict.get( 'orphan_tool_dependencies', {} )
+        # Updating should cause no problems here since a tool dependency cannot be included in both dictionaries.
+        tool_dependencies.update( orphan_tool_dependencies )
+        if tool_dependencies and ( tools or invalid_tools ):
+            for td_key, requirements_dict in tool_dependencies.items():
+                if td_key == 'set_environment':
+                    # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
+                    for env_requirements_dict in requirements_dict:
+                        name = env_requirements_dict[ 'name' ]
+                        type = env_requirements_dict[ 'type' ]
+                        if tool_dependency_is_orphan( type, name, None, tools ):
+                            if not has_orphan_set_environment_dependencies:
+                                has_orphan_set_environment_dependencies = True
+                            set_environment_orphans_str += "<b>* name:</b> %s, <b>type:</b> %s<br/>" % ( str( name ), str( type ) )
+                else:
+                    # "R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
+                    name = requirements_dict[ 'name' ]
+                    type = requirements_dict[ 'type' ]
+                    version = requirements_dict[ 'version' ]
+                    if tool_dependency_is_orphan( type, name, version, tools ):
+                        if not has_orphan_package_dependencies:
+                            has_orphan_package_dependencies = True
+                        package_orphans_str += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % \
+                            ( str( name ), str( type ), str( version ) )
+                message += "<br/>"
+    if has_orphan_package_dependencies:
+        message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration file's "
+        message += "<b>requirement</b> tag does not match the information for the following tool dependency definitions in the "
+        message += "<b>tool_dependencies.xml</b> file, so these tool dependencies have no relationship with any tools within "
+        message += "this repository.<br/>"
+        message += package_orphans_str
+    if has_orphan_set_environment_dependencies:
+        message += "The settings for <b>name</b> and <b>type</b> from a contained tool configuration file's <b>requirement</b> tag "
+        message += "does not match the information for the following tool dependency definitions in the <b>tool_dependencies.xml</b> "
+        message += "file, so these tool dependencies have no relationship with any tools within this repository.<br/>"
+        message += set_environment_orphans_str
     return message
 
 def generate_message_for_repository_type_change( trans, repository ):
@@ -413,3 +438,30 @@ def set_tool_dependency_attributes( trans, tool_dependency, status, error_messag
     tool_dependency.status = status
     trans.sa_session.add( tool_dependency )
     trans.sa_session.flush()
+
+def tool_dependency_is_orphan( type, name, version, tools ):
+    """
+    Determine if the combination of the received type, name and version is defined in the <requirement> tag for at least one tool in the
+    received list of tools.  If not, the tool dependency defined by the combination is considered an orphan in it's repository in the tool
+    shed.
+    """
+    if type == 'package':
+        if name and version:
+            for tool_dict in tools:
+                requirements = tool_dict.get( 'requirements', [] )
+                for requirement_dict in requirements:
+                    req_name = requirement_dict.get( 'name', None )
+                    req_version = requirement_dict.get( 'version', None )
+                    req_type = requirement_dict.get( 'type', None )
+                    if req_name == name and req_version == version and req_type == type:
+                        return False
+    elif type == 'set_environment':
+        if name:
+            for tool_dict in tools:
+                requirements = tool_dict.get( 'requirements', [] )
+                for requirement_dict in requirements:
+                    req_name = requirement_dict.get( 'name', None )
+                    req_type = requirement_dict.get( 'type', None )
+                    if req_name == name and req_type == type:
+                        return False
+    return True

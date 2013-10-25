@@ -1,6 +1,6 @@
-import logging, os
+import logging
+import os
 from time import strftime
-
 from galaxy import eggs
 from galaxy import util
 from galaxy import web

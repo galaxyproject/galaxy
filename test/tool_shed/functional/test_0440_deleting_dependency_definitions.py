@@ -30,14 +30,14 @@ Simple repository dependencies:
 5. Delete repository_dependencies.xml from convert_chars_0440, and make sure convert_chars_0440 now has two installable revisions: 1 and 2
 
 Complex repository dependencies:
-1. Create and populate bwa_package_0440 so that it has a valid orphan tool dependency definition and an installable revision 0.
+1. Create and populate bwa_package_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Create and populate bwa_base_0440 so that it has an installable revision 0.
 3. Add a valid complex repository dependency tool_dependencies.xml to bwa_base_0440 that points to the installable revision 0 of bwa_package_0440.
 4. Make sure that bwa_base_0440 installable revision is now revision 1 instead of revision 0.
 5. Delete tool_dependencies.xml from bwa_base_0440, and make sure bwa_base_0440 now has two installable revisions: 1 and 2
 
 Tool dependencies:
-1. Create and populate bwa_tool_dependency_0440 so that it has a valid orphan tool dependency definition and an installable revision 0.
+1. Create and populate bwa_tool_dependency_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Delete tool_dependencies.xml from bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 still has
    a single installable revision 0.
 3. Add the same tool_dependencies.xml file to bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 
@@ -176,7 +176,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
     def test_0030_create_bwa_package_repository( self ):
         '''Create and populate the bwa_package_0440 repository.'''
         '''
-        We are at complex repository dependencies, step 1 - Create and populate bwa_package_0440 so that it has a valid orphan
+        We are at complex repository dependencies, step 1 - Create and populate bwa_package_0440 so that it has a valid
         tool dependency definition and an installable revision 0.
         '''
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
@@ -285,7 +285,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
     def test_0055_create_bwa_tool_dependency_repository( self ):
         '''Create and populate the bwa_tool_dependency_0440 repository.'''
         '''
-        We are at tool dependencies, step 1 - Create and populate bwa_tool_dependency_0440 so that it has a valid orphan tool 
+        We are at tool dependencies, step 1 - Create and populate bwa_tool_dependency_0440 so that it has a valid tool 
         dependency definition and an installable revision 0.
         '''
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
