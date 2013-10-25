@@ -163,7 +163,6 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
                             has_orphan_package_dependencies = True
                         package_orphans_str += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % \
                             ( str( name ), str( type ), str( version ) )
-                message += "<br/>"
     if has_orphan_package_dependencies:
         message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration file's "
         message += "<b>requirement</b> tag does not match the information for the following tool dependency definitions in the "
