@@ -61,7 +61,21 @@
       <param name="interpret_features" value="yes"/>
       <param name="index_source" value="cached"/>
       <param name="out_format" value="fasta"/>
-      <output name="out_file1" file="extract_genomic_dna_out1.fasta" />
+      <output name="out_file1">
+	<assert_contents>
+	  <!-- First few lines... -->
+	  <has_text text=">hg17_chr1_147962192_147962580_- CCDS989.1_cds_0_0_chr1_147962193_r" />
+	  <has_text text="ACTTGATCCTGCTCCCTCGGTGTCTGCATTGACTCCTCATGCTGGGACTG" />
+	  <has_text text="GACCCGTCAACCCCCCTGCTCGCTGCTCACGTACCTTCATCACTTTTAGT" />
+	  <has_text text="GATGATGCAACTTTCGAGGAATGGTTCCCCCAAGGGCGGCCCCCAAAAGT" />
+	  <!-- Last few lines... -->
+	  <has_text text="GCTGTGGCACAGAACATGGACTCTGTGTTTAAGGAGCTCTTGGGAAAGAC" />
+	  <has_text text="CTCTGTCCGCCAGGGCCTTGGGCCAGCATCTACCACCTCTCCCAGTCCTG" />
+	  <has_text text="GGCCCCGAAGCCCAAAGGCCCCGCCCAGCAGCCGCCTGGGCAGGAACAAA" />
+	  <has_text text="GGCTTCTCCCGGGGCCCTGGGGCCCCAGCCTCACCCTCAGCTTCCCACCC" />
+	  <has_text text="CCAGGGCCTAGACACGACCCCCAAGCCACACTGA" />
+	</assert_contents>
+      </output>
     </test>
     <test>
       <param name="input" value="droPer1.bed" dbkey="droPer1" ftype="bed" />
