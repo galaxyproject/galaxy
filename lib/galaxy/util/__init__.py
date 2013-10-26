@@ -872,7 +872,7 @@ def send_mail( frm, to, subject, body, config ):
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
-    smtp_ssl = asbool( config.smtp_ssl )
+    smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
     if smtp_ssl:
         s = smtplib.SMTP_SSL()
     else:
