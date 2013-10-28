@@ -219,60 +219,50 @@ var PersistentStorage = function( storageKey, storageDefaults ){
 
 
 //==============================================================================
-function LoadingIndicator( $where ){
-    var self = this,
-        $indicator;
-
-    function setPosition(){
-        // even tho pos is 'fixed' - give illusion of width 100% and margin by manually setting width, offset
-        var padding = 4,
-            width = $indicator.parent().width() || $where.width(),
-            offset = $indicator.parent().offset() || $where.offset();
-
-        $indicator.outerWidth( width - ( padding * 2 ) );
-        // have to use css top, left and not offset (wont work when indicator is hidden)
-        $indicator.css({ top: offset.top + padding + 'px' , left: offset.left + padding + 'px' });
-    }
+function LoadingIndicator( $where, options ){
+    options = options || {};
+    var self = this;
 
     function render(){
-        var $spinner = $( '<span class="fa-icon-spinner fa-icon-spin fa-icon-large"></span>')
-                .css({ 'color' : 'grey', 'font-size' : '16px' });
-        var $message = $( '<i>loading...</i>' )
-                .css({ 'color' : 'grey', 'margin-left' : '8px' });
-        $indicator = $( '<div/>' ).addClass( 'loading-indicator' )
-            .css({
-                'position'          : 'fixed',
-                'padding'           : '4px',
-                'text-align'        : 'center',
-                'background-color'  : 'white',
-                'opacity'           : '0.85',
-                'border-radius'     : '3px'
-            })
-            .append( $spinner, $message )
-            //NOTE: insert as sibling to $where
-            .insertBefore( $where );
-        setPosition();
-        return $indicator.hide();
+        var html = [
+            '<div class="loading-indicator">',
+                '<span class="fa-icon-spinner fa-icon-spin fa-icon-large" style="color: grey"></span>',
+                '<span style="margin-left: 8px; color: grey"><i>loading...</i></span>',
+            '</div>'
+        ].join( '\n' );
+
+        return $( html ).css( options.css || {
+            'position'          : 'fixed',
+            'margin'            : '6px 0px 0px 10px',
+            'opacity'           : '0.85'
+        }).hide();
     }
 
-    self.show = function( speed, callback ){
+    self.show = function( msg, speed, callback ){
+        msg = msg || 'loading...';
         speed = speed || 'fast';
-        setPosition();
-        $indicator.fadeIn( speed, callback );
-        // not using full fadeOut allows using scroll to still work
-        //$whatIsLoading.fadeTo( speed, 0.0001, callback );
+        // since position is fixed - we insert as sibling
+        self.$indicator = render().insertBefore( $where );
+        self.message( msg );
+        self.$indicator.fadeIn( speed, callback );
         return self;
+    };
+
+    self.message = function( msg ){
+        self.$indicator.find( 'i' ).text( msg );
     };
 
     self.hide = function( speed, callback ){
         speed = speed || 'fast';
-        //$whatIsLoading.fadeTo( speed, 1.0, function(){
-        //    if( callback ){ callback(); }
-        //});
-        $indicator.fadeOut( speed, callback );
+        if( self.$indicator && self.$indicator.size() ){
+            self.$indicator.fadeOut( speed, function(){
+                self.$indicator.remove();
+                if( callback ){ callback(); }
+            });
+        } else {
+            if( callback ){ callback(); }
+        }
         return self;
     };
-    $indicator = render();
     return self;
 }
-

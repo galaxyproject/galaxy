@@ -14,10 +14,7 @@ TODO:
     use model.save instead of urls
 
     meta:
-        css/html class/id 'item' -> hda
-        add classes, ids on empty divs
         convert function comments to jsDoc style, complete comments
-        move inline styles into base.less
     
     feature creep:
         lineage
@@ -46,23 +43,28 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //logger              : console,
 
     /** which class to use for constructing the HDA views */
-    //HDAView             : HDABaseView,
+    //HDAView             : hdaBase.HDABaseView,
     HDAView             : hdaEdit.HDAEditView,
 
     tagName             : 'div',
     className           : 'history-panel',
 
     /** (in ms) that jquery effects will use */
-    fxSpeed             : 300,
+    //fxSpeed             : 'fast',
+    fxSpeed             : 400,
 
     /** event map */
     events : {
-        'click #history-tag'            : 'loadAndDisplayTags',
-        // allow (error) messages to be clicked away
+        'click .icon-button.tags'    : 'loadAndDisplayTags',
 //TODO: switch to common close (X) idiom
-        'click #message-container'      : 'clearMessages'
+        // allow (error) messages to be clicked away
+        'click .message-container'   : 'clearMessages'
     },
 
+    datasetsSelector : '.datasets-list',
+    emptyMsgSelector : '.empty-history-message',
+    msgsSelector     : '.message-container',
+    
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HDACollection events
      *  @param {Object} attributes
@@ -85,8 +87,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // ---- set up instance vars
         /** map of hda model ids to hda views */
         this.hdaViews = {};
-        /** map web controller urls for history related actions */
-        this.urls = {};
         /** loading indicator */
         this.indicator = new LoadingIndicator( this.$el );
 
@@ -114,7 +114,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         this.on( 'loading-history', function(){
             // show the loading indicator when loading a new history starts...
-            this.showLoadingIndicator();
+            this.showLoadingIndicator( 'loading history...' );
         });
         this.on( 'loading-done', function(){
             // ...hiding it again when loading is done (or there's been an error)
@@ -173,7 +173,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // otherwise, show an error message inside the panel
         } else {
             // it's possible to have a triggered error before the message container is rendered - wait for it to show
-            if( !this.$el.find( '#message-container' ).is( ':visible' ) ){
+            if( !this.$el.find( this.msgsSelector ).is( ':visible' ) ){
                 this.once( 'rendered', function(){
                     this.displayMessage( 'error', parsed.message, parsed.details );
                 });
@@ -269,6 +269,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var panel = this,
             // will be called to get hda ids that need details from the api
             hdaDetailIds = function( historyData ){
+//TODO: non-visible HDAs are getting details loaded... either stop loading them at all or filter ids thru isVisible
                 return panel.getExpandedHdaIds( historyData.id );
             };
         return this.loadHistory( historyId, attributes, historyFn, hdaFn, hdaDetailIds );
@@ -285,7 +286,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 hdaFn           : hdaFn,
                 hdaDetailIds    : attributes.initiallyExpanded || hdaDetailIds
             });
-        //console.debug( 'xhr:', xhr );
         return this._loadHistoryFromXHR( xhr, attributes )
             .fail( function( xhr, where, history ){
                 // throw an error up for the error handler
@@ -410,7 +410,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     /** clear all stored history panel data */
     clearWebStorage : function(){
         for( var key in sessionStorage ){
-            if( key.indexOf( 'HistoryView.' ) === 0 ){
+            if( key.indexOf( 'history:' ) === 0 ){
                 sessionStorage.removeItem( key );
             }
         }
@@ -494,7 +494,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // create and prepend to current el, if it was empty fadeout the emptyMsg first
         $({}).queue([
             function fadeOutEmptyMsg( next ){
-                var $emptyMsg = panel.$el.find( '#emptyHistoryMessage' );
+                var $emptyMsg = panel.$el.find( panel.emptyMsgSelector );
                 if( $emptyMsg.is( ':visible' ) ){
                     $emptyMsg.fadeOut( panel.fxSpeed, next );
                 } else {
@@ -503,7 +503,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             },
             function createAndPrepend( next ){
                 panel.scrollToTop();
-                var $whereTo = panel.$el.find( '#' + panel.model.get( 'id' ) + '-datasets' );
+                var $whereTo = panel.$el.find( panel.datasetsSelector );
                 panel.createHdaView( hda ).$el.hide().prependTo( $whereTo ).slideDown( panel.fxSpeed );
             }
         ]);
@@ -575,7 +575,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             hdaView.remove();
             delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
-                panel.$el.find( '#emptyHistoryMessage' ).fadeIn( panel.fxSpeed );
+                panel.$el.find( panel.emptyMsgSelector ).fadeIn( panel.fxSpeed, function(){
+                    panel.trigger( 'empty-history', panel );
+                });
             }
         });
     },
@@ -627,15 +629,18 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var $newRender = $( '<div/>' );
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
-        $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
+        var templateFn = ( !Galaxy.currUser.isAnonymous() )?( HistoryPanel.templates.historyPanel )
+                                                           :( HistoryPanel.templates.anonHistoryPanel );
+        $newRender.append( templateFn( this.model.toJSON() ) );
+
         $newRender.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
         if( !this.model.hdas.length
-        ||  !this.renderItems( $newRender.find( '#' + this.model.get( 'id' ) + '-datasets' ) ) ){
+        ||  !this.renderItems( $newRender.find( this.datasetsSelector ) ) ){
             // if history is empty or no hdas would be rendered, show the empty message
-            $newRender.find( '#emptyHistoryMessage' ).show();
+            $newRender.find( this.emptyMsgSelector ).show();
         }
         return $newRender;
     },
@@ -644,7 +649,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     renderWithoutModel : function( ){
         // we'll always need the message container
         var $newRender = $( '<div/>' ),
-            $msgContainer = $( '<div/>' ).attr( 'id', 'message-container' )
+            $msgContainer = $( '<div/>' ).addClass( 'message-container' )
                 .css({ 'margin-left': '4px', 'margin-right': '4px' });
         return $newRender.append( $msgContainer );
     },
@@ -676,34 +681,48 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //TODO: these should be either sub-MVs, or handled by events
     _setUpBehaviours : function(){
         // anon users shouldn't have access to any of these
-        if( !this.model || !( this.model.get( 'user' ) && this.model.get( 'user' ).email ) ){ return; }
+        if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
 
         // annotation slide down
         var panel = this,
-            historyAnnotationArea = this.$( '#history-annotation-area' );
-        this.$( '#history-annotate' ).click( function() {
-            if ( historyAnnotationArea.is( ":hidden" ) ) {
-                historyAnnotationArea.slideDown( panel.fxSpeed );
+            // need specific selector ('annotation-display' is used in HDAs, too)
+            $historyAnnotationArea = this.$el.find( '.history-controls .annotation-display' );
+        this.$el.find( '.history-controls .icon-button.annotate' ).click( function() {
+            if( $historyAnnotationArea.is( ":hidden" ) ){
+                $historyAnnotationArea.slideDown( panel.fxSpeed );
             } else {
-                historyAnnotationArea.slideUp( panel.fxSpeed );
+                $historyAnnotationArea.slideUp( panel.fxSpeed );
             }
             return false;
         });
 
-        // title and annotation editable text
-        //NOTE: these use page scoped selectors - so these need to be in the page DOM before they're applicable
-        async_save_text( "history-name-container", "history-name",
-            this.model.renameUrl(), "new_name", 18 );
+        this.$el.find( '.history-name' ).make_text_editable({
+            on_finish: function( newName ){
+                panel.$el.find( '.history-name' ).text( newName );
+                panel.model.save({ name: newName })
+                    .fail( function(){
+                        panel.$el.find( '.history-name' ).text( panel.model.previous( 'name' ) );
+                    });
+            }
+        });
 
-        async_save_text( "history-annotation-container", "history-annotation",
-            this.model.annotateUrl(), "new_annotation", 18, true, 4 );
+        this.$el.find( '.history-controls .annotation' ).make_text_editable({
+            use_textarea : true,
+            on_finish: function( newAnnotation ){
+                panel.$el.find( '.history-controls .annotation' ).text( newAnnotation );
+                panel.model.save({ annotation: newAnnotation })
+                    .fail( function(){
+                        panel.$el.find( '.history-controls .annotation' ).text( panel.model.previous( 'annotation' ) );
+                    });
+            }
+        });
     },
 
     // ------------------------------------------------------------------------ panel events
     /** Update the history size display (curr. upper right of panel).
      */
     updateHistoryDiskSize : function(){
-        this.$el.find( '#history-size' ).text( this.model.get( 'nice_size' ) );
+        this.$el.find( '.history-size' ).text( this.model.get( 'nice_size' ) );
     },
     
     /** Collapse all hda bodies and clear expandedHdas in the storage
@@ -741,39 +760,33 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
 //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
-        this.log( this + '.loadAndDisplayTags', event );
         var panel = this,
-            tagArea = this.$el.find( '#history-tag-area' ),
-            tagElt = tagArea.find( '.tag-elt' );
-        this.log( '\t tagArea', tagArea, ' tagElt', tagElt );
+            $tagArea = this.$el.find( '.history-controls .tags-display' ),
+            $tagElt = $tagArea.find( '.tags' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it
-        if( tagArea.is( ":hidden" ) ){
-            if( !jQuery.trim( tagElt.html() ) ){
+        if( $tagArea.is( ":hidden" ) ){
+            if( !jQuery.trim( $tagElt.html() ) ){
                 // Need to fill tag element.
-                $.ajax({
-                    //TODO: the html from this breaks a couple of times
-                    url: panel.model.tagUrl(),
-                    //url: '/generate_json_error',
-                    error: function( xhr, error, status ) {
-                        panel.log( 'Error loading tag area html', xhr, error, status );
-                        panel.trigger( 'error', panel, xhr, null, _l( "Error loading tags" ) );
-                    },
-                    success: function(tag_elt_html) {
-                        //panel.log( panel + ' tag elt html (ajax)', tag_elt_html );
-                        tagElt.html(tag_elt_html);
-                        tagElt.find("[title]").tooltip();
-                        tagArea.slideDown( panel.fxSpeed );
-                    }
+                var xhr = jQuery.ajax( panel.model.tagUrl() );
+                xhr.fail( function( xhr, status, error ){
+                    panel.log( 'Error loading tag area html', xhr, error, status );
+                    panel.trigger( 'error', panel, xhr, null, _l( "Error loading tags" ) );
+                });
+                xhr.done( function( html ){
+                    //panel.log( panel + ' tag elt html (ajax)', tag_elt_html );
+                    $tagElt.html( html );
+                    $tagElt.find( "[title]" ).tooltip();
+                    $tagArea.slideDown( panel.fxSpeed );
                 });
             } else {
                 // Tag element already filled: show
-                tagArea.slideDown( panel.fxSpeed );
+                $tagArea.slideDown( panel.fxSpeed );
             }
 
         } else {
             // Currently shown: Hide
-            tagArea.slideUp( panel.fxSpeed );
+            $tagArea.slideUp( panel.fxSpeed );
         }
         return false;
     },
@@ -789,7 +802,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             this.indicator.show( 0, callback );
         } else {
             this.$el.fadeOut( speed );
-            this.indicator.show( speed, callback );
+            this.indicator.show( msg, speed, callback );
         }
     },
 
@@ -812,7 +825,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         //console.debug( 'displayMessage', type, msg, details );
 
         this.scrollToTop();
-        var $msgContainer = this.$el.find( '#message-container' ),
+        var $msgContainer = this.$el.find( this.msgsSelector ),
             $msg = $( '<div/>' ).addClass( type + 'message' ).html( msg );
         //console.debug( '  ', $msgContainer );
 
@@ -867,7 +880,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     /** Remove all messages from the panel.
      */
     clearMessages : function(){
-        var $msgContainer = this.$el.find( '#message-container' );
+        var $msgContainer = this.$el.find( this.msgsSelector );
         $msgContainer.empty();
     },
 
@@ -961,7 +974,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     /** Show the over quota message (which happens to be in the history panel).
      */
     showQuotaMessage : function(){
-        var msg = this.$el.find( '#quota-message-container' );
+        var msg = this.$el.find( '.quota-message' );
         //this.log( this + ' showing quota message:', msg, userData );
         if( msg.is( ':hidden' ) ){ msg.slideDown( this.fxSpeed ); }
     },
@@ -970,7 +983,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     /** Hide the over quota message (which happens to be in the history panel).
      */
     hideQuotaMessage : function(){
-        var msg = this.$el.find( '#quota-message-container' );
+        var msg = this.$el.find( '.quota-message' );
         //this.log( this + ' hiding quota message:', msg, userData );
         if( !msg.is( ':hidden' ) ){ msg.slideUp( this.fxSpeed ); }
     },
@@ -1000,7 +1013,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
 //------------------------------------------------------------------------------ TEMPLATES
 HistoryPanel.templates = {
-    historyPanel : Handlebars.templates[ 'template-history-historyPanel' ]
+    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ],
+    anonHistoryPanel : Handlebars.templates[ 'template-history-historyPanel-anon' ]
 };
 
 //==============================================================================

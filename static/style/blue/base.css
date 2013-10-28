@@ -1392,6 +1392,61 @@ div.permissionContainer{padding-left:20px}
 .icon-button.link{background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .icon-button.link-broken{background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px}
+.history-panel [class$="messagesmall"]{margin:0px}
+.history-panel .editable-text{border:solid transparent 1px}
+.history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
+.history-panel .message-container{cursor:pointer}
+.history-panel .message-container [class$=message]{margin:0px}
+.history-panel .history-controls{margin:10px;padding:0px}
+.history-panel .history-title{margin-bottom:4px}
+.history-panel .history-name{word-wrap:break-word;font-weight:bold}
+.history-panel .history-title input{font-weight:bold;margin:-2px 0 0 -4px}
+.history-panel .history-subtitle{margin-bottom:10px}
+.history-panel .history-size{float:left}
+.history-panel .history-secondary-actions{float:right}
+.history-panel .quota-message{display:none;margin:8px 0px 5px 0px}
+.history-panel .tags-display,.history-panel .annotation-display{display:none;margin-bottom:10px}.history-panel .tags-display label,.history-panel .annotation-display label{display:block;margin:0px;padding:0px;font-weight:bold}
+.history-panel .tags-display label:after,.history-panel .annotation-display label:after{content:':'}
+.history-panel .annotation-display textarea{margin:0px;display:block;border-radius:3px;width:100%}
+.history-panel .dataset{border-width:1px 0px 0px 0px}
+.history-panel .dataset:last-child{border-width:1px 0px 1px 0px}
+.history-panel .empty-history-message{display:none;margin:0px 10px 0px 10px}
+.history-panel .tag-button{display:inline-block;height:20px;margin:2px 2px 0px 0px;border:1px solid grey;border-radius:3px 10px 10px 3px;padding:2px 4px 2px 4px;background-color:#EEE;line-height:12px}.history-panel .tag-button .tag-name{margin-right:2px}
+.dataset{border:1px solid #bfbfbf;padding:8px 10px}.dataset .dataset-warnings [class$=messagesmall]{margin:0px 0px 4px 0px;font-size:90%}
+.dataset .dataset-title-bar{cursor:pointer}.dataset .dataset-title-bar .dataset-state-icon{display:inline-block;vertical-align:middle;line-height:16px;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}
+.dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-break:normal;line-height:16px}
+.dataset .dataset-primary-actions{float:right}.dataset .dataset-primary-actions .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
+.dataset .dataset-primary-actions .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
+.dataset .dataset-body{display:none;padding-top:2px}.dataset .dataset-body label{margin:0px;padding:0px}
+.dataset .dataset-body .prompt:after{content:':'}
+.dataset .dataset-body .dataset-datatype,.dataset .dataset-body .dataset-dbkey{display:inline}
+.dataset .dataset-body .dataset-datatype .value:after{content:','}
+.dataset .dataset-body .dataset-actions{padding:2px 0}.dataset .dataset-body .dataset-actions .left{float:left}
+.dataset .dataset-body .dataset-actions .right{float:right}
+.dataset .dataset-body .tags-display{display:none}
+.dataset .dataset-body .annotation-display{display:none}.dataset .dataset-body .annotation-display textarea{margin:0px;display:block;border-radius:3px;width:100%}
+.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:8px 0;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
+.dataset .dataset-body .dataset-peek pre.peek table,.dataset .dataset-body .dataset-peek pre.peek th,.dataset .dataset-body .dataset-peek pre.peek tr,.dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
+.dataset.state-new{background:#eee}.dataset.state-new .state-icon{font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}.dataset.state-new .state-icon:before{content:"\f071"}
+.dataset.state-ok,.dataset.state-failed_metadata{background:#aff1af}.dataset.state-ok .state-icon,.dataset.state-failed_metadata .state-icon{display:none}
+.dataset.state-error{background:#f9c7c5}.dataset.state-error .state-icon{background-image:url(sprite-history-states.png);background-position:0px -15px;width:15px;height:15px;height:15px}
+.dataset.state-empty{background:#f9c7c5}.dataset.state-empty .state-icon{background-image:url(sprite-history-states.png);background-position:0px 0px;width:15px;height:15px;height:15px}
+.dataset.state-running{background:#ffc}.dataset.state-running .state-icon{background-image:url(data_running.gif)}
+.dataset.state-running .dataset-title-bar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important}
+.dataset.state-setting_metadata{background:#ffc}.dataset.state-setting_metadata .state-icon{background-image:url(data_running.gif)}
+.dataset.state-upload{background:#a6e4f7}.dataset.state-upload .state-icon{background-image:url(data_upload.gif)}
+.dataset.state-queued{background:#eee}.dataset.state-queued .state-icon{background-image:url(sprite-history-states.png);background-position:0px -45px;width:15px;height:15px;height:15px}
+.dataset.state-discarded{background:#eee}.dataset.state-discarded .state-icon{line-height:16px;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}.dataset.state-discarded .state-icon:before{content:"\f05e"}
+.dataset.state-noPermission{background:#eee;filter:alpha(opacity=60);-moz-opacity:.60;opacity:.60}.dataset.state-noPermission .state-icon{line-height:16px;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}.dataset.state-noPermission .state-icon:before{content:"\f05e"}
+.dataset.state-paused{background:#d9edf7}.dataset.state-paused .state-icon{font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}.dataset.state-paused .state-icon:before{content:"\f04c"}
+.hda .hda-hid:after{content:':'}
 body.historyPage{background:#dfe5f9;color:#000;margin:5px;border:0;padding:0}
 div.historyLinks{margin:5px 5px}
 div.historyItem{margin:0 -5px;padding:8px 10px;border-top:solid #bfbfbf 1px;border-right:none;word-wrap:break-word;background:#eee}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}
@@ -1409,15 +1464,15 @@ div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.
 div.historyItem-paused{background:#d9edf7}div.historyItem-paused .state-icon{line-height:16px;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}div.historyItem-paused .state-icon:before{content:"\f04c"}
 div.historyItem-new .state-icon{line-height:16px;font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat}div.historyItem-new .state-icon:before{content:"\f071"}
 div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important}
-div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px}
-div.historyItemButtons .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px}
-div.historyItemButtons .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px}
-div.historyItemButtons .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px}
-div.historyItemButtons .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px}
-div.historyItemButtons .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px}
-div.historyItemButtons .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px}
-div.historyItemButtons .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px}
-div.historyItemButtons .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px}
+div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
 div.historyItemBody div{padding-top:2px}
 pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto}pre.peek th{color:white;background:#5f6990}
 pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
