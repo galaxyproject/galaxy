@@ -2033,6 +2033,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     parent_library_id = self.folder.parent_library.id,
                      folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
