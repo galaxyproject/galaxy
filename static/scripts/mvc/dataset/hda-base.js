@@ -198,7 +198,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             
             // add frame manager option onclick event
             var self = this;
-            displayBtnData.onClick = function(){
+            displayBtnData.on_click = function(){
                 Galaxy.frame_manager.frame_new({
                     title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
