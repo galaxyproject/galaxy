@@ -99,13 +99,6 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
                 this.hdas.historyId = newId;
             }
         }, this );
-
-        // debugging events
-        //if( this.logger ){
-        //    this.on( 'all', function( event ){
-        //        this.log( this + '', arguments );
-        //    }, this );
-        //}
     },
 
     //TODO: see base-mvc
@@ -220,7 +213,6 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 
     function getHistory( id ){
         // get the history data
-        //return jQuery.ajax( '/generate_json_error' );
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
     }
     function countHdasFromHistory( historyData ){
@@ -240,7 +232,6 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         }
         var data = ( hdaDetailIds.length )?( { details : hdaDetailIds.join( ',' ) } ):( {} );
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
-        //return jQuery.ajax( '/generate_json_error' );
     }
 
     // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
@@ -258,7 +249,6 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     });
     historyXHR.fail( function( xhr, status, message ){
         // call reject on the outer deferred to allow it's fail callback to run
-        //console.warn( 'getHistoryData.localFailHandler (history)', xhr, status, message );
         df.reject( xhr, 'loading the history' );
     });
 
@@ -270,7 +260,6 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     });
     hdaXHR.fail( function( xhr, status, message ){
         // call reject on the outer deferred to allow it's fail callback to run
-        //console.warn( 'getHistoryData.localFailHandler (hdas)', xhr, status, message );
         df.reject( xhr, 'loading the datasets', { history: historyJSON } );
     });
 

@@ -68,8 +68,9 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
             'purge'         : galaxy_config.root + 'datasets/' + id + '/purge_async',
 
             'display'       : galaxy_config.root + 'datasets/' + id + '/display/?preview=True',
-            'download'      : galaxy_config.root + 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
             'edit'          : galaxy_config.root + 'datasets/' + id + '/edit',
+
+            'download'      : galaxy_config.root + 'datasets/' + id + '/display?to_ext=' + this.get( 'file_ext' ),
             'report_error'  : galaxy_config.root + 'dataset/errors?id=' + id,
             'rerun'         : galaxy_config.root + 'tool_runner/rerun?id=' + id,
             'show_params'   : galaxy_config.root + 'datasets/' + id + '/show_params',
@@ -80,19 +81,9 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
             'tags'      : { 'get': galaxy_config.root + 'tag/get_tagging_elt_async?item_id='
                                     + id + '&item_class=HistoryDatasetAssociation',
                             'set': galaxy_config.root + 'tag/retag?item_id='
-                                    + id + '&item_class=HistoryDatasetAssociation' }
+                                    + id + '&item_class=HistoryDatasetAssociation' },
+            'meta_download' : galaxy_config.root + 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
-        // download links to assoc. metadata files (bam indeces, etc.)
-        var meta_files = this.get( 'meta_files' );
-        if( meta_files ){
-            urls.meta_download = _.map( meta_files, function( meta_file ){
-                return {
-                    url         : galaxy_config.root + 'dataset/get_metadata_file?hda_id='
-                                    + id + '&metadata_name=' + meta_file.file_type,
-                    file_type   : meta_file.file_type
-                };
-            });
-        }
         return urls;
     },
 
@@ -173,6 +164,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ ajax
+
     /** save this HDA, _Mark_ing it as deleted (just a flag) */
     'delete' : function _delete( options ){
         return this.save( { deleted: true }, options );
@@ -192,7 +184,11 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     /** purge this HDA and remove the underlying dataset file from the server's fs */
+//TODO: use, override model.destroy, HDA.delete({ purge: true })
     purge : function _purge( options ){
+        options = options || {};
+        options.url = galaxy_config.root + 'datasets/' + this.get( 'id' ) + '/purge_async';
+
         //TODO: ideally this would be a DELETE call to the api
         //  using purge async for now
         var hda = this,
@@ -337,11 +333,11 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
     initialize : function( models, options ){
         options = options || {};
         this.historyId = options.historyId;
-        this._setUpListeners();
+        //this._setUpListeners();
     },
 
-    _setUpListeners : function(){
-    },
+    //_setUpListeners : function(){
+    //},
 
     // ........................................................................ common queries
     /** Get the ids of every hda in this collection

@@ -30,7 +30,7 @@ For all steps, verify that the generated dependency points to the tip of the spe
 
 6)  Upload a tarball to complex_dependency_test_3_0460 with a tool_dependencies.xml in a subfolder within the tarball.
 
-7)  Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with orphan tool dependencies.
+7)  Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with tool dependencies.
 
 8)  Upload to complex_dependency_test_4_0460 using the url hg://<tool shed url>/repos/user1/hg_tool_dependency_0460.
 
@@ -117,7 +117,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Populate package_bwa_0_5_9_0460 with an orphan tool dependency definition.',
+                          commit_message='Populate package_bwa_0_5_9_0460 with a tool dependency definition.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
 
@@ -218,7 +218,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
     def test_0035_create_repositories_for_url_upload( self ):
         '''Create and populate hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460.'''
         '''
-        This is step 7 - Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with orphan tool dependencies.
+        This is step 7 - Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with tool dependencies.
         '''
         category = test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name='hg_tool_dependency_0460', 
@@ -233,7 +233,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Populate hg_tool_dependency_0460 with an orphan tool dependency definition.',
+                          commit_message='Populate hg_tool_dependency_0460 with a tool dependency definition.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         repository = self.get_or_create_repository( name='hg_subfolder_tool_dependency_0460', 
@@ -248,7 +248,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Populate hg_subfolder_tool_dependency_0460 with an orphan tool dependency definition.',
+                          commit_message='Populate hg_subfolder_tool_dependency_0460 with a tool dependency definition.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
     
@@ -414,7 +414,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Populate hg_repository_dependency_0460 with an orphan tool dependency definition.',
+                          commit_message='Populate hg_repository_dependency_0460 with a tool dependency definition.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         repository = self.get_or_create_repository( name='hg_subfolder_repository_dependency_0460', 
@@ -429,7 +429,7 @@ class TestAutomaticDependencyRevision( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
-                          commit_message='Populate hg_subfolder_repository_dependency_0460 with an orphan tool dependency definition.',
+                          commit_message='Populate hg_subfolder_repository_dependency_0460 with a tool dependency definition.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
     

@@ -34,28 +34,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         ];
     },
 
-    /** Set up js behaviors, event handlers for elements within the given container.
-     *      Overridden from hda-base.
-     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
-     */
-    _setUpBehaviors : function( $container ){
-        hdaBase.HDABaseView.prototype._setUpBehaviors.call( this, $container );
-        //var hdaView = this;
-    },
-
-    // ......................................................................... render warnings
-    /** Render any hda warnings including: is deleted, is purged, is hidden.
-     *      Overrides _render_warnings to include links to further actions (undelete, etc.)).
-     *  @returns {Object} the templated urls
-     *  @see HDABaseView#_render_warnings
-     */
-    _render_warnings : function(){
-        // jQ errs on building dom with whitespace - if there are no messages, trim -> ''
-        return $( jQuery.trim( hdaBase.HDABaseView.templates.messages(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        )));
-    },
-    
     // ......................................................................... edit attr, delete
     /** Render icon-button group for the common, most easily accessed actions.
      *      Overrides _render_titleButtons to include edit and delete buttons.
@@ -64,11 +42,10 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_titleButtons : function(){
         // render the display, edit attr and delete icon-buttons
-        var buttonDiv = $( '<div class="historyItemButtons"></div>' );
-        buttonDiv.append( this._render_displayButton() );
-        buttonDiv.append( this._render_editButton() );
-        buttonDiv.append( this._render_deleteButton() );
-        return buttonDiv;
+        return hdaBase.HDABaseView.prototype._render_titleButtons.call( this ).concat([
+            this._render_editButton(),
+            this._render_deleteButton()
+        ]);
     },
     
 //TODO: move titleButtons into state renderers, remove state checks in the buttons
@@ -81,6 +58,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // DO show if in error (ala previous history panel)
         if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;
@@ -106,8 +84,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             }
         }
         
-        this.editButton = new IconButtonView({ model : new IconButton( editBtnData ) });
-        return this.editButton.render().$el;
+        //this.editButton = new IconButtonView({ model : new IconButton( editBtnData ) });
+        //return this.editButton.render().$el;
+        return new IconButtonView({ model : new IconButton( editBtnData ) }).render().$el;
+        //editBtnData.faIcon = 'fa-icon-pencil';
+        //return this._render_iconButton( editBtnData );
     },
     
     /** Render icon-button to delete this hda.
@@ -123,12 +104,10 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         
         var self = this,
-            id = 'historyItemDeleter-' + self.model.get( 'id' ),
             delete_url = self.urls[ 'delete' ],
             deleteBtnData = {
                 title       : _l( 'Delete' ),
                 href        : delete_url,
-                id          : id,
                 icon_class  : 'delete',
                 on_click    : function() {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
@@ -143,24 +122,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                 enabled     : false
             };
         }
-        this.deleteButton = new IconButtonView({ model : new IconButton( deleteBtnData ) });
-        return this.deleteButton.render().$el;
-    },
-
-    // ......................................................................... render body
-    /** Render the data/metadata summary (format, size, misc info, etc.).
-     *      Overrides _render_hdaSummary to include edit link in dbkey.
-     *  @see HDABaseView#_render_hdaSummary
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_hdaSummary : function(){
-        var modelData = _.extend( this.model.toJSON(), { urls: this.urls } );
-        // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
-        if( this.model.get( 'metadata_dbkey' ) === '?'
-        &&  !this.model.isDeletedOrPurged() ){
-            _.extend( modelData, { dbkey_unknown_and_editable : true });
-        }
-        return hdaBase.HDABaseView.templates.hdaSummary( modelData );
+        //this.deleteButton = new IconButtonView({ model : new IconButton( deleteBtnData ) });
+        //return this.deleteButton.render().$el;
+        return new IconButtonView({ model : new IconButton( deleteBtnData ) }).render().$el;
+        //deleteBtnData.faIcon = 'fa-icon-remove';
+        //return this._render_iconButton( deleteBtnData );
     },
 
     // ......................................................................... primary actions
@@ -173,26 +139,24 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             return null;
         }
         
-        this.errButton = new IconButtonView({ model : new IconButton({
+        return new IconButtonView({ model : new IconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
             target      : 'galaxy_main',
             icon_class  : 'bug'
-        })});
-        return this.errButton.render().$el;
+        })}).render().$el;
     },
     
     /** Render icon-button to re-run the job that created this hda.
      *  @returns {jQuery} rendered DOM
      */
     _render_rerunButton : function(){
-        this.rerunButton = new IconButtonView({ model : new IconButton({
+        return new IconButtonView({ model : new IconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
             target      : 'galaxy_main',
             icon_class  : 'arrow-circle'
-        }) });
-        return this.rerunButton.render().$el;
+        }) }).render().$el;
     },
     
     /** Render an icon-button or popupmenu based on the number of applicable visualizations
@@ -309,24 +273,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     },
     
     // ......................................................................... secondary actions
-    /** Render secondary actions: currently tagging and annotation (if user is allowed).
-     *  @param {Array} buttonRenderingFuncs array of rendering functions appending the results in order
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_secondaryActionButtons : function( buttonRenderingFuncs ){
-        // move to the right (same level as primary)
-        var secondaryActionButtons = $( '<div/>' ),
-            view = this;
-        secondaryActionButtons
-            .attr( 'style', 'float: right;' )
-            .attr( 'id', 'secondary-actions-' + this.model.get( 'id' ) );
-            
-        _.each( buttonRenderingFuncs, function( fn ){
-            secondaryActionButtons.append( fn.call( view ) );
-        });
-        return secondaryActionButtons;
-    },
-
     /** Render icon-button to load and display tagging html.
      *  @returns {jQuery} rendered DOM
      */
@@ -336,13 +282,12 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             return null;
         }
         
-        this.tagButton = new IconButtonView({ model : new IconButton({
+        return new IconButtonView({ model : new IconButton({
             title       : _l( 'Edit dataset tags' ),
             target      : 'galaxy_main',
             href        : this.urls.tags.get,
             icon_class  : 'tags'
-        })});
-        return this.tagButton.render().$el;
+        })}).render().$el;
     },
 
     /** Render icon-button to load and display annotation html.
@@ -354,74 +299,76 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             return null;
         }
 
-        this.annotateButton = new IconButtonView({ model : new IconButton({
+        return new IconButtonView({ model : new IconButton({
             title       : _l( 'Edit dataset annotation' ),
             target      : 'galaxy_main',
             icon_class  : 'annotate'
-        })});
-        return this.annotateButton.render().$el;
+        })}).render().$el;
     },
     
     // ......................................................................... state body renderers
+    /** Render an HDA where the metadata wasn't produced correctly.
+     *      Overridden to add a link to dataset/edit
+     *  @see HDABaseView#_render_body_failed_metadata
+     */
+    _render_body_failed_metadata : function(){
+        // add a message box about the failure at the top of the body then render the remaining body as STATES.OK
+        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: 'galaxy_main' })
+                .text( _l( 'set it manually or retry auto-detection' ) ),
+            $span = $( '<span/>' ).text( _l( 'You may be able to' ) + ' ' ).append( $link ),
+            $body = hdaBase.HDABaseView.prototype._render_body_failed_metadata.call( this );
+        $body.find( '.warningmessagesmall strong' ).append( $span );
+        return $body;
+    },
+
     /** Render an HDA whose job has failed.
      *      Overrides _render_body_error to prepend error report button to primary actions strip.
-     *  @param {jQuery} parent DOM to which to append this body
      *  @see HDABaseView#_render_body_error
      */
-    _render_body_error : function( parent ){
-        hdaBase.HDABaseView.prototype._render_body_error.call( this, parent );
-        var primaryActions = parent.find( '#primary-actions-' + this.model.get( 'id' ) );
-        primaryActions.prepend( this._render_errButton() );
+    _render_body_error : function(){
+        var $body = hdaBase.HDABaseView.prototype._render_body_error.call( this );
+        $body.find( '.dataset-actions .left' ).prepend( this._render_errButton() );
+        return $body;
     },
-        
+
     /** Render an HDA that's done running and where everything worked.
      *      Overrides _render_body_ok to add tag/annotation functionality and additional primary actions
      *  @param {jQuery} parent DOM to which to append this body
      *  @see HDABaseView#_render_body_ok
      */
-    _render_body_ok : function( parent ){
-        // most common state renderer and the most complicated
-        parent.append( this._render_hdaSummary() );
-
+    _render_body_ok : function(){
+        var $body = hdaBase.HDABaseView.prototype._render_body_ok.call( this );
         // return shortened form if del'd
-        //TODO: is this correct? maybe only on purged
         if( this.model.isDeletedOrPurged() ){
-            parent.append( this._render_primaryActionButtons([
-                this._render_downloadButton,
-                this._render_showParamsButton,
-                this._render_rerunButton
-            ]));
-            return;
+            return $body;
         }
-        
-        //NOTE: change the order here
-        parent.append( this._render_primaryActionButtons([
-            this._render_downloadButton,
-            this._render_showParamsButton,
-            this._render_rerunButton,
-            this._render_visualizationsButton
-        ]));
-        parent.append( this._render_secondaryActionButtons([
-            this._render_tagButton,
-            this._render_annotateButton
-        ]));
-        parent.append( '<div class="clear"/>' );
-        
-        parent.append( this._render_tagArea() );
-        parent.append( this._render_annotationArea() );
-        
-        parent.append( this._render_displayAppArea() );
-        this._render_displayApps( parent );
-        parent.append( this._render_peek() );
+        this.makeDbkeyEditLink( $body );
+
+        // more actions/buttons
+        $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+        $body.find( '.dataset-actions .right' ).append([
+            this._render_tagButton(),
+            this._render_annotateButton()
+        ]);
+        return $body;
+    },
+
+    makeDbkeyEditLink : function( $body ){
+        // make the dbkey a link to editing
+        if( this.model.get( 'metadata_dbkey' ) === '?'
+        &&  !this.model.isDeletedOrPurged() ){
+            $body.find( '.dataset-dbkey .value' ).replaceWith(
+                $( '<a target="galaxy_main">?</a>' ).attr( 'href', this.urls.edit ) );
+        }
     },
 
     // ......................................................................... events
     /** event map */
     events : {
-        'click .historyItemTitle'           : 'toggleBodyVisibility',
-        'click .historyItemUndelete'        : function( ev ){ this.model.undelete(); return false; },
-        'click .historyItemUnhide'          : function( ev ){ this.model.unhide();   return false; },
-        'click .historyItemPurge'           : 'confirmPurge',
+        'click .dataset-title-bar'          : 'toggleBodyVisibility',
+        'click .dataset-undelete'           : function( ev ){ this.model.undelete(); return false; },
+        'click .dataset-unhide'             : function( ev ){ this.model.unhide();   return false; },
+        'click .dataset-purge'              : 'confirmPurge',
 
         'click a.icon-button.tags'          : 'loadAndDisplayTags',
         'click a.icon-button.annotate'      : 'loadAndDisplayAnnotation'
@@ -430,115 +377,87 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){
 //TODO: confirm dialog
-        this.model.purge({ url: this.urls.purge });
+        this.model.purge();
         return false;
     },
 
     // ......................................................................... tags
-    /** Render area to display tags.
-     *  @returns {jQuery} rendered DOM
-     */
-//TODO: into sub-MV
-    _render_tagArea : function(){
-        if( !this.hasUser || !this.urls.tags.set ){ return null; }
-        return $( HDAEditView.templates.tagArea(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        ).trim() );
-    },
-
     /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
 //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
-        //BUG: broken with latest
-        //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
         var view = this,
-            tagArea = this.$el.find( '.tag-area' ),
-            tagElt = tagArea.find( '.tag-elt' );
+            $tagArea = this.$el.find( '.tags-display' ),
+            $tagElt = $tagArea.find( '.tags' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
-        if( tagArea.is( ":hidden" ) ){
-            if( !jQuery.trim( tagElt.html() ) ){
+        if( $tagArea.is( ":hidden" ) ){
+            if( !jQuery.trim( $tagElt.html() ) ){
                 // Need to fill tag element.
-                $.ajax({
-                    //TODO: the html from this breaks a couple of times
-                    url: this.urls.tags.get,
-                    error: function( xhr, status, error ){
-                        view.log( "Tagging failed", xhr, status, error );
-                        view.trigger( 'error', view, xhr, {}, _l( "Tagging failed" ) );
-                    },
-                    success: function(tag_elt_html) {
-                        tagElt.html(tag_elt_html);
-                        tagElt.find("[title]").tooltip();
-                        tagArea.slideDown( view.fxSpeed );
-                    }
+                var xhr = $.ajax( this.urls.tags.get );
+                xhr.fail( function( xhr, status, error ){
+                    view.log( "Tagging failed", xhr, status, error );
+                    view.trigger( 'error', view, xhr, {}, _l( "Tagging failed" ) );
+                });
+                xhr.done( function( tagHtml ){
+                    $tagElt.html( tagHtml );
+                    $tagElt.find( "[title]" ).tooltip();
+                    $tagArea.slideDown( view.fxSpeed );
                 });
             } else {
                 // Tag element is filled; show.
-                tagArea.slideDown( view.fxSpeed );
+                $tagArea.slideDown( view.fxSpeed );
             }
         } else {
             // Hide.
-            tagArea.slideUp( view.fxSpeed );
+            $tagArea.slideUp( view.fxSpeed );
         }
         return false;
     },
 
     // ......................................................................... annotations
-    /** Render area to display annotation.
-     *  @returns {jQuery} rendered DOM
-     */
-//TODO: into sub-MV
-    _render_annotationArea : function(){
-        if( !this.hasUser || !this.urls.annotation.get ){ return null; }
-        return $( HDAEditView.templates.annotationArea(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        ).trim() );
-    },
-    
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
     loadAndDisplayAnnotation : function( event ){
 //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayAnnotation', event );
         var view = this,
-            annotationArea = this.$el.find( '.annotation-area' ),
-            annotationElem = annotationArea.find( '.annotation-elt' ),
+            $annotationArea = this.$el.find( '.annotation-display' ),
+            $annotationElem = $annotationArea.find( '.annotation' ),
             setAnnotationUrl = this.urls.annotation.set;
 
         // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-        if ( annotationArea.is( ":hidden" ) ){
-            if( !jQuery.trim( annotationElem.html() ) ){
+        if ( $annotationArea.is( ":hidden" ) ){
+            if( !jQuery.trim( $annotationElem.html() ) ){
                 // Need to fill annotation element.
-                $.ajax({
-                    url: this.urls.annotation.get,
-                    error: function(){
-                        view.log( "Annotation failed", xhr, status, error );
-                        view.trigger( 'error', view, xhr, {}, _l( "Annotation failed" ) );
-                    },
-                    success: function( htmlFromAjax ){
-                        if( htmlFromAjax === "" ){
-                            htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
+                var xhr = $.ajax( this.urls.annotation.get );
+                xhr.fail( function( xhr, status, error ){
+                    view.log( "Annotation failed", xhr, status, error );
+                    view.trigger( 'error', view, xhr, {}, _l( "Annotation failed" ) );
+                });
+                xhr.done( function( html ){
+                    html = html || "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
+                    $annotationElem.html( html );
+                    $annotationArea.find( "[title]" ).tooltip();
+
+                    $annotationElem.make_text_editable({
+                        use_textarea: true,
+                        on_finish: function( newAnnotation ){
+                            $annotationElem.text( newAnnotation );
+                            view.model.save({ annotation: newAnnotation }, { silent: true })
+                                .fail( function(){
+                                    $annotationElem.text( view.model.previous( 'annotation' ) );
+                                });
                         }
-                        annotationElem.html( htmlFromAjax );
-                        annotationArea.find("[title]").tooltip();
-                        
-                        async_save_text(
-                            annotationElem.attr("id"), annotationElem.attr("id"),
-                            setAnnotationUrl,
-                            "new_annotation", 18, true, 4
-                        );
-                        annotationArea.slideDown( view.fxSpeed );
-                    }
+                    });
+                    $annotationArea.slideDown( view.fxSpeed );
                 });
             } else {
-                annotationArea.slideDown( view.fxSpeed );
+                $annotationArea.slideDown( view.fxSpeed );
             }
-            
         } else {
-            // Hide.
-            annotationArea.slideUp( view.fxSpeed );
+            $annotationArea.slideUp( view.fxSpeed );
         }
         return false;
     },
@@ -550,12 +469,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return 'HDAView(' + modelString + ')';
     }
 });
-
-//------------------------------------------------------------------------------
-HDAEditView.templates = {
-    tagArea             : Handlebars.templates[ 'template-hda-tagArea' ],
-    annotationArea      : Handlebars.templates[ 'template-hda-annotationArea' ]
-};
 
 //==============================================================================
 //TODO: these belong somewhere else

@@ -217,7 +217,8 @@ class Registry( object ):
             if sniffers:
                 for elem in sniffers.findall( 'sniffer' ):
                     # Keep an in-memory list of sniffer elems to enable persistence.
-                    self.sniffer_elems.append( elem )
+                    if elem not in self.sniffer_elems:
+                        self.sniffer_elems.append( elem )
                     dtype = elem.get( 'type', None )
                     if dtype:
                         try:
@@ -239,6 +240,8 @@ class Registry( object ):
                                     module = getattr( module, comp )
                             aclass = getattr( module, datatype_class_name )()
                             if deactivate:
+                                if elem in self.sniffer_elems:
+                                    self.sniffer_elems.remove( elem )
                                 for sniffer_class in self.sniff_order:
                                     if sniffer_class.__class__ == aclass.__class__:
                                         self.sniff_order.remove( sniffer_class )
@@ -463,10 +466,10 @@ class Registry( object ):
             target_datatype = elem[2]
             if installed_repository_dict:
                 converter_path = installed_repository_dict[ 'converter_path' ]
-                config_path = os.path.join( converter_path, tool_config )
             else:
-                config_path = os.path.join( self.converters_path, tool_config )
+                converter_path = self.converters_path
             try:
+                config_path = os.path.join( converter_path, tool_config )
                 converter = toolbox.load_tool( config_path )
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
@@ -484,7 +487,8 @@ class Registry( object ):
                             converter.id = tool_dict[ 'guid' ]
                             break
                 if deactivate:
-                    del toolbox.tools_by_id[ converter.id ]
+                    if converter.id in toolbox.tools_by_id:
+                        del toolbox.tools_by_id[ converter.id ]
                     if source_datatype in self.datatype_converters:
                         del self.datatype_converters[ source_datatype ][ target_datatype ]
                     self.log.debug( "Deactivated converter: %s", converter.id )
@@ -496,9 +500,9 @@ class Registry( object ):
                     self.log.debug( "Loaded converter: %s", converter.id )
             except Exception, e:
                 if deactivate:
-                    self.log.exception( "Error deactivating converter (%s): %s" % ( config_path, str( e ) ) )
+                    self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
                 else:
-                    self.log.exception( "Error loading converter (%s): %s" % ( config_path, str( e ) ) )
+                    self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
     def load_display_applications( self, installed_repository_dict=None, deactivate=False ):
         """
         If deactivate is False, add display applications from self.display_app_containers or

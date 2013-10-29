@@ -227,7 +227,6 @@ class UploadController( BaseUIController ):
                             # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
                             # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
                             # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                            # Handle messaging for orphan tool dependencies.
                             orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
                             if orphan_message:
                                 message += orphan_message

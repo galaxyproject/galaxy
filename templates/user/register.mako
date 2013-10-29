@@ -75,7 +75,7 @@
 			var error_text_password_short = 'Please use a password of at least 6 characters';
 			var error_text_password_match = "Passwords don't match";
 
-		    var validForm = true;    
+		    var validForm = true;
 		    
 		    var email = $('#email_input').val();
 		    var name = $('#name_input').val()
@@ -83,7 +83,7 @@
 		    else if (!validateString(email,"email")){ renderError(error_text_email); validForm = false;}
 		    else if (!($('#password_input').val() === $('#password_check_input').val())){ renderError(error_text_password_match); validForm = false;}
 		    else if ($('#password_input').val().length < 6 ){ renderError(error_text_password_short); validForm = false;}
-		    else if (!(validateString(name,"username"))){ renderError(error_text_username_characters); validForm = false;}
+		    else if (name && !(validateString(name,"username"))){ renderError(error_text_username_characters); validForm = false;}
 
 	   		if (!validForm) { 
 		        e.preventDefault();

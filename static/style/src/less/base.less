@@ -15,10 +15,8 @@
     min-width: 256px;
 }
 
-// load galaxy frame styles
+// galaxy sub-components
 @import "frame.less";
-
-// load galaxy upload styles
 @import "upload.less";
 
 // Mixins
@@ -1037,13 +1035,6 @@ div.debug {
 }
 
 
-
-
-
-
-
-
-
 div.odd_row {
     background: @table-bg-accent;
 }
@@ -1436,6 +1427,9 @@ div.permissionContainer {
 }
     
 // ==== History styles ====
+@import "sprite-history-states.less";
+@import "sprite-history-buttons.less";
+@import "history.less";
 
 body.historyPage {
     background: @side-panel-bg;
@@ -1491,7 +1485,7 @@ div.historyItem-failed_metadata {
     }
 }
 
-@import "sprite-history-states.less";
+//@import "sprite-history-states.less";
 
 div.historyItem-error {
     background: @state-danger-bg;

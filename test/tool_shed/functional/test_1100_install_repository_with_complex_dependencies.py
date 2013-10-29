@@ -276,7 +276,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
     def test_0060_verify_tool_dependency_uninstallation( self ):
         '''Uninstall the package_bwa_0_5_9_0100 repository.'''
         '''
-        Uninstall the repository that defines an orphan tool dependency on BWA 0.5.9, and verify
+        Uninstall the repository that defines a tool dependency relationship on BWA 0.5.9, and verify
         that this results in the compiled binary package also being removed.
         '''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )

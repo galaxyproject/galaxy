@@ -891,18 +891,6 @@
         <${cell_type}>
             %if trans.webapp.name == 'galaxy':
                 ${tool_dependency.installation_status | h}
-            %else:
-                %if row_is_header:
-                    ${tool_dependency.is_orphan | h}
-                %else:
-                    <%
-                        if string_as_bool( str( tool_dependency.is_orphan ) ):
-                            is_orphan = 'yes'
-                        else:
-                            is_orphan = 'no'
-                    %>
-                    ${is_orphan | h}
-                %endif
             %endif
         </${cell_type}>
     </tr>

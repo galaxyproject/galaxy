@@ -5,6 +5,7 @@ from galaxy.util import asbool
 from galaxy.web.framework.helpers import time_ago
 from tool_shed.util import common_util
 from tool_shed.util import readme_util
+from tool_shed.util.tool_dependency_util import tool_dependency_is_orphan
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -278,6 +279,14 @@ class ToolDependency( object ):
         self.installation_status = installation_status
         self.repository_id = repository_id
         self.tool_dependency_id = tool_dependency_id
+        # The designation of a ToolDependency into the "orphan" category has evolved over time, and is significantly restricted since the
+        # introduction of the TOOL_DEPENDENCY_DEFINITION repository type.  This designation is still critical, however, in that it handles
+        # the case where a repository contains both tools and a tool_dependencies.xml file, but the definition in the tool_dependencies.xml
+        # file is in no way related to anything defined by any of the contained tool's requirements tag sets.  This is important in that it
+        # is often a result of a typo (e.g., dependency name or version) that differs between the tool dependency definition within the
+        # tool_dependencies.xml file and what is defined in the tool config's <requirements> tag sets.  In these cases, the user should be
+        # presented with a warning message, and this warning message is is in fact displayed if the following is_orphan attribute is True.
+        # This is tricky because in some cases it may be intentional, and tool dependencies that are categorized as "orphan" are in fact valid.
         self.is_orphan = is_orphan
 
     @property
@@ -310,32 +319,29 @@ class Workflow( object ):
         self.repository_metadata_id = repository_metadata_id
         self.repository_id = repository_id
 
-def add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies ):
+def add_orphan_settings_to_tool_dependencies( tool_dependencies, tools ):
     """Inspect all received tool dependencies and label those that are orphans within the repository."""
-    orphan_env_dependencies = orphan_tool_dependencies.get( 'set_environment', None )
+    #orphan_env_dependencies = orphan_tool_dependencies.get( 'set_environment', None )
     new_tool_dependencies = {}
-    if tool_dependencies:
-        for td_key, requirements_dict in tool_dependencies.items():
-            if td_key in [ 'set_environment' ]:
-                # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
-                if orphan_env_dependencies:
-                    new_set_environment_dict_list = []
-                    for set_environment_dict in requirements_dict:
-                        if set_environment_dict in orphan_env_dependencies:
-                            set_environment_dict[ 'is_orphan' ] = True
-                        else:
-                            set_environment_dict[ 'is_orphan' ] = False
-                        new_set_environment_dict_list.append( set_environment_dict )
-                    new_tool_dependencies[ td_key ] = new_set_environment_dict_list
-                else:
-                    new_tool_dependencies[ td_key ] = requirements_dict
-            else:
-                # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
-                if td_key in orphan_tool_dependencies:
-                    requirements_dict[ 'is_orphan' ] = True
-                else:
-                    requirements_dict[ 'is_orphan' ] = False
-                new_tool_dependencies[ td_key ] = requirements_dict
+    for td_key, requirements_dict in tool_dependencies.items():
+        if td_key in [ 'set_environment' ]:
+            # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
+            new_set_environment_dict_list = []
+            for env_requirements_dict in requirements_dict:
+                name = env_requirements_dict[ 'name' ]
+                type = env_requirements_dict[ 'type' ]
+                if tool_dependency_is_orphan( type, name, None, tools ):
+                    env_requirements_dict[ 'is_orphan' ] = True
+                new_set_environment_dict_list.append( env_requirements_dict )
+            new_tool_dependencies[ td_key ] = new_set_environment_dict_list
+        else:
+            # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
+            name = requirements_dict[ 'name' ]
+            type = requirements_dict[ 'type' ]
+            version = requirements_dict[ 'version'] 
+            if tool_dependency_is_orphan( type, name, version, tools ):
+                requirements_dict[ 'is_orphan' ] = True
+            new_tool_dependencies[ td_key ] = requirements_dict
     return new_tool_dependencies
 
 def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
@@ -802,8 +808,16 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     tool_dependencies = metadata[ 'tool_dependencies' ]
                     if trans.webapp.name == 'tool_shed':
                         if 'orphan_tool_dependencies' in metadata:
+                            # The use of the orphan_tool_dependencies category in metadata has been deprecated, but we still need to check in case
+                            # the metadata is out of date.
                             orphan_tool_dependencies = metadata[ 'orphan_tool_dependencies' ]
-                            tool_dependencies = add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies )
+                            tool_dependencies.update( orphan_tool_dependencies )
+                        # Tool dependencies can be categorized as orphans only if the repository contains tools.
+                        if 'tools' not in exclude:
+                            tools = metadata.get( 'tools', [] )
+                            tools.extend( metadata.get( 'invalid_tools', [] ) )
+                            if tools:
+                                tool_dependencies = add_orphan_settings_to_tool_dependencies( tool_dependencies, tools )
                     folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
                                                                                                folder_id,
                                                                                                tool_dependencies,
@@ -967,8 +981,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               readme=None,
                                               installation_status='Installation status',
                                               repository_id=None,
-                                              tool_dependency_id=None,
-                                              is_orphan=None )
+                                              tool_dependency_id=None )
         else:
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
@@ -977,8 +990,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               readme=None,
                                               installation_status=None,
                                               repository_id=None,
-                                              tool_dependency_id=None,
-                                              is_orphan='Orphan' )
+                                              tool_dependency_id=None )
         folder.tool_dependencies.append( tool_dependency )
         not_used_by_local_tools_description = "these dependencies may not be required by tools in this repository"
         for dependency_key, requirements_dict in tool_dependencies.items():
@@ -988,7 +1000,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                     if trans.webapp.name == 'tool_shed':
                         is_orphan = set_environment_dict.get( 'is_orphan', False )
                     else:
-                        # TODO: handle this is Galaxy
+                        # This is probably not necessary to display in Galaxy.
                         is_orphan = False
                     if is_orphan:
                         folder.description = not_used_by_local_tools_description

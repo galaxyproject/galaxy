@@ -597,6 +597,8 @@ class InstallManager( object ):
 
     def __has_tool_dependencies( self, metadata_dict ):
         '''Determine if the provided metadata_dict specifies tool dependencies.'''
+        # The use of the orphan_tool_dependencies category in metadata has been deprecated, but we still need to check in case
+        # the metadata is out of date.
         if 'tool_dependencies' in metadata_dict or 'orphan_tool_dependencies' in metadata_dict:
             return True
         return False
