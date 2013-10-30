@@ -40,6 +40,7 @@ import threading
 import random
 import httplib
 import socket
+import urllib
 from paste import httpserver
 import galaxy.app
 from galaxy.app import UniverseApplication
@@ -150,6 +151,21 @@ def run_tests( test_config ):
     return test_runner.run( tests )
 
 
+def __copy_database_template( source, db_path ):
+    """
+    Copy a 'clean' sqlite template database (from file or URL) to specified
+    database path.
+    """
+    os.makedirs( os.path.dirname( db_path ) )
+    if os.path.exists( source ):
+        shutil.copy( source, db_path )
+        assert os.path.exists( db_path )
+    elif source.startswith("http"):
+        urllib.urlretrieve( source, db_path )
+    else:
+        raise Exception( "Failed to copy database template from source %s" % source )
+
+
 def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
@@ -198,6 +214,8 @@ def main():
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
+
+    database_auto_migrate = False
 
     if start_server:
         psu_production = False
@@ -259,7 +277,16 @@ def main():
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
-                database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe.sqlite' )
+                db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
+                if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+                    # Middle ground between recreating a completely new
+                    # database and pointing at existing database with
+                    # GALAXY_TEST_DBURI. The former requires a lot of setup
+                    # time, the latter results in test failures in certain
+                    # cases (namely tool shed tests expecting clean database).
+                    __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+                    database_auto_migrate = True
+                database_connection = 'sqlite:///%s' % db_path
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
@@ -276,6 +303,7 @@ def main():
                        allow_user_creation=True,
                        allow_user_deletion=True,
                        database_connection=database_connection,
+                       database_auto_migrate=database_auto_migrate,
                        datatype_converters_config_file="datatype_converters_conf.xml.sample",
                        file_path=file_path,
                        id_secret='changethisinproductiontoo',
