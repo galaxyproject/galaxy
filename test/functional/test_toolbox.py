@@ -3,7 +3,7 @@ import new
 from galaxy.tools.parameters import grouping
 from base.twilltestcase import TwillTestCase
 import galaxy.model
-from galaxy.model.orm import *
+from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
 
 toolbox = None
@@ -13,6 +13,23 @@ class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
 
     def do_it( self, testdef, shed_tool_id=None ):
+        """
+        Run through a tool test case.
+        """
+        self.__handle_test_def_errors( testdef )
+
+        latest_history = self.__setup_test_history()
+
+        self.__setup_test_data( testdef, shed_tool_id )
+
+        data_list = self.__run_tool( testdef )
+        self.assertTrue( data_list )
+
+        self.__verify_outputs( testdef, shed_tool_id, data_list )
+
+        self.__delete_history( latest_history )
+
+    def __handle_test_def_errors(self, testdef):
         # If the test generation had an error, raise
         if testdef.error:
             if testdef.exception:
@@ -20,6 +37,7 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
 
+    def __setup_test_history( self ):
         # Start with a new history
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -33,7 +51,9 @@ class ToolTestCase( TwillTestCase ):
         assert latest_history is not None, "Problem retrieving latest_history from database"
         if len( self.get_history_as_data_list() ) > 0:
             raise AssertionError("ToolTestCase.do_it failed")
+        return latest_history
 
+    def __setup_test_data( self, testdef, shed_tool_id ):
         # Upload any needed files
         for fname, extra in testdef.required_files:
             metadata = extra.get( 'metadata', [] )
@@ -44,9 +64,11 @@ class ToolTestCase( TwillTestCase ):
                               metadata=metadata,
                               composite_data=composite_data,
                               shed_tool_id=shed_tool_id )
+
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
             #Post upload attribute editing
             edit_attributes = extra.get( 'edit_attributes', [] )
+
             #currently only renaming is supported
             for edit_att in edit_attributes:
                 if edit_att.get( 'type', None ) == 'name':
@@ -60,6 +82,7 @@ class ToolTestCase( TwillTestCase ):
                 else:
                     raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
 
+    def __run_tool( self, testdef ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         all_inputs = {}
@@ -98,21 +121,30 @@ class ToolTestCase( TwillTestCase ):
             data_list = self.get_history_as_data_list()
             if job_finish_by_output_count and len( testdef.outputs ) > ( len( data_list ) - job_finish_by_output_count ):
                 data_list = None
-        self.assertTrue( data_list )
+        return data_list
+
+    def __verify_outputs( self, testdef, shed_tool_id, data_list ):
+        maxseconds = testdef.maxseconds
+
         elem_index = 0 - len( testdef.outputs )
         for output_tuple in testdef.outputs:
-            name, outfile, attributes = output_tuple
             # Get the correct hid
             elem = data_list[ elem_index ]
             self.assertTrue( elem is not None )
-            elem_hid = elem.get( 'hid' )
+            self.__verify_output( output_tuple, shed_tool_id, elem, maxseconds=maxseconds )
             elem_index += 1
+
+    def __verify_output( self, output_tuple, shed_tool_id, elem, maxseconds ):
+            name, outfile, attributes = output_tuple
+            elem_hid = elem.get( 'hid' )
             try:
-                self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes, shed_tool_id=shed_tool_id )
+                self.verify_dataset_correctness( outfile, hid=elem_hid, attributes=attributes, shed_tool_id=shed_tool_id )
             except Exception:
                 print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
                 print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
                 raise
+
+    def __delete_history( self, latest_history ):
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
