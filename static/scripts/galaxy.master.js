@@ -77,7 +77,7 @@ var GalaxyMasterIcon = Backbone.View.extend(
     options:
     {
         id              : "galaxy-icon",
-        icon            : "fa-icon-cog",
+        icon            : "fa-cog",
         tooltip         : "galaxy-icon",
         with_number     : false,
         on_click        : function() { alert ('clicked') },
@@ -150,7 +150,7 @@ var GalaxyMasterIcon = Backbone.View.extend(
     template: function (options)
     {
         var tmpl =  '<div id=' + options.id + ' class="symbol">' +
-                        '<div class="icon fa-icon-2x ' + options.icon + '"></div>';
+                        '<div class="icon fa fa-2x ' + options.icon + '"></div>';
         if (options.with_number)
             tmpl+=      '<div class="number"></div>';
         tmpl +=     '</div>';

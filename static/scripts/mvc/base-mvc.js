@@ -226,7 +226,7 @@ function LoadingIndicator( $where, options ){
     function render(){
         var html = [
             '<div class="loading-indicator">',
-                '<span class="fa-icon-spinner fa-icon-spin fa-icon-large" style="color: grey"></span>',
+                '<span class="fa fa-spinner fa-spin fa-lg" style="color: grey"></span>',
                 '<span style="margin-left: 8px; color: grey"><i>loading...</i></span>',
             '</div>'
         ].join( '\n' );

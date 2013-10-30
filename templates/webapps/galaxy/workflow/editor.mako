@@ -372,7 +372,7 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa-icon-cog"></span></a>
+            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}

@@ -25,11 +25,11 @@ var GalaxyUpload = Backbone.View.extend(
     
     // states
     state : {
-        init    : 'fa-icon-trash',
-        queued  : 'fa-icon-spinner fa-icon-spin',
+        init    : 'fa fa-trash-o',
+        queued  : 'fa fa-spinner fa-spin',
         running : '__running__',
-        success : 'fa-icon-ok',
-        error   : 'fa-icon-warning-sign'
+        success : 'fa fa-check',
+        error   : 'fa fa-exclamation-triangle'
     },
     
     // counter
@@ -66,7 +66,7 @@ var GalaxyUpload = Backbone.View.extend(
         var self = this;
         this.button_show = new mod_master.GalaxyMasterIcon (
         {
-            icon        : 'fa-icon-upload',
+            icon        : 'fa-arrow-circle-o-up',
             tooltip     : 'Upload Files',
             on_click    : function(e) { self.event_show(e) },
             on_unload   : function() {
