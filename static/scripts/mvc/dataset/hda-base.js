@@ -19,7 +19,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     //logger              : console,
 
     tagName     : "div",
-    className   : "historyItemContainer",
+    className   : "dataset hda history-panel-hda",
+    id          : function(){ return 'hda-' + this.model.get( 'id' ); },
 
     fxSpeed     : 'fast',
 
@@ -67,55 +68,50 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
     // ......................................................................... render main
     /** Render this HDA, set up ui.
-     *  @fires rendered:ready when rendered and NO running HDAs
-     *  @fires rendered when rendered and running HDAs
-     *  @fires rendered:initial on first render with running HDAs
-     *  @fires rendered:initial:ready when first rendered and NO running HDAs
+     *  @param {Boolean} fade   whether or not to fade out/in when re-rendering
+     *  @fires rendered when rendered
+     *  @fires rendered:ready when first rendered and NO running HDAs
      *  @returns {Object} this HDABaseView
      */
-    render : function(){
-        var view = this,
-            id = this.model.get( 'id' ),
-            state = this.model.get( 'state' ),
-            itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id ),
-            initialRender = ( this.$el.children().size() === 0 );
-
-        this.$el.attr( 'id', 'historyItemContainer-' + id );
+    render : function( fade ){
+        fade = ( fade === undefined )?( true ):( fade );
+        var view = this;
 
         //HACK: hover exit doesn't seem to be called on prev. tooltips when RE-rendering - so: no tooltip hide
         // handle that here by removing previous view's tooltips
         this.$el.find("[title]").tooltip( "destroy" );
 
-        /** web controller urls for functions relating to this hda. */
+        // re-get web controller urls for functions relating to this hda. (new model data may have changed this)
         this.urls = this.model.urls();
 
-        itemWrapper
-            .addClass( 'historyItemWrapper' ).addClass( 'historyItem' )
-            .addClass( 'historyItem-' + state );
+        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
+        var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
+        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
+        $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
+        this._setUpBehaviors( $newRender );
 
-        itemWrapper.append( this._render_warnings() );
-        itemWrapper.append( this._render_titleBar() );
-
-        //NOTE: only sets behaviors on title and warnings - body will set up it's own
-        this._setUpBehaviors( itemWrapper );
-
-        this.body = $( this._render_body() );
-        itemWrapper.append( this.body );
-
-        // transition...
-        this.$el.fadeOut( this.fxSpeed, function(){
-            view.$el.children().remove();
-            view.$el.append( itemWrapper ).fadeIn( view.fxSpeed, function(){
-                view.log( view + ' rendered:', view.$el );
-
-                var renderedEventName = 'rendered';
-                if( initialRender ){
-                    renderedEventName += ':initial';
-                } else if( view.model.inReadyState() ){
-                    renderedEventName += ':ready';
-                }
-                view.trigger( renderedEventName );
-            });
+        // fade the old render out (if desired)
+        if( fade ){
+            $( view ).queue( function( next ){ this.$el.fadeOut( view.fxSpeed, next ); });
+        }
+        // empty the old render, update to any new HDA state, swap in the new render contents
+        $( view ).queue( function( next ){
+            this.$el.empty()
+                .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
+                .append( $newRender.children() );
+            next();
+        });
+        // fade the new in
+        if( fade ){
+            $( view ).queue( function( next ){ this.$el.fadeIn( view.fxSpeed, next ); });
+        }
+        // trigger an event to know we're ready
+        $( view ).queue( function( next ){
+            this.trigger( 'rendered', view );
+            if( this.model.inReadyState() ){
+                this.trigger( 'rendered:ready', view );
+            }
+            next();
         });
         return this;
     },
@@ -130,35 +126,39 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         $container.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 
-    // ................................................................................ RENDER titlebar
-    /** Render any hda warnings including: is deleted, is purged, is hidden.
-     *      (including links to further actions (undelete, etc.))
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_warnings : function(){
-        // jQ errs on building dom with whitespace - if there are no messages, trim -> ''
-        return $( jQuery.trim( HDABaseView.templates.messages( this.model.toJSON() )));
-    },
-    
-    /** Render the part of an hda always shown (whether the body is expanded or not): title link, title buttons.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_titleBar : function(){
-        var titleBar = $( '<div class="historyItemTitleBar" style="overflow: hidden"></div>' );
-        titleBar.append( this._render_titleButtons() );
-        titleBar.append( '<span class="state-icon"></span>' );
-        titleBar.append( this._render_titleLink() );
-        return titleBar;
-    },
-
+    // ................................................................................ titlebar buttons
     /** Render icon-button group for the common, most easily accessed actions.
      *  @returns {jQuery} rendered DOM
      */
     _render_titleButtons : function(){
-        // render the display, edit attr and delete icon-buttons
-        var buttonDiv = $( '<div class="historyItemButtons"></div>' );
-        buttonDiv.append( this._render_displayButton() );
-        return buttonDiv;
+        // render just the display for read-only
+        return [ this._render_displayButton() ];
+    },
+
+    _render_iconButton : function( options ){
+        options = options || {};
+        //options.classes = [ 'icon-button', 'menu-button' ].concat( options.classes || [] );
+        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
+        //options.classes = [ 'btn' ].concat( options.classes || [] );
+        //options.classes = options.classes || [];
+        if( options.disabled ){
+            options.classes.push( 'disabled' );
+        }
+
+        var button = [
+            '<a class="', options.classes.join( ' ' ), '"',
+                    (( options.title )?   ( ' title="' + options.title + '"' ):( '' )),
+                    (( options.target )?  ( ' target="' + options.target + '"' ):( '' )),
+                    ' href="', (( options.href )?( options.href ):( 'javascript:void(0);' )), '">',
+                // could go with something less specific here - like 'html'
+                '<span class="', options.faIcon, '"></span>',
+            '</a>'
+        ].join( '' );
+        button = $( button );
+        if( _.isFunction( options.onClick ) ){
+            button.click( options.onClick );
+        }
+        return button;
     },
     
     /** Render icon-button to display this hda in the galaxy main iframe.
@@ -168,12 +168,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // don't show display if not viewable or not accessible
         // (do show if in error, running)
         if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;
         }
-        //NOTE: line 88 in history_common.mako should be handled by the url template generation
         
         var displayBtnData = {
             icon_class  : 'display',
@@ -210,52 +210,48 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
         return this.displayButton.render().$el;
+        //displayBtnData.faIcon = 'fa-icon-eye-open';
+        //return this._render_iconButton( displayBtnData );
     },
     
-    /** Render the hid and hda.name as a link (that will expand the body).
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_titleLink : function(){
-        return $( jQuery.trim( HDABaseView.templates.titleLink( this.model.toJSON() )));
-    },
-
-    // ......................................................................... body
-    /** Render the data/metadata summary (format, size, misc info, etc.).
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_hdaSummary : function(){
-        var modelData = _.extend( this.model.toJSON(), { urls: this.urls } );
-        return HDABaseView.templates.hdaSummary( modelData );
-    },
-
     // ......................................................................... primary actions
-    /** Render the icon-buttons gen. placed underneath the hda summary (e.g. download, show params, etc.)
-     *  @param {Array} buttonRenderingFuncs array of rendering functions appending the results in order
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_primaryActionButtons : function( buttonRenderingFuncs ){
-        var view = this,
-            primaryActionButtons = $( '<div/>' ).attr( 'id', 'primary-actions-' + this.model.get( 'id' ) );
-        _.each( buttonRenderingFuncs, function( fn ){
-            primaryActionButtons.append( fn.call( view ) );
-        });
-        return primaryActionButtons;
-    },
-    
     /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this hda.
      *  @returns {jQuery} rendered DOM
      */
     _render_downloadButton : function(){
         // don't show anything if the data's been purged
         if( this.model.get( 'purged' ) || !this.model.hasData() ){ return null; }
-        
+        var urls = this.urls,
+            meta_files = this.model.get( 'meta_files' );
+
         // return either: a single download icon-button (if there are no meta files)
+        if( _.isEmpty( meta_files ) ){
+            return $([ '<a href="', urls.download, '" title="', _l( 'Download' ),
+                          '" class="icon-button disk"></a>' ].join( '' ) );
+        }
+
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
-        var downloadLinkHTML = HDABaseView.templates.downloadLinks(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        );
-        //this.log( this + '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
-        return $( downloadLinkHTML.trim() );
+//TODO: Popupmenu
+        var menuId = 'dataset-' + this.model.get( 'id' ) + '-popup',
+            html = [
+                '<div popupmenu="' + menuId + '">',
+                    '<a class="action-button" href="' + urls.download + '">', _l( 'Download Dataset' ), '</a>',
+                    '<a>' + _l( 'Additional Files' ) + '</a>',
+
+                    _.map( meta_files, function( meta_file ){
+                        return [
+                            '<a class="action-button" href="', urls.meta_download + meta_file.file_type, '">',
+                                _l( 'Download' ), ' ', meta_file.file_type,
+                            '</a>'
+                        ].join( '' );
+                    }).join( '\n' ),
+
+                '</div>',
+                '<div style="float:left;" class="menubutton split popup" id="' + menuId + '">',
+                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-button disk"></a>',
+                '</div>'
+            ].join( '\n' );
+        return $( html );
     },
     
     /** Render icon-button to show the input and output (stdout/err) for the job that created this hda.
@@ -263,62 +259,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      */
     _render_showParamsButton : function(){
         // gen. safe to show in all cases
-        this.showParamsButton = new IconButtonView({ model : new IconButton({
+        return new IconButtonView({ model : new IconButton({
             title       : _l( 'View details' ),
             href        : this.urls.show_params,
             target      : 'galaxy_main',
             icon_class  : 'information'
-        }) });
-        return this.showParamsButton.render().$el;
-    },
-    
-    // ......................................................................... other elements
-    /** Render the area for display application links.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_displayAppArea : function(){
-        return $( '<div/>' ).addClass( 'display-apps' );
-    },
-
-    /** Render links to external genome display applications (igb, gbrowse, etc.).
-     *  @param {jQuery} $parent  the jq node to search for .display-apps and render into to (defaults to this.$el)
-     */
-//TODO: move into visualization button
-    _render_displayApps : function( $parent ){
-        $parent = $parent || this.$el;
-        var $displayAppsDiv = $parent.find( 'div.display-apps' ),
-            display_types = this.model.get( 'display_types' ),
-            display_apps  = this.model.get( 'display_apps' );
-
-        if( ( !this.model.hasData() )
-        ||  ( !$parent || !$parent.length )
-        ||  ( !$displayAppsDiv.length ) ){
-            return;
-        }
-
-        $displayAppsDiv.html( null );
-        if( !_.isEmpty( display_types ) ){
-            //this.log( this + 'display_types:', this.model.get( 'urls' ).display_types );
-            $displayAppsDiv.append( HDABaseView.templates.displayApps({ displayApps : display_types }) );
-        }
-        if( !_.isEmpty( display_apps ) ){
-            //this.log( this + 'display_apps:',  this.model.get( 'urls' ).display_apps );
-            $displayAppsDiv.append( HDABaseView.templates.displayApps({ displayApps : display_apps }) );
-        }
-    },
-            
-    /** Render the data peek.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_peek : function(){
-        var peek = this.model.get( 'peek' );
-        if( !peek ){ return null; }
-        return $( '<div/>' ).append(
-            $( '<pre/>' )
-                .attr( 'id', 'peek' + this.model.get( 'id' ) )
-                .addClass( 'peek' )
-                .append( peek )
-        );
+        }) }).render().$el;
     },
     
     // ......................................................................... state body renderers
@@ -326,169 +272,142 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_body : function(){
-        var $body = $( '<div/>' )
-            .attr( 'id', 'info-' + this.model.get( 'id' ) )
-            .addClass( 'historyItemBody' )
-            .attr( 'style', 'display: none' );
-
+        var $body = $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ),
+            // cheesy: get function by assumed matching name
+            renderFn = this[ '_render_body_' + this.model.get( 'state' ) ];
+        if( _.isFunction( renderFn ) ){
+            $body = renderFn.call( this );
+        }
+        // only render the body html if it's being shown
         if( this.expanded ){
-            // only render the body html if it's being shown
-            this._render_body_html( $body );
             $body.show();
         }
         return $body;
     },
 
-    /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
-     *  @param {jQuery} body the body element to append the html to
-     */
-    _render_body_html : function( $body ){
-        //this.log( this + '_render_body' );
-        $body.empty();
-
-        var modelState = this.model.get( 'state' );
-        // cheesy get function by assumed matching name
-        var renderFnName = '_render_body_' + modelState,
-            renderFn = this[ renderFnName ];
-        if( _.isFunction( renderFn ) ){
-            this[ renderFnName ]( $body );
-        } else {
-            $body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
-        }
-        $body.append( '<div style="clear: both"></div>' );
-        this._setUpBehaviors( $body );
+    /** helper for rendering the body in the common cases */
+    _render_stateBodyHelper : function( body, primaryButtonArray ){
+        primaryButtonArray = primaryButtonArray || [];
+        var view = this,
+            $body = $( HDABaseView.templates.body( _.extend( this.model.toJSON(), { body: body })));
+        $body.find( '.dataset-actions .left' ).append(
+            _.map( primaryButtonArray, function( renderingFn ){
+                return renderingFn.call( view );
+            })
+        );
+        return $body;
     },
 
     /** Render a new dataset - this should be a transient state that's never shown
      *      in case it does tho, we'll make sure there's some information here
      *  @param {jQuery} parent DOM to which to append this body
      */
-    _render_body_new : function( parent ){
-        var newMsg = _l( 'This is a new dataset and not all of its data are available yet' );
-        parent.append( $( '<div>' + _l( newMsg ) + '</div>' ) );
+    _render_body_new : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'This is a new dataset and not all of its data are available yet' ) + '</div>'
+        );
+    },
+    /** Render inaccessible, not-owned by curr user. */
+    _render_body_noPermission : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'You do not have permission to view this dataset' ) + '</div>'
+        );
+    },
+    /** Render an HDA which was deleted during upload. */
+    _render_body_discarded : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'The job creating this dataset was cancelled before completion' ) + '</div>',
+            this.defaultPrimaryActionButtonRenderers
+        );
+    },
+    /** Render an HDA whose job is queued. */
+    _render_body_queued : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'This job is waiting to run' ) + '</div>',
+            this.defaultPrimaryActionButtonRenderers
+        );
+    },
+    /** Render an HDA still being uploaded. */
+    _render_body_upload : function(){
+        return this._render_stateBodyHelper( '<div>' + _l( 'This dataset is currently uploading' ) + '</div>' );
+    },
+    /** Render an HDA where the metadata is still being determined. */
+    _render_body_setting_metadata : function(){
+        return this._render_stateBodyHelper( '<div>' + _l( 'Metadata is being auto-detected' ) + '</div>' );
+    },
+    /** Render an HDA whose job is running. */
+    _render_body_running : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'This job is currently running' ) + '</div>',
+            this.defaultPrimaryActionButtonRenderers
+        );
+    },
+    /** Render an HDA whose job is paused. */
+    _render_body_paused: function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume' ) + '</div>',
+            this.defaultPrimaryActionButtonRenderers
+        );
     },
 
-    /** Render inaccessible, not-owned by curr user.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_noPermission : function( parent ){
-        parent.append( $( '<div>' + _l( 'You do not have permission to view this dataset' ) + '</div>' ) );
-    },
-    
-    /** Render an HDA still being uploaded.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_upload : function( parent ){
-        parent.append( $( '<div>' + _l( 'Dataset is uploading' ) + '</div>' ) );
-    },
-        
-    /** Render an HDA whose job is queued.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_queued : function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is waiting to run' ) + '</div>' ) );
-        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
-    },
-
-    /** Render an HDA whose job is paused.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_paused: function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is paused. '
-                        + 'Use the "Resume Paused Jobs" in the history menu to resume' ) + '</div>' ) );
-        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
-    },
-        
-    /** Render an HDA whose job is running.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_running : function( parent ){
-        parent.append( '<div>' + _l( 'Job is currently running' ) + '</div>' );
-        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
-    },
-        
-    /** Render an HDA whose job has failed.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_error : function( parent ){
+    /** Render an HDA whose job has failed. */
+    _render_body_error : function(){
+        var html = _l( 'An error occurred with this dataset' )
+            + ': <i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>';
         if( !this.model.get( 'purged' ) ){
-            parent.append( $( '<div>' + this.model.get( 'misc_blurb' ) + '</div>' ) );
+            html = '<div>' + this.model.get( 'misc_blurb' ) + '</div>' + html;
         }
-        parent.append( ( _l( 'An error occurred with this dataset' ) + ': '
-                       + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
-        parent.append( this._render_primaryActionButtons(
+        return this._render_stateBodyHelper( html,
             this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])
-        ));
+        );
     },
         
-    /** Render an HDA which was deleted during upload.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_discarded : function( parent ){
-        parent.append( '<div>' + _l( 'The job creating this dataset was cancelled before completion' ) + '.</div>' );
-        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
+    /** Render an empty/no data HDA. */
+    _render_body_empty : function(){
+        return this._render_stateBodyHelper(
+            '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>',
+            this.defaultPrimaryActionButtonRenderers
+        );
     },
         
-    /** Render an HDA where the metadata is still being determined.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_setting_metadata : function( parent ){
-        parent.append( $( '<div>' + _l( 'Metadata is being auto-detected' ) + '.</div>' ) );
-    },
-    
-    /** Render an empty/no data HDA.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_empty : function( parent ){
-        parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
-        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
-    },
-        
-    /** Render an HDA where the metadata wasn't produced correctly.
-     *  @param {jQuery} parent DOM to which to append this body
-     */
-    _render_body_failed_metadata : function( parent ){
-        // add a message box about the failure at the top of the body...
-        parent.append( $( HDABaseView.templates.failedMetadata(
-            _.extend( this.model.toJSON(), { urls: this.urls } )
-        )));
-        //...then render the remaining body as STATES.OK (only diff between these states is the box above)
-        this._render_body_ok( parent );
+    /** Render an HDA where the metadata wasn't produced correctly. */
+    _render_body_failed_metadata : function(){
+        // add a message box about the failure at the top of the body then render the remaining body as STATES.OK
+        var $warning = $( '<div class="warningmessagesmall"></div>' )
+                .append( $( '<strong/>' ).text( _l( 'An error occurred setting the metadata for this dataset' ) ) ),
+            $body = this._render_body_ok();
+        $body.prepend( $warning );
+        return $body;
     },
         
     /** Render an HDA that's done running and where everything worked.
      *  @param {jQuery} parent DOM to which to append this body
      */
-    _render_body_ok : function( parent ){
+    _render_body_ok : function(){
         // most common state renderer and the most complicated
-        parent.append( this._render_hdaSummary() );
+        var view = this,
+            $body = $( HDABaseView.templates.body( this.model.toJSON() ) ),
+            // prepend the download btn to the defaults and render
+            btnRenderers = [ this._render_downloadButton ].concat( this.defaultPrimaryActionButtonRenderers );
+        $body.find( '.dataset-actions .left' ).append(
+            _.map( btnRenderers, function( renderingFn ){
+                return renderingFn.call( view );
+            }));
 
-        // return shortened form if del'd
+        // return shortened form if del'd (no display apps or peek?)
         if( this.model.isDeletedOrPurged() ){
-            parent.append( this._render_primaryActionButtons([
-                this._render_downloadButton,
-                this._render_showParamsButton
-            ]));
-            return;
+            return $body;
         }
-        
-        //NOTE: change the order here
-        parent.append( this._render_primaryActionButtons([
-            this._render_downloadButton,
-            this._render_showParamsButton
-        ]));
-        parent.append( '<div class="clear"/>' );
-        
-        parent.append( this._render_displayAppArea() );
-        this._render_displayApps( parent );
-        parent.append( this._render_peek() );
+
+        //this._render_displayApps( $body.children( '.dataset-display-applications' ) );
+        return $body;
     },
     
     // ......................................................................... events
     /** event map */
     events : {
         // expand the body when the title is clicked
-        'click .historyItemTitle'           : 'toggleBodyVisibility'
+        'click .dataset-title-bar'           : 'toggleBodyVisibility'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -499,7 +418,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expand ){
-        expand = ( expand === undefined )?( !this.body.is( ':visible' ) ):( expand );
+        var $body = this.$el.find( '.dataset-body' );
+        expand = ( expand === undefined )?( !$body.is( ':visible' ) ):( expand );
         if( expand ){
             this.expandBody();
         } else {
@@ -514,15 +434,14 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var hdaView = this;
 
         function _renderBodyAndExpand(){
-            hdaView._render_body_html( hdaView.body );
-            hdaView.body.slideDown( hdaView.fxSpeed, function(){
+            hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
                 hdaView.expanded = true;
                 hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
             });
         }
         // fetch first if no details in the model
         if( this.model.inReadyState() && !this.model.hasDetails() ){
-            this.model.fetch().done( function( model ){
+            this.model.fetch({ silent: true }).always( function( model ){
                 _renderBodyAndExpand();
             });
         } else {
@@ -535,7 +454,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      */
     collapseBody : function(){
         var hdaView = this;
-        this.body.slideUp( hdaView.fxSpeed, function(){
+        this.$el.children( '.dataset-body' ).slideUp( hdaView.fxSpeed, function(){
             hdaView.expanded = false;
             hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
         });
@@ -564,14 +483,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
 //------------------------------------------------------------------------------ TEMPLATES
 HDABaseView.templates = {
-    warningMsg          : Handlebars.templates[ 'template-warningmessagesmall' ],
-
-    messages            : Handlebars.templates[ 'template-hda-warning-messages' ],
-    titleLink           : Handlebars.templates[ 'template-hda-titleLink' ],
-    hdaSummary          : Handlebars.templates[ 'template-hda-hdaSummary' ],
-    downloadLinks       : Handlebars.templates[ 'template-hda-downloadLinks' ],
-    failedMetadata      : Handlebars.templates[ 'template-hda-failedMetadata' ],
-    displayApps         : Handlebars.templates[ 'template-hda-displayApps' ]
+    skeleton            : Handlebars.templates[ 'template-hda-skeleton' ],
+    body                : Handlebars.templates[ 'template-hda-body' ]
 };
 
 //==============================================================================

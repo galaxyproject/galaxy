@@ -206,7 +206,7 @@ var GalaxyUpload = Backbone.View.extend(
             return null;
             
         // configure uploadbox
-        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
+        this.uploadbox.configure({url : galaxy_config.root + "api/tools", paramname : "files_0|file_data"});
         
         // configure tool
         tool_input = {};
