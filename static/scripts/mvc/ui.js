@@ -5,10 +5,8 @@
 /**
  * backbone model for icon buttons
  */
-var IconButton = Backbone.Model.extend(
-{
-    defaults:
-    {
+var IconButton = Backbone.Model.extend({
+    defaults: {
         title           : "",
         icon_class      : "",
         on_click        : null,
@@ -26,105 +24,85 @@ var IconButton = Backbone.Model.extend(
 /**
  *  backbone view for icon buttons
  */
-var IconButtonView = Backbone.View.extend(
-{    
-    // initialize
-    initialize: function()
-    {
+var IconButtonView = Backbone.View.extend({
+
+    initialize : function(){
         // better rendering this way
         this.model.attributes.tooltip_config = { placement : 'bottom' };
-        this.model.bind('change', this.render, this);
+        this.model.bind( 'change', this.render, this );
     },
-    
-    // render
-    render: function()
-    {
-        // hide tooltip
-        this.$el.tooltip('hide');
-        
-        // create element
-        var new_elem = this.template(this.model.attributes);
-        
-        // configure tooltip
-        new_elem.tooltip(this.model.get('tooltip_config'));
-        
-        // replace
-        this.$el.replaceWith(new_elem);
-        this.setElement(new_elem);
 
-        // return
+    render : function( ){
+        // hide tooltip
+        this.$el.tooltip( 'hide' );
+        
+        var new_elem = this.template( this.model.toJSON() );
+        // configure tooltip
+        new_elem.tooltip( this.model.get( 'tooltip_config' ));
+        this.$el.replaceWith( new_elem );
+        this.setElement( new_elem );
         return this;
     },
     
-    // events
-    events:
-    {
+    events : {
         'click' : 'click'
     },
     
-    // click
-    click: function( event )
-    {
+    click : function( event ){
         // if on_click pass to that function
-        if(this.model.attributes.on_click)
-        {
-            this.model.attributes.on_click(event);
+        if( _.isFunction( this.model.get( 'on_click' ) ) ){
+            this.model.get( 'on_click' )( event );
             return false;
         }
-        
-        // otherwise, bubble up (to href or whatever)
+        // otherwise, bubble up ( to href or whatever )
         return true;
     },
     
     // generate html element
-    template: function(options)
-    {
-        // initialize
+    template: function( options ){
         var buffer = 'title="' + options.title + '" class="icon-button';
     
-        // is menu button
-        if(options.is_menu_button)
+        if( options.is_menu_button ){
             buffer += ' menu-button';
+        }
         
-        // add icon class
         buffer += ' ' + options.icon_class;
     
-        // add enabled/disabled class
-        if(!options.enabled)
+        if( !options.enabled ){
             buffer += '_disabled';
+        }
         
         // close class tag
         buffer += '"';
     
-        // add id
-        if(options.id)
+        if( options.id ){
             buffer += ' id="' + options.id + '"';
+        }
         
-        // add href
         buffer += ' href="' + options.href + '"';
-        
         // add target for href
-        if(options.target)
+        if( options.target ){
             buffer += ' target="' + options.target + '"';
-    
+        }
         // set visibility
-        if(!options.visible)
+        if( !options.visible ){
             buffer += ' style="display: none;"';
+        }
     
         // enabled/disabled
-        if (options.enabled)
+        if ( options.enabled ){
             buffer = '<a ' + buffer + '/>';
-        else
+        } else {
             buffer = '<span ' + buffer + '/>';
+        }
             
         // return element
-        return $(buffer);
+        return $( buffer );
     }
-});
+} );
 
 // define collection
-var IconButtonCollection = Backbone.Collection.extend(
-{
+var IconButtonCollection = Backbone.Collection.extend({
     model: IconButton
 });
 
@@ -132,24 +110,18 @@ var IconButtonCollection = Backbone.Collection.extend(
  * menu with multiple icon buttons
  * views are not needed nor used for individual buttons
  */
-var IconButtonMenuView = Backbone.View.extend(
-{
-    // tag
+var IconButtonMenuView = Backbone.View.extend({
+
     tagName: 'div',
 
-    // initialize
-    initialize: function()
-    {
+    initialize: function(){
         this.render();
     },
     
-    // render
-    render: function()
-    {
+    render: function(){
         // initialize icon buttons
         var self = this;
-        this.collection.each(function(button)
-        {
+        this.collection.each(function(button){
             // create and add icon button to menu
             var elt = 
             $('<a/>').attr('href', 'javascript:void(0)')
@@ -160,13 +132,15 @@ var IconButtonMenuView = Backbone.View.extend(
                      .click(button.attributes.on_click);
 
             // configure tooltip
-            if (button.attributes.tooltip_config)
+            if (button.attributes.tooltip_config){
                 elt.tooltip(button.attributes.tooltip_config);
+            }
 
             // add popup menu to icon
             var menu_options = button.get('options');
-            if (menu_options)
+            if (menu_options){
                 make_popupmenu(elt, menu_options);
+            }
         });
         
         // return
@@ -187,8 +161,7 @@ var create_icon_buttons_menu = function(config, global_config)
 
     // create and initialize menu
     var buttons = new IconButtonCollection( 
-        _.map(config, function(button_config)
-        {
+        _.map(config, function(button_config){
             return new IconButton(_.extend(button_config, global_config));
         })
     );
@@ -406,33 +379,27 @@ PopupMenu.make_popupmenu = function( button_element, initial_options ){
  *  @returns {Object[]} the options array to initialize a PopupMenu
  */
 //TODO: lose parent and selector, pass in array of links, use map to return options
-PopupMenu.convertLinksToOptions = function( $parent, selector )
-{
-    $parent = $($parent);
+PopupMenu.convertLinksToOptions = function( $parent, selector ){
+    $parent = $( $parent );
     selector = selector || 'a';
     var options = [];
-    $parent.find( selector ).each( function( elem, i )
-    {
+    $parent.find( selector ).each( function( elem, i ){
         var option = {}, $link = $( elem );
 
         // convert link text to the option text (html) and the href into the option func
         option.html = $link.text();
-        if( linkHref )
-        {
+        if( $link.attr( 'href' ) ){
             var linkHref    = $link.attr( 'href' ),
                 linkTarget  = $link.attr( 'target' ),
                 confirmText = $link.attr( 'confirm' );
 
-            option.func = function()
-            {
+            option.func = function(){
                 // if there's a "confirm" attribute, throw up a confirmation dialog, and
                 //  if the user cancels - do nothing
                 if( ( confirmText ) && ( !confirm( confirmText ) ) ){ return; }
 
                 // if there's no confirm attribute, or the user accepted the confirm dialog:
-                var f;
-                switch( linkTarget )
-                {
+                switch( linkTarget ){
                     // relocate the center panel
                     case '_parent':
                         window.parent.location = linkHref;
@@ -441,15 +408,6 @@ PopupMenu.convertLinksToOptions = function( $parent, selector )
                     // relocate the entire window
                     case '_top':
                         window.top.location = linkHref;
-                        break;
-
-                    // Http request target is a window named demolocal on the local box
-                    //TODO: I still don't understand this option (where the hell does f get set? confirm?)
-                    case 'demo':
-                        if( f === undefined || f.closed ){
-                            f = window.open( linkHref, linkTarget );
-                            f.creator = self;
-                        }
                         break;
 
                     // relocate this panel
@@ -505,5 +463,30 @@ PopupMenu.make_popup_menus = function( parent, menuSelector, buttonSelectorBuild
         $buttonElement.addClass( 'popup' );
     });
     return popupMenusCreated;
-}
+};
 
+var faIconButton = function( options ){
+    //FFS
+    options = options || {};
+    options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
+
+    options.classes = [ 'icon-btn' ].concat( options.classes || [] );
+    if( options.disabled ){
+        options.classes.push( 'disabled' );
+    }
+
+    var html = [
+        '<a class="', options.classes.join( ' ' ), '"',
+                (( options.title )?   ( ' title="' + options.title + '"' ):( '' )),
+                (( options.target )?  ( ' target="' + options.target + '"' ):( '' )),
+                ' href="', (( options.href )?( options.href ):( 'javascript:void(0);' )), '">',
+            // could go with something less specific here - like 'html'
+            '<span class="fa ', options.faIcon, '"></span>',
+        '</a>'
+    ].join( '' );
+    var $button = $( html ).tooltip( options.tooltipConfig );
+    if( _.isFunction( options.onclick ) ){
+        $button.click( options.onclick );
+    }
+    return $button;
+};

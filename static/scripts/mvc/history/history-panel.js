@@ -50,16 +50,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     className           : 'history-panel',
 
     /** (in ms) that jquery effects will use */
-    //fxSpeed             : 'fast',
-    fxSpeed             : 400,
-
-    /** event map */
-    events : {
-        'click .icon-button.tags'    : 'loadAndDisplayTags',
-//TODO: switch to common close (X) idiom
-        // allow (error) messages to be clicked away
-        'click .message-container'   : 'clearMessages'
-    },
+    fxSpeed             : 'fast',
 
     datasetsSelector : '.datasets-list',
     emptyMsgSelector : '.empty-history-message',
@@ -616,33 +607,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             },
             function( next ){
                 //TODO: ideally, these would be set up before the fade in (can't because of async save text)
-                panel._setUpBehaviours();
                 if( callback ){ callback.call( this ); }
                 panel.trigger( 'rendered', this );
             }
         ]);
         return this;
-    },
-
-    /** render with history data */
-    renderModel : function( ){
-        var $newRender = $( '<div/>' );
-        // render the main template, tooltips
-        //NOTE: this is done before the items, since item views should handle theirs themselves
-        var templateFn = ( !Galaxy.currUser.isAnonymous() )?( HistoryPanel.templates.historyPanel )
-                                                           :( HistoryPanel.templates.anonHistoryPanel );
-        $newRender.append( templateFn( this.model.toJSON() ) );
-
-        $newRender.find( '[title]' ).tooltip({ placement: 'bottom' });
-
-        // render hda views (if any and any shown (show_deleted/hidden)
-        //TODO: this seems too elaborate
-        if( !this.model.hdas.length
-        ||  !this.renderItems( $newRender.find( this.datasetsSelector ) ) ){
-            // if history is empty or no hdas would be rendered, show the empty message
-            $newRender.find( this.emptyMsgSelector ).show();
-        }
-        return $newRender;
     },
 
     /** render with no history data */
@@ -654,12 +623,119 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return $newRender.append( $msgContainer );
     },
 
+    /** render with history data */
+    renderModel : function( ){
+        var $newRender = $( '<div/>' );
+
+        // render based on anonymity, set up behaviors
+        if( Galaxy.currUser.isAnonymous() ){
+            $newRender.append( HistoryPanel.templates.anonHistoryPanel( this.model.toJSON() ) );
+
+        } else {
+            $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
+            $newRender.find( '.history-secondary-actions' ).append([
+                this._render_tagButton(),
+                this._render_annotateButton()
+            ]);
+        }
+        this._setUpBehaviours( $newRender );
+
+        // render hda views (if any and any shown (show_deleted/hidden)
+        //TODO: this seems too elaborate
+        if( !this.model.hdas.length
+        ||  !this.renderHdas( $newRender.find( this.datasetsSelector ) ) ){
+            // if history is empty or no hdas would be rendered, show the empty message
+            $newRender.find( this.emptyMsgSelector ).show();
+        }
+        return $newRender;
+    },
+
+    /** Render icon-button to load and display tagging html.
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_tagButton : function(){
+        return faIconButton({
+            title       : _l( 'Edit history tags' ),
+            classes     : 'history-tag-button',
+            faIcon      : 'fa-tags'
+        });
+        //return new IconButtonView({ model : new IconButton({
+        //    title       : _l( 'Edit history tags' ),
+        //    icon_class  : 'tags'
+        //})}).render().$el;
+    },
+
+    /** Render icon-button to load and display annotation html.
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_annotateButton : function(){
+        return faIconButton({
+            title       : _l( 'Edit history tags' ),
+            classes     : 'history-annotate-button',
+            faIcon      : 'fa-comment'
+        });
+        //return new IconButtonView({ model : new IconButton({
+        //    title       : _l( 'Edit history annotation' ),
+        //    icon_class  : 'annotate'
+        //})}).render().$el;
+    },
+
+    /** Set up HistoryPanel js/widget behaviours
+     */
+    //TODO: these should be either sub-MVs, or handled by events
+    _setUpBehaviours : function( $where ){
+        $where = $where || this.$el;
+        $where.find( '[title]' ).tooltip({ placement: 'bottom' });
+
+        // anon users shouldn't have access to any of the following
+        if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
+
+        // annotation slide down
+        var panel = this,
+            // need specific selector ('annotation-display' is used in HDAs, too)
+            $historyAnnotationArea = $where.find( '.history-controls .annotation-display' );
+        $where.find( '.history-controls .history-annotate-button' ).click( function() {
+            if( $historyAnnotationArea.is( ":hidden" ) ){
+                //HACK: for whitespace added to annotation
+                var $anno = panel.$el.find( '.history-controls .annotation' );
+                $anno.text( jQuery.trim( $anno.text() ) );
+                $historyAnnotationArea.slideDown( panel.fxSpeed );
+
+            } else {
+                $historyAnnotationArea.slideUp( panel.fxSpeed );
+            }
+            return false;
+        });
+                //<em>{{#local}}Describe or add notes to history{{/local}}</em>
+
+        $where.find( '.history-name' ).make_text_editable({
+            on_finish: function( newName ){
+                $where.find( '.history-name' ).text( newName );
+                panel.model.save({ name: newName })
+                    .fail( function(){
+                        $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
+                    });
+            }
+        });
+
+        $where.find( '.history-controls .annotation' ).make_text_editable({
+            use_textarea : true,
+            on_finish: function( newAnnotation ){
+                $where.find( '.history-controls .annotation' ).text( newAnnotation );
+                panel.model.save({ annotation: newAnnotation })
+                    .fail( function(){
+                        $where.find( '.history-controls .annotation' ).text( panel.model.previous( 'annotation' ) );
+                    });
+            }
+        });
+    },
+
     /** Set up/render a view for each HDA to be shown, init with model and listeners.
      *      HDA views are cached to the map this.hdaViews (using the model.id as key).
      *  @param {jQuery} $whereTo what dom element to prepend the HDA views to
      *  @returns the number of visible hda views
      */
-    renderItems : function( $whereTo ){
+    renderHdas : function( $whereTo ){
         this.hdaViews = {};
         var historyView = this,
             // only render the shown hdas
@@ -676,49 +752,15 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return visibleHdas.length;
     },
 
-    /** Set up HistoryPanel js/widget behaviours
-     */
-    //TODO: these should be either sub-MVs, or handled by events
-    _setUpBehaviours : function(){
-        // anon users shouldn't have access to any of these
-        if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
-
-        // annotation slide down
-        var panel = this,
-            // need specific selector ('annotation-display' is used in HDAs, too)
-            $historyAnnotationArea = this.$el.find( '.history-controls .annotation-display' );
-        this.$el.find( '.history-controls .icon-button.annotate' ).click( function() {
-            if( $historyAnnotationArea.is( ":hidden" ) ){
-                $historyAnnotationArea.slideDown( panel.fxSpeed );
-            } else {
-                $historyAnnotationArea.slideUp( panel.fxSpeed );
-            }
-            return false;
-        });
-
-        this.$el.find( '.history-name' ).make_text_editable({
-            on_finish: function( newName ){
-                panel.$el.find( '.history-name' ).text( newName );
-                panel.model.save({ name: newName })
-                    .fail( function(){
-                        panel.$el.find( '.history-name' ).text( panel.model.previous( 'name' ) );
-                    });
-            }
-        });
-
-        this.$el.find( '.history-controls .annotation' ).make_text_editable({
-            use_textarea : true,
-            on_finish: function( newAnnotation ){
-                panel.$el.find( '.history-controls .annotation' ).text( newAnnotation );
-                panel.model.save({ annotation: newAnnotation })
-                    .fail( function(){
-                        panel.$el.find( '.history-controls .annotation' ).text( panel.model.previous( 'annotation' ) );
-                    });
-            }
-        });
+    // ------------------------------------------------------------------------ panel events
+    /** event map */
+    events : {
+        'click .history-tag-button'    : 'loadAndDisplayTags',
+//TODO: switch to common close (X) idiom
+        // allow (error) messages to be clicked away
+        'click .message-container'   : 'clearMessages'
     },
 
-    // ------------------------------------------------------------------------ panel events
     /** Update the history size display (curr. upper right of panel).
      */
     updateHistoryDiskSize : function(){

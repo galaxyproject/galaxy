@@ -761,7 +761,7 @@ input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
 .nav-tabs{margin-bottom:15px}
 a{text-decoration:underline}
 label{font-weight:normal}
-@font-face{font-family:'FontAwesome';src:url('../images/fonts/fontawesome-webfont.eot?v=4.0.1');src:url('../images/fonts/fontawesome-webfont.eot?#iefix&v=4.0.1') format('embedded-opentype'),url('../images/fonts/fontawesome-webfont.woff?v=4.0.1') format('woff'),url('../images/fonts/fontawesome-webfont.ttf?v=4.0.1') format('truetype'),url('../images/fonts/fontawesome-webfont.svg?v=4.0.1#fontawesomeregular') format('svg');font-weight:normal;font-style:normal}.fa{display:inline-block;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+@font-face{font-family:'FontAwesome';src:url('../images/fonts/fontawesome-webfont.eot?v=4.0.1');src:url('../images/fonts/fontawesome-webfont.eot?#iefix&v=4.0.1') format('embedded-opentype'),url('../images/fonts/fontawesome-webfont.woff?v=4.0.1') format('woff'),url('../images/fonts/fontawesome-webfont.ttf?v=4.0.1') format('truetype'),url('../images/fonts/fontawesome-webfont.svg?v=4.0.1#fontawesomeregular') format('svg');font-weight:normal;font-style:normal}.fa{display:inline-block;font-family:FontAwesome;font-style:normal;font-weight:normal;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .fa-lg{font-size:1.3333333333333333em;line-height:.75em;vertical-align:-15%}
 .fa-2x{font-size:2em}
 .fa-3x{font-size:3em}
@@ -1507,48 +1507,54 @@ div.permissionContainer{padding-left:20px}
 .icon-button.link{background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .icon-button.link-broken{background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px}
+.icon-btn{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;border-radius:3px;border:1px solid rgba(0,0,0,0.1);background-color:rgba(0,0,0,0.05);color:#555;font-size:1.2em;cursor:pointer}
+.icon-btn:hover{background-color:white;color:maroon}
+.icon-btn.disabled{background-color:transparent;color:rgba(0,0,0,0.05)}
 .history-panel [class$="messagesmall"]{margin:0px}
 .history-panel .editable-text{border:solid transparent 1px}
 .history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
 .history-panel .message-container{cursor:pointer}
 .history-panel .message-container [class$=message]{margin:0px}
-.history-panel .history-controls{margin:10px;padding:0px}
-.history-panel .history-title{margin-bottom:4px}
-.history-panel .history-name{word-wrap:break-word;font-weight:bold}
-.history-panel .history-title input{font-weight:bold;margin:-2px 0 0 -4px}
-.history-panel .history-subtitle{margin-bottom:10px}
-.history-panel .history-size{float:left}
-.history-panel .history-secondary-actions{float:right}
-.history-panel .quota-message{display:none;margin:8px 0px 5px 0px}
-.history-panel .tags-display,.history-panel .annotation-display{display:none;margin-bottom:10px}.history-panel .tags-display label,.history-panel .annotation-display label{display:block;margin:0px;padding:0px;font-weight:bold}
-.history-panel .tags-display label:after,.history-panel .annotation-display label:after{content:':'}
-.history-panel .annotation-display textarea{margin:0px;display:block;border-radius:3px;width:100%}
+.history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-title{margin-bottom:4px}
+.history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
+.history-panel .history-controls .history-title input{font-weight:bold;margin:-2px 0 -2px -4px}
+.history-panel .history-controls .history-subtitle{margin-bottom:8px}
+.history-panel .history-controls .history-size{float:left}
+.history-panel .history-controls .history-secondary-actions{float:right}.history-panel .history-controls .history-secondary-actions .icon-btn{margin-left:2px}
+.history-panel .history-controls .quota-message{display:none;margin:8px 0px 5px 0px}
+.history-panel .history-controls .tags-display,.history-panel .history-controls .annotation-display{display:none;margin-bottom:8px}.history-panel .history-controls .tags-display label,.history-panel .history-controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;font-style:italic;font-size:90%;color:#555}
+.history-panel .history-controls .tags-display label:after,.history-panel .history-controls .annotation-display label:after{content:':'}
+.history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid fadout(#999, 50%);padding:4px;white-space:pre-line}
+.history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .history-panel .dataset{border-width:1px 0px 0px 0px}
 .history-panel .dataset:last-child{border-width:1px 0px 1px 0px}
 .history-panel .empty-history-message{display:none;margin:0px 10px 0px 10px}
-.history-panel .tag-button{display:inline-block;height:20px;margin:2px 2px 0px 0px;border:1px solid grey;border-radius:3px 10px 10px 3px;padding:2px 4px 2px 4px;background-color:#EEE;line-height:12px}.history-panel .tag-button .tag-name{margin-right:2px}
-.dataset{border:1px solid #bfbfbf;padding:8px 10px}.dataset .dataset-warnings [class$=messagesmall]{margin:0px 0px 4px 0px;font-size:90%}
-.dataset .dataset-title-bar{cursor:pointer}.dataset .dataset-title-bar .dataset-state-icon{display:inline-block;vertical-align:middle;line-height:16px;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}
+.history-panel .tag-button{display:inline-block;height:20px;margin:2px 2px 0px 0px;border:1px solid grey;border-radius:3px 10px 10px 3px;padding:2px 4px 2px 4px;background-color:#EEE;line-height:13px}.history-panel .tag-button .tag-name{margin-right:2px}
+.dataset{border:1px solid #bfbfbf}.dataset [class$=messagesmall]{margin:8px 10px 4px 8px;font-size:90%}
+.dataset .dataset-title-bar{cursor:pointer;padding:6px 10px 6px 8px}.dataset .dataset-title-bar .dataset-state-icon{display:inline-block;vertical-align:middle;line-height:16px;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}
 .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-break:normal;line-height:16px}
-.dataset .dataset-primary-actions{float:right}.dataset .dataset-primary-actions .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
-.dataset .dataset-primary-actions .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
-.dataset .dataset-body{display:none;padding-top:2px}.dataset .dataset-body label{margin:0px;padding:0px}
+.dataset .dataset-primary-actions{float:right;margin:6px 10px 0px 0px}.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
+.dataset .vertical-padding{padding-bottom:8px}
+.dataset .dataset-body{display:none;background-color:rgba(255,255,255,0.30000000000000004);padding:6px 10px 6px 8px}.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
+.dataset .dataset-body .dataset-summary{padding-bottom:8px}
+.dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
+.dataset .dataset-body .prompt{font-weight:normal;font-style:italic;font-size:90%;color:#555}
 .dataset .dataset-body .prompt:after{content:':'}
-.dataset .dataset-body .dataset-datatype,.dataset .dataset-body .dataset-dbkey{display:inline}
+.dataset .dataset-body .dataset-datatype,.dataset .dataset-body .dataset-dbkey{display:inline}.dataset .dataset-body .dataset-datatype .value,.dataset .dataset-body .dataset-dbkey .value{font-weight:bold}
 .dataset .dataset-body .dataset-datatype .value:after{content:','}
-.dataset .dataset-body .dataset-actions{padding:2px 0}.dataset .dataset-body .dataset-actions .left{float:left}
-.dataset .dataset-body .dataset-actions .right{float:right}
-.dataset .dataset-body .tags-display{display:none}
-.dataset .dataset-body .annotation-display{display:none}.dataset .dataset-body .annotation-display textarea{margin:0px;display:block;border-radius:3px;width:100%}
-.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:8px 0;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
+.dataset .dataset-body .dataset-dbkey:after{content:' ';display:none;margin-bottom:32px}
+.dataset .dataset-body .dataset-info{margin-top:4px;border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px}.dataset .dataset-body .dataset-info .value{white-space:pre-line}
+.dataset .dataset-body .dataset-actions{margin-bottom:4px}.dataset .dataset-body .dataset-actions .left{float:left}.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
+.dataset .dataset-body .dataset-actions .left .icon-btn-group{margin-right:2px}.dataset .dataset-body .dataset-actions .left .icon-btn-group .icon-btn{margin-right:0}
+.dataset .dataset-body .dataset-actions .right{float:right}.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
+.dataset .dataset-body .tags-display{display:none;padding-bottom:8px}
+.dataset .dataset-body .annotation-display{display:none;padding-bottom:8px}.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line}
+.dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
+.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin-top:8px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
 .dataset .dataset-body .dataset-peek pre.peek table,.dataset .dataset-body .dataset-peek pre.peek th,.dataset .dataset-body .dataset-peek pre.peek tr,.dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
+.dataset .icon-btn-group{display:inline-block}.dataset .icon-btn-group .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset .icon-btn-group .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset .icon-btn-group .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
 .dataset.state-new{background:#eee}.dataset.state-new .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.dataset.state-new .state-icon:before{content:"\f071"}
 .dataset.state-ok,.dataset.state-failed_metadata{background:#aff1af}.dataset.state-ok .state-icon,.dataset.state-failed_metadata .state-icon{display:none}
 .dataset.state-error{background:#f9c7c5}.dataset.state-error .state-icon{background-image:url(sprite-history-states.png);background-position:0px -15px;width:15px;height:15px;height:15px}

@@ -8,11 +8,11 @@ helpers = this.merge(helpers, Handlebars.helpers); data = data || {};
 function program1(depth0,data) {
   
   var buffer = "", stack1;
-  buffer += "\n    ";
+  buffer += "\n    <div class=\"dataset-summary\">\n        ";
   if (stack1 = helpers.body) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.body; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n    <div class=\"dataset-actions clear\">\n        <div class=\"left\"></div>\n        <div class=\"right\"></div>\n    </div>\n\n    ";
+  buffer += "\n    </div>\n    <div class=\"dataset-actions clear\">\n        <div class=\"left\"></div>\n        <div class=\"right\"></div>\n    </div>\n\n    ";
   return buffer;
   }
 

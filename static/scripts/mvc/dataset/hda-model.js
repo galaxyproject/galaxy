@@ -116,6 +116,13 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ common queries
+    toJSON : function(){
+        var json = Backbone.Model.prototype.toJSON.call( this );
+        //HACK: this should be done on the server side when setting
+        json.misc_info = jQuery.trim( json.misc_info );
+        return json;
+    },
+
     /** Is this hda deleted or purged? */
     isDeletedOrPurged : function(){
         return ( this.get( 'deleted' ) || this.get( 'purged' ) );
