@@ -187,11 +187,11 @@
         <div class="unified-panel-header-inner">
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)">
-                    <span class="fa-icon-refresh"></span>
+                    <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
-                    <span class="fa-icon-cog"></span>
+                    <span class="fa fa-cog"></span>
                 </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>

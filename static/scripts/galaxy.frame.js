@@ -85,7 +85,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         // add activate icon
         this.button_active = new mod_master.GalaxyMasterIcon (
         {
-            icon        : 'fa-icon-th',
+            icon        : 'fa-th',
             tooltip     : 'Enable/Disable Scratchbook',
             on_click    : function(e) { self.event_panel_active(e) },
             on_unload   : function() {
@@ -100,7 +100,7 @@ var GalaxyFrameManager = Backbone.View.extend(
         // add load icon
         this.button_load = new mod_master.GalaxyMasterIcon (
         {
-            icon        : 'fa-icon-eye-open',
+            icon        : 'fa-eye',
             tooltip     : 'Show/Hide Scratchbook',
             on_click    : function(e) { self.event_panel_load(e) },
             with_number : true
@@ -724,7 +724,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             $(".frame").fadeOut('fast');
             
             // add class
-            this.button_load.icon("fa-icon-eye-close");
+            this.button_load.icon("fa-eye-slash");
             this.button_load.untoggle();
             
             // hide background
@@ -740,7 +740,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             $(".frame").fadeIn('fast');
             
             // add class
-            this.button_load.icon("fa-icon-eye-open");
+            this.button_load.icon("fa-eye-open");
             this.button_load.toggle();
             
             // hide shadow
@@ -1056,13 +1056,13 @@ var GalaxyFrameManager = Backbone.View.extend(
         return  '<div id="' + id + '" class="frame corner">' +
                     '<div class="f-header corner">' +
                         '<span class="f-title">' + title + '</span>' +
-                        '<span class="f-icon f-pin fa-icon-pushpin"></span>' +
-                        '<span class="f-icon f-close fa-icon-trash"></span>' +            
+                        '<span class="f-icon f-pin fa fa-thumb-tack"></span>' +
+                        '<span class="f-icon f-close fa fa-trash-o"></span>' +
                     '</div>' +
                     '<div class="f-content">' + content +
                         '<div class="f-cover"></div>' +
                     '</div>' +
-                    '<span class="f-resize f-icon corner fa-icon-resize-full"></span>' +
+                    '<span class="f-resize f-icon corner fa fa-resize-full"></span>' +
                 '</div>';
     },
     
@@ -1081,8 +1081,8 @@ var GalaxyFrameManager = Backbone.View.extend(
     // fill menu button template
     template_menu: function()
     {
-        return  '<div class="frame-scroll-up frame-menu fa-icon-chevron-up fa-icon-2x"></div>' +
-                '<div class="frame-scroll-down frame-menu fa-icon-chevron-down fa-icon-2x"></div>';
+        return  '<div class="frame-scroll-up frame-menu fa fa-chevron-up fa-2x"></div>' +
+                '<div class="frame-scroll-down frame-menu fa fa-chevron-down fa-2x"></div>';
     }
 });
 

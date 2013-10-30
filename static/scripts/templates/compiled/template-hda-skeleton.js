@@ -112,7 +112,7 @@ function program14(depth0,data) {
   buffer += "\n\n        ";
   stack1 = helpers.unless.call(depth0, depth0.visible, {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n    </div>\n\n    <div class=\"dataset-primary-actions\"></div>\n\n    <div class=\"dataset-title-bar\">\n        <span class=\"dataset-state-icon state-icon\"></span>\n        <div class=\"dataset-title\">\n            <span class=\"hda-hid\">";
+  buffer += "\n    </div>\n\n    <div class=\"dataset-primary-actions\"></div>\n    <div class=\"dataset-title-bar clear\">\n        <span class=\"dataset-state-icon state-icon\"></span>\n        <div class=\"dataset-title\">\n            <span class=\"hda-hid\">";
   if (stack1 = helpers.hid) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.hid; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
@@ -120,7 +120,7 @@ function program14(depth0,data) {
   if (stack1 = helpers.name) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.name; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
-    + "</span>\n        </div>\n    </div>\n    <div class=\"clear\"></div>\n\n    <div class=\"dataset-body\"></div>\n</div>";
+    + "</span>\n        </div>\n    </div>\n\n    <div class=\"dataset-body\"></div>\n</div>";
   return buffer;
   });
 })();

@@ -200,7 +200,7 @@ $.extend( Node.prototype, {
                         .appendTo( "body" )
                         .append(
                             $("<div class='button'></div>").append(
-                                $("<div/>").addClass("fa-icon-button fa-icon-remove").click( function() {
+                                $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         if (x) {
                                             x.destroy();
@@ -859,7 +859,7 @@ function prebuild_node( type, title_text, tool_id ) {
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<div>").addClass("fa-icon-button fa-icon-remove").click( function( e ) {
+    buttons.append( $("<div>").addClass("fa-icon-button fa fa-times").click( function( e ) {
         node.destroy();
     }));
     // Place inside container

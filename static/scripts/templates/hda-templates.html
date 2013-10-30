@@ -36,15 +36,13 @@
     </div>
 
     <div class="dataset-primary-actions"></div>
-
-    <div class="dataset-title-bar">
+    <div class="dataset-title-bar clear">
         <span class="dataset-state-icon state-icon"></span>
         <div class="dataset-title">
             <span class="hda-hid">{{ hid }}</span>
             <span class="dataset-name">{{ name }}</span>
         </div>
     </div>
-    <div class="clear"></div>
 
     <div class="dataset-body"></div>
 </div>
@@ -54,7 +52,9 @@
 <script type="text/template" class="template-hda" id="template-hda-body">
 <div class="dataset-body">
     {{#if body}}
-    {{{ body }}}
+    <div class="dataset-summary">
+        {{{ body }}}
+    </div>
     <div class="dataset-actions clear">
         <div class="left"></div>
         <div class="right"></div>

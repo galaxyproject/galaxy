@@ -8,6 +8,11 @@
 @black: #000;
 
 @import "fontawesome/font-awesome.less";
+.fa-icon {
+  font-family: FontAwesome;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 @import "select2.less";
 /* fix for zero width select2 - remove when fixed there */
@@ -29,6 +34,13 @@
     .box-sizing(border-box);
     width: 100%;
     *width: 90%;
+}
+
+.border-radius(@radius) {
+    // from font-awesome 3.0
+    -webkit-border-radius: @radius;
+    -moz-border-radius: @radius;
+    border-radius: @radius;
 }
 
 // ==== Real (basic) styles ====
@@ -176,6 +188,9 @@ body.has-message-box.has-inactivity-box {
     a {
         color: #555;
     }
+    .fa {
+        font-size: 1.2em;
+    }
 }
 
 .unified-panel-header-inner {
@@ -222,8 +237,8 @@ body.has-message-box.has-inactivity-box {
 // Needs to be outside panel to show when hidden
 .panel-collapse {
     .unified-panel-footer();
-    .fa-icon();
     font-size: 4/3em;
+    .fa-icon;
     &:before {
         content:'\f053';
     }
@@ -729,12 +744,12 @@ input[type="submit"], button {
 #search-clear-btn {
     position: absolute; 
     right: 6px; 
-    top: 8px;
+    top: 5px;
     display: block;
     font-size: 1.4em;
     text-decoration: none;
     color: #888;
-    .fa-icon();
+    .fa-icon;
     &:before {
         content: "\f057";
     }
@@ -1535,7 +1550,7 @@ div.historyItem-noPermission {
     opacity: .60;
     .state-icon {
         line-height: 16px;
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f05e";
         }
@@ -1546,7 +1561,7 @@ div.historyItem-paused {
     background: @state-paused-bg;
     .state-icon {
         line-height: 16px;
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f04c";
         }
@@ -1556,7 +1571,7 @@ div.historyItem-paused {
 div.historyItem-new {
     .state-icon {
         line-height: 16px;
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f071";
         }

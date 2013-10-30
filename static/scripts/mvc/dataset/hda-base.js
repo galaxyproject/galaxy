@@ -135,32 +135,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         return [ this._render_displayButton() ];
     },
 
-    _render_iconButton : function( options ){
-        options = options || {};
-        //options.classes = [ 'icon-button', 'menu-button' ].concat( options.classes || [] );
-        options.classes = [ 'icon-btn' ].concat( options.classes || [] );
-        //options.classes = [ 'btn' ].concat( options.classes || [] );
-        //options.classes = options.classes || [];
-        if( options.disabled ){
-            options.classes.push( 'disabled' );
-        }
-
-        var button = [
-            '<a class="', options.classes.join( ' ' ), '"',
-                    (( options.title )?   ( ' title="' + options.title + '"' ):( '' )),
-                    (( options.target )?  ( ' target="' + options.target + '"' ):( '' )),
-                    ' href="', (( options.href )?( options.href ):( 'javascript:void(0);' )), '">',
-                // could go with something less specific here - like 'html'
-                '<span class="', options.faIcon, '"></span>',
-            '</a>'
-        ].join( '' );
-        button = $( button );
-        if( _.isFunction( options.onClick ) ){
-            button.click( options.onClick );
-        }
-        return button;
-    },
-    
     /** Render icon-button to display this hda in the galaxy main iframe.
      *  @returns {jQuery} rendered DOM
      */
@@ -171,7 +145,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( !this.model.get( 'accessible' ) ) ){
-            this.displayButton = null;
             return null;
         }
         
@@ -182,12 +155,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         // show a disabled display if the data's been purged
         if( this.model.get( 'purged' ) ){
-            displayBtnData.enabled = false;
+            displayBtnData.disabled = true;
             displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
         // disable if still uploading
         } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
-            displayBtnData.enabled = false;
+            displayBtnData.disabled = true;
             displayBtnData.title = _l( 'This dataset must finish uploading before it can be viewed' );
 
         } else {
@@ -198,7 +171,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             
             // add frame manager option onclick event
             var self = this;
-            displayBtnData.onClick = function(){
+            displayBtnData.on_click = function(){
                 Galaxy.frame_manager.frame_new({
                     title   : "Data Viewer: " + self.model.get('name'),
                     type    : "url",
@@ -207,11 +180,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
                 });
             };
         }
+        //return new IconButtonView({ model : new IconButton( displayBtnData ) }).render().$el;
 
-        this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
-        return this.displayButton.render().$el;
-        //displayBtnData.faIcon = 'fa-icon-eye-open';
-        //return this._render_iconButton( displayBtnData );
+        displayBtnData.faIcon = 'fa-eye';
+        return faIconButton( displayBtnData );
     },
     
     // ......................................................................... primary actions
@@ -226,8 +198,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         // return either: a single download icon-button (if there are no meta files)
         if( _.isEmpty( meta_files ) ){
-            return $([ '<a href="', urls.download, '" title="', _l( 'Download' ),
-                          '" class="icon-button disk"></a>' ].join( '' ) );
+            return $([
+                //'<a href="', urls.download, '" title="', _l( 'Download' ), '" class="icon-button disk"></a>'
+                '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                    '<span class="fa fa-floppy-o"></span>',
+                '</a>'
+            ].join( '' ) );
         }
 
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
@@ -235,7 +211,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var menuId = 'dataset-' + this.model.get( 'id' ) + '-popup',
             html = [
                 '<div popupmenu="' + menuId + '">',
-                    '<a class="action-button" href="' + urls.download + '">', _l( 'Download Dataset' ), '</a>',
+                    '<a href="' + urls.download + '">', _l( 'Download Dataset' ), '</a>',
                     '<a>' + _l( 'Additional Files' ) + '</a>',
 
                     _.map( meta_files, function( meta_file ){
@@ -245,10 +221,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
                             '</a>'
                         ].join( '' );
                     }).join( '\n' ),
-
                 '</div>',
-                '<div style="float:left;" class="menubutton split popup" id="' + menuId + '">',
-                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-button disk"></a>',
+
+                '<div class="icon-btn-group">',
+                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                        '<span class="fa fa-floppy-o"></span>',
+                    // join these w/o whitespace or there'll be a gap when rendered
+                    '</a><a class="icon-btn popup" id="' + menuId + '">',
+                        '<span class="fa fa-caret-down"></span>',
+                    '</a>',
                 '</div>'
             ].join( '\n' );
         return $( html );
@@ -259,12 +240,18 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      */
     _render_showParamsButton : function(){
         // gen. safe to show in all cases
-        return new IconButtonView({ model : new IconButton({
+        //return new IconButtonView({ model : new IconButton({
+        //    title       : _l( 'View details' ),
+        //    href        : this.urls.show_params,
+        //    target      : 'galaxy_main',
+        //    icon_class  : 'information'
+        //}) }).render().$el;
+        return faIconButton({
             title       : _l( 'View details' ),
             href        : this.urls.show_params,
             target      : 'galaxy_main',
-            icon_class  : 'information'
-        }) }).render().$el;
+            faIcon      : 'fa-info-circle'
+        });
     },
     
     // ......................................................................... state body renderers
@@ -272,6 +259,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_body : function(){
+        console.debug( 'model:', this.model.toJSON() );
         var $body = $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ),
             // cheesy: get function by assumed matching name
             renderFn = this[ '_render_body_' + this.model.get( 'state' ) ];

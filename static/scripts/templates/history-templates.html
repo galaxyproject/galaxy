@@ -5,7 +5,7 @@
 
         <div class="history-title">
             {{#if name }}
-            <div class="history-name editable-text" title="{{#local}}Click to rename history{{/local}}">
+            <div class="history-name" title="{{#local}}Click to rename history{{/local}}">
                 {{name}}
             </div>
             {{/if}}
@@ -17,10 +17,6 @@
             {{/if}}
 
             <div class="history-secondary-actions">
-                <a title="{{#local}}Edit history tags{{/local}}"
-                    class="icon-button tags" href="javascript:void(0)"></a>
-                <a title="{{#local}}Edit history annotation{{/local}}"
-                    class="icon-button annotate" href="javascript:void(0)"></a>
             </div>
         </div>
 
@@ -52,13 +48,9 @@
         {{! TODO: move to mvc/annotations.js }}
         <div class="annotation-display">
             <label class="prompt">{{#local}}Annotation{{/local}}</label>
-            <div class="annotation editable-text" title="{{#local}}Click to edit annotation{{/local}}">
-                {{#if annotation}}
-                {{annotation}}
-                {{else}}
-                <em>{{#local}}Describe or add notes to history{{/local}}</em>
-                {{/if}}
-            </div>
+            <div class="annotation" title="{{#local}}Click to edit annotation{{/local}}"
+                {{! need to elimate the whitespace in this }}
+                >{{#if annotation}}{{annotation}}{{/if}}</div>
         </div>
 
     </div>{{! end history-controls }}

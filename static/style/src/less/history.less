@@ -1,3 +1,65 @@
+// trello-ish style
+//@icon-btn-size:     18px;
+//@icon-btn-margin:   2px;
+//@icon-btn-color:    #AAA;
+//@icon-btn-bg:       @btn-default-bg;
+//@icon-btn-border:   lightgrey;
+
+// no bg
+//@icon-btn-size:     16px;
+//@icon-btn-margin:   0px;
+//@icon-btn-color:    #444;
+//@icon-btn-bg:       transparent;
+//@icon-btn-border:   transparent;
+
+// dark bg
+//@icon-btn-size:     16px;
+//@icon-btn-margin:   1px;
+//@icon-btn-color:    @link-color;
+//@icon-btn-bg:       rgba( 0, 0, 0, 0.1 );
+//@icon-btn-border:   transparent;
+
+// big & dark style
+@icon-btn-size:     20px;
+@icon-btn-margin:   2px;
+@icon-btn-color:    #555;
+//@icon-btn-bg:       transparent;
+@icon-btn-bg:       rgba( 0, 0, 0, 0.05 );
+@icon-btn-border:   rgba( 0, 0, 0, 0.1 );
+
+.icon-btn {
+    display : inline-block;
+    height  : @icon-btn-size;
+    width   : @icon-btn-size;
+    // center the icon
+    text-align: center;
+    line-height: @icon-btn-size - 3;
+    // colors and borders
+    border-radius: 3px;
+    border: 1px solid @icon-btn-border;
+    background-color: @icon-btn-bg;
+    color           : @icon-btn-color;
+
+    font-size: 1.2em;
+    cursor: pointer;
+
+    // tweaks
+    //TODO: not working - span
+    //.fa-comment {
+    //    display: inline-block;
+    //    margin-bottom: 4px;
+    //}
+}
+.icon-btn:hover {
+    background-color: white;
+    color: maroon;
+}
+.icon-btn.disabled {
+    background-color: transparent;
+    color: @icon-btn-bg;
+}
+
+
 // ---------------------------------------------------------------------------- history
 .history-panel {
 
@@ -23,62 +85,77 @@
     .history-controls {
         margin: 10px;
         padding: 0px;
-    }
 
-    .history-title {
-        margin-bottom: 4px;
-    }
-    .history-name {
-        word-wrap: break-word;
-        font-weight: bold;
-    }
-    .history-title input {
-        font-weight: bold;
-        // keep the text in position
-        margin: -2px 0px 0px -4px;
-    }
-
-    .history-subtitle {
-        margin-bottom: 10px;
-    }
-    .history-size {
-        float: left;
-    }
-    .history-secondary-actions {
-        float: right;
-    }
-
-    .quota-message {
-        display: none;
-        margin: 8px 0px 5px 0px;
-    }
-
-    .tags-display, .annotation-display {
-        display: none;
-        margin-bottom: 10px;
-        label {
-            display: block;
-            margin: 0px;
-            padding: 0px;
+        .history-title {
+            margin-bottom: 4px;
+        }
+        .history-name {
+            word-wrap: break-word;
             font-weight: bold;
         }
-        label:after {
-            content: ':';
+        .history-title input {
+            font-weight: bold;
+            // keep the text in position
+            margin: -2px 0px -2px -4px;
         }
-    }
-    .annotation-display {
-        textarea {
-            margin: 0px;
-            display: block;
-            border-radius: 3px;
-            width: 100%;
+
+        .history-subtitle {
+            margin-bottom: 8px;
+        }
+        .history-size {
+            float: left;
+        }
+        .history-secondary-actions {
+            float: right;
+            .icon-btn {
+                margin-left: @icon-btn-margin;
+            }
+        }
+
+        .quota-message {
+            display: none;
+            margin: 8px 0px 5px 0px;
+        }
+
+        //TODO: move these out
+        .tags-display, .annotation-display {
+            display: none;
+            margin-bottom: 8px;
+            label {
+                display: block;
+                margin: 0px;
+                padding: 0px;
+                font-weight: normal;
+                font-style: italic;
+                font-size: 90%;
+                color: #555;
+            }
+            label:after {
+                content: ':';
+            }
+        }
+        .annotation-display {
+            .annotation {
+                border-radius: 3px;
+                border: 1px solid fadout( @layout-border-color, 50% );
+                padding: 4px;
+                white-space: pre-line;
+            }
+            textarea {
+                margin: 0px 0px 2px 0px;
+                display: block;
+                border-radius: 3px;
+                width: 100%;
+            }
         }
     }
 
+    // display only a top border on all
     .dataset {
         border-width: 1px 0px 0px 0px;
     }
 
+    // add a bottom border on the last
     .dataset:last-child {
         border-width: 1px 0px 1px 0px;
     }
@@ -88,6 +165,8 @@
         margin: 0px 10px 0px 10px;
     }
 
+    // for both history and dataset tags
+    //TODO: move this out
     .tag-button {
         display: inline-block;
         height: 20px;
@@ -96,7 +175,7 @@
         border-radius: 3px 10px 10px 3px;
         padding: 2px 4px 2px 4px;
         background-color: #EEE;
-        line-height: 12px;
+        line-height: 13px;
         .tag-name {
             margin-right: 2px;
         }
@@ -106,18 +185,14 @@
 // ---------------------------------------------------------------------------- datasets
 .dataset {
     border: 1px solid @border-default-color;
-    padding: 8px 10px;
 
-    .dataset-warnings {
-        [class$=messagesmall] {
-            margin: 0px 0px 4px 0px;
-            //border: 1px solid grey;
-            font-size: 90%;
-        }
+    [class$=messagesmall] {
+        margin: 8px 10px 4px 8px;
+        font-size: 90%;
     }
-
     .dataset-title-bar {
         cursor: pointer;
+        padding: 6px 10px 6px 8px;
         .dataset-state-icon {
             display: inline-block;
             vertical-align: middle;
@@ -138,44 +213,38 @@
 
     .dataset-primary-actions {
         float: right;
-
-        //@import "sprite-history-buttons.less";
-        .icon-button.display {
-            .sprite(@eye_icon);
-        }
-        .icon-button.display:hover {
-            .sprite(@eye_icon_dark);
-        }
-        .icon-button.display_disabled {
-            .sprite(@eye_icon_grey);
-        }
-        .icon-button.delete {
-            .sprite(@delete_icon);
-        }
-        .icon-button.delete:hover {
-            .sprite(@delete_icon_dark);
-        }
-        .icon-button.delete_disabled {
-            .sprite(@delete_icon_grey);
-        }
-        .icon-button.edit {
-            .sprite(@pencil_icon);
-        }
-        .icon-button.edit:hover {
-            .sprite(@pencil_icon_dark);
-        }
-        .icon-button.edit_disabled {
-            .sprite(@pencil_icon_grey);
+        margin: 6px 10px 0px 0px;
+        .icon-btn {
+            margin-left: @icon-btn-margin;
         }
     }
 
+    //TODO: use :empty or :not(:empty)
+    .vertical-padding {
+        padding-bottom: 8px;
+    }
     .dataset-body {
         display: none;
-        padding-top: 2px;
+        background-color: fadeout( white, 70% );
+        padding: 6px 10px 6px 8px;
+
+        [class$=messagesmall] {
+            margin: 0px 0px 8px 0px;
+        }
+        .dataset-summary {
+            .vertical-padding;
+        }
 
         label {
             margin: 0px;
             padding: 0px;
+            font-weight: normal;
+        }
+        .prompt {
+            font-weight: normal;
+            font-style: italic;
+            font-size: 90%;
+            color: #555;
         }
 
         .prompt:after {
@@ -183,29 +252,69 @@
         }
         .dataset-datatype, .dataset-dbkey {
             display: inline;
+            .value {
+                font-weight: bold;
+            }
         }
         .dataset-datatype .value:after {
             content: ',';
         }
+        .dataset-dbkey:after {
+            content: ' ';
+            display: none;
+            margin-bottom: 32px;
+        }
+
+        .dataset-info {
+            margin-top: 4px;
+            border-radius: 3px;
+            border: 1px solid fadeout( @layout-border-color, 50% );
+            //background-color: fadeout( white, 60% );
+            padding: 4px;
+            .value {
+                white-space: pre-line;
+            }
+        }
 
         .dataset-actions {
-            padding: 2px 0;
-
+            margin-bottom: 4px;
             .left {
                 float: left;
+                .icon-btn {
+                    margin-right: @icon-btn-margin;
+                }
+                .icon-btn-group {
+                    margin-right: @icon-btn-margin;
+                    .icon-btn {
+                        margin-right: 0;
+                    }
+                }
             }
             .right {
                 float: right;
+                .icon-btn {
+                    margin-left: @icon-btn-margin;
+                }
             }
         }
 
+        //TODO: move these out
         .tags-display {
             display: none;
+            .vertical-padding;
         }
         .annotation-display {
             display: none;
+            .vertical-padding;
+            .annotation {
+                border-radius: 3px;
+                border: 1px solid fadeout( @layout-border-color, 50% );
+                //background-color: fadeout( white, 60% );
+                padding: 4px;
+                white-space: pre-line;
+            }
             textarea {
-                margin: 0px;
+                margin: 0px 0px 2px 0px;
                 display: block;
                 border-radius: 3px;
                 width: 100%;
@@ -214,7 +323,7 @@
 
         .dataset-peek pre.peek {
             width: 100%;
-            margin: 8px 0;
+            margin-top: 8px;
             border-radius: 3px;
             background: white;
             color: black;
@@ -230,6 +339,25 @@
             }
         }
     }
+
+    .icon-btn-group {
+        display: inline-block;
+        .icon-btn:not(:last-child) {
+            margin: 0px;
+            border-radius: 0px;
+            border-right: none;
+        }
+        .icon-btn:first-child {
+            margin-right: 0px;
+            border-top-left-radius: 3px;
+            border-bottom-left-radius: 3px;
+        }
+        .icon-btn:last-child {
+            margin-left: 0px;
+            border-radius: 0px 3px 3px 0px;
+        }
+    }
+
 }
 
 // Default history item appearance
@@ -237,7 +365,7 @@
 .dataset.state-new {
     background: @state-default-bg;
     .state-icon {
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f071";
         }
@@ -301,7 +429,7 @@
     background: @state-default-bg;
     .state-icon {
         line-height: 16px;
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f05e";
         }
@@ -315,7 +443,7 @@
     opacity: .60;
     .state-icon {
         line-height: 16px;
-        .fa-icon();
+        .fa-icon;
         &:before {
             content: "\f05e";
         }
@@ -325,7 +453,7 @@
 .dataset.state-paused {
     background: @state-paused-bg;
     .state-icon {
-        .fa-icon();
+        //.@fa-css-prefix;
         &:before {
             content: "\f04c";
         }
