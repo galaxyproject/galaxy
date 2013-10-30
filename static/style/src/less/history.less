@@ -186,21 +186,41 @@
 .dataset {
     border: 1px solid @border-default-color;
 
+    // body mixins
+    @vertical-gap: 8px;
+    .vertical-spacing {
+        margin-bottom: @vertical-gap;
+    }
+    .info-section {
+        border-radius: 3px;
+        border: 1px solid fadeout( @layout-border-color, 70% );
+        //background-color: fadeout( white, 60% );
+        padding: 4px;
+    }
+    @spacing-top     : 6px;
+    @spacing-right   : 10px;
+    @spacing-bottom  : 6px;
+    @spacing-left    : 8px;
+    .dataset-padding {
+        padding: @spacing-top @spacing-right @spacing-bottom @spacing-left;
+    }
+
     [class$=messagesmall] {
-        margin: 8px 10px 4px 8px;
+        margin: @spacing-top @spacing-right ( @spacing-bottom - 4 ) @spacing-left;
         font-size: 90%;
     }
+
     .dataset-title-bar {
         cursor: pointer;
-        padding: 6px 10px 6px 8px;
+        .dataset-padding;
         .dataset-state-icon {
-            display: inline-block;
-            vertical-align: middle;
-            line-height: 16px;
-            width: 16px;
-            height: 16px;
-            background-position: 0 1px;
-            background-repeat: no-repeat;
+            //display: inline-block;
+            //vertical-align: middle;
+            //line-height: 16px;
+            //width: 16px;
+            //height: 16px;
+            //background-position: 0 1px;
+            //background-repeat: no-repeat;
         }
         .dataset-title {
             display: inline;
@@ -213,26 +233,19 @@
 
     .dataset-primary-actions {
         float: right;
-        margin: 6px 10px 0px 0px;
+        margin: @spacing-top @spacing-right 0;
         .icon-btn {
             margin-left: @icon-btn-margin;
         }
     }
 
-    //TODO: use :empty or :not(:empty)
-    .vertical-padding {
-        padding-bottom: 8px;
-    }
     .dataset-body {
         display: none;
         background-color: fadeout( white, 70% );
-        padding: 6px 10px 6px 8px;
+        .dataset-padding;
 
         [class$=messagesmall] {
             margin: 0px 0px 8px 0px;
-        }
-        .dataset-summary {
-            .vertical-padding;
         }
 
         label {
@@ -246,38 +259,39 @@
             font-size: 90%;
             color: #555;
         }
-
         .prompt:after {
             content: ':';
         }
-        .dataset-datatype, .dataset-dbkey {
-            display: inline;
-            .value {
-                font-weight: bold;
-            }
-        }
-        .dataset-datatype .value:after {
-            content: ',';
-        }
-        .dataset-dbkey:after {
-            content: ' ';
-            display: none;
-            margin-bottom: 32px;
-        }
 
-        .dataset-info {
-            margin-top: 4px;
-            border-radius: 3px;
-            border: 1px solid fadeout( @layout-border-color, 50% );
-            //background-color: fadeout( white, 60% );
-            padding: 4px;
-            .value {
-                white-space: pre-line;
+        .dataset-summary {
+            .dataset-blurb {
+                margin-bottom: 2px;
             }
+            .dataset-datatype, .dataset-dbkey {
+                display: inline;
+                .value {
+                    font-weight: bold;
+                }
+            }
+            .dataset-datatype .value:after {
+                content: ',';
+            }
+            .dataset-dbkey:after {
+                content: ' ';
+                display: block;
+                .vertical-spacing;
+            }
+            .dataset-info {
+                .info-section;
+                .value {
+                    white-space: pre-line;
+                }
+            }
+            // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
+            .vertical-spacing;
         }
 
         .dataset-actions {
-            margin-bottom: 4px;
             .left {
                 float: left;
                 .icon-btn {
@@ -288,6 +302,11 @@
                     .icon-btn {
                         margin-right: 0;
                     }
+                }
+                &:not(:empty) {
+                    // can't use :empty on dataset-actions - will always have left & right, so
+                    //  add gap to left (more likely to have children)
+                    .vertical-spacing;
                 }
             }
             .right {
@@ -301,16 +320,13 @@
         //TODO: move these out
         .tags-display {
             display: none;
-            .vertical-padding;
+            .vertical-spacing;
         }
         .annotation-display {
             display: none;
-            .vertical-padding;
+            .vertical-spacing;
             .annotation {
-                border-radius: 3px;
-                border: 1px solid fadeout( @layout-border-color, 50% );
-                //background-color: fadeout( white, 60% );
-                padding: 4px;
+                .info-section;
                 white-space: pre-line;
             }
             textarea {
@@ -321,21 +337,30 @@
             }
         }
 
-        .dataset-peek pre.peek {
-            width: 100%;
-            margin-top: 8px;
-            border-radius: 3px;
-            background: white;
-            color: black;
-            font-size: 10px;
-            overflow: auto;
-            th {
-                color: white;
-                background: @panel-primary-heading-bg;
+        .dataset-display-applications {
+            .display-application:last-child {
+                .vertical-spacing;
             }
-            table, th, tr, td {
-                font-family: @font-family-monospace;
+        }
+
+        .dataset-peek {
+            .vertical-spacing;
+            pre.peek {
+                width: 100%;
+                margin: 0px;
+                border-radius: 3px;
+                background: white;
+                color: black;
                 font-size: 10px;
+                overflow: auto;
+                th {
+                    color: white;
+                    background: @panel-primary-heading-bg;
+                }
+                table, th, tr, td {
+                    font-family: @font-family-monospace;
+                    font-size: 10px;
+                }
             }
         }
     }
@@ -360,18 +385,95 @@
 
 }
 
-// Default history item appearance
-// Change background/border color depending on state
-.dataset.state-new {
-    background: @state-default-bg;
-    .state-icon {
-        .fa-icon;
-        &:before {
-            content: "\f071";
-        }
+.dataset .state-icon {
+    .fa-icon;
+    display: inline-block;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.state-icon-error {
+    background-color: white;
+    border-radius: 8px;
+    &:before {
+        font-size: 20px;
+        line-height: 16px;
+        color: red;
+        content: @fa-var-times-circle;
     }
 }
 
+.state-icon-running {
+    //TODO: couldn't find a way to do this with fa/spinning.less as mixin
+    -webkit-animation: spin 2s infinite linear;
+    -moz-animation: spin 2s infinite linear;
+    -o-animation: spin 2s infinite linear;
+    animation: spin 2s infinite linear;
+
+    @-moz-keyframes spin {
+        0% { -moz-transform: rotate(0deg); }
+        100% { -moz-transform: rotate(359deg); }
+    }
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(359deg); }
+    }
+    @-o-keyframes spin {
+        0% { -o-transform: rotate(0deg); }
+        100% { -o-transform: rotate(359deg); }
+    }
+    @-ms-keyframes spin {
+        0% { -ms-transform: rotate(0deg); }
+        100% { -ms-transform: rotate(359deg); }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(359deg); }
+    }
+    &:before {
+        content: @fa-var-spinner;
+    }
+}
+
+.state-icon-upload {
+    overflow: hidden;
+
+    &:before {
+        display: inline-block;
+        -webkit-animation: eclipse 2s infinite linear;
+        -moz-animation: eclipse 2s infinite linear;
+        -o-animation: eclipse 2s infinite linear;
+        animation: eclipse 2s infinite linear;
+
+        @-moz-keyframes eclipse {
+            0% { -moz-transform: translate(0px,16px); }
+            100% { -moz-transform: translate(0px,-16px); }
+        }
+        @-webkit-keyframes eclipse {
+            0% { -webkit-transform: translate(0px,16px); }
+            100% { -webkit-transform: translate(0px,-16px); }
+        }
+        @-o-keyframes eclipse {
+            0% { -o-transform: translate(0px,16px); }
+            100% { -o-transform: translate(0px,-16px); }
+        }
+        @-ms-keyframes eclipse {
+            0% { -ms-transform: translate(0px,16px); }
+            100% { -ms-transform: translate(0px,-16px); }
+        }
+        @keyframes eclipse {
+            0% { transform: translate(0px,16px); }
+            100% { transform: translate(0px,-16px); }
+        }
+        content: @fa-var-arrow-up;
+    }
+}
+
+// Change background/border color depending on state
 .dataset.state-ok, .dataset.state-failed_metadata {
     background: @state-success-bg;
     .state-icon {
@@ -379,59 +481,52 @@
     }
 }
 
-.dataset.state-error {
-    background: @state-danger-bg;
-    .state-icon {
-        .sprite(@data_error);
-    }
-}
-
+.dataset.state-error,
 .dataset.state-empty {
     background: @state-danger-bg;
     .state-icon {
-        .sprite(@data_empty);
-    }
-}
-
-.dataset.state-running {
-    background: @state-running-bg;
-    .state-icon {
-        background-image: url(data_running.gif);
-    }
-}
-// Special case for showing the spinner but not changing the background
-.dataset.state-running .dataset-title-bar.spinner .state-icon {
-    background: url(data_running.gif) 0 1px no-repeat !important;
-}
-
-.dataset.state-setting_metadata {
-    background: @state-running-bg;
-    .state-icon {
-        background-image: url(data_running.gif);
+        .state-icon-error;
     }
 }
 
 .dataset.state-upload {
     background: @state-info-bg;
     .state-icon {
-        background-image: url(data_upload.gif);
+        .state-icon-upload;
     }
 }
 
 .dataset.state-queued {
     background: @state-default-bg;
     .state-icon {
-        .sprite(@data_queued);
+        &:before {
+            content: @fa-var-clock-o;
+        }
+    }
+}
+
+.dataset.state-running,
+.dataset.state-setting_metadata {
+    background: @state-running-bg;
+    .state-icon {
+        .state-icon-running;
+    }
+}
+
+.dataset.state-paused {
+    background: @state-paused-bg;
+    .state-icon {
+        &:before {
+            content: @fa-var-pause;
+        }
     }
 }
 
 .dataset.state-discarded {
     background: @state-default-bg;
     .state-icon {
-        line-height: 16px;
-        .fa-icon;
         &:before {
-            content: "\f05e";
+            content: @fa-var-trash-o;
         }
     }
 }
@@ -442,23 +537,22 @@
     -moz-opacity: .60;
     opacity: .60;
     .state-icon {
-        line-height: 16px;
-        .fa-icon;
+        font-size: 20px;
         &:before {
-            content: "\f05e";
+            content: @fa-var-lock;
         }
     }
 }
 
-.dataset.state-paused {
-    background: @state-paused-bg;
+.dataset.state-new {
+    background: @state-default-bg;
     .state-icon {
-        //.@fa-css-prefix;
         &:before {
-            content: "\f04c";
+            content: @fa-var-exclamation-circle;
         }
     }
 }
+
 
 // ---------------------------------------------------------------------------- hdas
 .hda .hda-hid:after {
