@@ -796,7 +796,7 @@ def run_subprocess( app, cmd ):
         pass
     return returncode, message
 
-def set_environment( app, elem, tool_shed_repository ):
+def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install ):
     """
     Create a ToolDependency to set an environment variable.  This is different from the process used to set an environment variable that is associated
     with a package.  An example entry in a tool_dependencies.xml file is::
@@ -814,42 +814,47 @@ def set_environment( app, elem, tool_shed_repository ):
     tool_dependency = None
     env_var_version = elem.get( 'version', '1.0' )
     for env_var_elem in elem:
+        # Althoug we're in a loop here, this method will always return only a single ToolDependency or None.
+        env_var_name = env_var_elem.get( 'name', None )
         # The value of env_var_name must match the text value of at least 1 <requirement> tag in the tool config's <requirements> tag set whose
         # "type" attribute is "set_environment" (e.g., <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
-        env_var_name = env_var_elem.get( 'name', None )
         env_var_action = env_var_elem.get( 'action', None )
         if env_var_name and env_var_action:
-            install_dir = get_tool_dependency_install_dir( app=app,
-                                                           repository_name=tool_shed_repository.name,
-                                                           repository_owner=tool_shed_repository.owner,
-                                                           repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                           tool_dependency_type='set_environment',
-                                                           tool_dependency_name=env_var_name,
-                                                           tool_dependency_version=None )
-            tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
-            env_var_dict = td_common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
-            if env_var_dict:
-                if not os.path.exists( install_dir ):
-                    os.makedirs( install_dir )
-                tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
-                                                                                         tool_shed_repository=tool_shed_repository,
-                                                                                         name=env_var_name,
-                                                                                         version=None,
-                                                                                         type='set_environment',
-                                                                                         status=app.model.ToolDependency.installation_status.INSTALLING,
-                                                                                         set_status=True )
-                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                if env_var_version == '1.0':
-                    # Handle setting environment variables using a fabric method.
-                    fabric_util.file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                    sa_session.refresh( tool_dependency )
-                    if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
-                        tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
-                        sa_session.add( tool_dependency )
-                        sa_session.flush()
-                        print 'Environment variable ', env_var_name, 'set in', install_dir
-                else:
-                    raise NotImplementedError( 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).' )
+            # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
+            attr_tup = ( env_var_name, None, 'set_environment' )
+            if attr_tup in attr_tups_of_dependencies_for_install:
+                install_dir = get_tool_dependency_install_dir( app=app,
+                                                               repository_name=tool_shed_repository.name,
+                                                               repository_owner=tool_shed_repository.owner,
+                                                               repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                               tool_dependency_type='set_environment',
+                                                               tool_dependency_name=env_var_name,
+                                                               tool_dependency_version=None )
+                tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
+                env_var_dict = td_common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+                if env_var_dict:
+                    if not os.path.exists( install_dir ):
+                        os.makedirs( install_dir )
+                    tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                                                                             tool_shed_repository=tool_shed_repository,
+                                                                                             name=env_var_name,
+                                                                                             version=None,
+                                                                                             type='set_environment',
+                                                                                             status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                                             set_status=True )
+                    env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                    if env_var_version == '1.0':
+                        # Handle setting environment variables using a fabric method.
+                        fabric_util.file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                        sa_session.refresh( tool_dependency )
+                        if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
+                            tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                            sa_session.add( tool_dependency )
+                            sa_session.flush()
+                            print 'Environment variable ', env_var_name, 'set in', install_dir
+                    else:
+                        raise NotImplementedError( 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).' )
+    return tool_dependency
 
 def strip_path( fpath ):
     if not fpath:
