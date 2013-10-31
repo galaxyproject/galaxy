@@ -136,9 +136,13 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         # repository, and this should add datatypes to the datatypes registry. If that is the case, verify that datatypes
         # have been added, otherwise verify that the count is unchanged.
         if running_standalone:
-            assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
+            assert current_datatypes == base_datatypes_count + repository_datatypes_count, \
+            'Installing emboss resulted in unexpected count in datatypes registry, expected: %s, actual: %s, original: %s, added from repo: %s' % \
+            ( str( base_datatypes_count + repository_datatypes_count ), str( current_datatypes ), str( base_datatypes_count ), str( repository_datatypes_count ) )
         else:
-            assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
+            assert current_datatypes == base_datatypes_count, \
+            'Installing emboss added new datatypes, current datatypes: %s, original datatypes: %s' % \
+            ( str( current_datatypes ), str( base_datatypes_count ) )
   
     def test_0015_uninstall_emboss_repository( self ):
         '''Uninstall the emboss repository.'''

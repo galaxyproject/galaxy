@@ -94,22 +94,23 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
 
 def get_installed_repositories_from_repository_dependencies( trans, repository_dependencies_dict ):
     installed_repositories = []
-    for rd_key, rd_vals in repository_dependencies_dict.items():
-        if rd_key in [ 'root_key', 'description' ]:
-            continue
-        # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
-        # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
-        repository_components_tuple = container_util.get_components_from_key( rd_key )
-        components_list = suc.extract_components_from_tuple( repository_components_tuple )
-        tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
-        installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
-        if installed_repository not in installed_repositories:
-            installed_repositories.append( installed_repository )
-        for rd_val in rd_vals:
-            tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
+    if repository_dependencies_dict and isinstance( repository_dependencies_dict, dict ):
+        for rd_key, rd_vals in repository_dependencies_dict.items():
+            if rd_key in [ 'root_key', 'description' ]:
+                continue
+            # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
+            # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
+            repository_components_tuple = container_util.get_components_from_key( rd_key )
+            components_list = suc.extract_components_from_tuple( repository_components_tuple )
+            tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
             installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
             if installed_repository not in installed_repositories:
                 installed_repositories.append( installed_repository )
+            for rd_val in rd_vals:
+                tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
+                installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed, name, owner, changeset_revision )
+                if installed_repository not in installed_repositories:
+                    installed_repositories.append( installed_repository )
     return installed_repositories
 
 def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
