@@ -233,7 +233,7 @@ function LoadingIndicator( $where, options ){
 
         return $( html ).css( options.css || {
             'position'          : 'fixed',
-            'margin'            : '6px 0px 0px 10px',
+            'margin'            : '12px 0px 0px 10px',
             'opacity'           : '0.85'
         }).hide();
     }
