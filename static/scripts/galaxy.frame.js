@@ -740,7 +740,7 @@ var GalaxyFrameManager = Backbone.View.extend(
             $(".frame").fadeIn('fast');
             
             // add class
-            this.button_load.icon("fa-eye-open");
+            this.button_load.icon("fa-eye");
             this.button_load.toggle();
             
             // hide shadow
