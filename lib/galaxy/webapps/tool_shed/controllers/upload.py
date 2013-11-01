@@ -144,12 +144,17 @@ class UploadController( BaseUIController ):
                         elif uploaded_file_filename in [ suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if it defines a complex repository dependency definition whose changeset_revision values
                             # are missing and if so, set them appropriately.
-                            altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
-                            if altered:
-                                tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
-                                shutil.move( tmp_filename, full_path )
-                            else:
-                                shutil.move( uploaded_file_name, full_path )
+                            altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                            if error_message:
+                                ok = False
+                                message = error_message
+                                status = 'error'
+                            if ok:
+                                if altered:
+                                    tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
+                                    shutil.move( tmp_filename, full_path )
+                                else:
+                                    shutil.move( uploaded_file_name, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
                         # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
@@ -289,7 +294,10 @@ class UploadController( BaseUIController ):
                             shutil.move( tmp_filename, uploaded_file_name )
                     elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        # Can this be displayed?
+                        if error_message:
+                            log.debug( str( error_message ) )
                         if altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
@@ -350,7 +358,10 @@ class UploadController( BaseUIController ):
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    if error_message:
+                        # Can this be displayed?
+                        log.debug( error_message )
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
