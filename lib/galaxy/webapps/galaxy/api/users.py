@@ -4,12 +4,12 @@ API operations on User objects.
 import logging
 from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 from galaxy import util, web
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
 
 log = logging.getLogger( __name__ )
 
 
-class UserAPIController( BaseAPIController ):
+class UserAPIController( BaseAPIController, UsesTagsMixin ):
 
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
