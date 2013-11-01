@@ -48,6 +48,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     else:
         tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
     if tool_dependency:
+        # In some cases we should not override the current status of an existing tool_dependency, so do so only if set_status is True.
         if set_status:
             tool_dependency.status = status
     else:

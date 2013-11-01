@@ -250,8 +250,11 @@ class AdminToolshed( AdminGalaxy ):
                         removed = False
                 if removed:
                     tool_shed_repository.uninstalled = True
-                    # Remove all installed tool dependencies, but don't touch any repository dependencies..
-                    for tool_dependency in tool_shed_repository.installed_tool_dependencies:
+                    # Remove all installed tool dependencies and tool dependencies stuck in the INSTALLING state, but don't touch any
+                    # repository dependencies.
+                    tool_dependencies_to_uninstall = tool_shed_repository.installed_tool_dependencies
+                    tool_dependencies_to_uninstall.extend( tool_shed_repository.tool_dependencies_being_installed )
+                    for tool_dependency in tool_dependencies_to_uninstall:
                         uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans.app, tool_dependency )
                         if error_message:
                             errors = '%s  %s' % ( errors, error_message )
@@ -433,7 +436,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                     tool_dependencies=tool_dependencies )
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.model.ToolDependency.installation_status.ERROR:
-                message += '  %s' % suc.to_html_string( installed_tool_dependency.error_message )
+                message += '  %s' % str( installed_tool_dependency.error_message )
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
         if message:
             status = 'error'

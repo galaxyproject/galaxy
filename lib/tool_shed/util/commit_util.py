@@ -344,10 +344,11 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
     Populate or unpopulate the tooshed and changeset_revision attributes of each <repository> tag defined within a tool_dependencies.xml file.
     """
     altered = False
+    error_message = ''
     # Make sure we're looking at a valid tool_dependencies.xml file.
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
     if tree is None:
-        return False, None
+        return False, None, error_message
     root = tree.getroot()
     if root.tag == 'tool_dependency':
         package_altered = False
@@ -425,14 +426,20 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                                                                                     action_index,
                                                                                                                     action_elem,
                                                                                                                     unpopulate=unpopulate )
+                            else:
+                                package_name = root_elem.get( 'name', '' )
+                                package_version = root_elem.get( 'version', '' )
+                                error_message = 'Version %s of the %s package cannot be installed because ' % ( str( package_version ), str( package_name ) )
+                                error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
+                                error_message += 'tag set.'
                             if package_altered:
                                 package_elem[ actions_index ] = actions_elem
                     if package_altered:
                         root_elem[ package_index ] = package_elem
             if package_altered:
                 root[ root_index ] = root_elem
-        return altered, root
-    return False, None
+        return altered, root, error_message
+    return False, None, error_message
 
 def repository_tag_is_valid( filename, line ):
     """
