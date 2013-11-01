@@ -13,7 +13,7 @@ log = logging.getLogger( __name__ )
 
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
-                                 UsesLibraryMixin, UsesLibraryMixinItems ):
+                                 UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):

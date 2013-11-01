@@ -637,6 +637,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 this._render_tagButton(),
                 this._render_annotateButton()
             ]);
+            this.tagsEditor = new TagsEditor({
+                model   : this.model,
+                el      : $newRender.find( '.history-controls .tags-display' )
+            }).render();
         }
         this._setUpBehaviours( $newRender );
 
@@ -755,7 +759,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : {
-        'click .history-tag-button'    : 'loadAndDisplayTags',
+        'click .history-tag-button'    : 'displayTags',
 //TODO: switch to common close (X) idiom
         // allow (error) messages to be clicked away
         'click .message-container'   : 'clearMessages'
@@ -801,35 +805,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
 //TODO: into sub-MV
-    loadAndDisplayTags : function( event ){
-        var panel = this,
-            $tagArea = this.$el.find( '.history-controls .tags-display' ),
-            $tagElt = $tagArea.find( '.tags' );
-
-        // Show or hide tag area; if showing tag area and it's empty, fill it
-        if( $tagArea.is( ":hidden" ) ){
-            if( !jQuery.trim( $tagElt.html() ) ){
-                // Need to fill tag element.
-                var xhr = jQuery.ajax( panel.model.tagUrl() );
-                xhr.fail( function( xhr, status, error ){
-                    panel.log( 'Error loading tag area html', xhr, error, status );
-                    panel.trigger( 'error', panel, xhr, null, _l( "Error loading tags" ) );
-                });
-                xhr.done( function( html ){
-                    //panel.log( panel + ' tag elt html (ajax)', tag_elt_html );
-                    $tagElt.html( html );
-                    $tagElt.find( "[title]" ).tooltip();
-                    $tagArea.slideDown( panel.fxSpeed );
-                });
-            } else {
-                // Tag element already filled: show
-                $tagArea.slideDown( panel.fxSpeed );
-            }
-
-        } else {
-            // Currently shown: Hide
-            $tagArea.slideUp( panel.fxSpeed );
-        }
+    displayTags : function( event ){
+        this.$el.find( '.history-controls .tags-display' ).slideToggle( this.fxSpeed );
         return false;
     },
 

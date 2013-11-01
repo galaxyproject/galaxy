@@ -490,3 +490,5 @@ var faIconButton = function( options ){
     }
     return $button;
 };
+
+//var hideUntilActivated;

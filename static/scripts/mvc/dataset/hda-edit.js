@@ -380,6 +380,10 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             this._render_tagButton(),
             this._render_annotateButton()
         ]);
+        this.tagsEditor = new TagsEditor({
+            model   : this.model,
+            el      : $body.find( '.tags-display' )
+        }).render();
         return $body;
     },
 
@@ -400,7 +404,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
         'click .dataset-purge'          : 'confirmPurge',
 
-        'click .dataset-tag-btn'        : 'loadAndDisplayTags',
+        'click .dataset-tag-btn'        : 'displayTags',
         'click .dataset-annotate-btn'   : 'loadAndDisplayAnnotation'
     },
     
@@ -415,34 +419,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
      */
 //TODO: into sub-MV
-    loadAndDisplayTags : function( event ){
-        this.log( this + '.loadAndDisplayTags', event );
-        var view = this,
-            $tagArea = this.$el.find( '.tags-display' ),
-            $tagElt = $tagArea.find( '.tags' );
-
-        // Show or hide tag area; if showing tag area and it's empty, fill it.
-        if( $tagArea.is( ":hidden" ) ){
-            if( !jQuery.trim( $tagElt.html() ) ){
-                // Need to fill tag element.
-                var xhr = $.ajax( this.urls.tags.get );
-                xhr.fail( function( xhr, status, error ){
-                    view.log( "Tagging failed", xhr, status, error );
-                    view.trigger( 'error', view, xhr, {}, _l( "Tagging failed" ) );
-                });
-                xhr.done( function( tagHtml ){
-                    $tagElt.html( tagHtml );
-                    $tagElt.find( "[title]" ).tooltip();
-                    $tagArea.slideDown( view.fxSpeed );
-                });
-            } else {
-                // Tag element is filled; show.
-                $tagArea.slideDown( view.fxSpeed );
-            }
-        } else {
-            // Hide.
-            $tagArea.slideUp( view.fxSpeed );
-        }
+    displayTags : function( event ){
+        this.$el.find( '.tags-display' ).slideToggle( this.fxSpeed );
         return false;
     },
 

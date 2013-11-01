@@ -259,7 +259,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_body : function(){
-        console.debug( 'model:', this.model.toJSON() );
         var $body = $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ),
             // cheesy: get function by assumed matching name
             renderFn = this[ '_render_body_' + this.model.get( 'state' ) ];

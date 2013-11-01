@@ -1524,6 +1524,8 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .quota-message{display:none;margin:8px 0px 5px 0px}
 .history-panel .history-controls .tags-display,.history-panel .history-controls .annotation-display{display:none;margin-bottom:8px}.history-panel .history-controls .tags-display label,.history-panel .history-controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;font-style:italic;font-size:90%;color:#555}
 .history-panel .history-controls .tags-display label:after,.history-panel .history-controls .annotation-display label:after{content:':'}
+.history-panel .history-controls .tags-display .select2-container{min-width:0px}.history-panel .history-controls .tags-display .select2-container .select2-choices{border-radius:3px}
+.history-panel .history-controls .tags-display input{border-radius:3px}
 .history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid fadout(#999, 50%);padding:4px;white-space:pre-line}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .history-panel .dataset{border-width:1px 0px 0px 0px}
@@ -1550,7 +1552,7 @@ div.permissionContainer{padding-left:20px}
 .dataset .dataset-body .dataset-actions .left .icon-btn-group{margin-right:2px}.dataset .dataset-body .dataset-actions .left .icon-btn-group .icon-btn{margin-right:0}
 .dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
 .dataset .dataset-body .dataset-actions .right{float:right}.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
-.dataset .dataset-body .tags-display{display:none;margin-bottom:8px}
+.dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.dataset .dataset-body .tags-display .select2-container{min-width:0px}.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
 .dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
 .dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}

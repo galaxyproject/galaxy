@@ -1,66 +1,88 @@
-/*==============================================================================
-Backbone MV for Tags
-
-
-TODO:
-move rendering from tagging_common.py
-move functionality from controllers/tag.py
-?? - polymorph on class or simply class as attr?
-
-==============================================================================*/
-/** Single Tag model
- */
-var Tag = BaseModel.extend( LoggableMixin ).extend({
+/** */
+var TagsEditor = Backbone.View.extend( LoggableMixin ).extend({
     
-    // uncomment this out see log messages
-    logger              : console,
-    
-    defaults : {
-        id : null,
-        itemClass : null
+    tagName     : 'div',
+    className   : 'tags-display',
+
+    /** */
+    initialize : function( options ){
+        //console.debug( this, options );
+        this.listenTo( this.model, 'change:tags', function(){
+            this.render();
+        });
     },
-     
-    toString : function(){
-        return 'Tag()';
-    }
-});
 
-//------------------------------------------------------------------------------
-/** Single Tag view
- */
-var TagView = BaseView.extend( LoggableMixin ).extend({
-    
-    // uncomment this out see log messages
-    logger              : console,
+    /** */
+    render : function(){
+        var view = this;
 
-    toString : function(){
-        return 'TagView()';
-    }
-});
+        this.$el.html( this.template() );
+        this.$el.find( '.tags-input' ).select2({
+            placeholder : 'Add tags',
+            width       : '100%',
+            tags : function(){
+                // initialize possible tags in the dropdown based on all the tags the user has used so far
+                return view.getTagsUsed();
+            }
+        });
+        this._behaviors();
+        return this;
+    },
 
-//==============================================================================
-/** A collection of Tags
- */
-var TagCollection = Backbone.Collection.extend( LoggableMixin ).extend({   
-    model : Tag,
-    
-    // uncomment this out see log messages
-    logger              : console,
+    /** */
+    template : function(){
+        return [
+            //TODO: make prompt optional
+            '<label class="prompt">', _l( 'Tags' ), '</label>',
+            // set up initial tags by adding as CSV to input vals (necc. to init select2)
+            '<input class="tags-input" value="', this.tagsToCSV( this.model.get( 'tags' ) ), '" />'
+        ].join( '' );
+    },
 
-    toString : function(){
-        return 'TagCollection()';
-    }
-});
+    /** */
+    tagsToCSV : function( tagsArray ){
+        if( !_.isArray( tagsArray ) || _.isEmpty( tagsArray ) ){
+            return '';
+        }
+        return tagsArray.sort().join( ',' );
+    },
 
-//------------------------------------------------------------------------------
-/** View for a TagCollection (and it's controls) - as per an hda's tag controls on the history panel
- */
-var TagList = BaseView.extend( LoggableMixin ).extend({
+    /** */
+    getTagsUsed : function(){
+        return _.map( Galaxy.currUser.get( 'tags_used' ), function( tag ){
+            return { id: tag, text: tag };
+        });
+    },
 
-    // uncomment this out see log messages
-    logger              : console,
+    /** */
+    _behaviors : function(){
+        var view = this;
+        this.$el.find( '.tags-input' ).on( 'change', function( event ){
+            // save the model's tags in either remove or added event
+            view.model.save({ tags: event.val }, { silent: true });
+            // if it's new, add the tag to the users tags
+            if( event.added ){
+                view.addNewTagToTagsUsed( event.added.text );
+            }
+        });
+    },
 
-    toString : function(){
-        return 'TagList()';
-    }
+    /** */
+    addNewTagToTagsUsed : function( newTag ){
+        var tagsUsed = Galaxy.currUser.get( 'tags_used' );
+        if( !_.contains( tagsUsed, newTag ) ){
+            tagsUsed.push( newTag );
+            tagsUsed.sort();
+            Galaxy.currUser.set( 'tags_used', tagsUsed );
+        }
+    },
+
+    /** */
+    remove : function(){
+        this.$el.off();
+        Backbone.View.prototype.remove.call( this );
+    },
+
+    /** */
+    toString : function(){ return [ 'TagSetView(', this.model + '', ')' ].join(''); }
 });

@@ -50,7 +50,9 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         meta_files          : [],
 
         misc_blurb          : '',
-        misc_info           : ''
+        misc_info           : '',
+
+        tags                : null
     },
 
     /** fetch location of this HDA's history in the api */
