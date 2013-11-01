@@ -1552,6 +1552,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                            trans.model.Repository.table.c.user_id == user.id ) ):
             if not metadata_row.tool_test_results:
                 continue
+            if metadata_row.changeset_revision != metadata_row.repository.tip( trans.app ):
+                continue
             current_repository_errors = []
             tool_dependency_errors = []
             repository_dependency_errors = []
