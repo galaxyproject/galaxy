@@ -452,7 +452,8 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if 'annotation' in new_data.keys() and trans.get_user():
             history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=trans.user )
         # importable (ctrl.history.set_accessible_async)
         # sharing/permissions?
         # slugs?
@@ -715,7 +716,8 @@ class UsesHistoryDatasetAssociationMixin:
         if 'annotation' in new_data.keys() and trans.get_user():
             hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
         # sharing/permissions?
         # purged
 
@@ -2339,6 +2341,49 @@ class UsesTagsMixin( object ):
         tagged_item = self._get_tagged_item( trans, item_class_name, id )
         log.debug( "In get_item_tag_assoc with tagged_item %s" % tagged_item )
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
+
+    def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
+        #precondition: item is already security checked against user
+        #precondition: incoming tags is a list of sanitized/formatted strings
+        user = user or trans.user
+
+        # based on controllers/tag retag_async: delete all old, reset to entire new
+        trans.app.tag_handler.delete_item_tags( trans, user, item )
+        new_tags_str = ','.join( new_tags_list )
+        trans.app.tag_handler.apply_item_tags( trans, user, item, new_tags_str.encode( 'utf-8' ) )
+        trans.sa_session.flush()
+        return item.tags
+
+    def get_user_tags_used( self, trans, user=None ):
+        """
+        Return a list of distinct 'user_tname:user_value' strings that the
+        given user has used.
+
+        user defaults to trans.user.
+        Returns an empty list if no user is given and trans.user is anonymous.
+        """
+        #TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
+        user = user or trans.user
+        if not user:
+            return []
+
+        # get all the taggable model TagAssociations
+        tag_models = [ v.tag_assoc_class for v in trans.app.tag_handler.item_tag_assoc_info.values() ]
+        # create a union of subqueries for each for this user - getting only the tname and user_value
+        all_tags_query = None
+        for tag_model in tag_models:
+            subq = ( trans.sa_session.query( tag_model.user_tname, tag_model.user_value )
+                        .filter( tag_model.user == trans.user ) )
+            all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
+
+        # if nothing init'd the query, bail
+        if all_tags_query is None:
+            return []
+
+        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
+        tags = all_tags_query.distinct().all()
+        tags = [( ( name + ':' + val ) if val else name ) for name, val in tags ]
+        return sorted( tags )
 
 
 

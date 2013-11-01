@@ -11,14 +11,14 @@ from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServ
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin, UsesTagsMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
 
 import logging
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController, UsesHistoryMixin ):
+class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
@@ -369,6 +369,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
+            elif key == 'tags':
+                if isinstance( val, list ):
+                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )

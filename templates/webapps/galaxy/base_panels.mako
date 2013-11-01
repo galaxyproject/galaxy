@@ -18,7 +18,9 @@ ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/u
     if trans.user:
         user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
+        ##TODO: move these into to_dict
         user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+        user_dict['tags_used'] = trans.webapp.controllers[ 'tag' ].get_user_tags_used( trans )
     else:
         usage = 0
         percent = None
@@ -33,6 +35,7 @@ ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/u
             'nice_total_disk_usage' : util.nice_size( usage ),
             'quota_percent'         : percent
         }
+
 %>
 ${h.to_json_string( user_dict )}
 </%def>

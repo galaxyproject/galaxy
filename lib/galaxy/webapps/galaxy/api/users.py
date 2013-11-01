@@ -71,6 +71,7 @@ class UserAPIController( BaseAPIController ):
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                   'total_disk_usage': float } )
+        item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??
         item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
