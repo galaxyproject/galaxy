@@ -298,7 +298,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_tagButton : function(){
-        if( !this.hasUser || !this.urls.tags.get ){
+        if( !this.hasUser ){
             return null;
         }
         
@@ -320,7 +320,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_annotateButton : function(){
-        if( !this.hasUser || !this.urls.annotation.get ){
+        if( !this.hasUser ){
             return null;
         }
 
