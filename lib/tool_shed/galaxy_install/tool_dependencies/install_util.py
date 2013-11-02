@@ -272,7 +272,12 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                     env_var_dict[ 'value' ] = new_value
                                 new_env_var_dicts.append( env_var_dict )
                         else:
-                            log.debug( 'Invalid file %s specified, ignoring set_environment_for_install action.', env_sh_file_path )
+                            tool_dependency.status = app.model.ToolShedRepository.installation_status.ERROR
+                            error_message = 'Invalid file %s specified, ignoring set_environment_for_install action.', env_sh_file_path
+                            tool_dependency.error_message = error_message
+                            sa_session = app.model.context.current
+                            sa_session.add( tool_dependency )
+                            sa_session.flush()
                         action_dict[ 'environment_variable' ] = new_env_var_dicts
                     else:
                         action_dict[ 'environment_variable' ] = env_var_dicts
