@@ -24,9 +24,9 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
     if gzip:
         tarfile_mode += ":gz"
     try:
-    
+
         history_archive = tarfile.open( out_file, tarfile_mode )
-    
+
         # Read datasets attributes from file.
         datasets_attr_in = open( datasets_attrs_file, 'rb' )
         datasets_attr_str = ''
@@ -40,28 +40,28 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
             pass
         datasets_attr_in.close()
         datasets_attrs = from_json_string( datasets_attr_str )
-    
+
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
             dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
-            dataset_archive_name = os.path.join( 'datasets', 
+            dataset_archive_name = os.path.join( 'datasets',
                                                  get_dataset_filename( dataset_attrs[ 'name' ], dataset_attrs[ 'extension' ] ) )
             history_archive.add( dataset_file_name, arcname=dataset_archive_name )
             # Update dataset filename to be archive name.
             dataset_attrs[ 'file_name' ] = dataset_archive_name
-    
+
         # Rewrite dataset attributes file.
         datasets_attrs_out = open( datasets_attrs_file, 'w' )
         datasets_attrs_out.write( to_json_string( datasets_attrs ) )
         datasets_attrs_out.close()
-    
+
         # Finish archive.
         history_archive.add( history_attrs_file, arcname="history_attrs.txt" )
         history_archive.add( datasets_attrs_file, arcname="datasets_attrs.txt" )
         history_archive.add( jobs_attrs_file, arcname="jobs_attrs.txt" )
         history_archive.close()
-        
+
         # Status.
         return 'Created history archive.'
     except Exception, e:
@@ -71,10 +71,10 @@ if __name__ == "__main__":
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option( '-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.' )
-    (options, args) = parser.parse_args()    
+    (options, args) = parser.parse_args()
     gzip = bool( options.gzip )
     history_attrs, dataset_attrs, job_attrs, out_file = args
-    
+
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
     print status

@@ -2,7 +2,7 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os, sys, tempfile, threading, logging, imp
-import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary, assembly, ngsindex, graph
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
@@ -217,7 +217,8 @@ class Registry( object ):
             if sniffers:
                 for elem in sniffers.findall( 'sniffer' ):
                     # Keep an in-memory list of sniffer elems to enable persistence.
-                    self.sniffer_elems.append( elem )
+                    if elem not in self.sniffer_elems:
+                        self.sniffer_elems.append( elem )
                     dtype = elem.get( 'type', None )
                     if dtype:
                         try:
@@ -239,6 +240,8 @@ class Registry( object ):
                                     module = getattr( module, comp )
                             aclass = getattr( module, datatype_class_name )()
                             if deactivate:
+                                if elem in self.sniffer_elems:
+                                    self.sniffer_elems.remove( elem )
                                 for sniffer_class in self.sniff_order:
                                     if sniffer_class.__class__ == aclass.__class__:
                                         self.sniff_order.remove( sniffer_class )
@@ -273,11 +276,11 @@ class Registry( object ):
             self.to_xml_file()
         # Default values.
         if not self.datatypes_by_extension:
-            self.datatypes_by_extension = { 
+            self.datatypes_by_extension = {
                 'ab1'         : binary.Ab1(),
                 'axt'         : sequence.Axt(),
                 'bam'         : binary.Bam(),
-                'bed'         : interval.Bed(), 
+                'bed'         : interval.Bed(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
                 'csfasta'     : sequence.csFasta(),
@@ -289,7 +292,7 @@ class Registry( object ):
                 'gff'         : interval.Gff(),
                 'gff3'        : interval.Gff3(),
                 'genetrack'   : tracks.GeneTrack(),
-                'interval'    : interval.Interval(), 
+                'interval'    : interval.Interval(),
                 'laj'         : images.Laj(),
                 'lav'         : sequence.Lav(),
                 'maf'         : sequence.Maf(),
@@ -297,7 +300,7 @@ class Registry( object ):
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
-                'sam'         : tabular.Sam(), 
+                'sam'         : tabular.Sam(),
                 'scf'         : binary.Scf(),
                 'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
@@ -306,11 +309,11 @@ class Registry( object ):
                 'wig'         : interval.Wiggle(),
                 'xml'         : xml.GenericXml(),
             }
-            self.mimetypes_by_extension = { 
+            self.mimetypes_by_extension = {
                 'ab1'         : 'application/octet-stream',
                 'axt'         : 'text/plain',
                 'bam'         : 'application/octet-stream',
-                'bed'         : 'text/plain', 
+                'bed'         : 'text/plain',
                 'customtrack' : 'text/plain',
                 'csfasta'     : 'text/plain',
                 'eland'       : 'application/octet-stream',
@@ -320,7 +323,7 @@ class Registry( object ):
                 'gtf'         : 'text/plain',
                 'gff'         : 'text/plain',
                 'gff3'        : 'text/plain',
-                'interval'    : 'text/plain', 
+                'interval'    : 'text/plain',
                 'laj'         : 'text/plain',
                 'lav'         : 'text/plain',
                 'maf'         : 'text/plain',
@@ -359,7 +362,7 @@ class Registry( object ):
                 interval.Wiggle(),
                 images.Html(),
                 sequence.Axt(),
-                interval.Bed(), 
+                interval.Bed(),
                 interval.CustomTrack(),
                 interval.Gtf(),
                 interval.Gff(),
@@ -381,7 +384,7 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
-        
+
     def get_datatype_class_by_name( self, name ):
         """
         Return the datatype class where the datatype's `type` attribute
@@ -450,7 +453,7 @@ class Registry( object ):
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
         to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
         app's toolbox.
-        """   
+        """
         if installed_repository_dict:
             # Load converters defined by datatypes_conf.xml included in installed tool shed repository.
             converters = self.proprietary_converters
@@ -463,10 +466,10 @@ class Registry( object ):
             target_datatype = elem[2]
             if installed_repository_dict:
                 converter_path = installed_repository_dict[ 'converter_path' ]
-                config_path = os.path.join( converter_path, tool_config )
             else:
-                config_path = os.path.join( self.converters_path, tool_config )
+                converter_path = self.converters_path
             try:
+                config_path = os.path.join( converter_path, tool_config )
                 converter = toolbox.load_tool( config_path )
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
@@ -484,7 +487,8 @@ class Registry( object ):
                             converter.id = tool_dict[ 'guid' ]
                             break
                 if deactivate:
-                    del toolbox.tools_by_id[ converter.id ]
+                    if converter.id in toolbox.tools_by_id:
+                        del toolbox.tools_by_id[ converter.id ]
                     if source_datatype in self.datatype_converters:
                         del self.datatype_converters[ source_datatype ][ target_datatype ]
                     self.log.debug( "Deactivated converter: %s", converter.id )
@@ -496,9 +500,9 @@ class Registry( object ):
                     self.log.debug( "Loaded converter: %s", converter.id )
             except Exception, e:
                 if deactivate:
-                    self.log.exception( "Error deactivating converter (%s): %s" % ( config_path, str( e ) ) )
+                    self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
                 else:
-                    self.log.exception( "Error loading converter (%s): %s" % ( config_path, str( e ) ) )
+                    self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
     def load_display_applications( self, installed_repository_dict=None, deactivate=False ):
         """
         If deactivate is False, add display applications from self.display_app_containers or
@@ -547,8 +551,11 @@ class Registry( object ):
                                     display_app.id = tool_dict[ 'guid' ]
                                     break
                         if deactivate:
-                            del self.display_applications[ display_app.id ]
-                            del self.datatypes_by_extension[ extension ].display_applications[ display_app.id ]
+                            if display_app.id in self.display_applications:
+                                del self.display_applications[ display_app.id ]
+                            if extension in self.datatypes_by_extension:
+                                if display_app.id in self.datatypes_by_extension[ extension ].display_applications:
+                                    del self.datatypes_by_extension[ extension ].display_applications[ display_app.id ]
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.remove( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Deactivated display application '%s' for datatype '%s'." % ( display_app.id, extension ) )
@@ -574,7 +581,7 @@ class Registry( object ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
-        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file 
+        # Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file
         tool_xml_text = """
             <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>

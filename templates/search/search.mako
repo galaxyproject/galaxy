@@ -3,7 +3,6 @@
 
  ${h.js(
 	'libs/jquery/jquery',
-    'libs/json2'
 )}
 
 </%def>

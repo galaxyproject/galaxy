@@ -58,7 +58,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded tool_dependencies.xml.',
                               strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
-            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
+            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'type should be set to' ] )
 
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''
@@ -232,7 +232,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                  category_name,
                                  install_tool_dependencies=True, 
                                  preview_strings_displayed=preview_strings_displayed,
-                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'new' ],
+                                 post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'New' ],
                                  includes_tools_for_display_in_tool_panel=True )
  
     def test_0050_verify_installed_repositories( self ):

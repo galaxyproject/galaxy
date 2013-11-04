@@ -2,29 +2,36 @@
 Sequence classes
 """
 
-import gzip
 import data
+import gzip
 import logging
+import os
 import re
 import string
-import os
 from cgi import escape
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
-import galaxy.model
-from galaxy import util
-from sniff import *
 
-import pkg_resources
-pkg_resources.require("simplejson")
+from galaxy import eggs, util
+from galaxy.datatypes import metadata
+from galaxy.datatypes.checkers import is_gzip
+from galaxy.datatypes.sniff import get_test_fname, get_headers
+from galaxy.datatypes.metadata import MetadataElement
+
+eggs.require("simplejson")
 import simplejson
+
+try:
+    eggs.require( "bx-python" )
+    import bx.align.maf
+except:
+    pass
+
 
 log = logging.getLogger(__name__)
 
 class SequenceSplitLocations( data.Text ):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
-    one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end. 
+    one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end.
 
     The format of the file is JSON::
 
@@ -109,8 +116,6 @@ class Sequence( data.Text ):
         elif split_params['split_mode'] == 'to_size':
             # loop through the sections and calculate the number of sequences
             chunk_size = long(split_params['split_size'])
-
-            chunks = total_sequences / chunk_size
             rem = total_sequences % chunk_size
             sequences_per_file = [chunk_size for i in range(total_sequences / chunk_size)]
             # TODO: Should we invest the time in a better way to handle small remainders?
@@ -168,7 +173,7 @@ class Sequence( data.Text ):
             directories.append(dir)
             return dir
 
-        # we know how many splits and how many sequences in each. What remains is to write out instructions for the 
+        # we know how many splits and how many sequences in each. What remains is to write out instructions for the
         # splitting of all the input files. To decouple the format of those instructions from this code, the exact format of
         # those instructions is delegated to scripts
         start_sequence=0
@@ -191,7 +196,7 @@ class Sequence( data.Text ):
             start_sequence += sequences_per_file[part_no]
         return directories
     write_split_files = classmethod(write_split_files)
-    
+
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
@@ -211,7 +216,7 @@ class Alignment( data.Text ):
             return None
         raise NotImplementedError("Can't split generic alignment files")
 
-                                
+
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
     file_ext = "fasta"
@@ -219,13 +224,13 @@ class Fasta( Sequence ):
     def sniff( self, filename ):
         """
         Determines whether the file is in fasta format
-        
-        A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. 
-        The first character of the description line is a greater-than (">") symbol in the first column. 
+
+        A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.
+        The first character of the description line is a greater-than (">") symbol in the first column.
         All lines should be shorter than 80 characters
-        
+
         For complete details see http://www.ncbi.nlm.nih.gov/blast/fasta.shtml
-        
+
         Rules for sniffing as True:
 
             We don't care about line length (other than empty lines).
@@ -241,7 +246,7 @@ class Fasta( Sequence ):
                     This should be done through sniff order, where csfasta (currently has a null sniff function) is detected for first (stricter definition) followed sometime after by fasta
 
             We will only check that the first purported sequence is correctly formatted.
-        
+
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Fasta().sniff( fname )
         False
@@ -249,7 +254,7 @@ class Fasta( Sequence ):
         >>> Fasta().sniff( fname )
         True
         """
-        
+
         try:
             fh = open( filename )
             while True:
@@ -404,7 +409,7 @@ class csFasta( Sequence ):
 
     def sniff( self, filename ):
         """
-        Color-space sequence: 
+        Color-space sequence:
             >2_15_85_F3
             T213021013012303002332212012112221222112212222
 
@@ -438,7 +443,7 @@ class csFasta( Sequence ):
         except:
             pass
         return False
-    
+
     def set_meta( self, dataset, **kwd ):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
@@ -468,7 +473,7 @@ class Fastq ( Sequence ):
             if line and line.startswith( '#' ) and not sequences:
                 # We don't count comment lines for sequence data types
                 continue
-            if line and line.startswith( '@' ): 
+            if line and line.startswith( '@' ):
                 if seq_counter >= 4:
                     # count previous block
                     # blocks should be 4 lines long
@@ -509,7 +514,7 @@ class Fastq ( Sequence ):
                 # Check the sequence line, make sure it contains only G/C/A/T/N
                 if not bases_regexp.match( headers[1][0] ):
                     return False
-                return True 
+                return True
             return False
         except:
             return False
@@ -550,7 +555,7 @@ class Fastq ( Sequence ):
         output_name = data['output_name']
         start_sequence = long(args['start_sequence'])
         sequence_count = long(args['num_sequences'])
-        
+
         if 'toc_file' in args:
             toc_file = simplejson.load(open(args['toc_file'], 'r'))
             commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
@@ -579,94 +584,10 @@ class FastqCSSanger( Fastq ):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
 
-try:
-    from galaxy import eggs
-    import pkg_resources; pkg_resources.require( "bx-python" )
-    import bx.align.maf
-except:
-    pass
-
-#trying to import maf_utilities here throws an ImportError due to a circular import between jobs and tools:
-#from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
-#Traceback (most recent call last):
-#  File "./scripts/paster.py", line 27, in <module>
-#    command.run()
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 78, in run
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 117, in invoke
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 212, in run
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/serve.py", line 227, in command
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/serve.py", line 250, in loadapp
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 193, in loadapp
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 213, in loadobj
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 237, in loadcontext
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 267, in _loadconfig
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 397, in get_context
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 439, in _context_from_explicit
-#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 18, in import_string
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/pkg_resources.py", line 1912, in load
-#    entry = __import__(self.module_name, globals(),globals(), ['__name__'])
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/web/buildapp.py", line 18, in <module>
-#    from galaxy import config, jobs, util, tools
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/jobs/__init__.py", line 3, in <module>
-#    from galaxy import util, model
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/model/__init__.py", line 13, in <module>
-#    import galaxy.datatypes.registry
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/datatypes/registry.py", line 6, in <module>
-#    import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/datatypes/sequence.py", line 344, in <module>
-#    from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
-#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/tools/__init__.py", line 15, in <module>
-#    from galaxy import util, jobs, model
-#ImportError: cannot import name jobs
-#so we'll copy and paste for now...terribly icky
-#*** ANYCHANGE TO THIS METHOD HERE OR IN maf_utilities MUST BE PROPAGATED ***
-def COPIED_build_maf_index_species_chromosomes( filename, index_species = None ):
-    species = []
-    species_chromosomes = {}
-    indexes = bx.interval_index_file.Indexes()
-    blocks = 0
-    try:
-        maf_reader = bx.align.maf.Reader( open( filename ) )
-        while True:
-            pos = maf_reader.file.tell()
-            block = maf_reader.next()
-            if block is None:
-                break
-            blocks += 1
-            for c in block.components:
-                spec = c.src
-                chrom = None
-                if "." in spec:
-                    spec, chrom = spec.split( ".", 1 )
-                if spec not in species: 
-                    species.append( spec )
-                    species_chromosomes[spec] = []
-                if chrom and chrom not in species_chromosomes[spec]:
-                    species_chromosomes[spec].append( chrom )
-                if index_species is None or spec in index_species:
-                    forward_strand_start = c.forward_strand_start
-                    forward_strand_end = c.forward_strand_end
-                    try:
-                        forward_strand_start = int( forward_strand_start )
-                        forward_strand_end = int( forward_strand_end )
-                    except ValueError:
-                        continue #start and end are not integers, can't add component to index, goto next component
-                        #this likely only occurs when parse_e_rows is True?
-                        #could a species exist as only e rows? should the
-                    if forward_strand_end > forward_strand_start:
-                        #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
-                        indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
-    except Exception, e:
-        #most likely a bad MAF
-        log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
-        return ( None, [], {}, 0 )
-    return ( indexes, species, species_chromosomes, blocks )
-
-
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
     file_ext = "maf"
-    
+
     #Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
     MetadataElement( name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0 )
     MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
@@ -679,12 +600,14 @@ class Maf( Alignment ):
         Parses and sets species, chromosomes, index from MAF file.
         """
         #these metadata values are not accessable by users, always overwrite
-        indexes, species, species_chromosomes, blocks = COPIED_build_maf_index_species_chromosomes( dataset.file_name )
+        #Imported here to avoid circular dependency
+        from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
+        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes( dataset.file_name )
         if indexes is None:
             return #this is not a MAF file
         dataset.metadata.species = species
         dataset.metadata.blocks = blocks
-        
+
         #write species chromosomes to a file
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
@@ -694,7 +617,7 @@ class Maf( Alignment ):
             chrom_out.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
         chrom_out.close()
         dataset.metadata.species_chromosomes = chrom_file
-        
+
         index_file = dataset.metadata.maf_index
         if not index_file:
             index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset = dataset )
@@ -741,18 +664,18 @@ class Maf( Alignment ):
     def sniff( self, filename ):
         """
         Determines wether the file is in maf format
-        
-        The .maf format is line-oriented. Each multiple alignment ends with a blank line. 
-        Each sequence in an alignment is on a single line, which can get quite long, but 
-        there is no length limit. Words in a line are delimited by any white space. 
-        Lines starting with # are considered to be comments. Lines starting with ## can 
+
+        The .maf format is line-oriented. Each multiple alignment ends with a blank line.
+        Each sequence in an alignment is on a single line, which can get quite long, but
+        there is no length limit. Words in a line are delimited by any white space.
+        Lines starting with # are considered to be comments. Lines starting with ## can
         be ignored by most programs, but contain meta-data of one form or another.
-        
-        The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 
+
+        The first line of a .maf file begins with ##maf. This word is followed by white-space-separated
         variable=value pairs. There should be no white space surrounding the "=".
-     
+
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format5
-        
+
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Maf().sniff( fname )
         True
@@ -772,11 +695,11 @@ class Maf( Alignment ):
 
 class MafCustomTrack( data.Text ):
     file_ext = "mafcustomtrack"
-    
+
     MetadataElement( name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='' )
     MetadataElement( name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='' )
     MetadataElement( name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='' )
-    
+
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """
         Parses and sets viewport metadata from MAF file.
@@ -799,7 +722,7 @@ class MafCustomTrack( data.Text ):
                         forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
                 if i > max_block_check:
                     break
-            
+
             if forward_strand_end > forward_strand_start:
                 dataset.metadata.vp_chromosome = chrom
                 dataset.metadata.vp_start = forward_strand_start
@@ -810,7 +733,7 @@ class MafCustomTrack( data.Text ):
 
 class Axt( data.Text ):
     """Class describing an axt alignment"""
-    
+
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
@@ -820,21 +743,21 @@ class Axt( data.Text ):
     def sniff( self, filename ):
         """
         Determines whether the file is in axt format
-        
-        axt alignment files are produced from Blastz, an alignment tool available from Webb Miller's lab 
+
+        axt alignment files are produced from Blastz, an alignment tool available from Webb Miller's lab
         at Penn State University.
-        
+
         Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.
         Blocks are separated from one another by blank lines.
-        
+
         The summary line contains chromosomal position and size information about the alignment. It
         consists of 9 required fields.
-        
+
         The sequence lines contain the sequence of the primary assembly (line 2) and aligning assembly
         (line 3) with inserts.  Repeats are indicated by lower-case letters.
-    
+
         For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
-        
+
         >>> fname = get_test_fname( 'alignment.axt' )
         >>> Axt().sniff( fname )
         True
@@ -873,12 +796,12 @@ class Lav( data.Text ):
     def sniff( self, filename ):
         """
         Determines whether the file is in lav format
-        
+
         LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
         The first line of a .lav file begins with #:lav.
-    
+
         For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
-        
+
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Lav().sniff( fname )
         True

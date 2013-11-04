@@ -19,7 +19,7 @@ def hash_password( password ):
 
 def check_password( guess, hashed ):
     """
-    Check a hashed password. Supports either PBKDF2 if the hash is 
+    Check a hashed password. Supports either PBKDF2 if the hash is
     prefixed with that string, or sha1 otherwise.
     """
     if hashed.startswith( "PBKDF2" ):

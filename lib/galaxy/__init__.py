@@ -107,3 +107,5 @@ if not hasattr( logging, 'NullHandler' ):
         def emit( self, record ):
             pass
     logging.NullHandler = NullHandler
+
+import galaxy.eggs

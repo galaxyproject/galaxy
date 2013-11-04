@@ -70,6 +70,17 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
         return BaseModel.prototype.fetch.call( this, options );
     },
 
+    /** Clears all data from the sessionStorage.
+     */
+    clearSessionStorage : function(){
+        for( var key in sessionStorage ){
+            //TODO: currently only history
+            if( key.indexOf( 'HistoryView.' ) === 0 ){
+                sessionStorage.removeItem( key );
+            }
+        }
+    },
+
     /** string representation */
     toString : function(){
         var userInfo = [ this.get( 'username' ) ];

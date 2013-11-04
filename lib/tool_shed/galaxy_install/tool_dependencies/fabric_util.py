@@ -1,22 +1,23 @@
 # For Python 2.5
 from __future__ import with_statement
 
-import common_util
 import logging
 import os
 import shutil
 import tempfile
 import shutil
+import td_common_util
 from contextlib import contextmanager
+from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy import eggs
 
-import pkg_resources
-
-pkg_resources.require('ssh' )
-pkg_resources.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
+eggs.require( 'Fabric' )
 
 from fabric.api import env
+from fabric.api import hide
 from fabric.api import lcd
 from fabric.api import local
 from fabric.api import settings
@@ -31,6 +32,49 @@ def check_fabric_version():
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
+def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
+    '''
+    Append a line to a file unless skip_if_contained is True and the line already exists in the file. This method creates the file
+    if it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by the owner.  This method
+    is similar to a local version of fabric.contrib.files.append.
+    '''
+    if not os.path.exists( file_path ):
+        local( 'touch %s' % file_path )
+    if make_executable:
+        # Explicitly set the file to the received mode if valid.
+        with settings( hide( 'everything' ), warn_only=True ):
+            local( 'chmod +x %s' % file_path )
+    return_code = 0
+    # Convert the received text to a list, in order to support adding one or more lines to the file.
+    if isinstance( text, basestring ):
+        text = [ text ]
+    for line in text:
+        # Build a regex to search for the relevant line in env.sh.
+        regex = td_common_util.egrep_escape( line )
+        if skip_if_contained:
+            # If the line exists in the file, egrep will return a success.
+            with settings( hide( 'everything' ), warn_only=True ):
+                egrep_cmd = 'egrep "^%s$" %s' % ( regex, file_path )
+                contains_line = local( egrep_cmd ).succeeded
+            if contains_line:
+                continue
+        # Append the current line to the file, escaping any single quotes in the line.
+        line = line.replace( "'", r"'\\''" )
+        return_code = local( "echo '%s' >> %s" % ( line, file_path ) ).return_code
+        if return_code:
+            # Return upon the first error encountered.
+            return return_code
+    return return_code
+
+def filter_actions_after_binary_installation( actions ):
+    '''Filter out actions that should not be processed if a binary download succeeded.'''
+    filtered_actions = []
+    for action in actions:
+        action_type, action_dict = action
+        if action_type in [ 'set_environment', 'chmod', 'download_binary' ]:
+            filtered_actions.append( action )
+    return filtered_actions
+
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
     sa_session = app.model.context.current
     with settings( warn_only=True ):
@@ -39,9 +83,9 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     if output.return_code:
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
         if output.stderr:
-            tool_dependency.error_message = str( output.stderr )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
         elif output.stdout:
-            tool_dependency.error_message = str( output.stdout )[ :32768 ]
+            tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
         else:
             tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
         sa_session.add( tool_dependency )
@@ -54,44 +98,44 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
     """
     This method works with with a combination of three tool dependency definition tag sets, which are defined in the tool_dependencies.xml file in the
     order discussed here.  The example for this discussion is the tool_dependencies.xml file contained in the osra repository, which is available at:
-    
-    http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra 
-    
+
+    http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
+
     The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset revision XXX of the repository named
     package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been previously installed.
-    
+
     <tool_dependency>
         <package name="graphicsmagick" version="1.3.18">
             <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
         </package>
         ...
-    
+
     * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks something like this (we'll reference
     this file later in this discussion.
     ----
-    GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick; 
+    GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
     export GRAPHICSMAGICK_ROOT_DIR
     ----
-    
+
     The second tag set defines a specific package dependency that has been previously installed (guaranteed by the tag set discussed above) and compiled,
     where the compiled dependency is needed by the tool dependency currently being installed (osra version 2.0.0 in this case) and complied in order for
     it's installation and compilation to succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
     version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully compile.  When this tag set is handled,
     one of the effects is that the env.sh file associated with graphicsmagick version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment
     variables (e.g. PATH, PYTHONPATH, etc).
-    
+
     <!-- populate the environment variables from the dependent repositories -->
     <action type="set_environment_for_install">
         <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
             <package name="graphicsmagick" version="1.3.18" />
         </repository>
     </action>
-    
+
     The third tag set enables discovery of the same required package dependency discussed above for correctly compiling the osra version 2.0.0 package, but
     in this case the package can be discovered at tool execution time.  Using the $ENV[] option as shown in this example, the value of the environment
     variable named GRAPHICSMAGICK_ROOT_DIR (which was set in the environment using the second tag set described above) will be used to automatically alter
     the env.sh file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we discussed the env.sh file
-    for version 1.3.18 of the graphicsmagick package above. 
+    for version 1.3.18 of the graphicsmagick package above.
 
     <action type="set_environment">
         <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
@@ -103,7 +147,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
 
     The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy that looks something like this.  Notice
     that the path to the gmagick binary is included here since it expands the defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
-    
+
     ----
     LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
     export LD_LIBRARY_PATH
@@ -146,16 +190,62 @@ def install_virtualenv( app, venv_dir ):
     if not os.path.exists( venv_dir ):
         with make_tmp_dir() as work_dir:
             downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
-            downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
-            if common_util.istar( downloaded_file_path ):
-                common_util.extract_tar( downloaded_file_path, work_dir )
-                dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
-            else:
-                log.error( "Failed to download virtualenv: Downloaded file '%s' is not a tar file", downloaded_filename )
+            try:
+                dir = td_common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
+            except:
+                log.error( "Failed to download virtualenv: td_common_util.url_download( '%s', '%s', '%s' ) threw an exception", work_dir, downloaded_filename, VIRTUALENV_URL )
                 return False
             full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
             shutil.move( full_path_to_dir, venv_dir )
     return True
+
+
+class InstallEnvironment( object ):
+    """
+    Object describing the environment built up as part of the process of building
+    and installing a package.
+    """
+
+    def __init__( self ):
+        self.env_shell_file_paths = []
+
+    def build_command( self, command, action_type='shell_command' ):
+        """
+        Build command line for execution from simple command, but
+        configuring environment described by this object.
+        """
+        env_cmds = self.environment_commands(action_type)
+        return '\n'.join(env_cmds + [command])
+
+    def environment_commands(self, action_type):
+        """
+        Build a list of commands used to construct the environment described by
+        this object.
+        """
+        cmds = []
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    cmds.append( env_setting.strip( '\n' ) )
+            else:
+                log.debug( 'Invalid file %s specified, ignoring %s action.', env_shell_file_path, action_type )
+        return cmds
+
+    def environment_dict(self, action_type='template_command'):
+        env_vars = dict()
+        for env_shell_file_path in self.env_shell_file_paths:
+            if os.path.exists( env_shell_file_path ):
+                for env_setting in open( env_shell_file_path ):
+                    env_string = env_setting.split( ';' )[ 0 ]
+                    env_name, env_path = env_string.split( '=' )
+                    env_vars[ env_name ] = env_path
+            else:
+                log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
+        return env_vars
+
+    def add_env_shell_file_paths(self, paths):
+        self.env_shell_file_paths.extend(paths)
+
 
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
@@ -164,24 +254,69 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
-    env_shell_file_paths = []
+    install_environment = InstallEnvironment()
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
                 # The first action in the list of actions will be the one that defines the installation process.  There
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
+                if action_type == 'download_binary':
+                    url = action_dict[ 'url' ]
+                    # Get the target directory for this download, if the user has specified one. Default to the root of $INSTALL_DIR.
+                    target_directory = action_dict.get( 'target_directory', None )
+                    # Attempt to download a binary from the specified URL.
+                    log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
+                    downloaded_filename = None
+                    try:
+                        downloaded_filename = td_common_util.download_binary( url, work_dir )
+                        # Filter out any actions that are not download_binary, chmod, or set_environment.
+                        filtered_actions = filter_actions_after_binary_installation( actions[ 1: ] )
+                        # Set actions to the same, so that the current download_binary doesn't get re-run in the filtered actions below.
+                        actions = filtered_actions
+                    except Exception, e:
+                        log.exception( str( e ) )
+                        # No binary exists, or there was an error downloading the binary from the generated URL. Proceed with the remaining actions.
+                        filtered_actions = actions[ 1: ]
+                        action_type, action_dict = filtered_actions[ 0 ]
+                    # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                    # any errors in the move step are correctly sent to the tool dependency error handler.
+                    if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                        if target_directory:
+                            target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                            # Make sure the target directory is not outside of $INSTALL_DIR.
+                            if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                            else:
+                                full_path_to_dir = os.path.abspath( install_dir )
+                        else:
+                            full_path_to_dir = os.path.abspath( install_dir )
+                        td_common_util.move_file( current_dir=work_dir,
+                                                  source=downloaded_filename,
+                                                  destination=full_path_to_dir )
                 if action_type == 'download_by_url':
                     # Eliminate the download_by_url action so remaining actions can be processed correctly.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
+                    is_binary = action_dict.get( 'is_binary', False )
+                    log.debug( 'Attempting to download via url: %s', url )
                     if 'target_filename' in action_dict:
-                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
+                        # Sometimes compressed archives extract their content to a folder other than the default defined file name.  Using this
                         # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
-                    dir = common_util.url_download( work_dir, downloaded_filename, url, extract=True )
+                    dir = td_common_util.url_download( work_dir, downloaded_filename, url, extract=True )
+                    if is_binary:
+                        log_file = os.path.join( install_dir, INSTALLATION_LOG )
+                        log.debug( 'log_file: %s' % log_file )
+                        if os.path.exists( log_file ):
+                            logfile = open( log_file, 'ab' )
+                        else:
+                            logfile = open( log_file, 'wb' )
+                        logfile.write( 'Successfully downloaded from url: %s\n' % action_dict[ 'url' ] )
+                        logfile.close()
+                    log.debug( 'Successfully downloaded from url: %s' % action_dict[ 'url' ] )
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
@@ -201,8 +336,49 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         filename = action_dict[ 'target_filename' ]
                     else:
                         filename = url.split( '/' )[ -1 ]
-                    common_util.url_download( work_dir, filename, url )
+                    td_common_util.url_download( work_dir, filename, url )
                     dir = os.path.curdir
+                elif action_type == 'setup_r_environment':
+                    # setup an R environment
+                    # <action type="setup_r_environment">
+                    #       <repository name="package_r_3_0_1" owner="bgruening">
+                    #           <package name="R" version="3.0.1" />
+                    #       </repository>
+                    #       <!-- allow installing an R packages -->
+                    #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+                    # </action>
+
+                    if action_dict.get( 'env_shell_file_paths', False ):
+                        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                    else:
+                        log.warning( 'Missing R environment. Please check your specified R installation exists.' )
+                        return
+                    tarball_names = list()
+                    for url in action_dict[ 'r_packages' ]:
+                        filename = url.split( '/' )[ -1 ]
+                        tarball_names.append( filename )
+                        td_common_util.url_download( work_dir, filename, url, extract=False )
+                    dir = os.path.curdir
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
+                        with settings( warn_only=True ):
+                            for tarball_name in tarball_names:
+                                cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
+                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % (tarball_name)
+
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
+
+                            # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+
+                            if return_code:
+                                return
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
@@ -221,41 +397,38 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         action_type, action_dict = action_tup
                         if action_type == 'make_directory':
-                            common_util.make_directory( full_path=action_dict[ 'full_path' ] )
+                            if os.path.isabs( action_dict[ 'full_path' ] ):
+                                full_path = action_dict[ 'full_path' ]
+                            else:
+                                full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+                            td_common_util.make_directory( full_path=full_path )
                         elif action_type == 'move_directory_files':
-                            common_util.move_directory_files( current_dir=current_dir,
-                                                              source_dir=os.path.join( action_dict[ 'source_directory' ] ),
-                                                              destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
+                            td_common_util.move_directory_files( current_dir=current_dir,
+                                                                 source_dir=os.path.join( action_dict[ 'source_directory' ] ),
+                                                                 destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
                         elif action_type == 'move_file':
-                            # TODO: Remove this hack that resets current_dir so that the pre-compiled bwa binary can be found.
-                            # current_dir = '/Users/gvk/workspaces_2008/bwa/bwa-0.5.9'
-                            common_util.move_file( current_dir=current_dir,
-                                                   source=os.path.join( action_dict[ 'source' ] ),
-                                                   destination_dir=os.path.join( action_dict[ 'destination' ] ) )
+                            td_common_util.move_file( current_dir=current_dir,
+                                                      source=os.path.join( action_dict[ 'source' ] ),
+                                                      destination=os.path.join( action_dict[ 'destination' ] ),
+                                                      rename_to=action_dict[ 'rename_to' ] )
                         elif action_type == 'set_environment':
                             # Currently the only action supported in this category is "environment_variable".
                             # Build a command line from the prior_installation_required, in case an environment variable is referenced
                             # in the set_environment action.
-                            cmds = []
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        cmds.append( env_setting.strip( '\n' ) )
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring set_environment action.', env_shell_file_path )
+                            cmds = install_environment.environment_commands( 'set_environment' )
                             env_var_dicts = action_dict[ 'environment_variable' ]
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
                                 env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
-                                env_command = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = handle_command( app, tool_dependency, install_dir, env_command )
+                                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
+                                return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                                 if return_code:
                                     return
                         elif action_type == 'set_environment_for_install':
                             # Currently the only action supported in this category is a list of paths to one or more tool dependency env.sh files,
                             # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
                             # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
-                            env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
+                            install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                         elif action_type == 'setup_virtualenv':
                             # TODO: maybe should be configurable
                             venv_src_directory = os.path.abspath( os.path.join( app.config.tool_dependency_dir, '__virtualenv_src' ) )
@@ -289,38 +462,26 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             if not os.path.exists( output.stdout ):
                                 log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
                                 return
-                            modify_env_command = common_util.create_or_update_env_shell_file( install_dir, dict( name="PYTHONPATH", action="prepend_to", value=output.stdout ) )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            modify_env_command_dict = dict( name="PYTHONPATH", action="prepend_to", value=output.stdout )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
-                            modify_env_command = common_util.create_or_update_env_shell_file( install_dir, dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) ) )
-                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
-                                cmd = ''
-                                for env_shell_file_path in env_shell_file_paths:
-                                    if os.path.exists( env_shell_file_path ):
-                                        for env_setting in open( env_shell_file_path ):
-                                            cmd += '%s\n' % env_setting
-                                    else:
-                                        log.debug( 'Invalid file %s specified, ignoring shell_command action.', env_shell_file_path )
-                                cmd += action_dict[ 'command' ]
+                                cmd = install_environment.build_command( action_dict[ 'command' ] )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
                         elif action_type == 'template_command':
                             env_vars = dict()
-                            for env_shell_file_path in env_shell_file_paths:
-                                if os.path.exists( env_shell_file_path ):
-                                    for env_setting in open( env_shell_file_path ):
-                                        env_string = env_setting.split( ';' )[ 0 ]
-                                        env_name, env_path = env_string.split( '=' )
-                                        env_vars[ env_name ] = env_path
-                                else:
-                                    log.debug( 'Invalid file %s specified, ignoring template_command action.', env_shell_file_path )
-                            env_vars.update( common_util.get_env_var_values( install_dir ) )
+                            env_vars = install_environment.environment_dict()
+                            env_vars.update( td_common_util.get_env_var_values( install_dir ) )
                             language = action_dict[ 'language' ]
                             with settings( warn_only=True, **env_vars ):
                                 if language == 'cheetah':
@@ -329,6 +490,26 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                     if return_code:
                                         return
+                        elif action_type == 'make_install':
+                            # make; make install; allow providing make options
+                            with settings( warn_only=True ):
+                                make_opts = action_dict.get( 'make_opts', '' )
+                                cmd = install_environment.build_command( 'make %s && make install' % make_opts )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
+                        elif action_type == 'autoconf':
+                            # Handle configure, make and make install allow providing configuration options
+                            with settings( warn_only=True ):
+                                configure_opts = action_dict.get( 'configure_opts', '' )
+                                if 'prefix=' in configure_opts:
+                                    pre_cmd = './configure %s && make && make install' % configure_opts
+                                else:
+                                    pre_cmd = './configure prefix=$INSTALL_DIR %s && make && make install' % configure_opts
+                                cmd = install_environment.build_command( td_common_util.evaluate_template( pre_cmd, install_dir ) )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                if return_code:
+                                    return
                         elif action_type == 'download_file':
                             # Download a single file to the current working directory.
                             url = action_dict[ 'url' ]
@@ -337,7 +518,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             else:
                                 filename = url.split( '/' )[ -1 ]
                             extract = action_dict.get( 'extract', False )
-                            common_util.url_download( current_dir, filename, url, extract=extract )
+                            td_common_util.url_download( current_dir, filename, url, extract=extract )
                         elif action_type == 'change_directory':
                             target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
                             if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
@@ -348,6 +529,32 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
                             else:
                                 log.error( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
+                        elif action_type == 'chmod':
+                            for target_file, mode in action_dict[ 'change_modes' ]:
+                                if os.path.exists( target_file ):
+                                    os.chmod( target_file, mode )
+                        elif action_type == 'download_binary':
+                            url = action_dict[ 'url' ]
+                            target_directory = action_dict.get( 'target_directory', None )
+                            try:
+                                downloaded_filename = td_common_util.download_binary( url, work_dir )
+                            except Exception, e:
+                                log.exception( str( e ) )
+                            # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
+                            # any errors in the move step are correctly sent to the tool dependency error handler.
+                            if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
+                                if target_directory:
+                                    target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                                    # Make sure the target directory is not outside of $INSTALL_DIR.
+                                    if target_directory.startswith( os.path.realpath( install_dir ) ):
+                                        full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                                    else:
+                                        full_path_to_dir = os.path.abspath( install_dir )
+                                else:
+                                    full_path_to_dir = os.path.abspath( install_dir )
+                                td_common_util.move_file( current_dir=work_dir,
+                                                          source=downloaded_filename,
+                                                          destination=full_path_to_dir )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """

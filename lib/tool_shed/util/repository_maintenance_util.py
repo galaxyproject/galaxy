@@ -5,7 +5,7 @@ import tool_shed.util.shed_util_common as suc
 from galaxy.web.form_builder import build_select_field
 
 from galaxy import eggs
-eggs.require('mercurial')
+eggs.require( 'mercurial' )
 
 from mercurial import commands
 from mercurial import hg

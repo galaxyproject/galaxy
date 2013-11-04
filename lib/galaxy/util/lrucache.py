@@ -10,7 +10,7 @@ class LRUCache:
         ''' Clears/initiates storage variables'''
         self.key_ary = []
         self.obj_cache = {}
-        
+
     def __init__(self, num_elements):
         self.num_elements = num_elements
         self.clear()
@@ -25,7 +25,7 @@ class LRUCache:
         self.key_ary.remove(key)
         self.key_ary.append(key)
         return self.obj_cache[key]
-    
+
     def __setitem__(self, key, value):
         ''' Sets a new value to a key '''
         if key not in self.obj_cache:
@@ -38,7 +38,7 @@ class LRUCache:
 
 if __name__ == "__main__":
     import unittest
-    
+
     class TestLRUCache(unittest.TestCase):
         def test_lru(self):
             lru = LRUCache(2)
@@ -48,14 +48,14 @@ if __name__ == "__main__":
             self.assertEqual( lru[1], None )
             self.assertEqual( lru[2], 2 )
             self.assertEqual( lru[3], 3 )
-            
+
             self.assertEqual( lru.__setitem__("hello", "world"), "world")
             self.assertEqual( lru[2], None )
-            
+
             lru.clear()
             self.assertEqual( lru["hello"], None )
             self.assertEqual( lru[3], None )
-            
+
             # Test if recently used item is kept
             lru[0] = 0
             lru[1] = 1
@@ -66,7 +66,6 @@ if __name__ == "__main__":
             self.assertEqual( lru[0], 0 )
             self.assertEqual( lru[1], None )
             self.assertEqual( lru[2], 2 )
-            
+
     unittest.main()
-            
-            
+

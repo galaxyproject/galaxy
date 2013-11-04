@@ -6,19 +6,65 @@ from galaxy import web
 from galaxy import util
 from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController
+from tool_shed.util import export_util
+import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
-
-def default_value_mapper( trans, repository_metadata ):
-    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
-                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
-    if repository_metadata.time_last_tested:
-        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
-    return value_mapper
 
 
 class RepositoryRevisionsController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repository revisions."""
+
+    @web.expose_api_anonymous
+    def export( self, trans, payload, **kwd ):
+        """
+        POST /api/repository_revisions/export
+        Creates and saves a gzip compressed tar archive of a repository and optionally all of it's repository dependencies.
+
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param export_repository_dependencies (optional): whether to export repository dependencies - defaults to False
+        :param download_dir (optional): the local directory to which to download the archive - defaults to /tmp
+        """
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        tool_shed_url = tool_shed_url.rstrip( '/' )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        changeset_revision = payload.get( 'changeset_revision', '' )
+        if not changeset_revision:
+            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+        export_repository_dependencies = payload.get( 'export_repository_dependencies', False )
+        download_dir = payload.get( 'download_dir', '/tmp' )
+        try:
+            # We'll currently support only gzip-compressed tar archives.
+            file_type = 'gz'
+            export_repository_dependencies = util.string_as_bool( export_repository_dependencies )
+            # Get the repository information.
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            repository_id = trans.security.encode_id( repository.id )
+            response = export_util.export_repository( trans,
+                                                      tool_shed_url,
+                                                      repository_id,
+                                                      str( repository.name ),
+                                                      changeset_revision,
+                                                      file_type,
+                                                      export_repository_dependencies,
+                                                      api=True )
+            return response
+        except Exception, e:
+            message = "Error in the Tool Shed repository_revisions API in export: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -74,8 +120,8 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                repository_metadata_dict = repository_metadata.get_api_value( view='collection',
-                                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
+                repository_metadata_dict = repository_metadata.to_dict( view='collection',
+                                                                        value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=trans.security.encode_id( repository_metadata.id ) )
@@ -92,13 +138,13 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
         Displays information about a repository_metadata record in the Tool Shed.
-        
+
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -135,8 +181,15 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )
         return repository_metadata_dict
+    
+    def __get_value_mapper( self, trans, repository_metadata ):
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'repository_id' : trans.security.encode_id }
+        if repository_metadata.time_last_tested is not None:
+            value_mapper[ 'time_last_tested' ] = time_ago 
+        return value_mapper

@@ -80,7 +80,7 @@ class DataTransfer( object ):
             job.state = self.app.model.DeferredJob.states.OK
             self.sa_session.add( job )
             self.sa_session.flush()
-            # TODO: Error handling: failure executing, or errors returned from the manager 
+            # TODO: Error handling: failure executing, or errors returned from the manager
         if job.params[ 'type' ] == 'finish_transfer':
             protocol = job.params[ 'protocol' ]
             # Update the state of the relevant SampleDataset
@@ -92,7 +92,7 @@ class DataTransfer( object ):
             elif protocol in [ 'scp' ]:
                 # In this case, job.params will be a dictionary that contains a key named 'result'.  The value
                 # of the result key is a dictionary that looks something like:
-                # {'sample_dataset_id': '8', 'status': 'Not started', 'protocol': 'scp', 'name': '3.bed', 
+                # {'sample_dataset_id': '8', 'status': 'Not started', 'protocol': 'scp', 'name': '3.bed',
                 #  'file_path': '/data/library/3.bed', 'host': '127.0.0.1', 'sample_id': 8, 'external_service_id': 2,
                 #  'local_path': '/tmp/kjl2Ss4', 'password': 'galaxy', 'user_name': 'gvk', 'error_msg': '', 'size': '8.0K'}
                 try:
@@ -213,7 +213,7 @@ class DataTransfer( object ):
         # result_dict looks something like:
         # {'url': '127.0.0.1/data/filtered_subreads.fa', 'name': 'Filtered reads'}
         # Check if the new status is a valid transfer status
-        valid_statuses = [ v[1] for v in self.app.model.SampleDataset.transfer_status.items() ] 
+        valid_statuses = [ v[1] for v in self.app.model.SampleDataset.transfer_status.items() ]
         # TODO: error checking on valid new_status value
         if protocol in [ 'http', 'https' ]:
             sample_dataset = self.sa_session.query( self.app.model.SampleDataset ) \
@@ -367,7 +367,7 @@ class DataTransfer( object ):
                 outputs[ step.id ] = out_data
                 for pja in step.post_job_actions:
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(self.app, self.sa_session, pja, job, replacement_dict)
+                        ActionBox.execute(self.app, self.sa_session, pja, job, replacement_dict=None)
                     else:
                         job.add_post_job_action(pja)
             else:

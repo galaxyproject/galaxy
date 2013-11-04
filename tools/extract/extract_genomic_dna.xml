@@ -53,6 +53,7 @@
   </outputs>
   <requirements>
       <requirement type="binary">faToTwoBit</requirement>
+      <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <tests>
     <test>

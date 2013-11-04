@@ -4,10 +4,10 @@ from galaxy.util.template import fill_template
 
 class ExternalServiceParameter( object ):
     """ Abstract Class for External Service Parameters """
-    
+
     type = None
     requires_user_input = False
-    
+
     @classmethod
     def from_elem( cls, elem, parent ):
         param_type = elem.get( 'type', None )
@@ -21,9 +21,9 @@ class ExternalServiceParameter( object ):
         raise 'Abstract Method'
 class ExternalServiceTemplateParameter( ExternalServiceParameter ):
     """ Parameter that returns a string containing the requested content """
-    
+
     type = 'template'
-    
+
     def __init__( self, elem, parent ):
         ExternalServiceParameter.__init__( self, elem, parent )
         self.strip = string_as_bool( elem.get( 'strip', 'False' ) )

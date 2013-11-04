@@ -49,7 +49,7 @@ class LibraryListGrid( grids.Grid ):
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "search dataset name, info, message, dbkey",
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -237,4 +237,4 @@ class LibraryAdmin( BaseUIController ):
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
                                                               message=galaxy.util.sanitize_text( message ),
-                                                              status='done' ) )   
+                                                              status='done' ) )

@@ -156,10 +156,10 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
                             .appendTo(container_div).click(function(e) {
                             // Hide other pickers.
-                            $(".bs-tooltip").removeClass( "in" );
+                            $(".tooltip").removeClass( "in" );
                             
                             // Show input's color picker.
-                            var tip = $(this).siblings(".bs-tooltip").addClass( "in" );
+                            var tip = $(this).siblings(".tooltip").addClass( "in" );
                             tip.css( { 
                                 // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
                                 // top: $(this).position().top + $(this.height) 
@@ -187,7 +187,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
                                          .attr("title", "Set new random color").tooltip(),
                         // Color picker in tool tip style.
-                        tip = $( "<div class='bs-tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
+                        tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
                         // Inner div for padding purposes
                         tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
                         tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
@@ -245,9 +245,13 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         if (this.$el.children().length === 0) {
             this.render();
         }
-        show_modal("Configure", drawable.config.build_form(), {
-            "Cancel": cancel_fn,
-            "OK": ok_fn
+        Galaxy.modal.show({
+            title: "Configure",
+            body: drawable.config.build_form(),
+            buttons: {
+                "Cancel": cancel_fn,
+                "OK": ok_fn
+            }
         });
     },
 

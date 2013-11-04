@@ -165,7 +165,8 @@
     %>
     
     <div style="position: absolute; width: 100%; height: 100%">
-        <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
+        <iframe name="galaxy_main" id="galaxy_main" frameborder="0"
+                style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
     </div>
 
 </%def>
@@ -187,6 +188,9 @@
         </div>
     </div>
     <div class="unified-panel-body" style="overflow: hidden;">
-        <iframe name="galaxy_history" width="100%" height="100%" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%;" src="${h.url_for( controller='root', action='history' )}"></iframe>
+    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0"
+                style="position: absolute; margin: 0; border: 0 none; height: 100%;"
+                src="${h.url_for( controller='root', action='history' )}">
+        </iframe>
     </div>
 </%def>

@@ -18,9 +18,8 @@ from galaxy.tools.actions.upload import UploadToolAction
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
 
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
@@ -61,7 +60,7 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     if new_install:
         # Add the new elements to the shed_tool_conf file on disk.
         add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list )
-        # Use the new elements to add entries to the 
+        # Use the new elements to add entries to the
     config_elems = shed_tool_conf_dict[ 'config_elems' ]
     for config_elem in elem_list:
         # Add the new elements to the in-memory list of config_elems.
@@ -136,7 +135,7 @@ def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset
 
 def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
     """
-    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
+    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make
     sure the files exist.
     """
     invalid_files_and_errors_tups = []
@@ -597,7 +596,7 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_i
     tool = None
     message = ''
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
-    # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
+    # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in
     # the manifest, but have been deleted from disk.
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
     if sample_files:
@@ -746,7 +745,8 @@ def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files
                 else:
                     elems.append( elem )
     else:
-        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.", tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
+        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
+                   tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
     for elem in elems:
         if elem.tag == 'table':
             for file_elem in elem.findall( 'file' ):
@@ -758,9 +758,9 @@ def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files
     if elems:
         os.unlink( tool_data_table_conf_filename ) #remove old data_table
         app.tool_data_tables.to_xml_file( tool_data_table_conf_filename, elems ) #persist new data_table content
-    
+
     return tool_data_table_conf_filename, elems
-    
+
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """See if the file is column based with respect to a separator."""
@@ -962,7 +962,7 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
         suc.config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
 
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
-    """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
+    """A tool shed repository is being deactivated or uninstalled, so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
     # in the same way when the repository is activated or reinstalled.
     tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )

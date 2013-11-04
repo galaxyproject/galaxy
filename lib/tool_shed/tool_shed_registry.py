@@ -39,7 +39,7 @@ class Registry( object ):
 
     def password_manager_for_url( self, url ):
         """
-        If the tool shed is using external auth, the client to the tool shed must authenticate to that as well.  This provides access to the 
+        If the tool shed is using external auth, the client to the tool shed must authenticate to that as well.  This provides access to the
         urllib2.HTTPPasswordMgrWithdefaultRealm() object for the url passed in.
 
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at some stage...

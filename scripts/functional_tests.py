@@ -230,11 +230,11 @@ def main():
                            default_cluster_job_runner = default_cluster_job_runner )
             psu_production = True
         else:
+            tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
             # Configure the database path.
             if 'GALAXY_TEST_DBPATH' in os.environ:
                 galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
             else: 
-                tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
                 galaxy_db_path = os.path.join( tempdir, 'database' )
             # Configure the paths Galaxy needs to  test tools.
             file_path = os.path.join( galaxy_db_path, 'files' )
@@ -243,7 +243,7 @@ def main():
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
-                database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+                database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe.sqlite' )
             kwargs = {}
         for dir in file_path, new_file_path:
             try:

@@ -208,13 +208,15 @@ def main( options, args ):
         print "\nCall this script with the '-h' for more help"
 
     # delete multi template intermediate files
-    print "\nCleaning up intermediate multi-template template files:"
-    for filename in multi_template_template_filenames:
-        try:
-            print 'removing', filename
-            os.remove( filename )
-        except Exception, exc:
-            print exc
+    if options.remove_intermediate:
+        print "\nCleaning up intermediate multi-template template files:"
+        for filename in multi_template_template_filenames:
+            try:
+                print 'removing', filename
+                os.remove( filename )
+            except Exception, exc:
+                print exc
+
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -226,7 +228,10 @@ if __name__ == '__main__':
                           help=( 'indicates that files ending with the given string contain multiple '
                                + 'templates and the script should break those into individual '
                                + 'handlebars templates (defaults to "%s")' ) % DEFAULT_MULTI_EXT )
-    
-    ( options, args ) = optparser.parse_args()    
+    optparser.add_option( '--no-remove', action='store_false', dest='remove_intermediate', default=True,
+                          help=( 'remove intermediate *.handlebars files when using multiple template'
+                               + 'files (defaults to "True")' ) )
+
+    ( options, args ) = optparser.parse_args()
     sys.exit( main( options, args ) )
     

@@ -39,6 +39,7 @@ class Grid( object ):
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
     pass_through_operations = {}
+    legend = None
     def __init__( self ):
         # Determine if any multiple row operations are defined
         self.has_multiple_item_operations = False
@@ -197,7 +198,10 @@ class Grid( object ):
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
+                # persistent page='all'
                 page_num = 1
+                #page_num = 'all'
+                #extra_url_args['page'] = page_num
                 num_pages = 1
             else:
                 # Show a limited number of rows. Before modifying query, get the total number of rows that query
@@ -281,7 +285,7 @@ class Grid( object ):
                                     status = status,
                                     message = message,
                                     use_panels=self.use_panels,
-                                    show_item_checkboxes = ( self.show_item_checkboxes or 
+                                    show_item_checkboxes = ( self.show_item_checkboxes or
                                                              kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.

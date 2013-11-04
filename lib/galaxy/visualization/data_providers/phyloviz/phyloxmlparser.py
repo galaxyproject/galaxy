@@ -130,4 +130,3 @@ class Phyloxml_Parser(Base_Parser):
 
     def cleanTag(self, tagString):
         return tagString[self.nameSpaceIndex:]
-        

@@ -11,8 +11,8 @@ log = logging.getLogger( __name__ )
 
 class ToolTestBuilder( object ):
     """
-    Encapsulates information about a tool test, and allows creation of a 
-    dynamic TestCase class (the unittest framework is very class oriented, 
+    Encapsulates information about a tool test, and allows creation of a
+    dynamic TestCase class (the unittest framework is very class oriented,
     doing dynamic tests in this way allows better integration)
     """
     def __init__( self, tool, name, maxseconds ):
@@ -36,7 +36,7 @@ class ToolTestBuilder( object ):
                             break
                 if not found_parameter:
                     raise ValueError( "Unable to determine parameter type of test input '%s'. "
-                                      "Ensure that the parameter exists and that any container groups are defined first." 
+                                      "Ensure that the parameter exists and that any container groups are defined first."
                                       % name )
             elif isinstance( self.tool.inputs[name], basic.DataToolParameter ):
                 value = self.__add_uploaded_dataset( name, value, extra, self.tool.inputs[name] )
@@ -80,7 +80,7 @@ class ToolTestBuilder( object ):
             # is something like "input2" and the expanded page display is something like "queries_0|input2".
             # The problem is that the only param name on the page is "input2", and adding more test input params
             # with the same name ( "input2" ) is not yet supported in our test code ( the last one added is the only
-            # one used ).         
+            # one used ).
             if name in grouping_value.inputs:
                 if isinstance( grouping_value.inputs[name], basic.DataToolParameter ):
                     return True, self.__add_uploaded_dataset( name, value, extra, grouping_value.inputs[name] )

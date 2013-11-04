@@ -2,6 +2,7 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
+import time
 import copy
 import datetime
 import galaxy
@@ -17,13 +18,15 @@ import threading
 import traceback
 from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
+from galaxy.util import unicodify
+from .output_checker import check_output
 
 log = logging.getLogger( __name__ )
 
@@ -677,20 +680,8 @@ class JobWrapper( object ):
             out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
 
         # These can be passed on the command line if wanted as $__user_*__
-        if job.history and job.history.user:
-            user = job.history.user
-            user_id = '%d' % job.history.user.id
-            user_email = str(job.history.user.email)
-            user_name = str(job.history.user.username)
-        else:
-            user = None
-            user_id = 'Anonymous'
-            user_email = 'Anonymous'
-            user_name = 'Anonymous'
-        incoming['__user__'] = user
-        incoming['__user_id__'] = incoming['userId'] = user_id
-        incoming['__user_email__'] = incoming['userEmail'] = user_email
-        incoming['__user_name__'] = user_name
+        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming,
                                                  inp_data, out_data,
@@ -867,6 +858,9 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
@@ -926,6 +920,17 @@ class JobWrapper( object ):
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                trynum = 0
+                while trynum < self.app.config.retry_job_output_collection:
+                    try:
+                        # Attempt to short circuit NFS attribute caching
+                        os.stat( dataset.dataset.file_name )
+                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                        trynum = self.app.config.retry_job_output_collection
+                    except ( OSError, ObjectNotFound ), e:
+                        trynum += 1
+                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                        time.sleep( 2 ) 
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info = (dataset.info or '')
@@ -1067,158 +1072,7 @@ class JobWrapper( object ):
             self.cleanup()
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
-        """
-        Check the output of a tool - given the stdout, stderr, and the tool's
-        exit code, return True if the tool exited succesfully and False
-        otherwise. No exceptions should be thrown. If this code encounters
-        an exception, it returns True so that the workflow can continue;
-        otherwise, a bug in this code could halt workflow progress.
-        Note that, if the tool did not define any exit code handling or
-        any stdio/stderr handling, then it reverts back to previous behavior:
-        if stderr contains anything, then False is returned.
-        Note that the job id is just for messages.
-        """
-        # By default, the tool succeeded. This covers the case where the code
-        # has a bug but the tool was ok, and it lets a workflow continue.
-        success = True
-
-        try:
-            # Check exit codes and match regular expressions against stdout and
-            # stderr if this tool was configured to do so.
-            # If there is a regular expression for scanning stdout/stderr,
-            # then we assume that the tool writer overwrote the default
-            # behavior of just setting an error if there is *anything* on
-            # stderr.
-            if ( len( self.tool.stdio_regexes ) > 0 or
-                 len( self.tool.stdio_exit_codes ) > 0 ):
-                # Check the exit code ranges in the order in which
-                # they were specified. Each exit_code is a StdioExitCode
-                # that includes an applicable range. If the exit code was in
-                # that range, then apply the error level and add a message.
-                # If we've reached a fatal error rule, then stop.
-                max_error_level = galaxy.tools.StdioErrorLevel.NO_ERROR
-                if tool_exit_code != None:
-                    for stdio_exit_code in self.tool.stdio_exit_codes:
-                        if ( tool_exit_code >= stdio_exit_code.range_start and
-                             tool_exit_code <= stdio_exit_code.range_end ):
-                            # Tack on a generic description of the code
-                            # plus a specific code description. For example,
-                            # this might prepend "Job 42: Warning (Out of Memory)\n".
-                            code_desc = stdio_exit_code.desc
-                            if ( None == code_desc ):
-                                code_desc = ""
-                            tool_msg = ( "%s: Exit code %d (%s)" % (
-                                         galaxy.tools.StdioErrorLevel.desc( stdio_exit_code.error_level ),
-                                         tool_exit_code,
-                                         code_desc ) )
-                            log.info( "Job %s: %s" % (job.get_id_tag(), tool_msg) )
-                            stderr = tool_msg + "\n" + stderr
-                            max_error_level = max( max_error_level,
-                                                   stdio_exit_code.error_level )
-                            if ( max_error_level >=
-                                 galaxy.tools.StdioErrorLevel.FATAL ):
-                                break
-
-                if max_error_level < galaxy.tools.StdioErrorLevel.FATAL:
-                    # We'll examine every regex. Each regex specifies whether
-                    # it is to be run on stdout, stderr, or both. (It is
-                    # possible for neither stdout nor stderr to be scanned,
-                    # but those regexes won't be used.) We record the highest
-                    # error level, which are currently "warning" and "fatal".
-                    # If fatal, then we set the job's state to ERROR.
-                    # If warning, then we still set the job's state to OK
-                    # but include a message. We'll do this if we haven't seen
-                    # a fatal error yet
-                    for regex in self.tool.stdio_regexes:
-                        # If ( this regex should be matched against stdout )
-                        #   - Run the regex's match pattern against stdout
-                        #   - If it matched, then determine the error level.
-                        #       o If it was fatal, then we're done - break.
-                        # Repeat the stdout stuff for stderr.
-                        # TODO: Collapse this into a single function.
-                        if ( regex.stdout_match ):
-                            regex_match = re.search( regex.match, stdout,
-                                                     re.IGNORECASE )
-                            if ( regex_match ):
-                                rexmsg = self.regex_err_msg( regex_match, regex)
-                                log.info( "Job %s: %s"
-                                        % ( job.get_id_tag(), rexmsg ) )
-                                stdout = rexmsg + "\n" + stdout
-                                max_error_level = max( max_error_level,
-                                                       regex.error_level )
-                                if ( max_error_level >=
-                                     galaxy.tools.StdioErrorLevel.FATAL ):
-                                    break
-
-                        if ( regex.stderr_match ):
-                            regex_match = re.search( regex.match, stderr,
-                                                     re.IGNORECASE )
-                            if ( regex_match ):
-                                rexmsg = self.regex_err_msg( regex_match, regex)
-                                log.info( "Job %s: %s"
-                                        % ( job.get_id_tag(), rexmsg ) )
-                                stderr = rexmsg + "\n" + stderr
-                                max_error_level = max( max_error_level,
-                                                       regex.error_level )
-                                if ( max_error_level >=
-                                     galaxy.tools.StdioErrorLevel.FATAL ):
-                                    break
-
-                # If we encountered a fatal error, then we'll need to set the
-                # job state accordingly. Otherwise the job is ok:
-                if max_error_level >= galaxy.tools.StdioErrorLevel.FATAL:
-                    success = False
-                else:
-                    success = True
-
-            # When there are no regular expressions and no exit codes to check,
-            # default to the previous behavior: when there's anything on stderr
-            # the job has an error, and the job is ok otherwise.
-            else:
-                # TODO: Add in the tool and job id:
-                # log.debug( "Tool did not define exit code or stdio handling; "
-                #          + "checking stderr for success" )
-                if stderr:
-                    success = False
-                else:
-                    success = True
-
-        # On any exception, return True.
-        except:
-            tb = traceback.format_exc()
-            log.warning( "Tool check encountered unexpected exception; "
-                       + "assuming tool was successful: " + tb )
-            success = True
-
-        # Store the modified stdout and stderr in the job:
-        if None != job:
-            job.stdout = stdout
-            job.stderr = stderr
-
-        return success
-
-    def regex_err_msg( self, match, regex ):
-        """
-        Return a message about the match on tool output using the given
-        ToolStdioRegex regex object. The regex_match is a MatchObject
-        that will contain the string matched on.
-        """
-        # Get the description for the error level:
-        err_msg = galaxy.tools.StdioErrorLevel.desc( regex.error_level ) + ": "
-        # If there's a description for the regular expression, then use it.
-        # Otherwise, we'll take the first 256 characters of the match.
-        if None != regex.desc:
-            err_msg += regex.desc
-        else:
-            mstart = match.start()
-            mend = match.end()
-            err_msg += "Matched on "
-            # TODO: Move the constant 256 somewhere else besides here.
-            if mend - mstart > 256:
-                err_msg += match.string[ mstart : mstart+256 ] + "..."
-            else:
-                err_msg += match.string[ mstart: mend ]
-        return err_msg
+        return check_output( self.tool, stdout, stderr, tool_exit_code, job )
 
     def cleanup( self ):
         # remove temporary files
@@ -1483,6 +1337,12 @@ class JobWrapper( object ):
         just copy these files directly to the ulimate destination.
         """
         return output_path
+    
+    @property
+    def requires_setting_metadata( self ):
+        if self.tool:
+            return self.tool.requires_setting_metadata
+        return False
 
 
 class TaskWrapper(JobWrapper):
@@ -1650,6 +1510,9 @@ class TaskWrapper(JobWrapper):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        stdout = unicodify( stdout )
+        stderr = unicodify( stderr )
+
         # This may have ended too soon
         log.debug( 'task %s for job %d ended; exit code: %d'
                  % (self.task_id, self.job_id,

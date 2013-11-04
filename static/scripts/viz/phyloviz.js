@@ -401,7 +401,7 @@ var PhylovizLayoutBase =  Backbone.View.extend({
      *  enterNodes
      */
     addTooltips : function (){
-        $(".bs-tooltip").remove();      //clean up tooltip, just in case its listeners are removed by d3
+        $(".tooltip").remove();      //clean up tooltip, just in case its listeners are removed by d3
         $(".node")
             .attr("data-original-title", function(){
                 var d = this.__data__,
@@ -817,7 +817,7 @@ var SettingsMenu = UserMenuBase.extend({
      * Resets the value of the phyloTree model to its default
      */
     resetToDefaults : function(){
-        $(".bs-tooltip").remove();      // just in case the tool tip was not removed
+        $(".tooltip").remove();      // just in case the tool tip was not removed
         var self = this;
         $.each(self.phyloTree.defaults, function(key, value) {
             self.phyloTree.set(key, value);
