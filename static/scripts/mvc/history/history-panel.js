@@ -625,7 +625,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var $newRender = $( '<div/>' );
 
         // render based on anonymity, set up behaviors
-        if( Galaxy.currUser.isAnonymous() ){
+        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
             $newRender.append( HistoryPanel.templates.anonHistoryPanel( this.model.toJSON() ) );
 
         } else {
