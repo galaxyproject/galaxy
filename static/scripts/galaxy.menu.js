@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.master", "libs/backbone/backbone-relational"], function(mod_master) {
+define(["galaxy.masthead", "libs/backbone/backbone-relational"], function(mod_masthead) {
 
 // frame manager
 var GalaxyMenu = Backbone.Model.extend(
@@ -11,14 +11,14 @@ var GalaxyMenu = Backbone.Model.extend(
     // options
     options: null,
     
-    // link master class
-    master: null,
+    // link masthead class
+    masthead: null,
     
     // initialize
     initialize: function(options)
     {
         this.options = options.config;
-        this.master  = options.master;
+        this.masthead  = options.masthead;
         this.create();
     },
     
@@ -28,26 +28,26 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // Analyze data tab.
         //
-        var tab_analysis = new mod_master.GalaxyMasterTab({
+        var tab_analysis = new mod_masthead.GalaxyMastheadTab({
             title   : "Analyze Data",
             content : "root/index"
         });
-        this.master.append(tab_analysis);
+        this.masthead.append(tab_analysis);
 
         //
         // Workflow tab.
         //
-        var tab_workflow = new mod_master.GalaxyMasterTab({
+        var tab_workflow = new mod_masthead.GalaxyMastheadTab({
             title   : "Workflow",
             content : "workflow"
 
         });
-        this.master.append(tab_workflow);
+        this.masthead.append(tab_workflow);
 
         //
         // 'Shared Items' or Libraries tab.
         //
-        var tab_shared = new mod_master.GalaxyMasterTab({
+        var tab_shared = new mod_masthead.GalaxyMastheadTab({
             title   : "Shared Data",
             content : "library/index"
         });
@@ -79,14 +79,14 @@ var GalaxyMenu = Backbone.Model.extend(
             content : "page/list_published"
         });
 
-        this.master.append(tab_shared);
+        this.masthead.append(tab_shared);
 
         //
         // Lab menu.
         //
         if (this.options.user.requests)
         {
-            var tab_lab = new mod_master.GalaxyMasterTab({
+            var tab_lab = new mod_masthead.GalaxyMastheadTab({
                 title   : "Lab"
             });
             tab_lab.addMenu({
@@ -101,13 +101,13 @@ var GalaxyMenu = Backbone.Model.extend(
                 title   : "Help",
                 content : this.options.lims_doc_url
             });
-            this.master.append(tab_lab);
+            this.masthead.append(tab_lab);
         }
 
         //
         // Visualization tab.
         //
-        var tab_visualization = new mod_master.GalaxyMasterTab({
+        var tab_visualization = new mod_masthead.GalaxyMastheadTab({
 
             title       : "Visualization",
             content     : "visualization/list"
@@ -122,14 +122,14 @@ var GalaxyMenu = Backbone.Model.extend(
             content     : "visualization/list",
             target      : "_frame"
         });
-        this.master.append(tab_visualization);
+        this.masthead.append(tab_visualization);
 
         //
         // Cloud menu.
         //
         if (this.options.enable_cloud_launch)
         {
-            var tab_cloud = new mod_master.GalaxyMasterTab({
+            var tab_cloud = new mod_masthead.GalaxyMastheadTab({
                 title   : "Cloud",
                 content : "cloudlaunch/index"
             });
@@ -137,7 +137,7 @@ var GalaxyMenu = Backbone.Model.extend(
                 title   : "New Cloud Cluster",
                 content : "cloudlaunch/index"
             });
-            this.master.append(tab_cloud);
+            this.masthead.append(tab_cloud);
         }
 
         //
@@ -145,18 +145,18 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         if (this.options.is_admin_user)
         {
-            var tab_admin = new mod_master.GalaxyMasterTab({
+            var tab_admin = new mod_masthead.GalaxyMastheadTab({
                 title       : "Admin",
                 content     : "admin/index",
                 extra_class : "admin-only"
             });
-            this.master.append(tab_admin);
+            this.masthead.append(tab_admin);
         }
 
         //
         // Help tab.
         //
-        var tab_help = new mod_master.GalaxyMasterTab({
+        var tab_help = new mod_masthead.GalaxyMastheadTab({
             title   : "Help"
         });
         if (this.options.biostar_url)
@@ -210,14 +210,14 @@ var GalaxyMenu = Backbone.Model.extend(
                 target  : "_blank"
             });
         }
-        this.master.append(tab_help);
+        this.masthead.append(tab_help);
 
         //
         // User tab.
         //
         if (!this.options.user.valid)
         {
-            var tab_user = new mod_master.GalaxyMasterTab({
+            var tab_user = new mod_masthead.GalaxyMastheadTab({
                 title       : "User",
                 extra_class : "loggedout-only"
             });
@@ -242,10 +242,10 @@ var GalaxyMenu = Backbone.Model.extend(
                 });
             }
 
-            // add to master
-            this.master.append(tab_user);
+            // add to masthead
+            this.masthead.append(tab_user);
         } else {
-            var tab_user = new mod_master.GalaxyMasterTab({
+            var tab_user = new mod_masthead.GalaxyMastheadTab({
                 title       : "User",
                 extra_class : "loggedin-only"
             });
@@ -316,8 +316,8 @@ var GalaxyMenu = Backbone.Model.extend(
                 });
             }
 
-            // add to master
-            this.master.append(tab_user);
+            // add to masthead
+            this.masthead.append(tab_user);
         }
     }
 });

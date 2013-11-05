@@ -1,15 +1,15 @@
 /*
-    galaxy master
+    galaxy masthead
 */
 
 // dependencies
 define(["utils/galaxy.utils", "libs/backbone/backbone-relational"], function(mod_utils) {
 
-// master
-var GalaxyMaster = Backbone.View.extend(
+// masthead
+var GalaxyMasthead = Backbone.View.extend(
 {
     // base element
-    el_master: '#everything',
+    el_masthead: '#everything',
     
     // options
     options : null,
@@ -41,11 +41,11 @@ var GalaxyMaster = Backbone.View.extend(
         // define this element
         this.setElement($(this._template(options)));
         
-        // append to master
-        $(this.el_master).append($(this.el));
+        // append to masthead
+        $(this.el_masthead).append($(this.el));
         
         // assign background
-        this.$background = $(this.el).find('#master-background');
+        this.$background = $(this.el).find('#masthead-background');
         
         // loop through item specific unload functions
         // and collect all there warning messages, regarding
@@ -72,33 +72,33 @@ var GalaxyMaster = Backbone.View.extend(
         'mousedown' : function(e) { e.preventDefault() }
     },
 
-    // adds a new item to the master
+    // adds a new item to the masthead
     append : function(item)
     {
         return this._add(item, true);
     },
     
-    // adds a new item to the master
+    // adds a new item to the masthead
     prepend : function(item)
     {
         return this._add(item, false);
     },
     
-    // adds a new item to the master
+    // adds a new item to the masthead
     _add : function(item, append)
     {
-        var $loc = $(this.el).find('#' + item.masterLocation);
+        var $loc = $(this.el).find('#' + item.mastheadLocation);
         if ($loc)
         {
             // create frame for new item
-            var itemId = 'master-item-' + this.itemCounter++;
+            var itemId = 'masthead-item-' + this.itemCounter++;
             var $itemNew = $(item.el);
             
             // configure id and class in order to mark new items
             $itemNew.attr('id', itemId);
-            $itemNew.addClass('master-item');
+            $itemNew.addClass('masthead-item');
             
-            // append to master
+            // append to masthead
             if (append) {
                 $loc.append($itemNew);
             } else {
@@ -120,7 +120,7 @@ var GalaxyMaster = Backbone.View.extend(
     _eventRefresh: function(e)
     {
         // identify current item
-        var itemCurrent = $(e.target).closest('.master-item');
+        var itemCurrent = $(e.target).closest('.masthead-item');
         
         // get identifier
         if (itemCurrent.length)
@@ -131,8 +131,8 @@ var GalaxyMaster = Backbone.View.extend(
         {
             var it = this.list[this.itemLast];
             if (it) {
-                if (it.masterReset) {
-                    it.masterReset();
+                if (it.mastheadReset) {
+                    it.mastheadReset();
                 }
             }
         }
@@ -143,7 +143,7 @@ var GalaxyMaster = Backbone.View.extend(
         {
             var it = this.list[itemCurrent];
             if (it) {
-                if (it.masterReset) {
+                if (it.mastheadReset) {
                     if (this.itemLast == itemCurrent) {
                         useBackground = this.backgroundVisible ? false : true;
                     } else {
@@ -172,7 +172,7 @@ var GalaxyMaster = Backbone.View.extend(
     // template item
     _templateItem: function(id)
     {
-        return '<div id="' + id + '" class="master-item"></div>';
+        return '<div id="' + id + '" class="masthead-item"></div>';
     },
     
     // fill template
@@ -191,13 +191,13 @@ var GalaxyMaster = Backbone.View.extend(
                     '<div class="quota-meter-container"></div>' +
                     '<div id="iconbar" class="iconbar"></div>' +
                 '</div>' +
-                '<div id="master-background" style="display: none; position: absolute; top: 33px; width: 100%; height: 100%; z-index: 1010"></div>' +
+                '<div id="masthead-background" style="display: none; position: absolute; top: 33px; width: 100%; height: 100%; z-index: 1010"></div>' +
                 '</div>';
     }
 });
 
 // icon
-var GalaxyMasterIcon = Backbone.View.extend(
+var GalaxyMastheadIcon = Backbone.View.extend(
 {
     // icon options
     options:
@@ -211,8 +211,8 @@ var GalaxyMasterIcon = Backbone.View.extend(
         visible         : true
     },
     
-    // location identifier for master class
-    masterLocation: 'iconbar',
+    // location identifier for masthead class
+    mastheadLocation: 'iconbar',
     
     // initialize
     initialize: function (options)
@@ -290,7 +290,7 @@ var GalaxyMasterIcon = Backbone.View.extend(
 });
 
 // tab
-var GalaxyMasterTab = Backbone.View.extend(
+var GalaxyMastheadTab = Backbone.View.extend(
 {
     // main options
     options:
@@ -306,7 +306,7 @@ var GalaxyMasterTab = Backbone.View.extend(
     },
     
     // location
-    masterLocation: 'navbar',
+    mastheadLocation: 'navbar',
     
     // optional sub menu
     $menu: null,
@@ -414,8 +414,8 @@ var GalaxyMasterTab = Backbone.View.extend(
             this.$menu.append($(this._templateDivider()));
     },
     
-    // add reset function called by master
-    masterReset: function()
+    // add reset function called by masthead
+    mastheadReset: function()
     {
         this._hideMenu();
     },
@@ -490,9 +490,9 @@ var GalaxyMasterTab = Backbone.View.extend(
 
 // return
 return {
-    GalaxyMaster: GalaxyMaster,
-    GalaxyMasterTab: GalaxyMasterTab,
-    GalaxyMasterIcon: GalaxyMasterIcon
+    GalaxyMasthead: GalaxyMasthead,
+    GalaxyMastheadTab: GalaxyMastheadTab,
+    GalaxyMastheadIcon: GalaxyMastheadIcon
 };
 
 });

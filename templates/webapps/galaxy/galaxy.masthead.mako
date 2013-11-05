@@ -25,11 +25,11 @@
 %>
 </%def>
 
-## master head generator
+## masthead head generator
 <%def name="load()">
     <%
         ## get configuration
-        master_config = {
+        masthead_config = {
             ## inject configuration
             'brand'                     : app.config.get("brand", ""),
             'use_remote_user'           : app.config.use_remote_user,
@@ -70,37 +70,37 @@
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'galaxy.upload'],
-        function(mod_master, mod_menu, mod_modal, mod_frame, mod_upload)
+        require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'galaxy.upload'],
+        function(mod_masthead, mod_menu, mod_modal, mod_frame, mod_upload)
         {
-            ## check if master is available
-            if (Galaxy.master)
+            ## check if masthead is available
+            if (Galaxy.masthead)
                 return;
 
             ## get configuration
-            var master_config = ${ h.to_json_string( master_config ) };
+            var masthead_config = ${ h.to_json_string( masthead_config ) };
 
             ## set up the quota meter (And fetch the current user data from trans)
-            Galaxy.currUser = new User(master_config.user.json);
+            Galaxy.currUser = new User(masthead_config.user.json);
 
             ## load global galaxy objects
-            Galaxy.master = new mod_master.GalaxyMaster(master_config);
+            Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
             Galaxy.modal = new mod_modal.GalaxyModal();
             Galaxy.frame = new mod_frame.GalaxyFrame();
 
             ## construct default menu options
             Galaxy.menu = new mod_menu.GalaxyMenu({
-                master: Galaxy.master,
-                config: master_config
+                masthead: Galaxy.masthead,
+                config: masthead_config
             });
             
             ## add upload plugin
             ##Galaxy.upload = new mod_upload.GalaxyUpload();
 
-            ## add quota meter to master
+            ## add quota meter to masthead
             Galaxy.quotaMeter = new UserQuotaMeter({
                 model   : Galaxy.currUser,
-                el      : $(Galaxy.master.el).find('.quota-meter-container')
+                el      : $(Galaxy.masthead.el).find('.quota-meter-container')
             }).render();
         });
     </script>

@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.master", "libs/backbone/backbone-relational"], function(mod_master) {
+define(["galaxy.masthead", "libs/backbone/backbone-relational"], function(mod_masthead) {
 
 // frame manager
 var GalaxyFrame = Backbone.View.extend(
@@ -79,11 +79,11 @@ var GalaxyFrame = Backbone.View.extend(
     // initialize
     initialize : function(options)
     {
-        // add to master menu
+        // add to masthead menu
         var self = this;
         
         // add activate icon
-        this.button_active = new mod_master.GalaxyMasterIcon (
+        this.button_active = new mod_masthead.GalaxyMastheadIcon (
         {
             icon        : 'fa-th',
             tooltip     : 'Enable/Disable Scratchbook',
@@ -94,11 +94,11 @@ var GalaxyFrame = Backbone.View.extend(
             }
         });
         
-        // add to master
-        Galaxy.master.append(this.button_active);
+        // add to masthead
+        Galaxy.masthead.append(this.button_active);
 
         // add load icon
-        this.button_load = new mod_master.GalaxyMasterIcon (
+        this.button_load = new mod_masthead.GalaxyMastheadIcon (
         {
             icon        : 'fa-eye',
             tooltip     : 'Show/Hide Scratchbook',
@@ -106,8 +106,8 @@ var GalaxyFrame = Backbone.View.extend(
             with_number : true
         });
 
-        // add to master
-        Galaxy.master.append(this.button_load);
+        // add to masthead
+        Galaxy.masthead.append(this.button_load);
         
         // read in defaults
         if (options)
