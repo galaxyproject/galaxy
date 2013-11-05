@@ -173,10 +173,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             var self = this;
             displayBtnData.onclick = function(){
                 Galaxy.frame_manager.frame_new({
-                    title   : "Data Viewer: " + self.model.get('name'),
-                    type    : "url",
-                    location: "center",
-                    content : self.urls.display
+                    title       : "Data Viewer: " + self.model.get('name'),
+                    type        : "url",
+                    target      : "galaxy_main",
+                    content     : self.urls.display
                 });
             };
         }

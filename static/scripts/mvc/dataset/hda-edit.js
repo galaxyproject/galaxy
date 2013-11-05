@@ -232,9 +232,9 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                     return function(){// add widget
                         Galaxy.frame_manager.frame_new(
                         {
-                            title    : "Visualization",
-                            type     : "url",
-                            content  : visualization_url + '/' + visualization + '?' + $.param( params )
+                            title       : "Visualization",
+                            type        : "url",
+                            content     : visualization_url + '/' + visualization + '?' + $.param( params )
                         });
                     };
             }
@@ -491,10 +491,11 @@ function create_scatterplot_action_fn( url, params ){
         // add widget
         Galaxy.frame_manager.frame_new(
         {
-            title      : "Scatterplot",
-            type       : "url",
-            content    : url + '/scatterplot?' + $.param(params),
-            location   : 'center'
+            title       : "Scatterplot",
+            type        : "url",
+            content     : url + '/scatterplot?' + $.param(params),
+            target      : 'galaxy_main',
+            scratchbook : true
         });
 
         //TODO: this needs to go away
@@ -553,9 +554,10 @@ function create_scatterplot_action_fn( url, params ){
                                         
                                                 // add widget
                                                 parent.Galaxy.frame_manager.frame_new({
-                                                    title    : "Trackster",
-                                                    type     : "url",
-                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                    title       : "Trackster",
+                                                    type        : "url",
+                                                    content     : vis_url + "/trackster?" + $.param(dataset_params),
+                                                    scratchbook : true
                                                 });
                                             });
                                         }
@@ -570,9 +572,10 @@ function create_scatterplot_action_fn( url, params ){
 
                                 // add widget
                                 parent.Galaxy.frame_manager.frame_new({
-                                    title    : "Trackster",
-                                    type     : "url",
-                                    content  : url
+                                    title       : "Trackster",
+                                    type        : "url",
+                                    content     : url,
+                                    scratchbook : true
                                 });
                             }
                         }
