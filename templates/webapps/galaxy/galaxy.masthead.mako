@@ -86,7 +86,7 @@
             ## load global galaxy objects
             Galaxy.master = new mod_master.GalaxyMaster(master_config);
             Galaxy.modal = new mod_modal.GalaxyModal();
-            Galaxy.frame_manager = new mod_frame.GalaxyFrameManager();
+            Galaxy.frame = new mod_frame.GalaxyFrame();
 
             ## construct default menu options
             Galaxy.menu = new mod_menu.GalaxyMenu({

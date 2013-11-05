@@ -6,7 +6,7 @@
 define(["galaxy.master", "libs/backbone/backbone-relational"], function(mod_master) {
 
 // frame manager
-var GalaxyFrameManager = Backbone.View.extend(
+var GalaxyFrame = Backbone.View.extend(
 {
     // base element
     el_main: 'body',
@@ -164,7 +164,7 @@ var GalaxyFrameManager = Backbone.View.extend(
     },
     
     // adds and displays a new frame/window
-    frame_new: function(options)
+    add: function(options)
     {
         // frame default options
         var frameOptions =
@@ -1134,7 +1134,7 @@ var GalaxyFrameManager = Backbone.View.extend(
 
 // return
 return {
-    GalaxyFrameManager: GalaxyFrameManager
+    GalaxyFrame: GalaxyFrame
 };
 
 });

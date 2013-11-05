@@ -230,7 +230,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                     return create_scatterplot_action_fn( visualization_url, params );
                 default:
                     return function(){// add widget
-                        Galaxy.frame_manager.frame_new(
+                        Galaxy.frame.add(
                         {
                             title       : "Visualization",
                             type        : "url",
@@ -489,7 +489,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 function create_scatterplot_action_fn( url, params ){
     action = function() {
         // add widget
-        Galaxy.frame_manager.frame_new(
+        Galaxy.frame.add(
         {
             title       : "Scatterplot",
             type        : "url",
@@ -553,7 +553,7 @@ function create_scatterplot_action_fn( url, params ){
                                                 dataset_params.id = vis_id;
                                         
                                                 // add widget
-                                                parent.Galaxy.frame_manager.frame_new({
+                                                parent.Galaxy.frame.add({
                                                     title       : "Trackster",
                                                     type        : "url",
                                                     content     : vis_url + "/trackster?" + $.param(dataset_params),
@@ -571,7 +571,7 @@ function create_scatterplot_action_fn( url, params ){
                                 var url = vis_url + "/trackster?" + $.param(dataset_params);
 
                                 // add widget
-                                parent.Galaxy.frame_manager.frame_new({
+                                parent.Galaxy.frame.add({
                                     title       : "Trackster",
                                     type        : "url",
                                     content     : url,

@@ -99,10 +99,11 @@ var GalaxyMaster = Backbone.View.extend(
             $itemNew.addClass('master-item');
             
             // append to master
-            if (append)
+            if (append) {
                 $loc.append($itemNew);
-            else
+            } else {
                 $loc.prepend($itemNew);
+            }
             
             // add to list
             this.list[itemId] = item;
@@ -129,9 +130,11 @@ var GalaxyMaster = Backbone.View.extend(
         if (this.itemLast && this.itemLast != itemCurrent)
         {
             var it = this.list[this.itemLast];
-            if (it)
-                if (it.masterReset)
+            if (it) {
+                if (it.masterReset) {
                     it.masterReset();
+                }
+            }
         }
         
         // check if current item is in active state
@@ -139,21 +142,23 @@ var GalaxyMaster = Backbone.View.extend(
         if (itemCurrent)
         {
             var it = this.list[itemCurrent];
-            if (it)
-                if (it.masterReset)
-                {
-                    if (this.itemLast == itemCurrent)
+            if (it) {
+                if (it.masterReset) {
+                    if (this.itemLast == itemCurrent) {
                         useBackground = this.backgroundVisible ? false : true;
-                    else
+                    } else {
                         useBackground = true;
+                    }
                 }
+            }
         }
         
         // decide wether to show/hide  background
-        if (useBackground)
+        if (useBackground) {
             this.$background.show();
-        else
+        } else {
             this.$background.hide();
+        }
         
         // backup
         this.backgroundVisible = useBackground;
@@ -401,7 +406,7 @@ var GalaxyMasterTab = Backbone.View.extend(
                 return true;
             
             // load into frame
-            Galaxy.frame_manager.frame_new(options);
+            Galaxy.frame.add(options);
         });
         
         // append divider
@@ -445,7 +450,7 @@ var GalaxyMasterTab = Backbone.View.extend(
             }
         } else {
             // open new frame
-            Galaxy.frame_manager.frame_new(this.options);
+            Galaxy.frame.add(this.options);
         }
     },
     
