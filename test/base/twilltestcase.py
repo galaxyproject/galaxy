@@ -1320,9 +1320,12 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
         if repeat_name is not None:
             repeat_button = '%s_add' % repeat_name
+            # Must click somewhere in tool_form, to disambiguate what form
+            # is being targetted. 
+            tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
             # Submit the "repeat" form button to add an input)
             tc.submit( repeat_button )
-            print "button '%s' clicked" % repeat_button
+            #print "button '%s' clicked" % repeat_button
         tc.find( 'runtool_btn' )
         self.submit_form( **kwd )
 
