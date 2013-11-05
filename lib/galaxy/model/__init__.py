@@ -1751,6 +1751,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
 
+        # add tags string list
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname

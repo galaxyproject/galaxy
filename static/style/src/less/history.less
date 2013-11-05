@@ -95,6 +95,7 @@
         }
         .history-title input {
             font-weight: bold;
+            width: 100%;
             // keep the text in position
             margin: -2px 0px -2px -4px;
         }
@@ -148,9 +149,21 @@
         .annotation-display {
             .annotation {
                 border-radius: 3px;
-                border: 1px solid fadout( @layout-border-color, 50% );
+                border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
                 white-space: pre-line;
+            }
+            .annotation:empty {
+                height: @icon-btn-size;
+            }
+            // fake placeholder for editable text annotation
+            .annotation:empty:after {
+                position: relative;
+                top: -4px;
+                font-size: 10px;
+                font-style: italic;
+                color: grey;
+                content : 'Click here to edit annotation';
             }
             textarea {
                 margin: 0px 0px 2px 0px;
@@ -221,6 +234,13 @@
         font-size: 90%;
     }
 
+    .help-text {
+        font-weight: normal;
+        font-style: italic;
+        font-size: 90%;
+        color: #555;
+    }
+
     .dataset-title-bar {
         cursor: pointer;
         .dataset-padding;
@@ -265,10 +285,7 @@
             font-weight: normal;
         }
         .prompt {
-            font-weight: normal;
-            font-style: italic;
-            font-size: 90%;
-            color: #555;
+            .help-text;
         }
         .prompt:after {
             content: ':';
@@ -286,6 +303,7 @@
             }
             .dataset-datatype .value:after {
                 content: ',';
+                .help-text;
             }
             .dataset-dbkey:after {
                 content: ' ';
@@ -298,6 +316,13 @@
                     white-space: pre-line;
                 }
             }
+
+            .job-error-text {
+                .info-section;
+                overflow: auto;
+                white-space: pre;
+            }
+
             // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
             .vertical-spacing;
         }
@@ -345,6 +370,18 @@
             .annotation {
                 .info-section;
                 white-space: pre-line;
+            }
+            .annotation:empty {
+                height: @icon-btn-size;
+            }
+            // fake placeholder for editable text annotation
+            .annotation:empty:after {
+                position: relative;
+                top: -4px;
+                font-size: 10px;
+                font-style: italic;
+                color: grey;
+                content : 'Click here to edit annotation';
             }
             textarea {
                 margin: 0px 0px 2px 0px;

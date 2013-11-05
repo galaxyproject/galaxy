@@ -1517,7 +1517,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .message-container [class$=message]{margin:0px}
 .history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-title{margin-bottom:4px}
 .history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
-.history-panel .history-controls .history-title input{font-weight:bold;margin:-2px 0 -2px -4px}
+.history-panel .history-controls .history-title input{font-weight:bold;width:100%;margin:-2px 0 -2px -4px}
 .history-panel .history-controls .history-subtitle{margin-bottom:8px}
 .history-panel .history-controls .history-size{float:left}
 .history-panel .history-controls .history-secondary-actions{float:right}.history-panel .history-controls .history-secondary-actions .icon-btn{margin-left:2px}
@@ -1526,7 +1526,9 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .tags-display label:after,.history-panel .history-controls .annotation-display label:after{content:':'}
 .history-panel .history-controls .tags-display .select2-container{min-width:0px}.history-panel .history-controls .tags-display .select2-container .select2-choices{border-radius:3px}
 .history-panel .history-controls .tags-display input{border-radius:3px}
-.history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid fadout(#999, 50%);padding:4px;white-space:pre-line}
+.history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line}
+.history-panel .history-controls .annotation-display .annotation:empty{height:20px}
+.history-panel .history-controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .history-panel .dataset{border-width:1px 0px 0px 0px}
 .history-panel .dataset:last-child{border-width:1px 0px 1px 0px}
@@ -1536,6 +1538,7 @@ div.permissionContainer{padding-left:20px}
 .dataset .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
 .dataset .dataset-padding{padding:6px 10px 6px 8px}
 .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
+.dataset .help-text{font-weight:normal;font-style:italic;font-size:90%;color:#555}
 .dataset .dataset-title-bar{cursor:pointer;padding:6px 10px 6px 8px}
 .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-break:normal;line-height:16px}
 .dataset .dataset-primary-actions{float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
@@ -1545,15 +1548,18 @@ div.permissionContainer{padding-left:20px}
 .dataset .dataset-body .prompt:after{content:':'}
 .dataset .dataset-body .dataset-summary{margin-bottom:8px}.dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
 .dataset .dataset-body .dataset-summary .dataset-datatype,.dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.dataset .dataset-body .dataset-summary .dataset-datatype .value,.dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
-.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:','}
+.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;font-style:italic;font-size:90%;color:#555}
 .dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
 .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}.dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
+.dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
 .dataset .dataset-body .dataset-actions .left{float:left}.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
 .dataset .dataset-body .dataset-actions .left .icon-btn-group{margin-right:2px}.dataset .dataset-body .dataset-actions .left .icon-btn-group .icon-btn{margin-right:0}
 .dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
 .dataset .dataset-body .dataset-actions .right{float:right}.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
 .dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.dataset .dataset-body .tags-display .select2-container{min-width:0px}.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
 .dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
+.dataset .dataset-body .annotation-display .annotation:empty{height:20px}
+.dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
 .dataset .dataset-body .dataset-peek{margin-bottom:8px}.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}

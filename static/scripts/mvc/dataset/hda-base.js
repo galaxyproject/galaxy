@@ -180,8 +180,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
                 });
             };
         }
-        //return new IconButtonView({ model : new IconButton( displayBtnData ) }).render().$el;
-
         displayBtnData.faIcon = 'fa-eye';
         return faIconButton( displayBtnData );
     },
@@ -199,7 +197,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // return either: a single download icon-button (if there are no meta files)
         if( _.isEmpty( meta_files ) ){
             return $([
-                //'<a href="', urls.download, '" title="', _l( 'Download' ), '" class="icon-button disk"></a>'
                 '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>'
@@ -207,7 +204,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
 
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
-//TODO: Popupmenu
+        //TODO: Popupmenu
         var menuId = 'dataset-' + this.model.get( 'id' ) + '-popup',
             html = [
                 '<div popupmenu="' + menuId + '">',
@@ -240,12 +237,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      */
     _render_showParamsButton : function(){
         // gen. safe to show in all cases
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'View details' ),
-        //    href        : this.urls.show_params,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'information'
-        //}) }).render().$el;
         return faIconButton({
             title       : _l( 'View details' ),
             href        : this.urls.show_params,
@@ -339,8 +330,10 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
     /** Render an HDA whose job has failed. */
     _render_body_error : function(){
-        var html = _l( 'An error occurred with this dataset' )
-            + ': <i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>';
+        var html = [
+            '<span class="help-text">', _l( 'An error occurred with this dataset' ), ':</span>',
+            '<div class="job-error-text">', $.trim( this.model.get( 'misc_info' ) ), '</div>'
+        ].join( '' );
         if( !this.model.get( 'purged' ) ){
             html = '<div>' + this.model.get( 'misc_blurb' ) + '</div>' + html;
         }

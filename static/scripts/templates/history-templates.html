@@ -38,17 +38,8 @@
             {{#local}}Tool execution is on hold until your disk usage drops below your allocated quota{{/local}}.
         </div>
         
-        {{! tags and annotations }}
-        {{! TODO: move to mvc/tag.js }}
         <div class="tags-display"></div>
-
-        {{! TODO: move to mvc/annotations.js }}
-        <div class="annotation-display">
-            <label class="prompt">{{#local}}Annotation{{/local}}</label>
-            <div class="annotation" title="{{#local}}Click to edit annotation{{/local}}"
-                {{! need to elimate the whitespace in this }}
-                >{{#if annotation}}{{annotation}}{{/if}}</div>
-        </div>
+        <div class="annotation-display"></div>
 
     </div>{{! end history-controls }}
 

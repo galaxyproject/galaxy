@@ -97,15 +97,8 @@
     </div>
 
     {{#unless deleted }}
-    {{! TODO: move to mvc/tag.js }}
     <div class="tags-display"></div>
-
-    {{! TODO: move to mvc/annotations.js }}
-    <div class="annotation-display">
-        <label class="prompt">{{#local}}Annotation{{/local}}</label>
-        <div id="dataset-{{ id }}-annotation" class="annotation editable-text"
-             title="{{#local}}Edit dataset annotation{{/local}}"></div>
-    </div>
+    <div class="annotation-display"></div>
 
     <div class="dataset-display-applications">
         {{#each display_apps}}

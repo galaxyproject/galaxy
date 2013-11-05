@@ -361,7 +361,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
                 if not isinstance( val, bool ):
                     raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'published' ] = val
-            elif key == 'genome_build':
+            elif key == 'genome_build' and val is not None:
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )

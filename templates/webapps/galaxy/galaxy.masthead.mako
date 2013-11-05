@@ -6,7 +6,9 @@
     if trans.user:
         user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
-        user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+        user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
+        users_api_controller = trans.webapp.api_controllers[ 'users' ]
+        user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
     else:
         usage = 0
         percent = None

@@ -86,10 +86,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset must finish uploading before it can be edited' );
         }
-
-        
-        //return new IconButtonView({ model : new IconButton( editBtnData ) }).render().$el;
-
         editBtnData.faIcon = 'fa-pencil';
         return faIconButton( editBtnData );
     },
@@ -124,8 +120,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                 enabled     : false
             };
         }
-        //return new IconButtonView({ model : new IconButton( deleteBtnData ) }).render().$el;
-
         deleteBtnData.faIcon = 'fa-times';
         return faIconButton( deleteBtnData );
     },
@@ -138,14 +132,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         if( this.model.get( 'state' ) !== hdaModel.HistoryDatasetAssociation.STATES.ERROR ){
             return null;
         }
-        
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'View or report this error' ),
-        //    href        : this.urls.report_error,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'bug'
-        //})}).render().$el;
-
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
@@ -158,13 +144,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_rerunButton : function(){
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Run this job again' ),
-        //    href        : this.urls.rerun,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'arrow-circle'
-        //}) }).render().$el;
-
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
@@ -203,15 +182,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             };
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
-
-        // render the icon from template
-        //var visualizationsButton = new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Visualize' ),
-        //    href        : this.urls.visualization,
-        //    icon_class  : 'chart_curve'
-        //})});
-        //var $icon = visualizationsButton.render().addClass( 'visualize-icon' ); // needed?
-        ////return visualizationsButton.render().$el;
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
@@ -264,13 +234,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
             return null;
         }
-
-        // render the icon from template
-        //var visualizationsButton = new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Visualize' ),
-        //    icon_class  : 'chart_curve'
-        //})});
-        //var $icon = visualizationsButton.render().$el;
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
             faIcon      : 'fa-bar-chart-o'
@@ -291,49 +254,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             var popup = new PopupMenu( $icon, popup_menu_options );
         }
         return $icon;
-    },
-    
-    // ......................................................................... secondary actions
-    /** Render icon-button to load and display tagging html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_tagButton : function(){
-        if( !this.hasUser ){
-            return null;
-        }
-        
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit dataset tags' ),
-        //    target      : 'galaxy_main',
-        //    href        : this.urls.tags.get,
-        //    icon_class  : 'tags'
-        //})}).render().$el;
-
-        return faIconButton({
-            title       : _l( 'Edit dataset tags' ),
-            classes     : 'dataset-tag-btn',
-            faIcon      : 'fa-tags'
-        });
-    },
-
-    /** Render icon-button to load and display annotation html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_annotateButton : function(){
-        if( !this.hasUser ){
-            return null;
-        }
-
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit dataset annotation' ),
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'annotate'
-        //})}).render().$el;
-        return faIconButton({
-            title       : _l( 'Edit dataset annotation' ),
-            classes     : 'dataset-annotate-btn',
-            faIcon      : 'fa-comment'
-        });
     },
     
     // ......................................................................... state body renderers
@@ -375,16 +295,37 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         this.makeDbkeyEditLink( $body );
 
         // more actions/buttons
-        $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
-        $body.find( '.dataset-actions .right' ).append([
-            this._render_tagButton(),
-            this._render_annotateButton()
-        ]);
-        this.tagsEditor = new TagsEditor({
-            model   : this.model,
-            el      : $body.find( '.tags-display' )
-        }).render();
+        if( this.hasUser ){
+            $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+            this._renderTags( $body );
+            this._renderAnnotation( $body );
+        }
         return $body;
+    },
+
+    _renderTags : function( $where ){
+        this.tagsEditor = new TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            $activator      : faIconButton({
+                title   : _l( 'Edit dataset tags' ),
+                classes : 'dataset-tag-btn',
+                faIcon  : 'fa-tags'
+            }).appendTo( $where.find( '.dataset-actions .right' ) )
+        });
+    },
+    _renderAnnotation : function( $where ){
+        this.annotationEditor = new AnnotationEditor({
+            model           : this.model,
+            el              : $where.find( '.annotation-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            $activator      : faIconButton({
+                title   : _l( 'Edit dataset annotation' ),
+                classes : 'dataset-annotate-btn',
+                faIcon  : 'fa-comment'
+            }).appendTo( $where.find( '.dataset-actions .right' ) )
+        });
     },
 
     makeDbkeyEditLink : function( $body ){
@@ -402,70 +343,13 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         'click .dataset-title-bar'      : 'toggleBodyVisibility',
         'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
-        'click .dataset-purge'          : 'confirmPurge',
-
-        'click .dataset-tag-btn'        : 'displayTags',
-        'click .dataset-annotate-btn'   : 'loadAndDisplayAnnotation'
+        'click .dataset-purge'          : 'confirmPurge'
     },
     
     /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){
-//TODO: confirm dialog
+        //TODO: confirm dialog
         this.model.purge();
-        return false;
-    },
-
-    // ......................................................................... tags
-    /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
-     */
-//TODO: into sub-MV
-    displayTags : function( event ){
-        this.$el.find( '.tags-display' ).slideToggle( this.fxSpeed );
-        return false;
-    },
-
-    // ......................................................................... annotations
-    /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
-     */
-    loadAndDisplayAnnotation : function( event ){
-//TODO: this is a drop in from history.mako - should use MV as well
-        this.log( this + '.loadAndDisplayAnnotation', event );
-        var view = this,
-            $annotationArea = this.$el.find( '.annotation-display' ),
-            $annotationElem = $annotationArea.find( '.annotation' );
-
-        // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-        if ( $annotationArea.is( ":hidden" ) ){
-            if( !jQuery.trim( $annotationElem.html() ) ){
-                // Need to fill annotation element.
-                var xhr = $.ajax( this.urls.annotation.get );
-                xhr.fail( function( xhr, status, error ){
-                    view.log( "Annotation failed", xhr, status, error );
-                    view.trigger( 'error', view, xhr, {}, _l( "Annotation failed" ) );
-                });
-                xhr.done( function( html ){
-                    html = html || "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
-                    $annotationElem.html( html );
-                    $annotationArea.find( "[title]" ).tooltip();
-
-                    $annotationElem.make_text_editable({
-                        use_textarea: true,
-                        on_finish: function( newAnnotation ){
-                            $annotationElem.text( newAnnotation );
-                            view.model.save({ annotation: newAnnotation }, { silent: true })
-                                .fail( function(){
-                                    $annotationElem.text( view.model.previous( 'annotation' ) );
-                                });
-                        }
-                    });
-                    $annotationArea.slideDown( view.fxSpeed );
-                });
-            } else {
-                $annotationArea.slideDown( view.fxSpeed );
-            }
-        } else {
-            $annotationArea.slideUp( view.fxSpeed );
-        }
         return false;
     },
 

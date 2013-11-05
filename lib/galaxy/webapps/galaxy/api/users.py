@@ -71,6 +71,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin ):
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                   'total_disk_usage': float } )
+
+        # add a list of tags used by the user (as strings)
         item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??

@@ -13,9 +13,6 @@ TODO:
     tags & annotations -> out
     use model.save instead of urls
 
-    meta:
-        convert function comments to jsDoc style, complete comments
-    
     feature creep:
         lineage
         hide button
@@ -633,14 +630,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         } else {
             $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
-            $newRender.find( '.history-secondary-actions' ).append([
-                this._render_tagButton(),
-                this._render_annotateButton()
-            ]);
-            this.tagsEditor = new TagsEditor({
-                model   : this.model,
-                el      : $newRender.find( '.history-controls .tags-display' )
-            }).render();
+            this._renderTags( $newRender );
+            this._renderAnnotation( $newRender );
         }
         this._setUpBehaviours( $newRender );
 
@@ -654,34 +645,29 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return $newRender;
     },
 
-    /** Render icon-button to load and display tagging html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_tagButton : function(){
-        return faIconButton({
-            title       : _l( 'Edit history tags' ),
-            classes     : 'history-tag-button',
-            faIcon      : 'fa-tags'
+    _renderTags : function( $where ){
+        this.tagsEditor = new TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.history-controls .tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            $activator      : faIconButton({
+                title   : _l( 'Edit history tags' ),
+                classes : 'history-tag-btn',
+                faIcon  : 'fa-tags'
+            }).appendTo( $where.find( '.history-secondary-actions' ) )
         });
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit history tags' ),
-        //    icon_class  : 'tags'
-        //})}).render().$el;
     },
-
-    /** Render icon-button to load and display annotation html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_annotateButton : function(){
-        return faIconButton({
-            title       : _l( 'Edit history tags' ),
-            classes     : 'history-annotate-button',
-            faIcon      : 'fa-comment'
+    _renderAnnotation : function( $where ){
+        this.annotationEditor = new AnnotationEditor({
+            model           : this.model,
+            el              : $where.find( '.history-controls .annotation-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            $activator      : faIconButton({
+                title   : _l( 'Edit history tags' ),
+                classes : 'history-annotate-btn',
+                faIcon  : 'fa-comment'
+            }).appendTo( $where.find( '.history-secondary-actions' ) )
         });
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit history annotation' ),
-        //    icon_class  : 'annotate'
-        //})}).render().$el;
     },
 
     /** Set up HistoryPanel js/widget behaviours
@@ -694,41 +680,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // anon users shouldn't have access to any of the following
         if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
 
-        // annotation slide down
-        var panel = this,
-            // need specific selector ('annotation-display' is used in HDAs, too)
-            $historyAnnotationArea = $where.find( '.history-controls .annotation-display' );
-        $where.find( '.history-controls .history-annotate-button' ).click( function() {
-            if( $historyAnnotationArea.is( ":hidden" ) ){
-                //HACK: for whitespace added to annotation
-                var $anno = panel.$el.find( '.history-controls .annotation' );
-                $anno.text( jQuery.trim( $anno.text() ) );
-                $historyAnnotationArea.slideDown( panel.fxSpeed );
-
-            } else {
-                $historyAnnotationArea.slideUp( panel.fxSpeed );
-            }
-            return false;
-        });
-                //<em>{{#local}}Describe or add notes to history{{/local}}</em>
-
+        var panel = this;//,
         $where.find( '.history-name' ).make_text_editable({
             on_finish: function( newName ){
                 $where.find( '.history-name' ).text( newName );
                 panel.model.save({ name: newName })
                     .fail( function(){
                         $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
-                    });
-            }
-        });
-
-        $where.find( '.history-controls .annotation' ).make_text_editable({
-            use_textarea : true,
-            on_finish: function( newAnnotation ){
-                $where.find( '.history-controls .annotation' ).text( newAnnotation );
-                panel.model.save({ annotation: newAnnotation })
-                    .fail( function(){
-                        $where.find( '.history-controls .annotation' ).text( panel.model.previous( 'annotation' ) );
                     });
             }
         });
@@ -759,9 +717,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : {
-        'click .history-tag-button'    : 'displayTags',
-//TODO: switch to common close (X) idiom
         // allow (error) messages to be clicked away
+        //TODO: switch to common close (X) idiom
         'click .message-container'   : 'clearMessages'
     },
 
@@ -800,14 +757,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
         this.render();
         return this.storage.get( 'show_hidden' );
-    },
-
-    /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
-     */
-//TODO: into sub-MV
-    displayTags : function( event ){
-        this.$el.find( '.history-controls .tags-display' ).slideToggle( this.fxSpeed );
-        return false;
     },
 
     // ........................................................................ loading indicator

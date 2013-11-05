@@ -596,6 +596,8 @@ class UsesHistoryDatasetAssociationMixin:
             return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
+        hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
+
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
@@ -631,14 +633,6 @@ class UsesHistoryDatasetAssociationMixin:
         # ---- return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
-
-        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
-        # expensive
-        #if( ( hda.state in [ 'running', 'queued' ] )
-        #and ( hda.creating_job and hda.creating_job.tool_id ) ):
-        #    tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-        #    if tool_used and tool_used.force_history_refresh:
-        #        hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
 

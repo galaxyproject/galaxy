@@ -406,7 +406,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
+            elif key == 'annotation' and val is not None:
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )

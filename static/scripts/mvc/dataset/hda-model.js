@@ -56,7 +56,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     /** fetch location of this HDA's history in the api */
-    urlRoot: 'api/histories/',
+    urlRoot: '/api/histories/',
     /** full url spec. for this HDA */
     url : function(){
         return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
@@ -80,10 +80,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
 
             'annotation': { 'get': galaxy_config.root + 'dataset/get_annotation_async?id=' + id,
                             'set': galaxy_config.root + 'dataset/annotate_async?id=' + id },
-            'tags'      : { 'get': galaxy_config.root + 'tag/get_tagging_elt_async?item_id='
-                                    + id + '&item_class=HistoryDatasetAssociation',
-                            'set': galaxy_config.root + 'tag/retag?item_id='
-                                    + id + '&item_class=HistoryDatasetAssociation' },
             'meta_download' : galaxy_config.root + 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
         return urls;

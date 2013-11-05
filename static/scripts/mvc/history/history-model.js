@@ -25,8 +25,8 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         name            : 'Unnamed History',
         state           : 'new',
 
-        diskSize : 0,
-        deleted : false
+        diskSize        : 0,
+        deleted         : false
     },
 
     // ........................................................................ urls

@@ -106,50 +106,20 @@ function program12(depth0,data) {
 
 function program14(depth0,data) {
   
-  var buffer = "", stack1, options;
-  buffer += "\n    "
-    + "\n    <div class=\"tags-display\"></div>\n\n    "
-    + "\n    <div class=\"annotation-display\">\n        <label class=\"prompt\">";
-  options = {hash:{},inverse:self.noop,fn:self.program(15, program15, data),data:data};
-  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "</label>\n        <div id=\"dataset-";
-  if (stack1 = helpers.id) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
-  else { stack1 = depth0.id; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
-  buffer += escapeExpression(stack1)
-    + "-annotation\" class=\"annotation editable-text\"\n             title=\"";
-  options = {hash:{},inverse:self.noop,fn:self.program(17, program17, data),data:data};
-  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"></div>\n    </div>\n\n    <div class=\"dataset-display-applications\">\n        ";
-  stack1 = helpers.each.call(depth0, depth0.display_apps, {hash:{},inverse:self.noop,fn:self.program(19, program19, data),data:data});
+  var buffer = "", stack1;
+  buffer += "\n    <div class=\"tags-display\"></div>\n    <div class=\"annotation-display\"></div>\n\n    <div class=\"dataset-display-applications\">\n        ";
+  stack1 = helpers.each.call(depth0, depth0.display_apps, {hash:{},inverse:self.noop,fn:self.program(15, program15, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n\n        ";
-  stack1 = helpers.each.call(depth0, depth0.display_types, {hash:{},inverse:self.noop,fn:self.program(19, program19, data),data:data});
+  stack1 = helpers.each.call(depth0, depth0.display_types, {hash:{},inverse:self.noop,fn:self.program(15, program15, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    </div>\n\n    <div class=\"dataset-peek\">\n    ";
-  stack1 = helpers['if'].call(depth0, depth0.peek, {hash:{},inverse:self.noop,fn:self.program(23, program23, data),data:data});
+  stack1 = helpers['if'].call(depth0, depth0.peek, {hash:{},inverse:self.noop,fn:self.program(19, program19, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    </div>\n\n    ";
   return buffer;
   }
 function program15(depth0,data) {
-  
-  
-  return "Annotation";
-  }
-
-function program17(depth0,data) {
-  
-  
-  return "Edit dataset annotation";
-  }
-
-function program19(depth0,data) {
   
   var buffer = "", stack1;
   buffer += "\n        <div class=\"display-application\">\n            <span class=\"display-application-location\">";
@@ -157,12 +127,12 @@ function program19(depth0,data) {
   else { stack1 = depth0.label; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
     + "</span>\n            <span class=\"display-application-links\">\n                ";
-  stack1 = helpers.each.call(depth0, depth0.links, {hash:{},inverse:self.noop,fn:self.program(20, program20, data),data:data});
+  stack1 = helpers.each.call(depth0, depth0.links, {hash:{},inverse:self.noop,fn:self.program(16, program16, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n            </span>\n        </div>\n        ";
   return buffer;
   }
-function program20(depth0,data) {
+function program16(depth0,data) {
   
   var buffer = "", stack1, options;
   buffer += "\n                <a target=\"";
@@ -174,7 +144,7 @@ function program20(depth0,data) {
   else { stack1 = depth0.href; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
     + "\">";
-  options = {hash:{},inverse:self.noop,fn:self.program(21, program21, data),data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(17, program17, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
@@ -182,7 +152,7 @@ function program20(depth0,data) {
   buffer += "</a>\n                ";
   return buffer;
   }
-function program21(depth0,data) {
+function program17(depth0,data) {
   
   var stack1;
   if (stack1 = helpers.text) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
@@ -190,7 +160,7 @@ function program21(depth0,data) {
   return escapeExpression(stack1);
   }
 
-function program23(depth0,data) {
+function program19(depth0,data) {
   
   var buffer = "", stack1;
   buffer += "\n        <pre class=\"peek\">";
