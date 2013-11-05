@@ -28,7 +28,7 @@
         tophat2
         
         ## Change this to accommodate the number of threads you have available.
-        --num-threads 4
+        --num-threads \${GALAXY_SLOTS:-4}
 
         ## Set params.
         #if $params.settingsType == "full":
