@@ -80,6 +80,7 @@ JOB_EXIT_STATUS = {
     -6: "job aborted on MOM init, chkpt, ok migrate",
     -7: "job restart failed",
     -8: "exec() of user command failed",
+    -11: "job maximum walltime exceeded",
 }
 
 
@@ -414,6 +415,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
                 except AssertionError:
                     pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error, please retry it later'
                     log.error( '(%s/%s) PBS job failed: %s' % ( galaxy_job_id, job_id, JOB_EXIT_STATUS.get( int( status.exit_status ), 'Unknown error: %s' % status.exit_status ) ) )
+                    pbs_job_state.stop_job = False
                     self.work_queue.put( ( self.fail_job, pbs_job_state ) )
                     continue
                 except AttributeError:
