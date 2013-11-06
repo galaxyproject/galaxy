@@ -24,6 +24,7 @@ from galaxy.util import docstring_trim
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controller import UsesFormDefinitionsMixin
+from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
@@ -56,7 +57,8 @@ class UserOpenIDGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
-class User( BaseUIController, UsesFormDefinitionsMixin ):
+
+class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
 
@@ -703,22 +705,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user = trans.app.model.User( email=email )
-        user.set_password_cleartext( password )
-        user.username = username
-        if trans.app.config.user_activation_on: 
-            user.active = False
-        else:
-            user.active = True # Activation is off, every new user is active by default.
-        trans.sa_session.add( user )
-        trans.sa_session.flush()
-        trans.app.security_agent.create_private_user_role( user )
+        user = self.create_user( trans=trans, email=email, username=username, password=password )
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions( user,
-                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
             # Save other information associated with the user, if any
             user_info_forms = self.get_all_forms( trans,
                                                   filter=dict( deleted=False ),

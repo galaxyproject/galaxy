@@ -5,11 +5,13 @@ import logging
 from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 from galaxy import util, web
 from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
+from galaxy.web.base.controller import CreatesUsersMixin
 
 log = logging.getLogger( __name__ )
 
 
-class UserAPIController( BaseAPIController, UsesTagsMixin ):
+class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin ):
+
 
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
@@ -89,10 +91,15 @@ class UserAPIController( BaseAPIController, UsesTagsMixin ):
             raise HTTPNotImplemented( detail='User creation is not allowed in this Galaxy instance' )
         if trans.app.config.use_remote_user and trans.user_is_admin():
             user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
-            item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                      'total_disk_usage': float } )
+        elif trans.user_is_admin():
+            username = payload[ 'username' ]
+            email = payload[ 'email' ]
+            password = payload[ 'password' ]
+            user = self.create_user( trans=trans, email=email, username=username, password=password )
         else:
             raise HTTPNotImplemented()
+        item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                            'total_disk_usage': float } )
         return item
 
     @web.expose_api
