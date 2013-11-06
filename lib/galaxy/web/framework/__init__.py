@@ -9,6 +9,7 @@ import random
 import socket
 import string
 import time
+import hashlib
 from Cookie import CookieError
 
 
@@ -21,6 +22,7 @@ from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.backports.importlib import import_module
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import safe_str_cmp
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -136,7 +138,7 @@ def expose_api( func, to_json=True, user_required=True ):
         error_status = '403 Forbidden'
         if trans.error_message:
             return trans.error_message
-        if user_required and trans.user is None:
+        if user_required and trans.anonymous:
             error_message = "API Authentication Required for this request"
             return error
         if trans.request.body:
@@ -332,7 +334,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
-    def __init__( self, environ, app, webapp, session_cookie = None):
+
+    def __init__( self, environ, app, webapp, session_cookie=None):
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
@@ -349,8 +352,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
-            
-        
+
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -387,6 +389,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
         self.template_context.update ( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
+
+    @property
+    def anonymous( self ):
+        return self.user is None and not self.api_inherit_admin
 
     @property
     def sa_session( self ):
@@ -498,7 +504,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         api_key = self.request.params.get('key', None)
         secure_id = self.get_cookie( name=session_cookie )
-        if self.environ.get('is_api_request', False) and api_key:
+        sessionless_api_request = self.environ.get('is_api_request', False) and api_key
+        if sessionless_api_request and self._check_master_api_key( api_key ):
+            self.api_inherit_admin = True
+            log.info( "Session authenticated using Galaxy master api key" )
+            self.user = None
+            self.galaxy_session = None
+        elif sessionless_api_request:
             # Sessionless API transaction, we just need to associate a user.
             try:
                 provided_key = self.sa_session.query( self.app.model.APIKeys ).filter( self.app.model.APIKeys.table.c.key == api_key ).one()
@@ -518,6 +530,15 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
             self.galaxy_session = None
+
+    def _check_master_api_key( self, api_key ):
+        master_api_key = getattr( self.app.config, 'master_api_key', None )
+        if not master_api_key:
+            return False
+        # Hash keys to make them the same size, so we can do safe comparison.
+        master_hash = hashlib.sha256( master_api_key ).hexdigest()
+        provided_hash = hashlib.sha256( api_key ).hexdigest()
+        return safe_str_cmp( master_hash, provided_hash )
 
     def _ensure_valid_session( self, session_cookie, create=True):
         """
