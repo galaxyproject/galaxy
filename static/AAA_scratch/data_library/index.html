@@ -83,7 +83,7 @@
   </script>
 
 
-  <script src="require.js"></script>
+
   <script src="jquery-1.10.2.js" type="text/javascript"></script>
   <script src="js/bootstrap.min.js"></script>
   <script src="underscore.js" type="text/javascript"></script>
@@ -92,22 +92,6 @@
 
 
   <script>
-
- // configure require
-  //      require.config({
-  //          baseUrl: "/",
-  //          shim: {
-  //              "libs/underscore": { exports: "_" },
-  //              "libs/backbone/backbone": { exports: "Backbone" },
-  //              "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
-  //          }
-  //      });
-
-  // require(['galaxy.modal'], function(modal)
-  //       {
-  //           Galaxy.modal = new modal.GalaxyModal();
-  //       });
-
 
     // ENCODE HTML
     function htmlEncode(value){
@@ -245,9 +229,9 @@
       libraryListView.render();
     })
 
-    router.on('route:folder_content', function(id, params) {
+    router.on('route:folder_content', function(id) {
       // render folder's content
-      folderContentView.render({id: id, params: params});
+      folderContentView.render({id: id});
     })
 
     Backbone.history.start();

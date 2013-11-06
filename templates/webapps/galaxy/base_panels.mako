@@ -126,6 +126,7 @@ ${parent.late_javascripts()}
     ## 'Shared Items' or Libraries tab.
     <%
         menu_options = [ 
+                        [ _('New Libraries'), h.url_for( controller='/library', action='list') ],
                         [ _('Data Libraries'), h.url_for( controller='/library', action='index') ],
                         None,
                         [ _('Published Histories'), h.url_for( controller='/history', action='list_published' ) ],

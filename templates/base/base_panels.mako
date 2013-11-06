@@ -102,12 +102,13 @@
         });
         
         ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload'], function(master, frame, modal, upload)
+        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload', 'galaxy.library'], function(master, frame, modal, upload, library)
         {
             Galaxy.master = new master.GalaxyMaster();
             Galaxy.frame_manager = new frame.GalaxyFrameManager();
             Galaxy.modal = new modal.GalaxyModal();
-            ##Galaxy.upload = new upload.GalaxyUpload();
+            Galaxy.upload = new upload.GalaxyUpload();
+            ##Galaxy.library = new library.GalaxyLibrary();
         });
     </script>
 </%def>
