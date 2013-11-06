@@ -279,6 +279,21 @@ class CreatesUsersMixin:
         return user
 
 
+class CreatesApiKeysMixin:
+    """
+    Mixing centralizing logic for creating API keys for user objects.
+    """
+
+    def create_api_key( self, trans, user ):
+        guid = trans.app.security.get_new_guid()
+        new_key = trans.app.model.APIKeys()
+        new_key.user_id = user.id
+        new_key.key = guid
+        trans.sa_session.add( new_key )
+        trans.sa_session.flush()
+        return guid
+
+
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 

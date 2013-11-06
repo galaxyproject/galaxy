@@ -6,12 +6,12 @@ from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 from galaxy import util, web
 from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
 from galaxy.web.base.controller import CreatesUsersMixin
+from galaxy.web.base.controller import CreatesApiKeysMixin
 
 log = logging.getLogger( __name__ )
 
 
-class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin ):
-
+class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
 
     @web.expose_api
     def index( self, trans, deleted='False', **kwd ):
@@ -101,6 +101,17 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin ):
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                             'total_disk_usage': float } )
         return item
+
+    @web.expose_api
+    @web.require_admin
+    def api_key( self, trans, user_id, **kwd ):
+        """
+        POST /api/users/{encoded_user_id}/api_key
+        Creates a new API key for specified user.
+        """
+        user = self.get_user( trans, user_id )
+        key = self.create_api_key( trans, user )
+        return key
 
     @web.expose_api
     def update( self, trans, **kwd ):

@@ -25,6 +25,7 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controller import UsesFormDefinitionsMixin
 from galaxy.web.base.controller import CreatesUsersMixin
+from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
@@ -58,7 +59,7 @@ class UserOpenIDGrid( grids.Grid ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
 
-class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin ):
+class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
 
@@ -1685,11 +1686,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if params.get( 'new_api_key_button', False ):
-            new_key = trans.app.model.APIKeys()
-            new_key.user_id = trans.user.id
-            new_key.key = trans.app.security.get_new_guid()
-            trans.sa_session.add( new_key )
-            trans.sa_session.flush()
+            self.create_api_key( trans, trans.user )
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template( 'webapps/galaxy/user/api_keys.mako',
