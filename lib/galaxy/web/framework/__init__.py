@@ -504,13 +504,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         api_key = self.request.params.get('key', None)
         secure_id = self.get_cookie( name=session_cookie )
-        sessionless_api_request = self.environ.get('is_api_request', False) and api_key
-        if sessionless_api_request and self._check_master_api_key( api_key ):
+        api_key_supplied = self.environ.get('is_api_request', False) and api_key
+        if api_key_supplied and self._check_master_api_key( api_key ):
             self.api_inherit_admin = True
             log.info( "Session authenticated using Galaxy master api key" )
             self.user = None
             self.galaxy_session = None
-        elif sessionless_api_request:
+        elif api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
                 provided_key = self.sa_session.query( self.app.model.APIKeys ).filter( self.app.model.APIKeys.table.c.key == api_key ).one()
