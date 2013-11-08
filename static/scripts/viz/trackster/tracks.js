@@ -41,7 +41,8 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
     element.bind( "drag", { handle: "." + handle_class, relative: true }, function ( e, d ) {
         var element = $(this),
             parent = $(this).parent(),
-            children = parent.children(),
+            // Only sorting amongst tracks and groups.
+            children = parent.children('.track,.group'),
             this_obj = html_elt_js_obj_dict[$(this).attr("id")],
             child,
             container,
