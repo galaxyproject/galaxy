@@ -490,7 +490,8 @@ class Registry( object ):
                     if converter.id in toolbox.tools_by_id:
                         del toolbox.tools_by_id[ converter.id ]
                     if source_datatype in self.datatype_converters:
-                        del self.datatype_converters[ source_datatype ][ target_datatype ]
+                        if target_datatype in self.datatype_converters[ source_datatype ]:
+                            del self.datatype_converters[ source_datatype ][ target_datatype ]
                     self.log.debug( "Deactivated converter: %s", converter.id )
                 else:
                     toolbox.tools_by_id[ converter.id ] = converter
