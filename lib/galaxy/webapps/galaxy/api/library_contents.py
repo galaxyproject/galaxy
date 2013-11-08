@@ -2,8 +2,7 @@
 API operations on the contents of a library.
 """
 import logging
-
-from galaxy import web
+from galaxy import web , exceptions
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -318,3 +317,67 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return 'LibraryFolder', content_id[1:]
         else:
             raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )
+
+
+    @web.expose_api
+    def delete( self, trans, library_id, id, **kwd ):
+        """
+        delete( self, trans, library_id, id, **kwd )
+        * DELETE /api/libraries/{library_id}/contents/{id}
+            delete the HDA with the given ``id``
+
+
+        :type   id:     str
+        :param  id:     the encoded id of the library dataset to delete
+        :type   kwd:    dict
+        :param  kwd:    (optional) dictionary structure containing:
+
+            * payload:     a dictionary itself containing:
+                * purge:   if True, purge the HDA
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing:
+            * id:         the encoded id of the library dataset,
+            * deleted:    if the library dataset was marked as deleted,
+            * purged:     if the library dataset was purged
+        """
+        # a request body is optional here
+        purge = False
+        if kwd.get( 'payload', None ):
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+        rval = { 'id' : id }
+        try:
+            hda = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=True )
+            hda.deleted = True
+            if purge:
+                if not trans.app.config.allow_user_dataset_purge:
+                    raise exceptions.httpexceptions.HTTPForbidden(
+                        detail='This instance does not allow user dataset purging' )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        pass
+                    # flush now to preserve deleted state in case of later interruption
+                    trans.sa_session.flush()
+                rval[ 'purged' ] = True
+            trans.sa_session.flush()
+            rval[ 'deleted' ] = True
+        except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
+            log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+                           id, str( kwd ), str( http_server_err ) )
+            raise
+        except exceptions.httpexceptions.HTTPException:
+            raise
+        except Exception, exc:
+            log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
+                           id, str( kwd ), str( exc ) )
+            trans.response.status = 500
+            rval.update({ 'error': str( exc ) })
+        return rval
+
+        
