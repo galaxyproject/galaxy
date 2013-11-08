@@ -174,8 +174,12 @@ class ToolParameter( object, Dictifiable ):
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
-        #TODO: removing html as it causes a lot of errors on subclasses - needs histories, etc.
-        #tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        #TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
+        try:
+            tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        except AssertionError, e:
+            pass #HACK for assert trans.history, 'requires a history'
+
         tool_dict[ 'model_class' ] = self.__class__.__name__
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
