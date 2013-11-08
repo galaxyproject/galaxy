@@ -260,7 +260,7 @@ var PopupMenu = Backbone.View.extend({
                 return [ '<li class="head"><a href="javascript:void(0);">', option.html, '</a></li>' ].join( '' );
             }
             var href   = option.href || 'javascript:void(0);',
-                target = ( option.target  )?( ' target="' + target + '"' ):( '' ),
+                target = ( option.target  )?( ' target="' + option.target + '"' ):( '' ),
                 check  = ( option.checked )?( '<span class="fa fa-check"></span>' ):( '' );
             return [
                 '<li><a class="popupmenu-option" href="', href, '"', target, '>',

@@ -1,0 +1,55 @@
+<p class="help-text">
+    Use the following controls to change the data used by the chart.
+    Use the 'Draw' button to render (or re-render) the chart with the current settings.
+</p>
+
+{{! column selector containers }}
+<div class="column-select">
+    <label>Data column for X: </label>
+    <select name="xColumn">
+    {{#each numericColumns}}
+        <option value="{{index}}">{{name}}</option>
+    {{/each}}
+    </select>
+</div>
+<div class="column-select">
+    <label>Data column for Y: </label>
+    <select name="yColumn">
+    {{#each numericColumns}}
+        <option value="{{index}}">{{name}}</option>
+    {{/each}}
+    </select>
+</div>
+
+{{! optional id column }}
+<div id="include-id">
+    <label for="include-id-checkbox">Include a third column as data point IDs?</label>
+    <input type="checkbox" name="include-id" id="include-id-checkbox" />
+    <p class="help-text-small">
+        These will be displayed (along with the x and y values) when you hover over
+        a data point.
+    </p>
+</div>
+<div class="column-select" style="display: none">
+    <label for="ID-select">Data column for IDs: </label>
+    <select name="idColumn">
+    {{#each allColumns}}
+        <option value="{{index}}">{{name}}</option>
+    {{/each}}
+    </select>
+</div>
+
+{{! if we're using generic column selection names ('column 1') - allow the user to use the first line }}
+<div id="first-line-header" style="display: none;">
+    <p>Possible headers: {{ possibleHeaders }}
+    </p>
+    <label for="first-line-header-checkbox">Use the above as column headers?</label>
+    <input type="checkbox" name="include-id" id="first-line-header-checkbox"
+        {{#if usePossibleHeaders }}checked="true"{{/if}}/>
+    <p class="help-text-small">
+        It looks like Galaxy couldn't get proper column headers for this data.
+        Would you like to use the column headers above as column names to select columns?
+    </p>
+</div>
+
+<button class="render-button btn btn-primary active">Draw</button>
