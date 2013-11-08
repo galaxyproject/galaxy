@@ -14,7 +14,7 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
     //logger              : console,
     
     /** API location for this resource */
-    urlRoot : 'api/users',
+    urlRoot : '/api/users',
 
     /** Model defaults
      *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
