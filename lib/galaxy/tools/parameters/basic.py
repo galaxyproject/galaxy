@@ -268,7 +268,7 @@ class IntegerToolParameter( TextToolParameter ):
                 self.max = int( self.max )
             except:
                 raise ValueError( "An integer is required" )
-        if self.min is not None and self.max is not None:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -346,7 +346,7 @@ class FloatToolParameter( TextToolParameter ):
                 self.max = float( self.max )
             except:
                 raise ValueError( "A real number is required" )
-        if self.min is not None and self.max is not None:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
