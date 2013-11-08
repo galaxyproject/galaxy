@@ -123,7 +123,7 @@ class UploadController( BaseUIController ):
                         self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2 )
                     if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named <b>tool_dependencies.xml</b>.'
