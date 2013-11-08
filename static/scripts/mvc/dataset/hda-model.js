@@ -56,7 +56,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     /** fetch location of this HDA's history in the api */
-    urlRoot: '/api/histories/',
+    urlRoot: galaxy_config.root + 'api/histories/',
     /** full url spec. for this HDA */
     url : function(){
         return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
