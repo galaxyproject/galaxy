@@ -90,6 +90,7 @@ def app_factory( global_conf, **kwargs ):
                                          'reset_metadata_on_repository' : 'POST' },
                             name_prefix='repository_',
                             path_prefix='/api',
+                            new={ 'import_capsule' : 'POST' },
                             parent_resources=dict( member_name='repository', collection_name='repositories' ) )
     webapp.mapper.resource( 'repository_revision',
                             'repository_revisions',

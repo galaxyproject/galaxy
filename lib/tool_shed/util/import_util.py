@@ -25,9 +25,8 @@ def extract_capsule_files( trans, **kwd ):
     """Extract the uploaded capsule archive into a temporary location for inspection, validation and potential import."""
     return_dict = {}
     tar_archive = kwd.get( 'tar_archive', None )
-    uploaded_file = kwd.get( 'uploaded_file', None )
     capsule_file_name = kwd.get( 'capsule_file_name', None )
-    if tar_archive is not None and uploaded_file is not None and capsule_file_name is not None:
+    if tar_archive is not None and capsule_file_name is not None:
         return_dict.update( kwd )
         extract_directory_path = tempfile.mkdtemp( prefix="tmp-capsule-ecf" )
         if capsule_file_name.endswith( '.tar.gz' ):
@@ -39,10 +38,11 @@ def extract_capsule_files( trans, **kwd ):
         file_path = os.path.join( extract_directory_path, extract_directory_name )
         return_dict[ 'encoded_file_path' ] = encoding_util.tool_shed_encode( file_path )
         tar_archive.extractall( path=file_path )
-        tar_archive.close()
-        uploaded_file.close()
+        try:
+            tar_archive.close()
+        except Exception, e:
+            log.exception( "Cannot close tar_archive: %s" % str( e ) )
         del return_dict[ 'tar_archive' ]
-        del return_dict[ 'uploaded_file' ]
     return return_dict
 
 def get_archives_from_manifest( manifest_file_path ):
@@ -297,7 +297,7 @@ def upload_capsule( trans, **kwd ):
     if uploaded_file is not None:
         if isempty:
             uploaded_file.close()
-            return_dict[ 'error_message' ] = 'Your uploaded file is empty.'
+            return_dict[ 'error_message' ] = 'Your uploaded capsule file is empty.'
             return_dict[ 'status' ] = 'error'
             return return_dict
         try:
@@ -312,8 +312,8 @@ def upload_capsule( trans, **kwd ):
             tar_archive.close()
             return return_dict
         return_dict[ 'tar_archive' ] = tar_archive
-        return_dict[ 'uploaded_file' ] = uploaded_file
         return_dict[ 'capsule_file_name' ] = uploaded_file_filename
+        uploaded_file.close()
     else:
         return_dict[ 'error_message' ] = 'No files were entered on the import form.'
         return_dict[ 'status' ] = 'error'
