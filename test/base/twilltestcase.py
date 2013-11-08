@@ -1182,6 +1182,7 @@ class TwillTestCase( unittest.TestCase ):
                         #control name doesn't exist, could be repeat
                         repeat_startswith = control.name[0:-4]
                         if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                            tc.browser.clicked( f, control )
                             tc.submit( control.name )
                             return self.submit_form( form_no=form_no, button=button, **kwd )
                 # Check for refresh_on_change attribute, submit a change if required
@@ -1325,7 +1326,6 @@ class TwillTestCase( unittest.TestCase ):
             tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
             # Submit the "repeat" form button to add an input)
             tc.submit( repeat_button )
-            #print "button '%s' clicked" % repeat_button
         tc.find( 'runtool_btn' )
         self.submit_form( **kwd )
 
