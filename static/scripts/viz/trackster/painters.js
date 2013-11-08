@@ -357,17 +357,14 @@ extend(FeaturePainter.prototype, {
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             required_height = rows_required * y_scale;
         }
-        return required_height + this.get_top_padding(width) + this.get_bottom_padding(width);
+        return required_height + this.get_top_padding(width);
     },
+
     /** Extra padding before first row of features */
     get_top_padding: function(width) {
         return 0;
     },
-    /** Extra padding after last row of features */
-    get_bottom_padding: function(width) {
-        // Pad bottom by half a row, at least 5 px
-        return Math.max( Math.round( this.get_row_height() / 2 ), 5 );
-    },
+
     /**
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
      * a FeaturePositionMapper object with information about where features were drawn.
