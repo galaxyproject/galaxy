@@ -125,8 +125,9 @@ var TracksterView = Backbone.View.extend(
                 });
                 
                 // select default
-                if (galaxy_config.app.default_dbkey)
-                    $("#new-dbkey option[value='" + galaxy_config.app.default_dbkey + "']").attr("selected", true);
+                if (galaxy_config.app.default_dbkey) {
+                    $("#new-dbkey").val( galaxy_config.app.default_dbkey );
+                }
 
                 // change focus
                 $("#new-title").focus();
@@ -156,8 +157,9 @@ var TracksterView = Backbone.View.extend(
                                 '<select name="dbkey" id="new-dbkey">';
 
         // add dbkeys
-        for (var key in response)
-            html += '<option value="' + response[key][1] + '">' + response[key][0] + '</option>';
+        for (var i = 0; i < response.length; i++) {
+            html += '<option value="' + response[i][1] + '">' + response[i][0] + '</option>';
+        }
         
         // close selection/finalize template
         html +=                 '</select>' +
