@@ -226,7 +226,7 @@ var GalaxyMastheadIcon = Backbone.View.extend(
         
         // configure icon
         var self = this;
-        $(this.el).find('.icon').tooltip({title: this.options.tooltip})
+        $(this.el).find('.icon').tooltip({title: this.options.tooltip, placement: 'bottom'})
                                 .on('mouseup', self.options.on_click);
         
         // visiblity
