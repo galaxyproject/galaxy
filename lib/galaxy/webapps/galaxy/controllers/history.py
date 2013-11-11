@@ -1240,8 +1240,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         cannot_change[ send_to_user ][ history ].append( hda )
         return can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err
 
-    def _share_histories( self, trans, user, send_to_err, histories={} ):
+    def _share_histories( self, trans, user, send_to_err, histories=None ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
+        histories = histories or {}
         msg = ""
         sent_to_emails = []
         for send_to_user in histories.keys():

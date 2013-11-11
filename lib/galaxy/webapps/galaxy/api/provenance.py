@@ -25,7 +25,8 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
         return value
 
     @web.expose_api
-    def create( self, trans, tag_name, payload={}, **kwd ):
+    def create( self, trans, tag_name, payload=None, **kwd ):
+        payload = payload or {}
         raise HTTPNotImplemented()
 
     @web.expose_api
