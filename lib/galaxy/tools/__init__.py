@@ -1901,7 +1901,7 @@ class Tool( object, Dictifiable ):
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-    def handle_input( self, trans, incoming, history=None, old_errors=None, process_state='update' ):
+    def handle_input( self, trans, incoming, history=None, old_errors=None, process_state='update', source='html' ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1925,10 +1925,10 @@ class Tool( object, Dictifiable ):
                 if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 if len(incoming):
-                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
-        errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history )
+        errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history, source=source )
         if self.__should_refresh_state( incoming ):
             return self.__handle_state_refresh( trans, state, errors )
         else:
@@ -2006,7 +2006,7 @@ class Tool( object, Dictifiable ):
             new = True
         return state, new
 
-    def __check_param_values( self, trans, incoming, state, old_errors, process_state, history ):
+    def __check_param_values( self, trans, incoming, state, old_errors, process_state, history, source ):
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
@@ -2020,9 +2020,9 @@ class Tool( object, Dictifiable ):
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
             if process_state == "update":
-                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
             elif process_state == "populate":
-                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history )
+                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history, source=source )
             else:
                 raise Exception("Unknown process_state type %s" % process_state)
             # If the tool provides a `validate_input` hook, call it.
@@ -2070,7 +2070,7 @@ class Tool( object, Dictifiable ):
             message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
 
-    def populate_state( self, trans, inputs, state, incoming, history, prefix="", context=None ):
+    def populate_state( self, trans, inputs, state, incoming, history, source, prefix="", context=None ):
         errors = dict()
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
@@ -2097,6 +2097,7 @@ class Tool( object, Dictifiable ):
                                                     new_state,
                                                     incoming,
                                                     history,
+                                                    source,
                                                     prefix=rep_name + "|",
                                                     context=context )
                         if rep_errors:
@@ -2122,7 +2123,7 @@ class Tool( object, Dictifiable ):
 
                 # Get value of test param and determine current case
                 value, test_param_error = \
-                    check_param( trans, input.test_param, test_incoming, context )
+                    check_param( trans, input.test_param, test_incoming, context, source=source )
                 current_case = input.get_current_case( value, trans )
                 # Current case has changed, throw away old state
                 group_state = state[input.name] = {}
@@ -2133,6 +2134,7 @@ class Tool( object, Dictifiable ):
                                                     group_state,
                                                     incoming,
                                                     history,
+                                                    source,
                                                     prefix=group_prefix,
                                                     context=context,
                 )
@@ -2164,6 +2166,7 @@ class Tool( object, Dictifiable ):
                                                     rep_state,
                                                     incoming,
                                                     history,
+                                                    source,
                                                     prefix=rep_prefix,
                                                     context=context)
                     if rep_errors:
@@ -2193,14 +2196,14 @@ class Tool( object, Dictifiable ):
                     pass
                 else:
                     incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
+                    value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
         return errors
 
-    def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
+    def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`.
@@ -2258,6 +2261,7 @@ class Tool( object, Dictifiable ):
                                                     input.inputs,
                                                     rep_state,
                                                     incoming,
+                                                    source=source,
                                                     prefix=rep_prefix,
                                                     context=context,
                                                     update_only=update_only,
@@ -2306,7 +2310,7 @@ class Tool( object, Dictifiable ):
                 else:
                     # Get value of test param and determine current case
                     value, test_param_error = \
-                        check_param( trans, input.test_param, test_incoming, context )
+                        check_param( trans, input.test_param, test_incoming, context, source=source )
                     current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
@@ -2323,6 +2327,7 @@ class Tool( object, Dictifiable ):
                                                       incoming,
                                                       prefix=group_prefix,
                                                       context=context,
+                                                      source=source,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
                                                       item_callback=item_callback )
@@ -2364,6 +2369,7 @@ class Tool( object, Dictifiable ):
                                                     incoming,
                                                     prefix=rep_prefix,
                                                     context=context,
+                                                    source=source,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
                                                     item_callback=item_callback )
@@ -2396,7 +2402,7 @@ class Tool( object, Dictifiable ):
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
                     incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
+                    value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
                     if item_callback:
                         old_value = state.get( input.name, None )

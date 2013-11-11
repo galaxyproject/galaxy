@@ -124,7 +124,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # else "populate" the tool state from scratch using payload.
         incoming = params.__dict__
         process_state = "update" if "tool_state" in incoming else "populate"
-        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state )
+        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state, source="json" )
         if 'errors' in vars:
             trans.response.status = 400
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
