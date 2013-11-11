@@ -1926,24 +1926,8 @@ class Tool( object, Dictifiable ):
                 if len(incoming):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
-        # Process incoming data
-        if not( self.check_values ):
-            # If `self.check_values` is false we don't do any checking or
-            # processing on input  This is used to pass raw values
-            # through to/from external sites. FIXME: This should be handled
-            # more cleanly, there is no reason why external sites need to
-            # post back to the same URL that the tool interface uses.
-            errors = {}
-            params = incoming
-        else:
-            # Update state for all inputs on the current page taking new
-            # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
-            # If the tool provides a `validate_input` hook, call it.
-            validate_input = self.get_hook( 'validate_input' )
-            if validate_input:
-                validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
-            params = state.inputs
+
+        errors, params = self.__check_param_values( trans, incoming, state, old_errors )
         # Did the user actually click next / execute or is this just
         # a refresh?
         if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
@@ -1996,6 +1980,28 @@ class Tool( object, Dictifiable ):
             if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __check_param_values( self, trans, incoming, state, old_errors ):
+        # Process incoming data
+        if not( self.check_values ):
+            # If `self.check_values` is false we don't do any checking or
+            # processing on input  This is used to pass raw values
+            # through to/from external sites. FIXME: This should be handled
+            # more cleanly, there is no reason why external sites need to
+            # post back to the same URL that the tool interface uses.
+            errors = {}
+            params = incoming
+        else:
+            # Update state for all inputs on the current page taking new
+            # values from `incoming`.
+            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+            # If the tool provides a `validate_input` hook, call it.
+            validate_input = self.get_hook( 'validate_input' )
+            if validate_input:
+                validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
+            params = state.inputs
+        return errors, params
+
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
