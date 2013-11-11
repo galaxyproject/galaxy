@@ -475,10 +475,12 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                             error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
                             log.exception( error_message )
                             if tool_dependency:
-                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                tool_dependency.error_message = error_message
-                                sa_session.add( tool_dependency )
-                                sa_session.flush()
+                                # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
+                                # be left False here.
+                                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
+                                                                                                                  tool_dependency, 
+                                                                                                                  error_message, 
+                                                                                                                  remove_installation_path=False )
                         if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                            app.model.ToolDependency.installation_status.ERROR ]:
                             installed_tool_dependencies.append( tool_dependency )
@@ -492,10 +494,12 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                 error_message = "Error setting environment for tool dependency: %s" % str( e )
                 log.debug( error_message )
                 if tool_dependency:
-                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                    tool_dependency.error_message = error_message
-                    sa_session.add( tool_dependency )
-                    sa_session.flush()
+                    # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
+                    # be left False here.
+                    tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
+                                                                                                      tool_dependency, 
+                                                                                                      error_message, 
+                                                                                                      remove_installation_path=False )
             if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )

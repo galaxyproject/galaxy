@@ -48,11 +48,15 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     else:
         tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
     if tool_dependency:
+        log.debug( 'Updating an existing record for tool dependency %s version %s for tool shed repository %s with changeset revision %s.' % 
+                   ( str( name ), str( version ), str( tool_shed_repository.name ), str( tool_shed_repository.changeset_revision ) ) )
         # In some cases we should not override the current status of an existing tool_dependency, so do so only if set_status is True.
         if set_status:
             tool_dependency.status = status
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
+        log.debug( 'Creating a new record for tool dependency %s version %s for tool shed repository %s with changeset revision %s.' % 
+                   ( str( name ), str( version ), str( tool_shed_repository.name ), str( tool_shed_repository.changeset_revision ) ) )
         tool_dependency = app.model.ToolDependency( tool_shed_repository.id, name, version, type, status )
     sa_session.add( tool_dependency )
     sa_session.flush()
@@ -317,6 +321,51 @@ def get_tool_dependency_ids( as_string=False, **kwd ):
     if as_string:
         return ','.join( tool_dependency_ids )
     return tool_dependency_ids
+
+def get_tool_dependency_install_dir( app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type,
+                                     tool_dependency_name, tool_dependency_version ):
+    if tool_dependency_type == 'package':
+        return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
+                                              tool_dependency_name,
+                                              tool_dependency_version,
+                                              repository_owner,
+                                              repository_name,
+                                              repository_changeset_revision ) )
+    if tool_dependency_type == 'set_environment':
+        return os.path.abspath( os.path.join( app.config.tool_dependency_dir,
+                                              'environment_settings',
+                                              tool_dependency_name,
+                                              repository_owner,
+                                              repository_name,
+                                              repository_changeset_revision ) )
+
+def handle_tool_dependency_installation_error( app, tool_dependency, error_message, remove_installation_path=False ):
+    # Since there was an installation error, remove the installation directory because the install_package method uses 
+    # this: "if os.path.exists( install_dir ):". Setting remove_installation_path to True should rarely occur. It is
+    # currently set to True only to handle issues with installing tool dependencies into an Amazon S3 bucket. 
+    sa_session = app.model.context.current
+    tool_shed_repository = tool_dependency.tool_shed_repository
+    install_dir = get_tool_dependency_install_dir( app=app,
+                                                   repository_name=tool_shed_repository.name,
+                                                   repository_owner=tool_shed_repository.owner,
+                                                   repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                   tool_dependency_type=tool_dependency.type,
+                                                   tool_dependency_name=tool_dependency.name,
+                                                   tool_dependency_version=tool_dependency.version )
+    if remove_installation_path:
+        # This will be True only in the case where an exception was encountered during the installation process after the installation
+        # path was created, but before any information was written to the installation log, and the tool dependency status was not
+        # set to "Installed" or "Error". 
+        if os.path.exists( install_dir ):
+            try:
+                shutil.rmtree( install_dir )
+            except Exception, e:
+                log.exception( 'Error removing existing installation directory %s.', install_dir )
+    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+    tool_dependency.error_message = error_message
+    sa_session.add( tool_dependency )
+    sa_session.flush()
+    return tool_dependency
 
 def merge_missing_tool_dependencies_to_installed_container( containers_dict ):
     """ Merge the list of missing tool dependencies into the list of installed tool dependencies."""
