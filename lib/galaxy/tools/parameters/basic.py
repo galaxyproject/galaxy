@@ -1023,16 +1023,13 @@ class GenomeBuildParameter( SelectToolParameter ):
         self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
 
     def get_options( self, trans, other_values ):
-        if not trans.history:
-            yield 'unspecified', '?', False
-        else:
+        last_used_build = object()
+        if trans.history:
             last_used_build = trans.history.genome_build
-            for dbkey, build_name in trans.db_builds:
-                yield build_name, dbkey, ( dbkey == last_used_build )
+        for dbkey, build_name in trans.db_builds:
+            yield build_name, dbkey, ( dbkey == last_used_build )
 
     def get_legal_values( self, trans, other_values ):
-        if not trans.history:
-            return set( '?' )
         return set( dbkey for dbkey, _ in trans.db_builds )
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
