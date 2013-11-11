@@ -1184,11 +1184,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         if not tool.trackster_conf:
             return None
 
-        # Get tool definition and add input values from job.
+        # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict( trans, io_details=True )
-        inputs_dict = tool_dict[ 'inputs' ]
         tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
+
+        # Only get values for simple inputs for now.
+        inputs_dict = [ i for i in tool_dict[ 'inputs' ] if i[ 'type' ] not in [ 'data', 'hidden_data', 'conditional' ] ]
         for t_input in inputs_dict:
             # Add value to tool.
             if 'name' in t_input:

@@ -1799,7 +1799,7 @@ var TracksterToolView = Backbone.View.extend({
         // already in group, add track to group.
         if (current_track.container === view) {
             // Create new group.
-            var group = new DrawableGroup(view, view, { name: this.model.get('track').prefs.name });
+            var group = new DrawableGroup(view, view, { name: track.prefs.name });
             
             // Replace track with group.
             var index = current_track.container.replace_drawable(current_track, group, false);
