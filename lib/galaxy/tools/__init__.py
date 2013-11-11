@@ -1924,9 +1924,11 @@ class Tool( object, Dictifiable ):
 
         errors, params = self.__check_param_values( trans, incoming, state, old_errors )
 
-        # Did the user actually click next / execute or is this just
-        # a refresh?
-        if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
+        if self.__should_refresh_state( incoming ):
+            return self.__handle_state_refresh( trans, state, errors )
+        else:
+            # User actually clicked next or execute.
+
             # If there were errors, we stay on the same page and display
             # error messages
             if errors:
@@ -1962,7 +1964,11 @@ class Tool( object, Dictifiable ):
                 if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
-        else:
+
+    def __should_refresh_state( self, incoming ):
+        return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
+
+    def __handle_state_refresh( self, trans, state, errors ):
             try:
                 self.find_fieldstorage( state.inputs )
             except InterruptedUpload:
@@ -1974,7 +1980,7 @@ class Tool( object, Dictifiable ):
                 pass
             # Just a refresh, render the form with updated state and errors.
             if not self.display_interface:
-                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+                return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
 
     def __fetch_state( self, trans, incoming, history ):
