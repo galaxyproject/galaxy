@@ -1622,10 +1622,12 @@ var TracksterTool = tools_mod.Tool.extend({
     },
 
     initialize: function(options) {
-        // Restore tool visibility from state.
-        if (options.tool_state !== undefined) {
-            this.set('hidden', options.tool_state.hidden);
+        // Restore tool visibility from state; default to hidden.
+        var hidden = true;
+        if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
+            hidden = options.tool_state.hidden
         }
+        this.set('hidden', hidden);
 
         // FIXME: need to restore tool values from options.tool_state
 
