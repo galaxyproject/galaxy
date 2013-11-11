@@ -4,8 +4,10 @@ from galaxy.tools.actions import upload_common
 import logging
 log = logging.getLogger( __name__ )
 
+
 class UploadToolAction( ToolAction ):
-    def execute( self, tool, trans, incoming={}, set_output_hid = True, history=None, **kwargs ):
+
+    def execute( self, tool, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
             if input.type == "upload_dataset":
