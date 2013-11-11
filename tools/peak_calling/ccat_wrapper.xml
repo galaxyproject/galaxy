@@ -10,6 +10,7 @@
   '$output_peak_file' '$output_region_file' '$output_top_file' '$output_log_file'</command>
   <requirements>
     <requirement type="binary" version="3.0">CCAT</requirement>
+    <requirement type="package" version="3.0">CCAT</requirement>
   </requirements>
   <inputs>
     <param name="input_tag_file" type="data" format="bed" label="ChIP-Seq Tag File" >
