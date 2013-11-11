@@ -2,7 +2,9 @@
 Galaxy Security
 
 """
-import logging, socket, operator
+import logging
+import socket
+import operator
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
@@ -10,102 +12,138 @@ from galaxy.model.orm import *
 
 log = logging.getLogger(__name__)
 
+
 class Action( object ):
     def __init__( self, action, description, model ):
         self.action = action
         self.description = description
         self.model = model
 
+
 class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
-        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset", "grant" ),
-        DATASET_ACCESS = Action( "access", "Users having associated role can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only users having associated role", "restrict" ),
-        LIBRARY_ADD = Action( "add library item", "Users having associated role can add library items to this library item", "grant" ),
-        LIBRARY_MODIFY = Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
-        LIBRARY_MANAGE = Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
+        DATASET_MANAGE_PERMISSIONS=Action( "manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset", "grant" ),
+        DATASET_ACCESS=Action( "access", "Users having associated role can import this dataset into their history for analysis", "restrict" ),
+        LIBRARY_ACCESS=Action( "access library", "Restrict access to this library to only users having associated role", "restrict" ),
+        LIBRARY_ADD=Action( "add library item", "Users having associated role can add library items to this library item", "grant" ),
+        LIBRARY_MODIFY=Action( "modify library item", "Users having associated role can modify this library item", "grant" ),
+        LIBRARY_MANAGE=Action( "manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant" ),
         # Request type permissions
-        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to this request type to only users having associated role", "restrict" )
-
+        REQUEST_TYPE_ACCESS=Action( "access request_type", "Restrict access to this request type to only users having associated role", "restrict" )
     )
+
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
         for k, v in self.permitted_actions.items():
             if k == name or v.action == name:
                 return v
         return default
+
     def get_actions( self ):
         """Get all permitted actions as a list of Action objects"""
         return self.permitted_actions.__dict__.values()
+
     def get_item_actions( self, action, item ):
         raise 'No valid method of retrieving action (%s) for item %s.' % ( action, item )
-    def guess_derived_permissions_for_datasets( self, datasets = [] ):
+
+    def guess_derived_permissions_for_datasets( self, datasets=[] ):
         raise "Unimplemented Method"
+
     def can_access_dataset( self, roles, dataset ):
         raise "Unimplemented Method"
+
     def can_manage_dataset( self, roles, dataset ):
         raise "Unimplemented Method"
+
     def can_access_library( self, roles, library ):
         raise "Unimplemented Method"
+
     def can_add_library_item( self, roles, item ):
         raise "Unimplemented Method"
+
     def can_modify_library_item( self, roles, item ):
         raise "Unimplemented Method"
+
     def can_manage_library_item( self, roles, item ):
         raise "Unimplemented Method"
+
     def associate_components( self, **kwd ):
         raise 'No valid method of associating provided components: %s' % kwd
+
     def create_private_user_role( self, user ):
         raise "Unimplemented Method"
+
     def get_private_user_role( self, user ):
         raise "Unimplemented Method"
+
     def get_accessible_request_types( self, trans, user ):
         raise "Unimplemented Method"
+
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False ):
         raise "Unimplemented Method"
+
     def history_set_default_permissions( self, history, permissions=None, dataset=False, bypass_manage_permission=False ):
         raise "Unimplemented Method"
+
     def set_all_dataset_permissions( self, dataset, permissions ):
         raise "Unimplemented Method"
+
     def set_dataset_permission( self, dataset, permission ):
         raise "Unimplemented Method"
+
     def set_all_library_permissions( self, trans, dataset, permissions ):
         raise "Unimplemented Method"
+
     def library_is_public( self, library ):
         raise "Unimplemented Method"
+
     def make_library_public( self, library ):
         raise "Unimplemented Method"
+
     def get_accessible_libraries( self, trans, user ):
         raise "Unimplemented Method"
+
     def get_permitted_libraries( self, trans, user, actions ):
         raise "Unimplemented Method"
+
     def folder_is_public( self, library ):
         raise "Unimplemented Method"
+
     def make_folder_public( self, folder, count=0 ):
         raise "Unimplemented Method"
+
     def dataset_is_public( self, dataset ):
         raise "Unimplemented Method"
+
     def make_dataset_public( self, dataset ):
         raise "Unimplemented Method"
+
     def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
+
     def get_all_roles( self, trans, cntrller ):
         raise "Unimplemented Method"
+
     def get_legitimate_roles( self, trans, item, cntrller ):
         raise "Unimplemented Method"
+
     def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
         raise "Unimplemented Method"
+
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
+
     def components_are_associated( self, **kwd ):
         return bool( self.get_component_associations( **kwd ) )
+
     def convert_permitted_action_strings( self, permitted_action_strings ):
         """
         When getting permitted actions from an untrusted source like a
         form, ensure that they match our actual permitted actions.
         """
         return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
+
 
 class GalaxyRBACAgent( RBACAgent ):
     def __init__( self, model, permitted_actions=None ):
@@ -118,10 +156,12 @@ class GalaxyRBACAgent( RBACAgent ):
             ( self.model.LibraryFolder, self.model.LibraryFolderPermissions ),
             ( self.model.LibraryDataset, self.model.LibraryDatasetPermissions ),
             ( self.model.LibraryDatasetDatasetAssociation, self.model.LibraryDatasetDatasetAssociationPermissions ) )
+
     @property
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
+
     def sort_by_attr( self, seq, attr ):
         """
         Sort the sequence of objects by object's attribute
@@ -137,19 +177,20 @@ class GalaxyRBACAgent( RBACAgent ):
         intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
         intermed.sort()
         return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+
     def get_all_roles( self, trans, cntrller ):
         admin_controller = cntrller in [ 'library_admin' ]
         roles = set()
         if not trans.user:
             return trans.sa_session.query( trans.app.model.Role ) \
-                                   .filter( and_( self.model.Role.table.c.deleted==False,
+                                   .filter( and_( self.model.Role.table.c.deleted == False,
                                                   self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                   self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                    .order_by( self.model.Role.table.c.name )
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( self.model.Role.table.c.deleted==False ) \
+                                        .filter( self.model.Role.table.c.deleted == False ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.add( role )
         else:
@@ -160,12 +201,13 @@ class GalaxyRBACAgent( RBACAgent ):
                 roles.add( role )
             # Add all remaining non-private, non-sharing roles
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted==False,
+                                        .filter( and_( self.model.Role.table.c.deleted == False,
                                                        self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.add( role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
+
     def get_legitimate_roles( self, trans, item, cntrller ):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
@@ -215,6 +257,7 @@ class GalaxyRBACAgent( RBACAgent ):
                             if admin_controller or self.ok_to_display( trans.user, ura.role ):
                                 roles.add( ura.role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
+
     def ok_to_display( self, user, role ):
         """
         Method for checking if:
@@ -256,7 +299,6 @@ class GalaxyRBACAgent( RBACAgent ):
                     ret_val = True
                     break
         return ret_val
-
 
     def get_actions_for_items( self, trans, action, permission_items ):
         # TODO: Rename this; it's a replacement for get_item_actions, but it
@@ -345,7 +387,6 @@ class GalaxyRBACAgent( RBACAgent ):
 
         return ret_permissions
 
-
     def allow_action_on_libitems( self, trans, user_roles, action, items ):
         """
         This should be the equivalent of allow_action defined on multiple items.
@@ -359,7 +400,7 @@ class GalaxyRBACAgent( RBACAgent ):
 
         # Change item to lib_dataset or vice-versa.
         for item in items:
-            if all_items_actions.has_key( item.id ):
+            if item.id in all_items_actions:
                 item_actions = all_items_actions[ item.id ]
 
                 if self.permitted_actions.DATASET_ACCESS == action:
@@ -399,7 +440,6 @@ class GalaxyRBACAgent( RBACAgent ):
             log.debug( "allow_action_for_items: test end" )
         return ret_allow_action
 
-
     # DELETEME: SM: DO NOT TOUCH! This actually works.
     def dataset_access_mapping( self, trans, user_roles, datasets ):
         '''
@@ -432,7 +472,8 @@ class GalaxyRBACAgent( RBACAgent ):
         # so this will have to be rewritten to support other items.
         libitems_public_map = self.datasets_are_public( trans, libitems )
         libitems_allow_action_map = self.allow_action_on_libitems(
-            trans, user_roles, self.permitted_actions.DATASET_ACCESS, libitems )
+            trans, user_roles, self.permitted_actions.DATASET_ACCESS, libitems
+        )
         can_access = {}
         for libitem in libitems:
             can_access[ libitem.id ] = libitems_public_map[ libitem.id ] or libitems_allow_action_map[ libitem.id ]
@@ -440,15 +481,18 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def item_permission_map_for_modify( self, trans, user_roles, libitems ):
         return self.allow_action_on_libitems(
-            trans, user_roles, self.permitted_actions.LIBRARY_MODIFY, libitems )
+            trans, user_roles, self.permitted_actions.LIBRARY_MODIFY, libitems
+        )
 
     def item_permission_map_for_manage( self, trans, user_roles, libitems ):
         return self.allow_action_on_libitems(
-            trans, user_roles, self.permitted_actions.LIBRARY_MANAGE, libitems )
+            trans, user_roles, self.permitted_actions.LIBRARY_MANAGE, libitems
+        )
 
     def item_permission_map_for_add( self, trans, user_roles, libitems ):
         return self.allow_action_on_libitems(
-            trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems )
+            trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems
+        )
 
     def can_access_dataset( self, user_roles, dataset ):
         # SM: dataset_is_public will access dataset.actions, which is a
@@ -458,8 +502,10 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def can_manage_dataset( self, roles, dataset ):
         return self.allow_action( roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset )
+
     def can_access_library( self, roles, library ):
         return self.library_is_public( library ) or self.allow_action( roles, self.permitted_actions.LIBRARY_ACCESS, library )
+
     def get_accessible_libraries( self, trans, user ):
         """Return all data libraries that the received user can access"""
         accessible_libraries = []
@@ -480,6 +526,7 @@ class GalaxyRBACAgent( RBACAgent ):
                                        .order_by( trans.app.model.Library.name ):
             accessible_libraries.append( library )
         return accessible_libraries
+
     def has_accessible_folders( self, trans, folder, user, roles, search_downward=True ):
         if self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward ) or \
             self.can_add_library_item( roles, folder ) or \
@@ -490,20 +537,23 @@ class GalaxyRBACAgent( RBACAgent ):
             for folder in folder.active_folders:
                 return self.has_accessible_folders( trans, folder, user, roles, search_downward=search_downward )
         return False
+
     def has_accessible_library_datasets( self, trans, folder, user, roles, search_downward=True ):
         for library_dataset in trans.sa_session.query( trans.model.LibraryDataset ) \
                                                .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
-                                                              trans.app.model.LibraryDataset.table.c.folder_id==folder.id ) ):
+                                                              trans.app.model.LibraryDataset.table.c.folder_id == folder.id ) ):
             if self.can_access_library_item( roles, library_dataset, user ):
                 return True
         if search_downward:
             return self.__active_folders_have_accessible_library_datasets( trans, folder, user, roles )
         return False
+
     def __active_folders_have_accessible_library_datasets( self, trans, folder, user, roles ):
         for active_folder in folder.active_folders:
             if self.has_accessible_library_datasets( trans, active_folder, user, roles ):
                 return True
         return False
+
     def can_access_library_item( self, roles, item, user ):
         if type( item ) == self.model.Library:
             return self.can_access_library( roles, item )
@@ -514,12 +564,15 @@ class GalaxyRBACAgent( RBACAgent ):
         elif type( item ) == self.model.LibraryDatasetDatasetAssociation:
             return self.can_access_library( roles, item.library_dataset.folder.parent_library ) and self.can_access_dataset( roles, item.dataset )
         else:
-            log.warning( 'Unknown library item type: %s' % type ( item ) )
+            log.warning( 'Unknown library item type: %s' % type( item ) )
             return False
+
     def can_add_library_item( self, roles, item ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_ADD, item )
+
     def can_modify_library_item( self, roles, item ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_MODIFY, item )
+
     def can_manage_library_item( self, roles, item ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_MANAGE, item )
 
@@ -554,6 +607,7 @@ class GalaxyRBACAgent( RBACAgent ):
                         # join existing roles with new roles
                         perms[ action ].extend( filter( lambda x: x not in perms[ action ], roles ) )
         return perms
+
     def associate_components( self, **kwd ):
         if 'user' in kwd:
             if 'group' in kwd:
@@ -567,26 +621,31 @@ class GalaxyRBACAgent( RBACAgent ):
             if 'dataset' in kwd and 'role' in kwd:
                 return self.associate_action_dataset_role( kwd['action'], kwd['dataset'], kwd['role'] )
         raise 'No valid method of associating provided components: %s' % kwd
+
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
+
     def associate_user_role( self, user, role ):
         assoc = self.model.UserRoleAssociation( user, role )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
+
     def associate_group_role( self, group, role ):
         assoc = self.model.GroupRoleAssociation( group, role )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
+
     def associate_action_dataset_role( self, action, dataset, role ):
         assoc = self.model.DatasetPermissions( action, dataset, role )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
+
     def create_private_user_role( self, user ):
         # Create private role
         role = self.model.Role( name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE )
@@ -595,6 +654,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # Add user to role
         self.associate_components( role=role, user=user )
         return role
+
     def get_private_user_role( self, user, auto_create=False ):
         role = self.sa_session.query( self.model.Role ) \
                               .filter( and_( self.model.Role.table.c.name == user.email,
@@ -606,11 +666,13 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
+
     def get_sharing_roles( self, user ):
         return self.sa_session.query( self.model.Role ) \
                               .filter( and_( ( self.model.Role.table.c.name ).like( "Sharing role for: %" + user.email + "%" ),
                                              self.model.Role.table.c.type == self.model.Role.types.SHARING ) )
-    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private = False ):
+
+    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private=False ):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
         flush_needed = False
         if user is None:
@@ -637,6 +699,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
+
     def user_get_default_permissions( self, user ):
         permissions = {}
         for dup in user.default_permissions:
@@ -646,6 +709,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ action ] = [ dup.role ]
         return permissions
+
     def history_set_default_permissions( self, history, permissions={}, dataset=False, bypass_manage_permission=False ):
         # bypass_manage_permission is used to change permissions of datasets in a user-less history when logging in
         flush_needed = False
@@ -680,6 +744,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     continue
                 if bypass_manage_permission or self.can_manage_dataset( user.all_roles(), dataset ):
                     self.set_all_dataset_permissions( dataset, permissions )
+
     def history_get_default_permissions( self, history ):
         permissions = {}
         for dhp in history.default_permissions:
@@ -689,6 +754,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ action ] = [ dhp.role ]
         return permissions
+
     def set_all_dataset_permissions( self, dataset, permissions={} ):
         """
         Set new permissions on a dataset, eliminating all current permissions
@@ -721,6 +787,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if flush_needed:
             self.sa_session.flush()
         return ""
+
     def set_dataset_permission( self, dataset, permission={} ):
         """
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
@@ -741,6 +808,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 flush_needed = True
         if flush_needed:
             self.sa_session.flush()
+
     def get_permissions( self, item ):
         """
         Return a dictionary containing the actions and associated roles on item
@@ -755,6 +823,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ action ] = [ item_permission.role ]
         return permissions
+
     def get_accessible_request_types( self, trans, user ):
         """Return all RequestTypes that the received user has permission to access."""
         accessible_request_types = []
@@ -775,13 +844,15 @@ class GalaxyRBACAgent( RBACAgent ):
                                        .order_by( trans.app.model.RequestType.name ):
             accessible_request_types.append( request_type )
         return accessible_request_types
+
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):
             src = src.dataset
         if not isinstance( dst, self.model.Dataset ):
             dst = dst.dataset
         self.set_all_dataset_permissions( dst, self.get_permissions( src ) )
-    def privately_share_dataset( self, dataset, users = [] ):
+
+    def privately_share_dataset( self, dataset, users=[] ):
         intersect = None
         for user in users:
             roles = [ ura.role for ura in user.roles if ura.role.type == self.model.Role.types.SHARING ]
@@ -801,13 +872,14 @@ class GalaxyRBACAgent( RBACAgent ):
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = self.model.Role( name = "Sharing role for: " + ", ".join( [ u.email for u in users ] ),
-                                            type = self.model.Role.types.SHARING )
+            sharing_role = self.model.Role( name="Sharing role for: " + ", ".join( [ u.email for u in users ] ),
+                                            type=self.model.Role.types.SHARING )
             self.sa_session.add( sharing_role )
             self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+
     def set_all_library_permissions( self, trans, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
         flush_needed = False
@@ -828,6 +900,9 @@ class GalaxyRBACAgent( RBACAgent ):
                         # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
                         # permission.  In this case, we'll reset this permission to the library_item user's private role.
                         if not library_item.dataset.has_manage_permissions_roles( trans ):
+                            # Well this looks like a bug, this should be looked at.
+                            # Default permissions above is single hash that keeps getting reeditted here
+                            # because permission is being defined instead of permissions. -John
                             permission = {}
                             permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = [ trans.app.security_agent.get_private_user_role( library_item.user ) ]
                             self.set_dataset_permission( library_item.dataset, permissions )
@@ -840,6 +915,7 @@ class GalaxyRBACAgent( RBACAgent ):
                             self.set_dataset_permission( library_item.dataset, permissions )
         if flush_needed:
             self.sa_session.flush()
+
     def library_is_public( self, library, contents=False ):
         if contents:
             # Check all contained folders and datasets to find any that are not public
@@ -847,6 +923,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 return False
         # A library is considered public if there are no "access" actions associated with it.
         return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
+
     def make_library_public( self, library, contents=False ):
         flush_needed = False
         if contents:
@@ -859,6 +936,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 flush_needed = True
         if flush_needed:
             self.sa_session.flush()
+
     def folder_is_public( self, folder ):
         for sub_folder in folder.folders:
             if not self.folder_is_public( sub_folder ):
@@ -868,6 +946,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if ldda and ldda.dataset and not self.dataset_is_public( ldda.dataset ):
                 return False
         return True
+
     def make_folder_public( self, folder ):
         # Make all of the contents (include deleted contents, but not purged contents) of folder public
         for sub_folder in folder.folders:
@@ -909,7 +988,6 @@ class GalaxyRBACAgent( RBACAgent ):
             datasets_public[ permission.dataset_id ] = False
         return datasets_public
 
-
     def make_dataset_public( self, dataset ):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
@@ -920,6 +998,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 flush_needed = True
         if flush_needed:
             self.sa_session.flush()
+
     def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
         # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
         # is False, item_id refers to a dataset ( item_id must currently be decoded before being sent ).  The
@@ -1017,6 +1096,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ self.get_action( v.action ) ] = in_roles
         return permissions, in_roles, error, msg
+
     def copy_library_permissions( self, trans, source_library_item, target_library_item, user=None ):
         # Copy all relevant permissions from source.
         permissions = {}
@@ -1037,13 +1117,14 @@ class GalaxyRBACAgent( RBACAgent ):
                 # Make sure user's private role is included
                 private_role = self.model.security_agent.get_private_user_role( user )
                 for name, action in self.permitted_actions.items():
-                    if not permission_class.filter_by( role_id = private_role.id, action = action.action ).first():
+                    if not permission_class.filter_by( role_id=private_role.id, action=action.action ).first():
                         lp = permission_class( action.action, target_library_item, private_role )
                         self.sa_session.add( lp )
                         self.sa_session.flush()
             else:
                 raise 'Invalid class (%s) specified for target_library_item (%s)' % \
                     ( target_library_item.__class__, target_library_item.__class__.__name__ )
+
     def get_permitted_libraries( self, trans, user, actions ):
         """
         This method is historical (it is not currently used), but may be useful again at some
@@ -1073,6 +1154,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if can_show:
                 libraries[ library ] = hidden_folder_ids
         return libraries
+
     def show_library_item( self, user, roles, library_item, actions_to_check, hidden_folder_ids='' ):
         """
         This method must be sent an instance of Library() or LibraryFolder().  Recursive execution produces a
@@ -1097,6 +1179,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 else:
                     hidden_folder_ids = '%d' % folder.id
         return False, hidden_folder_ids
+
     def get_showable_folders( self, user, roles, library_item, actions_to_check, hidden_folder_ids=[], showable_folders=[] ):
         """
         This method must be sent an instance of Library(), all the folders of which are scanned to determine if
@@ -1115,6 +1198,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for folder in library_item.active_folders:
                 self.get_showable_folders( user, roles, folder, actions_to_check, showable_folders=showable_folders )
         return showable_folders
+
     def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
         for user in users:
             if delete_existing_assocs:
@@ -1131,6 +1215,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( user=user, group=group )
+
     def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
         for group in groups:
             if delete_existing_assocs:
@@ -1144,6 +1229,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 self.associate_components( group=group, role=role )
             for user in users:
                 self.associate_components( group=group, user=user )
+
     def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
         for role in roles:
             if delete_existing_assocs:
@@ -1157,20 +1243,22 @@ class GalaxyRBACAgent( RBACAgent ):
                 self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( group=group, role=role )
+
     def get_component_associations( self, **kwd ):
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'
         if 'dataset' in kwd:
             if 'action' in kwd:
-                return self.sa_session.query( self.model.DatasetPermissions ).filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
+                return self.sa_session.query( self.model.DatasetPermissions ).filter_by( action=kwd['action'].action, dataset_id=kwd['dataset'].id ).first()
         elif 'user' in kwd:
             if 'group' in kwd:
-                return self.sa_session.query( self.model.UserGroupAssociation ).filter_by( group_id = kwd['group'].id, user_id = kwd['user'].id ).first()
+                return self.sa_session.query( self.model.UserGroupAssociation ).filter_by( group_id=kwd['group'].id, user_id=kwd['user'].id ).first()
             elif 'role' in kwd:
-                return self.sa_session.query( self.model.UserRoleAssociation ).filter_by( role_id = kwd['role'].id, user_id = kwd['user'].id ).first()
+                return self.sa_session.query( self.model.UserRoleAssociation ).filter_by( role_id=kwd['role'].id, user_id=kwd['user'].id ).first()
         elif 'group' in kwd:
             if 'role' in kwd:
-                return self.sa_session.query( self.model.GroupRoleAssociation ).filter_by( role_id = kwd['role'].id, group_id = kwd['group'].id ).first()
+                return self.sa_session.query( self.model.GroupRoleAssociation ).filter_by( role_id=kwd['role'].id, group_id=kwd['group'].id ).first()
         raise 'No valid method of associating provided components: %s' % kwd
+
     def check_folder_contents( self, user, roles, folder, hidden_folder_ids='' ):
         """
         This method must always be sent an instance of LibraryFolder().  Recursive execution produces a
@@ -1210,6 +1298,7 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
+
     def can_access_request_type( self, roles, request_type ):
         action = self.permitted_actions.REQUEST_TYPE_ACCESS
         request_type_actions = []
@@ -1224,12 +1313,12 @@ class GalaxyRBACAgent( RBACAgent ):
                 ret_val = True
                 break
         return ret_val
+
     def set_request_type_permissions( self, request_type, permissions={} ):
         # Set new permissions on request_type, eliminating all current permissions
         for role_assoc in request_type.actions:
             self.sa_session.delete( role_assoc )
         # Add the new permissions on request_type
-        item_class = self.model.RequestType
         permission_class = self.model.RequestTypePermissions
         flush_needed = False
         for action, roles in permissions.items():
@@ -1241,6 +1330,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if flush_needed:
             self.sa_session.flush()
 
+
 class HostAgent( RBACAgent ):
     """
     A simple security agent which allows access to datasets based on host.
@@ -1249,30 +1339,33 @@ class HostAgent( RBACAgent ):
     """
     # TODO: Make sites user configurable
     sites = Bunch(
-        ucsc_main = ( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
+        ucsc_main=( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
                       'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
-        ucsc_test = ( 'hgwdev.cse.ucsc.edu', ),
-        ucsc_archaea = ( 'lowepub.cse.ucsc.edu', )
+        ucsc_test=( 'hgwdev.cse.ucsc.edu', ),
+        ucsc_archaea=( 'lowepub.cse.ucsc.edu', )
     )
+
     def __init__( self, model, permitted_actions=None ):
         self.model = model
         if permitted_actions:
             self.permitted_actions = permitted_actions
+
     @property
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
+
     def allow_action( self, addr, action, **kwd ):
         if 'dataset' in kwd and action == self.permitted_actions.DATASET_ACCESS:
             hda = kwd['dataset']
             if action == self.permitted_actions.DATASET_ACCESS and action.action not in [ dp.action for dp in hda.dataset.actions ]:
                 log.debug( 'Allowing access to public dataset with hda: %i.' % hda.id )
-                return True # dataset has no roles associated with the access permission, thus is already public
+                return True  # dataset has no roles associated with the access permission, thus is already public
             hdadaa = self.sa_session.query( self.model.HistoryDatasetAssociationDisplayAtAuthorization ) \
-                                    .filter_by( history_dataset_association_id = hda.id ).first()
+                                    .filter_by( history_dataset_association_id=hda.id ).first()
             if not hdadaa:
                 log.debug( 'Denying access to private dataset with hda: %i.  No hdadaa record for this dataset.' % hda.id )
-                return False # no auth
+                return False  # no auth
             # We could just look up the reverse of addr, but then we'd also
             # have to verify it with the forward address and special case any
             # IPs (instead of hosts) in the server list.
@@ -1284,28 +1377,30 @@ class HostAgent( RBACAgent ):
                 # balancing their connections (as UCSC does), this is okay.
                 try:
                     if socket.gethostbyname( server ) == addr:
-                        break # remote host is in the server list
+                        break  # remote host is in the server list
                 except ( socket.error, socket.gaierror ):
-                    pass # can't resolve, try next
+                    pass  # can't resolve, try next
             else:
                 log.debug( 'Denying access to private dataset with hda: %i.  Remote addr is not a valid server for site: %s.' % ( hda.id, hdadaa.site ) )
-                return False # remote addr is not in the server list
+                return False  # remote addr is not in the server list
             if ( datetime.utcnow() - hdadaa.update_time ) > timedelta( seconds=60 ):
                 log.debug( 'Denying access to private dataset with hda: %i.  Authorization was granted, but has expired.' % hda.id )
-                return False # not authz'd in the last 60 seconds
+                return False  # not authz'd in the last 60 seconds
             log.debug( 'Allowing access to private dataset with hda: %i.  Remote server is: %s.' % ( hda.id, server ) )
             return True
         else:
             raise 'The dataset access permission is the only valid permission in the host security agent.'
+
     def set_dataset_permissions( self, hda, user, site ):
         hdadaa = self.sa_session.query( self.model.HistoryDatasetAssociationDisplayAtAuthorization ) \
-                                .filter_by( history_dataset_association_id = hda.id ).first()
+                                .filter_by( history_dataset_association_id=hda.id ).first()
         if hdadaa:
             hdadaa.update_time = datetime.utcnow()
         else:
             hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization( hda=hda, user=user, site=site )
         self.sa_session.add( hdadaa )
         self.sa_session.flush()
+
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
