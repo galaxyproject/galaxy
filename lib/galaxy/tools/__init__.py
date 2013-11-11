@@ -1908,13 +1908,8 @@ class Tool( object, Dictifiable ):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
-        # Get the state or create if not found
-        if "tool_state" in incoming:
-            encoded_state = string_to_object( incoming["tool_state"] )
-            state = DefaultToolState()
-            state.decode( encoded_state, self, trans.app )
-        else:
-            state = self.new_state( trans, history=history )
+        state, state_new = self.__fetch_state( trans, incoming, history )
+        if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button
@@ -1928,6 +1923,7 @@ class Tool( object, Dictifiable ):
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
         errors, params = self.__check_param_values( trans, incoming, state, old_errors )
+
         # Did the user actually click next / execute or is this just
         # a refresh?
         if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
@@ -1980,6 +1976,18 @@ class Tool( object, Dictifiable ):
             if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __fetch_state( self, trans, incoming, history ):
+        # Get the state or create if not found
+        if "tool_state" in incoming:
+            encoded_state = string_to_object( incoming["tool_state"] )
+            state = DefaultToolState()
+            state.decode( encoded_state, self, trans.app )
+            new = False
+        else:
+            state = self.new_state( trans, history=history )
+            new = True
+        return state, new
 
     def __check_param_values( self, trans, incoming, state, old_errors ):
         # Process incoming data
