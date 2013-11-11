@@ -1958,12 +1958,7 @@ class Tool( object, Dictifiable ):
                     return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
             # Otherwise move on to the next page
             else:
-                state.page += 1
-                # Fill in the default values for the next page
-                self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
-                if not self.display_interface:
-                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
-                return 'tool_form.mako', dict( errors=errors, tool_state=state )
+                return self.__handle_page_advance( trans, state, errors )
 
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
@@ -1982,6 +1977,14 @@ class Tool( object, Dictifiable ):
             if not self.display_interface:
                 return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __handle_page_advance( self, trans, state, errors ):
+        state.page += 1
+        # Fill in the default values for the next page
+        self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
+        if not self.display_interface:
+            return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+        return 'tool_form.mako', dict( errors=errors, tool_state=state )
 
     def __fetch_state( self, trans, incoming, history ):
         # Get the state or create if not found
