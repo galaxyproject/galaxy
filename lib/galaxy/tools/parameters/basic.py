@@ -1359,7 +1359,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 options = []
             for filter_key, filter_value in self.filtered.iteritems():
                 dataset = other_values[filter_key]
-                if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ): #this is a bad way to check for this, but problems importing class ( due to circular imports? )
+                if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ):  # this is a bad way to check for this, but problems importing class ( due to circular imports? )
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.iteritems():
