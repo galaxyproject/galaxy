@@ -171,6 +171,9 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
 
+    webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
+        controller="users", action="api_key", user_id=None, conditions=dict( method=["POST"] ) )
+
     # visualizations registry generic template renderer
     webapp.add_route( '/visualization/show/:visualization_name',
         controller='visualization', action='render', visualization_name=None )

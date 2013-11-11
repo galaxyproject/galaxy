@@ -635,6 +635,11 @@ use_interactive = True
 # other users
 #api_allow_run_as = None
 
+# Master key that allows many API admin actions to be used without actually
+# having a defined admin user in the database/config. Only set this if you need
+# to bootstrap Galaxy, you probably do not want to set this on public servers.
+#master_api_key=changethis
+
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for
 # large servers.

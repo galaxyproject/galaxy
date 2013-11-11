@@ -90,7 +90,7 @@ ${history_panel_javascripts()}
 ## ----------------------------------------------------------------------------- generic 'base' function
 <%def name="history_panel_javascripts()">
 ${h.js(
-    "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging"
+    "mvc/tags", "mvc/annotations"
 )}
 
 ##TODO: concat these

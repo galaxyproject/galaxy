@@ -7,6 +7,7 @@ from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
+from itertools import izip
 
 from galaxy import eggs
 
@@ -929,6 +930,15 @@ def move_merge( source, target ):
             move_merge( os.path.join( source, name ), os.path.join( target, name ) )
     else:
         return shutil.move( source, target )
+
+
+def safe_str_cmp(a, b):
+    if len(a) != len(b):
+        return False
+    rv = 0
+    for x, y in izip(a, b):
+        rv |= ord(x) ^ ord(y)
+    return rv == 0
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 

@@ -4,15 +4,16 @@ API operations on the contents of a history.
 
 import logging
 from galaxy import exceptions, util, web
-from galaxy.web.base.controller import (BaseAPIController, url_for,
+from galaxy.web.base.controller import ( BaseAPIController, url_for,
         UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin,
-        UsesLibraryMixinItems)
+        UsesLibraryMixinItems, UsesTagsMixin )
+from galaxy.util.sanitize_html import sanitize_html
 
 log = logging.getLogger( __name__ )
 
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
-                                 UsesLibraryMixin, UsesLibraryMixinItems ):
+                                 UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
@@ -405,7 +406,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
+            elif key == 'annotation' and val is not None:
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
@@ -413,6 +414,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
                 validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'tags':
+                if isinstance( val, list ):
+                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )

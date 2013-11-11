@@ -347,6 +347,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     #       <!-- allow installing an R packages -->
                     #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
                     # </action>
+                    filtered_actions = actions[ 1: ]
 
                     if action_dict.get( 'env_shell_file_paths', False ):
                         install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )

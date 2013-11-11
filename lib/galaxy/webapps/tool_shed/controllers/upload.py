@@ -123,7 +123,7 @@ class UploadController( BaseUIController ):
                         self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2 )
                     if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named <b>tool_dependencies.xml</b>.'
@@ -150,12 +150,17 @@ class UploadController( BaseUIController ):
                         elif uploaded_file_filename in [ suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if it defines a complex repository dependency definition whose changeset_revision values
                             # are missing and if so, set them appropriately.
-                            altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
-                            if altered:
-                                tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
-                                shutil.move( tmp_filename, full_path )
-                            else:
-                                shutil.move( uploaded_file_name, full_path )
+                            altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                            if error_message:
+                                ok = False
+                                message = error_message
+                                status = 'error'
+                            if ok:
+                                if altered:
+                                    tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
+                                    shutil.move( tmp_filename, full_path )
+                                else:
+                                    shutil.move( uploaded_file_name, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
                         if ok:
@@ -303,7 +308,9 @@ class UploadController( BaseUIController ):
                             shutil.move( tmp_filename, uploaded_file_name )
                     elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        if error_message:
+                            return False, error_message, [], '', [], []
                         if altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
@@ -368,7 +375,9 @@ class UploadController( BaseUIController ):
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    if error_message:
+                        return False, error_message, [], '', [], []
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )

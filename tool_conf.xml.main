@@ -277,10 +277,6 @@
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
   </section>
-  <section id="indel_analysis" name="NGS: Indel Analysis">
-    <tool file="indels/sam_indel_filter.xml" />
-    <tool file="indels/indel_analysis.xml" />
-  </section>
   <section id="peak_calling" name="NGS: Peak Calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="peak_calling/sicer_wrapper.xml" />

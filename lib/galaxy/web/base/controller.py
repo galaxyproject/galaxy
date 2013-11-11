@@ -252,6 +252,48 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
+
+class CreatesUsersMixin:
+    """
+    Mixin centralizing logic for user creation between web and API controller.
+
+    Web controller handles additional features such e-mail subscription, activation,
+    user forms, etc.... API created users are much more vanilla for the time being.
+    """
+
+    def create_user( self, trans, email, username, password ):
+        user = trans.app.model.User( email=email )
+        user.set_password_cleartext( password )
+        user.username = username
+        if trans.app.config.user_activation_on:
+            user.active = False
+        else:
+            user.active = True  # Activation is off, every new user is active by default.
+        trans.sa_session.add( user )
+        trans.sa_session.flush()
+        trans.app.security_agent.create_private_user_role( user )
+        if trans.webapp.name == 'galaxy':
+            # We set default user permissions, before we log in and set the default history permissions
+            trans.app.security_agent.user_set_default_permissions( user,
+                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+        return user
+
+
+class CreatesApiKeysMixin:
+    """
+    Mixing centralizing logic for creating API keys for user objects.
+    """
+
+    def create_api_key( self, trans, user ):
+        guid = trans.app.security.get_new_guid()
+        new_key = trans.app.model.APIKeys()
+        new_key.user_id = user.id
+        new_key.key = guid
+        trans.sa_session.add( new_key )
+        trans.sa_session.flush()
+        return guid
+
+
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
@@ -452,7 +494,8 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if 'annotation' in new_data.keys() and trans.get_user():
             history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=trans.user )
         # importable (ctrl.history.set_accessible_async)
         # sharing/permissions?
         # slugs?
@@ -595,6 +638,8 @@ class UsesHistoryDatasetAssociationMixin:
             return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
+        hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
+
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
@@ -630,14 +675,6 @@ class UsesHistoryDatasetAssociationMixin:
         # ---- return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
-
-        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
-        # expensive
-        #if( ( hda.state in [ 'running', 'queued' ] )
-        #and ( hda.creating_job and hda.creating_job.tool_id ) ):
-        #    tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-        #    if tool_used and tool_used.force_history_refresh:
-        #        hda_dict[ 'force_history_refresh' ] = True
 
         return trans.security.encode_dict_ids( hda_dict )
 
@@ -715,7 +752,8 @@ class UsesHistoryDatasetAssociationMixin:
         if 'annotation' in new_data.keys() and trans.get_user():
             hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
         # sharing/permissions?
         # purged
 
@@ -1146,11 +1184,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         if not tool.trackster_conf:
             return None
 
-        # Get tool definition and add input values from job.
+        # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict( trans, io_details=True )
-        inputs_dict = tool_dict[ 'inputs' ]
         tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
+
+        # Only get values for simple inputs for now.
+        inputs_dict = [ i for i in tool_dict[ 'inputs' ] if i[ 'type' ] not in [ 'data', 'hidden_data', 'conditional' ] ]
         for t_input in inputs_dict:
             # Add value to tool.
             if 'name' in t_input:
@@ -2339,6 +2379,49 @@ class UsesTagsMixin( object ):
         tagged_item = self._get_tagged_item( trans, item_class_name, id )
         log.debug( "In get_item_tag_assoc with tagged_item %s" % tagged_item )
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
+
+    def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
+        #precondition: item is already security checked against user
+        #precondition: incoming tags is a list of sanitized/formatted strings
+        user = user or trans.user
+
+        # based on controllers/tag retag_async: delete all old, reset to entire new
+        trans.app.tag_handler.delete_item_tags( trans, user, item )
+        new_tags_str = ','.join( new_tags_list )
+        trans.app.tag_handler.apply_item_tags( trans, user, item, new_tags_str.encode( 'utf-8' ) )
+        trans.sa_session.flush()
+        return item.tags
+
+    def get_user_tags_used( self, trans, user=None ):
+        """
+        Return a list of distinct 'user_tname:user_value' strings that the
+        given user has used.
+
+        user defaults to trans.user.
+        Returns an empty list if no user is given and trans.user is anonymous.
+        """
+        #TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
+        user = user or trans.user
+        if not user:
+            return []
+
+        # get all the taggable model TagAssociations
+        tag_models = [ v.tag_assoc_class for v in trans.app.tag_handler.item_tag_assoc_info.values() ]
+        # create a union of subqueries for each for this user - getting only the tname and user_value
+        all_tags_query = None
+        for tag_model in tag_models:
+            subq = ( trans.sa_session.query( tag_model.user_tname, tag_model.user_value )
+                        .filter( tag_model.user == trans.user ) )
+            all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
+
+        # if nothing init'd the query, bail
+        if all_tags_query is None:
+            return []
+
+        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
+        tags = all_tags_query.distinct().all()
+        tags = [( ( name + ':' + val ) if val else name ) for name, val in tags ]
+        return sorted( tags )
 
 
 

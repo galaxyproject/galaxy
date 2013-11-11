@@ -17,7 +17,7 @@
     -jar "${GALAXY_DATA_INDEX_DIR}/shared/jars/gatk/GenomeAnalysisTK.jar"
     -T "VariantEval"
     --out "${output_report}"
-    --num_threads 4 ##hard coded, for now
+    --num_threads \${GALAXY_SLOTS:-4}
     -et "NO_ET" ##ET no phone home
     ##-log "${output_log}" ##don't use this to log to file, instead directly capture stdout
     #if $reference_source.reference_source_selector != "history":

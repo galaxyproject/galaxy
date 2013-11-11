@@ -235,7 +235,6 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
-    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
     if current_changeset_revision is None:
         # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
         # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
@@ -261,6 +260,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
                                                                                                      owner,
                                                                                                      installed_changeset_revision )
     if tool_shed_repository:
+        log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
@@ -270,6 +270,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
     else:
+        log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
         tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
                                                              name=name,
                                                              description=description,

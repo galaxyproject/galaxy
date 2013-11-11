@@ -36,15 +36,13 @@
     </div>
 
     <div class="dataset-primary-actions"></div>
-
-    <div class="dataset-title-bar">
+    <div class="dataset-title-bar clear">
         <span class="dataset-state-icon state-icon"></span>
         <div class="dataset-title">
             <span class="hda-hid">{{ hid }}</span>
             <span class="dataset-name">{{ name }}</span>
         </div>
     </div>
-    <div class="clear"></div>
 
     <div class="dataset-body"></div>
 </div>
@@ -54,7 +52,9 @@
 <script type="text/template" class="template-hda" id="template-hda-body">
 <div class="dataset-body">
     {{#if body}}
-    {{{ body }}}
+    <div class="dataset-summary">
+        {{{ body }}}
+    </div>
     <div class="dataset-actions clear">
         <div class="left"></div>
         <div class="right"></div>
@@ -97,18 +97,8 @@
     </div>
 
     {{#unless deleted }}
-    {{! TODO: move to mvc/tag.js }}
-    <div class="tags-display">
-        <label class="prompt">{{#local}}Tags{{/local}}</label>
-        <div class="tags"></div>
-    </div>
-
-    {{! TODO: move to mvc/annotations.js }}
-    <div class="annotation-display">
-        <label class="prompt">{{#local}}Annotation{{/local}}</label>
-        <div id="dataset-{{ id }}-annotation" class="annotation editable-text"
-             title="{{#local}}Edit dataset annotation{{/local}}"></div>
-    </div>
+    <div class="tags-display"></div>
+    <div class="annotation-display"></div>
 
     <div class="dataset-display-applications">
         {{#each display_apps}}

@@ -41,7 +41,8 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
     element.bind( "drag", { handle: "." + handle_class, relative: true }, function ( e, d ) {
         var element = $(this),
             parent = $(this).parent(),
-            children = parent.children(),
+            // Only sorting amongst tracks and groups.
+            children = parent.children('.track,.group'),
             this_obj = html_elt_js_obj_dict[$(this).attr("id")],
             child,
             container,
@@ -278,7 +279,7 @@ Drawable.prototype.action_icons_def = [
     {
         name: "settings_icon",
         title: "Edit settings",
-        css_class: "settings-icon",
+        css_class: "gear",
         on_click_fn: function(drawable) {
             var view = new ConfigView({
                 model: drawable.config
@@ -1246,7 +1247,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 chrom_data.resolve(result.chrom_info);
             },
             error: function() {
-                alert("Could not load chroms for this dbkey:", view.dbkey);
+                alert("Could not load chroms for this dbkey: " + view.dbkey);
             }
         });
         return chrom_data;
@@ -1621,10 +1622,12 @@ var TracksterTool = tools_mod.Tool.extend({
     },
 
     initialize: function(options) {
-        // Restore tool visibility from state.
-        if (options.tool_state !== undefined) {
-            this.set('hidden', options.tool_state.hidden);
+        // Restore tool visibility from state; default to hidden.
+        var hidden = true;
+        if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
+            hidden = options.tool_state.hidden
         }
+        this.set('hidden', hidden);
 
         // FIXME: need to restore tool values from options.tool_state
 
@@ -1796,7 +1799,7 @@ var TracksterToolView = Backbone.View.extend({
         // already in group, add track to group.
         if (current_track.container === view) {
             // Create new group.
-            var group = new DrawableGroup(view, view, { name: this.prefs.name });
+            var group = new DrawableGroup(view, view, { name: track.prefs.name });
             
             // Replace track with group.
             var index = current_track.container.replace_drawable(current_track, group, false);
@@ -2396,7 +2399,7 @@ extend(Track.prototype, Drawable.prototype, {
         {
             name: "overview_icon",
             title: "Set as overview",
-            css_class: "overview-icon",
+            css_class: "application-dock-270",
             on_click_fn: function(track) {
                 track.view.set_overview(track);
             }
@@ -2407,7 +2410,7 @@ extend(Track.prototype, Drawable.prototype, {
         {
             name: "filters_icon",
             title: "Filters",
-            css_class: "filters-icon",
+            css_class: "ui-slider-050",
             on_click_fn: function(drawable) {
                 // TODO: update Tooltip text.
                 if (drawable.filters_manager.visible()) {
@@ -2705,16 +2708,16 @@ extend(Track.prototype, Drawable.prototype, {
             if (!result || result === "error" || result.kind === "error") {
                 // Dataset is in error state.
                 track.container_div.addClass("error");
-                track.tiles_div.text(DATA_ERROR);
+                track.content_div.text(DATA_ERROR);
                 if (result.message) {
                     // Add links to (a) show error and (b) try again.
-                    track.tiles_div.append(
+                    track.content_div.append(
                         $("<a href='javascript:void(0);'></a>").text("View error").click(function() {
                             Galaxy.modal.show({title: "Trackster Error", body: "<pre>" + result.message + "</pre>", buttons : {'Close' : function() { Galaxy.modal.hide(); } } });
                         })
                     );
-                    track.tiles_div.append( $('<span/>').text(' ') );
-                    track.tiles_div.append(
+                    track.content_div.append( $('<span/>').text(' ') );
+                    track.content_div.append(
                         $("<a href='javascript:void(0);'></a>").text("Try again").click(function() {
                             track.init(true);
                         })
@@ -2770,7 +2773,6 @@ extend(Track.prototype, Drawable.prototype, {
         return $.getJSON( track.dataset.url(), 
             {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
                high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, function(result) {
-            track.container_div.addClass( "line-track" );
             var data = result.data;
             
             // Tracks may not have stat data either because there is no data or data is not yet ready.
@@ -3388,8 +3390,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         tile_element.css('height', 'auto');
         
         // Update max height based on current tile's height.
-        this.max_height_px = Math.max(this.max_height_px, tile_element.height());
-        
+        // BUG/HACK: tile_element.height() returns a height that is always 2 pixels too big, so 
+        // -2 to get the correct height.
+        this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
+
         // Update height for all tiles based on max height.
         tile_element.parent().children().css("height", this.max_height_px + "px");
         
@@ -4326,8 +4330,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
                     this.tiles_div.prepend( 
                         $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
-                            // +2 for padding
-                            'top': this.prefs.summary_height + 2,
+                            'top': this.prefs.summary_height,
                         })
                     );
                 }

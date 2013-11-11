@@ -1,19 +1,27 @@
 <script type="text/template" class="template-visualization" id="template-visualization-scatterplotControlForm">
 {{! main layout }}
 
+<h1>WHAAAAA?</h1>
 <div class="scatterplot-container chart-container tabbable tabs-left">
     {{! tab buttons/headers using Bootstrap }}
     <ul class="nav nav-tabs">
         {{! start with the data controls as the displayed tab }}
-        <li class="active"><a href="#data-control" data-toggle="tab" class="tooltip"
-            title="Use this tab to change which data are used">Data Controls</a></li>
-        <li><a href="#chart-control" data-toggle="tab" class="tooltip"
-            title="Use this tab to change how the chart is drawn">Chart Controls</a></li>
-        <li><a href="#stats-display" data-toggle="tab" class="tooltip"
-            title="This tab will display overall statistics for your data">Statistics</a></li>
-        <li><a href="#chart-display" data-toggle="tab" class="tooltip"
-            title="This tab will display the chart">Chart</a>
-            {{! loading indicator - initially hidden }}
+        <li class="active">
+            <a title="Use this tab to change which data are used"
+               href="#data-control" data-toggle="tab">Data Controls</a>
+        </li>
+        <li>
+            <a title="Use this tab to change how the chart is drawn"
+               href="#chart-control" data-toggle="tab" >Chart Controls</a>
+        </li>
+        <li>
+            <a title="This tab will display overall statistics for your data"
+               href="#stats-display" data-toggle="tab">Statistics</a>
+        </li>
+        <li>
+            <a title="This tab will display the chart"
+               href="#chart-display" data-toggle="tab">Chart</a>
+
             <div id="loading-indicator" style="display: none;">
                 <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
                 <span class="loading-message">{{message}}</span>
@@ -35,12 +43,19 @@
 
         {{! ---------------------------- tab for data statistics }}
         <div id="stats-display" class="tab-pane">
-            {{! rendered separately }}
+            <p class="help-text">By column:</p>
+            <table id="chart-stats-table">
+                <thead><th></th><th>X</th><th>Y</th></thead>
+                {{#each stats}}
+                <tr><td>{{name}}</td><td>{{xval}}</td><td>{{yval}}</td></tr>
+                </tr>
+                {{/each}}
+            </table>
         </div>
 
         {{! ---------------------------- tab for actual chart }}
         <div id="chart-display" class="tab-pane">
-            {{! chart rendered separately }}
+            <svg width="{{width}}" height="{{height}}"></svg>
         </div>
 
     </div>{{! end .tab-content }}

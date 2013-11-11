@@ -89,7 +89,12 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
             ordered_repository = ordered_repositories[ index ]
             ordered_changeset_revision = ordered_changeset_revisions[ index ]
-            repository_archive, error_message = generate_repository_archive( trans, work_dir, tool_shed_url, ordered_repository, ordered_changeset_revision, file_type )
+            repository_archive, error_message = generate_repository_archive( trans,
+                                                                             work_dir,
+                                                                             tool_shed_url,
+                                                                             ordered_repository,
+                                                                             ordered_changeset_revision,
+                                                                             file_type )
             if error_message:
                 error_messages = '%s  %s' % ( error_messages, error_message )
             else:
@@ -105,7 +110,10 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
         tmp_export_info = xml_util.create_and_write_tmp_file( export_elem, use_indent=True )
         repositories_archive.add( tmp_export_info, arcname='export_info.xml' )
         # Write the manifest, which must preserve the order in which the repositories should be imported.
-        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
+        exported_repository_root = xml_util.create_element( 'repositories' )
+        for exported_repository_elem in exported_repository_registry.exported_repository_elems:
+            exported_repository_root.append( exported_repository_elem )
+        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_root, use_indent=True )
         repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
     except Exception, e:
         log.exception( str( e ) )
@@ -150,7 +158,9 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                         shutil.move( tmp_filename, full_path )
                 elif name == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem = commit_util.handle_tool_dependencies_definition( trans, full_path, unpopulate=True )
+                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, full_path, unpopulate=True )
+                    if error_message:
+                        return None, error_message
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem, use_indent=True )
                         shutil.move( tmp_filename, full_path )

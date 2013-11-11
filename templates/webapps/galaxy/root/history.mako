@@ -9,11 +9,6 @@
 ## -----------------------------------------------------------------------------
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css(
-        "base",
-        "history",
-        "autocomplete_tagging"
-    )}
     <style>
         body.historyPage {
             margin: 0px;
@@ -38,7 +33,7 @@ ${h.templates( "helpers-common-templates" )}
         #HACK - the above sets the response type
         trans.response.set_content_type( "text/html" )
     %>
-    ## bc this is in it's own frame we reference the global Galaxy obj or the quotameter's User obj
+    ## bc this is in it's own frame we can't reference the global Galaxy obj or the quotameter's User obj
     window.Galaxy = {};
     Galaxy.currUser = new User(${user_data});
     $(function(){

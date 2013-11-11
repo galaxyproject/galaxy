@@ -174,8 +174,12 @@ class ToolParameter( object, Dictifiable ):
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
-        #TODO: removing html as it causes a lot of errors on subclasses - needs histories, etc.
-        #tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        #TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
+        try:
+            tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        except AssertionError, e:
+            pass #HACK for assert trans.history, 'requires a history'
+
         tool_dict[ 'model_class' ] = self.__class__.__name__
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
@@ -264,7 +268,7 @@ class IntegerToolParameter( TextToolParameter ):
                 self.max = int( self.max )
             except:
                 raise ValueError( "An integer is required" )
-        if self.min and self.max:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -334,15 +338,15 @@ class FloatToolParameter( TextToolParameter ):
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
         if self.min:
             try:
-                float( self.min )
+                self.min = float( self.min )
             except:
                 raise ValueError( "A real number is required" )
         if self.max:
             try:
-                float( self.max )
+                self.max = float( self.max )
             except:
                 raise ValueError( "A real number is required" )
-        if self.min and self.max:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):

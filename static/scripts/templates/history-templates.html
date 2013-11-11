@@ -5,7 +5,7 @@
 
         <div class="history-title">
             {{#if name }}
-            <div class="history-name editable-text" title="{{#local}}Click to rename history{{/local}}">
+            <div class="history-name" title="{{#local}}Click to rename history{{/local}}">
                 {{name}}
             </div>
             {{/if}}
@@ -17,10 +17,6 @@
             {{/if}}
 
             <div class="history-secondary-actions">
-                <a title="{{#local}}Edit history tags{{/local}}"
-                    class="icon-button tags" href="javascript:void(0)"></a>
-                <a title="{{#local}}Edit history annotation{{/local}}"
-                    class="icon-button annotate" href="javascript:void(0)"></a>
             </div>
         </div>
 
@@ -42,24 +38,8 @@
             {{#local}}Tool execution is on hold until your disk usage drops below your allocated quota{{/local}}.
         </div>
         
-        {{! tags and annotations }}
-        {{! TODO: move to mvc/tag.js }}
-        <div class="tags-display">
-            <label class="prompt">{{#local}}Tags{{/local}}</label>
-            <div class="tags"></div>
-        </div>
-
-        {{! TODO: move to mvc/annotations.js }}
-        <div class="annotation-display">
-            <label class="prompt">{{#local}}Annotation{{/local}}</label>
-            <div class="annotation editable-text" title="{{#local}}Click to edit annotation{{/local}}">
-                {{#if annotation}}
-                {{annotation}}
-                {{else}}
-                <em>{{#local}}Describe or add notes to history{{/local}}</em>
-                {{/if}}
-            </div>
-        </div>
+        <div class="tags-display"></div>
+        <div class="annotation-display"></div>
 
     </div>{{! end history-controls }}
 

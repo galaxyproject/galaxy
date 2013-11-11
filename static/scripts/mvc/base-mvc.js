@@ -219,6 +219,51 @@ var PersistentStorage = function( storageKey, storageDefaults ){
 
 
 //==============================================================================
+var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
+
+    /** */
+    hiddenUntilActivated : function( $activator, options ){
+        // call this in your view's initialize fn
+        options = options || {};
+        this.HUAVOptions = {
+            $elementShown   : this.$el,
+            showFn          : jQuery.prototype.toggle,
+            showSpeed       : 'fast'
+        };
+        _.extend( this.HUAVOptions, options || {});
+        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is( ':visible' );
+
+        if( $activator ){
+            var mixin = this;
+            $activator.on( 'click', function( ev ){
+                mixin.toggle( mixin.HUAVOptions.showSpeed );
+            });
+        }
+    },
+
+    /** */
+    toggle : function(){
+        // can be called manually as well with normal toggle arguments
+        if( this.HUAVOptions.$elementShown.is( ':hidden' ) ){
+            // fire the optional fns on the first/each showing - good for render()
+            if( !this.HUAVOptions.hasBeenShown ){
+                if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
+                    this.HUAVOptions.hasBeenShown = true;
+                    this.HUAVOptions.onshowFirstTime.call( this );
+                }
+            } else {
+                if( _.isFunction( this.HUAVOptions.onshow ) ){
+                    this.HUAVOptions.onshow.call( this );
+                }
+            }
+        }
+        return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
+    }
+};
+
+
+
+//==============================================================================
 function LoadingIndicator( $where, options ){
     options = options || {};
     var self = this;
@@ -226,14 +271,14 @@ function LoadingIndicator( $where, options ){
     function render(){
         var html = [
             '<div class="loading-indicator">',
-                '<span class="fa-icon-spinner fa-icon-spin fa-icon-large" style="color: grey"></span>',
+                '<span class="fa fa-spinner fa-spin fa-lg" style="color: grey"></span>',
                 '<span style="margin-left: 8px; color: grey"><i>loading...</i></span>',
             '</div>'
         ].join( '\n' );
 
         return $( html ).css( options.css || {
             'position'          : 'fixed',
-            'margin'            : '6px 0px 0px 10px',
+            'margin'            : '12px 0px 0px 10px',
             'opacity'           : '0.85'
         }).hide();
     }
