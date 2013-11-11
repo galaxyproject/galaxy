@@ -269,7 +269,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 hda = self.get_history_dataset_association( trans, history, history_content_id,
                     check_ownership=True, check_accessible=True )
 
-            rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **kwd )
+            display_kwd = kwd.copy()
+            try:
+                del display_kwd["key"]
+            except KeyError:
+                pass
+            rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
+
 
         except Exception, exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
