@@ -238,6 +238,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
     /** creates a new history on the server and sets it as the user's current history */
     createNewHistory : function( attributes ){
+        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+            this.displayMessage( 'error', _l( 'You must be logged in to create histories' ) );
+            return $.when();
+        }
         var panel = this,
             historyFn = function(){
                 // get history data from posting a new history (and setting it to current)
