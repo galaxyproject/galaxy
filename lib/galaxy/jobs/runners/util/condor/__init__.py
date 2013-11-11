@@ -18,12 +18,12 @@ PROBLEM_PARSING_EXTERNAL_ID = \
 SUBMIT_PARAM_PREFIX = "submit_"
 
 
-def submission_params(**kwds):
+def submission_params(prefix=SUBMIT_PARAM_PREFIX, **kwds):
     submission_params = {}
     for key, value in kwds.iteritems():
         key = key.lower()
-        if key.startswith(SUBMIT_PARAM_PREFIX):
-            condor_key = key[len(SUBMIT_PARAM_PREFIX):]
+        if key.startswith(prefix):
+            condor_key = key[len(prefix):]
             submission_params[condor_key] = value
     return submission_params
 
