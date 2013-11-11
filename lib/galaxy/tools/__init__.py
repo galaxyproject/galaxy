@@ -1901,12 +1901,18 @@ class Tool( object, Dictifiable ):
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-    def handle_input( self, trans, incoming, history=None, old_errors=None ):
+    def handle_input( self, trans, incoming, history=None, old_errors=None, process_state='update' ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
+
+        process_state can be either 'update' (to incrementally build up the state
+        over several calls - one repeat per handle for instance) or 'populate'
+        force a complete build of the state and submission all at once (like
+        from API). May want an incremental version of the API also at some point,
+        that is why this is not just called for_api.
         """
         state, state_new = self.__fetch_state( trans, incoming, history )
         if state_new:
@@ -1922,8 +1928,7 @@ class Tool( object, Dictifiable ):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
-        errors, params = self.__check_param_values( trans, incoming, state, old_errors )
-
+        errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history )
         if self.__should_refresh_state( incoming ):
             return self.__handle_state_refresh( trans, state, errors )
         else:
@@ -2001,7 +2006,7 @@ class Tool( object, Dictifiable ):
             new = True
         return state, new
 
-    def __check_param_values( self, trans, incoming, state, old_errors ):
+    def __check_param_values( self, trans, incoming, state, old_errors, process_state, history ):
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
@@ -2014,7 +2019,12 @@ class Tool( object, Dictifiable ):
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+            if process_state == "update":
+                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+            elif process_state == "populate":
+                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history )
+            else:
+                raise Exception("Unknown process_state type %s" % process_state)
             # If the tool provides a `validate_input` hook, call it.
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
@@ -2059,6 +2069,137 @@ class Tool( object, Dictifiable ):
         return 'message.mako', dict( status='error',
             message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
+
+    def populate_state( self, trans, inputs, state, incoming, history, prefix="", context=None ):
+        errors = dict()
+        # Push this level onto the context stack
+        context = ExpressionContext( state, context )
+        for input in inputs.itervalues():
+            key = prefix + input.name
+            if isinstance( input, Repeat ):
+                group_state = state[input.name]
+                # Create list of empty errors for each previously existing state
+                group_errors = [ ]
+                any_group_errors = False
+                rep_index = 0
+                while True:
+                    rep_name = "%s_%d" % ( key, rep_index )
+                    if not any( [ key.startswith(rep_name) for key in incoming.keys() ] ):
+                        break
+                    if rep_index < input.max:
+                        new_state = {}
+                        new_state['__index__'] = rep_index
+                        self.fill_in_new_state( trans, input.inputs, new_state, context, history=history )
+                        group_state.append( new_state )
+                        group_errors.append( {} )
+                        rep_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    new_state,
+                                                    incoming,
+                                                    history,
+                                                    prefix=rep_name + "|",
+                                                    context=context )
+                        if rep_errors:
+                            any_group_errors = True
+                            group_errors[rep_index].update( rep_errors )
+
+                    else:
+                        group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        any_group_errors = True
+                    rep_index += 1
+            elif isinstance( input, Conditional ):
+                group_state = state[input.name]
+                group_prefix = "%s|" % ( key )
+                # Deal with the 'test' element and see if it's value changed
+                if input.value_ref and not input.value_ref_in_group:
+                    # We are referencing an existent parameter, which is not
+                    # part of this group
+                    test_param_key = prefix + input.test_param.name
+                else:
+                    test_param_key = group_prefix + input.test_param.name
+                test_param_error = None
+                test_incoming = get_incoming_value( incoming, test_param_key, None )
+
+                # Get value of test param and determine current case
+                value, test_param_error = \
+                    check_param( trans, input.test_param, test_incoming, context )
+                current_case = input.get_current_case( value, trans )
+                # Current case has changed, throw away old state
+                group_state = state[input.name] = {}
+                # TODO: we should try to preserve values if we can
+                self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                group_errors = self.populate_state( trans,
+                                                    input.cases[current_case].inputs,
+                                                    group_state,
+                                                    incoming,
+                                                    history,
+                                                    prefix=group_prefix,
+                                                    context=context,
+                )
+                if test_param_error:
+                    group_errors[ input.test_param.name ] = test_param_error
+                if group_errors:
+                    errors[ input.name ] = group_errors
+                # Store the current case in a special value
+                group_state['__current_case__'] = current_case
+                # Store the value of the test element
+                group_state[ input.test_param.name ] = value
+            elif isinstance( input, UploadDataset ):
+                group_state = state[input.name]
+                group_errors = []
+                any_group_errors = False
+                d_type = input.get_datatype( trans, context )
+                writable_files = d_type.writable_files
+                #remove extra files
+                while len( group_state ) > len( writable_files ):
+                    del group_state[-1]
+                # Update state
+                max_index = -1
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    max_index = max( max_index, rep_index )
+                    rep_prefix = "%s_%d|" % ( key, rep_index )
+                    rep_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    rep_state,
+                                                    incoming,
+                                                    history,
+                                                    prefix=rep_prefix,
+                                                    context=context)
+                    if rep_errors:
+                        any_group_errors = True
+                        group_errors.append( rep_errors )
+                    else:
+                        group_errors.append( {} )
+                # Add new fileupload as needed
+                offset = 1
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = max_index + offset
+                    offset += 1
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+                # Were there *any* errors for any repetition?
+                if any_group_errors:
+                    errors[input.name] = group_errors
+            else:
+                if key not in incoming \
+                   and "__force_update__" + key not in incoming:
+                    # No new value provided, and we are only updating, so keep
+                    # the old value (which should already be in the state) and
+                    # preserve the old error message.
+                    pass
+                else:
+                    incoming_value = get_incoming_value( incoming, key, None )
+                    value, error = check_param( trans, input, incoming_value, context )
+                    # If a callback was provided, allow it to process the value
+                    if error:
+                        errors[ input.name ] = error
+                    state[ input.name ] = value
+        return errors
+
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """

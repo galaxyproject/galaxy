@@ -9,6 +9,9 @@ from galaxy.visualization.data_providers.genome import *
 import logging
 log = logging.getLogger( __name__ )
 
+DEFAULT_STATE_PROCESSING = "update"  # See comment below.
+
+
 class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
@@ -113,7 +116,15 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
         params = util.Params( inputs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
+        # process_state must be 'populate' or 'update'. If 'populate', fully
+        # expand repeat and conditionals when building up state, if 'update'
+        # state must be built up over several iterative calls to the API -
+        # mimicing behavior of web controller. Mimic the the web controller
+        # and modify state outright if "tool_state" is contain in input params,
+        # else "populate" the tool state from scratch using payload.
+        incoming = params.__dict__
+        process_state = "update" if "tool_state" in incoming else "populate"
+        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state )
         if 'errors' in vars:
             trans.response.status = 400
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
