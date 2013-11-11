@@ -1936,32 +1936,35 @@ class Tool( object, Dictifiable ):
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                try:
-                    rerun_remap_job_id = None
-                    if 'rerun_remap_job_id' in incoming:
-                        rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
-                    _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
-                except httpexceptions.HTTPFound, e:
-                    #if it's a paste redirect exception, pass it up the stack
-                    raise e
-                except Exception, e:
-                    log.exception('Exception caught while attempting tool execution:')
-                    return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
-                try:
-                    assert isinstance( out_data, odict )
-                    return 'tool_executed.mako', dict( out_data=out_data )
-                except:
-                    if isinstance( out_data, str ):
-                        message = out_data
-                    else:
-                        message = 'Failure executing tool (odict not returned from tool execution)'
-                    return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+                return self.__handle_tool_execute( trans, incoming, params, history )
             # Otherwise move on to the next page
             else:
                 return self.__handle_page_advance( trans, state, errors )
 
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
+
+    def __handle_tool_execute( self, trans, incoming, params, history ):
+        try:
+            rerun_remap_job_id = None
+            if 'rerun_remap_job_id' in incoming:
+                rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
+            _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
+        except httpexceptions.HTTPFound, e:
+            #if it's a paste redirect exception, pass it up the stack
+            raise e
+        except Exception, e:
+            log.exception('Exception caught while attempting tool execution:')
+            return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
+        try:
+            assert isinstance( out_data, odict )
+            return 'tool_executed.mako', dict( out_data=out_data )
+        except:
+            if isinstance( out_data, str ):
+                message = out_data
+            else:
+                message = 'Failure executing tool (odict not returned from tool execution)'
+            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
 
     def __handle_state_refresh( self, trans, state, errors ):
             try:
