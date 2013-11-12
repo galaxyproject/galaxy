@@ -108,7 +108,6 @@ class Registry( object ):
             if proprietary_converter_path or proprietary_display_path and not handling_proprietary_datatypes:
                 handling_proprietary_datatypes = True
             for elem in registration.findall( 'datatype' ):
-                self.log.debug( elem.attrib )
                 extension = elem.get( 'extension', None )
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
@@ -161,7 +160,6 @@ class Registry( object ):
                                 ok = False
                             if ok:
                                 datatype_class = None
-                                self.log.debug( [ proprietary_path, proprietary_datatype_module, datatype_class_name ] )
                                 if proprietary_path and proprietary_datatype_module and datatype_class_name:
                                     # We need to change the value of sys.path, so do it in a way that is thread-safe.
                                     lock = threading.Lock()
@@ -183,7 +181,6 @@ class Registry( object ):
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
                                         fields = datatype_module.split( '.' )
-                                        self.log.debug( fields )
                                         module = __import__( fields.pop(0) )
                                         for mod in fields:
                                             module = getattr( module, mod )
@@ -196,7 +193,6 @@ class Registry( object ):
                             # A new tool shed repository that contains proprietary datatypes is being installed, and since installation
                             # is occurring after the datatypes registry has been initialized, its contents cannot be overridden by new
                             # introduced conflicting data types.
-                            self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
                             if make_subclass:
                                 datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
                             if extension in self.datatypes_by_extension:
@@ -243,6 +239,8 @@ class Registry( object ):
                                 else:
                                     if elem not in self.display_app_containers:
                                         self.display_app_containers.append( elem )
+                    elif ( extension and ( dtype or type_extension ) ) and ( extension in self.datatypes_by_extension and not override ):
+                        self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
             # Load datatype sniffers from the config
             self.load_datatype_sniffers( root,
                                          deactivate=deactivate,
