@@ -1037,16 +1037,20 @@ def main():
                     # If a tool dependency fails to install correctly, this should be considered an installation error,
                     # and functional tests should be skipped, since the tool dependency needs to be correctly installed
                     # for the test to be considered reliable.
-                    log.error( 'One or more tool dependencies of this repository are marked as missing.' )
+                    log.error( 'One or more dependencies of this repository are marked as missing.' )
                     log.error( 'Updating repository and skipping functional tests.' )
                     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
                     for dependency in failed_tool_dependencies:
+                        log.error( 'Missing tool dependency %s of type %s version %s: %s' % \
+                                   ( str( dependency.name ), str( dependency.type ), str( dependency.version ), str( dependency.error_message ) ) )
                         test_result = dict( type=dependency.type,
                                             name=dependency.name,
                                             version=dependency.version,
                                             error_message=dependency.error_message )
                         repository_status[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
                     for dependency in repository.repository_dependencies_with_installation_errors:
+                        log.error( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
+                                   ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), str( dependency.error_message ) ) )
                         test_result = dict( tool_shed=dependency.tool_shed,
                                             name=dependency.name,
                                             owner=dependency.owner,
