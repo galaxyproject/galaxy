@@ -1016,9 +1016,9 @@ var TracksterView = Backbone.View.extend({
         }
         
         this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tooltip( {placement: 'bottom'} )
-                                .click(function() { view.zoom_out(); view.request_redraw(); }).appendTo(this.nav_controls);
+                                .click(function() { view.zoom_out(); }).appendTo(this.nav_controls);
         this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tooltip( {placement: 'bottom'} )
-                                .click(function() { view.zoom_in(); view.request_redraw(); }).appendTo(this.nav_controls);      
+                                .click(function() { view.zoom_in(); }).appendTo(this.nav_controls);      
         
         // Get initial set of chroms.
         this.load_chroms_deferred = this.load_chroms({low: 0});
@@ -1097,14 +1097,9 @@ var TracksterView = Backbone.View.extend({
         // Dragging in the top label track allows selecting a region
         // to zoom in 
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
-            return $("<div />").css( { 
-                "height": view.browser_content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height() + 1, 
-                "top": "0px", 
-                "position": "absolute", 
-                "background-color": "#ccf", 
-                "opacity": 0.5, 
-                 "z-index": 1000
-            } ).appendTo( $(this) );
+            return $("<div/>").addClass('zoom-area').css(
+                "height", view.browser_content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height() + 1
+            ).appendTo( $(this) );
         }).bind( "drag", function( e, d ) {
             $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ) - view.container.offset().left, width: Math.abs( e.pageX - d.startX ) });
             var min = Math.min(e.pageX, d.startX ) - view.container.offset().left,
@@ -1549,6 +1544,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
+
         this.changed();
         this.request_redraw();
     },
@@ -3079,7 +3075,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Step (c) for (re)moving tiles when clear_after is false.
         if (!clear_after) { this.tiles_div.children(".remove").removeClass("remove").remove(); }
                 
-        // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
+        // When all tiles are drawn, call post-draw actions.
         var track = this;
         $.when.apply($, tile_promises).then(function() {
             // Step (c) for (re)moving tiles when clear_after is true:
@@ -3373,7 +3369,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (this.left_offset) {
             left -= this.left_offset;
         }
-        tile_element.css({ position: 'absolute', top: 0, left: left });
+        tile_element.css('left', left);
         
         if ( tile_element.hasClass("remove") ) {
             // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
@@ -3528,13 +3524,12 @@ extend(LabelTrack.prototype, Track.prototype, {
             tickDistance = Math.floor( Math.pow( 10, Math.floor( Math.log( range ) / Math.log( 10 ) ) ) ),
             position = Math.floor( view.low / tickDistance ) * tickDistance,
             width = this.view.container.width(),
-            new_div = $("<div style='position: relative; height: 1.3em;'></div>");
+            new_div = $("<div/>").addClass('label-container');
         while ( position < view.high ) {
             var screenPosition = ( position - view.low ) / range * width;
-            new_div.append( $("<div class='label'>" + commatize( position ) + "</div>").css( {
-                position: "absolute",
+            new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
                 // Reduce by one to account for border
-                left: screenPosition - 1
+                left: screenPosition
             }));
             position += tickDistance;
         }
