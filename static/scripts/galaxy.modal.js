@@ -82,6 +82,7 @@ var GalaxyModal = Backbone.View.extend(
         this.$footer  = (this.$el).find('.modal-footer');
         this.$buttons = (this.$el).find('.buttons');
         this.$backdrop = (this.$el).find('.modal-backdrop');
+        this.$notification = (this.$el).find('.notification-modal');
         
         // append body
         this.$body.html(options.body);
@@ -122,6 +123,35 @@ var GalaxyModal = Backbone.View.extend(
         this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', true);
     },
     
+    // hide buttons
+    hideButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).hide();
+    },
+    // show buttons
+    showButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).show();
+    },
+
+    // show notification
+    showNotification : function(message, duration, bgColor, txtColor) {
+        // defaults
+        var duration = typeof duration !== 'undefined' ? duration : 1500;
+        var bgColor = typeof bgColor !== 'undefined' ? bgColor : "#F4E0E1";
+        var txtColor = typeof txtColor !== 'undefined' ? txtColor : "#A42732";
+
+        var HTMLmessage = "<div class='notification-message' style='text-align:center; line-height:16px; '> " + message + " </div>";
+        this.$notification.html("<div id='notification-bar' style='display:none; float: right; height: 16px; width:100%; background-color: " + bgColor + "; z-index: 100; color: " + txtColor + ";border-bottom: 1px solid " + txtColor + ";'>" + HTMLmessage + "</div>");
+
+        var self = this;
+        /*animate the bar*/
+        $('#notification-bar').slideDown(function() {
+            setTimeout(function() {
+                $('#notification-bar').slideUp(function() {self.$notification.html('');});
+            }, duration);
+        });
+
+    },
+
     // returns scroll top for body element
     scrollTop: function()
     {
@@ -137,10 +167,11 @@ var GalaxyModal = Backbone.View.extend(
         return  '<div class="modal">' +
                     '<div class="modal-backdrop fade in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
-                        '<div class="modal-content">' +
+                        '<div class="modal-content"">' +
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
+                                '<span class="notification-modal"></span>' + 
                             '</div>' +
                             '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +

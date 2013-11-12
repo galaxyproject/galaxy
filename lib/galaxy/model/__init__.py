@@ -2000,6 +2000,7 @@ class LibraryDataset( object ):
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
+                     peek = ( lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None )( ldda ),
                      template_data = template_data )
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
