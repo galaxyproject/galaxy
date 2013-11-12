@@ -34,11 +34,13 @@ ${h.to_json_string( user_dict )}
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
         
         ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal'], function(master, frame, modal)
-        {
-            Galaxy.master = new master.GalaxyMaster();
-            Galaxy.frame_manager = new frame.GalaxyFrameManager();
-            Galaxy.modal = new modal.GalaxyModal();
+        $(function() {
+            require(['galaxy.master', 'galaxy.frame', 'galaxy.modal'], function(master, frame, modal)
+            {
+                Galaxy.master = new master.GalaxyMaster();
+                Galaxy.frame_manager = new frame.GalaxyFrameManager();
+                Galaxy.modal = new modal.GalaxyModal();
+            });
         });
     </script>
 
