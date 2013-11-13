@@ -14,6 +14,8 @@ def main():
     os.mkdir( additional_files_path )
     shutil.copy( script_filename, os.path.join( additional_files_path, 'debug.txt' ) )
     
+    ## Dan, Others: Can we simply drop the "format=input_type" here since it is specified in reader.
+    ## This optimization would cut runtime roughly in half (for my test case anyway). -John
     out = fastqWriter( open( output_filename, 'wb' ), format = input_type )
     
     i = None
