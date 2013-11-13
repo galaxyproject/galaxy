@@ -430,7 +430,7 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
         if dst:
             dst.close()
     if extract:
-        if istar( file_path ) or iszip( file_path ):
+        if istar( file_path ) or ( iszip( file_path ) and not isjar( file_path ) ):
             archive = CompressedFile( file_path )
             extraction_path = archive.extract( install_dir )
         else:
