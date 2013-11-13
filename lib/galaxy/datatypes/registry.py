@@ -85,6 +85,13 @@ class Registry( object ):
             return imported_module
 
         if root_dir and config:
+            # If handling_proprietary_datatypes is determined as True below, we'll have an elem that looks something like this:
+            # <datatype display_in_upload="true"
+            #           extension="blastxml"
+            #           mimetype="application/xml"
+            #           proprietary_datatype_module="blast"
+            #           proprietary_path="[cloned repository path]"
+            #           type="galaxy.datatypes.blast:BlastXml" />
             handling_proprietary_datatypes = False
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
@@ -117,9 +124,13 @@ class Registry( object ):
                 type_extension = elem.get( 'type_extension', None )
                 mimetype = elem.get( 'mimetype', None )
                 display_in_upload = galaxy.util.string_as_bool( elem.get( 'display_in_upload', False ) )
+                # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
+                # in the distribution.
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
+                # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
+                # datatypes_conf.xml file.
                 proprietary_path = elem.get( 'proprietary_path', None )
                 proprietary_datatype_module = elem.get( 'proprietary_datatype_module', None )
                 if proprietary_path is not None or proprietary_datatype_module is not None and not handling_proprietary_datatypes:
@@ -182,21 +193,22 @@ class Registry( object ):
                                     except Exception, e:
                                         full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                         self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
-                                        ok = False
                                     finally:
                                         lock.release()
-                                if ok:
-                                    if datatype_class is None:
-                                        try:
-                                            # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
-                                            fields = datatype_module.split( '.' )
-                                            module = __import__( fields.pop( 0 ) )
-                                            for mod in fields:
-                                                module = getattr( module, mod )
-                                            datatype_class = getattr( module, datatype_class_name )
-                                        except Exception, e:
-                                            self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
-                                            ok = False
+                                # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
+                                # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
+                                if datatype_class is None:
+                                    try:
+                                        # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
+                                        fields = datatype_module.split( '.' )
+                                        module = __import__( fields.pop( 0 ) )
+                                        for mod in fields:
+                                            module = getattr( module, mod )
+                                        datatype_class = getattr( module, datatype_class_name )
+                                        self.log.debug( 'Retrieved datatype module %s from the datatype registry.' % str( datatype_module ) )
+                                    except Exception, e:
+                                        self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
+                                        ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[ type_extension ].__class__
