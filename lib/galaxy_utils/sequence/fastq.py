@@ -82,14 +82,16 @@ class fastqSequencingRead( SequencingRead ):
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
                 try:
-                    return [ chr( int( val ) + self.ascii_min - self.quality_min ) for val in quality.split() ]
+                    to_quality = self.ascii_min - self.quality_min
+                    return [ chr( int( val ) + to_quality ) for val in quality.split() ]
                 except ValueError, e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return []
     def get_decimal_quality_scores( self ):
         if self.is_ascii_encoded():
-            return [ ord( val ) - self.ascii_min + self.quality_min for val in self.quality ]
+            to_quality = self.quality_min - self.ascii_min
+            return [ ord( val ) + to_quality for val in self.quality ]
         else:
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
