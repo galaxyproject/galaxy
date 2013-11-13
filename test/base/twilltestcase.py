@@ -224,9 +224,9 @@ class TwillTestCase( unittest.TestCase ):
         """Pasted data in the upload utility"""
         self.visit_page( "tool_runner/index?tool_id=upload1" )
         try: 
-            tc.fv( "1", "file_type", ftype )
-            tc.fv( "1", "dbkey", dbkey )
-            tc.fv( "1", "url_paste", url_paste )
+            self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
+            tc.fv( "tool_form", "dbkey", dbkey )
+            tc.fv( "tool_form", "url_paste", url_paste )
             tc.submit( "runtool_btn" )
             self.home()
         except Exception, e:
