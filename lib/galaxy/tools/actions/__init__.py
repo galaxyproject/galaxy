@@ -206,12 +206,19 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            # -- Get chrom_info from either a custom or built-in build. --
+
             chrom_info = None
             if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                if 'fasta' in custom_build_dict:
+                # HACK: the attempt to get chrom_info below will trigger the 
+                # fasta-to-len converter if the dataset is not available or,
+                # which will in turn create a recursive loop when 
+                # running the fasta-to-len tool. So, use a hack in the second
+                # condition below to avoid getting chrom_info when running the
+                # fasta-to-len converter.
+                if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
                     build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
 
