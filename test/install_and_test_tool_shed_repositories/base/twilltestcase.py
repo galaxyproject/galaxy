@@ -150,10 +150,10 @@ class InstallTestRepository( TwillTestCase ):
         else:
             strings_displayed.append( 'has been uninstalled' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
-        # Get all tool dependencies that are in an error state and uninstall them explicitly, so that the next installation attempt
+        # Get all tool dependencies that are not in an installed state and uninstall them explicitly, so that the next installation attempt
         # may succeed.
-        error_state = model.ToolDependency.installation_status.ERROR
-        tool_dependencies = test_db_util.get_tool_dependencies_for_installed_repository( installed_repository.id, status=error_state )
+        installed_state = model.ToolDependency.installation_status.INSTALLED
+        tool_dependencies = test_db_util.get_tool_dependencies_for_installed_repository( installed_repository.id, exclude_status=installed_state )
         if len( tool_dependencies ) > 0:
             encoded_tool_dependency_ids = [ self.security.encode_id( tool_dependency.id ) for tool_dependency in tool_dependencies ]
             self.uninstall_tool_dependencies( self.security.encode_id( installed_repository.id ), encoded_tool_dependency_ids )
