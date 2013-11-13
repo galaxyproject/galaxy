@@ -72,38 +72,40 @@
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         ## load galaxy js-modules
-        require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'galaxy.upload'],
-        function(mod_masthead, mod_menu, mod_modal, mod_frame, mod_upload)
-        {
-            ## check if masthead is available
-            if (Galaxy.masthead)
-                return;
+        $(function() {
+            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'galaxy.upload'],
+            function(mod_masthead, mod_menu, mod_modal, mod_frame, mod_upload)
+            {
+                ## check if masthead is available
+                if (Galaxy.masthead)
+                    return;
 
-            ## get configuration
-            var masthead_config = ${ h.to_json_string( masthead_config ) };
+                ## get configuration
+                var masthead_config = ${ h.to_json_string( masthead_config ) };
 
-            ## set up the quota meter (And fetch the current user data from trans)
-            Galaxy.currUser = new User(masthead_config.user.json);
+                ## set up the quota meter (And fetch the current user data from trans)
+                Galaxy.currUser = new User(masthead_config.user.json);
 
-            ## load global galaxy objects
-            Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
-            Galaxy.modal = new mod_modal.GalaxyModal();
-            Galaxy.frame = new mod_frame.GalaxyFrame();
+                ## load global galaxy objects
+                Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
+                Galaxy.modal = new mod_modal.GalaxyModal();
+                Galaxy.frame = new mod_frame.GalaxyFrame();
 
-            ## construct default menu options
-            Galaxy.menu = new mod_menu.GalaxyMenu({
-                masthead: Galaxy.masthead,
-                config: masthead_config
+                ## construct default menu options
+                Galaxy.menu = new mod_menu.GalaxyMenu({
+                    masthead: Galaxy.masthead,
+                    config: masthead_config
+                });
+                
+                ## add upload plugin
+                ##Galaxy.upload = new mod_upload.GalaxyUpload();
+
+                ## add quota meter to masthead
+                Galaxy.quotaMeter = new UserQuotaMeter({
+                    model   : Galaxy.currUser,
+                    el      : $(Galaxy.masthead.el).find('.quota-meter-container')
+                }).render();
             });
-            
-            ## add upload plugin
-            ##Galaxy.upload = new mod_upload.GalaxyUpload();
-
-            ## add quota meter to masthead
-            Galaxy.quotaMeter = new UserQuotaMeter({
-                model   : Galaxy.currUser,
-                el      : $(Galaxy.masthead.el).find('.quota-meter-container')
-            }).render();
         });
     </script>
 </%def>

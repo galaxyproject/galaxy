@@ -337,6 +337,18 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                             print '\nSkipping installation of tool dependency', package_name, 'version', package_version, \
                                 'since it is installed in', install_dir, '\n'
                             can_install_tool_dependency = False
+                            # This tool dependency was previously installed, but the record was missing from the database due to some
+                            # activity outside of the control of the tool shed. Since a new record was created for it and we don't know
+                            # the state of the files on disk, we will set it to an error state. If we are running functional tests, the
+                            # state will be set to Installed, because previously compiled tool dependencies are not deleted by default.
+                            if app.config.running_functional_tests:
+                                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                            else:
+                                error_message = 'The installation directory for this tool dependency had contents, but the database had no record. '
+                                error_message += 'The installation log may show this tool dependency to be correctly installed, but due to the '
+                                error_message += 'missing database record, it is automatically set to Error.'
+                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                                tool_dependency.error_message = error_message
                         else:
                             error_message = '\nInstallation path %s for tool dependency %s version %s exists, but the expected file %s' % \
                                 ( install_dir, package_name, package_version, fabric_util.INSTALLATION_LOG )

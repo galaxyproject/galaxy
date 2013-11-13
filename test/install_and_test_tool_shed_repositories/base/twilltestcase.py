@@ -163,6 +163,8 @@ class InstallTestRepository( TwillTestCase ):
         url = '/admin_toolshed/uninstall_tool_dependencies?repository_id=%s&inst_td_ids=%s&operation=uninstall' % \
             ( encoded_repository_id, tool_dependency_ids )
         self.visit_url( url )
-        tc.fv( 'uninstall_tool_dependencies', 'tool_dependency_ids', tool_dependency_ids )
-        tc.submit( 'uninstall_tool_dependencies_button' )
+        html = self.last_page()
+        if 'uninstall_tool_dependencies' in html:
+            tc.fv( 'uninstall_tool_dependencies', 'tool_dependency_ids', tool_dependency_ids )
+            tc.submit( 'uninstall_tool_dependencies_button' )
         

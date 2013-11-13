@@ -2,6 +2,7 @@ import logging
 
 from galaxy import model, util
 from galaxy.web.framework.helpers import iff, grids
+from galaxy.web import url_for
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import tool_dependency_util
@@ -13,42 +14,42 @@ def generate_deprecated_repository_img_str( include_mouse_over=False ):
         deprecated_tip_str = 'class="icon-button" title="This repository is deprecated in the Tool Shed"'
     else:
         deprecated_tip_str = ''
-    return '<img src="/static/images/icon_error_sml.gif" %s/>' % deprecated_tip_str
+    return '<img src="%s/images/icon_error_sml.gif" %s/>' % ( url_for( '/static' ), deprecated_tip_str )
 
 def generate_includes_workflows_img_str( include_mouse_over=False ):
     if include_mouse_over:
         deprecated_tip_str = 'class="icon-button" title="This repository contains exported workflows"'
     else:
         deprecated_tip_str = ''
-    return '<img src="/static/images/fugue/gear.png" %s/>' % deprecated_tip_str
+    return '<img src="%s/images/fugue/gear.png" %s/>' % ( url_for( '/static' ), deprecated_tip_str )
 
 def generate_latest_revision_img_str( include_mouse_over=False ):
     if include_mouse_over:
         latest_revision_tip_str = 'class="icon-button" title="This is the latest installable revision of this repository"'
     else:
         latest_revision_tip_str = ''
-    return '<img src="/static/june_2007_style/blue/ok_small.png" %s/>' % latest_revision_tip_str
+    return '<img src="%s/june_2007_style/blue/ok_small.png" %s/>' % ( url_for( '/static' ), latest_revision_tip_str )
 
 def generate_revision_updates_img_str( include_mouse_over=False ):
     if include_mouse_over:
         revision_updates_tip_str = 'class="icon-button" title="Updates are available in the Tool Shed for this revision"'
     else:
         revision_updates_tip_str = ''
-    return '<img src="/static/images/icon_warning_sml.gif" %s/>' % revision_updates_tip_str
+    return '<img src="%s/images/icon_warning_sml.gif" %s/>' % ( url_for( '/static' ), revision_updates_tip_str )
 
 def generate_revision_upgrades_img_str( include_mouse_over=False ):
     if include_mouse_over:
         revision_upgrades_tip_str = 'class="icon-button" title="A newer installable revision is available for this repository"'
     else:
         revision_upgrades_tip_str = ''
-    return '<img src="/static/images/up.gif" %s/>' % revision_upgrades_tip_str
+    return '<img src="%s/images/up.gif" %s/>' % ( url_for( '/static' ), revision_upgrades_tip_str )
 
 def generate_unknown_img_str( include_mouse_over=False ):
     if include_mouse_over:
         unknown_tip_str = 'class="icon-button" title="Unable to get information from the Tool Shed"'
     else:
         unknown_tip_str = ''
-    return '<img src="/static/june_2007_style/blue/question-octagon-frame.png" %s/>' % unknown_tip_str
+    return '<img src="%s/june_2007_style/blue/question-octagon-frame.png" %s/>' % ( url_for( '/static' ), unknown_tip_str )
 
 
 class InstalledRepositoryGrid( grids.Grid ):

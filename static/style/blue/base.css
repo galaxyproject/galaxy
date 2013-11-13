@@ -1540,7 +1540,7 @@ div.permissionContainer{padding-left:20px}
 .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
 .dataset .help-text{font-weight:normal;font-style:italic;font-size:90%;color:#555}
 .dataset .dataset-title-bar{cursor:pointer;padding:6px 10px 6px 8px}
-.dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-break:normal;line-height:16px}
+.dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
 .dataset .dataset-primary-actions{float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
 .dataset .dataset-body{display:none;background-color:rgba(255,255,255,0.30000000000000004);padding:6px 10px 6px 8px}.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
 .dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}

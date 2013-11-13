@@ -493,7 +493,7 @@ class Conditional( Group ):
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context, history=None )
+        test_value = self.test_param.get_initial_value( trans, context, history=history )
         current_case = self.get_current_case( test_value, trans )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
@@ -502,7 +502,7 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=None )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
         return rval
 
 class ConditionalWhen( object ):

@@ -227,6 +227,7 @@
 }
 
 .track-tile {
+    position: absolute;
     background: white;
     
     canvas {
@@ -285,7 +286,13 @@
     height: 1.5em;
     overflow: hidden;
 
+    .label-container {
+        position: relative; 
+        height: 1.3em;
+    }
+
     .label {
+        position: absolute;
         border-left: solid #999 1px;
         padding: 1px;
         padding-bottom: 2px;
@@ -508,4 +515,12 @@ input {
     padding: 5px 8px 4px 8px;
     background-color: black;
     color: white;
+}
+
+.zoom-area {
+    position: absolute;
+    top: 0px;
+    background-color: #ccf;
+    opacity: 0.5;
+    z-index: @overlay-index; 
 }
