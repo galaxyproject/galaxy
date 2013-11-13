@@ -96,7 +96,6 @@ def fastq_read_pass_filter( fastq_read ):
                 return False
 #end for
     return True
-ret_val = fastq_read_pass_filter( fastq_read )
 </configfile>
   </configfiles>
   <outputs>

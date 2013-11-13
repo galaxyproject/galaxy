@@ -18,10 +18,10 @@ def main():
     
     i = None
     reads_kept = 0
+    execfile(script_filename, globals())
     for i, fastq_read in enumerate( fastqReader( open( input_filename ), format = input_type ) ):
-        local = {'fastq_read':fastq_read, 'ret_val':False}
-        execfile( script_filename, {}, local )
-        if local['ret_val']:
+        ret_val = fastq_read_pass_filter( fastq_read )  ## fastq_read_pass_filter defined in script_filename
+        if ret_val:
             out.write( fastq_read )
             reads_kept += 1
     out.close()
