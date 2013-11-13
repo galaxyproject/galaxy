@@ -72,16 +72,18 @@ class Registry( object ):
 
     def load_datatypes( self, root_dir=None, config=None, deactivate=False, override=True ):
         """
-        Parse a datatypes XML file located at root_dir/config.  If deactivate is True, an installed tool shed
-        repository that includes proprietary datatypes is being deactivated, so appropriate loaded datatypes
-        will be removed from the registry.  The value of override will be False when a tool shed repository is
-        being installed.  Since installation is occurring after the datatypes registry has been initialized, its
-        contents cannot be overridden by new introduced conflicting data types.
+        Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
+        an installed Tool Shed repository.  If deactivate is True, an installed Tool Shed repository that includes custom datatypes
+        is being deactivated or uninstalled, so appropriate loaded datatypes will be removed from the registry.  The value of
+        override will be False when a Tool Shed repository is being installed.  Since installation is occurring after the datatypes
+        registry has been initialized at server startup, it's contents cannot be overridden by newly introduced conflicting data types.
         """
+
         def __import_module( full_path, datatype_module, datatype_class_name ):
             open_file_obj, file_name, description = imp.find_module( datatype_module, [ full_path ] )
             imported_module = imp.load_module( datatype_class_name, open_file_obj, file_name, description )
             return imported_module
+
         if root_dir and config:
             handling_proprietary_datatypes = False
             # Parse datatypes_conf.xml
@@ -105,9 +107,11 @@ class Registry( object ):
             # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
             proprietary_converter_path = registration.get( 'proprietary_converter_path', None )
             proprietary_display_path = registration.get( 'proprietary_display_path', None )
-            if proprietary_converter_path or proprietary_display_path and not handling_proprietary_datatypes:
+            if proprietary_converter_path is not None or proprietary_display_path is not None and not handling_proprietary_datatypes:
                 handling_proprietary_datatypes = True
             for elem in registration.findall( 'datatype' ):
+                # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
+                ok = True
                 extension = elem.get( 'extension', None )
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
@@ -118,11 +122,11 @@ class Registry( object ):
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
                 proprietary_path = elem.get( 'proprietary_path', None )
                 proprietary_datatype_module = elem.get( 'proprietary_datatype_module', None )
-                if proprietary_path or proprietary_datatype_module and not handling_proprietary_datatypes:
+                if proprietary_path is not None or proprietary_datatype_module is not None and not handling_proprietary_datatypes:
                     handling_proprietary_datatypes = True
                 if deactivate:
-                    # We are deactivating an installed tool shed repository, so eliminate the
-                    # datatype elem from the in-memory list of datatype elems.
+                    # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
+                    # elem from the in-memory list of datatype elems.
                     for in_memory_elem in self.datatype_elems:
                         in_memory_extension = in_memory_elem.get( 'extension', None )
                         if in_memory_extension == extension:
@@ -131,30 +135,33 @@ class Registry( object ):
                             in_memory_mimetype = elem.get( 'mimetype', None )
                             in_memory_display_in_upload = galaxy.util.string_as_bool( elem.get( 'display_in_upload', False ) )
                             in_memory_make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
-                            if in_memory_dtype == dtype and in_memory_type_extension == type_extension and in_memory_mimetype == mimetype \
-                                and in_memory_display_in_upload == display_in_upload and in_memory_make_subclass == make_subclass:
+                            if in_memory_dtype == dtype and \
+                                in_memory_type_extension == type_extension and \
+                                in_memory_mimetype == mimetype and \
+                                in_memory_display_in_upload == display_in_upload and \
+                                in_memory_make_subclass == make_subclass:
                                 self.datatype_elems.remove( in_memory_elem )
-                    if extension and extension in self.datatypes_by_extension:
-                        # We are deactivating an installed tool shed repository, so eliminate the datatype from the registry.
-                        # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.
-                        self.log.debug( "Removing datatype with extension '%s' from the registry." % extension )
+                    if extension is not None and extension in self.datatypes_by_extension:
+                        # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
+                        # from the registry.  TODO: Handle deactivating datatype converters, etc before removing from
+                        # self.datatypes_by_extension.
                         del self.datatypes_by_extension[ extension ]
                         if extension in self.upload_file_formats:
                             self.upload_file_formats.remove( extension )
-                        can_process_datatype = False
+                        self.log.debug( "Removed datatype with extension '%s' from the registry." % extension )
                 else:
-                    # We are loading new datatypes. Keep an in-memory list of datatype elems to enable persistence.
-                    if extension not in self.datatypes_by_extension:
-                        self.datatype_elems.append( elem )
-                    can_process_datatype = ( extension and ( dtype or type_extension ) ) and \
-                        ( extension not in self.datatypes_by_extension or override )
+                    # We are loading new datatype, so we'll make sure it is correctly defined before proceeding.
+                    can_process_datatype = False
+                    if extension is not None:
+                        if dtype is not None or type_extension is not None:
+                            if override or extension not in self.datatypes_by_extension:
+                                can_process_datatype = True
                     if can_process_datatype:
-                        ok = True
-                        if dtype:
+                        if dtype is not None:
                             try:
                                 fields = dtype.split( ':' )
-                                datatype_module = fields[0]
-                                datatype_class_name = fields[1]
+                                datatype_module = fields[ 0 ]
+                                datatype_class_name = fields[ 1 ]
                             except Exception, e:
                                 self.log.exception( 'Error parsing datatype definition for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                                 ok = False
@@ -175,115 +182,141 @@ class Registry( object ):
                                     except Exception, e:
                                         full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                         self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
+                                        ok = False
                                     finally:
                                         lock.release()
-                                if datatype_class is None:
-                                    try:
-                                        # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
-                                        fields = datatype_module.split( '.' )
-                                        module = __import__( fields.pop(0) )
-                                        for mod in fields:
-                                            module = getattr( module, mod )
-                                        datatype_class = getattr( module, datatype_class_name )
-                                    except Exception, e:
-                                        self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
-                        elif type_extension:
-                            datatype_class = self.datatypes_by_extension[ type_extension ].__class__
-                        if not deactivate:
-                            # A new tool shed repository that contains proprietary datatypes is being installed, and since installation
-                            # is occurring after the datatypes registry has been initialized, its contents cannot be overridden by new
-                            # introduced conflicting data types.
-                            if make_subclass:
-                                datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
-                            if extension in self.datatypes_by_extension:
-                                self.log.warning( "Overriding conflicting datatype with extension '%s', using datatype from %s." % ( extension, config ) )
-                            self.datatypes_by_extension[ extension ] = datatype_class()
-                            if mimetype is None:
-                                # Use default mime type as per datatype spec
-                                mimetype = self.datatypes_by_extension[ extension ].get_mime()
-                            self.mimetypes_by_extension[ extension ] = mimetype
-                            if datatype_class.track_type:
-                                self.available_tracks.append( extension )
-                            if display_in_upload and extension not in self.upload_file_formats:
-                                self.upload_file_formats.append( extension )
-                            # Max file size cut off for setting optional metadata
-                            self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
-                            for converter in elem.findall( 'converter' ):
-                                # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
-                                converter_config = converter.get( 'file', None )
-                                target_datatype = converter.get( 'target_datatype', None )
-                                depends_on = converter.get( 'depends_on', None )
-                                if depends_on and target_datatype:
-                                    if extension not in self.converter_deps:
-                                        self.converter_deps[extension] = {}
-                                    self.converter_deps[extension][target_datatype] = depends_on.split(',')
-                                if converter_config and target_datatype:
-                                    #if imported_modules:
-                                    if proprietary_converter_path:
-                                        self.proprietary_converters.append( ( converter_config, extension, target_datatype ) )
+                                if ok:
+                                    if datatype_class is None:
+                                        try:
+                                            # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
+                                            fields = datatype_module.split( '.' )
+                                            module = __import__( fields.pop( 0 ) )
+                                            for mod in fields:
+                                                module = getattr( module, mod )
+                                            datatype_class = getattr( module, datatype_class_name )
+                                        except Exception, e:
+                                            self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
+                                            ok = False
+                        elif type_extension is not None:
+                            try:
+                                datatype_class = self.datatypes_by_extension[ type_extension ].__class__
+                            except Exception, e:
+                                self.log.exception( 'Error determining datatype_class for type_extension %s: %s' % ( str( type_extension ), str( e ) ) )
+                                ok = False
+                        if ok:
+                            if not deactivate:
+                                # A new tool shed repository that contains custom datatypes is being installed, and since installation is
+                                # occurring after the datatypes registry has been initialized at server startup, its contents cannot be
+                                # overridden by new introduced conflicting data types unless the value of override is True.
+                                if extension in self.datatypes_by_extension:
+                                    # Because of the way that the value of can_process_datatype was set above, we know that the value of
+                                    # override is True.
+                                    self.log.warning( "Overriding conflicting datatype with extension '%s', using datatype from %s." % \
+                                                      ( str( extension ), str( config ) ) )
+                                if make_subclass:
+                                    datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
+                                self.datatypes_by_extension[ extension ] = datatype_class()
+                                if mimetype is None:
+                                    # Use default mimetype per datatype specification.
+                                    mimetype = self.datatypes_by_extension[ extension ].get_mime()
+                                self.mimetypes_by_extension[ extension ] = mimetype
+                                if datatype_class.track_type:
+                                    self.available_tracks.append( extension )
+                                if display_in_upload and extension not in self.upload_file_formats:
+                                    self.upload_file_formats.append( extension )
+                                # Max file size cut off for setting optional metadata.
+                                self.datatypes_by_extension[ extension ].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
+                                for converter in elem.findall( 'converter' ):
+                                    # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
+                                    converter_config = converter.get( 'file', None )
+                                    target_datatype = converter.get( 'target_datatype', None )
+                                    depends_on = converter.get( 'depends_on', None )
+                                    if depends_on is not None and target_datatype is not None:
+                                        if extension not in self.converter_deps:
+                                            self.converter_deps[ extension ] = {}
+                                        self.converter_deps[ extension ][ target_datatype ] = depends_on.split( ',' )
+                                    if converter_config and target_datatype:
+                                        if proprietary_converter_path:
+                                            self.proprietary_converters.append( ( converter_config, extension, target_datatype ) )
+                                        else:
+                                            self.converters.append( ( converter_config, extension, target_datatype ) )
+                                # Add composite files.
+                                for composite_file in elem.findall( 'composite_file' ):
+                                    name = composite_file.get( 'name', None )
+                                    if name is None:
+                                        self.log.warning( "You must provide a name for your composite_file (%s)." % composite_file )
+                                    optional = composite_file.get( 'optional', False )
+                                    mimetype = composite_file.get( 'mimetype', None )
+                                    self.datatypes_by_extension[ extension ].add_composite_file( name, optional=optional, mimetype=mimetype )
+                                for display_app in elem.findall( 'display' ):
+                                    if proprietary_display_path:
+                                        if elem not in self.proprietary_display_app_containers:
+                                            self.proprietary_display_app_containers.append( elem )
                                     else:
-                                        self.converters.append( ( converter_config, extension, target_datatype ) )
-                            for composite_file in elem.findall( 'composite_file' ):
-                                # add composite files
-                                name = composite_file.get( 'name', None )
-                                if name is None:
-                                    self.log.warning( "You must provide a name for your composite_file (%s)." % composite_file )
-                                optional = composite_file.get( 'optional', False )
-                                mimetype = composite_file.get( 'mimetype', None )
-                                self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
-                            for display_app in elem.findall( 'display' ):
-                                #if imported_modules:
-                                if proprietary_display_path:
-                                    if elem not in self.proprietary_display_app_containers:
-                                        self.proprietary_display_app_containers.append( elem )
-                                else:
-                                    if elem not in self.display_app_containers:
-                                        self.display_app_containers.append( elem )
-                    elif ( extension and ( dtype or type_extension ) ) and ( extension in self.datatypes_by_extension and not override ):
-                        self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
-            # Load datatype sniffers from the config
+                                        if elem not in self.display_app_containers:
+                                            self.display_app_containers.append( elem )
+                                # Processing the new datatype elem is now complete, so make sure the element defining it is retained by appending
+                                # the new datatype to the in-memory list of datatype elems to enable persistence.
+                                self.datatype_elems.append( elem )
+                    else:
+                        if extension is not None:
+                            if dtype is not None or type_extension is not None:
+                                if extension in self.datatypes_by_extension:
+                                    if not override:
+                                        # Do not load the datatype since it conflicts with an existing datatype which we are not supposed
+                                        # to override.
+                                        self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
+            # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
+            # since sniffers are not tightly coupled with datatypes.
             self.load_datatype_sniffers( root,
                                          deactivate=deactivate,
                                          handling_proprietary_datatypes=handling_proprietary_datatypes,
                                          override=override )
             self.upload_file_formats.sort()
-            # Persist the xml form of the registry into a temporary file so that it
-            # can be loaded from the command line by tools and set_metadata processing.
+            # Persist the xml form of the registry into a temporary file so that it can be loaded from the command line by tools and
+            # set_metadata processing.
             self.to_xml_file()
         self.set_default_values()
 
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
             for ext in self.datatypes_by_extension:
-                datatype = self.datatypes_by_extension[ext]
+                datatype = self.datatypes_by_extension[ ext ]
                 included = False
                 for atype in self.sniff_order:
-                    if isinstance(atype, datatype.__class__):
+                    if isinstance( atype, datatype.__class__ ):
                         included = True
                         break
                 if not included:
-                    self.sniff_order.append(datatype)
+                    self.sniff_order.append( datatype )
         append_to_sniff_order()
 
     def load_datatype_sniffers( self, root, deactivate=False, handling_proprietary_datatypes=False, override=False ):
-        # Load datatype sniffers from the received XML config
+        """
+        Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
+        distributed config) or contained within an installed Tool Shed repository.  If deactivate is True, an installed Tool
+        Shed repository that includes custom sniffers is being deactivated or uninstalled, so appropriate loaded sniffers will
+        be removed from the registry.  The value of override will be False when a Tool Shed repository is being installed.
+        Since installation is occurring after the datatypes registry has been initialized at server startup, it's contents
+        cannot be overridden by newly introduced conflicting sniffers.
+        """
         sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]
         sniffers = root.find( 'sniffers' )
         if sniffers:
             for elem in sniffers.findall( 'sniffer' ):
-                dtype = elem.get( 'type', None )
+                # Keep a status of the process steps to enable stopping the process of handling the sniffer if necessary.
                 ok = True
-                if dtype:
+                dtype = elem.get( 'type', None )
+                if dtype is not None:
                     try:
                         fields = dtype.split( ":" )
-                        datatype_module = fields[0]
-                        datatype_class_name = fields[1]
+                        datatype_module = fields[ 0 ]
+                        datatype_class_name = fields[ 1 ]
                         module = None
                     except Exception, e:
                         self.log.exception( 'Error determining datatype class or module for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                         ok = False
                     if ok:
-                        #if imported_modules:
                         if handling_proprietary_datatypes:
                             # See if one of the imported modules contains the datatype class name.
                             for imported_module in self.imported_modules:
@@ -307,23 +340,21 @@ class Registry( object ):
                                 ok = False
                             if ok: 
                                 if deactivate:
+                                    # We are deactivating or uninstalling an installed Tool Shed repository, so eliminate the appropriate sniffers.
                                     sniffer_class = elem.get( 'type', None )
                                     if sniffer_class is not None:
                                         for index, s_e_c in enumerate( sniffer_elem_classes ):
                                             if sniffer_class == s_e_c:
                                                 del self.sniffer_elems[ index ]
-                                                self.log.debug( "Deactivated sniffer for datatype '%s'" % dtype )
+                                                self.log.debug( "Removed sniffer element for datatype '%s'" % str( dtype ) )
                                                 break
-                                    for sniffer_class in self.sniff_order:
-                                        if sniffer_class.__class__ == aclass.__class__:
-                                            self.sniff_order.remove( sniffer_class )
-                                            self.log.debug( "Removed sniffer class for datatype '%s' from sniff order" % dtype )
-                                            break
+                                        for sniffer_class in self.sniff_order:
+                                            if sniffer_class.__class__ == aclass.__class__:
+                                                self.sniff_order.remove( sniffer_class )
+                                                self.log.debug( "Removed sniffer class for datatype '%s' from sniff order" % str( dtype ) )
+                                                break
                                 else:
-                                    # Keep an in-memory list of sniffer elems to enable persistence.
-                                    if elem not in self.sniffer_elems:
-                                        self.sniffer_elems.append( elem )
-                                    # See if we have a conflicting sniffer already loaded.
+                                    # We are loading new sniffer, so see if we have a conflicting sniffer already loaded.
                                     conflict = False
                                     for conflict_loc, sniffer_class in enumerate( self.sniff_order ):
                                         if sniffer_class.__class__ == aclass.__class__:
@@ -331,7 +362,7 @@ class Registry( object ):
                                             conflict = True
                                             if override:
                                                 del self.sniff_order[ conflict_loc ]
-                                                self.log.debug( "Replaced conflicting sniffer for datatype '%s'" % dtype )
+                                                self.log.debug( "Removed conflicting sniffer for datatype '%s'" % dtype )
                                             break
                                     if conflict:
                                         if override:
@@ -340,6 +371,11 @@ class Registry( object ):
                                     else:
                                         self.sniff_order.append( aclass )
                                         self.log.debug( "Loaded sniffer for datatype '%s'" % dtype )
+                                    # Processing the new sniffer elem is now complete, so make sure the element defining it is loaded if necessary.
+                                    sniffer_class = elem.get( 'type', None )
+                                    if sniffer_class is not None:
+                                        if sniffer_class not in sniffer_elem_classes:
+                                            self.sniffer_elems.append( elem )
 
     def get_datatype_class_by_name( self, name ):
         """
@@ -370,28 +406,28 @@ class Registry( object ):
         #
         #return datatype
 
-    def get_available_tracks(self):
+    def get_available_tracks( self ):
         return self.available_tracks
 
-    def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
+    def get_mimetype_by_extension( self, ext, default='application/octet-stream' ):
         """Returns a mimetype based on an extension"""
         try:
-            mimetype = self.mimetypes_by_extension[ext]
+            mimetype = self.mimetypes_by_extension[ ext ]
         except KeyError:
             #datatype was never declared
             mimetype = default
-            self.log.warning('unknown mimetype in data factory %s' % ext)
+            self.log.warning( 'unknown mimetype in data factory %s' % str( ext ) )
         return mimetype
 
-    def get_datatype_by_extension(self, ext ):
+    def get_datatype_by_extension( self, ext ):
         """Returns a datatype based on an extension"""
         try:
-            builder = self.datatypes_by_extension[ext]
+            builder = self.datatypes_by_extension[ ext ]
         except KeyError:
             builder = data.Text()
         return builder
 
-    def change_datatype(self, data, ext):
+    def change_datatype( self, data, ext ):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
@@ -401,11 +437,11 @@ class Registry( object ):
             data.init_meta( copy_from=data )
         return data
 
-    def old_change_datatype(self, data, ext):
+    def old_change_datatype( self, data, ext ):
         """Creates and returns a new datatype based on an existing data and an extension"""
-        newdata = factory(ext)(id=data.id)
+        newdata = factory( ext )( id=data.id )
         for key, value in data.__dict__.items():
-            setattr(newdata, key, value)
+            setattr( newdata, key, value )
         newdata.ext = ext
         return newdata
 
@@ -422,9 +458,9 @@ class Registry( object ):
             # Load converters defined by local datatypes_conf.xml.
             converters = self.converters
         for elem in converters:
-            tool_config = elem[0]
-            source_datatype = elem[1]
-            target_datatype = elem[2]
+            tool_config = elem[ 0 ]
+            source_datatype = elem[ 1 ]
+            target_datatype = elem[ 2 ]
             if installed_repository_dict:
                 converter_path = installed_repository_dict[ 'converter_path' ]
             else:
@@ -636,11 +672,11 @@ class Registry( object ):
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
-            self.datatypes_by_extension['data'] = data.Data()
-            self.mimetypes_by_extension['data'] = 'application/octet-stream'
+            self.datatypes_by_extension[ 'data' ] = data.Data()
+            self.mimetypes_by_extension[ 'data' ] = 'application/octet-stream'
         # Default values - the order in which we attempt to determine data types is critical
         # because some formats are much more flexibly defined than others.
-        if len(self.sniff_order) < 1:
+        if len( self.sniff_order ) < 1:
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
@@ -666,27 +702,27 @@ class Registry( object ):
                 tabular.Eland()
             ]
 
-    def get_converters_by_datatype(self, ext):
+    def get_converters_by_datatype( self, ext ):
         """Returns available converters by source type"""
         converters = odict()
-        source_datatype = type(self.get_datatype_by_extension(ext))
+        source_datatype = type( self.get_datatype_by_extension( ext ) )
         for ext2, dict in self.datatype_converters.items():
-            converter_datatype = type(self.get_datatype_by_extension(ext2))
-            if issubclass(source_datatype, converter_datatype):
-                converters.update(dict)
+            converter_datatype = type( self.get_datatype_by_extension( ext2 ) )
+            if issubclass( source_datatype, converter_datatype ):
+                converters.update( dict )
         #Ensure ext-level converters are present
         if ext in self.datatype_converters.keys():
-            converters.update(self.datatype_converters[ext])
+            converters.update( self.datatype_converters[ ext ] )
         return converters
 
-    def get_converter_by_target_type(self, source_ext, target_ext):
+    def get_converter_by_target_type( self, source_ext, target_ext ):
         """Returns a converter based on source and target datatypes"""
-        converters = self.get_converters_by_datatype(source_ext)
+        converters = self.get_converters_by_datatype( source_ext )
         if target_ext in converters.keys():
-            return converters[target_ext]
+            return converters[ target_ext ]
         return None
 
-    def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
+    def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe=True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
             if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
@@ -728,8 +764,7 @@ class Registry( object ):
 
     def to_xml_file( self ):
         if self.xml_filename is not None:
-            # If persisted previously, attempt to remove
-            # the temporary file in which we were written.
+            # If persisted previously, attempt to remove the temporary file in which we were written.
             try:
                 os.unlink( self.xml_filename )
             except:
