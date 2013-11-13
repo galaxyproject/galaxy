@@ -89,7 +89,6 @@ class fastqSequencingRead( SequencingRead ):
                 score_list = self.convert_score_solexa_to_phred( self.get_decimal_quality_scores() )
         else:
             score_list = self.get_decimal_quality_scores()
-        new_read.quality = "%s " % " ".join( map( str, new_class.restrict_scores_to_valid_range( score_list ) ) ) #need trailing space to be valid decimal fastq
         if force_quality_encoding is None:
             if self.is_ascii_encoded():
                 new_encoding = 'ascii'
@@ -97,6 +96,7 @@ class fastqSequencingRead( SequencingRead ):
                 new_encoding = 'decimal'
         else:
             new_encoding = force_quality_encoding
+        new_read.quality = "%s " % " ".join( map( str, new_class.restrict_scores_to_valid_range( score_list ) ) ) #need trailing space to be valid decimal fastq
         if new_encoding == 'ascii':
             new_read.quality = "".join( new_read.get_ascii_quality_scores() )
         return new_read
