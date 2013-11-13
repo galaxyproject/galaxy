@@ -105,7 +105,9 @@ class fastqSequencingRead( SequencingRead ):
             else:
                 return 0
     def get_decimal_quality_scores( self ):
-        if self.is_ascii_encoded():
+        return self.__get_decimal_quality_scores(self.is_ascii_encoded())
+    def __get_decimal_quality_scores( self, ascii ):
+        if ascii:
             to_quality = self.quality_min - self.ascii_min
             return [ ord( val ) + to_quality for val in self.quality ]
         else:
@@ -128,15 +130,16 @@ class fastqSequencingRead( SequencingRead ):
             else:
                 new_read.sequence = self.convert_color_to_base_space( self.sequence )
         new_read.description = self.description
+        is_ascii = self.is_ascii_encoded()
         if self.score_system != new_read.score_system:
             if self.score_system == 'phred':
-                score_list = self.convert_score_phred_to_solexa( self.get_decimal_quality_scores() )
+                score_list = self.convert_score_phred_to_solexa( self.__get_decimal_quality_scores(is_ascii) )
             else:
-                score_list = self.convert_score_solexa_to_phred( self.get_decimal_quality_scores() )
+                score_list = self.convert_score_solexa_to_phred( self.__get_decimal_quality_scores(is_ascii) )
         else:
-            score_list = self.get_decimal_quality_scores()
+            score_list = self.__get_decimal_quality_scores(is_ascii)
         if force_quality_encoding is None:
-            if self.is_ascii_encoded():
+            if is_ascii:
                 new_encoding = 'ascii'
             else:
                 new_encoding = 'decimal'
