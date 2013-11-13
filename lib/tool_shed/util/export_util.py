@@ -103,7 +103,7 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
                 attributes, sub_elements = get_repository_attributes_and_sub_elements( ordered_repository, archive_name )
                 elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                 exported_repository_registry.exported_repository_elems.append( elem )
-            shutil.rmtree( work_dir )
+            suc.remove_dir( work_dir )
         # Keep information about the export in a file name export_info.xml in the archive.
         sub_elements = generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api )
         export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )

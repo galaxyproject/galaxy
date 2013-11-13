@@ -747,6 +747,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
+    suc.remove_dir( work_dir )
     return metadata_dict, invalid_file_tups
 
 def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):
