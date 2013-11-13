@@ -35,6 +35,34 @@ class fastqSequencingRead( SequencingRead ):
             return max( min( score, cls.quality_max ), cls.quality_min )
         return map( restrict_score, decimal_score_list )
     @classmethod
+    def transform_scores_to_valid_range( cls, decimal_score_list):
+        cls_quality_max = cls.quality_max
+        cls_quality_min = cls.quality_min
+        for i in range( len( decimal_score_list ) ):
+            score = decimal_score_list[i]
+            if(score > cls_quality_max):
+                transformed_score = cls_quality_max
+            elif( score < cls_quality_min ):
+                transformed_score = cls_quality_min
+            else:
+                transformed_score = score
+            decimal_score_list[i] = str(transformed_score)
+    @classmethod
+    def transform_scores_to_valid_range_ascii( cls, decimal_score_list ):
+        cls_quality_max = cls.quality_max
+        cls_quality_min = cls.quality_min
+        to_quality = cls.ascii_min - cls.quality_min
+        for i in range( len( decimal_score_list ) ):
+            score = decimal_score_list[i]
+            if(score > cls_quality_max):
+                transformed_score = cls_quality_max
+            elif( score < cls_quality_min ):
+                transformed_score = cls_quality_min
+            else:
+                transformed_score = score
+            transformed_score = chr(transformed_score + to_quality)
+            decimal_score_list[i] = transformed_score
+    @classmethod
     def convert_base_to_color_space( cls, sequence ):
         return cls.color_space_converter.to_color_space( sequence )
     @classmethod
@@ -96,9 +124,14 @@ class fastqSequencingRead( SequencingRead ):
                 new_encoding = 'decimal'
         else:
             new_encoding = force_quality_encoding
-        new_read.quality = "%s " % " ".join( map( str, new_class.restrict_scores_to_valid_range( score_list ) ) ) #need trailing space to be valid decimal fastq
         if new_encoding == 'ascii':
-            new_read.quality = "".join( new_read.get_ascii_quality_scores() )
+            new_class.transform_scores_to_valid_range_ascii( score_list )
+            restricted_scores = map( str, score_list )
+            new_read.quality = "".join( restricted_scores )
+        else:  # decimal
+            new_class.transform_scores_to_valid_range( score_list )
+            restricted_scores = map( str, score_list )
+            new_read.quality = "%s " % " ".join( restricted_scores ) #need trailing space to be valid decimal fastq
         return new_read
     def get_sequence( self ):
         return self.sequence
