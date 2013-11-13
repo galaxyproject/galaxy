@@ -88,6 +88,22 @@ class fastqSequencingRead( SequencingRead ):
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return []
+    def get_ascii_quality_scores_len( self ):
+        """
+        Compute ascii quality score length, without generating relatively
+        expensive qualty score array.
+        """
+        if self.is_ascii_encoded():
+            return len( self.quality )
+        else:
+            quality = self.quality.rstrip()
+            if quality:
+                try:
+                    return len( quality.split() )
+                except ValueError, e:
+                    raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
+            else:
+                return 0
     def get_decimal_quality_scores( self ):
         if self.is_ascii_encoded():
             to_quality = self.quality_min - self.ascii_min
@@ -168,9 +184,9 @@ class fastqSequencingRead( SequencingRead ):
                 return False
         return True
     def insufficient_quality_length( self ):
-        return len( self.get_ascii_quality_scores() ) < len( self.sequence )
+        return self.get_ascii_quality_scores_len() < len( self.sequence )
     def assert_sequence_quality_lengths( self ):
-        qual_len = len( self.get_ascii_quality_scores() )
+        qual_len = self.get_ascii_quality_scores_len()
         seq_len = len( self.sequence )
         assert qual_len == seq_len, "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i)" % ( qual_len, seq_len )
     def reverse( self, clone = True ):
@@ -235,11 +251,11 @@ class fastqCSSangerRead( fastqSequencingRead ):
         return False
     def insufficient_quality_length( self ):
         if self.has_adapter_base():
-            return len( self.get_ascii_quality_scores() ) + 1 < len( self.sequence )
+            return self.get_ascii_quality_scores_len() + 1 < len( self.sequence )
         return fastqSequencingRead.insufficient_quality_length( self )
     def assert_sequence_quality_lengths( self ):
         if self.has_adapter_base():
-            qual_len = len( self.get_ascii_quality_scores() )
+            qual_len = self.get_ascii_quality_scores_len()
             seq_len = len( self.sequence )
             assert ( qual_len + 1 == seq_len ) or ( qual_len == seq_len ), "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i with adapter base)" % ( qual_len, seq_len ) #SRA adds FAKE/DUMMY quality scores to the adapter base, we'll allow the reading of the Improper score here, but remove it in the Reader when "apply_galaxy_conventions" is set to True
         else:
