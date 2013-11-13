@@ -1,4 +1,4 @@
-#Dan Blankenberg
+##Dan Blankenberg
 import math
 import string
 import transform
@@ -126,12 +126,10 @@ class fastqSequencingRead( SequencingRead ):
             new_encoding = force_quality_encoding
         if new_encoding == 'ascii':
             new_class.transform_scores_to_valid_range_ascii( score_list )
-            restricted_scores = map( str, score_list )
-            new_read.quality = "".join( restricted_scores )
+            new_read.quality = "".join( score_list )
         else:  # decimal
             new_class.transform_scores_to_valid_range( score_list )
-            restricted_scores = map( str, score_list )
-            new_read.quality = "%s " % " ".join( restricted_scores ) #need trailing space to be valid decimal fastq
+            new_read.quality = "%s " % " ".join( score_list ) #need trailing space to be valid decimal fastq
         return new_read
     def get_sequence( self ):
         return self.sequence
