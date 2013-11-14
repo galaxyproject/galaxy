@@ -113,7 +113,7 @@ class Repeat( Group ):
         for i in range( self.default ):
             rval_dict = { '__index__': i}
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
             rval.append( rval_dict )
         return rval
 

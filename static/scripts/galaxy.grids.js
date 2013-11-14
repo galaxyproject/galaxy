@@ -133,27 +133,8 @@ var Grid = Backbone.Model.extend({
 // Code to handle grid operations: filtering, sorting, paging, and operations.
 //
 
-// Init operation buttons.
-function init_operation_buttons() {
-    // Initialize operation buttons.
-    $('input[name=operation]:submit').each(function() {
-        $(this).click( function() {
-           var operation_name = $(this).val();
-           // For some reason, $('input[name=id]:checked').val() does not return all ids for checked boxes.
-           // The code below performs this function.
-           var item_ids = [];
-           $('input[name=id]:checked').each(function() {
-               item_ids.push( $(this).val() );
-           });
-           do_operation(operation_name, item_ids); 
-        });
-    });
-}
-
 // Initialize grid controls
 function init_grid_controls() {
-    init_operation_buttons();    
-    
     // Initialize submit image elements.
     $('.submit-image').each( function() {
         // On mousedown, add class to simulate click.
@@ -498,7 +479,6 @@ function update_grid(maintain_page_links) {
             
             // Init grid.
             init_grid_elements();
-            init_operation_buttons();
             make_popup_menus();
             
             // Hide loading overlay.
@@ -558,11 +538,13 @@ function submit_operation(selected_button, confirmation_text)
         if(!confirm(confirmation_text))
             return false;
     
-    // set up hidden field to parse the command/operation to controller
-    $('#operation').val(selected_button.value);
-    
-    // submit form
-    selected_button.form.submit();
+    // add ids
+    var operation_name = selected_button.value;
+    var item_ids = [];
+    $('input[name=id]:checked').each(function() {
+        item_ids.push( $(this).val() );
+    });
+    do_operation(operation_name, item_ids);
     
     // return
     return true;

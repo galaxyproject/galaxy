@@ -137,6 +137,11 @@ def parse_xml(fname):
     ElementInclude.include(root)
     return tree
 
+
+def parse_xml_string(xml_string):
+    tree = ElementTree.fromstring(xml_string)
+    return tree
+
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:

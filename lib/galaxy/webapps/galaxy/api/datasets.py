@@ -7,7 +7,7 @@ from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
 from galaxy.datatypes import dataproviders
-
+from galaxy.util import string_as_bool_or_none
 import logging
 log = logging.getLogger( __name__ )
 
@@ -245,11 +245,16 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
 
     @web.expose_api_raw_anonymous
     def display( self, trans, history_content_id, history_id,
-                 preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
+                 preview=False, filename=None, to_ext=None, chunk=None, raw=False, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
+
+        The query parameter 'raw' should be considered experimental and may be dropped at
+        some point in the future without warning. Generally, data should be processed by its
+        datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
+        raw = string_as_bool_or_none( raw )
         # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
         rval = ''
         try:
@@ -269,7 +274,15 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 hda = self.get_history_dataset_association( trans, history, history_content_id,
                     check_ownership=True, check_accessible=True )
 
-            rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **kwd )
+            display_kwd = kwd.copy()
+            try:
+                del display_kwd["key"]
+            except KeyError:
+                pass
+            if raw:
+                rval = open( hda.file_name )
+            else:
+                rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 
         except Exception, exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",

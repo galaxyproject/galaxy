@@ -575,10 +575,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                                                         tool_shed_repository=tool_shed_repository,
                                                                                         tool_dependencies_config=tool_dependencies_config,
                                                                                         tool_dependencies=tool_shed_repository.tool_dependencies )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
+            suc.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.INSTALLED )
     else:
         # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
@@ -817,10 +814,7 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR ]:
                     repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
+            suc.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app, repository, trans.model.ToolShedRepository.installation_status.INSTALLED )
     return repair_dict
 

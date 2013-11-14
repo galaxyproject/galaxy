@@ -464,10 +464,7 @@ class InstallManager( object ):
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
+            suc.remove_dir( work_dir )
 
     def install_repository( self, repository_elem, tool_shed_repository, install_dependencies, is_repository_dependency=False ):
         """Install a single repository, loading contained tools into the tool panel."""

@@ -1093,7 +1093,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                  str( repository.name ),
                                                                                  changeset_revision,
                                                                                  file_type,
-                                                                                 export_repository_dependencies )
+                                                                                 export_repository_dependencies,
+                                                                                 api=False )
             repositories_archive_filename = os.path.basename( repositories_archive.name )
             if error_message:
                 message = error_message
@@ -1104,6 +1105,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 opened_archive = open( repositories_archive.name )
                 # Make sure the file is removed from disk after the contents have been downloaded.
                 os.unlink( repositories_archive.name )
+                repositories_archive_path, file_name = os.path.split( repositories_archive )
+                suc.remove_dir( repositories_archive_path )
                 return opened_archive
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
@@ -3091,6 +3094,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                                            work_dir )
                                 if message:
                                     status = 'error'
+                            suc.remove_dir( work_dir )
                             break
                     if guid:
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
