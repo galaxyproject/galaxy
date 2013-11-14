@@ -501,14 +501,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     if return_code:
                                         return
 
-                            # Ruby libraries are installed to $INSTALL_DIR (install_dir), we now set the GEM_PATH path to that directory
+                            # Perl libraries are installed to $INSTALL_DIR (install_dir), we now set the PERL5LIB path to that directory
                             # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
                             installed_env_dict = install_environment.environment_dict()
                             perl5lib_path = installed_env_dict.get('PERL5LIB', False)
                             perlbin_path = installed_env_dict.get('PATH', False)
 
                             if not perl5lib_path or not perlbin_path:
-                                log.warning( 'Missing RRUBYLIB or/and RUBY_HOME environment variable. Please check if your specified Ruby installation is valid.' )
+                                log.warning( 'Missing PERL5LIB or/and PATH environment variable. Please check if your specified Perl installation is valid.' )
 
                             modify_env_command_dict = dict( name="PATH", action="set_to", value=perlbin_path )
                             env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
