@@ -580,7 +580,6 @@ def register_test_result( url, metadata_id, test_results_dict, repository_info_d
     '''
     Update the repository metadata tool_test_results and appropriate flags using the API.
     '''
-    return {}
     params[ 'tool_test_results' ] = test_results_dict
     if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
         return {}
