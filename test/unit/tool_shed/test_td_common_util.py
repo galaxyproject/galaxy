@@ -29,6 +29,10 @@ def test_create_or_update_env_shell_file( ):
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == "R_LIBS=/usr/share/R/libs; export R_LIBS"
 
+    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="source", value=test_path))
+    assert path == join( TEST_INSTALL_DIR, "env.sh" )
+    assert line == ". /usr/share/R/libs"
+
 
 def test_parse_setup_environment_repositories( ):
     xml = """<action name="setup_r_environment">

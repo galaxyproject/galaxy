@@ -146,16 +146,21 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
     return None
 
 def create_or_update_env_shell_file( install_dir, env_var_dict ):
-    env_var_name = env_var_dict[ 'name' ]
     env_var_action = env_var_dict[ 'action' ]
     env_var_value = env_var_dict[ 'value' ]
-    if env_var_action == 'prepend_to':
-        changed_value = '%s:$%s' % ( env_var_value, env_var_name )
-    elif env_var_action == 'set_to':
-        changed_value = '%s' % env_var_value
-    elif env_var_action == 'append_to':
-        changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-    line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    if env_var_action in ['prepend_to', 'set_to', 'append_to']:
+        env_var_name = env_var_dict[ 'name' ]
+        if env_var_action == 'prepend_to':
+            changed_value = '%s:$%s' % ( env_var_value, env_var_name )
+        elif env_var_action == 'set_to':
+            changed_value = '%s' % env_var_value
+        elif env_var_action == 'append_to':
+            changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+        line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    elif env_var_action == "source":
+        line = ". %s" % env_var_value
+    else:
+        raise Exception( "Unknown shell file action %s" % env_var_action )
     env_shell_file_path = os.path.join( install_dir, 'env.sh' )
     return line, env_shell_file_path
 
