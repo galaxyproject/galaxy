@@ -21,6 +21,7 @@ from fabric.api import hide
 from fabric.api import lcd
 from fabric.api import local
 from fabric.api import settings
+from fabric.api import prefix
 
 log = logging.getLogger( __name__ )
 
@@ -244,6 +245,17 @@ class InstallEnvironment( object ):
             else:
                 log.debug( 'Invalid file %s specified, ignoring %s action.', env_shell_file_path, action_type )
         return cmds
+
+    def __call__( self, install_dir ):
+        with settings( warn_only=True, **td_common_util.get_env_var_values( install_dir ) ):
+            with prefix( self.__setup_environment() ):
+                yield
+
+    def __setup_environment(self):
+        return "&&".join( [". %s" % file for file in self.__valid_env_shell_file_paths() ] )
+
+    def __valid_env_shell_file_paths(self):
+        return [ file for file in self.env_shell_file_paths if os.path.exists( file ) ]
 
     def environment_dict(self, action_type='template_command'):
         env_vars = dict()
