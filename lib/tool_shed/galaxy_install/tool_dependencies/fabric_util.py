@@ -404,6 +404,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     #       <package>protk=1.2.4</package>
                     #       <package>http://url-to-some-gem-file.de/protk.gem</package>
                     # </action>
+                    filtered_actions = actions[ 1: ]
+
                     if action_dict.get( 'env_shell_file_paths', False ):
                         install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
                     else:
