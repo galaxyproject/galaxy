@@ -696,8 +696,6 @@ def uninstall_tool_dependency( app, tool_dependency ):
     if os.path.exists( tool_dependency_install_path ):
        log.debug( 'Uninstallation of tool dependency succeeded, but the installation path still exists on the filesystem. It is now being explicitly deleted.') 
        suc.remove_dir( tool_dependency_install_path )
-    return success
- 
 
 def main():
     # ---- Configuration ------------------------------------------------------
