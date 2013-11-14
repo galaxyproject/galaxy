@@ -1,13 +1,33 @@
+from os.path import join
 from contextlib import contextmanager
 from galaxy.util import parse_xml_string
 
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
 
+TEST_DEPENDENCIES_DIR = "/opt/galaxy/dependencies"
+TEST_INSTALL_DIR = "%s/test_install_dir" % TEST_DEPENDENCIES_DIR
+
+
 class MockApp( object ):
 
     def __init__( self ):
         pass
+
+
+def test_create_or_update_env_shell_file( ):
+    test_path = "/usr/share/R/libs"
+    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="append_to", name="R_LIBS", value=test_path))
+    assert path == join( TEST_INSTALL_DIR, "env.sh" )
+    assert line == "R_LIBS=$R_LIBS:/usr/share/R/libs; export R_LIBS"
+
+    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="prepend_to", name="R_LIBS", value=test_path))
+    assert path == join( TEST_INSTALL_DIR, "env.sh" )
+    assert line == "R_LIBS=/usr/share/R/libs:$R_LIBS; export R_LIBS"
+
+    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="set_to", name="R_LIBS", value=test_path))
+    assert path == join( TEST_INSTALL_DIR, "env.sh" )
+    assert line == "R_LIBS=/usr/share/R/libs; export R_LIBS"
 
 
 def test_parse_setup_environment_repositories( ):
