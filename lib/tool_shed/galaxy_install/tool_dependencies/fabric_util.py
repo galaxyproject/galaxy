@@ -441,6 +441,99 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
                             if return_code:
                                 return
+                elif action_type == 'setup_perl_environment':
+                    # setup an Perl environment
+                    # <action type="setup_perl_environment">
+                    #       <repository name="package_perl_5_18" owner="bgruening">
+                    #           <package name="perl" version="5.18.1" />
+                    #       </repository>
+                    #       <!-- allow downloading and installing an Perl package from cpan.org-->
+                    #       <package>XML::Parser</package>
+                    #       <package>http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
+                    # </action>
+                    filtered_actions = actions[ 1: ]
+
+                    if action_dict.get( 'env_shell_file_paths', False ):
+                        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+                    else:
+                        log.warning( 'Missing Rerl environment. Please check if your specified Rerl installation exists.' )
+                        return
+
+                    dir = os.path.curdir
+                    current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                    with lcd( current_dir ):
+                        with settings( warn_only=True ):
+
+                            for package in action_dict[ 'perl_packages' ]:
+                                """
+                                    If set to a true value then MakeMaker's prompt function will always return the default without waiting for user input.
+                                """
+                                cmd = '''export PERL_MM_USE_DEFAULT=1 && '''
+
+                                if package.find('://') != -1:
+                                    # we assume a URL to a gem file
+                                    url = package
+                                    package_name = url.split( '/' )[ -1 ]
+                                    dir = td_common_util.url_download( work_dir, package_name, url, extract=True )
+                                    # search for Build.PL or Makefile.PL (ExtUtils::MakeMaker vs. Module::Build)
+
+                                    tmp_work_dir = os.path.join( work_dir, dir)
+                                    if os.path.exists( os.path.join( tmp_work_dir, 'Makefile.PL' ) ):
+
+                                        cmd += '''perl Makefile.PL INSTALL_BASE=$INSTALL_DIR && make && make install'''
+                                    elif os.path.exists( os.path.join( tmp_work_dir, 'Build.PL' ) ):
+                                        cmd += '''perl Build.PL --install_base $INSTALL_DIR && perl Build && perl Build install'''
+                                    else:
+                                        log.warning( 'No Makefile.PL or Build.PL file found in %s. Skip installation of %s.' % ( url, package_name ) )
+                                        return
+                                    with lcd( tmp_work_dir ):
+                                        cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                        return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                        if return_code:
+                                            return
+                                else:
+                                    # perl package from CPAN without version number
+                                    # cpanm should be installed with the parent perl distribution, otherwise this will not work
+                                    cmd += '''cpanm --local-lib=$INSTALL_DIR %s''' % ( package )
+
+                                    cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
+                                    return_code = handle_command( app, tool_dependency, install_dir, cmd )
+                                    if return_code:
+                                        return
+
+                            # Ruby libraries are installed to $INSTALL_DIR (install_dir), we now set the GEM_PATH path to that directory
+                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
+                            installed_env_dict = install_environment.environment_dict()
+                            perl5lib_path = installed_env_dict.get('PERL5LIB', False)
+                            perlbin_path = installed_env_dict.get('PATH', False)
+
+                            if not perl5lib_path or not perlbin_path:
+                                log.warning( 'Missing RRUBYLIB or/and RUBY_HOME environment variable. Please check if your specified Ruby installation is valid.' )
+
+                            modify_env_command_dict = dict( name="PATH", action="set_to", value=perlbin_path )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
+                            modify_env_command_dict = dict( name="PERL5LIB", action="set_to", value=perl5lib_path )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
+                            modify_env_command_dict = dict( name="PERL5LIB", action="prepend_to", value=os.path.join(install_dir, 'lib', 'perl5') )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
+                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
+                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
+                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            if return_code:
+                                return
+
 
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.

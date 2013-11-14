@@ -719,6 +719,36 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
                 action_dict[ 'ruby_packages' ] = ruby_packages
             else:
                 continue
+        elif action_type == 'setup_perl_environment':
+            # setup an Perl environment
+            # <action type="setup_perl_environment">
+            #       <repository name="package_perl_5_18" owner="bgruening">
+            #           <package name="perl" version="5.18.1" />
+            #       </repository>
+            #       <!-- allow downloading and installing an Perl package from cpan.org-->
+            #       <package>XML::Parser</package>
+            #       <package>http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
+            # </action>
+
+            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+            if all_env_shell_file_paths:
+                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            perl_packages = list()
+            for env_elem in action_elem:
+                if env_elem.tag == 'package':
+                    """
+                        A valid package definition can be:
+                            XML::Parser
+                            http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz
+                        Unfortunately, CPAN does not support versioning. If you want real Reproducibility, 
+                        you need to specify the tarball path and the right order of different tarballs manually.
+                    """
+                    perl_packages.append( env_elem.text.strip() )
+            if perl_packages:
+                action_dict[ 'perl_packages' ] = perl_packages
+            else:
+                continue
         elif action_type == 'make_install':
             # make; make install; allow providing make options
             if action_elem.text:
