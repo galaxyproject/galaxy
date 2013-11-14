@@ -721,11 +721,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             #       <package>XML::Parser</package>
             #       <package>http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
             # </action>
-
-            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
-            all_env_shell_file_paths.extend( env_shell_file_paths )
-            if all_env_shell_file_paths:
-                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            td_common_util.parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict )
             perl_packages = list()
             for env_elem in action_elem:
                 if env_elem.tag == 'package':
