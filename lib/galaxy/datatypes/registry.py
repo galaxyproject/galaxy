@@ -358,6 +358,7 @@ class Registry( object ):
                                         for index, s_e_c in enumerate( sniffer_elem_classes ):
                                             if sniffer_class == s_e_c:
                                                 del self.sniffer_elems[ index ]
+                                                sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]
                                                 self.log.debug( "Removed sniffer element for datatype '%s'" % str( dtype ) )
                                                 break
                                         for sniffer_class in self.sniff_order:
