@@ -142,14 +142,13 @@ def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_
     # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
     revised, repository_elem, error_message = handle_repository_dependency_elem( trans, sub_elem, unpopulate=unpopulate )
     if error_message:
-        exception_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-        raise Exception( exception_message )
+        error_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
     if revised:
         elem[ sub_elem_index ] = repository_elem
         sub_elem_altered = True
         if not altered:
             altered = True
-    return altered, sub_elem_altered, elem
+    return altered, sub_elem_altered, elem, error_message
 
 def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
                               undesirable_dirs_removed, undesirable_files_removed ):
@@ -359,13 +358,16 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                 for package_index, package_elem in enumerate( root_elem ):
                     if package_elem.tag == 'repository':
                         # We have a complex repository dependency.
-                        altered, package_altered, root_elem = handle_complex_repository_dependency_elem( trans,
-                                                                                                         root_elem,
-                                                                                                         package_index,
-                                                                                                         package_elem,
-                                                                                                         package_altered,
-                                                                                                         altered,
-                                                                                                         unpopulate=unpopulate )
+                        altered, package_altered, root_elem, message = \
+                            handle_complex_repository_dependency_elem( trans,
+                                                                       root_elem,
+                                                                       package_index,
+                                                                       package_elem,
+                                                                       package_altered,
+                                                                       altered,
+                                                                       unpopulate=unpopulate )
+                        if message:
+                            error_message += message
                     elif package_elem.tag == 'install':
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
@@ -392,7 +394,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                 for last_actions_elem_package_index, last_actions_elem_package_elem in enumerate( last_actions_elem ):
                                                     if last_actions_elem_package_elem.tag == 'repository':
                                                         # We have a complex repository dependency.
-                                                        altered, last_actions_package_altered, last_actions_elem = \
+                                                        altered, last_actions_package_altered, last_actions_elem, message = \
                                                             handle_complex_repository_dependency_elem( trans,
                                                                                                        last_actions_elem,
                                                                                                        last_actions_elem_package_index,
@@ -400,6 +402,8 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                                                                        last_actions_package_altered,
                                                                                                        altered,
                                                                                                        unpopulate=unpopulate )
+                                                        if message:
+                                                            error_message += message
                                                 if last_actions_package_altered:
                                                     last_actions_elem[ last_actions_elem_package_index ] = last_actions_elem_package_elem
                                                     actions_group_elem[ last_actions_index ] = last_actions_elem
