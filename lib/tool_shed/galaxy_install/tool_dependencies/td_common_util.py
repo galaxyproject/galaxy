@@ -193,6 +193,7 @@ def get_env_shell_file_path( installation_directory ):
                 return os.path.abspath( os.path.join( root, name ) )
     return None
 
+
 def get_env_shell_file_paths( app, elem ):
     # Currently only the following tag set is supported.
     #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
@@ -383,7 +384,7 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
                     # platform. Append the child element to the list of elements to process.
                     actions_elem_list.append( child_element )
                 elif child_element.tag == 'action':
-                    # Any <action> tags within an <actions_group> tag set must come after all <actions> tags. 
+                    # Any <action> tags within an <actions_group> tag set must come after all <actions> tags.
                     if actions_elems_processed == actions_elem_count:
                         # If all <actions> elements have been processed, then this <action> element can be appended to the list of actions to
                         # execute within this group.
@@ -408,6 +409,16 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             in_actions_group = False
             continue
     return actions_elem_tuples
+
+
+def parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict ):
+    env_shell_file_paths = get_env_shell_file_paths( app, action_elem.find('repository') )
+
+    all_env_shell_file_paths.extend( env_shell_file_paths )
+    if all_env_shell_file_paths:
+        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
+
 
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )

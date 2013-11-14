@@ -665,11 +665,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             #       <!-- allow installing an R packages -->
             #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
             # </action>
-            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
-
-            all_env_shell_file_paths.extend( env_shell_file_paths )
-            if all_env_shell_file_paths:
-                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            td_common_util.parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict )
             r_packages = list()
             for env_elem in action_elem:
                 if env_elem.tag == 'package':
@@ -690,11 +686,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             #       <package>protk=1.2.4</package>
             #       <package>http://url-to-some-gem-file.de/protk.gem</package>
             # </action>
-            
-            env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, action_elem.find('repository') )
-            all_env_shell_file_paths.extend( env_shell_file_paths )
-            if all_env_shell_file_paths:
-                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            td_common_util.parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict )
             ruby_packages = list()
             for env_elem in action_elem:
                 if env_elem.tag == 'package':
