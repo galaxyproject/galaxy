@@ -367,7 +367,7 @@ def get_missing_tool_dependencies( repository ):
     for repository_dependency in repository.repository_dependencies:
         if not repository_dependency.includes_tool_dependencies:
             continue
-        missing_tool_dependencies.extend( get_failed_tool_dependencies( repository_dependency ) )
+        missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency ) )
     return missing_tool_dependencies
 
 def get_repository_info_from_api( url, repository_info_dict ):
