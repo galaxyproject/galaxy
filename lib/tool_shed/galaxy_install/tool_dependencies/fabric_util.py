@@ -200,6 +200,20 @@ def install_virtualenv( app, venv_dir ):
     return True
 
 
+class EnvFileBuilder( object ):
+
+    def __init__( self, install_dir ):
+        self.install_dir = install_dir
+        self.return_code = 0
+
+    def append_line( self, skip_if_contained=True, make_executable=True, **kwds ):
+        env_var_dict = dict(**kwds)
+        env_entry, env_file = td_common_util.create_or_update_env_shell_file( self.install_dir, env_var_dict )
+        return_code = file_append( env_entry, env_file, skip_if_contained=skip_if_contained, make_executable=make_executable )
+        self.return_code = self.return_code or return_code
+        return self.return_code
+
+
 class InstallEnvironment( object ):
     """
     Object describing the environment built up as part of the process of building
@@ -373,11 +387,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return
 
                             # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
-                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
-                            modify_env_command_dict = dict( name="R_LIBS", action="prepend_to", value=install_dir )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-
+                            env_file_builder = EnvFileBuilder( install_dir )
+                            env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_dir )
+                            return_code = env_file_builder.return_code
                             if return_code:
                                 return
                 elif action_type == 'setup_ruby_environment':
@@ -428,17 +440,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 if return_code:
                                     return
 
-                            # Ruby libraries are installed to $INSTALL_DIR (install_dir), we now set the GEM_PATH path to that directory
-                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
-                            modify_env_command_dict = dict( name="GEM_PATH", action="prepend_to", value=install_dir )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                            if return_code:
-                                return
-
-                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            env_file_builder = EnvFileBuilder( install_dir )
+                            env_file_builder.append_line( name="GEM_PATH", action="prepend_to", value=install_dir )
+                            env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
+                            return_code = env_file_builder.return_code
                             if return_code:
                                 return
                 elif action_type == 'setup_perl_environment':
@@ -573,13 +578,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # in the set_environment action.
                             cmds = install_environment.environment_commands( 'set_environment' )
                             env_var_dicts = action_dict[ 'environment_variable' ]
+                            env_file_builder = EnvFileBuilder( install_dir )
                             for env_var_dict in env_var_dicts:
                                 # Check for the presence of the $ENV[] key string and populate it if possible.
                                 env_var_dict = handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
-                                env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
-                                return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                                if return_code:
-                                    return
+                                env_file_builder.append_line( **env_var_dict )
+                            return_code = env_file_builder.return_code
+                            if return_code:
+                                return
                         elif action_type == 'set_environment_for_install':
                             # Currently the only action supported in this category is a list of paths to one or more tool dependency env.sh files,
                             # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
@@ -618,14 +624,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             if not os.path.exists( output.stdout ):
                                 log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
                                 return
-                            modify_env_command_dict = dict( name="PYTHONPATH", action="prepend_to", value=output.stdout )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                            if return_code:
-                                return
-                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            env_file_builder = EnvFileBuilder( install_dir )
+                            env_file_builder.append_line( name="PYTHONPATH", action="prepend_to", value=output.stdout )
+                            env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
+                            return_code = env_file_builder.return_code
                             if return_code:
                                 return
                         elif action_type == 'shell_command':
