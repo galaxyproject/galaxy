@@ -86,15 +86,19 @@ class LibrarySelectionGrid( LibraryListGrid ):
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
     def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey; datasets without a dbkey are returned as well. """
-        # use raw SQL b/c metadata is a BLOB
+        """ Filter by dbkey. """
+        # Use raw SQL b/c metadata is a BLOB.
         dbkey_user, dbkey = decode_dbkey( dbkey )
         dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( \
-                                or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
-                                or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
-                                )
-                            )
+        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+
+        #Use this query when datasets with matching dbkey *or* no dbkey can be added to the visualization.
+        #return query.filter( or_( \
+        #                        or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
+        #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
+        #                        )
+        #                    )
+        
 
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
