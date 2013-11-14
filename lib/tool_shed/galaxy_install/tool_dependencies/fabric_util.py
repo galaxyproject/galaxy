@@ -388,6 +388,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
 
                             # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
                             env_file_builder = EnvFileBuilder( install_dir )
+                            handle_action_shell_file_paths( env_file_builder, action_dict )   # Pull in R environment (runtime).
                             env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_dir )
                             return_code = env_file_builder.return_code
                             if return_code:
@@ -441,6 +442,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return
 
                             env_file_builder = EnvFileBuilder( install_dir )
+                            handle_action_shell_file_paths( env_file_builder, action_dict )   # Pull in ruby dependencies (runtime).
                             env_file_builder.append_line( name="GEM_PATH", action="prepend_to", value=install_dir )
                             env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
                             return_code = env_file_builder.return_code
@@ -506,39 +508,15 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     if return_code:
                                         return
 
-                            # Perl libraries are installed to $INSTALL_DIR (install_dir), we now set the PERL5LIB path to that directory
-                            # TODO: That code is used a lot for the different environments and should be refactored, once the environments are integrated
-                            installed_env_dict = install_environment.environment_dict()
-                            perl5lib_path = installed_env_dict.get('PERL5LIB', False)
-                            perlbin_path = installed_env_dict.get('PATH', False)
+                            env_file_builder = EnvFileBuilder( install_dir )
+                            # Recursively add dependent PERL5LIB and PATH to env.sh & anything else needed.
+                            handle_action_shell_file_paths( env_file_builder, action_dict )   # Pull in ruby dependencies (runtime).
 
-                            if not perl5lib_path or not perlbin_path:
-                                log.warning( 'Missing PERL5LIB or/and PATH environment variable. Please check if your specified Perl installation is valid.' )
-
-                            modify_env_command_dict = dict( name="PATH", action="set_to", value=perlbin_path )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
+                            env_file_builder.append_line( name="PERL5LIB", action="prepend_to", value=os.path.join(install_dir, 'lib', 'perl5') )
+                            env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
+                            return_code = env_file_builder.return_code
                             if return_code:
                                 return
-
-                            modify_env_command_dict = dict( name="PERL5LIB", action="set_to", value=perl5lib_path )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                            if return_code:
-                                return
-
-                            modify_env_command_dict = dict( name="PERL5LIB", action="prepend_to", value=os.path.join(install_dir, 'lib', 'perl5') )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                            if return_code:
-                                return
-
-                            modify_env_command_dict = dict( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
-                            env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, modify_env_command_dict )
-                            return_code = file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                            if return_code:
-                                return
-
 
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
@@ -713,6 +691,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 td_common_util.move_file( current_dir=work_dir,
                                                           source=downloaded_filename,
                                                           destination=full_path_to_dir )
+
+
+def handle_action_shell_file_paths( env_file_builder, action_dict ):
+    shell_file_paths = action_dict.get( 'action_shell_file_paths', [])
+    for shell_file_path in shell_file_paths:
+        env_file_builder.append_line( action="source", value=shell_file_path )
+
 
 def log_results( command, fabric_AttributeString, file_path ):
     """
