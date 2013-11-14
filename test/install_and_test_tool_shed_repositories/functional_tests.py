@@ -13,7 +13,6 @@ import platform
 import random
 import re
 import shutil
-import simplejson
 import socket
 import string
 import sys
@@ -54,6 +53,7 @@ eggs.require( "PasteDeploy" )
 eggs.require( "Cheetah" )
 eggs.require( "simplejson" )
 
+import simplejson
 import twill
 
 # This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
