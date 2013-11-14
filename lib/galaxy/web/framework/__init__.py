@@ -1070,10 +1070,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         the user (chromInfo in history).
         """
         dbnames = list()
-        datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
-                                  .filter_by( deleted=False, history_id=self.history.id, extension="len" )
-        for dataset in datasets:
-            dbnames.append( (dataset.dbkey, dataset.name) )
+        if self.history:
+            datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
+                                      .filter_by( deleted=False, history_id=self.history.id, extension="len" )
+            for dataset in datasets:
+                dbnames.append( (dataset.dbkey, dataset.name) )
         user = self.get_user()
         if user and 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
