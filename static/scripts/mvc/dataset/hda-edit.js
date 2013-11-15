@@ -74,7 +74,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
-            editBtnData.enabled = false;
+            editBtnData.disabled = true;
             if( purged ){
                 editBtnData.title = _l( 'Cannot edit attributes of datasets removed from disk' );
             } else if( deleted ){
@@ -117,7 +117,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             deleteBtnData = {
                 title       : _l( 'Dataset is already deleted' ),
                 icon_class  : 'delete',
-                enabled     : false
+                disabled    : true
             };
         }
         deleteBtnData.faIcon = 'fa-times';
