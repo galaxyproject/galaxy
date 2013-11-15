@@ -95,7 +95,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs = payload.get( 'inputs', {} )
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
-            if k.startswith("files_"):
+            if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
         
         #for inputs that are coming from the Library, copy them into the history
