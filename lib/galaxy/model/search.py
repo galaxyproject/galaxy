@@ -302,6 +302,9 @@ class HistoryDatasetView(ViewQueryBaseClass):
         'copied_from_ldda_id' : ViewField("copied_from_ldda_id", 
             sqlalchemy_field=HistoryDatasetAssociation.copied_from_library_dataset_dataset_association_id,
             id_decode=True),
+        'copied_from_hda_id' : ViewField("copied_from_hda_id", 
+            sqlalchemy_field=HistoryDatasetAssociation.copied_from_history_dataset_association_id,
+            id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=HistoryDatasetAssociation.deleted)
     }
 
