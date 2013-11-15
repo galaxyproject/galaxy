@@ -1105,7 +1105,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 opened_archive = open( repositories_archive.name )
                 # Make sure the file is removed from disk after the contents have been downloaded.
                 os.unlink( repositories_archive.name )
-                repositories_archive_path, file_name = os.path.split( repositories_archive )
+                repositories_archive_path, file_name = os.path.split( repositories_archive.name )
                 suc.remove_dir( repositories_archive_path )
                 return opened_archive
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )

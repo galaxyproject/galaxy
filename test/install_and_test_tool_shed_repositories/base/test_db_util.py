@@ -30,6 +30,12 @@ def get_installed_repository_by_name_owner_changeset_revision( name, owner, chan
                                     model.ToolShedRepository.table.c.installed_changeset_revision == changeset_revision ) ) \
                      .one()
 
+def get_missing_tool_dependencies( repository ):
+    return sa_session.query( model.ToolDependency ) \
+                     .filter( and_( model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
+                                    model.ToolDependency.table.c.status != model.ToolDependency.installation_status.INSTALLED ) ) \
+                     .all()
+
 def get_private_role( user ):
     for role in user.all_roles():
         if role.name == user.email and role.description == 'Private Role for %s' % user.email:

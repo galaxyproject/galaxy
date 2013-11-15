@@ -61,8 +61,7 @@ class InstallTestRepository( TwillTestCase ):
         changeset_revision = repository_info_dict[ 'changeset_revision' ]
         encoded_repository_id = repository_info_dict[ 'repository_id' ]
         tool_shed_url = repository_info_dict[ 'tool_shed_url' ]
-        preview_params = urllib.urlencode( dict( repository_id=encoded_repository_id, changeset_revision=changeset_revision ) )
-        self.visit_url( '%s/repository/preview_tools_in_changeset?%s' % ( tool_shed_url, preview_params ) )
+        # Pass galaxy_url to the tool shed in order to set cookies and redirects correctly.
         install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id,
                                                  changeset_revisions=changeset_revision,
                                                  galaxy_url=self.url ) )
@@ -136,35 +135,17 @@ class InstallTestRepository( TwillTestCase ):
                         break
                     time.sleep( 1 )
 
-    def uninstall_repository( self, installed_repository, deactivate_only=False ):
+    def deactivate_or_uninstall_repository( self, installed_repository, deactivate=False ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_url( url )
-        if deactivate_only:
+        if deactivate:
             tc.fv ( 1, "remove_from_disk", 'false' )
         else:
             tc.fv ( 1, "remove_from_disk", 'true' )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        if deactivate_only:
+        if deactivate:
             strings_displayed.append( 'has been deactivated' )
         else:
             strings_displayed.append( 'has been uninstalled' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
-        # Get all tool dependencies that are not in an installed state and uninstall them explicitly, so that the next installation attempt
-        # may succeed.
-        installed_state = model.ToolDependency.installation_status.INSTALLED
-        tool_dependencies = test_db_util.get_tool_dependencies_for_installed_repository( installed_repository.id, exclude_status=installed_state )
-        if len( tool_dependencies ) > 0:
-            encoded_tool_dependency_ids = [ self.security.encode_id( tool_dependency.id ) for tool_dependency in tool_dependencies ]
-            self.uninstall_tool_dependencies( self.security.encode_id( installed_repository.id ), encoded_tool_dependency_ids )
-        
-    def uninstall_tool_dependencies( self, encoded_repository_id, encoded_tool_dependency_ids ):
-        tool_dependency_ids = ','.join( encoded_tool_dependency_ids )
-        url = '/admin_toolshed/uninstall_tool_dependencies?repository_id=%s&inst_td_ids=%s&operation=uninstall' % \
-            ( encoded_repository_id, tool_dependency_ids )
-        self.visit_url( url )
-        html = self.last_page()
-        if 'uninstall_tool_dependencies' in html:
-            tc.fv( 'uninstall_tool_dependencies', 'tool_dependency_ids', tool_dependency_ids )
-            tc.submit( 'uninstall_tool_dependencies_button' )
-        
