@@ -47,7 +47,7 @@ mkdir -p %s
 """
 
 PBS_ARGMAP = {
-    'destination'           : '-d',
+    'destination'           : '-q',
     'Execution_Time'        : '-a',
     'Account_Name'          : '-A',
     'Checkpoint'            : '-c',
@@ -210,6 +210,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
         pbs_queue_name = None
         pbs_server_name = self.default_pbs_server
         pbs_options = []
+        if '-q' in job_destination.params and 'destination' not in job_destination.params:
+            job_destination.params['destination'] = job_destination.params.pop('-q')
         if 'destination' in job_destination.params:
             if '@' in job_destination.params['destination']:
                 # Destination includes a server
