@@ -442,8 +442,6 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                 error_message += 'tag set.'
                             if package_altered:
                                 package_elem[ actions_index ] = actions_elem
-                    if package_altered:
-                        root_elem[ package_index ] = package_elem
             if package_altered:
                 root[ root_index ] = root_elem
         return altered, root, error_message
