@@ -297,6 +297,7 @@ class HistoryDatasetView(ViewQueryBaseClass):
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
         'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
+        'history_id' : ViewField('history_id',sqlalchemy_field=HistoryDatasetAssociation.history_id, id_decode=True),
         'tag' : ViewField("tag", handler=history_dataset_handle_tag),
         'copied_from_ldda_id' : ViewField("copied_from_ldda_id", 
             sqlalchemy_field=HistoryDatasetAssociation.copied_from_library_dataset_dataset_association_id,
