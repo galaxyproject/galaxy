@@ -2084,7 +2084,7 @@ class Tool( object, Dictifiable ):
                 rep_index = 0
                 while True:
                     rep_name = "%s_%d" % ( key, rep_index )
-                    if not any( [ key.startswith(rep_name) for key in incoming.keys() ] ):
+                    if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
                         break
                     if rep_index < input.max:
                         new_state = {}
