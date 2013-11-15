@@ -357,17 +357,14 @@ extend(FeaturePainter.prototype, {
         if (mode === "no_detail" || mode === "Squish" || mode === "Pack") {
             required_height = rows_required * y_scale;
         }
-        return required_height + this.get_top_padding(width) + this.get_bottom_padding(width);
+        return required_height + this.get_top_padding(width);
     },
+
     /** Extra padding before first row of features */
     get_top_padding: function(width) {
         return 0;
     },
-    /** Extra padding after last row of features */
-    get_bottom_padding: function(width) {
-        // Pad bottom by half a row, at least 5 px
-        return Math.max( Math.round( this.get_row_height() / 2 ), 5 );
-    },
+
     /**
      * Draw data on ctx using slots and within the rectangle defined by width and height. Returns
      * a FeaturePositionMapper object with information about where features were drawn.
@@ -965,11 +962,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         // Draw read.
         if (feature[5] instanceof Array) {
             // Read is paired.
-            var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
-                b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
-                b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
-                b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) ),
-                connector = true;
+            var connector = true;
 
             // Draw left/forward read.
             if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
@@ -991,6 +984,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             // TODO: currently, there is no way to connect reads drawn on different tiles; to connect reads on different tiles, data manager
             // code is needed to join mate pairs from different regions. Alternatively, requesting multiple regions of data at once would
             // make it possible to put together more easily.
+            // -0.5 to position connector correctly between reads.
+            var b1_end   = Math.ceil( Math.min(width, Math.max(-0.5 * w_scale, (feature[4][1] - tile_low - 0.5) * w_scale)) ),
+                b2_start = Math.floor( Math.max(-0.5 * w_scale, (feature[5][0] - tile_low - 0.5) * w_scale) );
             if (connector && b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
                 dashedLine(ctx, b1_end, y_center + 5, b2_start, y_center + 5);

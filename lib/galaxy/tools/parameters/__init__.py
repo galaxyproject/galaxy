@@ -40,7 +40,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
             if new_value:
                 input_values[input.name] = new_value
 
-def check_param( trans, param, incoming_value, param_values ):
+def check_param( trans, param, incoming_value, param_values, source='html' ):
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -53,7 +53,10 @@ def check_param( trans, param, incoming_value, param_values ):
     try:
         if value is not None or isinstance(param, DataToolParameter):
             # Convert value from HTML representation
-            value = param.from_html( value, trans, param_values )
+            if source == 'html':
+                value = param.from_html( value, trans, param_values )
+            else:
+                value = param.from_json( value, trans, param_values )
             # Allow the value to be converted if neccesary
             filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value

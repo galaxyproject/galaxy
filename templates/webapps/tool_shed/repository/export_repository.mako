@@ -23,7 +23,7 @@
     ${container_javascripts()}
 </%def>
 
-${render_tool_shed_repository_actions( repository )}
+${render_tool_shed_repository_actions( repository, changeset_revision=changeset_revision )}
 
 %if message:
     ${render_msg( message, status )}

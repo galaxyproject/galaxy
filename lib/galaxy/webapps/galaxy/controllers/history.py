@@ -17,9 +17,11 @@ from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger( __name__ )
 
+
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
         return history.get_display_name()
+
 
 class HistoryListGrid( grids.Grid ):
 
@@ -303,32 +305,33 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if history.users_shared_with:
                 message_parts.append( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
                 status = ERROR
-            elif not history.deleted:
-                # We'll not eliminate any DefaultHistoryPermissions in case we undelete the history later
-                history.deleted = True
-                # If deleting the current history, make a new current.
-                if history == trans.get_history():
-                    deleted_current = True
-                trans.log_event( "History (%s) marked as deleted" % history.name )
-                n_deleted += 1
-            if purge and trans.app.config.allow_user_dataset_purge:
-                for hda in history.datasets:
-                    if trans.user:
-                        trans.user.total_disk_usage -= hda.quota_amount( trans.user )
-                    hda.purged = True
-                    trans.sa_session.add( hda )
-                    trans.log_event( "HDA id %s has been purged" % hda.id )
-                    trans.sa_session.flush()
-                    if hda.dataset.user_can_purge:
-                        try:
-                            hda.dataset.full_delete()
-                            trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
-                            trans.sa_session.add( hda.dataset )
-                        except:
-                            log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
-                history.purged = True
-                self.sa_session.add( history )
-                self.sa_session.flush()
+            else:
+                if not history.deleted:
+                    # We'll not eliminate any DefaultHistoryPermissions in case we undelete the history later
+                    history.deleted = True
+                    # If deleting the current history, make a new current.
+                    if history == trans.get_history():
+                        deleted_current = True
+                    trans.log_event( "History (%s) marked as deleted" % history.name )
+                    n_deleted += 1
+                if purge and trans.app.config.allow_user_dataset_purge:
+                    for hda in history.datasets:
+                        if trans.user:
+                            trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                        hda.purged = True
+                        trans.sa_session.add( hda )
+                        trans.log_event( "HDA id %s has been purged" % hda.id )
+                        trans.sa_session.flush()
+                        if hda.dataset.user_can_purge:
+                            try:
+                                hda.dataset.full_delete()
+                                trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                                trans.sa_session.add( hda.dataset )
+                            except:
+                                log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                    history.purged = True
+                    self.sa_session.add( history )
+                    self.sa_session.flush()
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -1240,8 +1243,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         cannot_change[ send_to_user ][ history ].append( hda )
         return can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err
 
-    def _share_histories( self, trans, user, send_to_err, histories={} ):
+    def _share_histories( self, trans, user, send_to_err, histories=None ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
+        histories = histories or {}
         msg = ""
         sent_to_emails = []
         for send_to_user in histories.keys():

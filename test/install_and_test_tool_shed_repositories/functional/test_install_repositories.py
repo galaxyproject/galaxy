@@ -16,7 +16,7 @@ class InstallTestRepositories( InstallTestRepository ):
         # Install the repository through the web interface using twill.
         self.install_repository( repository_info_dict )
 
-    def do_uninstallation( self, repository_info_dict, deactivate_only=False ):
+    def do_deactivate_or_uninstall( self, repository_info_dict, deactivate=False ):
         self.logout()
         self.login( email='test@bx.psu.edu', username='test' )
         admin_user = test_db_util.get_user( 'test@bx.psu.edu' )
@@ -27,7 +27,7 @@ class InstallTestRepositories( InstallTestRepository ):
                                                                                              repository_info_dict[ 'changeset_revision' ] )
         admin_user_private_role = test_db_util.get_private_role( admin_user )
         # Uninstall the repository through the web interface using twill.
-        self.uninstall_repository( repository, deactivate_only )
+        self.deactivate_or_uninstall_repository( repository, deactivate )
 
 def generate_install_method( repository_dict=None ):
     """Generate abstract test cases for the defined list of repositories."""
@@ -52,11 +52,11 @@ def generate_install_method( repository_dict=None ):
     namespace[ 'install_repository_%s' % repository_dict[ 'name' ] ] = test_method
     # The new.classobj function returns a new class object, with name name, derived
     # from baseclasses (which should be a tuple of classes) and with namespace dict.
-    new_class_obj = new.classobj( name, baseclasses, namespace )
+    new_class_obj = new.classobj( str( name ), baseclasses, namespace )
     G[ name ] = new_class_obj
 
-def generate_uninstall_method( repository_dict=None, deactivate_only=False ):
-    """Generate abstract test cases for the defined list of repositories."""
+def generate_deactivate_or_uninstall_method( repository_dict=None, deactivate=False ):
+    """Generate abstract test cases for the received repository_dict."""
     if repository_dict is None:
         return
     # Push all the toolbox tests to module level
@@ -69,14 +69,15 @@ def generate_uninstall_method( repository_dict=None, deactivate_only=False ):
     name = "TestUninstallRepository_%s_%s" % ( repository_dict[ 'name' ], repository_dict[ 'changeset_revision' ] )
     baseclasses = ( InstallTestRepositories, )
     namespace = dict()
-    def make_uninstall_method( repository_dict ):
+    def make_deactivate_or_uninstall_method( repository_dict ):
         def test_install_repository( self ):
-            self.do_uninstallation( repository_dict, deactivate_only )
+            self.do_deactivate_or_uninstall( repository_dict, deactivate )
         return test_install_repository
-    test_method = make_uninstall_method( repository_dict )
-    test_method.__doc__ = "Uninstall the repository %s." % repository_dict[ 'name' ]
-    namespace[ 'uninstall_repository_%s_%s' % ( repository_dict[ 'name' ], repository_dict[ 'changeset_revision' ] ) ] = test_method
+    test_method = make_deactivate_or_uninstall_method( repository_dict )
+    test_method.__doc__ = "Deactivate or uninstall the repository %s." % repository_dict[ 'name' ]
+    namespace[ 'uninstall_repository_%s_%s' % ( str( repository_dict[ 'name' ] ), repository_dict[ 'changeset_revision' ] ) ] = test_method
     # The new.classobj function returns a new class object, with name name, derived
     # from baseclasses (which should be a tuple of classes) and with namespace dict.
-    new_class_obj = new.classobj( name, baseclasses, namespace )
+    new_class_obj = new.classobj( str( name ), baseclasses, namespace )
     G[ name ] = new_class_obj
+    

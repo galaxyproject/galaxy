@@ -43,31 +43,15 @@ class CompressedFile( object ):
                     os.makedirs( extraction_path )
                 self.archive.extractall( extraction_path )
         else:
-            # Sort filenames within the archive by length, because if the shortest path entry in the archive is a directory,
-            # and the next entry has the directory prepended, then everything following that entry must be within that directory.
-            # For example, consider tarball for BWA 0.5.9:
-            # bwa-0.5.9.tar.bz2:
-            #                     bwa-0.5.9/
-            #                     bwa-0.5.9/bwt.c
-            #                     bwa-0.5.9/bwt.h
-            #                     bwa-0.5.9/Makefile
-            #                     bwa-0.5.9/bwt_gen/
-            #                     bwa-0.5.9/bwt_gen/Makefile
-            #                     bwa-0.5.9/bwt_gen/bwt_gen.c
-            #                     bwa-0.5.9/bwt_gen/bwt_gen.h
-            # When sorted by length, one sees a directory at the root of the tarball, and all other tarball contents as
-            # children of that directory.
-            filenames = sorted( [ self.getname( item ) for item in contents ], cmp=lambda a,b: cmp( len( a ), len( b ) ) )
-            parent_name = filenames[ 0 ]
-            parent = self.getmember( parent_name )
-            first_child = filenames[ 1 ]
-            if first_child.startswith( parent_name ) and parent is not None and self.isdir( parent ):
-                if self.getname( parent ) == self.file_name:
-                    self.archive.extractall( os.path.join( path ) )
-                    extraction_path = os.path.join( path, self.file_name )
-                else:
-                    self.archive.extractall( os.path.join( path ) )
-                    extraction_path = os.path.join( path, self.getname( parent ) )
+            # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
+            # or self.isdir() returns True, the archive contains a single directory with the desired contents.
+            # Otherwise, it contains multiple files and/or directories at the root of the archive.
+            common_prefix = os.path.commonprefix( [ self.getname( item ) for item in contents ] )
+            if len( common_prefix ) >= 1 and not common_prefix.endswith( os.sep ) and self.isdir( self.getmember( common_prefix ) ):
+                common_prefix += os.sep
+            if common_prefix.endswith( os.sep ):
+                self.archive.extractall( os.path.join( path ) )
+                extraction_path = os.path.join( path, common_prefix )
             else:
                 extraction_path = os.path.join( path, self.file_name )
                 if not os.path.exists( extraction_path ):
@@ -162,16 +146,21 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
     return None
 
 def create_or_update_env_shell_file( install_dir, env_var_dict ):
-    env_var_name = env_var_dict[ 'name' ]
     env_var_action = env_var_dict[ 'action' ]
     env_var_value = env_var_dict[ 'value' ]
-    if env_var_action == 'prepend_to':
-        changed_value = '%s:$%s' % ( env_var_value, env_var_name )
-    elif env_var_action == 'set_to':
-        changed_value = '%s' % env_var_value
-    elif env_var_action == 'append_to':
-        changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-    line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    if env_var_action in ['prepend_to', 'set_to', 'append_to']:
+        env_var_name = env_var_dict[ 'name' ]
+        if env_var_action == 'prepend_to':
+            changed_value = '%s:$%s' % ( env_var_value, env_var_name )
+        elif env_var_action == 'set_to':
+            changed_value = '%s' % env_var_value
+        elif env_var_action == 'append_to':
+            changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+        line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+    elif env_var_action == "source":
+        line = ". %s" % env_var_value
+    else:
+        raise Exception( "Unknown shell file action %s" % env_var_action )
     env_shell_file_path = os.path.join( install_dir, 'env.sh' )
     return line, env_shell_file_path
 
@@ -208,6 +197,7 @@ def get_env_shell_file_path( installation_directory ):
             if name == env_shell_file_name:
                 return os.path.abspath( os.path.join( root, name ) )
     return None
+
 
 def get_env_shell_file_paths( app, elem ):
     # Currently only the following tag set is supported.
@@ -399,7 +389,7 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
                     # platform. Append the child element to the list of elements to process.
                     actions_elem_list.append( child_element )
                 elif child_element.tag == 'action':
-                    # Any <action> tags within an <actions_group> tag set must come after all <actions> tags. 
+                    # Any <action> tags within an <actions_group> tag set must come after all <actions> tags.
                     if actions_elems_processed == actions_elem_count:
                         # If all <actions> elements have been processed, then this <action> element can be appended to the list of actions to
                         # execute within this group.
@@ -425,6 +415,16 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             continue
     return actions_elem_tuples
 
+
+def parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict ):
+    env_shell_file_paths = get_env_shell_file_paths( app, action_elem.find('repository') )
+
+    all_env_shell_file_paths.extend( env_shell_file_paths )
+    if all_env_shell_file_paths:
+        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
+
+
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -446,7 +446,7 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
         if dst:
             dst.close()
     if extract:
-        if istar( file_path ) or iszip( file_path ):
+        if istar( file_path ) or ( iszip( file_path ) and not isjar( file_path ) ):
             archive = CompressedFile( file_path )
             extraction_path = archive.extract( install_dir )
         else:

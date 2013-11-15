@@ -475,32 +475,34 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                             error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
                             log.exception( error_message )
                             if tool_dependency:
-                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                tool_dependency.error_message = error_message
-                                sa_session.add( tool_dependency )
-                                sa_session.flush()
+                                # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
+                                # be left False here.
+                                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
+                                                                                                                  tool_dependency, 
+                                                                                                                  error_message, 
+                                                                                                                  remove_installation_path=False )
                         if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                            app.model.ToolDependency.installation_status.ERROR ]:
                             installed_tool_dependencies.append( tool_dependency )
         elif elem.tag == 'set_environment':
-            env_var_name = elem.get( 'name', None )
-            if env_var_name:
-                # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
-                attr_tup = ( env_var_name, None, 'set_environment' )
-                if attr_tup in attr_tups_of_dependencies_for_install:
-                    try:
-                        tool_dependency = set_environment( app, elem, tool_shed_repository )
-                    except Exception, e:
-                        error_message = "Error setting environment for tool dependency: %s" % str( e )
-                        log.debug( error_message )
-                        if tool_dependency:
-                            tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                            tool_dependency.error_message = error_message
-                            sa_session.add( tool_dependency )
-                            sa_session.flush()
-                    if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
-                                                                       app.model.ToolDependency.installation_status.ERROR ]:
-                        installed_tool_dependencies.append( tool_dependency )
+            # <set_environment version="1.0">
+            #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+            # </set_environment>
+            try:
+                tool_dependency = set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
+            except Exception, e:
+                error_message = "Error setting environment for tool dependency: %s" % str( e )
+                log.debug( error_message )
+                if tool_dependency:
+                    # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
+                    # be left False here.
+                    tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
+                                                                                                      tool_dependency, 
+                                                                                                      error_message, 
+                                                                                                      remove_installation_path=False )
+            if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
+                                                               app.model.ToolDependency.installation_status.ERROR ]:
+                installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
 
 def repository_dependency_needed_only_for_compiling_tool_dependency( repository, repository_dependency ):

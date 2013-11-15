@@ -2,24 +2,30 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
+import binascii, errno, grp, logging, os, pickle, random, re, shutil, smtplib, stat, string, sys, tempfile, threading
 from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
+from itertools import izip
 
 from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'docutils' )
+eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-pkg_resources.require( 'elementtree' )
+eggs.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 
-pkg_resources.require( "wchartype" )
+eggs.require( "wchartype" )
 import wchartype
+
+from inflection import Inflector, English
+inflector = Inflector(English)
+
+eggs.require( "simplejson" )
+import simplejson
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -35,17 +41,11 @@ DEFAULT_ENCODING = 'utf-8'
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
 
-from inflection import Inflector, English
-inflector = Inflector(English)
-
-pkg_resources.require( "simplejson" )
-import simplejson
-
 def is_multi_byte( chars ):
     for char in chars:
         try:
             char = unicode( char )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError:
             # Probably binary
             return False
         if wchartype.is_asian( char ) or \
@@ -137,6 +137,11 @@ def parse_xml(fname):
     ElementInclude.include(root)
     return tree
 
+
+def parse_xml_string(xml_string):
+    tree = ElementTree.fromstring(xml_string)
+    return tree
+
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:
@@ -177,9 +182,9 @@ def xml_element_to_dict( elem ):
                 sub_elem_dict[ key ].append( value )
         for key, value in sub_elem_dict.iteritems():
             if len( value ) == 1:
-                rval[ elem.tag ][ k ] = value[0]
+                rval[ elem.tag ][ key ] = value[0]
             else:
-                rval[ elem.tag ][ k ] = value
+                rval[ elem.tag ][ key ] = value
     if elem.attrib:
         for key, value in elem.attrib.iteritems():
             rval[ elem.tag ][ "@%s" % key ] = value
@@ -737,7 +742,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
         name = names.next()
         file = os.path.join(dir, prefix + name)
         try:
-            linked_path = os.link( src, file )
+            os.link( src, file )
             return (os.path.abspath(file))
         except OSError, e:
             if e.errno == errno.EEXIST:
@@ -873,7 +878,7 @@ def send_mail( frm, to, subject, body, config ):
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
-    smtp_ssl = asbool( config.smtp_ssl )
+    smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
     if smtp_ssl:
         s = smtplib.SMTP_SSL()
     else:
@@ -931,6 +936,15 @@ def move_merge( source, target ):
     else:
         return shutil.move( source, target )
 
+
+def safe_str_cmp(a, b):
+    if len(a) != len(b):
+        return False
+    rv = 0
+    for x, y in izip(a, b):
+        rv |= ord(x) ^ ord(y)
+    return rv == 0
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
 # The dbnames list is used in edit attributes and the upload tool
@@ -946,5 +960,5 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__], verbose=False)

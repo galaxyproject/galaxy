@@ -11,8 +11,6 @@ from galaxy import web
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
-from galaxy.webapps.tool_shed import model
-from galaxy.webapps.tool_shed.model import directory_hash_id
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
@@ -21,6 +19,7 @@ from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import export_util
+from tool_shed.util import import_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_dependency_util
@@ -942,43 +941,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if error:
                 status = 'error'
             else:
-                # Add the repository record to the db
-                repository = trans.app.model.Repository( name=name,
-                                                         type=repository_type,
-                                                         description=description,
-                                                         long_description=long_description,
-                                                         user_id=trans.user.id )
-                # Flush to get the id
-                trans.sa_session.add( repository )
-                trans.sa_session.flush()
-                # Determine the repository's repo_path on disk
-                dir = os.path.join( trans.app.config.file_path, *directory_hash_id( repository.id ) )
-                # Create directory if it does not exist
-                if not os.path.exists( dir ):
-                    os.makedirs( dir )
-                # Define repo name inside hashed directory
-                repository_path = os.path.join( dir, "repo_%d" % repository.id )
-                # Create local repository directory
-                if not os.path.exists( repository_path ):
-                    os.makedirs( repository_path )
-                # Create the local repository
-                repo = hg.repository( suc.get_configured_ui(), repository_path, create=True )
-                # Add an entry in the hgweb.config file for the local repository.
-                lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
-                trans.app.hgweb_config_manager.add_entry( lhs, repository_path )
-                # Create a .hg/hgrc file for the local repository
-                repository_maintenance_util.create_hgrc_file( trans, repository )
-                flush_needed = False
-                if category_ids:
-                    # Create category associations
-                    for category_id in category_ids:
-                        category = trans.sa_session.query( model.Category ).get( trans.security.decode_id( category_id ) )
-                        rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
-                        trans.sa_session.add( rca )
-                        flush_needed = True
-                if flush_needed:
-                    trans.sa_session.flush()
-                message = "Repository <b>%s</b> has been created." % str( repository.name )
+                repository, message = repository_maintenance_util.create_repository( trans,
+                                                                                     name,
+                                                                                     repository_type,
+                                                                                     description,
+                                                                                     long_description,
+                                                                                     user_id=trans.user.id,
+                                                                                     category_ids=category_ids )
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='manage_repository',
                                                            message=message,
@@ -1124,7 +1093,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                  str( repository.name ),
                                                                                  changeset_revision,
                                                                                  file_type,
-                                                                                 export_repository_dependencies )
+                                                                                 export_repository_dependencies,
+                                                                                 api=False )
             repositories_archive_filename = os.path.basename( repositories_archive.name )
             if error_message:
                 message = error_message
@@ -1135,6 +1105,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 opened_archive = open( repositories_archive.name )
                 # Make sure the file is removed from disk after the contents have been downloaded.
                 os.unlink( repositories_archive.name )
+                repositories_archive_path, file_name = os.path.split( repositories_archive.name )
+                suc.remove_dir( repositories_archive_path )
                 return opened_archive
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
@@ -1552,6 +1524,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                            trans.model.Repository.table.c.user_id == user.id ) ):
             if not metadata_row.tool_test_results:
                 continue
+            if metadata_row.changeset_revision != metadata_row.repository.tip( trans.app ):
+                continue
             current_repository_errors = []
             tool_dependency_errors = []
             repository_dependency_errors = []
@@ -1880,14 +1854,49 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def import_capsule( self, trans, **kwd ):
-        pass
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        capsule_file_name = kwd.get( 'capsule_file_name', None )
+        encoded_file_path = kwd.get( 'encoded_file_path', None )
+        file_path = encoding_util.tool_shed_decode( encoded_file_path )
+        export_info_file_path = os.path.join( file_path, 'export_info.xml' )
+        export_info_dict = import_util.get_export_info_dict( export_info_file_path )
+        manifest_file_path = os.path.join( file_path, 'manifest.xml' )
+        # The manifest.xml file has already been validated, so no error_message should be returned here.
+        repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
+        # Determine the status for each exported repository archive contained within the capsule.
+        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans, repository_info_dicts )
+        if 'import_capsule_button' in kwd:
+            # Generate a list of repository name / import results message tuples for display after the capsule is imported.
+            import_results_tups = []
+            # Only create repositories that do not yet exist and that the current user is authorized to create.  The
+            # status will be None for repositories that fall into the intersection of these 2 categories.
+            for repository_status_info_dict in repository_status_info_dicts:
+                # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
+                repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
+                repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
+                import_results_tups = repository_maintenance_util.create_repository_and_import_archive( trans,
+                                                                                                        repository_status_info_dict,
+                                                                                                        import_results_tups )
+            suc.remove_dir( file_path )
+            return trans.fill_template( '/webapps/tool_shed/repository/import_capsule_results.mako',
+                                        export_info_dict=export_info_dict,
+                                        import_results_tups=import_results_tups,
+                                        message=message,
+                                        status=status )
+        return trans.fill_template( '/webapps/tool_shed/repository/import_capsule.mako',
+                                    encoded_file_path=encoded_file_path,
+                                    export_info_dict=export_info_dict,
+                                    repository_status_info_dicts=repository_status_info_dicts,
+                                    message=message,
+                                    status=status )
 
     @web.expose
     def index( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         # See if there are any RepositoryMetadata records since menu items require them.
-        repository_metadata = trans.sa_session.query( model.RepositoryMetadata ).first()
+        repository_metadata = trans.sa_session.query( trans.model.RepositoryMetadata ).first()
         current_user = trans.user
         has_reviewed_repositories = False
         has_deprecated_repositories = False
@@ -2444,8 +2453,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
+        """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
-        # It resets all metadata on the complete changelog for a single repository in the tool shed.
         invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans, id )
@@ -2806,6 +2815,31 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         return ''
 
     @web.expose
+    def upload_capsule( self, trans, **kwd ):
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        url = kwd.get( 'url', '' )
+        if 'upload_capsule_button' in kwd:
+            capsule_dict = import_util.upload_capsule( trans, **kwd )
+            status = capsule_dict.get( 'status', 'error' )
+            if status == 'error':
+                message = capsule_dict.get( 'error_message', '' )
+            else:
+                capsule_dict = import_util.extract_capsule_files( trans, **capsule_dict )
+                capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
+                status = capsule_dict.get( 'status', 'error' )
+                if status == 'ok':
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='import_capsule',
+                                                                      **capsule_dict ) )
+                else:
+                    message = 'The capsule contents are invalid and cannpt be imported:<br/>%s' % str( capsule_dict.get( 'error_message', '' ) )
+        return trans.fill_template( '/webapps/tool_shed/repository/upload_capsule.mako',
+                                    url=url,
+                                    message=message,
+                                    status=status )
+
+    @web.expose
     def view_changelog( self, trans, id, **kwd ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
@@ -2980,6 +3014,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                key_rd_dicts_to_be_processed=None,
                                                                                                all_repository_dependencies=None,
                                                                                                handled_key_rd_dicts=None )
+            if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                # Handle messaging for orphan tool dependency definitions.
+                orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
+                if orphan_message:
+                    message += orphan_message
+                    status = 'warning'
         else:
             metadata = None
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
@@ -3054,6 +3094,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                                            work_dir )
                                 if message:
                                     status = 'error'
+                            suc.remove_dir( work_dir )
                             break
                     if guid:
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )

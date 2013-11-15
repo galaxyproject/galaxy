@@ -93,15 +93,6 @@
                 "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
-        
-        ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload'], function(master, frame, modal, upload)
-        {
-            Galaxy.master = new master.GalaxyMaster();
-            Galaxy.frame_manager = new frame.GalaxyFrameManager();
-            Galaxy.modal = new modal.GalaxyModal();
-            ##Galaxy.upload = new upload.GalaxyUpload();
-        });
     </script>
 </%def>
 

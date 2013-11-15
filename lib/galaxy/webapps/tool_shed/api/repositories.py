@@ -1,22 +1,26 @@
 import logging
+import os
+import tarfile
+import tempfile
 from time import strftime
-from galaxy.web.framework.helpers import time_ago
 from galaxy import eggs
-from galaxy import web
 from galaxy import util
+from galaxy import web
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.framework.helpers import time_ago
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
+from tool_shed.util import encoding_util
+from tool_shed.util import import_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_maintenance_util
 from tool_shed.util import tool_util
 
 eggs.require( 'mercurial' )
 
-from mercurial import commands
 from mercurial import hg
-from mercurial import ui 
 
 log = logging.getLogger( __name__ )
 
@@ -39,7 +43,6 @@ class RepositoriesController( BaseAPIController ):
         try:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-            encoded_repository_id = trans.security.encode_id( repository.id )
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
             ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
@@ -146,6 +149,86 @@ class RepositoriesController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
+
+    @web.expose_api
+    def import_capsule( self, trans, payload, **kwd ):
+        """
+        POST /api/repositories/new/import_capsule
+        Import a repository capsule into the Tool Shed.
+
+        :param key: the user's API key
+
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed into which the capsule should be imported.
+        :param capsule_file_name (required): the name of the capsule file.
+        """
+        # Get the information about the capsule to be imported from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        capsule_file_name = payload.get( 'capsule_file_name', '' )
+        if not capsule_file_name:
+            raise HTTPBadRequest( detail="Missing required parameter 'capsule_file_name'." )
+        capsule_file_path = os.path.abspath( capsule_file_name )
+        capsule_dict = dict( error_message='',
+                             encoded_file_path=None,
+                             status='ok',
+                             tar_archive=None,
+                             uploaded_file=None,
+                             capsule_file_name=None )
+        if os.path.getsize( os.path.abspath( capsule_file_name ) ) == 0:
+            message = 'Your capsule file is empty.'
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+        try:
+            # Open for reading with transparent compression.
+            tar_archive = tarfile.open( capsule_file_path, 'r:*' )
+        except tarfile.ReadError, e:
+            message = 'Error opening file %s: %s' % ( str( capsule_file_name ), str( e ) )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+        capsule_dict[ 'tar_archive' ] = tar_archive
+        capsule_dict[ 'capsule_file_name' ] = capsule_file_name
+        capsule_dict = import_util.extract_capsule_files( trans, **capsule_dict )
+        capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
+        status = capsule_dict.get( 'status', 'error' )
+        if status == 'error':
+            message = 'The capsule contents are invalid and cannpt be imported:<br/>%s' % str( capsule_dict.get( 'error_message', '' ) )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+        encoded_file_path = capsule_dict.get( 'encoded_file_path', None )
+        file_path = encoding_util.tool_shed_decode( encoded_file_path )
+        export_info_file_path = os.path.join( file_path, 'export_info.xml' )
+        export_info_dict = import_util.get_export_info_dict( export_info_file_path )
+        manifest_file_path = os.path.join( file_path, 'manifest.xml' )
+        # The manifest.xml file has already been validated, so no error_message should be returned here.
+        repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
+        # Determine the status for each exported repository archive contained within the capsule.
+        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans, repository_info_dicts )
+        # Generate a list of repository name / import results message tuples for display after the capsule is imported.
+        import_results_tups = []
+        # Only create repositories that do not yet exist and that the current user is authorized to create.  The
+        # status will be None for repositories that fall into the intersection of these 2 categories.
+        for repository_status_info_dict in repository_status_info_dicts:
+            # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
+            repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
+            repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
+            import_results_tups = repository_maintenance_util.create_repository_and_import_archive( trans,
+                                                                                                    repository_status_info_dict,
+                                                                                                    import_results_tups )
+        suc.remove_dir( file_path )
+        # NOTE: the order of installation is defined in import_results_tups, but order will be lost when transferred to return_dict.
+        return_dict = {}
+        for import_results_tup in import_results_tups:
+            name_owner, message = import_results_tup
+            name, owner = name_owner
+            key = 'Archive of repository "%s" owned by "%s"' % ( str( name ), str( owner ) )
+            val = message.replace( '<b>', '"' ).replace( '</b>', '"' )
+            return_dict[ key ] = val
+        return return_dict
 
     @web.expose_api_anonymous
     def index( self, trans, deleted=False, **kwd ):
@@ -279,7 +362,7 @@ class RepositoriesController( BaseAPIController ):
                 encoded_id = trans.security.encode_id( repository.id )
                 if encoded_id in encoded_ids_to_skip:
                     log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
-                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                               ( str( repository.id ), str( encoded_ids_to_skip ) ) )
                 elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             # Now reset metadata on all remaining repositories.
@@ -287,7 +370,7 @@ class RepositoriesController( BaseAPIController ):
                 encoded_id = trans.security.encode_id( repository.id )
                 if encoded_id in encoded_ids_to_skip:
                     log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
-                               ( str( repository_id ), str( encoded_ids_to_skip ) ) )
+                               ( str( repository.id ), str( encoded_ids_to_skip ) ) )
                 elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                     results = handle_repository( trans, repository, results )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )

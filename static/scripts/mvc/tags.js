@@ -1,66 +1,103 @@
-/*==============================================================================
-Backbone MV for Tags
-
-
-TODO:
-move rendering from tagging_common.py
-move functionality from controllers/tag.py
-?? - polymorph on class or simply class as attr?
-
-==============================================================================*/
-/** Single Tag model
+/** A view on any model that has a 'tags' attribute (a list of tag strings)
+ *      Incorporates the select2 jQuery plugin for tags display/editing:
+ *      http://ivaynberg.github.io/select2/
  */
-var Tag = BaseModel.extend( LoggableMixin ).extend({
+var TagsEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActivatedViewMixin ).extend({
     
-    // uncomment this out see log messages
-    logger              : console,
-    
-    defaults : {
-        id : null,
-        itemClass : null
+    tagName     : 'div',
+    className   : 'tags-display',
+
+    /** Set up listeners, parse options */
+    initialize : function( options ){
+        //console.debug( this, options );
+        // only listen to the model only for changes to tags - re-render
+        this.listenTo( this.model, 'change:tags', function(){
+            this.render();
+        });
+        this.hiddenUntilActivated( options.$activator, options );
     },
-     
-    toString : function(){
-        return 'Tag()';
-    }
-});
 
-//------------------------------------------------------------------------------
-/** Single Tag view
- */
-var TagView = BaseView.extend( LoggableMixin ).extend({
-    
-    // uncomment this out see log messages
-    logger              : console,
+    /** Build the DOM elements, call select to on the created input, and set up behaviors */
+    render : function(){
+        var view = this;
+        this.$el.html( this._template() );
 
-    toString : function(){
-        return 'TagView()';
-    }
-});
+        this.$input().select2({
+            placeholder : 'Add tags',
+            width       : '100%',
+            tags : function(){
+                // initialize possible tags in the dropdown based on all the tags the user has used so far
+                return view._getTagsUsed();
+            }
+        });
 
-//==============================================================================
-/** A collection of Tags
- */
-var TagCollection = Backbone.Collection.extend( LoggableMixin ).extend({   
-    model : Tag,
-    
-    // uncomment this out see log messages
-    logger              : console,
+        this._setUpBehaviors();
+        return this;
+    },
 
-    toString : function(){
-        return 'TagCollection()';
-    }
-});
+    /** @returns {String} the html text used to build the view's DOM */
+    _template : function(){
+        return [
+            //TODO: make prompt optional
+            '<label class="prompt">', _l( 'Tags' ), '</label>',
+            // set up initial tags by adding as CSV to input vals (necc. to init select2)
+            '<input class="tags-input" value="', this.tagsToCSV(), '" />'
+        ].join( '' );
+    },
 
-//------------------------------------------------------------------------------
-/** View for a TagCollection (and it's controls) - as per an hda's tag controls on the history panel
- */
-var TagList = BaseView.extend( LoggableMixin ).extend({
+    /** @returns {String} the sorted, comma-separated tags from the model */
+    tagsToCSV : function(){
+        var tagsArray = this.model.get( 'tags' );
+        if( !_.isArray( tagsArray ) || _.isEmpty( tagsArray ) ){
+            return '';
+        }
+        return tagsArray.sort().join( ',' );
+    },
 
-    // uncomment this out see log messages
-    logger              : console,
+    /** @returns {jQuery} the input for this view */
+    $input : function(){
+        return this.$el.find( '.tags-input' );
+    },
 
-    toString : function(){
-        return 'TagList()';
-    }
+    /** @returns {String[]} all tags used by the current user */
+    _getTagsUsed : function(){
+//TODO: global
+        return Galaxy.currUser.get( 'tags_used' );
+    },
+
+    /** set up any event listeners on the view's DOM (mostly handled by select2) */
+    _setUpBehaviors : function(){
+        var view = this;
+        this.$input().on( 'change', function( event ){
+            // save the model's tags in either remove or added event
+            view.model.save({ tags: event.val }, { silent: true });
+            // if it's new, add the tag to the users tags
+            if( event.added ){
+                view._addNewTagToTagsUsed( event.added.text );
+            }
+        });
+    },
+
+    /** add a new tag (if not already there) to the list of all tags used by the user
+     *  @param {String} newTag  the tag to add to the list of used
+     */
+    _addNewTagToTagsUsed : function( newTag ){
+//TODO: global
+        var tagsUsed = Galaxy.currUser.get( 'tags_used' );
+        if( !_.contains( tagsUsed, newTag ) ){
+            tagsUsed.push( newTag );
+            tagsUsed.sort();
+            Galaxy.currUser.set( 'tags_used', tagsUsed );
+        }
+    },
+
+    /** shut down event listeners and remove this view's DOM */
+    remove : function(){
+        this.$input.off();
+        this.stopListening( this.model );
+        Backbone.View.prototype.remove.call( this );
+    },
+
+    /** string rep */
+    toString : function(){ return [ 'TagsEditor(', this.model + '', ')' ].join(''); }
 });

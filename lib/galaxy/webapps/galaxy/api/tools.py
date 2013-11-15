@@ -9,6 +9,7 @@ from galaxy.visualization.data_providers.genome import *
 import logging
 log = logging.getLogger( __name__ )
 
+
 class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
@@ -94,7 +95,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs = payload.get( 'inputs', {} )
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
-            if k.startswith("files_"):
+            if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
         
         #for inputs that are coming from the Library, copy them into the history
@@ -113,20 +114,36 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
         params = util.Params( inputs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
+        # process_state will be 'populate' or 'update'. When no tool
+        # state is specified in input - it will be 'populate', and
+        # tool will fully expand repeat and conditionals when building
+        # up state. If tool state is found in input
+        # parameters,process_state will be 'update' and complex
+        # submissions (with repeats and conditionals) must be built up
+        # over several iterative calls to the API - mimicing behavior
+        # of web controller (though frankly API never returns
+        # tool_state so this "legacy" behavior is probably impossible
+        # through API currently).
+        incoming = params.__dict__
+        process_state = "update" if "tool_state" in incoming else "populate"
+        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state, source="json" )
         if 'errors' in vars:
             trans.response.status = 400
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get( 'out_data', {} ).values()
+        output_datasets = vars.get( 'out_data', {} ).iteritems()
         rval = {
             "outputs": []
         }
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
-        for output in output_datasets:
+        for output_name, output in output_datasets:
             output_dict = output.to_dict()
+            #add the output name back into the output data structure
+            #so it's possible to figure out which newly created elements 
+            #correspond with which tool file outputs 
+            output_dict['output_name'] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
 

@@ -129,7 +129,7 @@
         </div>
         ## Hack, do it in css
         %if data_state == "paused":
-            <span class="fa-icon-pause"></span>
+            <span class="fa fa-pause"></span>
         %else:
             <span class="state-icon"></span>
         %endif

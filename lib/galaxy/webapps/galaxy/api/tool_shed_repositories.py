@@ -13,6 +13,8 @@ from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import workflow_util
+from tool_shed.util import tool_util
+
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -32,6 +34,7 @@ def get_message_for_no_shed_tool_config():
     message += 'Installing_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance.'
     return message
 
+
 class ToolShedRepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repositories."""
 
@@ -41,7 +44,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         GET /api/tool_shed_repositories/{encoded_tool_shed_repository_id}/exported_workflows
 
         Display a list of dictionaries containing information about this tool shed repository's exported workflows.
-        
+
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/f2db41e1fa331b3e/exported_workflows
@@ -72,10 +75,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/import_workflow
 
         Import the specified exported workflow contained in the specified installed tool shed repository into Galaxy.
-        
+
         :param key: the API key of the Galaxy user with which the imported workflow will be associated.
         :param id: the encoded id of the ToolShedRepository object
-        
+
         The following parameters are included in the payload.
         :param index: the index location of the workflow tuple in the list of exported workflows stored in the metadata for the specified repository
         """
@@ -107,7 +110,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/import_workflow
 
         Import all of the exported workflows contained in the specified installed tool shed repository into Galaxy.
-        
+
         :param key: the API key of the Galaxy user with which the imported workflows will be associated.
         :param id: the encoded id of the ToolShedRepository object
         """
@@ -227,7 +230,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
             return dict( status='error', error=message )
         if raw_text:
             items = json.from_json_string( raw_text )
-            repository_dict = items[ 0 ]
             repository_revision_dict = items[ 1 ]
             repo_info_dict = items[ 2 ]
         else:
@@ -267,8 +269,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if shed_tool_conf:
             # Get the tool_path setting.
             index, shed_conf_dict = suc.get_shed_tool_conf_dict( trans.app, shed_tool_conf )
-            # BUG, FIXME: Shed config dict does not exist in this context
-            tool_path = shed_config_dict[ 'tool_path' ]
+            tool_path = shed_conf_dict[ 'tool_path' ]
         else:
             # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
             for shed_config_dict in trans.app.toolbox.shed_tool_confs:
@@ -414,7 +415,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
         new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
-        tool_path = payload.get( 'tool_path', None )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
         all_installed_tool_shed_repositories = []
         for index, tool_shed_url in enumerate( tool_shed_urls ):
@@ -450,7 +450,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param owner (required): the owner of the Repository
         :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
         """
-        api_key = kwd.get( 'key', None )
         # Get the information about the repository to be installed from the payload.
         tool_shed_url = payload.get( 'tool_shed_url', '' )
         if not tool_shed_url:
@@ -470,7 +469,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
         ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
         if ordered_tsr_ids and ordered_repo_info_dicts:
-            repositories_for_repair = []
             for index, tsr_id in enumerate( ordered_tsr_ids ):
                 repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                 repo_info_dict = ordered_repo_info_dicts[ index ]
@@ -495,7 +493,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         PUT /api/tool_shed_repositories/reset_metadata_on_installed_repositories
 
         Resets all metadata on all repositories installed into Galaxy in an "orderly fashion".
-        
+
         :param key: the API key of the Galaxy admin user.
         """
         try:

@@ -1751,6 +1751,15 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
 
+        # add tags string list
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval[ 'tags' ] = tags_str_list
+
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
             
@@ -2033,6 +2042,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     parent_library_id = self.folder.parent_library.id,
                      folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,

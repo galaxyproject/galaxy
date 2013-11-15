@@ -99,7 +99,6 @@ def compare_changeset_revisions( trans, ancestor_changeset_revision, ancestor_me
     no_datatypes = not ancestor_datatypes and not current_datatypes
     no_readme_files = not ancestor_readme_files and not current_readme_files
     no_repository_dependencies = not ancestor_repository_dependencies and not current_repository_dependencies
-    # Tool dependencies can define orphan dependencies in the tool shed.
     no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
     no_tools = not ancestor_guids and not current_guids
     no_workflows = not ancestor_workflows and not current_workflows
@@ -544,8 +543,8 @@ def generate_datatypes_metadata( app, repository, repository_clone_url, reposito
 
 def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict ):
     """
-    The value of env_var_name must match the value of the "set_environment" type in the tool config's <requirements> tag set, or the tool dependency
-    will be considered an orphan.  Tool dependencies of type set_environment are always defined as valid, but may be orphans.
+    The value of env_var_name must match the value of the "set_environment" type in the tool config's <requirements> tag set,
+    or the tool dependency will be considered an orphan.
     """
     # The value of the received elem looks something like this:
     # <set_environment version="1.0">
@@ -748,6 +747,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
+    suc.remove_dir( work_dir )
     return metadata_dict, invalid_file_tups
 
 def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):
@@ -900,7 +900,6 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
-            # Tool dependencies of this type are always considered valid, but may be orphans.
             valid_tool_dependencies_dict = generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict )
     if valid_tool_dependencies_dict:
         if original_valid_tool_dependencies_dict:
@@ -920,18 +919,6 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                                                                  repository_dependency_tups=invalid_repository_dependency_tups,
                                                                  is_valid=False,
                                                                  description=description )
-    # We need to continue to restrict the behavior for defining orphan tool dependencies, possibly eliminating them altoghether at some point.
-    check_for_orphan_tool_dependencies = False
-    if app.name == 'tool_shed':
-        if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and not repository.can_change_type_to( app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-            check_for_orphan_tool_dependencies = True
-    elif 'tools' in metadata_dict:
-        check_for_orphan_tool_dependencies = True
-    if check_for_orphan_tool_dependencies:
-        # Determine and store orphan tool dependencies.
-        orphan_tool_dependencies = get_orphan_tool_dependencies( metadata_dict )
-        if orphan_tool_dependencies:
-            metadata_dict[ 'orphan_tool_dependencies' ] = orphan_tool_dependencies
     return metadata_dict, error_message
 
 def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict ):
@@ -1006,34 +993,6 @@ def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=F
     else:
         changeset_revision = suc.get_latest_changeset_revision( trans, repository, repo )
     return suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
-
-def get_orphan_tool_dependencies( metadata ):
-    """Inspect tool dependencies included in the received metadata and determine if any of them are orphans within the repository."""
-    orphan_tool_dependencies_dict = {}
-    if metadata:
-        tools = metadata.get( 'tools', None )
-        tool_dependencies = metadata.get( 'tool_dependencies', None )
-        if tool_dependencies:
-            for td_key, requirements_dict in tool_dependencies.items():
-                if td_key in [ 'set_environment' ]:
-                    for set_environment_dict in requirements_dict:
-                        type = 'set_environment'
-                        name = set_environment_dict.get( 'name', None )
-                        version = None
-                        if name:
-                            if tool_dependency_is_orphan( type, name, version, tools ):
-                                if td_key in orphan_tool_dependencies_dict:
-                                    orphan_tool_dependencies_dict[ td_key ].append( set_environment_dict )
-                                else:
-                                    orphan_tool_dependencies_dict[ td_key ] = [ set_environment_dict ]
-                else:
-                    type = requirements_dict.get( 'type', None )
-                    name = requirements_dict.get( 'name', None )
-                    version = requirements_dict.get( 'version', None )
-                    if type and name:
-                        if tool_dependency_is_orphan( type, name, version, tools ):
-                            orphan_tool_dependencies_dict[ td_key ] = requirements_dict
-    return orphan_tool_dependencies_dict
 
 def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     parent_id = None
@@ -1928,33 +1887,6 @@ def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str
                                                           id=trans.security.encode_id( repository.id ),
                                                           message=error_message,
                                                           status='error' ) )
-
-def tool_dependency_is_orphan( type, name, version, tools ):
-    """
-    Determine if the combination of the received type, name and version is defined in the <requirement> tag for at least one tool in the received list of tools.
-    If not, the tool dependency defined by the combination is considered an orphan in it's repository in the tool shed.
-    """
-    if tools:
-        if type == 'package':
-            if name and version:
-                for tool_dict in tools:
-                    requirements = tool_dict.get( 'requirements', [] )
-                    for requirement_dict in requirements:
-                        req_name = requirement_dict.get( 'name', None )
-                        req_version = requirement_dict.get( 'version', None )
-                        req_type = requirement_dict.get( 'type', None )
-                        if req_name == name and req_version == version and req_type == type:
-                            return False
-        elif type == 'set_environment':
-            if name:
-                for tool_dict in tools:
-                    requirements = tool_dict.get( 'requirements', [] )
-                    for requirement_dict in requirements:
-                        req_name = requirement_dict.get( 'name', None )
-                        req_type = requirement_dict.get( 'type', None )
-                        if req_name == name and req_type == type:
-                            return False
-    return True
 
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """

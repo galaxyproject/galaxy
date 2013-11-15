@@ -6,16 +6,14 @@ The module is named rods to avoid conflicting with the PyRods module, irods
 
 import os
 import time
-import errno
 import logging
-#import traceback
 
 from posixpath import join as path_join
 from posixpath import basename as path_basename
 from posixpath import dirname as path_dirname
 
 from galaxy.objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
-from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.exceptions import ObjectNotFound
 
 import galaxy.eggs
 galaxy.eggs.require( 'PyRods' )
@@ -121,7 +119,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
             log.debug( 'Creating collection %s' % collname )
             ci = irods.collInp_t()
             ci.collName = collname
-            status = rcCollCreate( self.rods_conn, ci )
+            status = irods.rcCollCreate( self.rods_conn, ci )
             assert status == 0, '__mkcolls(): Failed to create collection: %s' % collname
 
     @local_extra_dirs

@@ -1,1 +1,1 @@
-Handlebars.registerPartial("clearFloatDiv",function(a){return'<div class="clear"></div>'});Handlebars.registerHelper("warningmessagesmall",function(a){return'<div class="warningmessagesmall"><strong>'+a.fn(this)+"</strong></div>"});Handlebars.registerHelper("local",function(a){return _l(a.fn(this))});
+Handlebars.registerHelper("local",function(a){return _l(a.fn(this))});Handlebars.registerHelper("n2br",function(a){return a.fn(this).replace(/\n/g,"<br/>")});

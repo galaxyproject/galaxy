@@ -12,6 +12,10 @@
       <param name="input" value="2.wig" />
       <output name="out_file1" file="2.interval"/>
     </test>
+    <test>
+      <param name="input" value="3.wig" />
+      <output name="out_file1" file="3_wig.bed"/>
+    </test>
   </tests>
   <help>
 **Syntax**

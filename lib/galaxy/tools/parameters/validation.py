@@ -105,10 +105,11 @@ class InRangeValidator( Validator ):
     """
     @classmethod
     def from_element( cls, param, elem ):
-        return cls( elem.get( 'message', None ), elem.get( 'min', '-inf' ), elem.get( 'max', '+inf' ) )
+        return cls( elem.get( 'message', None ), elem.get( 'min' ), elem.get( 'max' ) )
     def __init__( self, message, range_min, range_max ):
-        self.min = float( range_min )
-        self.max = float( range_max )
+        self.min = float( range_min if range_min is not None else '-inf' )
+        self.max = float( range_max if range_max is not None else 'inf' )
+        assert self.min <= self.max, 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
         self_min_str = str( self.min ).rstrip( '0' ).rstrip( '.' )
         self_max_str = str( self.max ).rstrip( '0' ).rstrip( '.' )

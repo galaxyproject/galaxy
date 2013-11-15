@@ -58,7 +58,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded tool_dependencies.xml.',
                               strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
-            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
+            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'type should be set to' ] )
 
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''
@@ -276,7 +276,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
     def test_0060_verify_tool_dependency_uninstallation( self ):
         '''Uninstall the package_bwa_0_5_9_0100 repository.'''
         '''
-        Uninstall the repository that defines an orphan tool dependency on BWA 0.5.9, and verify
+        Uninstall the repository that defines a tool dependency relationship on BWA 0.5.9, and verify
         that this results in the compiled binary package also being removed.
         '''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )

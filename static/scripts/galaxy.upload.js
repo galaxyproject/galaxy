@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.master", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_master, mod_utils) {
+define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_masthead, mod_utils) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -25,11 +25,11 @@ var GalaxyUpload = Backbone.View.extend(
     
     // states
     state : {
-        init    : 'fa-icon-trash',
-        queued  : 'fa-icon-spinner fa-icon-spin',
+        init    : 'fa fa-trash-o',
+        queued  : 'fa fa-spinner fa-spin',
         running : '__running__',
-        success : 'fa-icon-ok',
-        error   : 'fa-icon-warning-sign'
+        success : 'fa fa-check',
+        error   : 'fa fa-exclamation-triangle'
     },
     
     // counter
@@ -64,9 +64,9 @@ var GalaxyUpload = Backbone.View.extend(
             
         // add activate icon
         var self = this;
-        this.button_show = new mod_master.GalaxyMasterIcon (
+        this.button_show = new mod_masthead.GalaxyMastheadIcon (
         {
-            icon        : 'fa-icon-upload',
+            icon        : 'fa-arrow-circle-o-up',
             tooltip     : 'Upload Files',
             on_click    : function(e) { self.event_show(e) },
             on_unload   : function() {
@@ -76,8 +76,8 @@ var GalaxyUpload = Backbone.View.extend(
             with_number : true
         });
         
-        // add to master
-        Galaxy.master.prepend(this.button_show);
+        // add to masthead
+        Galaxy.masthead.prepend(this.button_show);
         
         // load extension
         var self = this;
@@ -206,7 +206,7 @@ var GalaxyUpload = Backbone.View.extend(
             return null;
             
         // configure uploadbox
-        this.uploadbox.configure({url : galaxy_config.root + "api/tools/", paramname : "files_0|file_data"});
+        this.uploadbox.configure({url : galaxy_config.root + "api/tools", paramname : "files_0|file_data"});
         
         // configure tool
         tool_input = {};

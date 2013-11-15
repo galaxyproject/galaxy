@@ -1901,20 +1901,21 @@ class Tool( object, Dictifiable ):
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-    def handle_input( self, trans, incoming, history=None, old_errors=None ):
+    def handle_input( self, trans, incoming, history=None, old_errors=None, process_state='update', source='html' ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
+
+        process_state can be either 'update' (to incrementally build up the state
+        over several calls - one repeat per handle for instance) or 'populate'
+        force a complete build of the state and submission all at once (like
+        from API). May want an incremental version of the API also at some point,
+        that is why this is not just called for_api.
         """
-        # Get the state or create if not found
-        if "tool_state" in incoming:
-            encoded_state = string_to_object( incoming["tool_state"] )
-            state = DefaultToolState()
-            state.decode( encoded_state, self, trans.app )
-        else:
-            state = self.new_state( trans, history=history )
+        state, state_new = self.__fetch_state( trans, incoming, history )
+        if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button
@@ -1924,8 +1925,88 @@ class Tool( object, Dictifiable ):
                 if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
                 if len(incoming):
-                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+
+        errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history, source=source )
+        if self.__should_refresh_state( incoming ):
+            return self.__handle_state_refresh( trans, state, errors )
+        else:
+            # User actually clicked next or execute.
+
+            # If there were errors, we stay on the same page and display
+            # error messages
+            if errors:
+                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
+                return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
+            # If we've completed the last page we can execute the tool
+            elif state.page == self.last_page:
+                return self.__handle_tool_execute( trans, incoming, params, history )
+            # Otherwise move on to the next page
+            else:
+                return self.__handle_page_advance( trans, state, errors )
+
+    def __should_refresh_state( self, incoming ):
+        return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
+
+    def __handle_tool_execute( self, trans, incoming, params, history ):
+        try:
+            rerun_remap_job_id = None
+            if 'rerun_remap_job_id' in incoming:
+                rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
+            _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
+        except httpexceptions.HTTPFound, e:
+            #if it's a paste redirect exception, pass it up the stack
+            raise e
+        except Exception, e:
+            log.exception('Exception caught while attempting tool execution:')
+            return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
+        try:
+            assert isinstance( out_data, odict )
+            return 'tool_executed.mako', dict( out_data=out_data )
+        except:
+            if isinstance( out_data, str ):
+                message = out_data
+            else:
+                message = 'Failure executing tool (odict not returned from tool execution)'
+            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+
+    def __handle_state_refresh( self, trans, state, errors ):
+            try:
+                self.find_fieldstorage( state.inputs )
+            except InterruptedUpload:
+                # If inputs contain a file it won't persist.  Most likely this
+                # is an interrupted upload.  We should probably find a more
+                # standard method of determining an incomplete POST.
+                return self.handle_interrupted( trans, state.inputs )
+            except:
+                pass
+            # Just a refresh, render the form with updated state and errors.
+            if not self.display_interface:
+                return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __handle_page_advance( self, trans, state, errors ):
+        state.page += 1
+        # Fill in the default values for the next page
+        self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
+        if not self.display_interface:
+            return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+        return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __fetch_state( self, trans, incoming, history ):
+        # Get the state or create if not found
+        if "tool_state" in incoming:
+            encoded_state = string_to_object( incoming["tool_state"] )
+            state = DefaultToolState()
+            state.decode( encoded_state, self, trans.app )
+            new = False
+        else:
+            state = self.new_state( trans, history=history )
+            new = True
+        return state, new
+
+    def __check_param_values( self, trans, incoming, state, old_errors, process_state, history, source ):
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
@@ -1938,64 +2019,19 @@ class Tool( object, Dictifiable ):
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
+            if process_state == "update":
+                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
+            elif process_state == "populate":
+                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history, source=source )
+            else:
+                raise Exception("Unknown process_state type %s" % process_state)
             # If the tool provides a `validate_input` hook, call it.
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
                 validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
             params = state.inputs
-        # Did the user actually click next / execute or is this just
-        # a refresh?
-        if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
-            # If there were errors, we stay on the same page and display
-            # error messages
-            if errors:
-                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
-            # If we've completed the last page we can execute the tool
-            elif state.page == self.last_page:
-                try:
-                    rerun_remap_job_id = None
-                    if 'rerun_remap_job_id' in incoming:
-                        rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
-                    _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
-                except httpexceptions.HTTPFound, e:
-                    #if it's a paste redirect exception, pass it up the stack
-                    raise e
-                except Exception, e:
-                    log.exception('Exception caught while attempting tool execution:')
-                    return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
-                try:
-                    assert isinstance( out_data, odict )
-                    return 'tool_executed.mako', dict( out_data=out_data )
-                except:
-                    if isinstance( out_data, str ):
-                        message = out_data
-                    else:
-                        message = 'Failure executing tool (odict not returned from tool execution)'
-                    return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
-            # Otherwise move on to the next page
-            else:
-                state.page += 1
-                # Fill in the default values for the next page
-                self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
-                if not self.display_interface:
-                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
-                return 'tool_form.mako', dict( errors=errors, tool_state=state )
-        else:
-            try:
-                self.find_fieldstorage( state.inputs )
-            except InterruptedUpload:
-                # If inputs contain a file it won't persist.  Most likely this
-                # is an interrupted upload.  We should probably find a more
-                # standard method of determining an incomplete POST.
-                return self.handle_interrupted( trans, state.inputs )
-            except:
-                pass
-            # Just a refresh, render the form with updated state and errors.
-            if not self.display_interface:
-                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+        return errors, params
+
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
@@ -2033,7 +2069,141 @@ class Tool( object, Dictifiable ):
         return 'message.mako', dict( status='error',
             message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
-    def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
+
+    def populate_state( self, trans, inputs, state, incoming, history, source, prefix="", context=None ):
+        errors = dict()
+        # Push this level onto the context stack
+        context = ExpressionContext( state, context )
+        for input in inputs.itervalues():
+            key = prefix + input.name
+            if isinstance( input, Repeat ):
+                group_state = state[input.name]
+                # Create list of empty errors for each previously existing state
+                group_errors = [ ]
+                any_group_errors = False
+                rep_index = 0
+                while True:
+                    rep_name = "%s_%d" % ( key, rep_index )
+                    if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
+                        break
+                    if rep_index < input.max:
+                        new_state = {}
+                        new_state['__index__'] = rep_index
+                        self.fill_in_new_state( trans, input.inputs, new_state, context, history=history )
+                        group_state.append( new_state )
+                        group_errors.append( {} )
+                        rep_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    new_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=rep_name + "|",
+                                                    context=context )
+                        if rep_errors:
+                            any_group_errors = True
+                            group_errors[rep_index].update( rep_errors )
+
+                    else:
+                        group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        any_group_errors = True
+                    rep_index += 1
+            elif isinstance( input, Conditional ):
+                group_state = state[input.name]
+                group_prefix = "%s|" % ( key )
+                # Deal with the 'test' element and see if it's value changed
+                if input.value_ref and not input.value_ref_in_group:
+                    # We are referencing an existent parameter, which is not
+                    # part of this group
+                    test_param_key = prefix + input.test_param.name
+                else:
+                    test_param_key = group_prefix + input.test_param.name
+                test_param_error = None
+                test_incoming = get_incoming_value( incoming, test_param_key, None )
+
+                # Get value of test param and determine current case
+                value, test_param_error = \
+                    check_param( trans, input.test_param, test_incoming, context, source=source )
+                current_case = input.get_current_case( value, trans )
+                # Current case has changed, throw away old state
+                group_state = state[input.name] = {}
+                # TODO: we should try to preserve values if we can
+                self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                group_errors = self.populate_state( trans,
+                                                    input.cases[current_case].inputs,
+                                                    group_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=group_prefix,
+                                                    context=context,
+                )
+                if test_param_error:
+                    group_errors[ input.test_param.name ] = test_param_error
+                if group_errors:
+                    errors[ input.name ] = group_errors
+                # Store the current case in a special value
+                group_state['__current_case__'] = current_case
+                # Store the value of the test element
+                group_state[ input.test_param.name ] = value
+            elif isinstance( input, UploadDataset ):
+                group_state = state[input.name]
+                group_errors = []
+                any_group_errors = False
+                d_type = input.get_datatype( trans, context )
+                writable_files = d_type.writable_files
+                #remove extra files
+                while len( group_state ) > len( writable_files ):
+                    del group_state[-1]
+                # Update state
+                max_index = -1
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    max_index = max( max_index, rep_index )
+                    rep_prefix = "%s_%d|" % ( key, rep_index )
+                    rep_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    rep_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=rep_prefix,
+                                                    context=context)
+                    if rep_errors:
+                        any_group_errors = True
+                        group_errors.append( rep_errors )
+                    else:
+                        group_errors.append( {} )
+                # Add new fileupload as needed
+                offset = 1
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = max_index + offset
+                    offset += 1
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+                # Were there *any* errors for any repetition?
+                if any_group_errors:
+                    errors[input.name] = group_errors
+            else:
+                if key not in incoming \
+                   and "__force_update__" + key not in incoming:
+                    # No new value provided, and we are only updating, so keep
+                    # the old value (which should already be in the state) and
+                    # preserve the old error message.
+                    pass
+                else:
+                    incoming_value = get_incoming_value( incoming, key, None )
+                    value, error = check_param( trans, input, incoming_value, context, source=source )
+                    # If a callback was provided, allow it to process the value
+                    if error:
+                        errors[ input.name ] = error
+                    state[ input.name ] = value
+        return errors
+
+    def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`.
@@ -2091,6 +2261,7 @@ class Tool( object, Dictifiable ):
                                                     input.inputs,
                                                     rep_state,
                                                     incoming,
+                                                    source=source,
                                                     prefix=rep_prefix,
                                                     context=context,
                                                     update_only=update_only,
@@ -2139,7 +2310,7 @@ class Tool( object, Dictifiable ):
                 else:
                     # Get value of test param and determine current case
                     value, test_param_error = \
-                        check_param( trans, input.test_param, test_incoming, context )
+                        check_param( trans, input.test_param, test_incoming, context, source=source )
                     current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
@@ -2156,6 +2327,7 @@ class Tool( object, Dictifiable ):
                                                       incoming,
                                                       prefix=group_prefix,
                                                       context=context,
+                                                      source=source,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
                                                       item_callback=item_callback )
@@ -2197,6 +2369,7 @@ class Tool( object, Dictifiable ):
                                                     incoming,
                                                     prefix=rep_prefix,
                                                     context=context,
+                                                    source=source,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
                                                     item_callback=item_callback )
@@ -2229,7 +2402,7 @@ class Tool( object, Dictifiable ):
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
                     incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context )
+                    value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
                     if item_callback:
                         old_value = state.get( input.name, None )

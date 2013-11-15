@@ -4,18 +4,11 @@
     ${_('Galaxy History')}
 </%def>
 
-<%namespace file="/history/history_panel.mako" import="history_panel_stylesheets" />
 <%namespace file="/history/history_panel.mako" import="bootstrapped_history_panel" />
 
 ## -----------------------------------------------------------------------------
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css(
-        "base",
-        "history",
-        "autocomplete_tagging"
-    )}
-    ${history_panel_stylesheets()}
     <style>
         body.historyPage {
             margin: 0px;
@@ -33,17 +26,18 @@ ${h.js(
     "utils/localization",
     "mvc/user/user-model"
 )}
+${h.templates( "helpers-common-templates" )}
 <script type="text/javascript">
     <%
         user_data = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
         #HACK - the above sets the response type
         trans.response.set_content_type( "text/html" )
     %>
-    ## bc this is in it's own frame we reference the global Galaxy obj or the quotameter's User obj
+    ## bc this is in it's own frame we can't reference the global Galaxy obj or the quotameter's User obj
     window.Galaxy = {};
     Galaxy.currUser = new User(${user_data});
     $(function(){
-        $( 'body' ).addClass( 'historyPage' );
+        $( 'body' ).addClass( 'historyPage' ).addClass( 'history-panel' );
     });
 </script>
 

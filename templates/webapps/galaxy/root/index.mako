@@ -1,7 +1,6 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%namespace file="/root/tool_menu.mako" import="*" />
-<%namespace file="/history/history_panel.mako" import="history_panel_stylesheets" />
 <%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
 <%namespace file="/history/history_panel.mako" import="current_history_panel" />
 <%namespace file="/history/history_panel.mako" import="history_panel" />
@@ -9,7 +8,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css("tool_menu")}
-    ${history_panel_stylesheets()}
     <style>
         #right .unified-panel-body {
             background: none repeat scroll 0 0 #DFE5F9;
@@ -189,11 +187,11 @@
         <div class="unified-panel-header-inner">
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)">
-                    <span class="fa-icon-refresh"></span>
+                    <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
-                    <span class="fa-icon-cog"></span>
+                    <span class="fa fa-cog"></span>
                 </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>

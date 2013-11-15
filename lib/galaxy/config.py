@@ -35,10 +35,13 @@ class Configuration( object ):
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
-        self.database_connection =  kwargs.get( "database_connection", False )
+        self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+        # Don't set this to true for production databases, but probably should
+        # default to True for sqlite databases.
+        self.database_auto_migrate = string_as_bool( kwargs.get( "database_auto_migrate", "False" ) )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -313,6 +316,10 @@ class Configuration( object ):
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
+        self.master_api_key = kwargs.get( 'master_api_key', None )
+        if self.master_api_key == "changethis":  # default in sample config file
+            raise Exception("Insecure configuration, please change master_api_key to something other than default (changethis)")
+
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.

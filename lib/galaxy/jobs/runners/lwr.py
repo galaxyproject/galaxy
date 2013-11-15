@@ -108,7 +108,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
-        return self.get_client( job_wrapper.job_destination.params, job_id )
+        params = job_wrapper.job_destination.params.copy()
+        for key, value in params.iteritems():
+            params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
+        return self.get_client( params, job_id )
 
     def get_client_from_state(self, job_state):
         job_destination_params = job_state.job_destination.params

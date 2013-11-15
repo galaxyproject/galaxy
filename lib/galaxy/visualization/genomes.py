@@ -161,7 +161,7 @@ class Genome( object ):
             # No more chroms to read.
             pass
 
-        to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
+        to_sort = [{ 'chrom': chrm, 'len': length } for chrm, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
         return {
             'id': self.key,

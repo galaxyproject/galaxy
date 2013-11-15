@@ -163,7 +163,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             if not link_text:
                 # default to visualization name, titlecase, and replace underscores
                 link_text = visualization_name.title().replace( '_', ' ' )
-            render_location = visualization.config.get( 'render_location' )
+            render_location = visualization.config.get( 'render_location', 'galaxy_main' )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
                 'href'  : url,
