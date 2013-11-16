@@ -34,7 +34,7 @@ class S3ObjectStore(ObjectStore):
     Galaxy and S3.
     """
     def __init__(self, config, config_xml=None):
-        super(S3ObjectStore, self).__init__()
+        super(S3ObjectStore, self).__init__(config, config_xml)
         self.config = config
         self.staging_path = self.config.file_path
         self.s3_conn = get_OS_connection(self.config)
