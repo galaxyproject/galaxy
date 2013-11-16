@@ -21,7 +21,7 @@
         bowtie2
         
         ## number of threads
-        -p 4
+        -p \${GALAXY_SLOTS:-4}
 
         ## index file path
         -x $index_path
