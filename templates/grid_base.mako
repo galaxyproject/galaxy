@@ -222,7 +222,7 @@
         $(function() {
             ## get configuration
             var grid_config = ${ h.to_json_string( self.grid_config ) };
-            console.log(grid_config);
+            
             // Create grid.
             var grid = new Grid(grid_config);
             
