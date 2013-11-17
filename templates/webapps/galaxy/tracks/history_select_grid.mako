@@ -15,7 +15,6 @@ ${grid_javascripts()}
         $(document).ready(function() {
             $(".addtracktab, #grid-table a").off();
             $(".addtracktab, #grid-table a").click(function() {
-                console.log($(this).attr("href"));
                 var modal_body = $(".modal-body");
                 if (modal_body.length !== 0) {
                     modal_body.load($(this).attr("href"));
