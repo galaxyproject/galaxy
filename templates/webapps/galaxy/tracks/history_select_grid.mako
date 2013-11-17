@@ -4,7 +4,7 @@
 ## not make it possible to easily subclass templates.
 ##
 <%namespace file="../grid_base.mako" import="*" />
-
+${init()}
 ${stylesheets()}
 ${grid_javascripts()}
 
@@ -12,18 +12,16 @@ ${grid_javascripts()}
     <script type="text/javascript">
         // Load all grid URLs into modal-body element so that
         // grid + links stays embedded.
-        var load_urls_into_modal_body = function() {
+        $(document).ready(function() {
+            $(".addtracktab, #grid-table a").off();
             $(".addtracktab, #grid-table a").click(function() {
+                console.log($(this).attr("href"));
                 var modal_body = $(".modal-body");
                 if (modal_body.length !== 0) {
                     modal_body.load($(this).attr("href"));
                     return false;
                 }
             });
-        };
-        // Need to process label URLs when document loaded and when grid changes. 
-        $(document).ready(function() {
-            load_urls_into_modal_body();
         });
     </script>
     <style>

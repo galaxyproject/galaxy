@@ -321,7 +321,7 @@ class Grid( object ):
 
 class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, \
-                  link=None, attach_popup=False, visible=True, ncells=1, nowrap=False, \
+                  link=None, attach_popup=False, visible=True, nowrap=False, \
                   # Valid values for filterable are ['standard', 'advanced', None]
                   filterable=None, sortable=True, label_id_prefix=None ):
         """Create a grid column."""
@@ -334,7 +334,6 @@ class GridColumn( object ):
         self.nowrap = nowrap
         self.attach_popup = attach_popup
         self.visible = visible
-        self.ncells = ncells
         self.filterable = filterable
         # Column must have a key to be sortable.
         self.sortable = ( self.key is not None and sortable )
