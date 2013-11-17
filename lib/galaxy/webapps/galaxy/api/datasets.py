@@ -255,24 +255,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         raw = string_as_bool_or_none( raw )
-        # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
         rval = ''
         try:
-            # for anon users:
-            #TODO: check login_required?
-            #TODO: this isn't actually most_recently_used (as defined in histories)
-            if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-                history = trans.history
-                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-                hda = self.get_history_dataset_association( trans, history, history_content_id,
-                    check_ownership=False, check_accessible=True )
-
-            else:
-                history = self.get_history( trans, history_id,
-                    check_ownership=True, check_accessible=True, deleted=False )
-                hda = self.get_history_dataset_association( trans, history, history_content_id,
-                    check_ownership=True, check_accessible=True )
+            hda = self.get_history_dataset_association_from_ids( trans, history_content_id, history_id )
 
             display_kwd = kwd.copy()
             try:

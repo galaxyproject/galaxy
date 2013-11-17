@@ -568,6 +568,31 @@ class UsesHistoryDatasetAssociationMixin:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
 
+    def get_history_dataset_association_from_ids( self, trans, id, history_id ):
+        # Just to echo other TODOs, there seems to be some overlap here, still
+        # this block appears multiple places (dataset show, history_contents
+        # show, upcoming history job show) so I am consolodating it here.
+        # Someone smarter than me should determine if there is some redundancy here.
+
+        # for anon users:
+        #TODO: check login_required?
+        #TODO: this isn't actually most_recently_used (as defined in histories)
+        if( ( trans.user == None )
+        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+            history = trans.history
+            #TODO: dataset/hda by id (from history) OR check_ownership for anon user
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=False, check_accessible=True )
+        else:
+            #TODO: do we really need the history?
+            history = self.get_history( trans, history_id,
+                check_ownership=True, check_accessible=True, deleted=False )
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=True, check_accessible=True )
+        return hda
+
+
+
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
         """
         Returns one or more datasets in a list.
