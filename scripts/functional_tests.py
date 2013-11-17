@@ -217,9 +217,9 @@ def main():
 
     database_auto_migrate = False
 
+    galaxy_test_proxy_port = None
+    psu_production = False
     if start_server:
-        psu_production = False
-        galaxy_test_proxy_port = None
         if 'GALAXY_TEST_PSU_PRODUCTION' in os.environ:
             if not galaxy_test_port:
                 raise Exception( 'Please set GALAXY_TEST_PORT to the port to which the proxy server will proxy' )
