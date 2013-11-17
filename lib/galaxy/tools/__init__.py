@@ -2155,11 +2155,19 @@ class Tool( object, Dictifiable ):
                 #remove extra files
                 while len( group_state ) > len( writable_files ):
                     del group_state[-1]
+
+                # Add new fileupload as needed
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = len( group_state )
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+
                 # Update state
-                max_index = -1
                 for i, rep_state in enumerate( group_state ):
                     rep_index = rep_state['__index__']
-                    max_index = max( max_index, rep_index )
                     rep_prefix = "%s_%d|" % ( key, rep_index )
                     rep_errors = self.populate_state( trans,
                                                     input.inputs,
@@ -2173,16 +2181,6 @@ class Tool( object, Dictifiable ):
                         any_group_errors = True
                         group_errors.append( rep_errors )
                     else:
-                        group_errors.append( {} )
-                # Add new fileupload as needed
-                offset = 1
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = max_index + offset
-                    offset += 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
                         group_errors.append( {} )
                 # Were there *any* errors for any repetition?
                 if any_group_errors:
