@@ -42,11 +42,12 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
         if item is not None:
             if item.copied_from_library_dataset_dataset_association:
                 item = item.copied_from_library_dataset_dataset_association
+            job = item.creating_job
             return {
-                "id" : trans.security.encode_id(item.id),
-                "uuid" : ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
-                "tool_id" : item.creating_job.tool_id,
-                "parameters" : self._get_job_record(trans, item.creating_job, follow)
+                "id": trans.security.encode_id(item.id),
+                "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
+                "tool_id": job.tool_id,
+                "parameters": self._get_job_record(trans, job, follow),
             }
         return None
 
@@ -59,8 +60,8 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
                 out[in_d.name] = self._get_record(trans, in_d.dataset, follow)
             else:
                 out[in_d.name] = {
-                    "id" : trans.security.encode_id(in_d.dataset.id),
-                    "uuid" : ( lambda uuid: str( uuid ) if uuid else None )( in_d.dataset.dataset.uuid )
+                    "id": trans.security.encode_id(in_d.dataset.id),
+                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( in_d.dataset.dataset.uuid ),
                 }
         return out
 
@@ -75,5 +76,3 @@ class LDDAProvenanceController( BaseProvenanceController ):
     controller_name = "ldda_provenance"
     provenance_item_class = "LibraryDatasetDatasetAssociation"
     provenance_item_id = "library_content_id"
-
-
