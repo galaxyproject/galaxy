@@ -74,7 +74,7 @@ class ToolTestBuilder( object ):
                         # inserted at front of list so explicit declarations
                         # take precedence
                         attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-                self.add_param( attrib.pop( 'name' ), value, attrib )
+                self.__add_param( attrib.pop( 'name' ), value, attrib )
             for output_elem in test_elem.findall( "output" ):
                 attrib = dict( output_elem.attrib )
                 name = attrib.pop( 'name', None )
@@ -130,12 +130,12 @@ class ToolTestBuilder( object ):
                     extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
                     extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
                     attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
-                self.add_output( name, file, attributes )
+                self.__add_output( name, file, attributes )
         except Exception, e:
             self.error = True
             self.exception = e
 
-    def add_param( self, name, value, extra ):
+    def __add_param( self, name, value, extra ):
         try:
             if name not in self.tool.inputs:
                 found_parameter = False
@@ -155,7 +155,7 @@ class ToolTestBuilder( object ):
             log.debug( "Error for tool %s: could not add test parameter %s. %s" % ( self.tool.id, name, e ) )
         self.inputs.append( ( name, value, extra ) )
 
-    def add_output( self, name, file, extra ):
+    def __add_output( self, name, file, extra ):
         self.outputs.append( ( name, file, extra ) )
 
     def __expand_grouping_for_data_input( self, name, value, extra, grouping_name, grouping_value ):
