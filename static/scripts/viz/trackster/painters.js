@@ -749,7 +749,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             gap = Math.round(w_scale/2),
             char_width_px = ctx.canvas.manager.char_width_px,
             block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color),
-            pack_mode = (mode === 'Pack');
+            pack_mode = (mode === 'Pack'),
+            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale);
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -847,8 +848,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(s_start, y_center + 4, s_end - s_start, 3);
+                    paint_utils.draw_deletion(s_start, y_center, 1);
                     base_offset += cig_len;
                     break;
                 case "P": // TODO: No good way to draw insertions/padding right now, so ignore
@@ -1507,6 +1507,27 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
 };
 
 /**
+ * Utilities for painting reads.
+ */
+var ReadPainterUtils = function(ctx, row_height, char_width) {
+    this.ctx = ctx;
+    this.row_height = row_height;
+    this.char_width = char_width;
+};
+
+extend(ReadPainterUtils.prototype, {
+    /**
+     * Draw deletion of base(s).
+     */
+    draw_deletion: function(x, y, len) {
+        this.ctx.fillStyle = "black";
+        var thickness = Math.max( 0.25 * this.row_height, 1 );
+        y += 0.5 * ( this.row_height - thickness );
+        this.ctx.fillRect( x, y + 4, len * this.char_width, thickness);
+    }
+});
+
+/**
  * Paints variant data onto canvas.
  */
 var VariantPainter = function(data, view_start, view_end, prefs, mode, base_color_fn) {
@@ -1556,6 +1577,34 @@ extend(VariantPainter.prototype, Painter.prototype, {
     draw: function(ctx, width, height, w_scale) {
         ctx.save();
 
+        // Functions for detection insertions (TODO) and deletions.
+
+        /** Returns dictionary of information about a deletion; returns null if there no deletion.
+         * Dict attributes:
+         *    -start: where the deletion starts relative to reference start
+         *    -len: how long the deletion is
+         */
+        var get_deletion_info = function(ref, alt) {
+                var ref_len = ref.length,
+                    alt_len = alt.length,
+                    start = 0,
+                    len = 1,
+                    is_delete = false;
+                if (alt === '-') {
+                    is_delete = true;
+                    len = ref.length;
+                }
+                else if (ref.indexOf(alt) === 0 && ref_len > alt_len) {
+                    is_delete = true;
+                    len = ref_len = alt_len;
+                    start += alt_len;
+                }
+
+                return ( is_delete ? { start: start, len: len } : null );
+            };
+
+
+        // Draw.
         var locus_data,
             pos,
             id,
@@ -1582,6 +1631,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
                               (this.mode === 'Squish' ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT)
                              ),
             draw_summary = true,
+            paint_utils = new ReadPainterUtils(ctx, row_height, base_px),
             j;
 
         // If there's a single sample, update drawing variables.
@@ -1605,9 +1655,30 @@ extend(VariantPainter.prototype, Painter.prototype, {
             // Get locus data.
             locus_data = this.data[i];
             pos = locus_data[1];
-            alt = locus_data[4].split(',');
+            ref = locus_data[3];
+            alt = [ locus_data[4].split(',') ];
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
+
+            // Process alterate values to derive information about each alt.
+            alt = _.map(_.flatten(alt), function(a) {
+                var type,
+                    alt_info = {},
+                    delete_info = get_deletion_info(ref, a);
+                if (delete_info) {
+                    type = 'deletion';
+                    _.extend(alt_info, delete_info);
+                }
+                // TODO: test for insertion.
+                else { // SNP.
+                    type = 'snp';
+                }
+
+                return _.extend(alt_info, {
+                    type: type,
+                    value: a,
+                });
+            });
 
             // Only draw locus data if it's in viewing region.
             if (pos < this.view_start || pos > this.view_end) {
@@ -1627,7 +1698,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 draw_y_start = this.prefs.summary_height;
                 // Draw allele fractions onto summary.
                 for (j = 0; j < alt.length; j++) {
-                    ctx.fillStyle = this.base_color_fn(alt[j]);
+                    ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
                     allele_frac = allele_counts / sample_gts.length;
                     draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
                     ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
@@ -1664,12 +1735,21 @@ extend(VariantPainter.prototype, Painter.prototype, {
 
                 // If there's a variant, draw it.
                 if (variant) {
-                    ctx.fillStyle = this.base_color_fn(variant);
-                    if (this.mode === 'Squish' || w_scale < ctx.canvas.manager.char_width_px) {
-                        ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
+                    if (variant.type === 'snp') {
+                        var snp = variant.value;
+                        ctx.fillStyle = this.base_color_fn(snp);
+                        if (this.mode === 'Squish' || w_scale < ctx.canvas.manager.char_width_px) {
+                            ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
+                        }
+                        else {
+                            ctx.fillText(snp, char_x_start, draw_y_start + row_height);
+                        }
+                    }
+                    else if (variant.type === 'deletion') {
+                        paint_utils.draw_deletion(draw_x_start + base_px * variant.start, draw_y_start, variant.len);
                     }
                     else {
-                        ctx.fillText(variant, char_x_start, draw_y_start + row_height);
+                        // TODO: handle insertions.
                     }
                 }
             }
