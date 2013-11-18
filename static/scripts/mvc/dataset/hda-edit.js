@@ -69,7 +69,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                 title       : _l( 'Edit Attributes' ),
                 href        : this.urls.edit,
                 target      : 'galaxy_main',
-                icon_class  : 'edit'
+                classes     : 'dataset-edit'
             };
             
         // disable if purged or deleted and explain why in the tooltip
@@ -102,21 +102,18 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         
         var self = this,
-            delete_url = self.urls[ 'delete' ],
             deleteBtnData = {
                 title       : _l( 'Delete' ),
-                href        : delete_url,
-                icon_class  : 'delete',
-                onclick    : function() {
+                classes     : 'dataset-delete',
+                onclick     : function() {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.menu-button.delete' ).trigger( 'mouseout' );
+                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
                     self.model[ 'delete' ]();
                 }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
                 title       : _l( 'Dataset is already deleted' ),
-                icon_class  : 'delete',
                 disabled    : true
             };
         }

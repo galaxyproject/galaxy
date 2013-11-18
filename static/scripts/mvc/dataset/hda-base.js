@@ -149,8 +149,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
         
         var displayBtnData = {
-            icon_class  : 'display',
-            target      : 'galaxy_main'
+            target      : 'galaxy_main',
+            classes     : 'dataset-display'
         };
 
         // show a disabled display if the data's been purged
