@@ -80,29 +80,12 @@ class ToolTestBuilder( object ):
                 name = attrib.pop( 'name', None )
                 if name is None:
                     raise Exception( "Test output does not have a 'name'" )
-                assert_elem = output_elem.find("assert_contents")
-                assert_list = None
 
-                # Trying to keep testing patch as localized as
-                # possible, this function should be relocated
-                # somewhere more conventional.
-                def convert_elem(elem):
-                    """ Converts and XML element to a dictionary format, used by assertion checking code. """
-                    tag = elem.tag
-                    attributes = dict( elem.attrib )
-                    child_elems = list( elem.getchildren() )
-                    converted_children = []
-                    for child_elem in child_elems:
-                        converted_children.append( convert_elem(child_elem) )
-                    return {"tag": tag, "attributes": attributes, "children": converted_children}
-                if assert_elem is not None:
-                    assert_list = []
-                    for assert_child in list(assert_elem):
-                        assert_list.append(convert_elem(assert_child))
+                assert_list = self.__parse_assert_list( output_elem )
                 file = attrib.pop( 'file', None )
                 # File no longer required if an list of assertions was present.
-                if assert_list is None and file is None:
-                    raise Exception( "Test output does not have a 'file'")
+                if not assert_list and file is None:
+                    raise Exception( "Test output does not have a 'file' to compare with or list of assertions to check")
                 attributes = {}
                 # Method of comparison
                 attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
@@ -116,24 +99,50 @@ class ToolTestBuilder( object ):
                 if 'ftype' in attrib:
                     attributes['ftype'] = attrib['ftype']
                 for extra in output_elem.findall( 'extra_files' ):
-                    # File or directory, when directory, compare basename
-                    # by basename
-                    extra_type = extra.get( 'type', 'file' )
-                    extra_name = extra.get( 'name', None )
-                    assert extra_type == 'directory' or extra_name is not None, \
-                        'extra_files type (%s) requires a name attribute' % extra_type
-                    extra_value = extra.get( 'value', None )
-                    assert extra_value is not None, 'extra_files requires a value attribute'
-                    extra_attributes = {}
-                    extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-                    extra_attributes['delta'] = extra.get( 'delta', '0' )
-                    extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-                    extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
-                    attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
+                    attributes['extra_files'].append( self.__parse_extra_files_elem( extra ) )
                 self.__add_output( name, file, attributes )
         except Exception, e:
             self.error = True
             self.exception = e
+
+    def __parse_assert_list( self, output_elem ):
+        assert_elem = output_elem.find("assert_contents")
+        assert_list = None
+
+        # Trying to keep testing patch as localized as
+        # possible, this function should be relocated
+        # somewhere more conventional.
+        def convert_elem(elem):
+            """ Converts and XML element to a dictionary format, used by assertion checking code. """
+            tag = elem.tag
+            attributes = dict( elem.attrib )
+            child_elems = list( elem.getchildren() )
+            converted_children = []
+            for child_elem in child_elems:
+                converted_children.append( convert_elem(child_elem) )
+            return {"tag": tag, "attributes": attributes, "children": converted_children}
+        if assert_elem is not None:
+            assert_list = []
+            for assert_child in list(assert_elem):
+                assert_list.append(convert_elem(assert_child))
+
+        return assert_list
+
+    def __parse_extra_files_elem( self, extra ):
+        # File or directory, when directory, compare basename
+        # by basename
+        extra_type = extra.get( 'type', 'file' )
+        extra_name = extra.get( 'name', None )
+        assert extra_type == 'directory' or extra_name is not None, \
+            'extra_files type (%s) requires a name attribute' % extra_type
+        extra_value = extra.get( 'value', None )
+        assert extra_value is not None, 'extra_files requires a value attribute'
+        extra_attributes = {}
+        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
+        extra_attributes['delta'] = extra.get( 'delta', '0' )
+        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
+        extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
+        return extra_type, extra_value, extra_name, extra_attributes
 
     def __add_param( self, name, value, extra ):
         try:
