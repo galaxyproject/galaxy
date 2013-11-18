@@ -750,7 +750,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             char_width_px = ctx.canvas.manager.char_width_px,
             block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color),
             pack_mode = (mode === 'Pack'),
-            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale);
+            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale, mode);
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -770,6 +770,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 // -0.5 to offset sequence between bases.
                 s_start = Math.floor( Math.max(-0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
+
+            if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
+                continue;
+            }
             
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
             // read is drawn at 1px.
@@ -789,55 +793,54 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 case "M": // Loose match with reference; can be match or mismatch.
                 case "=": // Strict match with reference.
                 case "X": // Strict mismatch with reference.
-                    if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        // Draw read base as rectangle.
-                        ctx.fillStyle = block_color;
-                        ctx.fillRect(s_start, 
-                                     y_start + (pack_mode ? 1 : 4 ), 
-                                     s_end - s_start, 
-                                     (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                    // Draw read base as rectangle.
+                    ctx.fillStyle = block_color;
+                    ctx.fillRect(s_start, 
+                                 y_start + (pack_mode ? 1 : 4 ), 
+                                 s_end - s_start, 
+                                 (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
 
-                        // Draw sequence and/or variants.
-                        var seq = read_seq.slice(seq_offset, seq_offset + cig_len),
-                            ref_char,
-                            read_char;
-                        for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                            // Draw base if it's on tile:
-                            if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
-                                // Get reference and read character.
-                                ref_char = (this.ref_seq ? this.ref_seq[seq_start - tile_low + c] : null);
-                                read_char = seq[c];
+                    // Draw sequence and/or variants.
+                    var seq = read_seq.slice(seq_offset, seq_offset + cig_len),
+                        ref_char,
+                        read_char;
+                    for (var c = 0, str_len = seq.length; c < str_len; c++) {
+                        // Draw base if it's on tile:
+                        if (seq_start + c >= tile_low && seq_start + c <= tile_high) {
+                            // Get reference and read character.
+                            ref_char = (this.ref_seq ? this.ref_seq[seq_start - tile_low + c] : null);
+                            read_char = seq[c];
 
-                                // Draw base depending on (a) available reference data and (b) config options.
-                                if (
-                                    // If there's reference data and (a) showing all (i.e. not showing 
-                                    // differences) or (b) if there is a variant.
-                                    (ref_char && 
-                                        (!this.prefs.show_differences || 
-                                        (read_char.toLowerCase !== 'n' && (ref_char.toLowerCase() !== read_char.toLowerCase())))
-                                    ) ||
-                                    // If there's no reference data and showing all.
-                                    (!ref_char && !this.prefs.show_differences)
-                                    ) {
+                            // Draw base depending on (a) available reference data and (b) config options.
+                            if (
+                                // If there's reference data and (a) showing all (i.e. not showing 
+                                // differences) or (b) if there is a variant.
+                                (ref_char && 
+                                    (!this.prefs.show_differences || 
+                                    (read_char.toLowerCase !== 'n' && (ref_char.toLowerCase() !== read_char.toLowerCase())))
+                                ) ||
+                                // If there's no reference data and showing all.
+                                (!ref_char && !this.prefs.show_differences)
+                                ) {
 
-                                    // Draw base.
-                                    var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
-                                    ctx.fillStyle = this.base_color_fn(seq[c]);
-                                    if (pack_mode && w_scale > char_width_px) {
-                                        ctx.fillText(seq[c], c_start, y_start + 9);
-                                    }
-                                    // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
-                                    else if (w_scale > 0.05) {
-                                        ctx.fillRect(c_start - gap, 
-                                                     y_start + (pack_mode ? 1 : 4), 
-                                                     Math.max( 1, Math.round(w_scale) ),
-                                                     (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
-                                    }
+                                // Draw base.
+                                var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
+                                ctx.fillStyle = this.base_color_fn(seq[c]);
+                                if (pack_mode && w_scale > char_width_px) {
+                                    ctx.fillText(seq[c], c_start, y_start + 9);
                                 }
-
+                                // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
+                                else if (w_scale > 0.05) {
+                                    ctx.fillRect(c_start - gap, 
+                                                 y_start + (pack_mode ? 1 : 4), 
+                                                 Math.max( 1, Math.round(w_scale) ),
+                                                 (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                                }
                             }
+
                         }
                     }
+
                     seq_offset += cig_len;
                     base_offset += cig_len;
                     break;
@@ -1033,6 +1036,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
             char_width_px = ctx.canvas.manager.char_width_px,
             block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color),
             pack_mode = (mode === 'Pack'),
+            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale, mode),
             drawing_blocks = [];
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
@@ -1074,11 +1078,15 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
             var cig = cigar[cig_id],
                 cig_op = "MIDNSHP=X"[ cig[0] ],
                 cig_len = cig[1];
-            
+
             var seq_start = feature_start + base_offset,
                 // -0.5 to offset sequence between bases.
                 s_start = Math.floor( Math.max(0, -0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
+
+            if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
+                continue;
+            }
             
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
             // read is drawn at 1px.
@@ -1100,45 +1108,43 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                     break;
                 case "=": // Match with reference.
                 case "X": // Mismatch with reference.
-                    if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        //
-                        // Draw sequence and/or variants.
-                        //
+                    //
+                    // Draw sequence and/or variants.
+                    //
 
-                        // Get sequence to draw.
-                        var cur_seq = '';
-                        if (cig_op === 'X') {
-                            // Get sequence from read_seq.
-                            cur_seq = read_seq.slice(seq_offset, seq_offset + cig_len);
-                        }
-                        else if (this.ref_seq) { // && cig_op === '='
-                            // Use reference sequence.
-                            cur_seq = this.ref_seq.slice(
-                                // If read starts after tile start, slice at read start.
-                                Math.max(0, seq_start - tile_low),
-                                // If read ends before tile end, slice at read end.
-                                Math.min(seq_start - tile_low + cig_len, tile_high - tile_low)
-                            );
-                        }
+                    // Get sequence to draw.
+                    var cur_seq = '';
+                    if (cig_op === 'X') {
+                        // Get sequence from read_seq.
+                        cur_seq = read_seq.slice(seq_offset, seq_offset + cig_len);
+                    }
+                    else if (this.ref_seq) { // && cig_op === '='
+                        // Use reference sequence.
+                        cur_seq = this.ref_seq.slice(
+                            // If read starts after tile start, slice at read start.
+                            Math.max(0, seq_start - tile_low),
+                            // If read ends before tile end, slice at read end.
+                            Math.min(seq_start - tile_low + cig_len, tile_high - tile_low)
+                        );
+                    }
 
-                        // Draw sequence. Because cur_seq starts and read/tile start, go to there to start writing.
-                        var start_pos = Math.max(seq_start, tile_low);
-                        for (var c = 0; c < cur_seq.length; c++) {
-                            // Draw base if showing all (i.e. not showing differences) or there is a mismatch.
-                            if (cur_seq && !this.prefs.show_differences || cig_op === 'X') {
-                                // Draw base.
-                                var c_start = Math.floor( Math.max(0, (start_pos + c - tile_low) * w_scale) );
-                                ctx.fillStyle = this.base_color_fn(cur_seq[c]);
-                                if (pack_mode && w_scale > char_width_px) {
-                                    ctx.fillText(cur_seq[c], c_start, y_start + 9);
-                                }
-                                // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
-                                else if (w_scale > 0.05) {
-                                    ctx.fillRect(c_start - gap, 
-                                                 y_start + (pack_mode ? 1 : 4), 
-                                                 Math.max( 1, Math.round(w_scale) ),
-                                                 (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
-                                }
+                    // Draw sequence. Because cur_seq starts and read/tile start, go to there to start writing.
+                    var start_pos = Math.max(seq_start, tile_low);
+                    for (var c = 0; c < cur_seq.length; c++) {
+                        // Draw base if showing all (i.e. not showing differences) or there is a mismatch.
+                        if (cur_seq && !this.prefs.show_differences || cig_op === 'X') {
+                            // Draw base.
+                            var c_start = Math.floor( Math.max(0, (start_pos + c - tile_low) * w_scale) );
+                            ctx.fillStyle = this.base_color_fn(cur_seq[c]);
+                            if (pack_mode && w_scale > char_width_px) {
+                                ctx.fillText(cur_seq[c], c_start, y_start + 9);
+                            }
+                            // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
+                            else if (w_scale > 0.05) {
+                                ctx.fillRect(c_start - gap, 
+                                             y_start + (pack_mode ? 1 : 4), 
+                                             Math.max( 1, Math.round(w_scale) ),
+                                             (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
                             }
                         }
                     }
@@ -1156,8 +1162,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(s_start, y_start + 4, s_end - s_start, 3);
+                    paint_utils.draw_deletion(s_start, y_start + (pack_mode ? 1 : 4), cig_len);
                     base_offset += cig_len;
                     break;
                 case "I": // Insertion.
@@ -1509,21 +1514,24 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
 /**
  * Utilities for painting reads.
  */
-var ReadPainterUtils = function(ctx, row_height, char_width) {
+var ReadPainterUtils = function(ctx, row_height, px_per_base, mode) {
     this.ctx = ctx;
     this.row_height = row_height;
-    this.char_width = char_width;
+    this.px_per_base = px_per_base;
+    this.draw_details = (mode === 'Pack' || mode === 'Auto') && (px_per_base >= ctx.canvas.manager.char_width_px);
+    this.delete_details_thickness = 0.2;
 };
 
 extend(ReadPainterUtils.prototype, {
     /**
-     * Draw deletion of base(s).
+     * Draw deletion of base(s). 
+     * @param draw_detail if true, drawing in detail and deletion is drawn more subtly
      */
     draw_deletion: function(x, y, len) {
         this.ctx.fillStyle = "black";
-        var thickness = Math.max( 0.25 * this.row_height, 1 );
+        var thickness = (this.draw_details ? this.delete_details_thickness : 1) * this.row_height;
         y += 0.5 * ( this.row_height - thickness );
-        this.ctx.fillRect( x, y + 4, len * this.char_width, thickness);
+        this.ctx.fillRect(x, y, len * this.px_per_base, thickness);
     }
 });
 
@@ -1631,7 +1639,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
                               (this.mode === 'Squish' ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT)
                              ),
             draw_summary = true,
-            paint_utils = new ReadPainterUtils(ctx, row_height, base_px),
+            paint_utils = new ReadPainterUtils(ctx, row_height, w_scale, this.mode),
             j;
 
         // If there's a single sample, update drawing variables.
@@ -1738,15 +1746,15 @@ extend(VariantPainter.prototype, Painter.prototype, {
                     if (variant.type === 'snp') {
                         var snp = variant.value;
                         ctx.fillStyle = this.base_color_fn(snp);
-                        if (this.mode === 'Squish' || w_scale < ctx.canvas.manager.char_width_px) {
-                            ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
+                        if (paint_utils.draw_details) {
+                            ctx.fillText(snp, char_x_start, draw_y_start + row_height);
                         }
                         else {
-                            ctx.fillText(snp, char_x_start, draw_y_start + row_height);
+                            ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
                         }
                     }
                     else if (variant.type === 'deletion') {
-                        paint_utils.draw_deletion(draw_x_start + base_px * variant.start, draw_y_start, variant.len);
+                        paint_utils.draw_deletion(draw_x_start + base_px * variant.start, draw_y_start + 1, variant.len);
                     }
                     else {
                         // TODO: handle insertions.
