@@ -466,7 +466,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             draw_start = f_start,
             draw_end = f_end,
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
+            y_start = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
             thickness, y_start, thick_start = null, thick_end = null,
             // TODO: is there any reason why block, label color cannot be set at the Painter level?
             // For now, assume '.' === '+'
@@ -484,7 +484,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         if (mode === "no_detail") {
             // No details for feature, so only one way to display.
             ctx.fillStyle = block_color;
-            ctx.fillRect(f_start, y_center + 5, f_end - f_start, NO_DETAIL_FEATURE_HEIGHT);
+            ctx.fillRect(f_start, y_start + 5, f_end - f_start, NO_DETAIL_FEATURE_HEIGHT);
         } 
         else { // Mode is either Squish or Pack:
             // Feature details.
@@ -517,7 +517,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             if (!feature_blocks) {
                 // If there are no blocks, treat the feature as one big exon.
                 ctx.fillStyle = block_color;
-                ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
+                ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
                 // If strand is specified, draw arrows over feature
                 if ( feature_strand && full_height ) {
                     if (feature_strand === "+") {
@@ -525,7 +525,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     } else if (feature_strand === "-") {
                         ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
                     }
-                    ctx.fillRect(f_start, y_center + 1, f_end - f_start, thick_height);
+                    ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
                 }
             } else { 
                 //
@@ -536,19 +536,19 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // a block, is visible.
                 //
                
-                // Compute y axis center position and height
-                var cur_y_center, cur_height;
+                // Compute y axis start position and height
+                var cur_y_start, cur_height;
                 if (mode === "Squish" || mode === "Dense") {
-                    cur_y_center = y_center + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
+                    cur_y_start = y_start + Math.floor(SQUISH_FEATURE_HEIGHT/2) + 1;
                     cur_height = 1;
                 }
                 else { // mode === "Pack"
                     if (feature_strand) {
-                        cur_y_center = y_center;
+                        cur_y_start = y_start;
                         cur_height = thick_height;
                     }
                     else {
-                        cur_y_center += (SQUISH_FEATURE_HEIGHT/2) + 1;
+                        cur_y_start += (SQUISH_FEATURE_HEIGHT/2) + 1;
                         cur_height = 1;
                     }
                 }
@@ -570,7 +570,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             ctx.fillStyle = CONNECTOR_COLOR;
                         }
                     }
-                    ctx.fillRect(f_start, cur_y_center, f_end - f_start, cur_height);
+                    ctx.fillRect(f_start, cur_y_start, f_end - f_start, cur_height);
                 }
                 
                 // Draw blocks.
@@ -587,14 +587,14 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
                     // Draw thin block.
                     ctx.fillStyle = block_color;
-                    ctx.fillRect(block_start, y_center + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height);
+                    ctx.fillRect(block_start, y_start + (thick_height-thin_height)/2 + 1, block_end - block_start, thin_height);
 
                     // If block intersects with thick region, draw block as thick.
                     // - No thick is sometimes encoded as thick_start == thick_end, so don't draw in that case
                     if (thick_start !== undefined && feature_te > feature_ts && !(block_start > thick_end || block_end < thick_start) ) {
                         var block_thick_start = Math.max(block_start, thick_start),
                             block_thick_end = Math.min(block_end, thick_end);
-                        ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                        ctx.fillRect(block_thick_start, y_start + 1, block_thick_end - block_thick_start, thick_height);
                         if ( feature_blocks.length === 1 && mode === "Pack") {
                             // Exactly one block means we have no introns, but do have a distinct "thick" region,
                             // draw arrows over it if in pack mode.
@@ -608,12 +608,12 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect(block_thick_start, y_center + 1, block_thick_end - block_thick_start, thick_height);
+                            ctx.fillRect(block_thick_start, y_start + 1, block_thick_end - block_thick_start, thick_height);
                         }
                     }
                     // Draw individual connectors if required
                     if ( this.draw_individual_connectors && last_block_start ) {
-                        this.draw_connector( ctx, last_block_start, last_block_end, block_start, block_end, y_center );
+                        this.draw_connector( ctx, last_block_start, last_block_end, block_start, block_end, y_start );
                     }
                     last_block_start = block_start;
                     last_block_end = block_end;
@@ -632,8 +632,8 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                         new_height = Math.ceil(thick_height * hscale_factor),
                         ws_height = Math.round( (thick_height-new_height)/2 );
                     if (hscale_factor !== 1) {
-                        ctx.fillRect(f_start, cur_y_center + 1, f_end - f_start, ws_height);
-                        ctx.fillRect(f_start, cur_y_center + thick_height - ws_height + 1, f_end - f_start, ws_height);
+                        ctx.fillRect(f_start, cur_y_start + 1, f_end - f_start, ws_height);
+                        ctx.fillRect(f_start, cur_y_start + thick_height - ws_height + 1, f_end - f_start, ws_height);
                     }   
                 }                
             }
@@ -647,11 +647,11 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // FIXME: assumption here that the entire view starts at 0
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
+                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8);
                     draw_end += ctx.measureText(feature_name).width + LABEL_SPACING;
                 } else {
                     ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
+                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8);
                     draw_start -= ctx.measureText(feature_name).width + LABEL_SPACING;
                 }
                 //ctx.fillStyle = block_color;
@@ -741,7 +741,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Draw a single read.
      */
-    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, read_seq) {
+    draw_read: function(ctx, mode, w_scale, y_start, tile_low, tile_high, feature_start, cigar, strand, read_seq) {
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high],
             base_offset = 0,
@@ -793,7 +793,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         // Draw read base as rectangle.
                         ctx.fillStyle = block_color;
                         ctx.fillRect(s_start, 
-                                     y_center + (pack_mode ? 1 : 4 ), 
+                                     y_start + (pack_mode ? 1 : 4 ), 
                                      s_end - s_start, 
                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
 
@@ -824,12 +824,12 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
                                     ctx.fillStyle = this.base_color_fn(seq[c]);
                                     if (pack_mode && w_scale > char_width_px) {
-                                        ctx.fillText(seq[c], c_start, y_center + 9);
+                                        ctx.fillText(seq[c], c_start, y_start + 9);
                                     }
                                     // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                     else if (w_scale > 0.05) {
                                         ctx.fillRect(c_start - gap, 
-                                                     y_center + (pack_mode ? 1 : 4), 
+                                                     y_start + (pack_mode ? 1 : 4), 
                                                      Math.max( 1, Math.round(w_scale) ),
                                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
                                     }
@@ -843,12 +843,12 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start, y_center + 5, s_end - s_start, 1);
-                    //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
+                    ctx.fillRect(s_start, y_start + 5, s_end - s_start, 1);
+                    //ctx.dashedLine(s_start + this.left_offset, y_start + 5, this.left_offset + s_end, y_start + 5);
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    paint_utils.draw_deletion(s_start, y_center, 1);
+                    paint_utils.draw_deletion(s_start, y_start, 1);
                     base_offset += cig_len;
                     break;
                 case "P": // TODO: No good way to draw insertions/padding right now, so ignore
@@ -874,8 +874,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
-                                ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
-                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
+                                ctx.fillRect(x_center - gap, y_start - 9, s_end - s_start, 9);
+                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_start + 4, 5]};
                                 ctx.fillStyle = CONNECTOR_COLOR;
                                 // Based on overlap b/t sequence and tile, get sequence to be drawn.
                                 switch( compute_overlap( [seq_start, seq_start + cig_len], tile_region ) ) {
@@ -895,21 +895,21 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 // Draw sequence.
                                 for (var c = 0, str_len = seq.length; c < str_len; c++) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start - (s_end - s_start)/2, y_center);
+                                    ctx.fillText(seq[c], c_start - (s_end - s_start)/2, y_start);
                                 }
                             }
                             else {
                                 // Draw block.
                                 ctx.fillStyle = "yellow";
                                 // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                                ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
+                                ctx.fillRect(x_center, y_start + (this.mode !== "Dense" ? 2 : 5), 
                                              s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
                             }
                         }
                         else {
                             if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
-                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
+                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_start + 9] } );
                             }
                             else {
                                 // TODO: probably can merge this case with code above.
@@ -955,7 +955,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             // -0.5 to put element between bases.
             f_start = Math.floor( Math.max(-0.5 * w_scale, (feature_start - tile_low - 0.5) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
-            y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            y_start = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             label_color = this.prefs.label_color;
 
         
@@ -966,7 +966,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
             // Draw left/forward read.
             if (feature[4][1] >= tile_low && feature[4][0] <= tile_high && feature[4][2]) {
-                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], feature[4][4]);
+                this.draw_read(ctx, mode, w_scale, y_start, tile_low, tile_high, feature[4][0], feature[4][2], feature[4][3], feature[4][4]);
             }
             else {
                 connector = false;
@@ -974,7 +974,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
             // Draw right/reverse read.
             if (feature[5][1] >= tile_low && feature[5][0] <= tile_high && feature[5][2]) {
-                this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], feature[5][4]);
+                this.draw_read(ctx, mode, w_scale, y_start, tile_low, tile_high, feature[5][0], feature[5][2], feature[5][3], feature[5][4]);
             }
             else {
                 connector = false;
@@ -989,21 +989,21 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 b2_start = Math.floor( Math.max(-0.5 * w_scale, (feature[5][0] - tile_low - 0.5) * w_scale) );
             if (connector && b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                dashedLine(ctx, b1_end, y_center + 5, b2_start, y_center + 5);
+                dashedLine(ctx, b1_end, y_start + 5, b2_start, y_start + 5);
             }
         } else {
             // Read is single.
-            this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, feature[4], feature[5], feature[6]);
+            this.draw_read(ctx, mode, w_scale, y_start, tile_low, tile_high, feature_start, feature[4], feature[5], feature[6]);
         }
         if (mode === "Pack" && feature_start >= tile_low && feature_name !== ".") {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
             if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8);
             }
         }
         
@@ -1024,7 +1024,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
     /**
      * Draw a single read from reference-based read sequence and cigar.
      */
-    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, read_seq) {
+    draw_read: function(ctx, mode, w_scale, y_start, tile_low, tile_high, feature_start, cigar, strand, read_seq) {
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high],
             base_offset = 0,
@@ -1063,7 +1063,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                 // Draw read base as rectangle.
                 ctx.fillStyle = block_color;
                 ctx.fillRect(s_start, 
-                             y_center + (pack_mode ? 1 : 4 ), 
+                             y_start + (pack_mode ? 1 : 4 ), 
                              s_end - s_start, 
                              (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
             }
@@ -1130,12 +1130,12 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                                 var c_start = Math.floor( Math.max(0, (start_pos + c - tile_low) * w_scale) );
                                 ctx.fillStyle = this.base_color_fn(cur_seq[c]);
                                 if (pack_mode && w_scale > char_width_px) {
-                                    ctx.fillText(cur_seq[c], c_start, y_center + 9);
+                                    ctx.fillText(cur_seq[c], c_start, y_start + 9);
                                 }
                                 // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                 else if (w_scale > 0.05) {
                                     ctx.fillRect(c_start - gap, 
-                                                 y_center + (pack_mode ? 1 : 4), 
+                                                 y_start + (pack_mode ? 1 : 4), 
                                                  Math.max( 1, Math.round(w_scale) ),
                                                  (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
                                 }
@@ -1150,14 +1150,14 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start, y_center + 5, s_end - s_start, 1);
-                    //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
+                    ctx.fillRect(s_start, y_start + 5, s_end - s_start, 1);
+                    //ctx.dashedLine(s_start + this.left_offset, y_start + 5, this.left_offset + s_end, y_start + 5);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
                     ctx.fillStyle = "black";
-                    ctx.fillRect(s_start, y_center + 4, s_end - s_start, 3);
+                    ctx.fillRect(s_start, y_start + 4, s_end - s_start, 3);
                     base_offset += cig_len;
                     break;
                 case "I": // Insertion.
@@ -1180,8 +1180,8 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                             if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
-                                ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
-                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_center + 4, 5]};
+                                ctx.fillRect(x_center - gap, y_start - 9, s_end - s_start, 9);
+                                draw_last[draw_last.length] = {type: "triangle", data: [insert_x_coord, y_start + 4, 5]};
                                 ctx.fillStyle = CONNECTOR_COLOR;
                                 // Based on overlap b/t sequence and tile, get sequence to be drawn.
                                 switch( compute_overlap( [seq_start, seq_start + cig_len], tile_region ) ) {
@@ -1201,21 +1201,21 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                                 // Draw sequence.
                                 for (var c = 0, str_len = seq.length; c < str_len; c++) {
                                     var c_start = Math.floor( Math.max(0, (seq_start + c -  tile_low) * w_scale) );
-                                    ctx.fillText(seq[c], c_start - (s_end - s_start)/2, y_center);
+                                    ctx.fillText(seq[c], c_start - (s_end - s_start)/2, y_start);
                                 }
                             }
                             else {
                                 // Draw block.
                                 ctx.fillStyle = "yellow";
                                 // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                                ctx.fillRect(x_center, y_center + (this.mode !== "Dense" ? 2 : 5), 
+                                ctx.fillRect(x_center, y_start + (this.mode !== "Dense" ? 2 : 5), 
                                              s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
                             }
                         }
                         else {
                             if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
-                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
+                                draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_start + 9] } );
                             }
                             else {
                                 // TODO: probably can merge this case with code above.
@@ -1275,7 +1275,7 @@ extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeatur
         return Math.min( 128, Math.ceil( ( this.longest_feature_length / 2 ) * w_scale ) );
     },
 
-    draw_connector: function( ctx, block1_start, block1_end, block2_start, block2_end, y_center ) {
+    draw_connector: function( ctx, block1_start, block1_end, block2_start, block2_end, y_start ) {
         // Arc drawing -- from closest endpoints
         var x_center = ( block1_end + block2_start ) / 2,
             radius = block2_start - x_center; 
@@ -1283,7 +1283,7 @@ extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeatur
         var angle1 = Math.PI, angle2 = 0;
         if ( radius > 0 ) {
             ctx.beginPath();
-            ctx.arc( x_center, y_center, block2_start - x_center, Math.PI, 0 );
+            ctx.arc( x_center, y_start, block2_start - x_center, Math.PI, 0 );
             ctx.stroke();
         }
     }
