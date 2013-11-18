@@ -1570,113 +1570,10 @@ class Tool( object, Dictifiable ):
         store in `self.tests`.
         """
         self.tests = []
-        # Composite datasets need a unique name: each test occurs in a fresh
-        # history, but we'll keep it unique per set of tests
-        composite_data_names_counter = 0
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
-            name = test_elem.get( 'name', 'Test-%d' % (i+1) )
-            maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
-            test = ToolTestBuilder( self, name, maxseconds )
-            try:
-                for param_elem in test_elem.findall( "param" ):
-                    attrib = dict( param_elem.attrib )
-                    if 'values' in attrib:
-                        value = attrib[ 'values' ].split( ',' )
-                    elif 'value' in attrib:
-                        value = attrib['value']
-                    else:
-                        value = None
-                    attrib['children'] = list( param_elem.getchildren() )
-                    if attrib['children']:
-                        # At this time, we can assume having children only
-                        # occurs on DataToolParameter test items but this could
-                        # change and would cause the below parsing to change
-                        # based upon differences in children items
-                        attrib['metadata'] = []
-                        attrib['composite_data'] = []
-                        attrib['edit_attributes'] = []
-                        # Composite datasets need to be renamed uniquely
-                        composite_data_name = None
-                        for child in attrib['children']:
-                            if child.tag == 'composite_data':
-                                attrib['composite_data'].append( child )
-                                if composite_data_name is None:
-                                    # Generate a unique name; each test uses a
-                                    # fresh history
-                                    composite_data_name = '_COMPOSITE_RENAMED_%i_' \
-                                        % ( composite_data_names_counter )
-                                    composite_data_names_counter += 1
-                            elif child.tag == 'metadata':
-                                attrib['metadata'].append( child )
-                            elif child.tag == 'metadata':
-                                attrib['metadata'].append( child )
-                            elif child.tag == 'edit_attributes':
-                                attrib['edit_attributes'].append( child )
-                        if composite_data_name:
-                            # Composite datasets need implicit renaming;
-                            # inserted at front of list so explicit declarations
-                            # take precedence
-                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-                    test.add_param( attrib.pop( 'name' ), value, attrib )
-                for output_elem in test_elem.findall( "output" ):
-                    attrib = dict( output_elem.attrib )
-                    name = attrib.pop( 'name', None )
-                    if name is None:
-                        raise Exception( "Test output does not have a 'name'" )
-                    assert_elem = output_elem.find("assert_contents")
-                    assert_list = None
-                    # Trying to keep testing patch as localized as
-                    # possible, this function should be relocated
-                    # somewhere more conventional.
-                    def convert_elem(elem):
-                        """ Converts and XML element to a dictionary format, used by assertion checking code. """
-                        tag = elem.tag
-                        attributes = dict( elem.attrib )
-                        child_elems = list( elem.getchildren() )
-                        converted_children = []
-                        for child_elem in child_elems:
-                            converted_children.append( convert_elem(child_elem) )
-                        return {"tag" : tag, "attributes" : attributes, "children" : converted_children}
-                    if assert_elem is not None:
-                        assert_list = []
-                        for assert_child in list(assert_elem):
-                            assert_list.append(convert_elem(assert_child))
-                    file = attrib.pop( 'file', None )
-                    # File no longer required if an list of assertions was present.
-                    if assert_list is None and file is None:
-                        raise Exception( "Test output does not have a 'file'")
-                    attributes = {}
-                    # Method of comparison
-                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
-                    # Number of lines to allow to vary in logs (for dates, etc)
-                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
-                    # Allow a file size to vary if sim_size compare
-                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
-                    attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
-                    attributes['extra_files'] = []
-                    attributes['assert_list'] = assert_list
-                    if 'ftype' in attrib:
-                        attributes['ftype'] = attrib['ftype']
-                    for extra in output_elem.findall( 'extra_files' ):
-                        # File or directory, when directory, compare basename
-                        # by basename
-                        extra_type = extra.get( 'type', 'file' )
-                        extra_name = extra.get( 'name', None )
-                        assert extra_type == 'directory' or extra_name is not None, \
-                            'extra_files type (%s) requires a name attribute' % extra_type
-                        extra_value = extra.get( 'value', None )
-                        assert extra_value is not None, 'extra_files requires a value attribute'
-                        extra_attributes = {}
-                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-                        extra_attributes['delta'] = extra.get( 'delta', '0' )
-                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-                        extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
-                        attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
-                    test.add_output( name, file, attributes )
-            except Exception, e:
-                test.error = True
-                test.exception = e
+            test = ToolTestBuilder( self, test_elem, i )
             self.tests.append( test )
+
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
@@ -2155,11 +2052,19 @@ class Tool( object, Dictifiable ):
                 #remove extra files
                 while len( group_state ) > len( writable_files ):
                     del group_state[-1]
+
+                # Add new fileupload as needed
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = len( group_state )
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+
                 # Update state
-                max_index = -1
                 for i, rep_state in enumerate( group_state ):
                     rep_index = rep_state['__index__']
-                    max_index = max( max_index, rep_index )
                     rep_prefix = "%s_%d|" % ( key, rep_index )
                     rep_errors = self.populate_state( trans,
                                                     input.inputs,
@@ -2173,16 +2078,6 @@ class Tool( object, Dictifiable ):
                         any_group_errors = True
                         group_errors.append( rep_errors )
                     else:
-                        group_errors.append( {} )
-                # Add new fileupload as needed
-                offset = 1
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = max_index + offset
-                    offset += 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
                         group_errors.append( {} )
                 # Were there *any* errors for any repetition?
                 if any_group_errors:

@@ -100,7 +100,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         grids.TextColumn( "Name", key="name",
                             # Link name to dataset's history.
                             link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
-        HistoryColumn( "History", key="history",
+        HistoryColumn( "History", key="history", sortable=False,
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
@@ -113,11 +113,12 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Copy to current history", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Copy to current history", condition=( lambda item: not item.deleted ), async_compatible=True ),
     ]
     standard_filters = []
     default_filter = dict( name="All", deleted="False", tags="All" )
     preserve_state = False
+    use_async = True
     use_paging = True
     num_rows_per_page = 50
     def build_initial_query( self, trans, **kwargs ):

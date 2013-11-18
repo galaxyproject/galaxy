@@ -12,16 +12,167 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="/display_common.mako" import="render_message" />
+<%namespace file="./grid_common.mako" import="*" />
 <%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
+<%namespace file="/display_common.mako" import="get_class_plural" />
 
 <%def name="init()">
 <%
-    self.has_left_panel=False
-    self.has_right_panel=False
-    self.message_box_visible=False
-    self.active_view="user"
-    self.overlay_visible=False
+    self.has_left_panel         = False
+    self.has_right_panel        = False
+    self.message_box_visible    = False
+    self.overlay_visible        = False
+    self.active_view            = 'user'
+
+    self.grid_config = {
+        'title'                         : grid.title,
+        'url_base'                      : trans.request.path_url,
+        'async'                         : grid.use_async,
+        'async_ops'                     : [],
+        'categorical_filters'           : {},
+        'filters'                       : cur_filter_dict,
+        'sort_key'                      : sort_key,
+        'show_item_checkboxes'          : context.get('show_item_checkboxes', False),
+        'cur_page_num'                  : cur_page_num,
+        'num_pages'                     : num_pages,
+        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class='History' ),
+        'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
+        'status'                        : status,
+        'message'                       : util.restore_text(message),
+        'global_actions'                : [],
+        'operations'                    : [],
+        'items'                         : [],
+        'columns'                       : [],
+        'multiple_item_ops_exist'       : None,
+        'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
+        'use_paging'                    : grid.use_paging,
+        'legend'                        : grid.legend,
+        'current_item_id'               : ''
+    }
+
+    ## add current item if exists
+    if current_item:
+        self.grid_config['current_item_id'] = current_item.id
+    endif
+
+    ## column
+    for column in grid.columns:
+        
+        ## add column sort links
+        href = None
+        extra = ''
+        if column.sortable:
+            if sort_key.endswith(column.key):
+                if not sort_key.startswith("-"):
+                    href = url( sort=( "-" + column.key ) )
+                    extra = "&darr;"
+                else:
+                    href = url( sort=( column.key ) )
+                    extra = "&uarr;"
+            else:
+                href = url( sort=column.key )
+
+        ## add to configuration
+        self.grid_config['columns'].append({
+            'key'               : column.key,
+            'visible'           : column.visible,
+            'nowrap'            : column.nowrap,
+            'attach_popup'      : column.attach_popup,
+            'label_id_prefix'   : column.label_id_prefix,
+            'sortable'          : column.sortable,
+            'label'             : column.label,
+            'href'              : href,
+            'extra'             : extra
+        })
+    endfor
+    
+    ## operations
+    for operation in grid.operations:
+        self.grid_config['operations'].append({
+            'allow_multiple'        : operation.allow_multiple,
+            'allow_popup'           : operation.allow_popup,
+            'target'                : operation.target,
+            'label'                 : operation.label,
+            'confirm'               : operation.confirm,
+            'global_operation'      : False
+        })
+        if operation.allow_multiple:
+            self.grid_config['multiple_item_ops_exist'] = True
+            
+        if operation.global_operation:
+            self.grid_config['global_operation'] = url( ** (operation.global_operation()) )
+    endfor
+
+    ## global actions
+    for action in grid.global_actions:
+        self.grid_config['global_actions'].append({
+            'url_args'  : url(**action.url_args),
+            'label'     : action.label
+        })
+    endfor
+
+    ## Operations that are async (AJAX) compatible.
+    for operation in [op for op in grid.operations if op.async_compatible]:
+        self.grid_config['async_ops'].append(operation.label.lower());
+    endfor
+
+    ## Filter values for categorical filters.
+    for column in grid.columns:
+        if column.filterable is not None and not isinstance( column, TextColumn ):
+            self.grid_config['categorical_filters'][column.key] = dict([ (filter.label, filter.args) for filter in column.get_accepted_filters() ])
+        endif
+    endfor
+
+    # items
+    for i, item in enumerate( query ):
+        item_dict = {
+            'id'                    : item.id,
+            'encode_id'             : trans.security.encode_id(item.id),
+            'link'                  : [],
+            'operation_config'      : {},
+            'column_config'         : {}
+        }
+
+        ## data columns
+        for column in grid.columns:
+            if column.visible:
+                ## get link
+                link = column.get_link(trans, grid, item)
+                if link:
+                    link = url(**link)
+                else:
+                    link = None
+                endif
+
+                ## get value
+                value = column.get_value( trans, grid, item )
+
+                # Handle non-ascii chars.
+                if isinstance(value, str):
+                    value = unicode(value, 'utf-8')
+
+                    # escape string
+                    value = value.replace('/', '//')
+                endif
+
+                ## Item dictionary
+                item_dict['column_config'][column.label] = {
+                    'link'      : link,
+                    'value'     : value
+                }
+            endif
+        endfor
+        ## add operation details to item
+        for operation in grid.operations:
+            item_dict['operation_config'][operation.label] = {
+                'allowed'   : operation.allowed(item),
+                'url_args'  : url( **operation.get_url_args( item ) )
+            }
+        endfor
+
+        ## add item to list
+        self.grid_config['items'].append(item_dict)
+    endfor
 %>
 </%def>
 
@@ -45,7 +196,7 @@
     ${self.make_grid( grid )}
 </%def>
 
-<%def name="title()">${grid.title}</%def>
+<%def name="title()">${self.grid_config['title']}</%def>
 
 <%def name="javascripts()">
    ${parent.javascripts()}
@@ -57,65 +208,33 @@
     ${handle_refresh_frames()}
     
     <script type="text/javascript">
-        
-        // Needed URLs for grid history searching.
-        var history_tag_autocomplete_url = "${url( controller='tag', action='tag_autocomplete_data', item_class='History' )}",
-            history_name_autocomplete_url = "${url( controller='history', action='name_autocomplete_data' )}";
 
-        //
-        // Create grid object.
-        //
+        var gridView = null;
 
-        // Operations that are async (AJAX) compatible.
-        var async_ops = [];
-        %for operation in [op for op in grid.operations if op.async_compatible]:
-            async_ops.push('${operation.label.lower()}');
-        %endfor
+        function add_tag_to_grid_filter (tag_name, tag_value)
+        {
+            // Put tag name and value together.
+            var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "");
+            $('#advanced-search').show('fast');
+            gridView.add_filter_condition("tags", tag, true);
+        };
 
-        // Filter values for categorical filters.
-        var categorical_filters = {};
-        %for column in grid.columns:
-            %if column.filterable is not None and not isinstance( column, TextColumn ):
-                var ${column.key}_filters = ${ h.to_json_string( dict([ (filter.label, filter.args) for filter in column.get_accepted_filters() ]) ) };
-                categorical_filters['${column.key}'] = ${column.key}_filters;
-            %endif
-        %endfor
-
-        /** Returns true if string denotes true. */
-        var is_true = function(s) { return _.indexOf(['True', 'true', 't'], s) !== -1; };
-
-        // Create grid.
-        var grid = new Grid({
-            url_base: '${trans.request.path_url}',
-            async: is_true('${grid.use_async}'),
-            async_ops: async_ops,
-            categorical_filters: categorical_filters,
-            filters: ${h.to_json_string( cur_filter_dict )},
-            sort_key: '${sort_key}',
-            show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
-            cur_page: ${cur_page_num},
-            // persistent page="all"
-            //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
-            num_pages: ${num_pages}
-        });
-
-        // Initialize grid objects on load.
-        // FIXME: use a grid view object eventually.
-        $(document).ready(function() {
+        $(function() {
+            ## get configuration
+            var grid_config = ${ h.to_json_string( self.grid_config ) };
+            
+            // Create grid.
+            var grid = new Grid(grid_config);
             
             // strip protocol and domain
             var url = grid.get('url_base');
             url = url.replace(/^.*\/\/[^\/]+/, '');
             grid.set('url_base', url);
-            
-            init_grid_elements();
-            init_grid_controls();
-            // Initialize text filters to select text on click and use normal font when user is typing.
-            $('input[type=text]').each(function() {
-                $(this).click(function() { $(this).select(); } )
-                       .keyup(function () { $(this).css("font-style", "normal"); });
-            });
+
+            // Create view.
+            gridView = new GridView(grid);
         });
+
     </script>
 </%def>
 
@@ -127,16 +246,11 @@
         %if context.get('use_panels'):
         div#center {
             padding: 10px;
+            overflow: auto;
         }
         %endif
     </style>
 </%def>
-
-##
-## Custom grid methods.
-##
-
-<%namespace file="./grid_common.mako" import="*" />
 
 <%def name="make_grid( grid )">
     <div class="loading-elt-overlay"></div>
@@ -147,7 +261,14 @@
             <td></td>
         </tr>
         <tr>
-            <td width="100%" id="grid-message" valign="top">${render_message( message, status )}</td>
+            <td width="100%" id="grid-message" valign="top">
+                %if message:
+                    <p>
+                        <div class="${self.grid_config['status']}message transient-message">${self.grid_config['message']}</div>
+                        <div style="clear: both"></div>
+                    </p>
+                %endif
+            </td>
             <td></td>
             <td></td>
         </tr>
@@ -157,7 +278,7 @@
 </%def>
 
 <%def name="grid_title()">
-    <h2>${grid.title}</h2>
+    <h2>${self.grid_config['title']}</h2>
 </%def>
 
 ## Render grid header.
@@ -166,18 +287,18 @@
         %if render_title:
             ${self.grid_title()}
         %endif
-    
-        %if grid.global_actions:
+
+        %if self.grid_config['global_actions']:
             <ul class="manage-table-actions">
-                %if len( grid.global_actions ) < 3:
-                    %for action in grid.global_actions:
-                        <li><a class="action-button" href="${url( **action.url_args )}">${action.label}</a></li>
+                %if len( self.grid_config['global_actions'] ) < 3:
+                    %for action in self.grid_config['global_actions']:
+                        <li><a class="action-button" href="${action['url_args']}">${action['label']}</a></li>
                     %endfor
                 %else:
                     <li><a class="action-button" id="action-8675309-popup" class="menubutton">Actions</a></li>
                     <div popupmenu="action-8675309-popup">
-                        %for action in grid.global_actions:
-                            <a class="action-button" href="${url( **action.url_args )}">${action.label}</a>
+                        %for action in self.grid_config['global_actions']:
+                            <a class="action-button" href="${action['url_args']}">${action['label']}</a>
                         %endfor
                     </div>
                 %endif
@@ -191,55 +312,37 @@
 ## Render grid.
 <%def name="render_grid_table( grid, show_item_checkboxes=False)">
     <%
-        # Set flag to indicate whether grid has operations that operate on multiple items.
-        multiple_item_ops_exist = False
-        for operation in grid.operations:
-            if operation.allow_multiple:
-                multiple_item_ops_exist = True
-                
+        # get configuration
+        show_item_checkboxes = self.grid_config['show_item_checkboxes']
+        multiple_item_ops_exist = self.grid_config['multiple_item_ops_exist']
+        sort_key = self.grid_config['sort_key']
+
         # Show checkboxes if flag is set or if multiple item ops exist.
         if show_item_checkboxes or multiple_item_ops_exist:
             show_item_checkboxes = True
     %>
-    <form action="${url()}" method="post" onsubmit="return false;">
+    <form method="post" onsubmit="return false;">
         <table id="grid-table" class="grid">
             <thead id="grid-table-header">
                 <tr>
                     %if show_item_checkboxes:
                         <th>
-                            %if query.count() > 0:
-                                <input type="checkbox" id="check_all" name=select_all_checkbox value="true" onclick='check_all_items(1);'><input type="hidden" name=select_all_checkbox value="true">
+                            %if len(self.grid_config['items']) > 0:
+                                <input type="checkbox" id="check_all" name=select_all_checkbox value="true" onclick='gridView.check_all_items(1);'><input type="hidden" name=select_all_checkbox value="true">
                             %endif
                         </th>
                     %endif
-                    %for column in grid.columns:
-                        %if column.visible:
-                            <%
-                                href = ""
-                                extra = ""
-                                if column.sortable:
-                                    if sort_key.endswith(column.key):
-                                        if not sort_key.startswith("-"):
-                                            href = url( sort=( "-" + column.key ) )
-                                            extra = "&darr;"
-                                        else:
-                                            href = url( sort=( column.key ) )
-                                            extra = "&uarr;"
-                                    else:
-                                        href = url( sort=column.key )
-                            %>
+                    %for column in self.grid_config['columns']:
+                        %if column['visible']:
                             <th\
-                            id="${column.key}-header"
-                            %if column.ncells > 1:
-                                colspan="${column.ncells}"
-                            %endif
+                            id="${column['key']}-header"
                             >
-                                %if href:
-                                    <a href="${href}" class="sort-link" sort_key="${column.key}">${column.label}</a>
+                                %if column['href']:
+                                    <a href="${column['href']}" class="sort-link" sort_key="${column['key']}">${column['label']}</a>
                                 %else:
-                                    ${column.label}
+                                    ${column['label']}
                                 %endif
-                                <span class="sort-arrow">${extra}</span>
+                                <span class="sort-arrow">${column['extra']}</span>
                             </th>
                         %endif
                     %endfor
@@ -259,15 +362,16 @@
 ## Render grid table body contents.
 <%def name="render_grid_table_body_contents(grid, show_item_checkboxes=False)">
         <% num_rows_rendered = 0 %>
-        %if query.count() == 0:
+        %if len(self.grid_config['items']) == 0:
             ## No results.
             <tr><td colspan="100"><em>No Items</em></td></tr>
             <% num_rows_rendered = 1 %>
         %endif
-        %for i, item in enumerate( query ):
-            <% encoded_id = trans.security.encode_id( item.id ) %>
+        %for i, item in enumerate( self.grid_config['items'] ):
+            <% encoded_id = item['encode_id'] %>
+            <% popupmenu_id = "grid-" + str(i) + "-popup" %>
             <tr \
-            %if current_item == item:
+            %if self.grid_config['current_item_id'] == item['id']:
                 class="current" \
             %endif
             > 
@@ -278,71 +382,72 @@
                     </td>
                 %endif
                 ## Data columns
-                %for column in grid.columns:
-                    %if column.visible:
+                %for column in self.grid_config['columns']:
+                    %if column['visible']:
                         <%
-                            # Nowrap
+                            ## Nowrap
                             nowrap = ""
-                            if column.nowrap:
-                              nowrap = 'style="white-space:nowrap;"'
-                            # Link
-                            link = column.get_link( trans, grid, item )
-                            if link:
-                                href = url( **link )
-                            else:
-                                href = None
-                            # Value (coerced to list so we can loop)
-                            value = column.get_value( trans, grid, item )
-                            if column.ncells == 1:
-                                value = [ value ]
-                        %>
-                        %for cellnum, v in enumerate( value ):
-                            <%
-                                id = ""
-                                # Handle non-ascii chars.
-                                if isinstance(v, str):
-                                    v = unicode(v, 'utf-8')
-                                # Attach popup menu?
-                                if column.attach_popup and cellnum == 0:
-                                    id = 'grid-%d-popup' % i
-                                # Determine appropriate class
-                                cls = ""
-                                if column.attach_popup:
-                                    cls = "menubutton"
-                                    if href:
-                                        cls += " split"
+                            if column['nowrap']:
+                                nowrap = 'style="white-space:nowrap;"'
 
-                            %>
-                            <td ${nowrap}>
-                            %if href:
-                                %if len(grid.operations) != 0:
+                            # get column settings
+                            column_settings = item['column_config'][column['label']]
+                            
+                            # load attributes
+                            link = column_settings['link']
+                            value = column_settings['value']
+                            
+                            # check if formatting is defined
+                            value = str(value).replace('//', '/')
+                            
+                            # Attach popup menu?
+                            id = ""
+                            if column['attach_popup']:
+                                id = 'grid-%d-popup' % i
+                            endif
+
+                            # Determine appropriate class
+                            cls = ""
+                            if column['attach_popup']:
+                                cls = "menubutton"
+                                if link:
+                                    cls += " split"
+                                endif
+                            endif
+                        %>
+                        <td ${nowrap}>
+                        %if link:
+                            %if len(self.grid_config['operations']) != 0:
                                 <div id="${id}" class="${cls}" style="float: left;">
-                                %endif
-                                    <a class="label" href="${href}">${v}</a>
-                                %if len(grid.operations) != 0:
-                                </div>
-                                %endif
-                            %else:
-                                <div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${encoded_id}" for="${encoded_id}">${v}</label></div>
                             %endif
-                            </td>
-                        %endfor
+                                    <a class="label" href="${link}">${value}</a>
+                            %if len(self.grid_config['operations']) != 0:
+                                </div>
+                            %endif
+                        %else:
+                            <div id="${id}" class="${cls}"><label id="${column['label_id_prefix']}${encoded_id}" for="${encoded_id}">${value}</label></div>
+                        %endif
+                        </td>
                     %endif
                 %endfor
                 ## Actions column
                 <td>
-                    <div popupmenu="grid-${i}-popup">
-                        %for operation in grid.operations:
-                            %if operation.allowed( item ) and operation.allow_popup:
+                    <div popupmenu="${popupmenu_id}">
+                        %for operation in self.grid_config['operations']:
+                            <%
+                                operation_id = operation['label']
+                                operation_settings = item['operation_config'][operation_id]
+                            %>
+                            %if operation_settings['allowed'] and operation['allow_popup']:
                                 <%
                                 target = ""
-                                if operation.target:
-                                    target = "target='" + operation.target + "'"
+                                if operation['target']:
+                                    target = "target='" + operation['target'] + "'"
                                 %>
-                                %if operation.confirm:
-                                    <a class="action-button" ${target} confirm="${operation.confirm}" href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>
+                                %if operation['confirm']:
+                                    <a class="action-button" ${target} confirm="${operation['confirm']}" href="${operation_settings['url_args']}">${operation_id}</a>
                                 %else:
-                                    <a class="action-button" ${target} href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>
+                                    <a class="action-button" ${target} href="${operation_settings['url_args']}">${operation_id}</a>
                                 %endif  
                             %endif
                         %endfor
@@ -351,20 +456,16 @@
             </tr>
             <% num_rows_rendered += 1 %>
         %endfor
-        ## Dummy rows to prevent table for moving too much.
-        ##%if grid.use_paging:
-        ##    %for i in range( num_rows_rendered , grid.num_rows_per_page ):
-        ##        <tr><td colspan="1000">  </td></tr>
-        ##    %endfor
-        ##%endif
 </%def>
 
 ## Render grid table footer contents.
 <%def name="render_grid_table_footer_contents(grid, show_item_checkboxes=False)">
-    ## Row for navigating among pages.
-    <%namespace file="/display_common.mako" import="get_class_plural" />
-    <% items_plural = get_class_plural( grid.model_class ).lower() %>
-    %if grid.use_paging and num_pages > 1:
+    <%
+        items_plural = self.grid_config['get_class_plural']
+        num_pages = self.grid_config['num_pages']
+        cur_page_num = self.grid_config['cur_page_num']
+    %>
+    %if self.grid_config['use_paging'] and num_pages > 1:
         <tr id="page-links-row">
             %if show_item_checkboxes:
                 <td></td>
@@ -438,33 +539,29 @@
             <td></td>
             <td colspan="100">
                 For <span class="grid-selected-count"></span> selected ${items_plural}:
-                %for operation in grid.operations:
-                    %if operation.allow_multiple:
-                        <input type="button" value="${operation.label}" class="action-button" onclick="submit_operation(this, '${operation.confirm}')">
+                %for operation in self.grid_config['operations']:
+                    %if operation['allow_multiple']:
+                        <input type="button" value="${operation['label']}" class="action-button" onclick="gridView.submit_operation(this, '${operation['confirm']}')">
                     %endif
                 %endfor
             </td>
         </tr>
     %endif
-    %if len([o for o in grid.operations if o.global_operation]) > 0:
+    %if len([o for o in self.grid_config['operations'] if o['global_operation']]) > 0:
     <tr>
         <td colspan="100">
-            %for operation in grid.operations:
-            %if operation.global_operation:
-                <%
-                    link = operation.global_operation()
-                    href = url( **link )
-                %>
-                <a class="action-button" href="${href}">${operation.label}</a>
-            %endif
+            %for operation in self.grid_config['operations']:
+                %if operation['global_operation']:
+                    <a class="action-button" href="${operation['global_operation']}">${operation['label']}</a>
+                %endif
             %endfor
         </td>
     </tr>
     %endif
-    %if grid.legend:
+    %if self.grid_config['legend']:
         <tr>
             <td colspan="100">
-                ${grid.legend}
+                ${self.grid_config['legend']}
             </td>
          </tr>
     %endif

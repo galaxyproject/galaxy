@@ -30,15 +30,12 @@ class HistoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, history ):
             state_count_dict = self.get_hda_state_counts( trans, history )
 
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
                 if count:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, count ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div>' % (state, count)
             return rval
-
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
@@ -72,7 +69,7 @@ class HistoryListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
-        DatasetsByStateColumn( "Datasets", key="datasets_by_state", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", key="datasets_by_state", sortable=False ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -118,13 +115,11 @@ class SharedHistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 total = sum( 1 for d in history.active_datasets if d.state == state )
                 if total:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div>' % ( state, total )
             return rval
 
     class SharedByColumn( grids.GridColumn ):
@@ -138,7 +133,7 @@ class SharedHistoryListGrid( grids.Grid ):
     default_filter = {}
     columns = [
         grids.GridColumn( "Name", key="name", attach_popup=True ), # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
-        DatasetsByStateColumn( "Datasets", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         SharedByColumn( "Shared by", key="user_id" )

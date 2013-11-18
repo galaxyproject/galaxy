@@ -147,11 +147,11 @@ class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
     title = "Insert into visualization"
     template = "/tracks/add_to_viz.mako"
-    async_template = "/page/select_items_grid_async.mako"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     use_async = True
     use_paging = False
+    show_item_checkboxes = True
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
         grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),

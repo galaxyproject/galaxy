@@ -2,6 +2,7 @@
 <!DOCTYPE HTML>
 <html>
     <!--base.mako-->
+    ${self.init()}
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -16,6 +17,9 @@
 
 ## Default title
 <%def name="title()"></%def>
+
+## Default init
+<%def name="init()"></%def>
 
 ## Default stylesheets
 <%def name="stylesheets()">

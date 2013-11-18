@@ -135,32 +135,17 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :returns:   dictionary containing detailed HDA information
         .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
-        hda_dict = {}
         try:
-            # for anon users:
-            #TODO: check login_required?
-            #TODO: this isn't actually most_recently_used (as defined in histories)
-            if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-                history = trans.history
-                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=False, check_accessible=True )
-            else:
-                #TODO: do we really need the history?
-                history = self.get_history( trans, history_id,
-                    check_ownership=True, check_accessible=True, deleted=False )
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=True, check_accessible=True )
+            hda = self.get_history_dataset_association_from_ids( trans, id, history_id )
             hda_dict = self.get_hda_dict( trans, hda )
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+            return hda_dict
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
             log.error( msg, exc_info=True )
             trans.response.status = 500
             return msg
-        return hda_dict
 
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
