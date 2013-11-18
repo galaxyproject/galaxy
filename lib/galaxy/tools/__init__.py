@@ -1574,7 +1574,7 @@ class Tool( object, Dictifiable ):
         # history, but we'll keep it unique per set of tests
         composite_data_names_counter = 0
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
-            name = test_elem.get( 'name', 'Test-%d' % (i+1) )
+            name = test_elem.get( 'name', 'Test-%d' % (i + 1) )
             maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
             test = ToolTestBuilder( self, name, maxseconds )
             try:
@@ -1625,6 +1625,7 @@ class Tool( object, Dictifiable ):
                         raise Exception( "Test output does not have a 'name'" )
                     assert_elem = output_elem.find("assert_contents")
                     assert_list = None
+
                     # Trying to keep testing patch as localized as
                     # possible, this function should be relocated
                     # somewhere more conventional.
@@ -1636,7 +1637,7 @@ class Tool( object, Dictifiable ):
                         converted_children = []
                         for child_elem in child_elems:
                             converted_children.append( convert_elem(child_elem) )
-                        return {"tag" : tag, "attributes" : attributes, "children" : converted_children}
+                        return {"tag": tag, "attributes": attributes, "children": converted_children}
                     if assert_elem is not None:
                         assert_list = []
                         for assert_child in list(assert_elem):
@@ -1677,6 +1678,7 @@ class Tool( object, Dictifiable ):
                 test.error = True
                 test.exception = e
             self.tests.append( test )
+
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',

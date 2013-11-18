@@ -1,13 +1,10 @@
-import new, sys
 import os.path
-import galaxy.util
-import parameters
 from parameters import basic
 from parameters import grouping
-from elementtree.ElementTree import XML
 import logging
 
 log = logging.getLogger( __name__ )
+
 
 class ToolTestBuilder( object ):
     """
@@ -15,6 +12,7 @@ class ToolTestBuilder( object ):
     dynamic TestCase class (the unittest framework is very class oriented,
     doing dynamic tests in this way allows better integration)
     """
+
     def __init__( self, tool, name, maxseconds ):
         self.tool = tool
         self.name = name
@@ -24,6 +22,7 @@ class ToolTestBuilder( object ):
         self.outputs = []
         self.error = False
         self.exception = None
+
     def add_param( self, name, value, extra ):
         try:
             if name not in self.tool.inputs:
@@ -43,8 +42,10 @@ class ToolTestBuilder( object ):
         except Exception, e:
             log.debug( "Error for tool %s: could not add test parameter %s. %s" % ( self.tool.id, name, e ) )
         self.inputs.append( ( name, value, extra ) )
+
     def add_output( self, name, file, extra ):
         self.outputs.append( ( name, file, extra ) )
+
     def __expand_grouping_for_data_input( self, name, value, extra, grouping_name, grouping_value ):
         # Currently handles grouping.Conditional and grouping.Repeat
         if isinstance( grouping_value, grouping.Conditional  ):
@@ -93,20 +94,21 @@ class ToolTestBuilder( object ):
                         if found_parameter:
                             return True, new_value
         return False, value
+
     def __add_uploaded_dataset( self, name, value, extra, input_parameter ):
         if value is None:
             assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
             return value
         if ( value, extra ) not in self.required_files:
-            self.required_files.append( ( value, extra ) ) #these files will be uploaded
+            self.required_files.append( ( value, extra ) )  # these files will be uploaded
         name_change = [ att for att in extra.get( 'edit_attributes', [] ) if att.get( 'type' ) == 'name' ]
         if name_change:
-            name_change = name_change[-1].get( 'value' ) #only the last name change really matters
-            value = name_change #change value for select to renamed uploaded file for e.g. composite dataset
+            name_change = name_change[-1].get( 'value' )  # only the last name change really matters
+            value = name_change  # change value for select to renamed uploaded file for e.g. composite dataset
         else:
             for end in [ '.zip', '.gz' ]:
                 if value.endswith( end ):
                     value = value[ :-len( end ) ]
                     break
-            value = os.path.basename( value ) #if uploading a file in a path other than root of test-data
+            value = os.path.basename( value )  # if uploading a file in a path other than root of test-data
         return value
