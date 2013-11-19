@@ -257,6 +257,33 @@ def get_env_shell_file_paths( app, elem ):
         log.debug( error_message )
     return env_shell_file_paths
 
+def get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_file_paths, elem, action_dict ):
+    """
+    Parse an XML tag set to discover all child repository dependency tags and define the path to an env.sh file associated
+    with the repository (this requires the repository dependency to be in an installed state).  The received action_dict
+    will be updated with these discovered paths and returned to the caller.  This method handles tool dependency definition
+    tag sets <setup_r_environment>, <setup_ruby_environment> and <setup_perl_environment>.
+    """
+    # An example elem is:
+    # <action type="setup_perl_environment">
+    #     <repository name="package_perl_5_18" owner="iuc">
+    #         <package name="perl" version="5.18.1" />
+    #     </repository>
+    #     <repository name="package_expat_2_1" owner="iuc" prior_installation_required="True">
+    #         <package name="expat" version="2.1.0" />
+    #     </repository>
+    #     <package>http://search.cpan.org/CPAN/authors/id/T/TO/TODDR/XML-Parser-2.41.tar.gz</package>
+    #     <package>http://search.cpan.org/CPAN/authors/id/L/LD/LDS/CGI.pm-3.43.tar.gz</package>
+    # </action>
+    for action_elem in elem:
+        if action_elem.tag == 'repository':
+            env_shell_file_paths = get_env_shell_file_paths( app, action_elem )
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+    if all_env_shell_file_paths:
+        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
+    return action_dict
+
 def get_env_var_values( install_dir ):
     env_var_dict = {}
     env_var_dict[ 'INSTALL_DIR' ] = install_dir
@@ -414,16 +441,6 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             in_actions_group = False
             continue
     return actions_elem_tuples
-
-
-def parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict ):
-    env_shell_file_paths = get_env_shell_file_paths( app, action_elem.find('repository') )
-
-    all_env_shell_file_paths.extend( env_shell_file_paths )
-    if all_env_shell_file_paths:
-        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
-        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
-
 
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )

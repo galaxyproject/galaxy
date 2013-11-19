@@ -795,12 +795,11 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             for tool_dependency in repository.missing_tool_dependencies:
                 if tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR,
                                                trans.model.ToolDependency.installation_status.INSTALLING ]:
-                    tool_dependency_util.set_tool_dependency_attributes( trans,
-                                                                         tool_dependency,
-                                                                         trans.model.ToolDependency.installation_status.UNINSTALLED,
-                                                                         None,
-                                                                         remove_from_disk=True )
-                    trans.sa_session.refresh( tool_dependency )
+                    tool_dependency = tool_dependency_util.set_tool_dependency_attributes( trans.app,
+                                                                                           tool_dependency=tool_dependency,
+                                                                                           status=trans.model.ToolDependency.installation_status.UNINSTALLED,
+                                                                                           error_message=None,
+                                                                                           remove_from_disk=True )
             # Install tool dependencies.
             suc.update_tool_shed_repository_status( trans.app,
                                                     repository,
