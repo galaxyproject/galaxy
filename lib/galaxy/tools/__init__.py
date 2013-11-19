@@ -2083,19 +2083,11 @@ class Tool( object, Dictifiable ):
                 if any_group_errors:
                     errors[input.name] = group_errors
             else:
-                if key not in incoming \
-                   and "__force_update__" + key not in incoming:
-                    # No new value provided, and we are only updating, so keep
-                    # the old value (which should already be in the state) and
-                    # preserve the old error message.
-                    pass
-                else:
-                    incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context, source=source )
-                    # If a callback was provided, allow it to process the value
-                    if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
+                incoming_value = get_incoming_value( incoming, key, None )
+                value, error = check_param( trans, input, incoming_value, context, source=source )
+                if error:
+                    errors[ input.name ] = error
+                state[ input.name ] = value
         return errors
 
     def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
