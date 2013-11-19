@@ -510,9 +510,6 @@ class DataSourceParser( object ):
 
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get( 'result_type', 'string' )
-            print
-            print test_attr, test_result_type
-            print
 
             # test functions should be sent an object to test, and the parsed result expected from the test
 
