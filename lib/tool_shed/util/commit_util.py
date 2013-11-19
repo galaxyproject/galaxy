@@ -368,6 +368,8 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                                        unpopulate=unpopulate )
                         if message:
                             error_message += message
+                        if package_altered:
+                            root[ root_index ] = root_elem
                     elif package_elem.tag == 'install':
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
