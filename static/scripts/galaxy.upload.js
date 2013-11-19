@@ -47,8 +47,13 @@ var GalaxyUpload = Backbone.View.extend(
         }
     },
     
+    // options
+    options : {
+        nginx_upload_path : ''
+    },
+    
     // initialize
-    initialize : function()
+    initialize : function(options)
     {
         // wait for galaxy history panel (workaround due to the use of iframes)
         if (!Galaxy.currHistoryPanel)
@@ -108,6 +113,11 @@ var GalaxyUpload = Backbone.View.extend(
                 // insert default back to array
                 self.select_genome.unshift(def);
             });
+        
+        // read in options
+        if (options) {
+            this.options = _.defaults(options, this.options);
+        }
     },
     
     // mouse over
@@ -206,7 +216,7 @@ var GalaxyUpload = Backbone.View.extend(
             return null;
             
         // configure uploadbox
-        this.uploadbox.configure({url : galaxy_config.root + "api/tools", paramname : "files_0|file_data"});
+        this.uploadbox.configure({url : galaxy_config.root + this.options.nginx_upload_path, paramname : "files_0|file_data"});
         
         // configure tool
         tool_input = {};
