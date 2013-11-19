@@ -34,7 +34,7 @@
         masthead_config = {
             ## inject configuration
             'brand'                     : app.config.get("brand", ""),
-            'nginx_upload_path'         : app.config.get("nginx_upload_path", "api/tools"),
+            'nginx_upload_path'         : app.config.get("nginx_upload_path", h.url_for(controller='api', action='tools')),
             'use_remote_user'           : app.config.use_remote_user,
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
