@@ -1223,6 +1223,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             for hid in dataset_ids:
                 step = model.WorkflowStep()
                 step.type = 'data_input'
+                step.tool_inputs = dict( name="Input Dataset" )
                 hid_to_output_pair[ hid ] = ( step, 'output' )
                 steps.append( step )
             # Tool steps
