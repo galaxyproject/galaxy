@@ -24,7 +24,6 @@
         error_filesize  : "File exceeds 2GB. Please use an FTP client.",
         error_default   : "Please make sure the file is available.",
         error_server    : "Upload request failed.",
-        error_toomany   : "You can only queue <20 files per upload session.",
         error_login     : "Uploads require you to log in.",
         error_missing   : "No upload content available."
     }
