@@ -203,7 +203,11 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
 %if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Automated tool tests</div>
+        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+            <div class="toolFormTitle">Automated tool dependency test</div>
+        %else:
+            <div class="toolFormTitle">Automated tool tests</div>
+        %endif
         <div class="toolFormBody">
             <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository_metadata.changeset_revision )}" method="post" >
                 <div class="form-row">
