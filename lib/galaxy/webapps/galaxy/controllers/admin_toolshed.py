@@ -436,7 +436,9 @@ class AdminToolshed( AdminGalaxy ):
                                                                                     tool_dependencies=tool_dependencies )
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.model.ToolDependency.installation_status.ERROR:
-                message += '  %s' % str( installed_tool_dependency.error_message )
+                text = util.unicodify( installed_tool_dependency.error_message )
+                if text is not None:
+                    message += '  %s' % text
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
         if message:
             status = 'error'
@@ -681,8 +683,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                       action='uninstall_tool_dependencies',
                                                                       **kwd ) )
                 else:
-                    kwd[ 'message' ] = 'All selected tool dependencies are already uninstalled.'
-                    kwd[ 'status' ] = 'error'
+                    message = 'No selected tool dependencies can be uninstalled, you may need to use the <b>Repair repository</b> feature.'
+                    status = 'error'
             elif operation == "install":
                 if trans.app.config.tool_dependency_dir:
                     tool_dependencies_for_installation = []
@@ -694,13 +696,12 @@ class AdminToolshed( AdminGalaxy ):
                     if tool_dependencies_for_installation:
                         self.initiate_tool_dependency_installation( trans, tool_dependencies_for_installation )
                     else:
-                        kwd[ 'message' ] = 'All selected tool dependencies are already installed.'
-                        kwd[ 'status' ] = 'error'
+                        message = 'All selected tool dependencies are already installed.'
+                        status = 'error'
                 else:
                         message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (universe_wsgi.ini) '
                         message += ' and restart your Galaxy server to install tool dependencies.'
-                        kwd[ 'message' ] = message
-                        kwd[ 'status' ] = 'error'
+                        status = 'error'
         installed_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
                                                                                              tool_shed_repository=tool_shed_repository,
                                                                                              name='inst_td_ids',

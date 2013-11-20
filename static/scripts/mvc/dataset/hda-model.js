@@ -395,8 +395,11 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
 
     // ........................................................................ ajax
     /** fetch detailed model data for all HDAs in this collection */
-    fetchAllDetails : function(){
-        return this.fetch({ data : { details : 'all' } });
+    fetchAllDetails : function( options ){
+        options = options || {};
+        var detailsFlag = { details: 'all' };
+        options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
+        return this.fetch( options );
     },
 
     // ........................................................................ sorting/filtering

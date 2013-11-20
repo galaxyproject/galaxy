@@ -9,7 +9,7 @@ module.exports = function(grunt) {
             // compile all hb templates into a single file in the build dir
             compile: {
                 options: {
-                    namespace: 'Templates',
+                    namespace: 'scatterplot',
                     processName : function( filepath ){
                         return filepath.match( /\w*\.handlebars/ )[0].replace( '.handlebars', '' );
                     }

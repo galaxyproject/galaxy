@@ -763,6 +763,25 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return this.storage.get( 'show_hidden' );
     },
 
+    // ........................................................................ multi-select of hdas
+    showSelect : function( speed ){
+        _.each( this.hdaViews, function( view ){
+            view.showSelect( speed );
+        });
+    },
+
+    hideSelect : function( speed ){
+        _.each( this.hdaViews, function( view ){
+            view.hideSelect( speed );
+        });
+    },
+
+    getSelectedHdaViews : function(){
+        return _.filter( this.hdaViews, function( v ){
+            return v.selected;
+        });
+    },
+
     // ........................................................................ loading indicator
     /** hide the panel and display a loading indicator (in the panel's parent) when history model's are switched */
     showLoadingIndicator : function( msg, speed, callback ){

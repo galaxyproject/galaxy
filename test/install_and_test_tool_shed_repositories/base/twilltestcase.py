@@ -107,6 +107,7 @@ class InstallTestRepository( TwillTestCase ):
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
     def visit_url( self, url, allowed_codes=[ 200 ] ):
@@ -124,10 +125,14 @@ class InstallTestRepository( TwillTestCase ):
         if repository_ids:
             for repository_id in repository_ids:
                 galaxy_repository = test_db_util.get_repository( self.security.decode_id( repository_id ) )
+                log.debug( 'Repository %s with ID %s has initial state %s.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                 timeout_counter = 0
                 while galaxy_repository.status not in final_states:
                     test_db_util.refresh( galaxy_repository )
+                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                     timeout_counter = timeout_counter + 1
+                    if timeout_counter % 10 == 0:
+                        log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
                     # This timeout currently defaults to 180 seconds, or 3 minutes.
                     if timeout_counter > common.repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \

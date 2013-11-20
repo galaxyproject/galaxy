@@ -32,6 +32,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             // HDAEdit gets the rerun button on almost all states
             this._render_rerunButton
         ];
+
     },
 
     // ......................................................................... edit attr, delete
@@ -69,7 +70,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                 title       : _l( 'Edit Attributes' ),
                 href        : this.urls.edit,
                 target      : 'galaxy_main',
-                icon_class  : 'edit'
+                classes     : 'dataset-edit'
             };
             
         // disable if purged or deleted and explain why in the tooltip
@@ -102,21 +103,18 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         
         var self = this,
-            delete_url = self.urls[ 'delete' ],
             deleteBtnData = {
                 title       : _l( 'Delete' ),
-                href        : delete_url,
-                icon_class  : 'delete',
-                onclick    : function() {
+                classes     : 'dataset-delete',
+                onclick     : function() {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.menu-button.delete' ).trigger( 'mouseout' );
+                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
                     self.model[ 'delete' ]();
                 }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
                 title       : _l( 'Dataset is already deleted' ),
-                icon_class  : 'delete',
                 disabled    : true
             };
         }
@@ -158,7 +156,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_visualizationsButton : function(){
         var visualizations = this.model.get( 'visualizations' );
-        if( ( !this.model.hasData() )
+        if( ( !this.hasUser )
+        ||  ( !this.model.hasData() )
         ||  ( _.isEmpty( visualizations ) ) ){
             return null;
         }
@@ -211,8 +210,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
 
         // No need for popup menu because there's a single visualization.
-        if ( visualizations.length === 1 ) {
-            $icon.attr( 'title', visualizations[0] );
+        if( visualizations.length === 1 ){
+            $icon.attr( 'data-original-title', visualizations[0] );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
@@ -339,12 +338,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
     // ......................................................................... events
     /** event map */
-    events : {
-        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+    events : _.extend( _.clone( hdaBase.HDABaseView.prototype.events ), {
         'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
         'click .dataset-purge'          : 'confirmPurge'
-    },
+    }),
     
     /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){

@@ -477,7 +477,7 @@ class DataSourceParser( object ):
             return lambda o: getattr( o, next_attr_name )
 
         # recursive case
-        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] ), next_attr_name )
+        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] )( o ), next_attr_name )
 
     def parse_tests( self, xml_tree_list ):
         """
@@ -493,7 +493,7 @@ class DataSourceParser( object ):
             return tests
 
         for test_elem in xml_tree_list:
-            test_type = test_elem.get( 'type' )
+            test_type = test_elem.get( 'type', 'eq' )
             test_result = test_elem.text
             if not test_type or not test_result:
                 log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
@@ -509,9 +509,10 @@ class DataSourceParser( object ):
             getter = self._build_getattr_lambda( test_attr )
 
             # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get( 'result_type' ) or 'string'
+            test_result_type = test_elem.get( 'result_type', 'string' )
 
             # test functions should be sent an object to test, and the parsed result expected from the test
+
             # is test_attr attribute an instance of result
             if   test_type == 'isinstance':
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry

@@ -221,7 +221,8 @@ def get_download_url_for_platform( url_templates, platform_info_dict ):
             return url_template
     return None
 
-def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
+def get_installed_and_missing_tool_dependencies_for_installed_repository( trans, repository, all_tool_dependencies ):
+    """Return the lists of installed tool dependencies and missing tool dependencies for a Tool Shed repository that has been installed into Galaxy."""
     if all_tool_dependencies:
         tool_dependencies = {}
         missing_tool_dependencies = {}
@@ -429,7 +430,7 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                     required_repository, installed_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple )
                     if required_repository:
                         required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
-                            get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
+                            get_installed_and_missing_tool_dependencies_for_installed_repository( trans, required_repository, tool_dependencies )
                         if required_repository_installed_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
                             required_repository_installed_tool_dependencies = \
@@ -479,14 +480,16 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         error_message = ''
     return removed, error_message
 
-def set_tool_dependency_attributes( trans, tool_dependency, status, error_message, remove_from_disk=False ):
+def set_tool_dependency_attributes( app, tool_dependency, status, error_message=None, remove_from_disk=False ):
+    sa_session = app.model.context.current
     if remove_from_disk:
-        installation_directory = tool_dependency.installation_directory( trans.app )
+        installation_directory = tool_dependency.installation_directory( app )
         removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
     tool_dependency.error_message = error_message
     tool_dependency.status = status
-    trans.sa_session.add( tool_dependency )
-    trans.sa_session.flush()
+    sa_session.add( tool_dependency )
+    sa_session.flush()
+    return tool_dependency
 
 def tool_dependency_is_orphan( type, name, version, tools ):
     """

@@ -1,6 +1,7 @@
-import os, sys, logging, platform
-
-log = logging.getLogger(__name__)
+import logging
+import os
+import platform
+import sys
 
 cwd = os.getcwd()
 if cwd not in sys.path:
@@ -16,23 +17,10 @@ from galaxy import eggs
 
 eggs.require( 'mercurial' )
 
-from mercurial import hg, ui, commands
+from mercurial import hg
+from mercurial import ui
 
-def get_repository_current_revision( repo_path ):
-    '''
-    This method uses the python mercurial API to get the current working directory's mercurial changeset hash. Note that if the author of mercurial
-    changes the API, this method will have to be updated or replaced.
-    '''
-    # Initialize a mercurial repo object from the provided path.
-    repo = hg.repository( ui.ui(), repo_path )
-    # Get the working directory's change context.
-    ctx = repo[ None ]
-    # Extract the changeset hash of the first parent of that change context (the most recent changeset to which the working directory was updated).
-    changectx = ctx.parents()[ 0 ]
-    # Also get the numeric revision, so we can return the customary id:hash changeset identifiers.
-    ctx_rev = changectx.rev()
-    hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
-    return hg_id
+log = logging.getLogger(__name__)
 
 def get_database_version( app ):
     '''
@@ -74,7 +62,25 @@ def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_
         return None, repository_name, changeset_revision
     return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
 
-def get_test_environment( current_environment={} ):
+def get_repository_current_revision( repo_path ):
+    '''
+    This method uses the python mercurial API to get the current working directory's mercurial changeset hash. Note that if the author of mercurial
+    changes the API, this method will have to be updated or replaced.
+    '''
+    # Initialize a mercurial repo object from the provided path.
+    repo = hg.repository( ui.ui(), repo_path )
+    # Get the working directory's change context.
+    ctx = repo[ None ]
+    # Extract the changeset hash of the first parent of that change context (the most recent changeset to which the working directory was updated).
+    changectx = ctx.parents()[ 0 ]
+    # Also get the numeric revision, so we can return the customary id:hash changeset identifiers.
+    ctx_rev = changectx.rev()
+    hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
+    return hg_id
+
+def get_test_environment( current_environment=None ):
+    if current_environment is None:
+        current_environment = {}
     rval = current_environment
     rval[ 'python_version' ] = platform.python_version()
     rval[ 'architecture' ] = platform.machine()
@@ -132,4 +138,3 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                         shed_tools_dict[ guid ] = galaxy_test_file_dir
                         last_galaxy_test_file_dir = galaxy_test_file_dir
     return has_test_data, shed_tools_dict
-

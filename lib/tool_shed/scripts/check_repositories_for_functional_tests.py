@@ -284,18 +284,38 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
                 # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
                 # automated functional test framework produces.
-                tool_has_tests = True
-                if 'tests' not in tool_metadata or not tool_metadata[ 'tests' ]:
-                    tool_has_tests = False
-                    if verbosity >= 2:
-                        print '# No functional tests defined for %s.' % tool_id
-                    no_tests += 1
-                else:
-                    tool_has_tests = True
+                tool_has_tests = False
+                defined_test_dicts = tool_metadata.get( 'tests', None )
+                if defined_test_dicts is not None:
+                    # We need to inspect the <test> tags because the following tags...
+                    # <tests>
+                    # </tests> 
+                    # ...will produce the following metadata:
+                    # "tests": []
+                    # And the following tags...
+                    # <tests>
+                    #     <test>
+                    #    </test>
+                    # </tests> 
+                    # ...will produce the following metadata:
+                    # "tests": 
+                    #    [{"inputs": [], "name": "Test-1", "outputs": [], "required_files": []}]
+                    for defined_test_dict in defined_test_dicts:
+                        inputs = defined_test_dict.get( 'inputs', [] )
+                        outputs = defined_test_dict.get( 'outputs', [] )
+                        if inputs and outputs:
+                            # At least one tool within the repository has a valid <test> tag.
+                            tool_has_tests = True
+                            break
+                if tool_has_tests:
                     if verbosity >= 2:
                         print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
                             ( tool_id, changeset_revision, name )
                     has_tests += 1
+                else:
+                    if verbosity >= 2:
+                        print '# No functional tests defined for %s.' % tool_id
+                    no_tests += 1
                 failure_reason = ''
                 problem_found = False
                 missing_test_files = []

@@ -43,22 +43,18 @@ $(function(){
         data = None
         ##data = list( hda.datatype.dataset_column_dataprovider( hda, limit=10000 ) )
     %>
-    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )},
-        data            = ${h.to_json_string( data )},
-        querySettings   = ${h.to_json_string( query_args )},
-        config          = _.extend( querySettings, {
-            containerSelector : '#chart',
-            dataset     : hda,
-        });
-    //console.debug( querySettings );
+    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )};
 
     var editor = new ScatterplotConfigEditor({
         el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hda.id ),
-        config  : config
+        config  : ${h.to_json_string( query_args )},
+        dataset : ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )}
     }).render();
+    window.editor = editor;
     // uncomment to auto render for development
     //$( '.render-button:visible' ).click();
 });
+
 </script>
 %endif
 

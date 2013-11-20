@@ -40,6 +40,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             this._render_showParamsButton
         ];
         
+        /** is the view currently in selection mode? */
+        //this.selectable = attributes.selectable || false;
+        this.selectable = false;
+        /** is the view currently selected? */
+        this.selected = false;
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
         this._setUpListeners();
@@ -88,13 +93,14 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
         $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
         $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
+        //this._renderSelectable( $newRender );
         this._setUpBehaviors( $newRender );
 
         // fade the old render out (if desired)
         if( fade ){
             $( view ).queue( function( next ){ this.$el.fadeOut( view.fxSpeed, next ); });
         }
-        // empty the old render, update to any new HDA state, swap in the new render contents
+        // empty the old render, update to any new HDA state, swap in the new render contents, handle multi-select
         $( view ).queue( function( next ){
             this.$el.empty()
                 .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
@@ -111,6 +117,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             if( this.model.inReadyState() ){
                 this.trigger( 'rendered:ready', view );
             }
+            if( this.selectable ){ this.showSelect(); }
             next();
         });
         return this;
@@ -149,8 +156,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
         
         var displayBtnData = {
-            icon_class  : 'display',
-            target      : 'galaxy_main'
+            target      : 'galaxy_main',
+            classes     : 'dataset-display'
         };
 
         // show a disabled display if the data's been purged
@@ -183,7 +190,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         displayBtnData.faIcon = 'fa-eye';
         return faIconButton( displayBtnData );
     },
-    
+
     // ......................................................................... primary actions
     /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this hda.
      *  @returns {jQuery} rendered DOM
@@ -387,7 +394,9 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** event map */
     events : {
         // expand the body when the title is clicked
-        'click .dataset-title-bar'           : 'toggleBodyVisibility'
+        'click .dataset-title-bar'  : 'toggleBodyVisibility',
+        // toggle selected state
+        'click .dataset-selector'   : 'select'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -405,6 +414,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         } else {
             this.collapseBody();
         }
+        return false;
     },
 
     /** Render and show the full, detailed body of this view including extra data and controls.
@@ -414,10 +424,16 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var hdaView = this;
 
         function _renderBodyAndExpand(){
-            hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
-                hdaView.expanded = true;
-                hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
-            });
+            hdaView.$el.children( '.dataset-body' ).replaceWith( hdaView._render_body() );
+            hdaView.$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
+                    hdaView.expanded = true;
+                    hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+                });
+
+            //hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
+            //    hdaView.expanded = true;
+            //    hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+            //});
         }
         // fetch first if no details in the model
         if( this.model.inReadyState() && !this.model.hasDetails() ){
@@ -438,6 +454,65 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             hdaView.expanded = false;
             hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
         });
+    },
+
+    // ......................................................................... selection
+    /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
+     *      Note: this also hides the primary actions
+     */
+    showSelect : function( speed ){
+        // if already shown, do nothing
+        if( this.$el.find( '.dataset-selector' ).css( 'display' ) !== 'none' ){ return; }
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
+        var hdaView = this,
+            SELECTOR_WIDTH = 32;
+
+        this.$el.queue( 'fx', function( next ){
+            $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
+        });
+        this.$el.queue( 'fx', function( next ){
+            $( this ).find( '.dataset-selector' ).show()
+                // height is height of titlebar, width will animate from 0 to WIDTH
+                .css({
+                    height: $( this ).find( '.dataset-title-bar' ).innerHeight()
+                })
+                .animate({ width: SELECTOR_WIDTH }, speed, next );
+            hdaView.selectable = true;
+            hdaView.trigger( 'selectable', true, hdaView );
+        });
+    },
+
+    /** remove the selection checkbox */
+    hideSelect : function( speed ){
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // reverse the process from showSelect
+        this.selectable = false;
+        this.trigger( 'selectable', false, this );
+        this.$el.queue( 'fx', function( next ){
+            $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
+                $( this ).hide();
+                next();
+            });
+        });
+        this.$el.queue( 'fx', function( next ){
+            $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
+        });
+    },
+
+    /** event handler for selection (also programmatic selection)
+     *  @param {boolean} selected   T/F select/de-select this hda
+     */
+    select : function( event, selected ){
+        // do nothing if selected is passed and selector already in desired state
+        if( selected !== undefined && selected === this.selected ){ return false; }
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' ).toggleClass( 'fa-square-o fa-check-square-o' );
+        this.selected = !this.selected;
+        this.trigger( ( this.selected )?( 'selected' ):( 'de-selected' ), this );
+        return false;
     },
 
     // ......................................................................... removal

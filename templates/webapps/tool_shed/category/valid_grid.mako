@@ -5,6 +5,7 @@
 
 ## Render grid header.
 <%def name="render_grid_header( grid, repo_grid, render_title=True)">
+    ${init()}
     <div class="grid-header">
         %if render_title:
             ${grid_title()}

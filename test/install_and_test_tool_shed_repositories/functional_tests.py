@@ -363,7 +363,10 @@ def get_latest_downloadable_changeset_revision( url, name, owner ):
         return '000000000000'
 
 def get_missing_tool_dependencies( repository ):
+    log.debug( 'Checking %s repository %s for missing tool dependencies.' % ( repository.status, repository.name ) )
     missing_tool_dependencies = repository.missing_tool_dependencies
+    for tool_dependency in repository.tool_dependencies:
+        log.debug( 'Tool dependency %s version %s has status %s.' % ( tool_dependency.name, tool_dependency.version, tool_dependency.status ) )
     for repository_dependency in repository.repository_dependencies:
         if not repository_dependency.includes_tool_dependencies:
             continue
@@ -687,7 +690,10 @@ def uninstall_tool_dependency( app, tool_dependency ):
     tool_dependency_install_path = tool_dependency.installation_directory( app )
     uninstalled, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
     if error_message:
+        log.debug( 'There was an error attempting to remove directory: %s' % str( tool_dependency_install_path ) )
         log.debug( error_message )
+    else:
+        log.debug( 'Successfully removed tool dependency installation directory: %s' % str( tool_dependency_install_path ) )
     sa_session = app.model.context.current
     if not uninstalled or tool_dependency.status != app.model.ToolDependency.installation_status.UNINSTALLED:
         tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
@@ -1107,7 +1113,8 @@ def main():
                 # }
                 if 'missing_test_components' not in repository_status:
                     repository_status[ 'missing_test_components' ] = []
-                if repository.missing_tool_dependencies or repository.missing_repository_dependencies:
+                missing_tool_dependencies = get_missing_tool_dependencies( repository )
+                if missing_tool_dependencies or repository.missing_repository_dependencies:
                     # If a tool dependency fails to install correctly, this should be considered an installation error,
                     # and functional tests should be skipped, since the tool dependency needs to be correctly installed
                     # for the test to be considered reliable.
@@ -1143,9 +1150,7 @@ def main():
                     # The deactivate flag is set to True if the environment variable GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES
                     # is set to 'true'. 
                     if deactivate:
-                        # Recursively retrieve every missing tool dependency for this repository and its required repositories.
                         log.debug( 'Due to the above missing tool dependencies, we are now uninstalling the following tool dependencies, but not changing their repositories.' )
-                        missing_tool_dependencies = get_missing_tool_dependencies( repository )
                         for missing_tool_dependency in missing_tool_dependencies:
                             uninstall_tool_dependency( app, missing_tool_dependency )
                         # We are deactivating this repository and all of its repository dependencies.

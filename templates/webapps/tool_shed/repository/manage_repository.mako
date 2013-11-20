@@ -7,6 +7,7 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     from tool_shed.util.shed_util_common import changeset_is_malicious
+    from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 
     if repository.metadata_revisions:
         has_metadata = True
@@ -199,17 +200,29 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     </div>
 </div>
 ${render_repository_items( metadata, containers_dict, can_set_metadata=True, render_repository_actions_for='tool_shed' )}
-%if includes_tools:
+%if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Automated tool tests</div>
+        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+            <div class="toolFormTitle">Automated tool dependency test</div>
+        %else:
+            <div class="toolFormTitle">Automated tool tests</div>
+        %endif
         <div class="toolFormBody">
             <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository_metadata.changeset_revision )}" method="post" >
                 <div class="form-row">
-                    <label>Skip automated testing of tools in this revision:</label>
+                    %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+                        <label>Skip automated testing of this tool dependency recipe</label>
+                    %else:
+                        <label>Skip automated testing of tools in this revision:</label>
+                    %endif
                     ${skip_tool_tests_check_box.get_html()}
                     <div class="toolParamHelp" style="clear: both;">
-                        Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
+                        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+                            Check the box and click <b>Save</b> to skip automated testing of this tool dependency recipe.
+                        %else:
+                            Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
+                        %endif
                     </div>
                 </div>
                 <div style="clear: both"></div>

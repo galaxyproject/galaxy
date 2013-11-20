@@ -10,13 +10,9 @@ var ScatterplotView = Backbone.View.extend({
     //TODO: should be a view on visualization(revision) model
 
     defaults : {
-        dataset : {
-        },
         metadata : {
             dataLines : undefined
         },
-
-        ajaxFn : null,
 
         pagination : {
             currPage    : 0,
@@ -48,6 +44,7 @@ var ScatterplotView = Backbone.View.extend({
 
     initialize : function( attributes ){
         this.config = _.extend( _.clone( this.defaults ), attributes.config || {});
+        this.dataset = attributes.dataset;
         //console.debug( this + '.config:', this.config );
     },
 
@@ -65,7 +62,7 @@ var ScatterplotView = Backbone.View.extend({
         //console.debug( 'currPage', this.config.pagination.currPage );
         var view = this;
 //TODO: very tied to datasets - should be generalized eventually
-            xhr = jQuery.getJSON( '/api/datasets/' + this.config.dataset.id, {
+            xhr = jQuery.getJSON( '/api/datasets/' + this.dataset.id, {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',
                 limit       : this.config.pagination.perPage,
@@ -151,7 +148,7 @@ var ScatterplotView = Backbone.View.extend({
     },
 
     renderLineInfo : function( data ){
-        var totalLines = this.config.dataset.metadata_data_lines || 'an unknown number of',
+        var totalLines = this.dataset.metadata_data_lines || 'an unknown number of',
             lineStart  = ( this.config.pagination.currPage * this.config.pagination.perPage ),
             lineEnd    = lineStart + data.length;
         return $( '<p/>' ).addClass( 'scatterplot-data-info' )
@@ -168,9 +165,9 @@ var ScatterplotView = Backbone.View.extend({
         }
 //TODO: cache numPages/numLines in config
         var view = this,
-            dataLines = this.config.dataset.metadata_data_lines,
+            dataLines = this.dataset.metadata_data_lines,
             numPages = ( dataLines )?( Math.ceil( dataLines / this.config.pagination.perPage ) ):( undefined );
-        //console.debug( 'data:', this.config.dataset.metadata_data_lines, 'numPages:', numPages );
+        //console.debug( 'data:', this.dataset.metadata_data_lines, 'numPages:', numPages );
 
         // prev next buttons
         var $prev = makePage$Li( 'Prev' ).click( function(){
@@ -207,9 +204,9 @@ var ScatterplotView = Backbone.View.extend({
         }
 //TODO: cache numPages/numLines in config
         var view = this,
-            dataLines = this.config.dataset.metadata_data_lines,
+            dataLines = this.dataset.metadata_data_lines,
             numPages = ( dataLines )?( Math.ceil( dataLines / this.config.pagination.perPage ) ):( undefined );
-        //console.debug( 'data:', this.config.dataset.metadata_data_lines, 'numPages:', numPages );
+        //console.debug( 'data:', this.dataset.metadata_data_lines, 'numPages:', numPages );
 
         // page numbers (as separate control)
         //var $paginationContainer = $( '<div/>' ).addClass( 'pagination-container' ),

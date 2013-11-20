@@ -37,14 +37,19 @@ var ScatterplotConfigEditor = BaseView.extend( LoggableMixin ).extend({
     /** initialize requires a configuration Object containing a dataset Object */
     initialize : function( attributes ){
         //console.log( this + '.initialize, attributes:', attributes );
-        if( !attributes || !attributes.config || !attributes.config.dataset ){
+        if( !attributes || !attributes.config || !attributes.dataset ){
             throw new Error( "ScatterplotView requires a configuration and dataset" );
         }
-        this.dataset = attributes.config.dataset;
+        //console.log( 'config:', attributes.config );
+
+        this.dataset = attributes.dataset;
         //console.log( 'dataset:', this.dataset );
 
+//TODO: ScatterplotView -> ScatterplotDisplay, this.plotView -> this.display
         this.plotView = new ScatterplotView({
+            dataset : attributes.dataset,
             config  : attributes.config
+//TODO: if data
         });
     },
 
@@ -197,8 +202,8 @@ var ScatterplotConfigEditor = BaseView.extend( LoggableMixin ).extend({
         // parse the column values for both indeces (for the data fetch) and names (for the chart)
         var $dataControls = this.$el.find( '#data-control' );
         var settings = {
-            xColumn : $dataControls.find( '[name="xColumn"]' ).val(),
-            yColumn : $dataControls.find( '[name="yColumn"]' ).val()
+            xColumn : Number( $dataControls.find( '[name="xColumn"]' ).val() ),
+            yColumn : Number( $dataControls.find( '[name="yColumn"]' ).val() )
         };
         if( $dataControls.find( '#include-id-checkbox' ).prop( 'checked' ) ){
             settings.idColumn = $dataControls.find( '[name="idColumn"]' ).val();
@@ -229,9 +234,9 @@ var ScatterplotConfigEditor = BaseView.extend( LoggableMixin ).extend({
 });
 
 ScatterplotConfigEditor.templates = {
-    mainLayout      : Templates.editor,
-    dataControl     : Templates.datacontrol,
-    chartControl    : Templates.chartcontrol
+    mainLayout      : scatterplot.editor,
+    dataControl     : scatterplot.datacontrol,
+    chartControl    : scatterplot.chartcontrol
 };
 
 //==============================================================================

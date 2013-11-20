@@ -33,8 +33,7 @@ def test_create_or_update_env_shell_file( ):
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == ". /usr/share/R/libs"
 
-
-def test_parse_setup_environment_repositories( ):
+def test_get_env_shell_file_paths_from_setup_environment_elem( ):
     xml = """<action name="setup_r_environment">
         <repository name="package_r_3_0_1" owner="bgruening" toolshed="toolshed.g2.bx.psu.edu" changeset_revision="1234567">
             <package name="R" version="3.0.1" />
@@ -49,25 +48,24 @@ def test_parse_setup_environment_repositories( ):
 
     r_env_sh = '/path/to/go/env.sh'
 
-    def mock_get_env_shell_file_paths( app, elem):
+    def mock_get_env_shell_file_paths( app, elem ):
         assert app == mock_app
         assert elem.get( 'name' ) == "package_r_3_0_1"
         return [ r_env_sh ]
 
-    with __mock_common_util_method("get_env_shell_file_paths", mock_get_env_shell_file_paths):
-        td_common_util.parse_setup_environment_repositories( mock_app, all_env_paths, action_elem, action_dict )
+    with __mock_common_util_method( "get_env_shell_file_paths", mock_get_env_shell_file_paths ):
+        td_common_util.get_env_shell_file_paths_from_setup_environment_elem( mock_app, all_env_paths, action_elem, action_dict )
         ## Verify old env files weren't deleted.
         assert required_for_install_env_sh in all_env_paths
         ## Verify new ones added.
         assert r_env_sh in all_env_paths
         ## env_shell_file_paths includes everything
-        assert all( [env in action_dict[ 'env_shell_file_paths' ] for env in all_env_paths] )
+        assert all( [ env in action_dict[ 'env_shell_file_paths' ] for env in all_env_paths ] )
 
         ## action_shell_file_paths includes only env files defined in
         ## inside the setup_ action element.
         assert required_for_install_env_sh not in action_dict[ 'action_shell_file_paths' ]
         assert r_env_sh in action_dict[ 'action_shell_file_paths' ]
-
 
 ## Poor man's mocking. Need to get a real mocking library as real Galaxy development
 ## dependnecy.
