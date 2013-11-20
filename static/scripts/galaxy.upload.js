@@ -153,22 +153,30 @@ var GalaxyUpload = Backbone.View.extend(
         
         // add functionality to new row elements
         var self = this;
+        
+        // handle click event
         it.find('#symbol').on('click', function() { self.event_remove (index) });
+        
+        // handle text editing event
         it.find('#text-content').on('keyup', function() {
             var count = it.find('#text-content').val().length;
             it.find('#size').html(self.size_to_string (count));
         });
+        
+        // handle genome selection event
+        var self = this;
         it.find('#genome').on('change', function(e) {
-            // identify target
-            var $target = $(e.target);
-            var selected_genome = $target.val();
+            // identify selected genome
+            var selected_genome = $(e.target).val();
             
-            // identify other genome selectors
-            var genomes = (self.$el).find('.genome');
-            genomes.each(function() {
-                var $select = $(this);
-                if ($select.val() == '?')
-                    $select.val(selected_genome);
+            // update genome
+            var items = $(self.el).find('.upload-item');
+            items.each(function()
+            {
+                var symbol = $(this).find('#symbol');
+                if(symbol.hasClass(self.state.init)) {
+                    $(this).find('#genome').val(selected_genome);
+                }
             });
         });
         
