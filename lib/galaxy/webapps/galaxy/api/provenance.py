@@ -48,6 +48,8 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
                 "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
                 "tool_id": job.tool_id,
                 "parameters": self._get_job_record(trans, job, follow),
+                "stderr": job.stderr,
+                "stdout": job.stdout,
             }
         return None
 
