@@ -265,7 +265,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             except KeyError:
                 pass
             if raw:
-                rval = open( hda.file_name )
+                if filename and filename != 'index':
+                    file_path = trans.app.object_store.get_filename(hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id, alt_name=filename)
+                else:
+                    file_path = hda.file_name
+                rval = open( file_path )
+
             else:
                 rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 
