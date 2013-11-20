@@ -1811,7 +1811,8 @@ class Tool( object, Dictifiable ):
         from API). May want an incremental version of the API also at some point,
         that is why this is not just called for_api.
         """
-        state, state_new = self.__fetch_state( trans, incoming, history )
+        all_pages = ( process_state == "populate" )  # If process_state = update, handle all pages at once.
+        state, state_new = self.__fetch_state( trans, incoming, history, all_pages=all_pages )
         if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
@@ -1837,7 +1838,7 @@ class Tool( object, Dictifiable ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
-            elif state.page == self.last_page:
+            elif all_pages or state.page == self.last_page:
                 return self.__handle_tool_execute( trans, incoming, params, history )
             # Otherwise move on to the next page
             else:
@@ -1891,7 +1892,7 @@ class Tool( object, Dictifiable ):
             return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
         return 'tool_form.mako', dict( errors=errors, tool_state=state )
 
-    def __fetch_state( self, trans, incoming, history ):
+    def __fetch_state( self, trans, incoming, history, all_pages ):
         # Get the state or create if not found
         if "tool_state" in incoming:
             encoded_state = string_to_object( incoming["tool_state"] )
@@ -1899,7 +1900,7 @@ class Tool( object, Dictifiable ):
             state.decode( encoded_state, self, trans.app )
             new = False
         else:
-            state = self.new_state( trans, history=history )
+            state = self.new_state( trans, history=history, all_pages=all_pages )
             new = True
         return state, new
 
@@ -1917,15 +1918,17 @@ class Tool( object, Dictifiable ):
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
             if process_state == "update":
-                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
+                inputs = self.inputs_by_page[state.page]
+                errors = self.update_state( trans, inputs, state.inputs, incoming, old_errors=old_errors or {}, source=source )
             elif process_state == "populate":
-                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history, source=source )
+                inputs = self.inputs
+                errors = self.populate_state( trans, inputs, state.inputs, incoming, history, source=source )
             else:
                 raise Exception("Unknown process_state type %s" % process_state)
             # If the tool provides a `validate_input` hook, call it.
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
-                validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
+                validate_input( trans, errors, state.inputs, inputs )
             params = state.inputs
         return errors, params
 
