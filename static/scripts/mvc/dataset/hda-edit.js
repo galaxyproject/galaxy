@@ -156,7 +156,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_visualizationsButton : function(){
         var visualizations = this.model.get( 'visualizations' );
-        if( ( !this.model.hasData() )
+        if( ( !this.hasUser )
+        ||  ( !this.model.hasData() )
         ||  ( _.isEmpty( visualizations ) ) ){
             return null;
         }
@@ -209,8 +210,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
 
         // No need for popup menu because there's a single visualization.
-        if ( visualizations.length === 1 ) {
-            $icon.attr( 'title', visualizations[0] );
+        if( visualizations.length === 1 ){
+            $icon.attr( 'data-original-title', visualizations[0] );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
