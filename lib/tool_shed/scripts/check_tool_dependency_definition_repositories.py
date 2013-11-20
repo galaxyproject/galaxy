@@ -86,7 +86,7 @@ def main():
 
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
-    print "# %s - Validating repositories of type %s on %s..." % ( TOOL_DEPENDENCY_DEFINITION, now )
+    print "# %s - Validating repositories of type %s on %s..." % ( TOOL_DEPENDENCY_DEFINITION, now, config_parser.get( config_section, 'host' ) )
     print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
     
     app = RepositoriesApplication( config )
