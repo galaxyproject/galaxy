@@ -11,9 +11,9 @@ import logging
 import threading
 
 from galaxy import util
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs import Sleeper
 from galaxy.model import directory_hash_id
-from galaxy.exceptions import ObjectNotFound, ObjectInvalid
 from galaxy.util.odict import odict
 
 from sqlalchemy.orm import object_session
@@ -609,9 +609,12 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
 
     if store == 'disk':
         return DiskObjectStore(config=config, config_xml=config_xml)
-    elif store == 's3' or store == 'swift':
+    elif store == 's3':
         from galaxy.objectstore.s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'swift':
+        from galaxy.objectstore.s3 import SwiftObjectStore
+        return SwiftObjectStore(config=config, config_xml=config_xml)
     elif store == 'distributed':
         return DistributedObjectStore(config=config, fsmon=fsmon, config_xml=config_xml)
     elif store == 'hierarchical':

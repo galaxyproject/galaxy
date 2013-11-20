@@ -33,15 +33,13 @@ class S3ObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
-    def __init__(self, config, config_xml=None):
+    def __init__(self, config, config_xml):
         super(S3ObjectStore, self).__init__(config, config_xml)
         self.config = config
         self.staging_path = self.config.file_path
-        self.s3_conn = get_OS_connection(self.config)
-        self.bucket = self._get_bucket(self.config.os_bucket_name)
-        self.use_rr = self.config.os_use_reduced_redundancy
-        self.cache_size = self.config.object_store_cache_size
         self.transfer_progress = 0
+        self._parse_config_xml(config_xml)
+        self._configure_connection()
         # Clean cache only if value is set in universe_wsgi.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
@@ -57,6 +55,31 @@ class S3ObjectStore(ObjectStore):
             self.use_axel = True
         except OSError:
             self.use_axel = False
+
+    def _configure_connection(self):
+        log.debug("Configuring S3 Connection")
+        self.conn = S3Connection(self.access_key, self.secret_key)
+
+    def _parse_config_xml(self, config_xml):
+        try:
+            a_xml = config_xml.findall('auth')[0]
+            self.access_key = a_xml.get('access_key')
+            self.secret_key = a_xml.get('secret_key')
+            b_xml = config_xml.findall('bucket')[0]
+            self.bucket = b_xml.get('name')
+            self.use_rr = b_xml.get('use_reduced_redundancy', False)
+            cn_xml = config_xml.findall('connection')[0]
+            self.host = cn_xml.get('host', None)
+            self.port = int(cn_xml.get('port', 6000))
+            self.is_secure = cn_xml.get('is_secure', True)
+            self.conn_path = cn_xml.get('conn_path', '/')
+            c_xml = config_xml.findall('cache')[0]
+            self.cache_size = float(c_xml.get('size', -1))
+            self.cache_path = c_xml.get('path')
+        except Exception:
+            # Toss it back up after logging, we can't continue loading at this point.
+            log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
+            raise
 
     def __cache_monitor(self):
         time.sleep(2) # Wait for things to load before starting the monitor
@@ -127,7 +150,7 @@ class S3ObjectStore(ObjectStore):
         it a few times. Raise error is connection is not established. """
         for i in range(5):
             try:
-                bucket = self.s3_conn.get_bucket(bucket_name)
+                bucket = self.conn.get_bucket(bucket_name)
                 log.debug("Using cloud object store with bucket '%s'" % bucket.name)
                 return bucket
             except S3ResponseError:
@@ -290,7 +313,8 @@ class S3ObjectStore(ObjectStore):
                     # print "Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path)
                     # print "+ Push started at '%s'" % start_time
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 60 or self.config.object_store == 'swift':
+                    #DBTODO Hack, refactor this logic.
+                    if mb_size < 60 or type(self) == SwiftObjectStore:
                         self.transfer_progress = 0 # Reset transfer progress counter
                         key.set_contents_from_filename(source_file, reduced_redundancy=self.use_rr,
                             cb=self._transfer_cb, num_cb=10)
@@ -512,24 +536,20 @@ class S3ObjectStore(ObjectStore):
         return 0.0
 
 
-def get_OS_connection(config):
+class SwiftObjectStore(S3ObjectStore):
     """
-    Get a connection object for a cloud Object Store specified in the config.
-    Currently, this is a ``boto`` connection object.
+    Object store that stores objects as items in a Swift bucket. A local
+    cache exists that is used as an intermediate location for files between
+    Galaxy and Swift.
     """
-    log.debug("Getting a connection object for '{0}' object store".format(config.object_store))
-    a_key = config.os_access_key
-    s_key = config.os_secret_key
-    if config.object_store == 's3':
-        return S3Connection(a_key, s_key)
-    else:
-        # Establish the connection now
-        calling_format = boto.s3.connection.OrdinaryCallingFormat()
-        s3_conn = boto.connect_s3(aws_access_key_id=a_key,
-                            aws_secret_access_key=s_key,
-                            is_secure=config.os_is_secure,
-                            host=config.os_host,
-                            port=int(config.os_port),
-                            calling_format=calling_format,
-                            path=config.os_conn_path)
-        return s3_conn
+
+    def _configure_connection(self):
+        log.debug("Configuring Swift Connection")
+        self.conn = boto.connect_s3(aws_access_key_id=self.access_key,
+                            aws_secret_access_key=self.secret_key,
+                            is_secure=self.is_secure,
+                            host=self.host,
+                            port=self.port,
+                            calling_format=boto.s3.connection.OrdinaryCallingFormat(),
+                            path=self.conn_path)
+
