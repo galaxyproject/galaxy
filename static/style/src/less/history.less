@@ -241,9 +241,24 @@
         color: #555;
     }
 
+    .dataset-selector {
+        //background-color: red;
+        float: left;
+        // always initially hidden and zero width
+        display: none;
+        width: 0px;
+        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
+        margin: 0px 8px -@spacing-bottom 0px;
+        padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+        cursor: pointer;
+        //text-align: center;
+        vertical-align: middle;
+    }
+
     .dataset-title-bar {
         cursor: pointer;
         .dataset-padding;
+
         .dataset-state-icon {
             //display: inline-block;
             //vertical-align: middle;

@@ -32,6 +32,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             // HDAEdit gets the rerun button on almost all states
             this._render_rerunButton
         ];
+
     },
 
     // ......................................................................... edit attr, delete
@@ -336,12 +337,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
     // ......................................................................... events
     /** event map */
-    events : {
-        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+    events : _.extend( _.clone( hdaBase.HDABaseView.prototype.events ), {
         'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
         'click .dataset-purge'          : 'confirmPurge'
-    },
+    }),
     
     /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){
