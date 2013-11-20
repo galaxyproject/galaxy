@@ -2015,12 +2015,15 @@ class Tool( object, Dictifiable ):
                     test_param_key = prefix + input.test_param.name
                 else:
                     test_param_key = group_prefix + input.test_param.name
-                test_param_error = None
-                test_incoming = get_incoming_value( incoming, test_param_key, None )
-
                 # Get value of test param and determine current case
-                value, test_param_error = \
-                    check_param( trans, input.test_param, test_incoming, context, source=source )
+                value, test_param_error = check_param_from_incoming( trans,
+                                                                     group_state,
+                                                                     input.test_param,
+                                                                     incoming,
+                                                                     test_param_key,
+                                                                     context,
+                                                                     source )
+
                 current_case = input.get_current_case( value, trans )
                 # Current case has changed, throw away old state
                 group_state = state[input.name] = {}
@@ -2083,8 +2086,7 @@ class Tool( object, Dictifiable ):
                 if any_group_errors:
                     errors[input.name] = group_errors
             else:
-                incoming_value = get_incoming_value( incoming, key, None )
-                value, error = check_param( trans, input, incoming_value, context, source=source )
+                value, error = check_param_from_incoming( trans, state, input, incoming, key, context, source )
                 if error:
                     errors[ input.name ] = error
                 state[ input.name ] = value
@@ -3481,7 +3483,24 @@ def json_fix( val ):
     else:
         return val
 
+
+def check_param_from_incoming( trans, state, input, incoming, key, context, source ):
+    """
+    Unlike "update" state, this preserves default if no incoming value found.
+    This lets API user specify just a subset of params and allow defaults to be
+    used when available.
+    """
+    default_input_value = state.get( input.name, None )
+    incoming_value = get_incoming_value( incoming, key, default_input_value )
+    value, error = check_param( trans, input, incoming_value, context, source=source )
+    return value, error
+
+
 def get_incoming_value( incoming, key, default ):
+    """
+    Fetch value from incoming dict directly or check special nginx upload
+    created variants of this key.
+    """
     if "__" + key + "__is_composite" in incoming:
         composite_keys = incoming["__" + key + "__keys"].split()
         value = dict()
