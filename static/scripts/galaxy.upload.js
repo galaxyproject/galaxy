@@ -174,8 +174,9 @@ var GalaxyUpload = Backbone.View.extend(
             items.each(function()
             {
                 var symbol = $(this).find('#symbol');
-                if(symbol.hasClass(self.state.init)) {
-                    $(this).find('#genome').val(selected_genome);
+                var genome = $(this).find('#genome');
+                if(symbol.hasClass(self.state.init) && genome.val() == '?') {
+                    genome.val(selected_genome);
                 }
             });
         });
