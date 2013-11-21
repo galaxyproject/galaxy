@@ -1,6 +1,15 @@
+import common
+import string
+import os
+import re
+import test_db_util
+import simplejson
+import logging
+import time
+import tempfile
+import tarfile
 import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model as galaxy_model
-import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
 from tool_shed.util import shed_util_common as suc
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
@@ -44,7 +53,7 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository_review/create_component?operation=create'
         self.visit_url( url )
         self.submit_form( 1, 'create_component_button', **kwd )
-        
+
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
               self.security.encode_id( category.id )
@@ -479,7 +488,17 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
-        
+
+    def export_capsule( self, repository ):
+        url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
+            ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
+        self.visit_url( url )
+        self.submit_form( 'export_repository', 'export_repository_button' )
+        fd, capsule_filename = tempfile.mkstemp()
+        os.close( fd )
+        file( capsule_filename, 'w' ).write( self.last_page() )
+        return capsule_filename
+
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
         kwd = dict()
         changed = False
@@ -727,7 +746,17 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed )
-        
+
+    def import_capsule( self, filename, strings_displayed=[], strings_not_displayed=[],
+                        strings_displayed_after_submit=[], strings_not_displayed_after_submit=[] ):
+        url = '/repository/upload_capsule'
+        self.visit_url( url )
+        tc.formfile( 'upload_capsule', 'file_data', filename )
+        tc.submit( 'upload_capsule_button' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        self.submit_form( 'import_capsule', 'import_capsule_button' )
+        self.check_for_strings( strings_displayed_after_submit, strings_not_displayed_after_submit )
+
     def import_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
             ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
