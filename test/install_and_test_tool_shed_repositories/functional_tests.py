@@ -43,6 +43,7 @@ sys.path = new_path
 
 from functional_tests import generate_config_file
 from galaxy import eggs
+from galaxy.util import unicodify
 
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
@@ -1122,7 +1123,7 @@ def main():
                     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
                     for dependency in repository.missing_tool_dependencies:
                         log.error( 'Missing tool dependency %s of type %s version %s: %s' % \
-                                   ( str( dependency.name ), str( dependency.type ), str( dependency.version ), str( dependency.error_message ) ) )
+                                   ( str( dependency.name ), str( dependency.type ), str( dependency.version ), unicodify( dependency.error_message ) ) )
                         test_result = dict( type=dependency.type,
                                             name=dependency.name,
                                             version=dependency.version,
