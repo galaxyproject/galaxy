@@ -3160,11 +3160,18 @@ class Page( object, Dictifiable ):
         rval['revision_ids'] = rev
         return rval
 
-class PageRevision( object ):
+class PageRevision( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'page_id', 'title', 'content' ]
     def __init__( self ):
         self.user = None
         self.title = None
         self.content = None
+
+    def to_dict( self, view='element' ):
+        rval = super( PageRevision, self ).to_dict( view=view )
+        rval['create_time'] = str(self.create_time)
+        rval['update_time'] = str(self.update_time)
+        return rval
 
 class PageUserShareAssociation( object ):
     def __init__( self ):

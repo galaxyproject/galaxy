@@ -36,7 +36,7 @@ History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation,
 StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
 ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
 JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation, ToolVersion,
-Page )
+Page, PageRevision )
 
 from galaxy.util.json import to_json_string
 from sqlalchemy import and_
@@ -484,6 +484,27 @@ class PageView(ViewQueryBaseClass):
     def search(self, trans):
         self.query = trans.sa_session.query( Page )
 
+
+
+
+##################
+#Page Revision Searching
+##################
+
+
+class PageRevisionView(ViewQueryBaseClass):
+    DOMAIN = "page_revision"
+    FIELDS = {
+        'id' : ViewField('id', sqlalchemy_field=PageRevision.id, id_decode=True),
+        'title' : ViewField('title', sqlalchemy_field=PageRevision.title),
+        'page_id' : ViewField('page_id', sqlalchemy_field=PageRevision.page_id, id_decode=True),
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( PageRevision )
+
+
+
 """
 The view mapping takes a user's name for a table and maps it to a View class that will
 handle queries
@@ -501,7 +522,8 @@ view_mapping = {
     'workflow' : WorkflowView,
     'tool' : ToolView,
     'job' : JobView,
-    'page' : PageView
+    'page' : PageView,
+    'page_revision' : PageRevisionView,
 }
 
 """
