@@ -466,7 +466,7 @@ PopupMenu.make_popup_menus = function( parent, menuSelector, buttonSelectorBuild
 };
 
 var faIconButton = function( options ){
-    //FFS
+    //TODO: move out of global
     options = options || {};
     options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
 
@@ -491,4 +491,101 @@ var faIconButton = function( options ){
     return $button;
 };
 
-//var hideUntilActivated;
+var searchInput = function( options ){
+//TODO: move out of global
+//TODO: consolidate with tool menu functionality, use there
+//TODO: this could and should be merged/oop'd with editableText (the behaviors are mostly the same - but not style)
+    var KEYCODE_ESC = 27,
+        KEYCODE_RETURN = 13,
+        $searchInput = $( '<div/>' ),
+        defaults = {
+            initialVal      : '',
+            name            : 'search',
+            placeholder     : 'search',
+            classes         : '',
+            onclear         : function(){},
+            onsearch        : function( inputVal ){},
+            minSearchLen    : 0,
+            escWillClear    : true,
+            oninit          : function(){}
+        };
+        
+    if( jQuery.type( options ) === 'object' ){
+        options = jQuery.extend( true, defaults, options );
+    }
+    //console.debug( options );
+
+    function clearSearchInput( event ){
+        //console.debug( this, 'clear' );
+        var $input = $( this ).parent().children( 'input' );
+        //console.debug( 'input', $input );
+        $input.val( '' );
+        $input.trigger( 'clear:searchInput' );
+        options.onclear();
+    }
+    function search( event, searchTerms ){
+        //console.debug( this, 'searching', searchTerms );
+        $( this ).trigger( 'search:searchInput', searchTerms );
+        options.onsearch( searchTerms );
+        //var $input = $( this ).parent().children( 'input' );
+        //console.debug( 'input', $input );
+    }
+
+    function inputTemplate(){
+        // class search-query is bootstrap 2.3 style that now lives in base.less
+        return [ '<input type="text" name="', options.name, '" placeholder="', options.placeholder, '" ',
+                        'class="search-query ', options.classes, '" ', '/>'
+        ].join( '' );
+    }
+    // the search input that responds to keyboard events and displays the search value
+    function $input(){
+        return $( inputTemplate() ).css({
+            'width'         : '100%',
+            // make space for the clear button
+            'padding-right' : '24px'
+        })
+        // select all text on a focus
+        .focus( function( event ){
+            $( this ).select();
+        })
+        // attach behaviors to esc, return if desired, search on some min len string
+        .keyup( function( event ){
+            //console.debug( event.which, $( this ).val() )
+            // esc key will clear if
+            if( event.which === KEYCODE_ESC && options.escWillClear ){
+                clearSearchInput.call( this, event );
+
+            } else {
+                var searchTerms = $( this ).val();
+                // return key or the search string len > minSearchLen (if not 0) triggers search
+                if( ( event.which === KEYCODE_RETURN )
+                ||  ( options.minSearchLen && searchTerms.length >= options.minSearchLen ) ){
+                    search.call( this, event, searchTerms );
+                } else if( !searchTerms.length ){
+                    clearSearchInput.call( this, event );
+                }
+            }
+        })
+        .val( options.initialVal );
+    }
+
+    // a button for clearing the search bar, placed on the right hand side
+    function clearBtnTemplate(){
+        return '<span class="search-clear fa fa-times-circle"></span>';
+    }
+    function $clearBtn(){
+//TODO: to base.less
+//TODO: hover effects
+        return $( clearBtnTemplate() ).css({
+            position    : 'absolute',
+            right       : '15px',
+            'font-size' : '1.4em',
+            'line-height': '23px',
+            color       : 'grey'
+        })
+        .click( function( event ){
+            clearSearchInput.call( this, event );
+        });
+    }
+    return $searchInput.append([ $input(), $clearBtn() ]);
+};

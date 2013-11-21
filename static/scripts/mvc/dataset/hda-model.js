@@ -218,30 +218,97 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ sorting/filtering
-    /** what attributes of an HDA will be used in a search */
-    searchKeys : [
+
+    // ........................................................................ search
+    /** what attributes of an HDA will be used in a text search */
+    searchAttributes : [
         'name', 'file_ext', 'genome_build', 'misc_blurb', 'misc_info', 'annotation', 'tags'
     ],
 
-    /** search this HDA for the string searchFor
-     *  @param {String} searchFor   look for this string in all attributes listed in searchKeys (above) using indexOf
-     *  @returns {Array} an array of attribute keys where searchFor was found
+    /** our attr keys don't often match the labels we display to the user - so, when using
+     *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
+     *      following attr keys.
      */
-    search : function( searchFor ){
-        var model = this;
+    searchAliases : {
+        title       : 'name',
+        format      : 'file_ext',
+        database    : 'genome_build',
+        blurb       : 'misc_blurb',
+        description : 'misc_blurb',
+        info        : 'misc_info',
+        tag         : 'tags'
+    },
+
+    /** search the attribute with key attrKey for the string searchFor; T/F if found */
+    searchAttribute : function( attrKey, searchFor ){
+        var attrVal = this.get( attrKey );
+        //console.debug( 'searchAttribute', attrKey, attrVal, searchFor );
+        // bail if empty searchFor or unsearchable values
+        if( !searchFor
+        ||  ( attrVal === undefined || attrVal === null ) ){
+            return false;
+        }
+        // pass to sep. fn for deep search of array attributes
+        if( _.isArray( attrVal ) ){ return this._searchArrayAttribute( attrVal, searchFor ); }
+        return ( attrVal.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
+    },
+
+    /** deep(er) search for array attributes; T/F if found */
+    _searchArrayAttribute : function( array, searchFor ){
+        //console.debug( '_searchArrayAttribute', array, searchFor );
         searchFor = searchFor.toLowerCase();
-        return _.filter( this.searchKeys, function( key ){
-            var attr = model.get( key );
-            return ( _.isString( attr ) && attr.toLowerCase().indexOf( searchFor ) !== -1 );
+        //precondition: searchFor has already been validated as non-empty string
+        //precondition: assumes only 1 level array
+        //TODO: could possibly break up searchFor more (CSV...)
+        return _.any( array, function( elem ){
+            return ( elem.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
         });
     },
 
-    /** alias of search, but returns a boolean
-     *  @param {String} matchesWhat   look for this string in all attributes listed in searchKeys (above) using indexOf
-     *  @returns {Boolean} was matchesWhat found in any attributes
+    /** search all searchAttributes for the string searchFor,
+     *      returning a list of keys of attributes that contain searchFor
      */
-    matches : function( matchesWhat ){
-        return !!this.search( matchesWhat ).length;
+    search : function( searchFor ){
+        var model = this;
+        return _.filter( this.searchAttributes, function( key ){
+            return model.searchAttribute( key, searchFor );
+        });
+    },
+
+    /** alias of search, but returns a boolean; accepts attribute specifiers where
+     *      the attributes searched can be narrowed to a single attribute using
+     *      the form: matches( 'genome_build=hg19' )
+     *      (the attribute keys allowed can also be aliases to the true attribute key;
+     *          see searchAliases above)
+     *  @param {String} term   plain text or ATTR_SPECIFIER sep. key=val pair
+     *  @returns {Boolean} was term found in (any) attribute(s)
+     */
+    matches : function( term ){
+        var ATTR_SPECIFIER = '=',
+            split = term.split( ATTR_SPECIFIER );
+        // attribute is specified - search only that
+        if( split.length >= 2 ){
+            var attrKey = split[0];
+            attrKey = this.searchAliases[ attrKey ] || attrKey;
+            return this.searchAttribute( attrKey, split[1] );
+        }
+        // no attribute is specified - search all attributes in searchAttributes
+        return !!this.search( term ).length;
+    },
+
+    /** an implicit AND search for all terms; IOW, an hda must match all terms given
+     *      where terms is a whitespace separated value string.
+     *      e.g. given terms of: 'blah bler database=hg19'
+     *          an HDA would have to have attributes containing blah AND bler AND a genome_build == hg19
+     *      To include whitespace in terms: wrap the term in double quotations.
+     */
+    matchesAll : function( terms ){
+        var model = this;
+        // break the terms up by whitespace and filter out the empty strings
+        terms = terms.match( /(".*"|\w*=".*"|\S*)/g ).filter( function( s ){ return !!s; });
+        return _.all( terms, function( term ){
+            return model.matches( term );
+        });
     },
 
     // ........................................................................ misc
@@ -389,8 +456,28 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
      *  @returns array of hda models
      *  @see HistoryDatasetAssociation#isVisible
      */
-    getVisible : function( show_deleted, show_hidden ){
-        return this.filter( function( item ){ return item.isVisible( show_deleted, show_hidden ); });
+    getVisible : function( show_deleted, show_hidden, filters ){
+        filters = filters || [];
+        //console.debug( 'filters:', filters );
+        //TODO:?? why doesn't this return a collection?
+        // always filter by show deleted/hidden first
+        var filteredHdas = new HDACollection( this.filter( function( item ){
+            return item.isVisible( show_deleted, show_hidden );
+        }));
+
+        _.each( filters, function( filter_fn ){
+            if( !_.isFunction( filter_fn ) ){ return; }
+            filteredHdas = new HDACollection( filteredHdas.filter( filter_fn ) );
+        });
+        //if( filteredHdas.length ){
+        //    console.debug( 'filteredHdas:' );
+        //    filteredHdas.each( function( hda ){
+        //        console.debug( '\t', hda );
+        //    });
+        //} else {
+        //    console.warn( 'no visible hdas' );
+        //}
+        return filteredHdas;
     },
 
     // ........................................................................ ajax
@@ -433,7 +520,7 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
 
     /** String representation. */
     toString : function(){
-         return ( 'HDACollection()' );
+         return ([ 'HDACollection(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
     }
 });
 

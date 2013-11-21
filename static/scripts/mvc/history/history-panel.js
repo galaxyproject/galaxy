@@ -78,6 +78,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         /** loading indicator */
         this.indicator = new LoadingIndicator( this.$el );
 
+        /** filters for displaying hdas */
+        this.filters = [];
+
         // ---- handle models passed on init
         if( this.model ){
             this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
@@ -579,21 +582,25 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires: rendered    when the panel is attached and fully visible
      *  @see Backbone.View#render
      */
-    render : function( callback ){
+    render : function( speed, callback ){
+        // send a speed of 0 to have no fade in/out performed
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var panel = this,
             $newRender;
 
+        // handle the possibility of no model (can occur if fetching the model returns an error)
         if( this.model ){
             $newRender = this.renderModel();
         } else {
             $newRender = this.renderWithoutModel();
         }
+
         // fade out existing, swap with the new, fade in, set up behaviours
         $( panel ).queue( 'fx', [
             function( next ){
                 //panel.$el.fadeTo( panel.fxSpeed, 0.0001, next );
-                if( panel.$el.is( ':visible' ) ){
-                    panel.$el.fadeOut( panel.fxSpeed, next );
+                if( speed && panel.$el.is( ':visible' ) ){
+                    panel.$el.fadeOut( speed, next );
                 } else {
                     next();
                 }
@@ -604,12 +611,20 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 if( $newRender ){
                     panel.$el.append( $newRender.children() );
                 }
-                panel.$el.fadeIn( panel.fxSpeed, next );
+                next();
+            },
+            function( next ){
+                if( speed && !panel.$el.is( ':visible' ) ){
+                    panel.$el.fadeIn( speed, next );
+                } else {
+                    next();
+                }
             },
             function( next ){
                 //TODO: ideally, these would be set up before the fade in (can't because of async save text)
                 if( callback ){ callback.call( this ); }
                 panel.trigger( 'rendered', this );
+                next();
             }
         ]);
         return this;
@@ -640,12 +655,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this._setUpBehaviours( $newRender );
 
         // render hda views (if any and any shown (show_deleted/hidden)
-        //TODO: this seems too elaborate
-        if( !this.model.hdas.length
-        ||  !this.renderHdas( $newRender.find( this.datasetsSelector ) ) ){
-            // if history is empty or no hdas would be rendered, show the empty message
-            $newRender.find( this.emptyMsgSelector ).show();
-        }
+        this.renderHdas( $newRender );
         return $newRender;
     },
 
@@ -702,20 +712,32 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns the number of visible hda views
      */
     renderHdas : function( $whereTo ){
+        $whereTo = $whereTo || this.$el;
         this.hdaViews = {};
         var historyView = this,
+            $datasetsList = $whereTo.find( this.datasetsSelector ),
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
             visibleHdas  = this.model.hdas.getVisible(
                 this.storage.get( 'show_deleted' ),
-                this.storage.get( 'show_hidden' )
+                this.storage.get( 'show_hidden' ),
+                this.filters
             );
+        //console.debug( 'renderHdas, visibleHdas:', visibleHdas, $whereTo );
+        $datasetsList.empty();
 
-        _.each( visibleHdas, function( hda ){
-            // render it (NOTE: reverse order, newest on top (prepend))
-            $whereTo.prepend( historyView.createHdaView( hda ).$el );
-        });
-        return visibleHdas.length;
+        if( visibleHdas.length ){
+            visibleHdas.each( function( hda ){
+                // render it (NOTE: reverse order, newest on top (prepend))
+                $datasetsList.prepend( historyView.createHdaView( hda ).$el );
+            });
+            $whereTo.find( this.emptyMsgSelector ).hide();
+            
+        } else {
+            //console.debug( 'emptyMsg:', $whereTo.find( this.emptyMsgSelector ) )
+            $whereTo.find( this.emptyMsgSelector ).show();
+        }
+        return this.hdaViews;
     },
 
     // ------------------------------------------------------------------------ panel events
@@ -761,6 +783,55 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
         this.render();
         return this.storage.get( 'show_hidden' );
+    },
+
+    // ........................................................................ filters
+    /** render a search input for filtering datasets shown
+     *      (see the search section in the HDA model for implementation of the actual searching)
+     *      return will start the search
+     *      esc will clear the search
+     *      clicking the clear button will clear the search
+     *      uses searchInput in ui.js
+     */
+    renderSearchControls : function(){
+        var panel = this;
+        //TODO: needs proper async
+        panel.model.hdas.fetchAllDetails({ silent: true });
+
+        function onSearch( searchFor ){
+            //console.debug( 'onSearch', searchFor, panel );
+            panel.searchFor = searchFor;
+            panel.filters = [ function( hda ){ return hda.matchesAll( panel.searchFor ); } ];
+            panel.trigger( 'search:searching', searchFor, panel );
+            panel.renderHdas();
+        }
+        function onSearchClear(){
+            //console.debug( 'onSearchClear', panel );
+            panel.searchFor = '';
+            panel.filters = [];
+            panel.trigger( 'search:clear', panel );
+            panel.renderHdas();
+        }
+        return searchInput({
+                initialVal      : panel.searchFor,
+                name            : 'history-search',
+                placeholder     : 'search datasets',
+                classes         : 'history-search',
+                onsearch        : onSearch,
+                onclear         : onSearchClear
+            })
+            .addClass( 'history-search-controls' )
+            .css( 'padding', '0px 0px 8px 0px' );
+    },
+
+    /** toggle showing/hiding the search controls (rendering first on the initial show) */
+    toggleSearchControls : function(){
+        var $searchInput = this.$el.find( '.history-search-controls' );
+        if( !$searchInput.size() ){
+            $searchInput = this.renderSearchControls().hide();
+            this.$el.find( '.history-title' ).before( $searchInput );
+        }
+        $searchInput.slideToggle( this.fxSpeed );
     },
 
     // ........................................................................ multi-select of hdas
