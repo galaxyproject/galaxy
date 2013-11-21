@@ -166,6 +166,14 @@ class BaseController( object ):
                     rval[k] = trans.security.encode_id( v )
                 except:
                     pass # probably already encoded
+            if (k.endswith("_ids") and type(v) == list):
+                try:
+                    o = []
+                    for i in v:
+                        o.append(trans.security.encode_id( i ))
+                    rval[k] = o
+                except:
+                    pass
             else:
                 if recursive and type(v) == dict:
                     rval[k] = self.encode_all_ids(trans, v, recursive)

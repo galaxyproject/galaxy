@@ -3140,7 +3140,8 @@ class UserOpenID( object ):
         self.session = session
         self.openid = openid
 
-class Page( object ):
+class Page( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug' ]
     def __init__( self ):
         self.id = None
         self.user = None
@@ -3150,6 +3151,14 @@ class Page( object ):
         self.revisions = []
         self.importable = None
         self.published = None
+
+    def to_dict( self, view='element' ):
+        rval = super( Page, self ).to_dict( view=view )
+        rev = []
+        for a in self.revisions:
+            rev.append(a.id)
+        rval['revision_ids'] = rev
+        return rval
 
 class PageRevision( object ):
     def __init__( self ):
