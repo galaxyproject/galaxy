@@ -86,7 +86,7 @@ def main():
 
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
-    print "# %s - Validating repositories of type %s on %s..." % ( TOOL_DEPENDENCY_DEFINITION, now, config_parser.get( config_section, 'host' ) )
+    print "# %s - Validating repositories of type %s on %s..." % ( now, TOOL_DEPENDENCY_DEFINITION, config_parser.get( config_section, 'host' ) )
     print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
     
     app = RepositoriesApplication( config )
@@ -175,14 +175,13 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                 invalid_metadata += 1
             if not info_only:
                 repository_metadata.tool_test_results = repository_status
-                repository_metadata.time_last_tested = datetime.utcnow()
                 app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()
     print '# -------------------------------------------------------------------------------------------'
     print '# Checked %d repository revisions.' % records_checked
     print '# %d revisions found with valid tool dependency definition metadata.' % valid_metadata
-    print '# %d revisions found with valid tool dependency definition metadata.' % invalid_metadata
+    print '# %d revisions found with invalid tool dependency definition metadata.' % invalid_metadata
     if info_only:
         print '# Database not updated with any information from this run.'
     print "# Elapsed time: ", stop - start

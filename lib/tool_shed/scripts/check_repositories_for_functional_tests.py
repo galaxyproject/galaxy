@@ -1,91 +1,69 @@
 #!/usr/bin/env python
+import ConfigParser
+import logging
+import os
+import shutil
+import sys
+import tempfile
+import time
 
-import os, sys, logging, tempfile
+from datetime import datetime
+from optparse import OptionParser
+from time import strftime
 
 new_path = [ os.path.join( os.getcwd(), "lib" ), os.path.join( os.getcwd(), "test" ) ]
-new_path.extend( sys.path[1:] )
+new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
+
+from galaxy import eggs
+eggs.require( "SQLAlchemy >= 0.4" )
+eggs.require( 'mercurial' )
+
+import galaxy.webapps.tool_shed.config as tool_shed_config
+import galaxy.webapps.tool_shed.model.mapping
+
+from base.util import get_test_environment
+from base.util import get_database_version
+from base.util import get_repository_current_revision
+from galaxy.model.orm import and_, not_, select
+from mercurial import hg
+from mercurial import ui
+from mercurial import __version__
+from tool_shed.util.shed_util_common import clone_repository
+from tool_shed.util.shed_util_common import get_configured_ui
 
 log = logging.getLogger()
 log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
-from galaxy import eggs
-import pkg_resources
-eggs.require( "SQLAlchemy >= 0.4" )
-eggs.require( 'mercurial' )
-from mercurial import hg, ui, commands, __version__
+assert sys.version_info[ :2 ] >= ( 2, 6 )
 
-import time, ConfigParser, shutil
-from datetime import datetime, timedelta
-from time import strftime
-from optparse import OptionParser
 
-import galaxy.webapps.tool_shed.config as tool_shed_config
-import galaxy.webapps.tool_shed.model.mapping
-import sqlalchemy as sa
-from galaxy.model.orm import and_, not_, select
-from galaxy.util.json import from_json_string, to_json_string
-from galaxy.web import url_for
-from galaxy.tools import parameters
-from tool_shed.util.shed_util_common import clone_repository, get_configured_ui
-
-from base.util import get_test_environment, get_database_version, get_repository_current_revision
-
-assert sys.version_info[:2] >= ( 2, 4 )
-
-def main():
-    '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
-    parser = OptionParser()
-    parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
-    parser.add_option( "-s",
-                       "--section",
-                       action="store",
-                       dest="section",
-                       default='server:main',
-                       help="which .ini file section to extract the host and port from" )
-    parser.add_option(
-        "-v", "--verbose",
-        action="count", dest="verbosity",
-        default=1,
-        help="Control the amount of detail in the log output.")
-    parser.add_option(
-        "--verbosity", action="store", dest="verbosity",
-        metavar='VERBOSITY',
-        type="int", help="Control the amount of detail in the log output. --verbosity=1 is "
-        "the same as -v")
-    ( options, args ) = parser.parse_args()
-    try:
-        ini_file = args[0]
-    except IndexError:
-        print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
-        exit( 127 )
-    config_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
-    config_parser.read( ini_file )
-    config_dict = {}
-    for key, value in config_parser.items( "app:main" ):
-        config_dict[key] = value
-    config = tool_shed_config.Configuration( **config_dict )
-
-    config_section = options.section
-    now = strftime( "%Y-%m-%d %H:%M:%S" )
-    print "#############################################################################"
-    print "# %s - Checking repositories for tools with functional tests." % now
-    print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
-    app = FlagRepositoriesApplication( config )
-
-    if options.info_only:
-        print "# Displaying info only ( --info_only )"
-    if options.verbosity:
-        print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
-
-    check_and_flag_repositories( app, info_only=options.info_only, verbosity=options.verbosity )
+class FlagRepositoriesApplication( object ):
+    """Encapsulates the state of a Universe application"""
+    def __init__( self, config ):
+        if config.database_connection is False:
+            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
+        # Setup the database engine and ORM
+        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False )
+        self.hgweb_config_manager = self.model.hgweb_config_manager
+        self.hgweb_config_manager.hgweb_config_dir = config.hgweb_config_dir
+        print "# Using configured hgweb.config file: ", self.hgweb_config_manager.hgweb_config
+    @property
+    def sa_session( self ):
+        """
+        Returns a SQLAlchemy session -- currently just gets the current
+        session from the threadlocal session context, but this is provided
+        to allow migration toward a more SQLAlchemy 0.4 style of use.
+        """
+        return self.model.context.current
+    def shutdown( self ):
+        pass
 
 def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
-    '''
+    """
     This method will iterate through all records in the repository_metadata table, checking each one for tool metadata,
-    then checking the tool metadata for tests.
-    Each tool's metadata should look something like:
+    then checking the tool metadata for tests.  Each tool's metadata should look something like:
     {
       "add_to_tool_panel": true,
       "description": "",
@@ -111,94 +89,11 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
       "version": "1.2.3",
       "version_string_cmd": null
     }
-
     If the "tests" attribute is missing or empty, this script will mark the metadata record (which is specific to a changeset revision of a repository)
     not to be tested. If each "tools" attribute has at least one valid "tests" entry, this script will do nothing, and leave it available for the install
     and test repositories script to process. If the tested changeset revision does not have a test-data directory, this script will also mark the revision
     not to be tested.
-
-    TODO: Update this dict structure with the recently added components.
-
-    If any error is encountered, the script will update the repository_metadata.tool_test_results attribute following this structure:
-    {
-        "test_environment":
-            {
-                 "galaxy_revision": "9001:abcd1234",
-                 "galaxy_database_version": "114",
-                 "tool_shed_revision": "9001:abcd1234",
-                 "tool_shed_mercurial_version": "2.3.1",
-                 "tool_shed_database_version": "17",
-                 "python_version": "2.7.2",
-                 "architecture": "x86_64",
-                 "system": "Darwin 12.2.0"
-            },
-         "passed_tests":
-            [
-                {
-                    "test_id": "The test ID, generated by twill",
-                    "tool_id": "The tool ID that was tested",
-                    "tool_version": "The tool version that was tested",
-                },
-            ]
-        "failed_tests":
-            [
-                {
-                    "test_id": "The test ID, generated by twill",
-                    "tool_id": "The tool ID that was tested",
-                    "tool_version": "The tool version that was tested",
-                    "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
-                    "traceback": "The captured traceback."
-                },
-            ]
-        "installation_errors":
-            {
-                 'tool_dependencies':
-                     [
-                         {
-                            'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
-                            'name': 'Name of the tool dependency.',
-                            'version': 'Version if this is a package, otherwise blank.',
-                            'error_message': 'The error message returned when installation was attempted.',
-                         },
-                     ],
-                 'repository_dependencies':
-                     [
-                         {
-                            'tool_shed': 'The tool shed that this repository was installed from.',
-                            'name': 'The name of the repository that failed to install.',
-                            'owner': 'Owner of the failed repository.',
-                            'changeset_revision': 'Changeset revision of the failed repository.',
-                            'error_message': 'The error message that was returned when the repository failed to install.',
-                         },
-                     ],
-                 'current_repository':
-                     [
-                         {
-                            'tool_shed': 'The tool shed that this repository was installed from.',
-                            'name': 'The name of the repository that failed to install.',
-                            'owner': 'Owner of the failed repository.',
-                            'changeset_revision': 'Changeset revision of the failed repository.',
-                            'error_message': 'The error message that was returned when the repository failed to install.',
-                         },
-                     ],
-                {
-                    "name": "The name of the repository.",
-                    "owner": "The owner of the repository.",
-                    "changeset_revision": "The changeset revision of the repository.",
-                    "error_message": "The message stored in tool_dependency.error_message."
-                },
-            }
-         "missing_test_components":
-            [
-                {
-                    "tool_id": "The tool ID that missing components.",
-                    "tool_version": "The version of the tool."
-                    "tool_guid": "The guid of the tool."
-                    "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
-                },
-            ]
-    }
-    '''
+    """
     start = time.time()
     skip_metadata_ids = []
     checked_repository_ids = []
@@ -214,49 +109,68 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     # Get the list of metadata records to check for functional tests and test data. Limit this to records that have not been flagged do_not_test,
     # since there's no need to check them again if they won't be tested anyway. Also filter out changeset revisions that are not downloadable,
     # because it's redundant to test a revision that a user can't install.
-    for metadata_record in app.sa_session.query( app.model.RepositoryMetadata ) \
-                                         .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
-                                                        app.model.RepositoryMetadata.table.c.includes_tools == True,
-                                                        app.model.RepositoryMetadata.table.c.do_not_test == False,
-                                                        not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
+    for repository_metadata in app.sa_session.query( app.model.RepositoryMetadata ) \
+                                             .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
+                                                            app.model.RepositoryMetadata.table.c.includes_tools == True,
+                                                            app.model.RepositoryMetadata.table.c.do_not_test == False,
+                                                            not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
-        # Initialize the repository_status dict with the test environment, but leave the test_errors empty.
-        repository_status = {}
-        if metadata_record.tool_test_results:
-            repository_status = metadata_record.tool_test_results
-        # Clear any old invalid tests for this metadata revision, since this could lead to duplication of invalid test rows,
-        # or tests incorrectly labeled as invalid.
-        missing_test_components = []
-        if 'test_environment' in repository_status:
-            repository_status[ 'test_environment' ] = get_test_environment( repository_status[ 'test_environment' ] )
+        # Create the repository_status dictionary, using the dictionary from the previous test run if available.
+        if repository_metadata.tool_test_results:
+            repository_status = repository_metadata.tool_test_results
         else:
-            repository_status[ 'test_environment' ] = get_test_environment()
-        repository_status[ 'test_environment' ][ 'tool_shed_database_version' ] = get_database_version( app )
-        repository_status[ 'test_environment' ][ 'tool_shed_mercurial_version' ] = __version__.version
-        repository_status[ 'test_environment' ][ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
-        name = metadata_record.repository.name
-        owner = metadata_record.repository.user.username
-        changeset_revision = str( metadata_record.changeset_revision )
-        if metadata_record.repository.id not in checked_repository_ids:
-            checked_repository_ids.append( metadata_record.repository.id )
+            repository_status = {}
+        # Initialize the repository_status dictionary with the information about the current test environment.
+        last_test_environment = repository_status.get( 'test_environment', None )
+        if last_test_environment is None:
+            test_environment = get_test_environment()
+        else:
+            test_environment = get_test_environment( last_test_environment )
+        test_environment[ 'tool_shed_database_version' ] = get_database_version( app )
+        test_environment[ 'tool_shed_mercurial_version' ] = __version__.version
+        test_environment[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
+        repository_status[ 'test_environment' ] = test_environment
+        # Check the next repository revision.
+        changeset_revision = str( repository_metadata.changeset_revision )
+        name = repository.name
+        owner = repository.user.username
+        metadata = repository_metadata.metadata
+        repository = repository_metadata.repository
+        if repository.id not in checked_repository_ids:
+            checked_repository_ids.append( repository.id )
         if verbosity >= 1:
             print '# -------------------------------------------------------------------------------------------'
             print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
-        if 'tools' not in metadata_record.metadata:
-            continue
-        else:
+        tool_dicts = repository_metadata.get( 'tools', None )
+        """
+        "{"tools": 
+            [{"add_to_tool_panel": true, 
+              "description": "data on any column using simple expressions", 
+              "guid": "localhost:9009/repos/iuc/filtering_with_empty_test_tags/Filter1/1.1.0", 
+              "id": "Filter1", 
+              "name": "Filter", 
+              "requirements": [], 
+              "tests": 
+                  [{"inputs": [], "name": "Test-1", "outputs": [], "required_files": []}, 
+                   {"inputs": [], "name": "Test-2", "outputs": [], "required_files": []}], 
+              "tool_config": "database/community_files/000/repo_6/filtering.xml", 
+              "tool_type": "default", 
+              "version": "1.1.0", 
+              "version_string_cmd": null}]}"
+        """
+        if tool_dicts is not None:
             has_test_data = False
             testable_revision_found = False
             # Clone the repository up to the changeset revision we're checking.
-            repo_dir = metadata_record.repository.repo_path( app )
+            repo_dir = repository_metadata.repository.repo_path( app )
             repo = hg.repository( get_configured_ui(), repo_dir )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a
-                # directory named test-data. If this directory is not present, update the metadata record for the changeset
+                # directory named test-data. If this directory is not present update the metadata record for the changeset
                 # revision we're checking.
                 for root, dirs, files in os.walk( work_dir ):
                     if '.hg' in dirs:
@@ -266,18 +180,18 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                         test_data_path = os.path.join( root, dirs[ dirs.index( 'test-data' ) ] )
                         break
             if verbosity >= 1:
-                if not has_test_data:
-                    print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                else:
+                if has_test_data:
                     print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                else:
+                    print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                 print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
                     ( changeset_revision,  name, owner )
-            # Loop through all the tools in this metadata record, checking each one for defined functional tests.
-            for tool_metadata in metadata_record.metadata[ 'tools' ]:
+            # Inspect each tool_dict for defined functional tests.
+            for tool_dict in tool_dicts:
                 tool_count += 1
-                tool_id = tool_metadata[ 'id' ]
-                tool_version = tool_metadata[ 'version' ]
-                tool_guid = tool_metadata[ 'guid' ]
+                tool_id = tool_dict[ 'id' ]
+                tool_version = tool_dict[ 'version' ]
+                tool_guid = tool_dict[ 'guid' ]
                 if verbosity >= 2:
                     print "# Checking tool ID '%s' in changeset revision %s of %s." % \
                         ( tool_id, changeset_revision, name )
@@ -285,7 +199,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
                 # automated functional test framework produces.
                 tool_has_tests = False
-                defined_test_dicts = tool_metadata.get( 'tests', None )
+                defined_test_dicts = tool_dict.get( 'tests', None )
                 if defined_test_dicts is not None:
                     # We need to inspect the <test> tags because the following tags...
                     # <tests>
@@ -321,7 +235,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 missing_test_files = []
                 has_test_files = False
                 if tool_has_tests and has_test_data:
-                    missing_test_files = check_for_missing_test_files( tool_metadata[ 'tests' ], test_data_path )
+                    missing_test_files = check_for_missing_test_files( defined_test_dicts, test_data_path )
                     if missing_test_files:
                         if verbosity >= 2:
                             print "# Tool ID '%s' in changeset revision %s of %s is missing one or more required test files: %s" % \
@@ -337,90 +251,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 if missing_test_files:
                     failure_reason += 'One or more test files are missing for tool %s: %s' % ( tool_id, ', '.join( missing_test_files ) )
                     problem_found = True
-                test_errors = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
-                                    missing_components=failure_reason )
-                # The repository_metadata.tool_test_results attribute should always have the following structure:
-                # {
-                #     "test_environment":
-                #         {
-                #              "galaxy_revision": "9001:abcd1234",
-                #              "galaxy_database_version": "114",
-                #              "tool_shed_revision": "9001:abcd1234",
-                #              "tool_shed_mercurial_version": "2.3.1",
-                #              "tool_shed_database_version": "17",
-                #              "python_version": "2.7.2",
-                #              "architecture": "x86_64",
-                #              "system": "Darwin 12.2.0"
-                #         },
-                #      "passed_tests":
-                #         [
-                #             {
-                #                 "test_id": "The test ID, generated by twill",
-                #                 "tool_id": "The tool ID that was tested",
-                #                 "tool_version": "The tool version that was tested",
-                #             },
-                #         ]
-                #     "failed_tests":
-                #         [
-                #             {
-                #                 "test_id": "The test ID, generated by twill",
-                #                 "tool_id": "The tool ID that was tested",
-                #                 "tool_version": "The tool version that was tested",
-                #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
-                #                 "traceback": "The captured traceback."
-                #             },
-                #         ]
-                #     "installation_errors":
-                #         {
-                #              'tool_dependencies':
-                #                  [
-                #                      {
-                #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
-                #                         'name': 'Name of the tool dependency.',
-                #                         'version': 'Version if this is a package, otherwise blank.',
-                #                         'error_message': 'The error message returned when installation was attempted.',
-                #                      },
-                #                  ],
-                #              'repository_dependencies':
-                #                  [
-                #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.',
-                #                         'name': 'The name of the repository that failed to install.',
-                #                         'owner': 'Owner of the failed repository.',
-                #                         'changeset_revision': 'Changeset revision of the failed repository.',
-                #                         'error_message': 'The error message that was returned when the repository failed to install.',
-                #                      },
-                #                  ],
-                #              'current_repository':
-                #                  [
-                #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.',
-                #                         'name': 'The name of the repository that failed to install.',
-                #                         'owner': 'Owner of the failed repository.',
-                #                         'changeset_revision': 'Changeset revision of the failed repository.',
-                #                         'error_message': 'The error message that was returned when the repository failed to install.',
-                #                      },
-                #                  ],
-                #             {
-                #                 "name": "The name of the repository.",
-                #                 "owner": "The owner of the repository.",
-                #                 "changeset_revision": "The changeset revision of the repository.",
-                #                 "error_message": "The message stored in tool_dependency.error_message."
-                #             },
-                #         }
-                #      "missing_test_components":
-                #         [
-                #             {
-                #                 "tool_id": "The tool ID that missing components.",
-                #                 "tool_version": "The version of the tool."
-                #                 "tool_guid": "The guid of the tool."
-                #                 "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
-                #             },
-                #         ]
-                # }
-                #
-                # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
-                # than the list relevant to what it is testing.
+                test_errors = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid, missing_components=failure_reason )
                 # Only append this error dict if it hasn't already been added.
                 if problem_found:
                     if test_errors not in missing_test_components:
@@ -443,8 +274,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                             if 'missing_components' in invalid_test:
                                 print '# %s' % invalid_test[ 'missing_components' ]
             if not info_only:
-                # If repository_status[ 'test_errors' ] is empty, no issues were found, and we can just update time_last_tested with the platform
-                # on which this script was run.
+                # The repository_metadata.time_last_tested column is not changed by this script since no testing is performed here.
                 if missing_test_components:
                     # If functional test definitions or test data are missing, set do_not_test = True if no tool with valid tests has been
                     # found in this revision, and:
@@ -456,14 +286,13 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                     #    changeset revision will be created, either of which will be automatically checked and flagged as appropriate.
                     #    In the install and test script, this behavior is slightly different, since we do want to always run functional
                     #    tests on the most recent downloadable changeset revision.
-                    if should_set_do_not_test_flag( app, metadata_record.repository, changeset_revision ) and not testable_revision_found:
-                        metadata_record.do_not_test = True
-                    metadata_record.tools_functionally_correct = False
-                    metadata_record.missing_test_components = True
+                    if should_set_do_not_test_flag( app, repository_metadata.repository, changeset_revision ) and not testable_revision_found:
+                        repository_metadata.do_not_test = True
+                    repository_metadata.tools_functionally_correct = False
+                    repository_metadata.missing_test_components = True
                     repository_status[ 'missing_test_components' ] = missing_test_components
-                metadata_record.tool_test_results = repository_status
-                metadata_record.time_last_tested = datetime.utcnow()
-                app.sa_session.add( metadata_record )
+                repository_metadata.tool_test_results = repository_status
+                app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()
     print '# -------------------------------------------------------------------------------------------'
@@ -476,14 +305,6 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
         print '# Database not updated, info_only set.'
     print "# Elapsed time: ", stop - start
     print "#############################################################################"
-
-def get_repo_changelog_tuples( repo_path ):
-    repo = hg.repository( ui.ui(), repo_path )
-    changelog_tuples = []
-    for changeset in repo.changelog:
-        ctx = repo.changectx( changeset )
-        changelog_tuples.append( ( ctx.rev(), str( ctx ) ) )
-    return changelog_tuples
 
 def check_for_missing_test_files( test_definition, test_data_path ):
     '''Process the tool's functional test definitions and check for each file specified as an input or output.'''
@@ -500,6 +321,14 @@ def check_for_missing_test_files( test_definition, test_data_path ):
             missing_test_files.append( required_file )
     return missing_test_files
 
+def get_repo_changelog_tuples( repo_path ):
+    repo = hg.repository( ui.ui(), repo_path )
+    changelog_tuples = []
+    for changeset in repo.changelog:
+        ctx = repo.changectx( changeset )
+        changelog_tuples.append( ( ctx.rev(), str( ctx ) ) )
+    return changelog_tuples
+
 def is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions ):
     # Get a list of ( numeric revision, changeset hash ) tuples from the changelog.
     changelog = get_repo_changelog_tuples( repository.repo_path( app ) )
@@ -513,6 +342,41 @@ def is_most_recent_downloadable_revision( app, repository, changeset_revision, d
         return True
     return False
 
+def main():
+    '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
+    parser = OptionParser()
+    parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
+    parser.add_option( "-s", "--section", action="store", dest="section", default='server:main',
+                       help=".ini file section from which to to extract the host and port" )
+    parser.add_option( "-v", "--verbose", action="count", dest="verbosity", default=1, help="Control the amount of detail in the log output.")
+    parser.add_option( "--verbosity", action="store", dest="verbosity", metavar='VERBOSITY', type="int",
+                       help="Control the amount of detail in the log output. --verbosity=1 is the same as -v" )
+    ( options, args ) = parser.parse_args()
+    try:
+        ini_file = args[ 0 ]
+    except IndexError:
+        print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
+        exit( 127 )
+    config_parser = ConfigParser.ConfigParser( {'here':os.getcwd() } )
+    config_parser.read( ini_file )
+    config_dict = {}
+    for key, value in config_parser.items( "app:main" ):
+        config_dict[key] = value
+    config = tool_shed_config.Configuration( **config_dict )
+    config_section = options.section
+    now = strftime( "%Y-%m-%d %H:%M:%S" )
+
+    print "#############################################################################"
+    print "# %s - Checking repositories for tools with functional tests." % now
+    print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( config_section, 'host' ),
+                                                                   config_parser.get( config_section, 'port' ) )
+    app = FlagRepositoriesApplication( config )
+    if options.info_only:
+        print "# Displaying info only ( --info_only )"
+    if options.verbosity:
+        print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
+    check_and_flag_repositories( app, info_only=options.info_only, verbosity=options.verbosity )
+
 def should_set_do_not_test_flag( app, repository, changeset_revision ):
     '''
     Returns True if:
@@ -524,11 +388,11 @@ def should_set_do_not_test_flag( app, repository, changeset_revision ):
        flagged as appropriate. In the install and test script, this behavior is slightly different, since we do want to always run functional tests
        on the most recent downloadable changeset revision.
     '''
-    metadata_records = app.sa_session.query( app.model.RepositoryMetadata ) \
+    repository_revisions = app.sa_session.query( app.model.RepositoryMetadata ) \
                                      .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
                                                     app.model.RepositoryMetadata.table.c.repository_id == repository.id ) ) \
                                      .all()
-    downloadable_revisions = [ metadata_record.changeset_revision for metadata_record in metadata_records ]
+    downloadable_revisions = [ repository_metadata.changeset_revision for repository_metadata in repository_revisions ]
     is_latest_revision = is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions )
     if len( downloadable_revisions ) == 1:
         return True
@@ -539,26 +403,87 @@ def should_set_do_not_test_flag( app, repository, changeset_revision ):
     else:
         return False
 
-
-class FlagRepositoriesApplication( object ):
-    """Encapsulates the state of a Universe application"""
-    def __init__( self, config ):
-        if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
-        # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False )
-        self.hgweb_config_manager = self.model.hgweb_config_manager
-        self.hgweb_config_manager.hgweb_config_dir = config.hgweb_config_dir
-        print "# Using configured hgweb.config file: ", self.hgweb_config_manager.hgweb_config
-    @property
-    def sa_session( self ):
-        """
-        Returns a SQLAlchemy session -- currently just gets the current
-        session from the threadlocal session context, but this is provided
-        to allow migration toward a more SQLAlchemy 0.4 style of use.
-        """
-        return self.model.context.current
-    def shutdown( self ):
-        pass
-
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    # The repository_metadata.tool_test_results json value should have the following structure:
+    # {
+    #     "test_environment":
+    #         {
+    #              "galaxy_revision": "9001:abcd1234",
+    #              "galaxy_database_version": "114",
+    #              "tool_shed_revision": "9001:abcd1234",
+    #              "tool_shed_mercurial_version": "2.3.1",
+    #              "tool_shed_database_version": "17",
+    #              "python_version": "2.7.2",
+    #              "architecture": "x86_64",
+    #              "system": "Darwin 12.2.0"
+    #         },
+    #      "passed_tests":
+    #         [
+    #             {
+    #                 "test_id": "The test ID, generated by twill",
+    #                 "tool_id": "The tool ID that was tested",
+    #                 "tool_version": "The tool version that was tested",
+    #             },
+    #         ]
+    #     "failed_tests":
+    #         [
+    #             {
+    #                 "test_id": "The test ID, generated by twill",
+    #                 "tool_id": "The tool ID that was tested",
+    #                 "tool_version": "The tool version that was tested",
+    #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
+    #                 "traceback": "The captured traceback."
+    #             },
+    #         ]
+    #     "installation_errors":
+    #         {
+    #              'tool_dependencies':
+    #                  [
+    #                      {
+    #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
+    #                         'name': 'Name of the tool dependency.',
+    #                         'version': 'Version if this is a package, otherwise blank.',
+    #                         'error_message': 'The error message returned when installation was attempted.',
+    #                      },
+    #                  ],
+    #              'repository_dependencies':
+    #                  [
+    #                      {
+    #                         'tool_shed': 'The tool shed that this repository was installed from.',
+    #                         'name': 'The name of the repository that failed to install.',
+    #                         'owner': 'Owner of the failed repository.',
+    #                         'changeset_revision': 'Changeset revision of the failed repository.',
+    #                         'error_message': 'The error message that was returned when the repository failed to install.',
+    #                      },
+    #                  ],
+    #              'current_repository':
+    #                  [
+    #                      {
+    #                         'tool_shed': 'The tool shed that this repository was installed from.',
+    #                         'name': 'The name of the repository that failed to install.',
+    #                         'owner': 'Owner of the failed repository.',
+    #                         'changeset_revision': 'Changeset revision of the failed repository.',
+    #                         'error_message': 'The error message that was returned when the repository failed to install.',
+    #                      },
+    #                  ],
+    #             {
+    #                 "name": "The name of the repository.",
+    #                 "owner": "The owner of the repository.",
+    #                 "changeset_revision": "The changeset revision of the repository.",
+    #                 "error_message": "The message stored in tool_dependency.error_message."
+    #             },
+    #         }
+    #      "missing_test_components":
+    #         [
+    #             {
+    #                 "tool_id": "The tool ID that missing components.",
+    #                 "tool_version": "The version of the tool."
+    #                 "tool_guid": "The guid of the tool."
+    #                 "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
+    #             },
+    #         ]
+    # }
+    #
+    # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
+    # than the list relevant to what it is testing.
+    main()

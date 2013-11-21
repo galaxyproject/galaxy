@@ -120,8 +120,8 @@ def get_static_settings():
 def get_webapp_global_conf():
     """Get the global_conf dictionary sent as the first argument to app_factory.
     """
-    # (was originally sent 'dict()') - nothing here for now except static settings
-    global_conf = dict()
+    # (was originally sent '{}') - nothing here for now except static settings
+    global_conf = {}
     if STATIC_ENABLED:
         global_conf.update( get_static_settings() )
     return global_conf
@@ -229,7 +229,7 @@ if 'repository_name' in os.environ and 'repository_owner' in os.environ:
 class ReportResults( Plugin ):
     '''Simple Nose plugin to record the IDs of all tests run, regardless of success.'''
     name = "reportresults"
-    passed = dict()
+    passed = {}
 
     def options( self, parser, env=os.environ ):
         super( ReportResults, self ).options( parser, env=env )
@@ -479,7 +479,7 @@ def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
     tool_test_results = repository_metadata.get( 'tool_test_results', {} )
     # If, for some reason, the script that checks for functional tests has not run, tool_test_results will be None.
     if tool_test_results is None:
-        return dict()
+        return {}
     return tool_test_results
 
 def install_repository( repository_info_dict ):
@@ -581,14 +581,16 @@ def parse_exclude_list( xml_filename ):
     return exclude_list
 
 def register_test_result( url, metadata_id, test_results_dict, repository_info_dict, params ):
-    '''
-    Update the repository metadata tool_test_results and appropriate flags using the API.
-    '''
+    '''Update the repository metadata tool_test_results and appropriate flags using the API.'''
     params[ 'tool_test_results' ] = test_results_dict
     if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
         return {}
     else:
-        return update( tool_shed_api_key, '%s' % ( suc.url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
+        url = '%s' % ( suc.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', metadata_id ) )
+        return update( tool_shed_api_key,
+                       url,
+                       params,
+                       return_formatted=False )
 
 def remove_generated_tests( app ):
     # Delete any configured tool functional tests from the test_toolbox.__dict__, otherwise nose will find them
@@ -644,7 +646,7 @@ def run_tests( test_config ):
     return result, test_config.plugins._plugins
 
 def show_summary_output( repository_info_dicts ):
-    repositories_by_owner = dict()
+    repositories_by_owner = {}
     for repository in repository_info_dicts:
         if repository[ 'owner' ] not in repositories_by_owner:
             repositories_by_owner[ repository[ 'owner' ] ] = []
@@ -706,6 +708,7 @@ def uninstall_tool_dependency( app, tool_dependency ):
 
 def main():
     # ---- Configuration ------------------------------------------------------
+    # TODO: refactor this very large main method into smaller, more maintainable components.
     galaxy_test_host = os.environ.get( 'GALAXY_INSTALL_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_INSTALL_TEST_PORT', str( default_galaxy_test_port_max ) )
 
@@ -730,7 +733,7 @@ def main():
     galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_MIGRATED_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_sheds_conf.xml' ) )
     galaxy_shed_tools_dict = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE', os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
-    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( dict() ) )
+    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
     if 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' )
     else:
@@ -946,8 +949,8 @@ def main():
               "user_id": "529fd61ab1c6cc36"
             }
             """
-            repository_status = dict()
-            params = dict()
+            repository_status = {}
+            params = {}
             repository_id = str( repository_info_dict.get( 'repository_id', None ) )
             changeset_revision = str( repository_info_dict.get( 'changeset_revision', None ) )
             metadata_revision_id = repository_info_dict.get( 'id', None )
@@ -1027,7 +1030,7 @@ def main():
                 # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository
                 # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
                 # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
-                file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( dict() ) )
+                file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
                 has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file, from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
                 # The repository_status dict should always have the following structure:
                 # {
