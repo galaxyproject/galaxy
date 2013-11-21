@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
 
     @web.expose_api
-    def index( self, trans, deleted='False', **kwd ):
+    def index( self, trans, deleted='False', f_email=None, **kwd ):
         """
         GET /api/users
         GET /api/users/deleted
@@ -23,6 +23,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         rval = []
         query = trans.sa_session.query( trans.app.model.User )
         deleted = util.string_as_bool( deleted )
+        if f_email:
+            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
         if deleted:
             query = query.filter( trans.app.model.User.table.c.deleted == True )
             # only admins can see deleted users
