@@ -1131,7 +1131,7 @@ def main():
                         repository_status[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
                     for dependency in repository.missing_repository_dependencies:
                         log.error( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
-                                   ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), str( dependency.error_message ) ) )
+                                   ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), unicodify( dependency.error_message ) ) )
                         test_result = dict( tool_shed=dependency.tool_shed,
                                             name=dependency.name,
                                             owner=dependency.owner,
