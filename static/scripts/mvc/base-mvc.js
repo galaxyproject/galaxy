@@ -89,6 +89,59 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
 
 
 //==============================================================================
+/** Backbone model that syncs to the browser's sessionStorage API.
+ */
+var SessionStorageModel = Backbone.Model.extend({
+    initialize : function( hash, x, y, z ){
+        if( !hash || !hash.hasOwnProperty( 'id' ) ){
+            throw new Error( 'SessionStorageModel needs an id on init' );
+        }
+        // immed. save the passed in model and save on any change to it
+        this.save();
+        this.on( 'change', function(){
+            this.save();
+        });
+    },
+    sync : function( method, model, options ){
+        model.trigger('request', model, {}, options);
+        var returned;
+        switch( method ){
+            case 'create'   : returned = this._create( model ); break;
+            case 'read'     : returned = this._read( model );   break;
+            case 'update'   : returned = this._update( model ); break;
+            case 'delete'   : returned = this._delete( model ); break;
+        }
+        if( returned !== undefined || returned !== null ){
+            if( options.success ){ options.success(); }
+        } else {
+            if( options.error ){ options.error(); }
+        }
+        return returned;
+    },
+    _create : function( model ){
+        var json = model.toJSON(),
+            set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
+        return ( set === null )?( set ):( json );
+    },
+    _read : function( model ){
+        return JSON.parse( sessionStorage.getItem( model.id, JSON.stringify( model.toJSON() ) ) );
+    },
+    _update : function( model ){
+        return model._create( model );
+    },
+    _delete : function( model ){
+        return sessionStorage.removeItem( model.id );
+    },
+    isNew : function(){
+        return !sessionStorage.hasOwnProperty( this.id );
+    }
+});
+(function(){
+    SessionStorageModel.prototype = _.omit( SessionStorageModel.prototype, 'url', 'urlRoot' );
+}());
+
+
+//==============================================================================
 /**
  *  @class persistent storage adapter.
  *      Provides an easy interface to object based storage using method chaining.
