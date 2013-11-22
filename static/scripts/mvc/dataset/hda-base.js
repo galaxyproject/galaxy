@@ -263,6 +263,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         if( _.isFunction( renderFn ) ){
             $body = renderFn.call( this );
         }
+        this._setUpBehaviors( $body );
+
         // only render the body html if it's being shown
         if( this.expanded ){
             $body.show();
