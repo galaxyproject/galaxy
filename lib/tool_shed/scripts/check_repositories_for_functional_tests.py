@@ -114,6 +114,10 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                                                             app.model.RepositoryMetadata.table.c.includes_tools == True,
                                                             app.model.RepositoryMetadata.table.c.do_not_test == False,
                                                             not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
+        # Clear any old invalid tests for this metadata revision, since this could lead to duplication of invalid test rows,
+        # or tests incorrectly labeled as invalid.
+        missing_test_components = []
+        repository = repository_metadata.repository
         records_checked += 1
         # Create the repository_status dictionary, using the dictionary from the previous test run if available.
         if repository_metadata.tool_test_results:
@@ -143,12 +147,12 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
             print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
-        tool_dicts = repository_metadata.get( 'tools', None )
+        tool_dicts = metadata.get( 'tools', None )
         if tool_dicts is not None:
             has_test_data = False
             testable_revision_found = False
             # Clone the repository up to the changeset revision we're checking.
-            repo_dir = repository_metadata.repository.repo_path( app )
+            repo_dir = repository.repo_path( app )
             repo = hg.repository( get_configured_ui(), repo_dir )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = clone_repository( repo_dir, work_dir, changeset_revision )
