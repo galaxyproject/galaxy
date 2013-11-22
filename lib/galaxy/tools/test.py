@@ -252,8 +252,6 @@ class ToolTestBuilder( object ):
                 assert_list = self.__parse_assert_list( output_elem )
                 file = attrib.pop( 'file', None )
                 # File no longer required if an list of assertions was present.
-                if not assert_list and file is None:
-                    raise Exception( "Test output does not have a 'file' to compare with or list of assertions to check")
                 attributes = {}
                 # Method of comparison
                 attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
@@ -262,12 +260,15 @@ class ToolTestBuilder( object ):
                 # Allow a file size to vary if sim_size compare
                 attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
                 attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
-                attributes['extra_files'] = []
-                attributes['assert_list'] = assert_list
+                extra_files = []
                 if 'ftype' in attrib:
                     attributes['ftype'] = attrib['ftype']
                 for extra in output_elem.findall( 'extra_files' ):
-                    attributes['extra_files'].append( self.__parse_extra_files_elem( extra ) )
+                    extra_files.append( self.__parse_extra_files_elem( extra ) )
+                if not (assert_list or file or extra_files):
+                    raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
+                attributes['assert_list'] = assert_list
+                attributes['extra_files'] = extra_files
                 self.__add_output( name, file, attributes )
         except Exception, e:
             self.error = True
