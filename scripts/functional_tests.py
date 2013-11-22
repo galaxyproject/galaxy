@@ -415,6 +415,16 @@ def main():
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
         # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
+
+        def _run_functional_test( testing_shed_tools=None ):
+            functional.test_toolbox.toolbox = app.toolbox
+            functional.test_toolbox.build_tests( testing_shed_tools=testing_shed_tools )
+            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            result = run_tests( test_config )
+            success = result.wasSuccessful()
+            return success
+
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
@@ -438,12 +448,7 @@ def main():
                 for installed_tool_panel_config in installed_tool_panel_configs:
                     tool_configs.append( installed_tool_panel_config )
                 app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests( testing_shed_tools=True )
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )
-            success = result.wasSuccessful()
+            success = _run_functional_test( testing_shed_tools=True )
             try:
                 os.unlink( tmp_tool_panel_conf )
             except:
@@ -453,14 +458,9 @@ def main():
             except:
                 log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
         else:
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests()
             if galaxy_test_file_dir:
                 os.environ[ 'GALAXY_TEST_FILE_DIR' ] = galaxy_test_file_dir
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )
-            success = result.wasSuccessful()
+            success = _run_functional_test( )
     except:
         log.exception( "Failure running tests" )
 
