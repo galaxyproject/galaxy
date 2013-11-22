@@ -78,13 +78,15 @@ class ToolTestBuilder( object ):
                     if selected:
                         default_option = name
                 else:
-                    default_option = test_param.static_options[0]
+                    first_option = test_param.static_options[0]
+                    first_option_value = first_option[1]
+                    default_option = first_option_value
                 matches_declared_value = lambda case_value: case_value == default_option
             else:
                 # No explicit value for this param and cannot determine a
                 # default - give up. Previously this would just result in a key
                 # error exception.
-                msg = "Failed to find test parameter specification required for conditional %s" % cond
+                msg = "Failed to find test parameter value specification required for conditional %s" % cond.name
                 raise Exception( msg )
 
         # Check the tool's defined cases against predicate to determine
@@ -93,7 +95,9 @@ class ToolTestBuilder( object ):
             if matches_declared_value( case.value ):
                 return case
         else:
-            log.info("Failed to find case matching test parameter specification for cond %s. Remainder of test behavior is unspecified." % cond)
+            msg_template = "%s - Failed to find case matching value (%s) for test parameter specification for conditional %s. Remainder of test behavior is unspecified."
+            msg = msg_template % ( self.tool.id, declared_value, cond.name )
+            log.info( msg )
 
     def __split_if_str( self, value ):
         split = isinstance(value, str)
@@ -143,10 +147,20 @@ class ToolTestBuilder( object ):
                 case_value = raw_input[ 1 ] if raw_input else None
                 case = self.__matching_case_for_value( value, case_value )
                 if case:
-                    expanded_value = self.__split_if_str( case.value )
-                    expanded_inputs[ case_context.for_state() ] = expanded_value
                     for input_name, input_value in case.inputs.items():
-                        expanded_inputs.update( self.__process_raw_inputs( { input_name: input_value }, raw_inputs, parent_context=cond_context ) )
+                        case_inputs = self.__process_raw_inputs( { input_name: input_value }, raw_inputs, parent_context=cond_context )
+                        expanded_inputs.update( case_inputs )
+                    expanded_case_value = self.__split_if_str( case.value )
+                    if case_value is not None:
+                        # A bit tricky here - we are growing inputs with value
+                        # that may be implicit (i.e. not defined by user just
+                        # a default defined in tool). So we do not want to grow
+                        # expanded_inputs and risk repeat block viewing this
+                        # as a new instance with value defined and hence enter
+                        # an infinite loop - hence the "case_value is not None"
+                        # check.
+                        expanded_inputs[ case_context.for_state() ] = expanded_case_value
+
             elif isinstance( value, grouping.Repeat ):
                 repeat_index = 0
                 while True:

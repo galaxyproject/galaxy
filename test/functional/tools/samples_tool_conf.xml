@@ -13,4 +13,5 @@
   <tool file="output_order.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
+  <tool file="implicit_default_conds.xml" />
 </toolbox>
