@@ -940,10 +940,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             for required_file in ttb.required_files:
                 value, extra = required_file
                 required_files.append( ( value ) )
-            inputs = []
-            for input in ttb.inputs:
-                name, value, extra = input
-                inputs.append( ( name, value ) )
+            inputs = [ input for input in ttb.inputs ]
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
