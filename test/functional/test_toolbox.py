@@ -53,8 +53,12 @@ class ToolTestCase( TwillTestCase ):
                 output_data = data_list[ name ]
             except (TypeError, KeyError):
                 # Legacy - fall back on ordered data list access if data_list is
-                # just a list (case with twill variant)
-                output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
+                # just a list (case with twill variant or if output changes its
+                # name).
+                if hasattr(data_list, "values"):
+                    output_data = data_list.values()[ output_index ]
+                else:
+                    output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
             self.assertTrue( output_data is not None )
             try:
                 galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )

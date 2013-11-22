@@ -1,5 +1,6 @@
 import os
 from galaxy.tools.parameters import grouping
+from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
@@ -148,7 +149,7 @@ class GalaxyInteractorApi( object ):
         ## Convert outputs list to a dictionary that can be accessed by
         ## output_name so can be more flexiable about ordering of outputs
         ## but also allows fallback to legacy access as list mode.
-        outputs_dict = {}
+        outputs_dict = odict()
         index = 0
         for output in datasets_object[ 'outputs' ]:
             outputs_dict[ index ] = outputs_dict[ output.get("output_name") ] = output
