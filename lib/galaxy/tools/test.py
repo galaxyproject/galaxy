@@ -54,26 +54,7 @@ class ToolTestBuilder( object ):
         """
         Iterator over metadata representing the required files for upload.
         """
-        for fname, extra in self.required_files:
-            data_dict = dict(
-                fname=fname,
-                metadata=extra.get( 'metadata', [] ),
-                composite_data=extra.get( 'composite_data', [] ),
-                ftype=extra.get( 'ftype', DEFAULT_FTYPE ),
-                dbkey=extra.get( 'dbkey', DEFAULT_DBKEY ),
-            )
-            edit_attributes = extra.get( 'edit_attributes', [] )
-
-            #currently only renaming is supported
-            for edit_att in edit_attributes:
-                if edit_att.get( 'type', None ) == 'name':
-                    new_name = edit_att.get( 'value', None )
-                    assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
-                    data_dict['name'] = new_name
-                else:
-                    raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
-
-            yield data_dict
+        return test_data_iter( self.required_files )
 
     def __matching_case_for_value( self, cond, declared_value ):
         test_param = cond.test_param
@@ -131,7 +112,7 @@ class ToolTestBuilder( object ):
             self.__preprocess_input_elems( test_elem )
             self.__parse_inputs_elems( test_elem, i )
 
-            self.__parse_output_elems( test_elem )
+            self.outputs = parse_output_elems( test_elem )
         except Exception, e:
             self.error = True
             self.exception = e
@@ -142,44 +123,7 @@ class ToolTestBuilder( object ):
     def __parse_inputs_elems( self, test_elem, i ):
         raw_inputs = []
         for param_elem in test_elem.findall( "param" ):
-            attrib = dict( param_elem.attrib )
-            if 'values' in attrib:
-                value = attrib[ 'values' ].split( ',' )
-            elif 'value' in attrib:
-                value = attrib['value']
-            else:
-                value = None
-            attrib['children'] = list( param_elem.getchildren() )
-            if attrib['children']:
-                # At this time, we can assume having children only
-                # occurs on DataToolParameter test items but this could
-                # change and would cause the below parsing to change
-                # based upon differences in children items
-                attrib['metadata'] = []
-                attrib['composite_data'] = []
-                attrib['edit_attributes'] = []
-                # Composite datasets need to be renamed uniquely
-                composite_data_name = None
-                for child in attrib['children']:
-                    if child.tag == 'composite_data':
-                        attrib['composite_data'].append( child )
-                        if composite_data_name is None:
-                            # Generate a unique name; each test uses a
-                            # fresh history.
-                            composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
-                                % ( i, uuid.uuid1().hex )
-                    elif child.tag == 'metadata':
-                        attrib['metadata'].append( child )
-                    elif child.tag == 'metadata':
-                        attrib['metadata'].append( child )
-                    elif child.tag == 'edit_attributes':
-                        attrib['edit_attributes'].append( child )
-                if composite_data_name:
-                    # Composite datasets need implicit renaming;
-                    # inserted at front of list so explicit declarations
-                    # take precedence
-                    attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-            name = attrib.pop( 'name' )
+            name, value, attrib = parse_param_elem( param_elem, i )
             raw_inputs.append( ( name, value, attrib ) )
         self.inputs = self.__process_raw_inputs( self.tool.inputs, raw_inputs )
 
@@ -229,98 +173,174 @@ class ToolTestBuilder( object ):
                     expanded_inputs[ context.for_state() ] = processed_value
         return expanded_inputs
 
-    def __parse_output_elems( self, test_elem ):
-        for output_elem in test_elem.findall( "output" ):
-            attrib = dict( output_elem.attrib )
-            name = attrib.pop( 'name', None )
-            if name is None:
-                raise Exception( "Test output does not have a 'name'" )
-
-            assert_list = self.__parse_assert_list( output_elem )
-            file = attrib.pop( 'file', None )
-            # File no longer required if an list of assertions was present.
-            attributes = {}
-            # Method of comparison
-            attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
-            # Number of lines to allow to vary in logs (for dates, etc)
-            attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
-            # Allow a file size to vary if sim_size compare
-            attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
-            attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
-            extra_files = []
-            if 'ftype' in attrib:
-                attributes['ftype'] = attrib['ftype']
-            for extra in output_elem.findall( 'extra_files' ):
-                extra_files.append( self.__parse_extra_files_elem( extra ) )
-            metadata = {}
-            for metadata_elem in output_elem.findall( 'metadata' ):
-                metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-            if not (assert_list or file or extra_files or metadata):
-                raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
-            attributes['assert_list'] = assert_list
-            attributes['extra_files'] = extra_files
-            attributes['metadata'] = metadata
-            self.__add_output( name, file, attributes )
-
-    def __parse_assert_list( self, output_elem ):
-        assert_elem = output_elem.find("assert_contents")
-        assert_list = None
-
-        # Trying to keep testing patch as localized as
-        # possible, this function should be relocated
-        # somewhere more conventional.
-        def convert_elem(elem):
-            """ Converts and XML element to a dictionary format, used by assertion checking code. """
-            tag = elem.tag
-            attributes = dict( elem.attrib )
-            child_elems = list( elem.getchildren() )
-            converted_children = []
-            for child_elem in child_elems:
-                converted_children.append( convert_elem(child_elem) )
-            return {"tag": tag, "attributes": attributes, "children": converted_children}
-        if assert_elem is not None:
-            assert_list = []
-            for assert_child in list(assert_elem):
-                assert_list.append(convert_elem(assert_child))
-
-        return assert_list
-
-    def __parse_extra_files_elem( self, extra ):
-        # File or directory, when directory, compare basename
-        # by basename
-        extra_type = extra.get( 'type', 'file' )
-        extra_name = extra.get( 'name', None )
-        assert extra_type == 'directory' or extra_name is not None, \
-            'extra_files type (%s) requires a name attribute' % extra_type
-        extra_value = extra.get( 'value', None )
-        assert extra_value is not None, 'extra_files requires a value attribute'
-        extra_attributes = {}
-        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-        extra_attributes['delta'] = extra.get( 'delta', '0' )
-        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-        extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
-        return extra_type, extra_value, extra_name, extra_attributes
-
-    def __add_output( self, name, file, extra ):
-        self.outputs.append( ( name, file, extra ) )
-
     def __add_uploaded_dataset( self, name, value, extra, input_parameter ):
         if value is None:
             assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
             return value
-        if ( value, extra ) not in self.required_files:
-            self.required_files.append( ( value, extra ) )  # these files will be uploaded
-        name_change = [ att for att in extra.get( 'edit_attributes', [] ) if att.get( 'type' ) == 'name' ]
-        if name_change:
-            name_change = name_change[-1].get( 'value' )  # only the last name change really matters
-            value = name_change  # change value for select to renamed uploaded file for e.g. composite dataset
-        else:
-            for end in [ '.zip', '.gz' ]:
-                if value.endswith( end ):
-                    value = value[ :-len( end ) ]
-                    break
-            value = os.path.basename( value )  # if uploading a file in a path other than root of test-data
-        return value
+        return require_file( name, value, extra, self.required_files )
+
+
+def test_data_iter( required_files ):
+    for fname, extra in required_files:
+        data_dict = dict(
+            fname=fname,
+            metadata=extra.get( 'metadata', [] ),
+            composite_data=extra.get( 'composite_data', [] ),
+            ftype=extra.get( 'ftype', DEFAULT_FTYPE ),
+            dbkey=extra.get( 'dbkey', DEFAULT_DBKEY ),
+        )
+        edit_attributes = extra.get( 'edit_attributes', [] )
+
+        #currently only renaming is supported
+        for edit_att in edit_attributes:
+            if edit_att.get( 'type', None ) == 'name':
+                new_name = edit_att.get( 'value', None )
+                assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
+                data_dict['name'] = new_name
+            else:
+                raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
+
+        yield data_dict
+
+
+def require_file( name, value, extra, required_files ):
+    if ( value, extra ) not in required_files:
+        required_files.append( ( value, extra ) )  # these files will be uploaded
+    name_change = [ att for att in extra.get( 'edit_attributes', [] ) if att.get( 'type' ) == 'name' ]
+    if name_change:
+        name_change = name_change[-1].get( 'value' )  # only the last name change really matters
+        value = name_change  # change value for select to renamed uploaded file for e.g. composite dataset
+    else:
+        for end in [ '.zip', '.gz' ]:
+            if value.endswith( end ):
+                value = value[ :-len( end ) ]
+                break
+        value = os.path.basename( value )  # if uploading a file in a path other than root of test-data
+    return value
+
+
+def parse_param_elem( param_elem, i=0 ):
+    attrib = dict( param_elem.attrib )
+    if 'values' in attrib:
+        value = attrib[ 'values' ].split( ',' )
+    elif 'value' in attrib:
+        value = attrib['value']
+    else:
+        value = None
+    attrib['children'] = list( param_elem.getchildren() )
+    if attrib['children']:
+        # At this time, we can assume having children only
+        # occurs on DataToolParameter test items but this could
+        # change and would cause the below parsing to change
+        # based upon differences in children items
+        attrib['metadata'] = []
+        attrib['composite_data'] = []
+        attrib['edit_attributes'] = []
+        # Composite datasets need to be renamed uniquely
+        composite_data_name = None
+        for child in attrib['children']:
+            if child.tag == 'composite_data':
+                attrib['composite_data'].append( child )
+                if composite_data_name is None:
+                    # Generate a unique name; each test uses a
+                    # fresh history.
+                    composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
+                        % ( i, uuid.uuid1().hex )
+            elif child.tag == 'metadata':
+                attrib['metadata'].append( child )
+            elif child.tag == 'metadata':
+                attrib['metadata'].append( child )
+            elif child.tag == 'edit_attributes':
+                attrib['edit_attributes'].append( child )
+        if composite_data_name:
+            # Composite datasets need implicit renaming;
+            # inserted at front of list so explicit declarations
+            # take precedence
+            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
+    name = attrib.pop( 'name' )
+    return ( name, value, attrib )
+
+
+def parse_output_elems( test_elem ):
+    outputs = []
+    for output_elem in test_elem.findall( "output" ):
+        name, file, attributes = __parse_output_elem( output_elem )
+        outputs.append( ( name, file, attributes ) )
+    return outputs
+
+
+def __parse_output_elem( output_elem ):
+    attrib = dict( output_elem.attrib )
+    name = attrib.pop( 'name', None )
+    if name is None:
+        raise Exception( "Test output does not have a 'name'" )
+
+    assert_list = __parse_assert_list( output_elem )
+    file = attrib.pop( 'file', None )
+    # File no longer required if an list of assertions was present.
+    attributes = {}
+    # Method of comparison
+    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
+    # Number of lines to allow to vary in logs (for dates, etc)
+    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
+    # Allow a file size to vary if sim_size compare
+    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
+    attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
+    extra_files = []
+    if 'ftype' in attrib:
+        attributes['ftype'] = attrib['ftype']
+    for extra in output_elem.findall( 'extra_files' ):
+        extra_files.append( __parse_extra_files_elem( extra ) )
+    metadata = {}
+    for metadata_elem in output_elem.findall( 'metadata' ):
+        metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
+    if not (assert_list or file or extra_files or metadata):
+        raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
+    attributes['assert_list'] = assert_list
+    attributes['extra_files'] = extra_files
+    attributes['metadata'] = metadata
+    return name, file, attributes
+
+
+def __parse_assert_list( output_elem ):
+    assert_elem = output_elem.find("assert_contents")
+    assert_list = None
+
+    # Trying to keep testing patch as localized as
+    # possible, this function should be relocated
+    # somewhere more conventional.
+    def convert_elem(elem):
+        """ Converts and XML element to a dictionary format, used by assertion checking code. """
+        tag = elem.tag
+        attributes = dict( elem.attrib )
+        child_elems = list( elem.getchildren() )
+        converted_children = []
+        for child_elem in child_elems:
+            converted_children.append( convert_elem(child_elem) )
+        return {"tag": tag, "attributes": attributes, "children": converted_children}
+    if assert_elem is not None:
+        assert_list = []
+        for assert_child in list(assert_elem):
+            assert_list.append(convert_elem(assert_child))
+
+    return assert_list
+
+
+def __parse_extra_files_elem( extra ):
+    # File or directory, when directory, compare basename
+    # by basename
+    extra_type = extra.get( 'type', 'file' )
+    extra_name = extra.get( 'name', None )
+    assert extra_type == 'directory' or extra_name is not None, \
+        'extra_files type (%s) requires a name attribute' % extra_type
+    extra_value = extra.get( 'value', None )
+    assert extra_value is not None, 'extra_files requires a value attribute'
+    extra_attributes = {}
+    extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
+    extra_attributes['delta'] = extra.get( 'delta', '0' )
+    extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
+    extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
+    return extra_type, extra_value, extra_name, extra_attributes
 
 
 class ParamContext(object):
