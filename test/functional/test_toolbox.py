@@ -25,8 +25,11 @@ class ToolTestCase( TwillTestCase ):
         test_history = galaxy_interactor.new_history()
 
         # Upload any needed files
+        upload_waits = []
         for test_data in testdef.test_data():
-            galaxy_interactor.stage_data( test_data, shed_tool_id )
+            upload_waits.append( galaxy_interactor.stage_data_async( test_data, shed_tool_id ) )
+        for upload_wait in upload_waits:
+            upload_wait()
 
         data_list = galaxy_interactor.run_tool( testdef )
         self.assertTrue( data_list )
@@ -70,20 +73,24 @@ class GalaxyInteractorTwill( object ):
     def __init__( self, twill_test_case ):
         self.twill_test_case = twill_test_case
 
-    def stage_data( self, test_data, shed_tool_id ):
+    def stage_data_async( self, test_data, shed_tool_id, async=True ):
+            name = test_data.get( 'name', None )
+            if name:
+                async = False
             self.twill_test_case.upload_file( test_data['fname'],
                                               ftype=test_data['ftype'],
                                               dbkey=test_data['dbkey'],
                                               metadata=test_data['metadata'],
                                               composite_data=test_data['composite_data'],
-                                              shed_tool_id=shed_tool_id )
-            name = test_data.get('name', None)
+                                              shed_tool_id=shed_tool_id,
+                                              wait=(not async) )
             if name:
                 hda_id = self.twill_test_case.get_history_as_data_list()[-1].get( 'id' )
                 try:
                     self.twill_test_case.edit_hda_attribute_info( hda_id=str(hda_id), new_name=name )
                 except:
                     print "### call to edit_hda failed for hda_id %s, new_name=%s" % (hda_id, name)
+            return lambda: self.twill_test_case.wait()
 
     def run_tool( self, testdef ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload

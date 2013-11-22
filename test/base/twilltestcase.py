@@ -197,7 +197,7 @@ class TwillTestCase( unittest.TestCase ):
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, shed_tool_id=None ):
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, name=None, shed_tool_id=None, wait=True ):
         """
         Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
         so the tool-data directory of test data files is contained in the installed tool shed repository.
@@ -218,12 +218,19 @@ class TwillTestCase( unittest.TestCase ):
                 filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 tc.formfile( "tool_form", "file_data", filename )
                 tc.fv( "tool_form", "space_to_tab", space_to_tab )
+                if name:
+                    # NAME is a hidden form element, so the following prop must
+                    # set to use it.
+                    tc.config("readonly_controls_writeable", 1)
+                    tc.fv( "tool_form", "NAME", name )
             tc.submit( "runtool_btn" )
             self.home()
         except AssertionError, err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
+        if not wait:
+            return
         # Make sure every history item has a valid hid
         hids = self.get_hids_in_history()
         for hid in hids:
