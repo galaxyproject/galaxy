@@ -1,7 +1,8 @@
 <tool id="handle_cond" name="handle_cond">
     <description>tail-to-head</description>
+    <!--  -->
     <command>
-        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1
+        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1; cat "$files.p4.file" >> $out_file1;
     </command>
     <inputs>
         <conditional name="p1">
@@ -30,7 +31,18 @@
             <when value="false">
                 <param name="p3v" value="7" type="integer" />
             </when>            
-        </conditional>                
+        </conditional>
+        <conditional name="files">
+            <param name="attach_files" type="boolean" checked="true" />
+            <when value="true">
+                <conditional name="p4">
+                    <param type="boolean" name="use" />
+                    <when value="true">
+                        <param type="data" name="file" />
+                    </when>
+                </conditional>
+            </when>
+        </conditional>               
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
@@ -40,9 +52,12 @@
             <param name="p1|use" value="True"/>
             <param name="p2|use" value="False"/>
             <param name="p3|use" value="True"/>
+            <param name="p4|use" value="True" />
+            <param name="p4|file" value="simple_line.txt" />
             <output name="out_file1">
                 <assert_contents>
                     <has_line line="4 7 4" />
+                    <has_line line="This is a line of text." />
                 </assert_contents>
             </output>
         </test>

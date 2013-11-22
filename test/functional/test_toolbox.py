@@ -9,6 +9,9 @@ from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
 from simplejson import dumps, loads
 
+import logging
+log = logging.getLogger( __name__ )
+
 toolbox = None
 
 
