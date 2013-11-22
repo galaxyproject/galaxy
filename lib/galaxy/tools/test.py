@@ -10,6 +10,7 @@ log = logging.getLogger( __name__ )
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
 DEFAULT_INTERACTOR = "twill"  # Default mechanism test code uses for interacting with Galaxy instance.
+DEFAULT_MAX_SECS = 120
 
 
 def parse_tests_elem(tool, tests_elem):
@@ -35,7 +36,7 @@ class ToolTestBuilder( object ):
 
     def __init__( self, tool, test_elem, i, default_interactor ):
         name = test_elem.get( 'name', 'Test-%d' % (i + 1) )
-        maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
+        maxseconds = int( test_elem.get( 'maxseconds', DEFAULT_MAX_SECS ) )
 
         self.tool = tool
         self.name = name

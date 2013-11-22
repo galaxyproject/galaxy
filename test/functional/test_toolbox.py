@@ -64,7 +64,14 @@ class ToolTestCase( TwillTestCase ):
             output_data = data_list[ output_index ]
             self.assertTrue( output_data is not None )
             name, outfile, attributes = output_tuple
-            galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+            try:
+                galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+            except Exception:
+                for stream in ['stdout', 'stderr']:
+                    stream_output = galaxy_interactor.get_job_stream( history, output_data, stream=stream )
+                    print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
+                raise
+
             output_index += 1
 
 
@@ -77,16 +84,16 @@ class GalaxyInteractorApi( object ):
         self.uploads = {}
 
     def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
+        self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
         hid = output_data.get( 'id' )
-        try:
-            fetcher = self.__dataset_fetcher( history_id )
-            self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
-        except Exception:
-            ## TODO: Print this!
-            # print >>sys.stderr, self.twill_test_case.get_job_stdout( output_data.get( 'id' ), format=True )
-            ## TODO: Print this!
-            # print >>sys.stderr, self.twill_test_case.get_job_stderr( output_data.get( 'id' ), format=True )
-            raise
+        fetcher = self.__dataset_fetcher( history_id )
+        ## TODO: Twill version verifys dataset is 'ok' in here.
+        self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+
+    def get_job_stream( self, history_id, output_data, stream ):
+        hid = output_data.get( 'id' )
+        data = self.__get( "histories/%s/contents/%s/provenance" % (history_id, hid) ).json()
+        return data.get( stream, '' )
 
     def new_history( self ):
         history_json = self.__post( "histories", {"name": "test_history"} ).json()
@@ -150,8 +157,11 @@ class GalaxyInteractorApi( object ):
                 tool_input.update(testdef.to_dict(testdef.tool.inputs_by_page[i], all_inputs))
 
         datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=tool_input )
-        self.__wait_for_history( history_id )()  # TODO: Remove and respect maxseconds!
-        return datasets.json()[ 'outputs' ]
+        datasets_object = datasets.json()
+        try:
+            return datasets_object[ 'outputs' ]
+        except KeyError:
+            raise Exception( datasets_object[ 'message' ] )
 
     def output_hid( self, output_data ):
         return output_data[ 'id' ]
@@ -161,16 +171,18 @@ class GalaxyInteractorApi( object ):
 
     def __wait_for_history( self, history_id ):
         def wait():
-            while True:
-                history_json = self.__get( "histories/%s" % history_id ).json()
-                state = history_json[ 'state' ]
-                if state == 'ok':
-                    #raise Exception(str(self.__get( self.__get( "histories/%s/contents" % history_id ).json()[0]['url'] ).json() ) )
-                    #raise Exception(str(self.__get( self.__get( "histories/%s/contents" % history_id ).json()[0]['url'] ).json() ) )
-                    break
-                elif state == 'error':
-                    raise Exception("History in error state.")
+            while not self.__history_ready( history_id ):
+                pass
         return wait
+
+    def __history_ready( self, history_id ):
+        history_json = self.__get( "histories/%s" % history_id ).json()
+        state = history_json[ 'state' ]
+        if state == 'ok':
+            return True
+        elif state == 'error':
+            raise Exception("History in error state.")
+        return False
 
     def __submit_tool( self, history_id, tool_id, tool_input, extra_data={}, files=None ):
         data = dict(
@@ -230,12 +242,10 @@ class GalaxyInteractorTwill( object ):
 
     def verify_output( self, history, output_data, outfile, attributes, shed_tool_id, maxseconds ):
         hid = output_data.get( 'hid' )
-        try:
-            self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id )
-        except Exception:
-            print >>sys.stderr, self.twill_test_case.get_job_stdout( output_data.get( 'id' ), format=True )
-            print >>sys.stderr, self.twill_test_case.get_job_stderr( output_data.get( 'id' ), format=True )
-            raise
+        self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+
+    def get_job_stream( self, history_id, output_data, stream ):
+        return self.twill_test_case._get_job_stream_output( output_data.get( 'id' ), stream=stream, format=False )
 
     def stage_data_async( self, test_data, history, shed_tool_id, async=True ):
             name = test_data.get( 'name', None )

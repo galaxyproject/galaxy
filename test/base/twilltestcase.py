@@ -616,6 +616,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
 
         output = self.last_page()
+        return self._format_stream( output, stream, format )
+
+    def _format_stream( self, output, stream, format ):
         if format:
             msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
             msg += output + "\n"
@@ -1409,13 +1412,16 @@ class TwillTestCase( unittest.TestCase ):
                 return True
         return False
 
-    def wait( self, maxseconds=120 ):
+    def wait( self, **kwds ):
         """Waits for the tools to finish"""
+        return self.wait_for(lambda: self.get_running_datasets(), **kwds)
+
+    def wait_for(self, func, maxseconds=120):
         sleep_amount = 0.1
         slept = 0
-        self.home()
         while slept <= maxseconds:
-            if self.get_running_datasets():
+            result = func()
+            if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
