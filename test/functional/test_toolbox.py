@@ -198,7 +198,7 @@ class GalaxyInteractorApi( object ):
 
     def __dataset_fetcher( self, history_id ):
         def fetcher( hda_id, base_name=None ):
-            url = "histories/%s/contents/%s/display" % (history_id, hda_id)
+            url = "histories/%s/contents/%s/display?raw=true" % (history_id, hda_id)
             if base_name:
                 url += "&filename=%s" % base_name
             return self.__get( url ).text
