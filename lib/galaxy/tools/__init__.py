@@ -1982,6 +1982,7 @@ class Tool( object, Dictifiable ):
                 group_errors = [ ]
                 any_group_errors = False
                 rep_index = 0
+                del group_state[:]  # Clear prepopulated defaults if repeat.min set.
                 while True:
                     rep_name = "%s_%d" % ( key, rep_index )
                     if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
