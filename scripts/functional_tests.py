@@ -62,6 +62,7 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
+default_galaxy_master_key = "TEST123"
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
@@ -296,6 +297,7 @@ def main():
                 pass
 
     # ---- Build Application --------------------------------------------------
+    master_api_key = os.environ.get( "GALAXY_TEST_MASTER_API_KEY", default_galaxy_master_key )
     app = None
     if start_server:
         kwargs = dict( admin_users='test@bx.psu.edu',
@@ -322,7 +324,9 @@ def main():
                        tool_parse_help=False,
                        update_integrated_tool_panel=False,
                        use_heartbeat=False,
-                       user_library_import_dir=user_library_import_dir )
+                       user_library_import_dir=user_library_import_dir,
+                       master_api_key=master_api_key,
+        )
         if psu_production:
             kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
@@ -418,7 +422,10 @@ def main():
 
         def _run_functional_test( testing_shed_tools=None ):
             functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests( testing_shed_tools=testing_shed_tools )
+            functional.test_toolbox.build_tests(
+                testing_shed_tools=testing_shed_tools,
+                master_api_key=master_api_key,
+            )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )
             result = run_tests( test_config )

@@ -191,7 +191,7 @@ class GalaxyInteractorTwill( object ):
         return expanded_inputs
 
 
-def build_tests( testing_shed_tools=False ):
+def build_tests( testing_shed_tools=False, master_api_key=None ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -226,6 +226,7 @@ def build_tests( testing_shed_tools=False ):
                 test_method.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
                 namespace[ 'test_tool_%06d' % j ] = test_method
                 namespace[ 'shed_tool_id' ] = shed_tool_id
+                namespace[ 'master_api_key' ] = master_api_key
             # The new.classobj function returns a new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = new.classobj( name, baseclasses, namespace )
