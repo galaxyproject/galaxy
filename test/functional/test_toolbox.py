@@ -325,10 +325,16 @@ class GalaxyInteractorTwill( object ):
         else:
             job_finish_by_output_count = False
 
+        inputs_tree = testdef.inputs
+        # # # HACK: Flatten single-value lists. Required when using expand_grouping
+        # #for key, value in inputs_tree.iteritems():
+        #    if isinstance(value, list) and len(value) == 1:
+        #        inputs_tree[key] = value[0]
+
         # Strip out just a given page of inputs from inputs "tree".
         def filter_page_inputs( n ):
             page_input_keys = testdef.tool.inputs_by_page[ n ].keys()
-            return dict( [ (k, v) for k, v in testdef.inputs.iteritems() if k.split("|")[0] in page_input_keys ] )
+            return dict( [ (k, v) for k, v in inputs_tree.iteritems() if k.split("|")[0] or k.split("|")[0].resplit("_", 1)[0] in page_input_keys ] )
 
         # Do the first page
         page_inputs = filter_page_inputs( 0 )

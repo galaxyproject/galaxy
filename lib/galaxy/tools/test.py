@@ -139,7 +139,7 @@ class ToolTestBuilder( object ):
         # history, but we'll keep it unique per set of tests - use i (test #)
         # and composite_data_names_counter (instance per test #)
         composite_data_names_counter = 0
-        raw_inputs = {}
+        raw_inputs = []
         for param_elem in test_elem.findall( "param" ):
             attrib = dict( param_elem.attrib )
             if 'values' in attrib:
@@ -180,9 +180,7 @@ class ToolTestBuilder( object ):
                     # take precedence
                     attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
             name = attrib.pop( 'name' )
-            if name not in raw_inputs:
-                raw_inputs[ name ] = []
-            raw_inputs[ name ].append( ( value, attrib ) )
+            raw_inputs.append( ( name, value, attrib ) )
         self.inputs = self.__process_raw_inputs( self.tool.inputs, raw_inputs )
 
     def __process_raw_inputs( self, tool_inputs, raw_inputs, parent_context=None ):
@@ -197,8 +195,8 @@ class ToolTestBuilder( object ):
             if isinstance( value, grouping.Conditional ):
                 cond_context = ParamContext( name=value.name, parent_context=parent_context )
                 case_context = ParamContext( name=value.test_param.name, parent_context=cond_context )
-                raw_input = case_context.value( raw_inputs )
-                case_value = raw_input[ 0 ] if raw_input else None
+                raw_input = case_context.extract_value( raw_inputs )
+                case_value = raw_input[ 1 ] if raw_input else None
                 case = self.__matching_case_for_value( value, case_value )
                 if case:
                     expanded_value = self.__split_if_str( case.value )
@@ -220,9 +218,9 @@ class ToolTestBuilder( object ):
                     repeat_index += 1
             else:
                 context = ParamContext( name=value.name, parent_context=parent_context )
-                raw_input = context.value( raw_inputs )
+                raw_input = context.extract_value( raw_inputs )
                 if raw_input:
-                    (param_value, param_extra) = raw_input
+                    (name, param_value, param_extra) = raw_input
                     if isinstance( value, basic.DataToolParameter ):
                         processed_value = [ self.__add_uploaded_dataset( context.for_state(), param_value, param_extra, value ) ]
                     else:
@@ -345,24 +343,33 @@ class ParamContext(object):
 
     def param_names( self ):
         for parent_context_param in self.parent_context.param_names():
-            yield "%s|%s" % ( parent_context_param, self.name )
-        yield self.name
+            if self.index is not None:
+                yield "%s|%s_%d" % ( parent_context_param, self.name, self.index )
+            else:
+                yield "%s|%s" % ( parent_context_param, self.name )
+        if self.index is not None:
+            yield "%s_%d" % ( self.name, self.index )
+        else:
+            yield self.name
 
-    def value( self, declared_inputs ):
+    def extract_value( self, raw_inputs ):
         for param_name in self.param_names():
-            if param_name in declared_inputs:
-                index = self.get_index()
-                try:
-                    return declared_inputs[ param_name ][ index ]
-                except IndexError:
-                    return None
+            value = self.__raw_param_found( param_name, raw_inputs)
+            if value:
+                return value
         return None
 
-    def get_index( self ):
-        if self.index is not None:
-            return self.index
+    def __raw_param_found( self, param_name, raw_inputs ):
+        index = None
+        for i, raw_input in enumerate( raw_inputs ):
+            if raw_input[ 0 ] == param_name:
+                index = i
+        if index is not None:
+            raw_input = raw_inputs[ index ]
+            del raw_inputs[ index ]
+            return raw_input
         else:
-            return self.parent_context.get_index()
+            return None
 
 
 class RootParamContext(object):

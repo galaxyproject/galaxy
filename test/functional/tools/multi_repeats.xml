@@ -21,6 +21,12 @@
             <param name="input2" value="simple_line.txt"/>
             <output name="out_file1" file="simple_line_x2.txt"/>
         </test>
+        <!--
+            Following tests continue to work, but for anything more
+            advanced than this simple case these should be considered
+            something of an anti-pattern - see disambiguate_repeats.xml
+            for superior syntax.
+        -->
         <test>
             <param name="input1" value="simple_line.txt"/>
             <param name="input2" value="simple_line.txt"/>
