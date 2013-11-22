@@ -73,18 +73,29 @@ class ToolTestBuilder( object ):
 
             yield data_dict
 
+    def __matching_case( self, cond, declared_inputs ):
+        param = cond.test_param
+        declared_value = declared_inputs.get( param.name, None )
+        for i, case in enumerate( cond.cases ):
+            if declared_value and (case.value == declared_value):
+                return case
+            if not declared_value:
+                # TODO: Default might not be top value, fix this.
+                return case
+        print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( param.name, declared_value )
+
     def expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
         for key, value in tool_inputs.items():
             expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
             if isinstance( value, grouping.Conditional ):
                 new_prefix = expanded_key
-                for i, case in enumerate( value.cases ):
-                    if declared_inputs[ value.test_param.name ] == case.value:
-                        expanded_value = self.__split_if_str(case.value)
-                        expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
-                        for input_name, input_value in case.inputs.items():
-                            expanded_inputs.update( self.expand_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ) )
+                case = self.__matching_case( value, declared_inputs )
+                if case:
+                    expanded_value = self.__split_if_str(case.value)
+                    expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
+                    for input_name, input_value in case.inputs.items():
+                        expanded_inputs.update( self.expand_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ) )
             elif isinstance( value, grouping.Repeat ):
                 for repeat_index in xrange( 0, 1 ):  # need to allow for and figure out how many repeats we have
                     for r_name, r_value in value.inputs.iteritems():
