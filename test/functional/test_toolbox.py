@@ -201,7 +201,7 @@ class GalaxyInteractorApi( object ):
             url = "histories/%s/contents/%s/display?raw=true" % (history_id, hda_id)
             if base_name:
                 url += "&filename=%s" % base_name
-            return self.__get( url ).text
+            return self.__get( url ).content
 
         return fetcher
 
