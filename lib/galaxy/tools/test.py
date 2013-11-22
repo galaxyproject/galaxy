@@ -127,12 +127,16 @@ class ToolTestBuilder( object ):
             # features or workarounds.
             self.interactor = test_elem.get( 'interactor', default_interactor )
 
+            self.__preprocess_input_elems( test_elem )
             self.__parse_inputs_elems( test_elem, i )
 
             self.__parse_output_elems( test_elem )
         except Exception, e:
             self.error = True
             self.exception = e
+
+    def __preprocess_input_elems( self, test_elem ):
+        expand_input_elems( test_elem )
 
     def __parse_inputs_elems( self, test_elem, i ):
         # Composite datasets need a unique name: each test occurs in a fresh
@@ -385,3 +389,46 @@ class RootParamContext(object):
 
     def get_index( self ):
         return 0
+
+
+def expand_input_elems( root_elem, prefix="" ):
+    __append_prefix_to_params( root_elem, prefix )
+
+    repeat_elems = root_elem.findall( 'repeat' )
+    indices = {}
+    for repeat_elem in repeat_elems:
+        name = repeat_elem.get( "name" )
+        if name not in indices:
+            indices[ name ] = 0
+            index = 0
+        else:
+            index = indices[ name ] + 1
+            indices[ name ] = index
+
+        new_prefix = __prefix_join( prefix, name, index=index )
+        expand_input_elems( repeat_elem, new_prefix )
+        __pull_up_params( root_elem, repeat_elem )
+        root_elem.remove( repeat_elem )
+
+    cond_elems = root_elem.findall( 'conditional' )
+    for cond_elem in cond_elems:
+        new_prefix = __prefix_join( prefix, cond_elem.get( "name" ) )
+        expand_input_elems( cond_elem, new_prefix )
+        __pull_up_params( root_elem, cond_elem )
+        root_elem.remove( cond_elem )
+
+
+def __append_prefix_to_params( elem, prefix ):
+    for param_elem in elem.findall( 'param' ):
+        param_elem.set( "name", __prefix_join( prefix, param_elem.get( "name" ) ) )
+
+
+def __pull_up_params( parent_elem, child_elem ):
+    for param_elem in child_elem.findall( 'param' ):
+        parent_elem.append( param_elem )
+        child_elem.remove( param_elem )
+
+
+def __prefix_join( prefix, name, index=None ):
+    name = name if index is None else "%s_%d" % ( name, index )
+    return name if not prefix else "%s|%s" % ( prefix, name )

@@ -24,5 +24,22 @@
 
             <output name="out_file1" file="simple_lines_interleaved.txt"/>
         </test>
+
+        <test>
+            <repeat name="queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="queries">
+                <param name="input" value="simple_line_alternative.txt"/>
+            </repeat>
+            <repeat name="more_queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="more_queries">
+                <param name="input" value="simple_line_alternative.txt"/>
+            </repeat>
+            <output name="out_file1" file="simple_lines_interleaved.txt"/>
+        </test>
+
     </tests>
 </tool>
