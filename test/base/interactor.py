@@ -1,4 +1,5 @@
 import os
+from StringIO import StringIO
 from galaxy.tools.parameters import grouping
 from galaxy.util.odict import odict
 import galaxy.model
@@ -8,6 +9,9 @@ from simplejson import dumps, loads
 
 from logging import getLogger
 log = getLogger( __name__ )
+
+VERBOSE_ERRORS = True
+ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 
 
 def build_interactor( test_case, type="api" ):
@@ -60,7 +64,7 @@ class GalaxyInteractorApi( object ):
 
     def get_job_stream( self, history_id, output_data, stream ):
         hid = self.__output_id( output_data )
-        data = self._get( "histories/%s/contents/%s/provenance" % (history_id, hid) ).json()
+        data = self._dataset_provenance( history_id, hid )
         return data.get( stream, '' )
 
     def new_history( self ):
@@ -171,7 +175,61 @@ class GalaxyInteractorApi( object ):
     def __history_ready( self, history_id ):
         history_json = self._get( "histories/%s" % history_id ).json()
         state = history_json[ 'state' ]
-        return self._state_ready( state, error_msg="History in error state." )
+        try:
+            return self._state_ready( state, error_msg="History in error state." )
+        except Exception:
+            if VERBOSE_ERRORS:
+                self._summarize_history_errors( history_id )
+            raise
+
+    def _summarize_history_errors( self, history_id ):
+        print "History with id %s in error - summary of datasets in error below." % history_id
+        try:
+            history_contents = self.__contents( history_id )
+        except Exception:
+            print "*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*"
+
+        for dataset in history_contents:
+            if dataset[ 'state' ] != 'error':
+                continue
+
+            print ERROR_MESSAGE_DATASET_SEP
+            dataset_id = dataset.get( 'id', None )
+            print "| %d - %s (HID - NAME) " % ( int( dataset['hid'] ), dataset['name'] )
+            try:
+                dataset_info = self._dataset_info( history_id, dataset_id )
+                print "| Dataset Blurb:"
+                print self.format_for_error( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." )
+                print "| Dataset Info:"
+                print self.format_for_error( dataset_info.get( "misc_info", "" ), "Dataset info is empty." )
+            except Exception:
+                print "| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*"
+            try:
+                provenance_info = self._dataset_provenance( history_id, dataset_id )
+                print "| Dataset Job Standard Output:"
+                print self.format_for_error( provenance_info.get( "stdout", "" ), "Standard output was empty." )
+                print "| Dataset Job Standard Error:"
+                print self.format_for_error( provenance_info.get( "stderr", "" ), "Standard error was empty." )
+            except Exception:
+                print "| *TEST FRAMEWORK ERROR FETCHING JOB DETAILS*"
+            print "|"
+        print ERROR_MESSAGE_DATASET_SEP
+
+    def format_for_error( self, blob, empty_message, prefix="|  " ):
+        contents = "\n".join([ "%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r") ] )
+        return contents or "%s*%s*" % ( prefix, empty_message )
+
+    def _dataset_provenance( self, history_id, id ):
+        provenance = self._get( "histories/%s/contents/%s/provenance" % ( history_id, id ) ).json()
+        return provenance
+
+    def _dataset_info( self, history_id, id ):
+        dataset_json = self._get( "histories/%s/contents/%s" % ( history_id, id ) ).json()
+        return dataset_json
+
+    def __contents( self, history_id ):
+        history_contents_json = self._get( "histories/%s/contents" % history_id ).json()
+        return history_contents_json
 
     def _state_ready( self, state_str, error_msg ):
         if state_str == 'ok':
