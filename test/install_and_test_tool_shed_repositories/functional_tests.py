@@ -91,6 +91,7 @@ log = logging.getLogger( 'install_and_test_repositories' )
 default_galaxy_test_port_min = 10000
 default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
+default_galaxy_master_api_key = "123456"
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -792,6 +793,7 @@ def main():
     # Write the embedded web application's specific configuration to a temporary file. This is necessary in order for
     # the external metadata script to find the right datasets.
     kwargs = dict( admin_users = 'test@bx.psu.edu',
+                   master_api_key = default_galaxy_master_api_key,
                    allow_user_creation = True,
                    allow_user_deletion = True,
                    allow_library_path_paste = True,
@@ -1181,7 +1183,7 @@ def main():
                     test_toolbox.toolbox = app.toolbox
                     # Generate the test methods for this installed repository. We need to pass in True here, or it will look
                     # in $GALAXY_HOME/test-data for test data, which may result in missing or invalid test files.
-                    test_toolbox.build_tests( testing_shed_tools=True )
+                    test_toolbox.build_tests( testing_shed_tools=True, master_api_key=default_galaxy_master_api_key )
                     # Set up nose to run the generated functional tests.
                     test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
                     test_config.configure( sys.argv )
