@@ -7,6 +7,8 @@ from base.twilltestcase import TwillTestCase
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
+from simplejson import dumps
+import requests
 
 toolbox = None
 
@@ -29,14 +31,14 @@ class ToolTestCase( TwillTestCase ):
         # Upload any needed files
         upload_waits = []
         for test_data in testdef.test_data():
-            upload_waits.append( galaxy_interactor.stage_data_async( test_data, shed_tool_id ) )
+            upload_waits.append( galaxy_interactor.stage_data_async( test_data, test_history, shed_tool_id ) )
         for upload_wait in upload_waits:
             upload_wait()
 
-        data_list = galaxy_interactor.run_tool( testdef )
+        data_list = galaxy_interactor.run_tool( testdef, test_history )
         self.assertTrue( data_list )
 
-        self.__verify_outputs( testdef, shed_tool_id, data_list )
+        self.__verify_outputs( testdef, test_history, shed_tool_id, data_list, galaxy_interactor )
 
         galaxy_interactor.delete_history( test_history )
 
@@ -53,45 +55,150 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
 
-    def __verify_outputs( self, testdef, shed_tool_id, data_list ):
+    def __verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
         maxseconds = testdef.maxseconds
 
-        elem_index = 0 - len( testdef.outputs )
+        output_index = 0 - len( testdef.outputs )
         for output_tuple in testdef.outputs:
             # Get the correct hid
-            elem = data_list[ elem_index ]
-            self.assertTrue( elem is not None )
-            self.__verify_output( output_tuple, shed_tool_id, elem, maxseconds=maxseconds )
-            elem_index += 1
-
-    def __verify_output( self, output_tuple, shed_tool_id, elem, maxseconds ):
+            output_data = data_list[ output_index ]
+            self.assertTrue( output_data is not None )
             name, outfile, attributes = output_tuple
-            elem_hid = elem.get( 'hid' )
-            try:
-                self.verify_dataset_correctness( outfile, hid=elem_hid, attributes=attributes, shed_tool_id=shed_tool_id )
-            except Exception:
-                print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
-                print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
-                raise
+            galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+            output_index += 1
 
 
 class GalaxyInteractorApi( object ):
 
     def __init__( self, twill_test_case ):
         self.twill_test_case = twill_test_case
-        self.master_api_key = twill_test_case.master_api_key
+        self.api_url = "%s/api" % twill_test_case.url.rstrip("/")
+        self.api_key = self.__get_user_key( twill_test_case.master_api_key )
+        self.uploads = {}
+
+    def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
+        hid = output_data.get( 'id' )
+        try:
+            fetcher = self.__dataset_fetcher( history_id )
+            self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        except Exception:
+            ## TODO: Print this!
+            # print >>sys.stderr, self.twill_test_case.get_job_stdout( output_data.get( 'id' ), format=True )
+            ## TODO: Print this!
+            # print >>sys.stderr, self.twill_test_case.get_job_stderr( output_data.get( 'id' ), format=True )
+            raise
 
     def new_history( self ):
-        return None
+        history_json = self.__post( "histories", {"name": "test_history"} ).json()
+        return history_json[ 'id' ]
 
-    def stage_data_async( self, test_data, shed_tool_id, async=True ):
-        return lambda: True
+    def stage_data_async( self, test_data, history_id, shed_tool_id, async=True ):
+        fname = test_data[ 'fname' ]
+        file_name = self.twill_test_case.get_filename( fname, shed_tool_id=shed_tool_id )
+        name = test_data.get( 'name', None )
+        if not name:
+            name = os.path.basename( file_name )
+        tool_input = {
+            "file_type": test_data[ 'ftype' ],
+            "dbkey": test_data[ 'dbkey' ],  # TODO: Handle it! Doesn't work if undefined, does seem to in Twill.
+            "files_0|NAME": name,
+            "files_0|type": "upload_dataset",
+        }
+        files = {
+            "files_0|file_data": open( file_name, 'rb')
+        }
+        submit_response = self.__submit_tool( history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files ).json()
+        dataset = submit_response["outputs"][0]
+        #raise Exception(str(dataset))
+        hid = dataset['id']
+        self.uploads[ fname ] = {"src": "hda", "id": hid}
+        return self.__wait_for_history( history_id )
 
-    def run_tool( self, testdef ):
-        return []
+    def run_tool( self, testdef, history_id ):
+        # We need to handle the case where we've uploaded a valid compressed file since the upload
+        # tool will have uncompressed it on the fly.
+        all_inputs = {}
+        for name, value, _ in testdef.inputs:
+            all_inputs[ name ] = value
+
+        for key, value in all_inputs.iteritems():
+            # TODO: Restrict this to param inputs.
+            if value in self.uploads:
+                all_inputs[key] = self.uploads[ value ]
+
+        # TODO: Handle repeats.
+        # TODO: Handle pages.
+        # TODO: Handle force_history_refresh
+        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=all_inputs )
+        self.__wait_for_history( history_id )()  # TODO: Remove and respect maxseconds!
+        return datasets.json()[ 'outputs' ]
+
+    def output_hid( self, output_data ):
+        return output_data[ 'id' ]
 
     def delete_history( self, history ):
         return None
+
+    def __wait_for_history( self, history_id ):
+        def wait():
+            while True:
+                history_json = self.__get( "histories/%s" % history_id ).json()
+                state = history_json[ 'state' ]
+                if state == 'ok':
+                    #raise Exception(str(self.__get( self.__get( "histories/%s/contents" % history_id ).json()[0]['url'] ).json() ) )
+                    #raise Exception(str(self.__get( self.__get( "histories/%s/contents" % history_id ).json()[0]['url'] ).json() ) )
+                    break
+                elif state == 'error':
+                    raise Exception("History in error state.")
+        return wait
+
+    def __submit_tool( self, history_id, tool_id, tool_input, extra_data={}, files=None ):
+        data = dict(
+            history_id=history_id,
+            tool_id=tool_id,
+            inputs=dumps( tool_input ),
+            **extra_data
+        )
+        return self.__post( "tools", files=files, data=data )
+
+    def __get_user_key( self, admin_key ):
+        all_users = self.__get( 'users', key=admin_key ).json()
+        try:
+            test_user = [ user for user in all_users if user["email"] == 'test@bx.psu.edu' ][0]
+        except IndexError:
+            data = dict(
+                email='test@bx.psu.edu',
+                password='testuser',
+                username='admin-user',
+            )
+            test_user = self.__post( 'users', data, key=admin_key ).json()
+        return self.__post( "users/%s/api_key" % test_user['id'], key=admin_key ).json()
+
+    def __dataset_fetcher( self, history_id ):
+        def fetcher( hda_id, base_name=None ):
+            url = "histories/%s/contents/%s/display" % (history_id, hda_id)
+            if base_name:
+                url += "&filename=%s" % base_name
+            return self.__get( url ).text
+
+        return fetcher
+
+    def __post( self, path, data={}, files=None, key=None):
+        if not key:
+            key = self.api_key
+        data = data.copy()
+        data['key'] = key
+        return requests.post( "%s/%s" % (self.api_url, path), data=data, files=files )
+
+    def __get( self, path, data={}, key=None ):
+        if not key:
+            key = self.api_key
+        data = data.copy()
+        data['key'] = key
+        if path.startswith("/api"):
+            path = path[ len("/api"): ]
+        url = "%s/%s" % (self.api_url, path)
+        return requests.get( url, params=data )
 
 
 class GalaxyInteractorTwill( object ):
@@ -99,7 +206,16 @@ class GalaxyInteractorTwill( object ):
     def __init__( self, twill_test_case ):
         self.twill_test_case = twill_test_case
 
-    def stage_data_async( self, test_data, shed_tool_id, async=True ):
+    def verify_output( self, history, output_data, outfile, attributes, shed_tool_id, maxseconds ):
+        hid = output_data.get( 'hid' )
+        try:
+            self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id )
+        except Exception:
+            print >>sys.stderr, self.twill_test_case.get_job_stdout( output_data.get( 'id' ), format=True )
+            print >>sys.stderr, self.twill_test_case.get_job_stderr( output_data.get( 'id' ), format=True )
+            raise
+
+    def stage_data_async( self, test_data, history, shed_tool_id, async=True ):
             name = test_data.get( 'name', None )
             if name:
                 async = False
@@ -118,7 +234,7 @@ class GalaxyInteractorTwill( object ):
                     print "### call to edit_hda failed for hda_id %s, new_name=%s" % (hda_id, name)
             return lambda: self.twill_test_case.wait()
 
-    def run_tool( self, testdef ):
+    def run_tool( self, testdef, test_history ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         all_inputs = {}
@@ -178,6 +294,9 @@ class GalaxyInteractorTwill( object ):
 
     def delete_history( self, latest_history ):
         self.twill_test_case.delete_history( id=self.twill_test_case.security.encode_id( latest_history.id ) )
+
+    def output_hid( self, output_data ):
+        return output_data.get( 'hid' )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
