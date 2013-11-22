@@ -179,10 +179,12 @@ class ToolTestBuilder( object ):
                 raw_input = context.extract_value( raw_inputs )
                 if raw_input:
                     (name, param_value, param_extra) = raw_input
+                    param_value = self.__split_if_str( param_value )
                     if isinstance( value, basic.DataToolParameter ):
-                        processed_value = [ self.__add_uploaded_dataset( context.for_state(), param_value, param_extra, value ) ]
+                        if not isinstance(param_value, list):
+                            param_value = [ param_value ]
+                        processed_value = [ self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ) for v in param_value ]
                     else:
-                        param_value = self.__split_if_str( param_value )
                         processed_value = param_value
                     expanded_inputs[ context.for_state() ] = processed_value
         return expanded_inputs
@@ -309,7 +311,7 @@ def __parse_output_elem( output_elem ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
+        raise Exception( "Test output defines nothting to check (e.g. must have a 'file' check against, assertions to check, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata

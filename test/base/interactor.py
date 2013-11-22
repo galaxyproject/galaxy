@@ -133,9 +133,13 @@ class GalaxyInteractorApi( object ):
         inputs_tree = testdef.inputs.copy()
         for key, value in inputs_tree.iteritems():
             values = [value] if not isinstance(value, list) else value
+            new_values = []
             for value in values:
                 if value in self.uploads:
-                    inputs_tree[ key ] = self.uploads[ value ]
+                    new_values.append( self.uploads[ value ] )
+                else:
+                    new_values.append( value )
+            inputs_tree[ key ] = new_values
 
         # # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.iteritems():

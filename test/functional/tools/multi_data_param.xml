@@ -18,13 +18,23 @@
       <output name="out1" file="simple_line.txt" />
       <output name="out2" file="simple_line_alternative.txt" />
     </test>
-    <!-- TODO: Support this or something like this.
+    <test>
+      <param name="f1" value="simple_line.txt,simple_line_alternative.txt" />
+      <param name="f2" value="simple_line_alternative.txt" />
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <!-- Twill interactor cannot do these latter two, but not even 
+         UI widget can do this next one. -->
     <test>
       <param name="f1" value="simple_line.txt,simple_line.txt" />
       <param name="f2" value="simple_line_alternative.txt" />
       <output name="out1" file="simple_line_x2.txt" />
-      <output name="out1" file="simple_line_alternative.txt" />
+      <output name="out2" file="simple_line_alternative.txt" />
     </test>
-    -->
   </tests>
 </tool>
