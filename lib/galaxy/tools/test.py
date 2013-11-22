@@ -192,10 +192,6 @@ class ToolTestBuilder( object ):
         return value
 
     def __parse_elem( self, test_elem, i, default_interactor ):
-        # Composite datasets need a unique name: each test occurs in a fresh
-        # history, but we'll keep it unique per set of tests - use i (test #)
-        # and composite_data_names_counter (instance per test #)
-        composite_data_names_counter = 0
         try:
             # Mechanism test code uses for interacting with Galaxy instance,
             # until 'api' is the default switch this to API to use its new
@@ -203,80 +199,91 @@ class ToolTestBuilder( object ):
             # features or workarounds.
             self.interactor = test_elem.get( 'interactor', default_interactor )
 
-            for param_elem in test_elem.findall( "param" ):
-                attrib = dict( param_elem.attrib )
-                if 'values' in attrib:
-                    value = attrib[ 'values' ].split( ',' )
-                elif 'value' in attrib:
-                    value = attrib['value']
-                else:
-                    value = None
-                attrib['children'] = list( param_elem.getchildren() )
-                if attrib['children']:
-                    # At this time, we can assume having children only
-                    # occurs on DataToolParameter test items but this could
-                    # change and would cause the below parsing to change
-                    # based upon differences in children items
-                    attrib['metadata'] = []
-                    attrib['composite_data'] = []
-                    attrib['edit_attributes'] = []
-                    # Composite datasets need to be renamed uniquely
-                    composite_data_name = None
-                    for child in attrib['children']:
-                        if child.tag == 'composite_data':
-                            attrib['composite_data'].append( child )
-                            if composite_data_name is None:
-                                # Generate a unique name; each test uses a
-                                # fresh history
-                                composite_data_name = '_COMPOSITE_RENAMED_t%i_d%i' \
-                                    % ( i, composite_data_names_counter )
-                                composite_data_names_counter += 1
-                        elif child.tag == 'metadata':
-                            attrib['metadata'].append( child )
-                        elif child.tag == 'metadata':
-                            attrib['metadata'].append( child )
-                        elif child.tag == 'edit_attributes':
-                            attrib['edit_attributes'].append( child )
-                    if composite_data_name:
-                        # Composite datasets need implicit renaming;
-                        # inserted at front of list so explicit declarations
-                        # take precedence
-                        attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-                self.__add_param( attrib.pop( 'name' ), value, attrib )
-            for output_elem in test_elem.findall( "output" ):
-                attrib = dict( output_elem.attrib )
-                name = attrib.pop( 'name', None )
-                if name is None:
-                    raise Exception( "Test output does not have a 'name'" )
+            self.__parse_inputs_elems( test_elem, i )
 
-                assert_list = self.__parse_assert_list( output_elem )
-                file = attrib.pop( 'file', None )
-                # File no longer required if an list of assertions was present.
-                attributes = {}
-                # Method of comparison
-                attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
-                # Number of lines to allow to vary in logs (for dates, etc)
-                attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
-                # Allow a file size to vary if sim_size compare
-                attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
-                attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
-                extra_files = []
-                if 'ftype' in attrib:
-                    attributes['ftype'] = attrib['ftype']
-                for extra in output_elem.findall( 'extra_files' ):
-                    extra_files.append( self.__parse_extra_files_elem( extra ) )
-                metadata = {}
-                for metadata_elem in output_elem.findall( 'metadata' ):
-                    metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-                if not (assert_list or file or extra_files or metadata):
-                    raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
-                attributes['assert_list'] = assert_list
-                attributes['extra_files'] = extra_files
-                attributes['metadata'] = metadata
-                self.__add_output( name, file, attributes )
+            self.__parse_output_elems( test_elem )
         except Exception, e:
             self.error = True
             self.exception = e
+
+    def __parse_inputs_elems( self, test_elem, i ):
+        # Composite datasets need a unique name: each test occurs in a fresh
+        # history, but we'll keep it unique per set of tests - use i (test #)
+        # and composite_data_names_counter (instance per test #)
+        composite_data_names_counter = 0
+        for param_elem in test_elem.findall( "param" ):
+            attrib = dict( param_elem.attrib )
+            if 'values' in attrib:
+                value = attrib[ 'values' ].split( ',' )
+            elif 'value' in attrib:
+                value = attrib['value']
+            else:
+                value = None
+            attrib['children'] = list( param_elem.getchildren() )
+            if attrib['children']:
+                # At this time, we can assume having children only
+                # occurs on DataToolParameter test items but this could
+                # change and would cause the below parsing to change
+                # based upon differences in children items
+                attrib['metadata'] = []
+                attrib['composite_data'] = []
+                attrib['edit_attributes'] = []
+                # Composite datasets need to be renamed uniquely
+                composite_data_name = None
+                for child in attrib['children']:
+                    if child.tag == 'composite_data':
+                        attrib['composite_data'].append( child )
+                        if composite_data_name is None:
+                            # Generate a unique name; each test uses a
+                            # fresh history
+                            composite_data_name = '_COMPOSITE_RENAMED_t%i_d%i' \
+                                % ( i, composite_data_names_counter )
+                            composite_data_names_counter += 1
+                    elif child.tag == 'metadata':
+                        attrib['metadata'].append( child )
+                    elif child.tag == 'metadata':
+                        attrib['metadata'].append( child )
+                    elif child.tag == 'edit_attributes':
+                        attrib['edit_attributes'].append( child )
+                if composite_data_name:
+                    # Composite datasets need implicit renaming;
+                    # inserted at front of list so explicit declarations
+                    # take precedence
+                    attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
+            self.__add_param( attrib.pop( 'name' ), value, attrib )
+
+    def __parse_output_elems( self, test_elem ):
+        for output_elem in test_elem.findall( "output" ):
+            attrib = dict( output_elem.attrib )
+            name = attrib.pop( 'name', None )
+            if name is None:
+                raise Exception( "Test output does not have a 'name'" )
+
+            assert_list = self.__parse_assert_list( output_elem )
+            file = attrib.pop( 'file', None )
+            # File no longer required if an list of assertions was present.
+            attributes = {}
+            # Method of comparison
+            attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
+            # Number of lines to allow to vary in logs (for dates, etc)
+            attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
+            # Allow a file size to vary if sim_size compare
+            attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
+            attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
+            extra_files = []
+            if 'ftype' in attrib:
+                attributes['ftype'] = attrib['ftype']
+            for extra in output_elem.findall( 'extra_files' ):
+                extra_files.append( self.__parse_extra_files_elem( extra ) )
+            metadata = {}
+            for metadata_elem in output_elem.findall( 'metadata' ):
+                metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
+            if not (assert_list or file or extra_files or metadata):
+                raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
+            attributes['assert_list'] = assert_list
+            attributes['extra_files'] = extra_files
+            attributes['metadata'] = metadata
+            self.__add_output( name, file, attributes )
 
     def __parse_assert_list( self, output_elem ):
         assert_elem = output_elem.find("assert_contents")
