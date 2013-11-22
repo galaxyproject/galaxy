@@ -1305,7 +1305,15 @@ class TwillTestCase( unittest.TestCase ):
                                     control.get( name=elem ).selected = True
                         else:
                             for elem in control_value:
-                                control.get( name=elem ).selected = True
+                                try:
+                                    # Doubt this case would ever work, but want
+                                    # to preserve backward compat.
+                                    control.get( name=elem ).selected = True
+                                except Exception:
+                                    # ... anyway this is really what we want to
+                                    # do, probably even want to try the len(
+                                    # elem ) > 30 check below.
+                                    control.get( label=elem ).selected = True
                     else:  # control.is_of_kind( "singlelist" )
                         for elem in control_value:
                             try:

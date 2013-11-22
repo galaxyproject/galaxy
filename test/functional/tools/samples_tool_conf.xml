@@ -14,4 +14,5 @@
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
   <tool file="implicit_default_conds.xml" />
+  <tool file="multi_data_param.xml" />
 </toolbox>
