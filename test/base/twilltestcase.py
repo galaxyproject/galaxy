@@ -826,8 +826,10 @@ class TwillTestCase( unittest.TestCase ):
                 if ext != test_ext:
                     raise AssertionError( errmsg )
         else:
+            hda_id = self.security.encode_id( elem.get( 'id' ) )
             self.home()
-            self.visit_page( "display?hid=" + hid )
+            # See not in controllers/root.py about encoded_id.
+            self.visit_page( "display?encoded_id=%s" % hda_id )
             data = self.last_page()
             if attributes is not None and attributes.get( "assert_list", None ) is not None:
                 try:
@@ -918,7 +920,7 @@ class TwillTestCase( unittest.TestCase ):
         if base_name is None:
             base_name = os.path.split(file_name)[-1]
         temp_name = self.makeTfname(fname=base_name)
-        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
+        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, hda_id, base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
         if self.keepOutdir > '':
