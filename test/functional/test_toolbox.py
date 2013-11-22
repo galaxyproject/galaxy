@@ -7,8 +7,7 @@ from base.twilltestcase import TwillTestCase
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
-from simplejson import dumps
-import requests
+from simplejson import dumps, loads
 
 toolbox = None
 
@@ -133,7 +132,10 @@ class GalaxyInteractorApi( object ):
             }
         submit_response_object = self.__submit_tool( history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files )
         submit_response = submit_response_object.json()
-        dataset = submit_response["outputs"][0]
+        try:
+            dataset = submit_response["outputs"][0]
+        except KeyError:
+            raise Exception(submit_response)
         #raise Exception(str(dataset))
         hid = dataset['id']
         self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = self.uploads[ name ] = {"src": "hda", "id": hid}
@@ -242,7 +244,7 @@ class GalaxyInteractorApi( object ):
             key = self.api_key
         data = data.copy()
         data['key'] = key
-        return requests.post( "%s/%s" % (self.api_url, path), data=data, files=files )
+        return post_request( "%s/%s" % (self.api_url, path), data=data, files=files )
 
     def __get( self, path, data={}, key=None ):
         if not key:
@@ -252,7 +254,7 @@ class GalaxyInteractorApi( object ):
         if path.startswith("/api"):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)
-        return requests.get( url, params=data )
+        return get_request( url, params=data )
 
 
 class GalaxyInteractorTwill( object ):
@@ -398,3 +400,66 @@ GALAXY_INTERACTORS = {
     'api': GalaxyInteractorApi,
     'twill': GalaxyInteractorTwill,
 }
+
+
+# Lets just try to use requests if it is available, but if not provide fallback
+# on custom implementations of limited requests get/post functionality.
+try:
+    from requests import get as get_request
+    from requests import post as post_request
+except ImportError:
+    import urllib2
+    import httplib
+
+    class RequestsLikeResponse( object ):
+
+        def __init__( self, content ):
+            self.content = content
+
+        def json( self ):
+            return loads( self.content )
+
+    def get_request( url, params={} ):
+        argsep = '&'
+        if '?' not in url:
+            argsep = '?'
+        url = url + argsep + '&'.join( [ '%s=%s' % (k, v) for k, v in params.iteritems() ] )
+        #req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' } )
+        return RequestsLikeResponse(urllib2.urlopen( url ).read() )
+
+    def post_request( url, data, files ):
+        parsed_url = urllib2.urlparse.urlparse( url )
+        return __post_multipart( host=parsed_url.netloc, selector=parsed_url.path, fields=data.iteritems(), files=(files or {}).iteritems() )
+
+    # http://stackoverflow.com/a/681182
+    def __post_multipart(host, selector, fields, files):
+        content_type, body = __encode_multipart_formdata(fields, files)
+        h = httplib.HTTP(host)
+        h.putrequest('POST', selector)
+        h.putheader('content-type', content_type)
+        h.putheader('content-length', str(len(body)))
+        h.endheaders()
+        h.send(body)
+        errcode, errmsg, headers = h.getreply()
+        return RequestsLikeResponse(h.file.read())
+
+    def __encode_multipart_formdata(fields, files):
+        LIMIT = '----------lImIt_of_THE_fIle_eW_$'
+        CRLF = '\r\n'
+        L = []
+        for (key, value) in fields:
+            L.append('--' + LIMIT)
+            L.append('Content-Disposition: form-data; name="%s"' % key)
+            L.append('')
+            L.append(value)
+        for (key, value) in files:
+            L.append('--' + LIMIT)
+            L.append('Content-Disposition: form-data; name="%s"; filename="%s";' % (key, key))
+            L.append('Content-Type: application/octet-stream')
+            L.append('')
+            L.append(value.read())
+        L.append('--' + LIMIT + '--')
+        L.append('')
+        body = CRLF.join(L)
+        content_type = 'multipart/form-data; boundary=%s' % LIMIT
+        return content_type, body
