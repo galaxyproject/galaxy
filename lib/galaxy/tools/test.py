@@ -73,6 +73,24 @@ class ToolTestBuilder( object ):
 
             yield data_dict
 
+    def to_dict( self, tool_inputs, declared_inputs ):
+        expanded_inputs = {}
+        for key, value in tool_inputs.items():
+            if isinstance( value, grouping.Conditional ):
+                for i, case in enumerate( value.cases ):
+                    if declared_inputs[ value.test_param.name ] == case.value:
+                        pass  # TODO
+            elif isinstance( value, grouping.Repeat ):
+                values = []
+                for r_name, r_value in value.inputs.iteritems():
+                    values.append( self.to_dict( {r_name: r_value} , declared_inputs ) )
+                expanded_inputs[ value.name ] = values
+            elif value.name not in declared_inputs:
+                print "%s not declared in tool test, will not change default value." % value.name
+            else:
+                expanded_inputs[ value.name ] = declared_inputs[value.name]
+        return expanded_inputs
+
     def __matching_case( self, cond, declared_inputs ):
         param = cond.test_param
         declared_value = declared_inputs.get( param.name, None )

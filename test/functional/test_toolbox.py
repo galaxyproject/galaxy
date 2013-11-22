@@ -126,10 +126,30 @@ class GalaxyInteractorApi( object ):
             if value in self.uploads:
                 all_inputs[key] = self.uploads[ value ]
 
-        # TODO: Handle repeats.
-        # TODO: Handle pages.
-        # TODO: Handle force_history_refresh
-        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=all_inputs )
+        # TODO: Handle pages?
+        # TODO: Handle force_history_refresh?
+        flat_inputs = True
+        if flat_inputs:
+            # Build up tool_input flately (e.g {"a_repeat_0|a_repeat_param" : "value1"})
+            expanded_inputs = {}
+            expanded_inputs.update(testdef.expand_grouping(testdef.tool.inputs_by_page[0], all_inputs))
+            for i in range( 1, testdef.tool.npages ):
+                expanded_inputs.update(testdef.expand_grouping(testdef.tool.inputs_by_page[i], all_inputs))
+
+            # # HACK: Flatten single-value lists. Required when using expand_grouping
+            for key, value in expanded_inputs.iteritems():
+                if isinstance(value, list) and len(value) == 1:
+                    expanded_inputs[key] = value[0]
+            tool_input = expanded_inputs
+        else:
+            # Build up tool_input as nested dictionary (e.g. {"a_repeat": [{"a_repeat_param" : "value1"}]})
+            # Doesn't work with the tool API at this time.
+            tool_input = {}
+            tool_input.update(testdef.to_dict(testdef.tool.inputs_by_page[0], all_inputs))
+            for i in range( 1, testdef.tool.npages ):
+                tool_input.update(testdef.to_dict(testdef.tool.inputs_by_page[i], all_inputs))
+
+        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=tool_input )
         self.__wait_for_history( history_id )()  # TODO: Remove and respect maxseconds!
         return datasets.json()[ 'outputs' ]
 
