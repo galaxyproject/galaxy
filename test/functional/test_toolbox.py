@@ -57,12 +57,16 @@ class ToolTestCase( TwillTestCase ):
     def __verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
         maxseconds = testdef.maxseconds
 
-        output_index = 0 - len( testdef.outputs )
-        for output_tuple in testdef.outputs:
+        for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
-            output_data = data_list[ output_index ]
-            self.assertTrue( output_data is not None )
             name, outfile, attributes = output_tuple
+            try:
+                output_data = data_list[ name ]
+            except (TypeError, KeyError):
+                # Legacy - fall back on ordered data list access if data_list is
+                # just a list (case with twill variant)
+                output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
+            self.assertTrue( output_data is not None )
             try:
                 galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
             except Exception:
@@ -70,8 +74,6 @@ class ToolTestCase( TwillTestCase ):
                     stream_output = galaxy_interactor.get_job_stream( history, output_data, stream=stream )
                     print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
                 raise
-
-            output_index += 1
 
 
 class GalaxyInteractorApi( object ):
@@ -199,9 +201,20 @@ class GalaxyInteractorApi( object ):
         datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=tool_input )
         datasets_object = datasets.json()
         try:
-            return datasets_object[ 'outputs' ]
+            return self.__dictify_outputs( datasets_object )
         except KeyError:
             raise Exception( datasets_object[ 'message' ] )
+
+    def __dictify_outputs( self, datasets_object ):
+        ## Convert outputs list to a dictionary that can be accessed by
+        ## output_name so can be more flexiable about ordering of outputs
+        ## but also allows fallback to legacy access as list mode.
+        outputs_dict = {}
+        index = 0
+        for output in datasets_object[ 'outputs' ]:
+            outputs_dict[ index ] = outputs_dict[ output.get("output_name") ] = output
+            index += 1
+        return outputs_dict
 
     def output_hid( self, output_data ):
         return output_data[ 'id' ]

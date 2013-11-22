@@ -10,4 +10,5 @@
   <tool file="multi_output.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
+  <tool file="output_order.xml" />
 </toolbox>
