@@ -1020,6 +1020,9 @@ def main():
     galaxy_test_host = os.environ.get( 'GALAXY_INSTALL_TEST_HOST', default_galaxy_test_host )
     # Set the GALAXY_INSTALL_TEST_HOST variable so that Twill will have the Galaxy url to install repositories into.
     os.environ[ 'GALAXY_INSTALL_TEST_HOST' ] = galaxy_test_host
+    # Set the GALAXY_TEST_HOST environment variable so that the toolbox tests will have the Galaxy url to run tool functional
+    # tests on.
+    os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
     galaxy_test_port = os.environ.get( 'GALAXY_INSTALL_TEST_PORT', str( default_galaxy_test_port_max ) )
     os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
     tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_PATH', 'tools' )
