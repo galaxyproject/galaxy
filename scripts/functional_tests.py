@@ -178,6 +178,7 @@ def main():
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
     testing_migrated_tools = '-migrated' in sys.argv
     testing_installed_tools = '-installed' in sys.argv
+    datatypes_conf_override = None
 
     if testing_migrated_tools or testing_installed_tools:
         sys.argv.pop()
@@ -197,8 +198,21 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml' )
-        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
+        framework_test = '-framework' in sys.argv  # Run through suite of tests testing framework.
+        if framework_test:
+            sys.argv.pop()
+            framework_tool_dir = os.path.join('test', 'functional', 'tools')
+            tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
+            datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
+            test_dir = os.path.join( framework_tool_dir, 'test-data')
+
+            tool_path = framework_tool_dir
+        else:
+            # Use tool_conf.xml toolbox.
+            tool_conf = 'tool_conf.xml'
+            test_dir = default_galaxy_test_file_dir
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
+        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
         library_import_dir = galaxy_test_file_dir
@@ -338,6 +352,8 @@ def main():
         if use_distributed_object_store:
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
+        if datatypes_conf_override:
+            kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.
         galaxy_config_file = os.environ.get( 'GALAXY_TEST_INI_FILE', None )
         if not galaxy_config_file:

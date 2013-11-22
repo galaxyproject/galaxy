@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<toolbox>
+  <tool file="upload.xml"/>
+  <tool file="multi_repeats.xml"/>
+</toolbox>
