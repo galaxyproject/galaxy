@@ -258,14 +258,14 @@ class GalaxyInteractorTwill( object ):
             job_finish_by_output_count = False
 
         # Do the first page
-        page_inputs = self.__expand_grouping(testdef.tool.inputs_by_page[0], all_inputs)
+        page_inputs = testdef.expand_grouping(testdef.tool.inputs_by_page[0], all_inputs)
 
         # Run the tool
         self.twill_test_case.run_tool( testdef.tool.id, repeat_name=repeat_name, **page_inputs )
         print "page_inputs (0)", page_inputs
         # Do other pages if they exist
         for i in range( 1, testdef.tool.npages ):
-            page_inputs = self.__expand_grouping(testdef.tool.inputs_by_page[i], all_inputs)
+            page_inputs = testdef.expand_grouping(testdef.tool.inputs_by_page[i], all_inputs)
             self.twill_test_case.submit_form( **page_inputs )
             print "page_inputs (%i)" % i, page_inputs
 
@@ -299,43 +299,6 @@ class GalaxyInteractorTwill( object ):
 
     def output_hid( self, output_data ):
         return output_data.get( 'hid' )
-
-    def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
-        expanded_inputs = {}
-        for key, value in tool_inputs.items():
-            if isinstance( value, grouping.Conditional ):
-                if prefix:
-                    new_prefix = "%s|%s" % ( prefix, value.name )
-                else:
-                    new_prefix = value.name
-                for i, case in enumerate( value.cases ):
-                    if declared_inputs[ value.test_param.name ] == case.value:
-                        if isinstance(case.value, str):
-                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value.split( "," )
-                        else:
-                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value
-                        for input_name, input_value in case.inputs.items():
-                            expanded_inputs.update( self.__expand_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ) )
-            elif isinstance( value, grouping.Repeat ):
-                for repeat_index in xrange( 0, 1 ):  # need to allow for and figure out how many repeats we have
-                    for r_name, r_value in value.inputs.iteritems():
-                        new_prefix = "%s_%d" % ( value.name, repeat_index )
-                        if prefix:
-                            new_prefix = "%s|%s" % ( prefix, new_prefix )
-                        expanded_inputs.update( self.__expand_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix ) )
-            elif value.name not in declared_inputs:
-                print "%s not declared in tool test, will not change default value." % value.name
-            elif isinstance(declared_inputs[value.name], str):
-                if prefix:
-                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name].split(",")
-                else:
-                    expanded_inputs[value.name] = declared_inputs[value.name].split(",")
-            else:
-                if prefix:
-                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name]
-                else:
-                    expanded_inputs[value.name] = declared_inputs[value.name]
-        return expanded_inputs
 
 
 def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=None ):
