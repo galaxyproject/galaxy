@@ -104,6 +104,9 @@ class GalaxyInteractorApi( object ):
             "file_type": test_data[ 'ftype' ],
             "dbkey": test_data[ 'dbkey' ],
         }
+        for elem in test_data.get('metadata', []):
+            tool_input["files_metadata|%s" % elem.get( 'name' )] = elem.get( 'value' )
+
         composite_data = test_data[ 'composite_data' ]
         if composite_data:
             files = {}
