@@ -1,0 +1,24 @@
+<tool id="composite_output" name="composite_output" version="1.0.0">
+  <command>mkdir $output.extra_files_path; cp $input.extra_files_path/* $output.extra_files_path</command>
+  <inputs>
+    <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+  </inputs>
+  <outputs>
+    <data format="velvet" name="output" label="">
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+        <composite_data value='velveth_test1/Sequences' ftype="Sequences"/>
+        <composite_data value='velveth_test1/Roadmaps' ftype="Roadmaps"/>
+        <composite_data value='velveth_test1/Log'/>
+      </param>
+      <output name="output" file="velveth_test1/output.html">
+        <extra_files type="file" name="Sequences" value="velveth_test1/Sequences" />
+        <extra_files type="file" name="Roadmaps" value="velveth_test1/Roadmaps" />
+        <extra_files type="file" name="Log" value="velveth_test1/Log" />
+      </output>
+    </test>
+  </tests>
+</tool>
