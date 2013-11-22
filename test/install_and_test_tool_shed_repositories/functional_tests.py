@@ -91,7 +91,7 @@ log = logging.getLogger( 'install_and_test_repositories' )
 default_galaxy_test_port_min = 10000
 default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
-default_galaxy_master_api_key = "123456"
+default_galaxy_master_api_key = None
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -262,14 +262,14 @@ class ReportResults( Plugin ):
             return passed_tests
         return []
 
-def deactivate_repository( app, repository_info_dict ):
+def deactivate_repository( app, repository_dict ):
     # Clean out any generated tests. This is necessary for Twill.
     remove_generated_tests( app )
     sa_session = app.model.context.current
     # The dict contains the only repository the app should have installed at this point.
-    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( repository_info_dict[ 'name' ],
-                                                                                         repository_info_dict[ 'owner' ],
-                                                                                         repository_info_dict[ 'changeset_revision' ] )
+    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( repository_dict[ 'name' ],
+                                                                                         repository_dict[ 'owner' ],
+                                                                                         repository_dict[ 'changeset_revision' ] )
     # We have to do this through Twill, in order to maintain app.toolbox and shed_tool_conf.xml in a state that is valid for future tests.
     for required_repository in repository.repository_dependencies:
         repository_dict = dict( name=required_repository.name,
@@ -355,14 +355,17 @@ def get_api_url( base, parts=[], params=None, key=None ):
     return url
 
 def get_latest_downloadable_changeset_revision( url, name, owner ):
+    error_message = ''
     api_url_parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
     params = urllib.urlencode( dict( name=name, owner=owner ) )
     api_url = get_api_url( url, api_url_parts, params )
-    changeset_revisions = json_from_url( api_url )
+    changeset_revisions, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
     if changeset_revisions:
-        return changeset_revisions[ -1 ]
+        return changeset_revisions[ -1 ], error_message
     else:
-        return '000000000000'
+        return suc.INITIAL_CHANGELOG_HASH, error_message
 
 def get_missing_tool_dependencies( repository ):
     log.debug( 'Checking %s repository %s for missing tool dependencies.' % ( repository.status, repository.name ) )
@@ -370,18 +373,24 @@ def get_missing_tool_dependencies( repository ):
     for tool_dependency in repository.tool_dependencies:
         log.debug( 'Tool dependency %s version %s has status %s.' % ( tool_dependency.name, tool_dependency.version, tool_dependency.status ) )
     for repository_dependency in repository.repository_dependencies:
-        if not repository_dependency.includes_tool_dependencies:
-            continue
-        missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency ) )
+        if repository_dependency.includes_tool_dependencies:
+            missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency ) )
     return missing_tool_dependencies
 
-def get_repository_info_from_api( url, repository_info_dict ):
-    parts = [ 'api', 'repositories', repository_info_dict[ 'repository_id' ] ]
+def get_repository_info_from_api( url, repository_dict ):
+    error_message = ''
+    parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
     api_url = get_api_url( base=url, parts=parts )
-    extended_dict = json_from_url( api_url )
-    latest_changeset_revision = get_latest_downloadable_changeset_revision( url, extended_dict[ 'name' ], extended_dict[ 'owner' ] )
+    extended_dict, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
+    latest_changeset_revision, error_message = get_latest_downloadable_changeset_revision( url,
+                                                                                           extended_dict[ 'name' ],
+                                                                                           extended_dict[ 'owner' ] )
+    if error_message:
+        return None, error_message
     extended_dict[ 'latest_revision' ] = str( latest_changeset_revision )
-    return extended_dict
+    return extended_dict, error_message
 
 def get_repository_tuple_from_elem( elem ):
     attributes = elem.attrib
@@ -390,78 +399,84 @@ def get_repository_tuple_from_elem( elem ):
     changeset_revision = attributes.get( 'changeset_revision', None )
     return ( name, owner, changeset_revision )
 
-def get_repositories_to_install( tool_shed_url, latest_revision_only=True ):
-    '''
+def get_repositories_to_install( tool_shed_url ):
+    """
     Get a list of repository info dicts to install. This method expects a json list of dicts with the following structure:
-    [
-      {
-        "changeset_revision": <revision>,
-        "encoded_repository_id": <encoded repository id from the tool shed>,
-        "name": <name>,
-        "owner": <owner>,
-        "tool_shed_url": <url>
-      },
-      ...
-    ]
-    NOTE: If the tool shed URL specified in any dict is not present in the tool_sheds_conf.xml, the installation will fail.
-    '''
-    assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
+    [{ "changeset_revision": <revision>,
+       "encoded_repository_id": <encoded repository id from the tool shed>,
+       "name": <name>,
+       "owner": <owner>,
+       "tool_shed_url": <url> }]
+    """
+    error_message = ''
+    latest_revision_only = '-check_all_revisions' not in sys.argv
+    repository_dicts = []
+    # We are testing deprecated repositories because it is possible that a deprecated repository contains valid tools that
+    # someone has previously installed. Deleted repositories have never been installed, so should not be tested. If they are
+    # undeleted, this script will then test them the next time it runs. We don't need to check if a repository has been deleted
+    # here because our call to the Tool Shed API filters by downloadable='true', in which case deleted will always be False.
+    if os.path.exists( exclude_list_file ):
+        log.debug( 'Loading the list of repositories excluded from testing from the file %s...', exclude_list_file )
+        exclude_list = parse_exclude_list( exclude_list_file )
+        results_dict[ 'exclude_list' ] = exclude_list
     params = urllib.urlencode( dict( do_not_test='false',
                                      downloadable='true',
                                      malicious='false',
                                      includes_tools='true',
                                      skip_tool_test='false' ) )
     api_url = get_api_url( base=tool_shed_url, parts=[ 'repository_revisions' ], params=params )
-    base_repository_list = json_from_url( api_url )
-    log.info( 'The api returned %d metadata revisions.', len( base_repository_list ) )
-    known_repository_ids = {}
-    detailed_repository_list = []
-    for repository_to_install_dict in base_repository_list:
+    baseline_repository_dicts, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
+    log.debug( 'The Tool Shed API returned %d metadata revisions for installation and testing.' % len( baseline_repository_dicts ) )
+    for baseline_repository_dict in baseline_repository_dicts:
         # We need to get some details from the tool shed API, such as repository name and owner, to pass on to the
         # module that will generate the install methods.
-        repository_info_dict = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
-        if repository_info_dict[ 'latest_revision' ] == '000000000000':
-            continue
-        owner = repository_info_dict[ 'owner' ]
-        name = repository_info_dict[ 'name' ]
-        changeset_revision = repository_to_install_dict[ 'changeset_revision' ]
-        repository_id = repository_to_install_dict[ 'repository_id' ]
-        # We are testing deprecated repositories, because it is possible that a deprecated repository contains valid
-        # and functionally correct tools that someone has previously installed. Deleted repositories have never been installed,
-        # and therefore do not need to be checked. If they are undeleted, this script will then test them the next time it runs.
-        if repository_info_dict[ 'deleted' ]:
-            log.info( "Skipping revision %s of repository id %s (%s/%s) since the repository is deleted...",
-                      changeset_revision,
-                      repository_id,
-                      name,
-                      owner )
-            continue
-        # Now merge the dict returned from /api/repository_revisions with the detailed dict we just retrieved.
-        if latest_revision_only:
-            if changeset_revision == repository_info_dict[ 'latest_revision' ]:
-                detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
+        repository_dict, error_message = get_repository_info_from_api( galaxy_tool_shed_url, baseline_repository_dict )
+        if error_message:
+            log.debug( 'Error getting additional details about repository %s from the API: %s' % ( str( name ), error_message ) )
         else:
-            detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
-    repositories_tested = len( detailed_repository_list )
+            # Don't test empty repositories.
+            changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
+            if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
+                # append it to the list of repository_dicts to install and test.
+                if latest_revision_only:
+                    latest_revision = repository_dict[ 'latest_revision' ]
+                    if changeset_revision == latest_revision:
+                        repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
+                else:
+                    repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
     if latest_revision_only:
         skipped_previous = ' and metadata revisions that are not the most recent'
     else:
         skipped_previous = ''
     if testing_single_repository:
-        log.info( 'Testing single repository with name %s and owner %s.',
-                  testing_single_repository[ 'name' ],
-                  testing_single_repository[ 'owner' ])
-        for repository_to_install in detailed_repository_list:
-            if repository_to_install[ 'name' ] == testing_single_repository[ 'name' ] \
-            and repository_to_install[ 'owner' ] == testing_single_repository[ 'owner' ]:
-                if testing_single_repository[ 'changeset_revision' ] is None:
-                    return [ repository_to_install ]
+        tsr_name = testing_single_repository[ 'name' ]
+        tsr_owner = testing_single_repository[ 'owner' ]
+        tsr_changeset_revision = testing_single_repository[ 'changeset_revision' ]
+        log.debug( 'Testing single repository with name %s and owner %s.' % ( str( tsr_name ), str( tsr_owner ) ) )
+        for repository_to_install in repository_dicts:
+            rti_name = repository_to_install[ 'name' ]
+            rti_owner = repository_to_install[ 'owner' ]
+            rti_changeset_revision = repository_to_install[ 'changeset_revision' ]
+            if rti_name == tsr_name and rti_owner == tsr_owner:
+                if tsr_changeset_revision is None:
+                    return [ repository_to_install ], error_message
                 else:
-                    if testing_single_repository[ 'changeset_revision' ] == repository_to_install[ 'changeset_revision' ]:
-                        return [ repository_to_install ]
-        return []
-    log.info( 'After removing deleted repositories%s from the list, %d remain to be tested.', skipped_previous, repositories_tested )
-    return detailed_repository_list
+                    if tsr_changeset_revision == rti_changeset_revision:
+                        return repository_dicts, error_message
+        return repository_dicts, error_message
+    # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
+    log.debug( "Retrieved %d repositories from the API url: %s." % ( len( repository_dicts ), str( galaxy_tool_shed_url ) ) )
+    if '-list_repositories' in sys.argv:
+        log.debug( "Repositories for testing:" )
+        for repository_dict in repository_dicts:
+            log.debug( "Revision %s of repository %s owned by %s" % \
+                ( str( repository_dict.get( 'changeset_revision', None ) ), \
+                  str( repository_dict.get( 'name', None ) ), \
+                  str( repository_dict.get( 'owner', None ) ) ) )
+    return repository_dicts, error_message
 
 def get_tool_info_from_test_id( test_id ):
     '''
@@ -474,82 +489,289 @@ def get_tool_info_from_test_id( test_id ):
     return tool_id, tool_version
 
 def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
+    error_message = ''
     api_path = [ 'api', 'repository_revisions', metadata_revision_id ]
     api_url = get_api_url( base=tool_shed_url, parts=api_path )
-    repository_metadata = json_from_url( api_url )
+    repository_metadata, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
     tool_test_results = repository_metadata.get( 'tool_test_results', {} )
     # If, for some reason, the script that checks for functional tests has not run, tool_test_results will be None.
     if tool_test_results is None:
-        return {}
-    return tool_test_results
+        return {}, error_message
+    return tool_test_results, error_message
 
-def install_repository( repository_info_dict ):
-    """
-    The repository_info_dict looks something like:
-    {
-      "changeset_revision": "13fa22a258b5",
-      "contents_url": "/api/repositories/529fd61ab1c6cc36/contents",
-      "deleted": false,
-      "deprecated": false,
-      "description": "Convert column case.",
-      "downloadable": true,
-      "id": "529fd61ab1c6cc36",
-      "long_description": "This tool takes the specified columns and converts them to uppercase or lowercase.",
-      "malicious": false,
-      "name": "change_case",
-      "owner": "test",
-      "private": false,
-      "repository_id": "529fd61ab1c6cc36",
-      "times_downloaded": 0,
-      "tool_shed_url": "http://toolshed.local:10001",
-      "url": "/api/repository_revisions/529fd61ab1c6cc36",
-      "user_id": "529fd61ab1c6cc36"
-    }
-    """
-    data[ 'tool_shed_url' ] = repository_info_dict[ 'tool_shed_url' ]
-    data[ 'name' ] = repository_info_dict[ 'name' ]
-    data[ 'owner' ] = repository_info_dict[ 'owner' ]
-    data[ 'changeset_revision' ] = repository_info_dict[ 'changeset_revision' ]
-    data[ 'install_repository_dependencies' ] = True
-    data[ 'install_tool_dependencies' ] = True
-    submit( options.api, '%s%s' % ( galaxy_url.strip( '/' ), '/api/tool_shed_repositories/new/install_repository_revision' ), data )
+def handle_missing_dependencies( app, repository, metadata_revision_id, missing_tool_dependencies, repository_dict, repository_status_dict, results_dict ):
+    """Handle missing repository or tool dependencies for an installed repository."""
+    # If a tool dependency fails to install correctly, this should be considered an installation error,
+    # and functional tests should be skipped, since the tool dependency needs to be correctly installed
+    # for the test to be considered reliable.
+    log.debug( 'The following dependencies of this repository are missing, so skipping functional tests.' )
+    # In keeping with the standard display layout, add the error message to the dict for each tool individually.
+    for dependency in repository.missing_tool_dependencies:
+        log.debug( 'Missing tool dependency %s of type %s version %s: %s' % \
+            ( str( dependency.name ), str( dependency.type ), str( dependency.version ), unicodify( dependency.error_message ) ) )
+        test_result = dict( type=dependency.type,
+                            name=dependency.name,
+                            version=dependency.version,
+                            error_message=dependency.error_message )
+        repository_status_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
+    for dependency in repository.missing_repository_dependencies:
+        log.debug( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
+            ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), unicodify( dependency.error_message ) ) )
+        test_result = dict( tool_shed=dependency.tool_shed,
+                            name=dependency.name,
+                            owner=dependency.owner,
+                            changeset_revision=dependency.changeset_revision,
+                            error_message=dependency.error_message )
+        repository_status_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
+    # Record the status of this repository in the tool shed.
+    params[ 'tools_functionally_correct' ] = False
+    params[ 'do_not_test' ] = False
+    params[ 'test_install_error' ] = True
+    register_test_result( galaxy_tool_shed_url,
+                          metadata_revision_id,
+                          repository_status_dict,
+                          repository_dict,
+                          params )
+    # Since this repository is missing components, we do not want to test it. Deactivate this repository.
+    # The deactivate flag is set to True if the environment variable GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES
+    # is set to 'true'. 
+    deactivate = asbool( os.environ.get( 'GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES', False ) )
+    if deactivate:
+        log.debug( 'Due to the above missing tool dependencies, we are now uninstalling the following tool dependencies but not changing their repositories.' )
+        for missing_tool_dependency in missing_tool_dependencies:
+            uninstall_tool_dependency( app, missing_tool_dependency )
+        # We are deactivating this repository and all of its repository dependencies.
+        log.debug( 'Due to the above missing repository dependencies, we are now deactivating the following repositories.' )
+        deactivate_repository( app, repository_dict )
+    else:
+        # We are uninstalling this repository and all of its repository dependencies.
+        log.debug( 'Due to the above missing repository dependencies, we are now uninstalling the following repositories.' )
+        uninstall_repository( app, repository_dict )
+        results_dict[ 'repositories_failed_install' ].append( dict( name=str( repository.name ),
+                                                                    owner=str( repository.owner ),
+                                                                    changeset_revision=str( repository.changeset_revision ) ) )
+        # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
+        test_toolbox.toolbox = app.toolbox
+    return repository_status_dict, results_dict
 
-def is_latest_downloadable_revision( url, repository_info_dict ):
-    latest_revision = get_latest_downloadable_changeset_revision( url, name=repository_info_dict[ 'name' ], owner=repository_info_dict[ 'owner' ] )
-    return str( repository_info_dict[ 'changeset_revision' ] ) == str( latest_revision )
+def initialize_results_dict():
+    # Initialize a dictionary for the summary that will be printed to stdout.
+    results_dict = {}
+    results_dict[ 'total_repositories_tested' ] = 0
+    results_dict[ 'repositories_passed' ] = []
+    results_dict[ 'repositories_failed' ] = []
+    results_dict[ 'repositories_failed_install' ] = []
+    results_dict[ 'exclude_list' ] = []
+    return results_dict
+
+def install_repository( app, repository_dict ):
+    """Attempt to install a repository defined by the received repository_dict from the tool shed into Galaxy."""
+    name = str( repository_dict[ 'name' ] )
+    owner = str( repository_dict[ 'owner' ] )
+    changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+    error_message = ''
+    repository = None
+    log.debug( "Installing revision %s of repository %s owned by %s..." % ( str( changeset_revision ), str( name ), str( owner ) ) )
+    # Explicitly clear tests from twill's test environment.
+    remove_generated_tests( app )
+    # Use the repository information dictionary to generate an install method that will install the repository into the
+    # embedded Galaxy application, with tool dependencies and repository dependencies, if any.
+    test_install_repositories.generate_install_method( repository_dict )
+    # Configure nose to run the install method as a test.
+    test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+    test_config.configure( sys.argv )
+    # Run the configured install method as a test. This method uses the embedded Galaxy application's web interface to
+    # install the specified repository with tool and repository dependencies also selected for installation.
+    result, _ = run_tests( test_config )
+    try:
+        repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+    except Exception, e:
+        error_message = 'Error getting revision %s of installed repository %s owned by %s: %s' % \
+            ( str( changeset_revision ), str( name ), str( owner ), str( e ) )
+        log.exception( error_message )
+    return repository, error_message
+
+def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
+    error_message = ''
+    # Allow the option to keep or delete tool dependencies when a repository has been tested.
+    deactivate = asbool( os.environ.get( 'GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES', False ) )
+    # Initialize a dictionary for the summary that will be printed to stdout.
+    results_dict = initialize_results_dict()
+    total_repositories_tested = results_dict[ 'total_repositories_tested' ]
+    repositories_to_install, error_message = get_repositories_to_install( galaxy_tool_shed_url )
+    if error_message:
+        return None, error_message
+    # Generate a test method that will use Twill to install each repository into the embedded Galaxy application that was
+    # started up, installing repository and tool dependencies. Upon successful installation, generate a test case for each
+    # functional test defined for each tool in the repository and execute the test cases. Record the result of the tests.
+    # The traceback and captured output of the tool that was run will be recored for test failures.  After all tests have
+    # completed, the repository is uninstalled, so test cases don't interfere with the next repository's functional tests.
+    for repository_dict in repositories_to_install:
+        # Each repository_dict looks something like:
+        # { "changeset_revision": "13fa22a258b5",
+        #   "contents_url": "/api/repositories/529fd61ab1c6cc36/contents",
+        #   "deleted": false,
+        #   "deprecated": false,
+        #   "description": "Convert column case.",
+        #   "downloadable": true,
+        #   "id": "529fd61ab1c6cc36",
+        #   "long_description": "This tool takes the specified columns and converts them to uppercase or lowercase.",
+        #   "malicious": false,
+        #   "name": "change_case",
+        #   "owner": "test",
+        #   "private": false,
+        #   "repository_id": "529fd61ab1c6cc36",
+        #   "times_downloaded": 0,
+        #   "tool_shed_url": "http://toolshed.local:10001",
+        #   "url": "/api/repository_revisions/529fd61ab1c6cc36",
+        #   "user_id": "529fd61ab1c6cc36" }
+        params = {}
+        changeset_revision = repository_dict.get( 'changeset_revision', None )
+        metadata_revision_id = repository_dict.get( 'id', None )
+        # Add the URL for the tool shed we're installing from, so the automated installation methods go to the right place.
+        repository_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
+        # Get the name and owner out of the repository info dict.
+        name = str( repository_dict[ 'name' ] )
+        owner = str( repository_dict[ 'owner' ] )
+        # Populate the repository_status_dict.
+        repository_status_dict, error_message = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
+        if error_message:
+            return None, error_message
+        if 'test_environment' not in repository_status_dict:
+            repository_status_dict[ 'test_environment' ] = {}
+        test_environment = get_test_environment( repository_status_dict[ 'test_environment' ] )
+        test_environment[ 'galaxy_database_version' ] = get_database_version( app )
+        test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
+        repository_status_dict[ 'test_environment' ] = test_environment
+        repository_status_dict[ 'passed_tests' ] = []
+        repository_status_dict[ 'failed_tests' ] = []
+        repository_status_dict[ 'skip_reason' ] = None
+        repository_status_dict[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
+        # Handle repositories not to be tested.
+        exclude_list = results_dict[ 'exclude_list' ]
+        # Entries in the exclude_list look something like this.
+        # { 'reason': The default reason or the reason specified in this section,
+        #   'repositories':
+        #         [( name, owner, changeset revision if changeset revision else None ),
+        #          ( name, owner, changeset revision if changeset revision else None )] }
+        # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
+        # revision should be skipped.
+        skip_this_repository = False
+        skip_reason = None
+        for exclude_dict in exclude_list:
+            reason = exclude_dict[ 'reason' ]
+            exclude_repositories = exclude_dict[ 'repositories' ]
+            if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
+                skip_this_repository = True
+                skip_reason = reason
+                break
+        if skip_this_repository:
+            repository_status_dict[ 'not_tested' ] = dict( reason=skip_reason )
+            params[ 'tools_functionally_correct' ] = False
+            params[ 'do_not_test' ] = False
+            register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status_dict, repository_dict, params )
+            log.debug( "Not testing revision %s of repository %s owned by %s." % ( str( changeset_revision ), str( name ), str( owner ) ) )
+        else:
+            repository, error_message = install_repository( app, repository_dict )
+            if error_message:
+                repository_status_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
+
+                # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
+                log.debug( 'Attempting to uninstall repository %s' % str( name ) )
+                try:
+                    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+                except:
+                    log.exception( 'No installed repository found.' )
+                error_message = '%s\n%s' % ( error_message, extract_log_data( result, from_tool_test=False ) )
+                test_result = dict( tool_shed=galaxy_tool_shed_url,
+                                    name=name,
+                                    owner=owner,
+                                    changeset_revision=changeset_revision,
+                                    error_message=error_message )
+                repository_status_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
+                params[ 'tools_functionally_correct' ] = False
+                params[ 'test_install_error' ] = True
+                params[ 'do_not_test' ] = False
+                register_test_result( galaxy_tool_shed_url,
+                                      metadata_revision_id,
+                                      repository_status_dict,
+                                      repository_dict,
+                                      params )
+                try:
+                    if deactivate:
+                        # We are deactivating this repository and all of its repository dependencies.
+                        success = deactivate_repository( app, repository_dict )
+                    else:
+                        # We are uninstalling this repository and all of its repository dependencies.
+                        success = uninstall_repository( app, repository_dict )
+                except:
+                    log.exception( 'Encountered error attempting to deactivate or uninstall %s.', repository_dict[ 'name' ] )
+                    success = False
+                if not success:
+                    log.error( 'Repository %s failed to uninstall.', name )
+                results_dict[ 'repositories_failed_install' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
+                log.debug( 'Repository %s failed to install correctly.' % str( name ) )
+            else:
+                # Configure and run functional tests for this repository. This is equivalent to sh run_functional_tests.sh -installed
+                remove_install_tests()
+                log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
+                # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository
+                # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
+                # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
+                file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
+                has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file,
+                                                                          from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
+                if 'missing_test_components' not in repository_status_dict:
+                    repository_status_dict[ 'missing_test_components' ] = []
+                missing_tool_dependencies = get_missing_tool_dependencies( repository )
+                if missing_tool_dependencies or repository.missing_repository_dependencies:
+                    repository_status_dict, results_dict = handle_missing_dependencies( app,
+                                                                                        repository,
+                                                                                        metadata_revision_id,
+                                                                                        missing_tool_dependencies,
+                                                                                        repository_dict,
+                                                                                        repository_status_dict,
+                                                                                        results_dict )
+                else:
+                    # If the repository has a test-data directory we write the generated shed_tools_dict to a file, so the functional
+                    # test framework can find it.
+                    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
+                    log.debug( 'Saved generated shed_tools_dict to %s\nContents: %s' % ( str( galaxy_shed_tools_dict ), str( shed_tools_dict ) ) )
+                    params, repository_status_dict, results_dict = test_repository_tools( app,
+                                                                                          repository,
+                                                                                          params,
+                                                                                          metadata_revision_id,
+                                                                                          repository_dict,
+                                                                                          repository_status_dict,
+                                                                                          results_dict )
+                    total_repositories_tested += 1
+    results_dict[ 'total_repositories_tested' ] = total_repositories_tested
+    return results_dict, error_message
+
+def is_latest_downloadable_revision( url, repository_dict ):
+    latest_revision = get_latest_downloadable_changeset_revision( url, name=repository_dict[ 'name' ], owner=repository_dict[ 'owner' ] )
+    return str( repository_dict[ 'changeset_revision' ] ) == str( latest_revision )
 
 def json_from_url( url ):
+    error_message = ''
     url_handle = urllib.urlopen( url )
     url_contents = url_handle.read()
     try:
         parsed_json = from_json_string( url_contents )
-    except:
-        log.exception( 'Error parsing JSON data.' )
-        raise
-    return parsed_json
+    except Exception, e:
+        error_message = str( url_contents )
+        log.exception( 'Error parsing JSON data in json_from_url(): %s.' % str( e ) )
+        return None, error_message
+    return parsed_json, error_message
 
 def parse_exclude_list( xml_filename ):
-    '''
-    This method should return a list with the following structure:
-    [
-        {
-            'reason': The default reason or the reason specified in this section,
-            'repositories':
-                [
-                    ( name, owner, changeset revision if changeset revision else None ),
-                    ( name, owner, changeset revision if changeset revision else None )
-                ]
-        },
-        {
-            'reason': The default reason or the reason specified in this section,
-            'repositories':
-                [
-                    ( name, owner, changeset revision if changeset revision else None ),
-                    ( name, owner, changeset revision if changeset revision else None )
-                ]
-        },
-    ]
-    '''
+    """Return a list of repositories to exclude from testing."""
+    # This method should return a list with the following structure:
+    # [{ 'reason': The default reason or the reason specified in this section,
+    #    'repositories': [( name, owner, changeset revision if changeset revision else None ),
+    #                     ( name, owner, changeset revision if changeset revision else None )]}]
     exclude_list = []
     exclude_verbose = []
     xml_tree = parse_xml( xml_filename )
@@ -572,17 +794,17 @@ def parse_exclude_list( xml_filename ):
                 exclude_count += 1
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
-    log.debug( '%d repositories excluded from testing...', exclude_count )
+    log.debug( '%s repositories excluded from testing...' % str( exclude_count ) )
     if '-list_repositories' in sys.argv:
         for name, owner, changeset_revision in exclude_verbose:
             if changeset_revision:
-                log.debug( 'Repository %s owned by %s, changeset revision %s.', name, owner, changeset_revision )
+                log.debug( 'Repository %s owned by %s, changeset revision %s.' % ( str( name ), str( owner ), str( changeset_revision ) ) )
             else:
-                log.debug( 'Repository %s owned by %s, all revisions.', name, owner )
+                log.debug( 'Repository %s owned by %s, all revisions.' % ( str( name ), str( owner ) ) )
     return exclude_list
 
-def register_test_result( url, metadata_id, test_results_dict, repository_info_dict, params ):
-    '''Update the repository metadata tool_test_results and appropriate flags using the API.'''
+def register_test_result( url, metadata_id, test_results_dict, repository_dict, params ):
+    """Update the repository metadata tool_test_results and appropriate flags using the API."""
     params[ 'tool_test_results' ] = test_results_dict
     if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
         return {}
@@ -594,15 +816,17 @@ def register_test_result( url, metadata_id, test_results_dict, repository_info_d
                        return_formatted=False )
 
 def remove_generated_tests( app ):
-    # Delete any configured tool functional tests from the test_toolbox.__dict__, otherwise nose will find them
-    # and try to re-run the tests after uninstalling the repository, which will cause false failure reports,
-    # since the test data has been deleted from disk by now.
+    """
+    Delete any configured tool functional tests from the test_toolbox.__dict__, otherwise nose will find them
+    and try to re-run the tests after uninstalling the repository, which will cause false failure reports,
+    since the test data has been deleted from disk by now.
+    """
     tests_to_delete = []
     tools_to_delete = []
     global test_toolbox
     for key in test_toolbox.__dict__:
         if key.startswith( 'TestForTool_' ):
-            log.info( 'Tool test found in test_toolbox, deleting: %s', key )
+            log.debug( 'Tool test found in test_toolbox, deleting: %s' % str( key ) )
             # We can't delete this test just yet, we're still iterating over __dict__.
             tests_to_delete.append( key )
             tool_id = key.replace( 'TestForTool_', '' )
@@ -615,15 +839,17 @@ def remove_generated_tests( app ):
     for tool in tools_to_delete:
         del app.toolbox.tools_by_id[ tool ]
 
-def remove_install_tests( app ):
-    # Delete any configured repository installation tests from the test_toolbox.__dict__, otherwise nose will find them
-    # and try to install the repository again while running tool functional tests.
+def remove_install_tests():
+    """
+    Delete any configured repository installation tests from the test_toolbox.__dict__, otherwise nose will find them
+    and try to install the repository again while running tool functional tests.
+    """
     tests_to_delete = []
     global test_toolbox
     # Push all the toolbox tests to module level
     for key in test_install_repositories.__dict__:
        if key.startswith( 'TestInstallRepository_' ):
-            log.info( 'Repository installation process found, deleting: %s', key )
+            log.debug( 'Repository installation process found, deleting: %s' % str( key ) )
             # We can't delete this test just yet, we're still iterating over __dict__.
             tests_to_delete.append( key )
     for key in tests_to_delete:
@@ -646,9 +872,9 @@ def run_tests( test_config ):
     result = test_runner.run( tests )
     return result, test_config.plugins._plugins
 
-def show_summary_output( repository_info_dicts ):
+def show_summary_output( repository_dicts ):
     repositories_by_owner = {}
-    for repository in repository_info_dicts:
+    for repository in repository_dicts:
         if repository[ 'owner' ] not in repositories_by_owner:
             repositories_by_owner[ repository[ 'owner' ] ] = []
         repositories_by_owner[ repository[ 'owner' ] ].append( repository )
@@ -657,29 +883,106 @@ def show_summary_output( repository_info_dicts ):
         for repository in repositories_by_owner[ owner ]:
             print "# %s owned by %s, changeset revision %s" % ( repository[ 'name' ], repository[ 'owner' ], repository[ 'changeset_revision' ] )
 
-def uninstall_repository( app, repository_info_dict ):
+def test_repository_tools( app, repository, params, metadata_revision_id, repository_dict, repository_status_dict, results_dict ):
+    name = str( repository.name )
+    owner = str( repository.owner )
+    changeset_revision = str( repository.changeset_revision )
+    # Set the module-level variable 'toolbox', so that test.functional.test_toolbox will generate the appropriate test methods.
+    test_toolbox.toolbox = app.toolbox
+    # Generate the test methods for this installed repository. We need to pass in True here, or it will look
+    # in $GALAXY_HOME/test-data for test data, which may result in missing or invalid test files.
+    test_toolbox.build_tests( testing_shed_tools=True, master_api_key=default_galaxy_master_api_key )
+    # Set up nose to run the generated functional tests.
+    test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+    test_config.configure( sys.argv )
+    # Run the configured tests.
+    result, test_plugins = run_tests( test_config )
+    success = result.wasSuccessful()
+    # Use the ReportResults nose plugin to get a list of tests that passed.
+    for plugin in test_plugins:
+        if hasattr( plugin, 'getTestStatus' ):
+            test_identifier = '%s/%s' % ( owner, name )
+            passed_tests = plugin.getTestStatus( test_identifier )
+            break
+    repository_status_dict[ 'passed_tests' ] = []
+    for test_id in passed_tests:
+        # Normalize the tool ID and version display.
+        tool_id, tool_version = get_tool_info_from_test_id( test_id )
+        test_result = dict( test_id=test_id, tool_id=tool_id, tool_version=tool_version )
+        repository_status_dict[ 'passed_tests' ].append( test_result )
+    if success:
+        # This repository's tools passed all functional tests. Update the repository_metadata table in the tool shed's database
+        # to reflect that. Call the register_test_result method, which executes a PUT request to the repository_revisions API
+        # controller with the status of the test. This also sets the do_not_test and tools_functionally correct flags, and
+        # updates the time_last_tested field to today's date.
+        results_dict[ 'repositories_passed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
+        params[ 'tools_functionally_correct' ] = True
+        params[ 'do_not_test' ] = False
+        params[ 'test_install_error' ] = False
+        register_test_result( galaxy_tool_shed_url,
+                              metadata_revision_id,
+                              repository_status_dict,
+                              repository_dict,
+                              params )
+        log.debug( 'Revision %s of repository %s installed and passed functional tests.' % ( str( changeset_revision ), str( name ) ) )
+    else:
+        repository_status_dict[ 'failed_tests' ] = extract_log_data( result, from_tool_test=True )
+        # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome
+        # of the tests, and updates tool_test_results with the relevant log data.
+        # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
+        # field to today's date.
+        results_dict[ 'repositories_failed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
+        set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_dict )
+        params[ 'tools_functionally_correct' ] = False
+        params[ 'test_install_error' ] = False
+        params[ 'do_not_test' ] = str( set_do_not_test )
+        register_test_result( galaxy_tool_shed_url,
+                              metadata_revision_id,
+                              repository_status_dict,
+                              repository_dict,
+                              params )
+        log.debug( 'Revision %s of repository %s installed successfully but did not pass functional tests.' % \
+            ( str( changeset_revision ), str( name ) ) )
+    # Run the uninstall method. This removes tool functional test methods from the test_toolbox module and uninstalls the
+    # repository using Twill.
+    deactivate = asbool( os.environ.get( 'GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES', False ) )
+    if deactivate:
+        log.debug( 'Deactivating changeset revision %s of repository %s' % ( str( changeset_revision ), str( name ) ) )
+        # We are deactivating this repository and all of its repository dependencies.
+        success = deactivate_repository( app, repository_dict )
+    else:
+        log.debug( 'Uninstalling changeset revision %s of repository %s' % ( str( changeset_revision ), str( name ) ) )
+        # We are uninstalling this repository and all of its repository dependencies.
+        success = uninstall_repository( app, repository_dict )
+    if not success:
+        log.debug( 'Repository %s failed to uninstall.' % str( name ) )
+    # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
+    test_toolbox.toolbox = app.toolbox
+    return params, repository_status_dict, results_dict
+
+def uninstall_repository( app, repository_dict ):
     # Clean out any generated tests. This is necessary for Twill.
     remove_generated_tests( app )
     sa_session = app.model.context.current
     # The dict contains the only repository the app should have installed at this point.
-    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( repository_info_dict[ 'name' ],
-                                                                                         repository_info_dict[ 'owner' ],
-                                                                                         repository_info_dict[ 'changeset_revision' ] )
+    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( repository_dict[ 'name' ],
+                                                                                         repository_dict[ 'owner' ],
+                                                                                         repository_dict[ 'changeset_revision' ] )
     # We have to do this through Twill, in order to maintain app.toolbox and shed_tool_conf.xml in a state that is valid for future tests.
     for required_repository in repository.repository_dependencies:
-        repository_dict = dict( name=required_repository.name,
-                                owner=required_repository.owner,
-                                changeset_revision=required_repository.changeset_revision )
+        repository_dict = dict( name=str( required_repository.name ),
+                                owner=str( required_repository.owner ),
+                                changeset_revision=str( required_repository.changeset_revision ) )
         # Generate a test method to uninstall this repository through the embedded Galaxy application's web interface.
         test_install_repositories.generate_deactivate_or_uninstall_method( repository_dict, deactivate=False )
         log.debug( 'Changeset revision %s of %s repository %s selected for uninstallation.' % \
-                   ( required_repository.changeset_revision, required_repository.status, required_repository.name ) )
-    repository_dict = dict( name=repository.name,
-                            owner=repository.owner,
-                            changeset_revision=repository.changeset_revision )
+                   ( str( required_repository.changeset_revision ), str( required_repository.status ), str( required_repository.name ) ) )
+    repository_dict = dict( name=str( repository.name ),
+                            owner=str( repository.owner ),
+                            changeset_revision=str( repository.changeset_revision ) )
     test_install_repositories.generate_deactivate_or_uninstall_method( repository_dict, deactivate=False )
     log.debug( 'Changeset revision %s of %s repository %s selected for uninstallation.' % \
-               ( repository.changeset_revision, repository.status, repository.name ) )
+               ( str( repository.changeset_revision ), str( repository.status ), str( repository.name ) ) )
     # Set up nose to run the generated uninstall method as a functional test.
     test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
     test_config.configure( sys.argv )
@@ -708,11 +1011,16 @@ def uninstall_tool_dependency( app, tool_dependency ):
        suc.remove_dir( tool_dependency_install_path )
 
 def main():
+    if tool_shed_api_key is None:
+        # If the tool shed URL specified in any dict is not present in the tool_sheds_conf.xml, the installation will fail.
+        log.debug( 'Cannot proceed without a valid tool shed API key set in the enviroment variable GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY.' )
+        return 1
     # ---- Configuration ------------------------------------------------------
-    # TODO: refactor this very large main method into smaller, more maintainable components.
     galaxy_test_host = os.environ.get( 'GALAXY_INSTALL_TEST_HOST', default_galaxy_test_host )
+    # Set the GALAXY_INSTALL_TEST_HOST variable so that Twill will have the Galaxy url to install repositories into.
+    os.environ[ 'GALAXY_INSTALL_TEST_HOST' ] = galaxy_test_host
     galaxy_test_port = os.environ.get( 'GALAXY_INSTALL_TEST_PORT', str( default_galaxy_test_port_max ) )
-
+    os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
     tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
@@ -722,9 +1030,6 @@ def main():
     use_distributed_object_store = os.environ.get( 'GALAXY_INSTALL_TEST_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
-    galaxy_test_proxy_port = None
-    # Allow the option to keep or delete tool dependencies when a repository has been tested.
-    deactivate = asbool( os.environ.get( 'GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES', False ) )
     # Set up the configuration files for the Galaxy instance.
     shed_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF', os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_data_table_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF', tool_data_table_conf )
@@ -735,6 +1040,9 @@ def main():
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_sheds_conf.xml' ) )
     galaxy_shed_tools_dict = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE', os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
     file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
+    # Set the GALAXY_TOOL_SHED_TEST_FILE environment variable to the path of the shed_tools_dict file, so that test.base.twilltestcase.setUp
+    # will find and parse it properly.
+    os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict
     if 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' )
     else:
@@ -768,9 +1076,7 @@ def main():
             os.makedirs( dir )
         except OSError:
             pass
-
     print "Database connection: ", database_connection
-
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
@@ -839,9 +1145,7 @@ def main():
         kwargs[ 'database_engine_option_pool_size' ] = '10'
     kwargs[ 'config_file' ] = galaxy_config_file
     app = UniverseApplication( **kwargs )
-
-    log.info( "Embedded Galaxy application started" )
-
+    log.debug( "Embedded Galaxy application started..." )
     # ---- Run galaxy webserver ------------------------------------------------------
     server = None
     global_conf = get_webapp_global_conf()
@@ -850,7 +1154,6 @@ def main():
                                    use_translogger=False,
                                    static_enabled=STATIC_ENABLED,
                                    app=app )
-
     # Serve the app on a specified or random port.
     if galaxy_test_port is not None:
         server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
@@ -869,10 +1172,7 @@ def main():
         else:
             raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % \
                              ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
-    if galaxy_test_proxy_port:
-        os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_proxy_port
-    else:
-        os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_port
+    os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_port
     # Start the server.
     t = threading.Thread( target=server.serve_forever )
     t.start()
@@ -886,9 +1186,9 @@ def main():
         time.sleep( 0.1 )
     else:
         raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
-    log.info( "Embedded galaxy web server started" )
-    log.info( "The embedded Galaxy application is running on %s:%s", galaxy_test_host, galaxy_test_port )
-    log.info( "Repositories will be installed from the tool shed at %s", galaxy_tool_shed_url )
+    log.debug( "Embedded galaxy web server started..." )
+    log.debug( "The embedded Galaxy application is running on %s:%s" % ( str( galaxy_test_host ), str( galaxy_test_port ) ) )
+    log.debug( "Repositories will be installed from the tool shed at %s" % str( galaxy_tool_shed_url ) )
     success = False
     # If a tool_data_table_conf.test.xml file was found, add the entries from it into the app's tool data tables.
     if additional_tool_data_tables:
@@ -896,452 +1196,68 @@ def main():
                                                                tool_data_path=additional_tool_data_path,
                                                                shed_tool_data_table_config=None,
                                                                persist=False )
-    # Initialize some variables for the summary that will be printed to stdout.
-    repositories_passed = []
-    repositories_failed = []
-    repositories_failed_install = []
-    exclude_list = []
-    if os.path.exists( exclude_list_file ):
-        log.info( 'Loading the list of repositories excluded from testing from the file %s...', exclude_list_file )
-        exclude_list = parse_exclude_list( exclude_list_file )
-    try:
-        # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
-        log.info( "Retrieving repositories to install from the URL:\n%s\n", str( galaxy_tool_shed_url ) )
-        if '-check_all_revisions' not in sys.argv:
-            repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, latest_revision_only=True )
-        else:
-            repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, latest_revision_only=False )
-        log.info( "Retrieved %d repositories from the API.", len( repositories_to_install ) )
-        if '-list_repositories' in sys.argv:
-            log.info( "The API returned the following repositories, not counting deleted:" )
-            for repository_info_dict in repositories_to_install:
-                log.info( "%s owned by %s changeset revision %s",
-                          repository_info_dict.get( 'name', None ),
-                          repository_info_dict.get( 'owner', None ),
-                          repository_info_dict.get( 'changeset_revision', None ) )
-        repositories_tested = len( repositories_to_install )
-        # This loop will iterate through the list of repositories generated by the above code, having already filtered out any
-        # that were marked as deleted. For each repository, it will generate a test method that will use Twill to install that
-        # repository into the embedded Galaxy application that was started up, selecting to install repository and tool
-        # dependencies if they are defined. If the installation completes successfully, it will then generate a test case for
-        # each functional test defined for each tool in the repository, and execute the generated test cases. When this completes,
-        # it will record the result of the tests, and if any failed, the traceback and captured output of the tool that was run.
-        # After all tests have completed, the repository is uninstalled, so that the previous test cases don't interfere with
-        # the next repository's functional tests.
-        for repository_info_dict in repositories_to_install:
-            """
-            Each repository_info_dict looks something like:
-            {
-              "changeset_revision": "13fa22a258b5",
-              "contents_url": "/api/repositories/529fd61ab1c6cc36/contents",
-              "deleted": false,
-              "deprecated": false,
-              "description": "Convert column case.",
-              "downloadable": true,
-              "id": "529fd61ab1c6cc36",
-              "long_description": "This tool takes the specified columns and converts them to uppercase or lowercase.",
-              "malicious": false,
-              "name": "change_case",
-              "owner": "test",
-              "private": false,
-              "repository_id": "529fd61ab1c6cc36",
-              "times_downloaded": 0,
-              "tool_shed_url": "http://toolshed.local:10001",
-              "url": "/api/repository_revisions/529fd61ab1c6cc36",
-              "user_id": "529fd61ab1c6cc36"
-            }
-            """
-            repository_status = {}
-            params = {}
-            repository_id = str( repository_info_dict.get( 'repository_id', None ) )
-            changeset_revision = str( repository_info_dict.get( 'changeset_revision', None ) )
-            metadata_revision_id = repository_info_dict.get( 'id', None )
-            # Add the URL for the tool shed we're installing from, so the automated installation methods go to the right place.
-            repository_info_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
-            # Get the name and owner out of the repository info dict.
-            name = str( repository_info_dict[ 'name' ] )
-            owner = str( repository_info_dict[ 'owner' ] )
-            # Populate the repository_status dict now.
-            repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
-            if 'test_environment' not in repository_status:
-                repository_status[ 'test_environment' ] = {}
-            test_environment = get_test_environment( repository_status[ 'test_environment' ] )
-            test_environment[ 'galaxy_database_version' ] = get_database_version( app )
-            test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
-            repository_status[ 'test_environment' ] = test_environment
-            repository_status[ 'passed_tests' ] = []
-            repository_status[ 'failed_tests' ] = []
-            repository_status[ 'skip_reason' ] = None
-            # Iterate through the list of repositories defined not to be installed. This should be a list of dicts in the following format:
-            # {
-            #     'reason': The default reason or the reason specified in this section,
-            #     'repositories':
-            #         [
-            #             ( name, owner, changeset revision if changeset revision else None ),
-            #             ( name, owner, changeset revision if changeset revision else None )
-            #         ]
-            # },
-            # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
-            # revision should be skipped.
-            # TODO: When a repository is selected to be skipped, use the API to update the tool shed with the defined skip reason.
-            skip_this_repository = False
-            skip_because = None
-            for exclude_by_reason in exclude_list:
-                reason = exclude_by_reason[ 'reason' ]
-                exclude_repositories = exclude_by_reason[ 'repositories' ]
-                if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
-                    skip_this_repository = True
-                    skip_because = reason
-                    break
-            if skip_this_repository:
-                repository_status[ 'not_tested' ] = dict( reason=skip_because )
-                params[ 'tools_functionally_correct' ] = False
-                params[ 'do_not_test' ] = False
-                register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status, repository_info_dict, params )
-                log.info( "Not testing revision %s of repository %s owned by %s.", changeset_revision, name, owner )
-                continue
-            else:
-                log.info( "Installing and testing revision %s of repository %s owned by %s...", changeset_revision, name, owner )
-            # Explicitly clear tests from twill's test environment.
-            remove_generated_tests( app )
-            # Use the repository information dict to generate an install method that will install the repository into the embedded
-            # Galaxy application, with tool dependencies and repository dependencies, if any.
-            test_install_repositories.generate_install_method( repository_info_dict )
-            # Set the GALAXY_INSTALL_TEST_HOST variable so that Twill will have the Galaxy url to install repositories into.
-            os.environ[ 'GALAXY_INSTALL_TEST_HOST' ] = galaxy_test_host
-            # Configure nose to run the install method as a test.
-            test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            # Run the configured install method as a test. This method uses the embedded Galaxy application's web interface to install the specified
-            # repository, with tool and repository dependencies also selected for installation.
-            result, _ = run_tests( test_config )
-            success = result.wasSuccessful()
-            repository_status[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
-            try:
-                repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-            except:
-                log.exception( 'Error getting installed repository.' )
-                success = False
-                pass
-            # If the installation succeeds, configure and run functional tests for this repository. This is equivalent to
-            # sh run_functional_tests.sh -installed
-            if success:
-                # Clean out repository installation methods.
-                remove_install_tests( app )
-                log.debug( 'Installation of %s succeeded, running all defined functional tests.', name )
-                # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository
-                # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
-                # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
-                file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
-                has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file, from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
-                # The repository_status dict should always have the following structure:
-                # {
-                #     "test_environment":
-                #         {
-                #              "galaxy_revision": "9001:abcd1234",
-                #              "galaxy_database_version": "114",
-                #              "tool_shed_revision": "9001:abcd1234",
-                #              "tool_shed_mercurial_version": "2.3.1",
-                #              "tool_shed_database_version": "17",
-                #              "python_version": "2.7.2",
-                #              "architecture": "x86_64",
-                #              "system": "Darwin 12.2.0"
-                #         },
-                #      "passed_tests":
-                #         [
-                #             {
-                #                 "test_id": "The test ID, generated by twill",
-                #                 "tool_id": "The tool ID that was tested",
-                #                 "tool_version": "The tool version that was tested",
-                #             },
-                #         ]
-                #     "failed_tests":
-                #         [
-                #             {
-                #                 "test_id": "The test ID, generated by twill",
-                #                 "tool_id": "The tool ID that was tested",
-                #                 "tool_version": "The tool version that was tested",
-                #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
-                #                 "traceback": "The captured traceback."
-                #             },
-                #         ]
-                #     "installation_errors":
-                #         {
-                #              'tool_dependencies':
-                #                  [
-                #                      {
-                #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
-                #                         'name': 'Name of the tool dependency.',
-                #                         'version': 'Version if this is a package, otherwise blank.',
-                #                         'error_message': 'The error message returned when installation was attempted.',
-                #                      },
-                #                  ],
-                #              'repository_dependencies':
-                #                  [
-                #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.',
-                #                         'name': 'The name of the repository that failed to install.',
-                #                         'owner': 'Owner of the failed repository.',
-                #                         'changeset_revision': 'Changeset revision of the failed repository.',
-                #                         'error_message': 'The error message that was returned when the repository failed to install.',
-                #                      },
-                #                  ],
-                #              'current_repository':
-                #                  [
-                #                      {
-                #                         'tool_shed': 'The tool shed that this repository was installed from.',
-                #                         'name': 'The name of the repository that failed to install.',
-                #                         'owner': 'Owner of the failed repository.',
-                #                         'changeset_revision': 'Changeset revision of the failed repository.',
-                #                         'error_message': 'The error message that was returned when the repository failed to install.',
-                #                      },
-                #                  ],
-                #             {
-                #                 "name": "The name of the repository.",
-                #                 "owner": "The owner of the repository.",
-                #                 "changeset_revision": "The changeset revision of the repository.",
-                #                 "error_message": "The message stored in tool_dependency.error_message."
-                #             },
-                #         }
-                #      "missing_test_components":
-                #         [
-                #             {
-                #                 "tool_id": "The tool ID that missing components.",
-                #                 "tool_version": "The version of the tool."
-                #                 "tool_guid": "The guid of the tool."
-                #                 "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
-                #             },
-                #         ]
-                #      "not_tested":
-                #         {
-                #             "reason": "The Galaxy development team has determined that this repository should not be installed and tested by the automated framework."
-                #         }
-                # }
-                if 'missing_test_components' not in repository_status:
-                    repository_status[ 'missing_test_components' ] = []
-                missing_tool_dependencies = get_missing_tool_dependencies( repository )
-                if missing_tool_dependencies or repository.missing_repository_dependencies:
-                    # If a tool dependency fails to install correctly, this should be considered an installation error,
-                    # and functional tests should be skipped, since the tool dependency needs to be correctly installed
-                    # for the test to be considered reliable.
-                    log.error( 'The following dependencies of this repository are missing, skipping functional tests.' )
-                    # In keeping with the standard display layout, add the error message to the dict for each tool individually.
-                    for dependency in repository.missing_tool_dependencies:
-                        log.error( 'Missing tool dependency %s of type %s version %s: %s' % \
-                                   ( str( dependency.name ), str( dependency.type ), str( dependency.version ), unicodify( dependency.error_message ) ) )
-                        test_result = dict( type=dependency.type,
-                                            name=dependency.name,
-                                            version=dependency.version,
-                                            error_message=dependency.error_message )
-                        repository_status[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
-                    for dependency in repository.missing_repository_dependencies:
-                        log.error( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
-                                   ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), unicodify( dependency.error_message ) ) )
-                        test_result = dict( tool_shed=dependency.tool_shed,
-                                            name=dependency.name,
-                                            owner=dependency.owner,
-                                            changeset_revision=dependency.changeset_revision,
-                                            error_message=dependency.error_message )
-                        repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                    # Record the status of this repository in the tool shed.
-                    params[ 'tools_functionally_correct' ] = False
-                    params[ 'do_not_test' ] = False
-                    params[ 'test_install_error' ] = True
-                    register_test_result( galaxy_tool_shed_url,
-                                          metadata_revision_id,
-                                          repository_status,
-                                          repository_info_dict,
-                                          params )
-                    # Since this repository is missing components, we do not want to test it. Deactivate this repository.
-                    # The deactivate flag is set to True if the environment variable GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES
-                    # is set to 'true'. 
-                    if deactivate:
-                        log.debug( 'Due to the above missing tool dependencies, we are now uninstalling the following tool dependencies, but not changing their repositories.' )
-                        for missing_tool_dependency in missing_tool_dependencies:
-                            uninstall_tool_dependency( app, missing_tool_dependency )
-                        # We are deactivating this repository and all of its repository dependencies.
-                        log.debug( 'Due to the above missing repository dependencies, we are now deactivating the following repositories.' )
-                        deactivate_repository( app, repository_info_dict )
-                    else:
-                        # We are uninstalling this repository and all of its repository dependencies.
-                        log.debug( 'Due to the above missing repository dependencies, we are now uninstalling the following repositories.' )
-                        uninstall_repository( app, repository_info_dict )
-                    # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
-                    test_toolbox.toolbox = app.toolbox
-                    repositories_failed_install.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                else:
-                    # If the repository does have a test-data directory, we write the generated shed_tools_dict to a file, so the functional
-                    # test framework can find it.
-                    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
-                    log.info( 'Saved generated shed_tools_dict to %s\nContents: %s', galaxy_shed_tools_dict, str( shed_tools_dict ) )
-                    # Set the GALAXY_TOOL_SHED_TEST_FILE environment variable to the path of the shed_tools_dict file, so that test.base.twilltestcase.setUp
-                    # will find and parse it properly.
-                    os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict
-                    os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
-                    os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
-                    # Set the module-level variable 'toolbox', so that test.functional.test_toolbox will generate the appropriate test methods.
-                    test_toolbox.toolbox = app.toolbox
-                    # Generate the test methods for this installed repository. We need to pass in True here, or it will look
-                    # in $GALAXY_HOME/test-data for test data, which may result in missing or invalid test files.
-                    test_toolbox.build_tests( testing_shed_tools=True, master_api_key=default_galaxy_master_api_key )
-                    # Set up nose to run the generated functional tests.
-                    test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-                    test_config.configure( sys.argv )
-                    # Run the configured tests.
-                    result, test_plugins = run_tests( test_config )
-                    success = result.wasSuccessful()
-                    # Use the ReportResults nose plugin to get a list of tests that passed.
-                    for plugin in test_plugins:
-                        if hasattr( plugin, 'getTestStatus' ):
-                            test_identifier = '%s/%s' % ( owner, name )
-                            passed_tests = plugin.getTestStatus( test_identifier )
-                            break
-                    repository_status[ 'passed_tests' ] = []
-                    for test_id in passed_tests:
-                        # Normalize the tool ID and version display.
-                        tool_id, tool_version = get_tool_info_from_test_id( test_id )
-                        test_result = dict( test_id=test_id, tool_id=tool_id, tool_version=tool_version )
-                        repository_status[ 'passed_tests' ].append( test_result )
-                    if success:
-                        # This repository's tools passed all functional tests. Update the repository_metadata table in the tool shed's database
-                        # to reflect that. Call the register_test_result method, which executes a PUT request to the repository_revisions API
-                        # controller with the status of the test. This also sets the do_not_test and tools_functionally correct flags, and
-                        # updates the time_last_tested field to today's date.
-                        repositories_passed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                        params[ 'tools_functionally_correct' ] = True
-                        params[ 'do_not_test' ] = False
-                        params[ 'test_install_error' ] = False
-                        register_test_result( galaxy_tool_shed_url,
-                                              metadata_revision_id,
-                                              repository_status,
-                                              repository_info_dict,
-                                              params )
-                        log.debug( 'Revision %s of repository %s installed and passed functional tests.', changeset_revision, name )
-                    else:
-                        repository_status[ 'failed_tests' ] = extract_log_data( result, from_tool_test=True )
-                        # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome
-                        # of the tests, and updates tool_test_results with the relevant log data.
-                        # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
-                        # field to today's date.
-                        repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                        set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
-                        params[ 'tools_functionally_correct' ] = False
-                        params[ 'test_install_error' ] = False
-                        params[ 'do_not_test' ] = str( set_do_not_test )
-                        register_test_result( galaxy_tool_shed_url,
-                                              metadata_revision_id,
-                                              repository_status,
-                                              repository_info_dict,
-                                              params )
-                        log.debug( 'Revision %s of repository %s installed successfully, but did not pass functional tests.',
-                                   changeset_revision, name )
-                    # Run the uninstall method. This removes tool functional test methods from the test_toolbox module and uninstalls the
-                    # repository using Twill.
-                    if deactivate:
-                        log.debug( 'Deactivating changeset revision %s of repository %s',
-                                   repository_info_dict[ 'changeset_revision' ],
-                                   repository_info_dict[ 'name' ] )
-                        # We are deactivating this repository and all of its repository dependencies.
-                        success = deactivate_repository( app, repository_info_dict )
-                    else:
-                        log.debug( 'Uninstalling changeset revision %s of repository %s',
-                                   repository_info_dict[ 'changeset_revision' ],
-                                   repository_info_dict[ 'name' ] )
-                        # We are uninstalling this repository and all of its repository dependencies.
-                        success = uninstall_repository( app, repository_info_dict )
-                    if not success:
-                        log.error( 'Repository %s failed to uninstall.', repository_info_dict[ 'name' ] )
-                    # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
-                    test_toolbox.toolbox = app.toolbox
-            else:
-                # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
-                log.debug( 'Uninstalling repository %s', repository_info_dict[ 'name' ] )
-                try:
-                    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-                except:
-                    log.exception( 'Unable to uninstall, no installed repository found.' )
-                test_result = dict( tool_shed=galaxy_tool_shed_url,
-                                    name=repository_info_dict[ 'name' ],
-                                    owner=repository_info_dict[ 'owner' ],
-                                    changeset_revision=repository_info_dict[ 'changeset_revision' ],
-                                    error_message=extract_log_data( result, from_tool_test=False ) )
-                repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                params[ 'tools_functionally_correct' ] = False
-                params[ 'test_install_error' ] = True
-                params[ 'do_not_test' ] = False
-                register_test_result( galaxy_tool_shed_url,
-                                      metadata_revision_id,
-                                      repository_status,
-                                      repository_info_dict,
-                                      params )
-                try:
-                    if deactivate:
-                        # We are deactivating this repository and all of its repository dependencies.
-                        success = deactivate_repository( app, repository_info_dict )
-                    else:
-                        # We are uninstalling this repository and all of its repository dependencies.
-                        success = uninstall_repository( app, repository_info_dict )
-                except:
-                    log.exception( 'Encountered error attempting to deactivate or uninstall %s.', repository_info_dict[ 'name' ] )
-                    success = False
-                if not success:
-                    log.error( 'Repository %s failed to uninstall.', repository_info_dict[ 'name' ] )
-                repositories_failed_install.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                log.debug( 'Repository %s failed to install correctly.', repository_info_dict[ 'name' ] )
-    except:
-        log.exception( "Failure running tests" )
-
-    log.info( "Shutting down" )
-    # ---- Tear down -----------------------------------------------------------
-    # Gracefully shut down the embedded web server and UniverseApplication.
-    if server:
-        log.info( "Shutting down embedded galaxy web server" )
-        server.server_close()
-        server = None
-        log.info( "Embedded galaxy server stopped" )
-    if app:
-        log.info( "Shutting down galaxy application" )
-        app.shutdown()
-        app = None
-        log.info( "Embedded galaxy application stopped" )
-    # Clean up test files unless otherwise specified.
-    if 'GALAXY_INSTALL_TEST_NO_CLEANUP' not in os.environ:
-        try:
-            for dir in [ galaxy_test_tmp_dir ]:
-                if os.path.exists( dir ):
-                    log.info( "Cleaning up temporary files in %s", dir )
-                    shutil.rmtree( dir )
-        except:
-            pass
-    else:
-        log.debug( 'GALAXY_INSTALL_TEST_NO_CLEANUP set, not cleaning up.' )
-
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "####################################################################################"
-    print "# %s - repository installation and testing script completed." % now
-    print "# Repository revisions tested: %d" % repositories_tested
-    if '-info_only' in sys.argv:
-        print "# -info_only set, not updating the tool shed."
-    if repositories_tested > 0:
-        if repositories_passed:
-            print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories passed all tests:" % len( repositories_passed )
-            show_summary_output( repositories_passed )
-        if repositories_failed:
-            print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories failed one or more tests:" % len( repositories_failed )
-            show_summary_output( repositories_failed )
-        if repositories_failed_install:
-            # Set success to False so that the return code will not be 0.
-            success = False
-            print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories with installation errors:" % len( repositories_failed_install )
-            show_summary_output( repositories_failed_install )
+    print "# %s - running repository installation and testing script." % now
+    print "####################################################################################"
+    results_dict, error_message = install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file )
+    if error_message:
+        log.debug( error_message )
+    else:
+        total_repositories_tested = results_dict[ 'total_repositories_tested' ]
+        repositories_passed = results_dict[ 'repositories_passed' ]
+        repositories_failed = results_dict[ 'repositories_failed' ]
+        repositories_failed_install = results_dict[ 'repositories_failed_install' ]
+        exclude_list = results_dict[ 'exclude_list' ]
+        now = strftime( "%Y-%m-%d %H:%M:%S" )
+        print "####################################################################################"
+        print "# %s - repository installation and testing script completed." % now
+        print "# Repository revisions tested: %s" % str( total_repositories_tested )
+        if '-info_only' in sys.argv:
+            print "# -info_only set, not updating the tool shed."
+        if total_repositories_tested > 0:
+            if repositories_passed:
+                print '# ----------------------------------------------------------------------------------'
+                print "# %d repositories passed all tests:" % len( repositories_passed )
+                show_summary_output( repositories_passed )
+            if repositories_failed:
+                print '# ----------------------------------------------------------------------------------'
+                print "# %d repositories failed one or more tests:" % len( repositories_failed )
+                show_summary_output( repositories_failed )
+            if repositories_failed_install:
+                # Set success to False so that the return code will not be 0.
+                success = False
+                print '# ----------------------------------------------------------------------------------'
+                print "# %d repositories with installation errors:" % len( repositories_failed_install )
+                show_summary_output( repositories_failed_install )
+            else:
+                success = True
         else:
             success = True
+        print "####################################################################################"
+    log.debug( "Shutting down..." )
+    # Gracefully shut down the embedded web server and UniverseApplication.
+    if server:
+        log.debug( "Shutting down embedded galaxy web server..." )
+        server.server_close()
+        server = None
+        log.debug( "Embedded galaxy server stopped..." )
+    if app:
+        log.debug( "Shutting down galaxy application..." )
+        app.shutdown()
+        app = None
+        log.debug( "Embedded galaxy application stopped..." )
+    # Clean up test files unless otherwise specified.
+    if 'GALAXY_INSTALL_TEST_NO_CLEANUP' not in os.environ:
+        for dir in [ galaxy_test_tmp_dir ]:
+            if os.path.exists( dir ):
+                try:
+                    shutil.rmtree( dir )
+                    log.debug( "Cleaned up temporary files in %s", dir )
+                except:
+                    pass
     else:
-        success = True
-    print "####################################################################################"
+        log.debug( 'GALAXY_INSTALL_TEST_NO_CLEANUP set, not cleaning up.' )
     # Normally, the value of 'success' would determine whether this test suite is marked as passed or failed
     # in the automated buildbot framework. However, due to the procedure used here, we only want to report
     # failure if a repository fails to install correctly. Therefore, we have overriden the value of 'success'
@@ -1352,8 +1268,87 @@ def main():
         return 1
 
 if __name__ == "__main__":
-    now = strftime( "%Y-%m-%d %H:%M:%S" )
-    print "####################################################################################"
-    print "# %s - running repository installation and testing script." % now
-    print "####################################################################################"
+    # The repository_status_dict should always have the following structure:
+    # {
+    #     "test_environment":
+    #         {
+    #              "galaxy_revision": "9001:abcd1234",
+    #              "galaxy_database_version": "114",
+    #              "tool_shed_revision": "9001:abcd1234",
+    #              "tool_shed_mercurial_version": "2.3.1",
+    #              "tool_shed_database_version": "17",
+    #              "python_version": "2.7.2",
+    #              "architecture": "x86_64",
+    #              "system": "Darwin 12.2.0"
+    #         },
+    #      "passed_tests":
+    #         [
+    #             {
+    #                 "test_id": "The test ID, generated by twill",
+    #                 "tool_id": "The tool ID that was tested",
+    #                 "tool_version": "The tool version that was tested",
+    #             },
+    #         ]
+    #     "failed_tests":
+    #         [
+    #             {
+    #                 "test_id": "The test ID, generated by twill",
+    #                 "tool_id": "The tool ID that was tested",
+    #                 "tool_version": "The tool version that was tested",
+    #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
+    #                 "traceback": "The captured traceback."
+    #             },
+    #         ]
+    #     "installation_errors":
+    #         {
+    #              'tool_dependencies':
+    #                  [
+    #                      {
+    #                         'type': 'Type of tool dependency, e.g. package, set_environment, etc.',
+    #                         'name': 'Name of the tool dependency.',
+    #                         'version': 'Version if this is a package, otherwise blank.',
+    #                         'error_message': 'The error message returned when installation was attempted.',
+    #                      },
+    #                  ],
+    #              'repository_dependencies':
+    #                  [
+    #                      {
+    #                         'tool_shed': 'The tool shed that this repository was installed from.',
+    #                         'name': 'The name of the repository that failed to install.',
+    #                         'owner': 'Owner of the failed repository.',
+    #                         'changeset_revision': 'Changeset revision of the failed repository.',
+    #                         'error_message': 'The error message that was returned when the repository failed to install.',
+    #                      },
+    #                  ],
+    #              'current_repository':
+    #                  [
+    #                      {
+    #                         'tool_shed': 'The tool shed that this repository was installed from.',
+    #                         'name': 'The name of the repository that failed to install.',
+    #                         'owner': 'Owner of the failed repository.',
+    #                         'changeset_revision': 'Changeset revision of the failed repository.',
+    #                         'error_message': 'The error message that was returned when the repository failed to install.',
+    #                      },
+    #                  ],
+    #             {
+    #                 "name": "The name of the repository.",
+    #                 "owner": "The owner of the repository.",
+    #                 "changeset_revision": "The changeset revision of the repository.",
+    #                 "error_message": "The message stored in tool_dependency.error_message."
+    #             },
+    #         }
+    #      "missing_test_components":
+    #         [
+    #             {
+    #                 "tool_id": "The tool ID that missing components.",
+    #                 "tool_version": "The version of the tool."
+    #                 "tool_guid": "The guid of the tool."
+    #                 "missing_components": "Which components are missing, e.g. the test data filename, or the test-data directory."
+    #             },
+    #         ]
+    #      "not_tested":
+    #         {
+    #             "reason": "The Galaxy development team has determined that this repository should not be installed and tested by the automated framework."
+    #         }
+    # }
     sys.exit( main() )

@@ -144,22 +144,6 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         tool_dicts = repository_metadata.get( 'tools', None )
-        """
-        "{"tools": 
-            [{"add_to_tool_panel": true, 
-              "description": "data on any column using simple expressions", 
-              "guid": "localhost:9009/repos/iuc/filtering_with_empty_test_tags/Filter1/1.1.0", 
-              "id": "Filter1", 
-              "name": "Filter", 
-              "requirements": [], 
-              "tests": 
-                  [{"inputs": [], "name": "Test-1", "outputs": [], "required_files": []}, 
-                   {"inputs": [], "name": "Test-2", "outputs": [], "required_files": []}], 
-              "tool_config": "database/community_files/000/repo_6/filtering.xml", 
-              "tool_type": "default", 
-              "version": "1.1.0", 
-              "version_string_cmd": null}]}"
-        """
         if tool_dicts is not None:
             has_test_data = False
             testable_revision_found = False
