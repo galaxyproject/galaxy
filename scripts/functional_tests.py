@@ -176,12 +176,11 @@ def main():
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    testing_migrated_tools = '-migrated' in sys.argv
-    testing_installed_tools = '-installed' in sys.argv
+    testing_migrated_tools = __check_arg( '-migrated' )
+    testing_installed_tools = __check_arg( '-installed' )
     datatypes_conf_override = None
 
     if testing_migrated_tools or testing_installed_tools:
-        sys.argv.pop()
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
@@ -198,9 +197,8 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        framework_test = '-framework' in sys.argv  # Run through suite of tests testing framework.
+        framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
-            sys.argv.pop()
             framework_tool_dir = os.path.join('test', 'functional', 'tools')
             tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
@@ -521,6 +519,20 @@ def main():
         return 0
     else:
         return 1
+
+
+def __check_arg( name, param=False ):
+    try:
+        index = sys.argv.index( name )
+        del sys.argv[ index ]
+        if param:
+            ret_val = sys.argv[ index ]
+            del sys.argv[ index ]
+        else:
+            ret_val = True
+    except ValueError:
+        ret_val = False
+    return ret_val
 
 if __name__ == "__main__":
     sys.exit( main() )
