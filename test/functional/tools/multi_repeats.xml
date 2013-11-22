@@ -1,5 +1,4 @@
-<tool id="multirepeat" name="multirepeat">
-    <description>tail-to-head</description>
+<tool id="multi_repeats" name="multi_repeats">
     <command>
         cat $input1 #for $q in $queries# ${q.input2} #end for# #for $q in $more_queries# ${q.more_queries_input} #end for# > $out_file1
     </command>

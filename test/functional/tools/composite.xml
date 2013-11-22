@@ -1,5 +1,4 @@
-<tool id="velvet_inspired" name="velvet_inspired" version="1.0.0">
-  <description>Velvet sequence assembler for very short reads</description>
+<tool id="composite" version="1.0.0">
   <command>cat '$input.extra_files_path/Sequences' > $output</command>
   <inputs>
     <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
