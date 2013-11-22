@@ -13,6 +13,7 @@ elif [ $1 = 'help' ]; then
 	echo "'run_functional_tests.sh -list'                    for listing all the tool ids"
 	echo "'run_functional_tests.sh -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory"
 	echo "'run_functional_tests.sh -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory"
+    echo "'run_functional_tests.sh -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file"
 	echo "'run_functional_tests.sh -framework'               for running through example tool tests testing framework features in test/functional/tools"    
 	echo "'run_functional_tests.sh -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'"
 elif [ $1 = '-id' ]; then
@@ -48,6 +49,8 @@ elif [ $1 = '-toolshed' ]; then
     else
         python ./test/tool_shed/functional_tests.py -v --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html $2
     fi
+elif [ $1 = '-workflow' ]; then
+    python ./scripts/functional_tests.py -v functional.test_workflow:WorkflowTestCase --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html -workflow $2
 elif [ $1 = '-framework' ]; then
     if [ ! $2 ]; then
         python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -framework

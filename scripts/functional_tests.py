@@ -420,7 +420,7 @@ def main():
     new_path = [ os.path.join( cwd, "test" ) ]
     new_path.extend( sys.path[1:] )
     sys.path = new_path
-    import functional.test_toolbox
+
     # ---- Find tests ---------------------------------------------------------
     if galaxy_test_proxy_port:
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
@@ -436,6 +436,13 @@ def main():
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
 
         def _run_functional_test( testing_shed_tools=None ):
+            workflow_test = __check_arg( '-workflow', param=True )
+            if workflow_test:
+                import functional.test_workflow
+                functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
+                functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
+                functional.test_workflow.WorkflowTestCase.user_api_key = os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key )
+            import functional.test_toolbox
             functional.test_toolbox.toolbox = app.toolbox
             functional.test_toolbox.build_tests(
                 testing_shed_tools=testing_shed_tools,
