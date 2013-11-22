@@ -1,7 +1,7 @@
 import new
 import sys
 from base.twilltestcase import TwillTestCase
-from base.interactor import build_interactor
+from base.interactor import build_interactor, stage_data_in_history
 import logging
 log = logging.getLogger( __name__ )
 
@@ -23,12 +23,7 @@ class ToolTestCase( TwillTestCase ):
 
         test_history = galaxy_interactor.new_history()
 
-        # Upload any needed files
-        upload_waits = []
-        for test_data in testdef.test_data():
-            upload_waits.append( galaxy_interactor.stage_data_async( test_data, test_history, shed_tool_id ) )
-        for upload_wait in upload_waits:
-            upload_wait()
+        stage_data_in_history( galaxy_interactor, testdef.test_data(), test_history, shed_tool_id )
 
         data_list = galaxy_interactor.run_tool( testdef, test_history )
         self.assertTrue( data_list )

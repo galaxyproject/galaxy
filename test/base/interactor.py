@@ -5,10 +5,23 @@ from galaxy.model.orm import and_, desc
 from galaxy.model.mapping import context as sa_session
 from simplejson import dumps, loads
 
+from logging import getLogger
+log = getLogger( __name__ )
+
 
 def build_interactor( test_case, type="api" ):
     interactor_class = GALAXY_INTERACTORS[ type ]
     return interactor_class( test_case )
+
+
+def stage_data_in_history( galaxy_interactor, all_test_data, history, shed_tool_id=None ):
+    # Upload any needed files
+    upload_waits = []
+
+    for test_data in all_test_data:
+        upload_waits.append( galaxy_interactor.stage_data_async( test_data, history, shed_tool_id ) )
+    for upload_wait in upload_waits:
+        upload_wait()
 
 
 class GalaxyInteractorApi( object ):
@@ -20,14 +33,14 @@ class GalaxyInteractorApi( object ):
         self.uploads = {}
 
     def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
-        self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
-        hid = output_data.get( 'id' )
+        self.wait_for_history( history_id, maxseconds )
+        hid = self.__output_id( output_data )
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
         self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
         metadata = attributes.get( 'metadata', {} )
         if metadata:
-            dataset = self.__get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
+            dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.iteritems():
                 dataset_key = "metadata_%s" % key
                 try:
@@ -41,14 +54,26 @@ class GalaxyInteractorApi( object ):
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )
 
+    def wait_for_history( self, history_id, maxseconds ):
+        self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
+
     def get_job_stream( self, history_id, output_data, stream ):
-        hid = output_data.get( 'id' )
-        data = self.__get( "histories/%s/contents/%s/provenance" % (history_id, hid) ).json()
+        hid = self.__output_id( output_data )
+        data = self._get( "histories/%s/contents/%s/provenance" % (history_id, hid) ).json()
         return data.get( stream, '' )
 
     def new_history( self ):
-        history_json = self.__post( "histories", {"name": "test_history"} ).json()
+        history_json = self._post( "histories", {"name": "test_history"} ).json()
         return history_json[ 'id' ]
+
+    def __output_id( self, output_data ):
+        # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
+        # or simple id as comes out of workflow API.
+        try:
+            output_id = output_data.get( 'id' )
+        except AttributeError:
+            output_id = output_data
+        return output_id
 
     def stage_data_async( self, test_data, history_id, shed_tool_id, async=True ):
         fname = test_data[ 'fname' ]
@@ -143,12 +168,15 @@ class GalaxyInteractorApi( object ):
         return wait
 
     def __history_ready( self, history_id ):
-        history_json = self.__get( "histories/%s" % history_id ).json()
+        history_json = self._get( "histories/%s" % history_id ).json()
         state = history_json[ 'state' ]
-        if state == 'ok':
+        return self._state_ready( state, error_msg="History in error state." )
+
+    def _state_ready( self, state_str, error_msg ):
+        if state_str == 'ok':
             return True
-        elif state == 'error':
-            raise Exception("History in error state.")
+        elif state_str == 'error':
+            raise Exception( error_msg )
         return False
 
     def __submit_tool( self, history_id, tool_id, tool_input, extra_data={}, files=None ):
@@ -158,12 +186,12 @@ class GalaxyInteractorApi( object ):
             inputs=dumps( tool_input ),
             **extra_data
         )
-        return self.__post( "tools", files=files, data=data )
+        return self._post( "tools", files=files, data=data )
 
     def __get_user_key( self, user_key, admin_key ):
         if user_key:
             return user_key
-        all_users = self.__get( 'users', key=admin_key ).json()
+        all_users = self._get( 'users', key=admin_key ).json()
         try:
             test_user = [ user for user in all_users if user["email"] == 'test@bx.psu.edu' ][0]
         except IndexError:
@@ -172,26 +200,26 @@ class GalaxyInteractorApi( object ):
                 password='testuser',
                 username='admin-user',
             )
-            test_user = self.__post( 'users', data, key=admin_key ).json()
-        return self.__post( "users/%s/api_key" % test_user['id'], key=admin_key ).json()
+            test_user = self._post( 'users', data, key=admin_key ).json()
+        return self._post( "users/%s/api_key" % test_user['id'], key=admin_key ).json()
 
     def __dataset_fetcher( self, history_id ):
         def fetcher( hda_id, base_name=None ):
             url = "histories/%s/contents/%s/display?raw=true" % (history_id, hda_id)
             if base_name:
                 url += "&filename=%s" % base_name
-            return self.__get( url ).content
+            return self._get( url ).content
 
         return fetcher
 
-    def __post( self, path, data={}, files=None, key=None):
+    def _post( self, path, data={}, files=None, key=None):
         if not key:
             key = self.api_key
         data = data.copy()
         data['key'] = key
         return post_request( "%s/%s" % (self.api_url, path), data=data, files=files )
 
-    def __get( self, path, data={}, key=None ):
+    def _get( self, path, data={}, key=None ):
         if not key:
             key = self.api_key
         data = data.copy()
