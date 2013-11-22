@@ -504,19 +504,19 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
     for dependency in repository.missing_tool_dependencies:
         log.debug( 'Missing tool dependency %s of type %s version %s: %s' % \
             ( str( dependency.name ), str( dependency.type ), str( dependency.version ), unicodify( dependency.error_message ) ) )
-        test_result = dict( type=str( dependency.type ),
-                            name=str( dependency.name ),
-                            version=str( dependency.version ),
-                            error_message=unicodify( dependency.error_message ) )
+        test_result = dict( type=dependency.type,
+                            name=dependency.name,
+                            version=sdependency.version,
+                            error_message=dependency.error_message )
         repository_status_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
     for dependency in repository.missing_repository_dependencies:
         log.debug( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
             ( str( dependency.name ), str( dependency.changeset_revision ), str( dependency.owner ), unicodify( dependency.error_message ) ) )
-        test_result = dict( tool_shed=str( dependency.tool_shed ),
-                            name=str( dependency.name ),
-                            owner=str( dependency.owner ),
-                            changeset_revision=str( dependency.changeset_revision ),
-                            error_message=unicodify( dependency.error_message ) )
+        test_result = dict( tool_shed=dependency.tool_shed,
+                            name=dependency.name,
+                            owner=dependency.owner,
+                            changeset_revision=dependency.changeset_revision,
+                            error_message=dependency.error_message )
         repository_status_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
     # Record the status of this repository in the tool shed.
     params = dict( tools_functionally_correct=False,
@@ -727,7 +727,14 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     try:
                         results_dict = test_repository_tools( app, repository, repository_dict, repository_status_dict, results_dict )
                     except Exception, e:
-                        log.exception( 'Error executing tests for repository %s: %s' % ( name, str( e ) ) )
+                        exception_message = 'Error executing tests for repository %s: %s' % ( name, str( e ) )
+                        log.exception( exception_message )
+                        repository_status_dict[ 'failed_tests' ].append( exception_message )
+                        # Record the status of this repository in the tool shed.
+                        params = dict( tools_functionally_correct=False,
+                                       do_not_test=False,
+                                       test_install_error=False )
+                        register_test_result( galaxy_tool_shed_url, repository_status_dict, repository_dict, params )
                         results_dict[ 'repositories_failed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                     total_repositories_tested += 1
     results_dict[ 'total_repositories_tested' ] = total_repositories_tested
@@ -909,7 +916,7 @@ def test_repository_tools( app, repository, repository_dict, repository_status_d
         register_test_result( galaxy_tool_shed_url, repository_status_dict, repository_dict, params )
         log.debug( 'Revision %s of repository %s installed and passed functional tests.' % ( str( changeset_revision ), str( name ) ) )
     else:
-        repository_status_dict[ 'failed_tests' ] = extract_log_data( result, from_tool_test=True )
+        repository_status_dict[ 'failed_tests' ].append( extract_log_data( result, from_tool_test=True ) )
         # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome
         # of the tests, and updates tool_test_results with the relevant log data.
         # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
