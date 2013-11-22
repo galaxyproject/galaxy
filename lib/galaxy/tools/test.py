@@ -1,5 +1,6 @@
 import os
 import os.path
+import uuid
 from parameters import basic
 from parameters import grouping
 from galaxy.util import string_as_bool
@@ -139,10 +140,6 @@ class ToolTestBuilder( object ):
         expand_input_elems( test_elem )
 
     def __parse_inputs_elems( self, test_elem, i ):
-        # Composite datasets need a unique name: each test occurs in a fresh
-        # history, but we'll keep it unique per set of tests - use i (test #)
-        # and composite_data_names_counter (instance per test #)
-        composite_data_names_counter = 0
         raw_inputs = []
         for param_elem in test_elem.findall( "param" ):
             attrib = dict( param_elem.attrib )
@@ -168,10 +165,9 @@ class ToolTestBuilder( object ):
                         attrib['composite_data'].append( child )
                         if composite_data_name is None:
                             # Generate a unique name; each test uses a
-                            # fresh history
-                            composite_data_name = '_COMPOSITE_RENAMED_t%i_d%i' \
-                                % ( i, composite_data_names_counter )
-                            composite_data_names_counter += 1
+                            # fresh history.
+                            composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
+                                % ( i, uuid.uuid1().hex )
                     elif child.tag == 'metadata':
                         attrib['metadata'].append( child )
                     elif child.tag == 'metadata':
