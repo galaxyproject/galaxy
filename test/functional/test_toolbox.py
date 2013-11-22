@@ -111,7 +111,7 @@ class GalaxyInteractorApi( object ):
         dataset = submit_response["outputs"][0]
         #raise Exception(str(dataset))
         hid = dataset['id']
-        self.uploads[ fname ] = {"src": "hda", "id": hid}
+        self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = {"src": "hda", "id": hid}
         return self.__wait_for_history( history_id )
 
     def run_tool( self, testdef, history_id ):
