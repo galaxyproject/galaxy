@@ -76,17 +76,13 @@ class ToolTestBuilder( object ):
     def expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
         for key, value in tool_inputs.items():
+            expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
             if isinstance( value, grouping.Conditional ):
-                if prefix:
-                    new_prefix = "%s|%s" % ( prefix, value.name )
-                else:
-                    new_prefix = value.name
+                new_prefix = expanded_key
                 for i, case in enumerate( value.cases ):
                     if declared_inputs[ value.test_param.name ] == case.value:
-                        if isinstance(case.value, str):
-                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value.split( "," )
-                        else:
-                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value
+                        expanded_value = self.__split_if_str(case.value)
+                        expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
                         for input_name, input_value in case.inputs.items():
                             expanded_inputs.update( self.expand_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ) )
             elif isinstance( value, grouping.Repeat ):
@@ -98,17 +94,16 @@ class ToolTestBuilder( object ):
                         expanded_inputs.update( self.expand_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix ) )
             elif value.name not in declared_inputs:
                 print "%s not declared in tool test, will not change default value." % value.name
-            elif isinstance(declared_inputs[value.name], str):
-                if prefix:
-                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name].split(",")
-                else:
-                    expanded_inputs[value.name] = declared_inputs[value.name].split(",")
             else:
-                if prefix:
-                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name]
-                else:
-                    expanded_inputs[value.name] = declared_inputs[value.name]
+                value = self.__split_if_str(declared_inputs[value.name])
+                expanded_inputs[expanded_key] = value
         return expanded_inputs
+
+    def __split_if_str( self, value ):
+        split = isinstance(value, str)
+        if split:
+            value = value.split(",")
+        return value
 
     def __parse_elem( self, test_elem, i, default_interactor ):
         # Composite datasets need a unique name: each test occurs in a fresh
