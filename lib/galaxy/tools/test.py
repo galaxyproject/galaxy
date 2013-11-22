@@ -265,10 +265,14 @@ class ToolTestBuilder( object ):
                     attributes['ftype'] = attrib['ftype']
                 for extra in output_elem.findall( 'extra_files' ):
                     extra_files.append( self.__parse_extra_files_elem( extra ) )
-                if not (assert_list or file or extra_files):
+                metadata = {}
+                for metadata_elem in output_elem.findall( 'metadata' ):
+                    metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
+                if not (assert_list or file or extra_files or metadata):
                     raise Exception( "Test output defines not checks (e.g. must have a 'file' check against, assertions to check, etc...)")
                 attributes['assert_list'] = assert_list
                 attributes['extra_files'] = extra_files
+                attributes['metadata'] = metadata
                 self.__add_output( name, file, attributes )
         except Exception, e:
             self.error = True

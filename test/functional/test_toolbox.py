@@ -88,6 +88,21 @@ class GalaxyInteractorApi( object ):
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
         self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        metadata = attributes.get( 'metadata', {} )
+        if metadata:
+            dataset = self.__get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
+            for key, value in metadata.iteritems():
+                dataset_key = "metadata_%s" % key
+                try:
+                    dataset_value = dataset.get( dataset_key, None )
+                    if dataset_value != value:
+                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]."
+                        msg_params = ( key, value, dataset_value )
+                        msg = msg % msg_params
+                        raise Exception( msg )
+                except KeyError:
+                    msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
+                    raise Exception( msg )
 
     def get_job_stream( self, history_id, output_data, stream ):
         hid = output_data.get( 'id' )
