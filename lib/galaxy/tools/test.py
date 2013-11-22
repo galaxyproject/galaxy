@@ -3,7 +3,6 @@ import os.path
 from parameters import basic
 from parameters import grouping
 from galaxy.util import string_as_bool
-from galaxy.util.bunch import Bunch
 import logging
 
 log = logging.getLogger( __name__ )
@@ -76,16 +75,43 @@ class ToolTestBuilder( object ):
             yield data_dict
 
     def __matching_case_for_value( self, cond, declared_value ):
-        for i, case in enumerate( cond.cases ):
-            if declared_value is not None and (case.value == declared_value):
-                return case
+        test_param = cond.test_param
+        if isinstance(test_param, basic.BooleanToolParameter):
             if declared_value is None:
-                # TODO: Default might not be top value, fix this.
-                # TODO: Also may be boolean, got to look at checked.
+                # No explicit value for param in test case, determine from default
+                query_value = test_param.checked
+            else:
+                # Test case supplied value, check cases against this.
+                query_value = string_as_bool( declared_value )
+            matches_declared_value = lambda case_value: string_as_bool(case_value) == query_value
+        elif isinstance(test_param, basic.SelectToolParameter):
+            if declared_value is not None:
+                # Test case supplied explicit value to check against.
+                matches_declared_value = lambda case_value: case_value == declared_value
+            elif test_param.static_options:
+                # No explicit value in test case, not much to do if options are dynamic but
+                # if static options are available can find the one specified as default or
+                # fallback on top most option (like GUI).
+                for (name, value, selected) in test_param.static_options:
+                    if selected:
+                        default_option = name
+                else:
+                    default_option = test_param.static_options[0]
+                matches_declared_value = lambda case_value: case_value == default_option
+            else:
+                # No explicit value for this param and cannot determine a
+                # default - give up. Previously this would just result in a key
+                # error exception.
+                msg = "Failed to find test parameter specification required for conditional %s" % cond
+                raise Exception( msg )
+
+        # Check the tool's defined cases against predicate to determine
+        # selected or default.
+        for i, case in enumerate( cond.cases ):
+            if matches_declared_value( case.value ):
                 return case
         else:
-            return Bunch(value=declared_value, inputs=Bunch(items=lambda: []))
-        print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( cond.test_param.name, declared_value )
+            log.info("Failed to find case matching test parameter specification for cond %s. Remainder of test behavior is unspecified." % cond)
 
     def __split_if_str( self, value ):
         split = isinstance(value, str)
@@ -172,7 +198,8 @@ class ToolTestBuilder( object ):
                 cond_context = ParamContext( name=value.name, parent_context=parent_context )
                 case_context = ParamContext( name=value.test_param.name, parent_context=cond_context )
                 raw_input = case_context.value( raw_inputs )
-                case = self.__matching_case_for_value( value, raw_input )
+                case_value = raw_input[ 0 ] if raw_input else None
+                case = self.__matching_case_for_value( value, case_value )
                 if case:
                     expanded_value = self.__split_if_str( case.value )
                     expanded_inputs[ case_context.for_state() ] = expanded_value
