@@ -164,41 +164,21 @@ class GalaxyInteractorApi( object ):
     def run_tool( self, testdef, history_id ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
-        all_inputs = {}
-        for name, value, _ in testdef.inputs:
-            # TODO: Restrict this to param inputs.
-            if value in self.uploads:
-                value = self.uploads[ value ]
 
-            if name in all_inputs:
-                all_inputs[name].append( value )
-            else:
-                all_inputs[name] = [ value ]
+        inputs_tree = testdef.inputs.copy()
+        for key, value in inputs_tree.iteritems():
+            values = [value] if not isinstance(value, list) else value
+            for value in values:
+                if value in self.uploads:
+                    inputs_tree[ key ] = self.uploads[ value ]
 
-        # TODO: Handle pages?
-        # TODO: Handle force_history_refresh?
-        flat_inputs = True
-        if flat_inputs:
-            # Build up tool_input flately (e.g {"a_repeat_0|a_repeat_param" : "value1"})
-            expanded_inputs = {}
-            expanded_inputs.update(testdef.expand_multi_grouping(testdef.tool.inputs_by_page[0], all_inputs))
-            for i in range( 1, testdef.tool.npages ):
-                expanded_inputs.update(testdef.expand_multi_grouping(testdef.tool.inputs_by_page[i], all_inputs))
+        # # HACK: Flatten single-value lists. Required when using expand_grouping
+        for key, value in inputs_tree.iteritems():
+            if isinstance(value, list) and len(value) == 1:
+                inputs_tree[key] = value[0]
 
-            # # HACK: Flatten single-value lists. Required when using expand_grouping
-            for key, value in expanded_inputs.iteritems():
-                if isinstance(value, list) and len(value) == 1:
-                    expanded_inputs[key] = value[0]
-            tool_input = expanded_inputs
-        else:
-            # Build up tool_input as nested dictionary (e.g. {"a_repeat": [{"a_repeat_param" : "value1"}]})
-            # Doesn't work with the tool API at this time.
-            tool_input = {}
-            tool_input.update(testdef.to_dict(testdef.tool.inputs_by_page[0], all_inputs))
-            for i in range( 1, testdef.tool.npages ):
-                tool_input.update(testdef.to_dict(testdef.tool.inputs_by_page[i], all_inputs))
-
-        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=tool_input )
+        log.info( "Submiting tool with params %s" % inputs_tree )
+        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
         datasets_object = datasets.json()
         try:
             return self.__dictify_outputs( datasets_object )
@@ -322,9 +302,11 @@ class GalaxyInteractorTwill( object ):
     def run_tool( self, testdef, test_history ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
+
+        # Lose tons of information to accomodate legacy repeat handling.
         all_inputs = {}
-        for name, value, _ in testdef.inputs:
-            all_inputs[ name ] = value
+        for key, value in testdef.inputs.iteritems():
+            all_inputs[ key.split("|")[-1] ] = value
 
         # See if we have a grouping.Repeat element
         repeat_name = None
@@ -340,15 +322,20 @@ class GalaxyInteractorTwill( object ):
         else:
             job_finish_by_output_count = False
 
+        # Strip out just a given page of inputs from inputs "tree".
+        def filter_page_inputs( n ):
+            page_input_keys = testdef.tool.inputs_by_page[ n ].keys()
+            return dict( [ (k, v) for k, v in testdef.inputs.iteritems() if k.split("|")[0] in page_input_keys ] )
+
         # Do the first page
-        page_inputs = testdef.expand_grouping(testdef.tool.inputs_by_page[0], all_inputs)
+        page_inputs = filter_page_inputs( 0 )
 
         # Run the tool
         self.twill_test_case.run_tool( testdef.tool.id, repeat_name=repeat_name, **page_inputs )
         print "page_inputs (0)", page_inputs
         # Do other pages if they exist
         for i in range( 1, testdef.tool.npages ):
-            page_inputs = testdef.expand_grouping(testdef.tool.inputs_by_page[i], all_inputs)
+            page_inputs = filter_page_inputs( i )
             self.twill_test_case.submit_form( **page_inputs )
             print "page_inputs (%i)" % i, page_inputs
 

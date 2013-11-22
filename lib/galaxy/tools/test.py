@@ -75,29 +75,7 @@ class ToolTestBuilder( object ):
 
             yield data_dict
 
-    def to_dict( self, tool_inputs, declared_inputs ):
-        expanded_inputs = {}
-        for key, value in tool_inputs.items():
-            if isinstance( value, grouping.Conditional ):
-                for i, case in enumerate( value.cases ):
-                    if declared_inputs[ value.test_param.name ] == case.value:
-                        pass  # TODO
-            elif isinstance( value, grouping.Repeat ):
-                values = []
-                for r_name, r_value in value.inputs.iteritems():
-                    values.append( self.to_dict( {r_name: r_value} , declared_inputs ) )
-                expanded_inputs[ value.name ] = values
-            elif value.name not in declared_inputs:
-                print "%s not declared in tool test, will not change default value." % value.name
-            else:
-                expanded_inputs[ value.name ] = declared_inputs[value.name]
-        return expanded_inputs
-
-    def __matching_case( self, cond, declared_inputs, prefix, index=None ):
-        param = cond.test_param
-        declared_value = self.__declared_match( declared_inputs, param.name, prefix)
-        if index is not None:
-            declared_value = declared_value[index]
+    def __matching_case_for_value( self, cond, declared_value ):
         for i, case in enumerate( cond.cases ):
             if declared_value is not None and (case.value == declared_value):
                 return case
@@ -107,83 +85,7 @@ class ToolTestBuilder( object ):
                 return case
         else:
             return Bunch(value=declared_value, inputs=Bunch(items=lambda: []))
-        print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( param.name, declared_value )
-
-    def expand_multi_grouping( self, tool_inputs, declared_inputs, prefix='', index=0 ):
-        """
-        Used by API, slight generalization of expand_grouping used by Twill based interactor. Still
-        not quite the context/tree based specification that should exist!
-        """
-        expanded_inputs = {}
-        for key, value in tool_inputs.items():
-            expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
-            if isinstance( value, grouping.Conditional ):
-                new_prefix = expanded_key
-                case = self.__matching_case( value, declared_inputs, new_prefix, index=index )
-                if case:
-                    expanded_value = self.__split_if_str( case.value )
-                    expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
-                    for input_name, input_value in case.inputs.items():
-                        expanded_inputs.update( self.expand_multi_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ), index=index )
-            elif isinstance( value, grouping.Repeat ):
-                repeat_index = 0
-                any_children_matched = True
-                while any_children_matched:
-                    any_children_matched = False
-                    for r_name, r_value in value.inputs.iteritems():
-                        new_prefix = "%s_%d" % ( value.name, repeat_index )
-                        if prefix:
-                            new_prefix = "%s|%s" % ( prefix, new_prefix )
-                        expanded_input = self.expand_multi_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix, index=repeat_index )
-                        if expanded_input:
-                            any_children_matched = True
-                            expanded_inputs.update( expanded_input )
-                    repeat_index += 1
-            else:
-                declared_value = self.__declared_match( declared_inputs, value.name, prefix )
-                if declared_value and len(declared_value) > index:
-                    value = self.__split_if_str( declared_value[ index ] )
-                    expanded_inputs[ expanded_key ] = value
-        return expanded_inputs
-
-    def expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
-        expanded_inputs = {}
-        for key, value in tool_inputs.items():
-            expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
-            if isinstance( value, grouping.Conditional ):
-                new_prefix = expanded_key
-                case = self.__matching_case( value, declared_inputs, new_prefix )
-                if case:
-                    expanded_value = self.__split_if_str(case.value)
-                    expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
-                    for input_name, input_value in case.inputs.items():
-                        expanded_inputs.update( self.expand_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ) )
-            elif isinstance( value, grouping.Repeat ):
-                for repeat_index in xrange( 0, 1 ):  # need to allow for and figure out how many repeats we have
-                    for r_name, r_value in value.inputs.iteritems():
-                        new_prefix = "%s_%d" % ( value.name, repeat_index )
-                        if prefix:
-                            new_prefix = "%s|%s" % ( prefix, new_prefix )
-                        expanded_inputs.update( self.expand_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix ) )
-            else:
-                declared_value = self.__declared_match( declared_inputs, value.name, prefix )
-                if not declared_value:
-                    print "%s not declared in tool test, will not change default value." % value.name
-                else:
-                    value = self.__split_if_str(declared_value)
-                    expanded_inputs[expanded_key] = value
-        return expanded_inputs
-
-    def __declared_match( self, declared_inputs, name, prefix ):
-        prefix_suffixes = [ "%s|" % part for part in prefix.split( "|" ) ] if prefix else []
-        prefix_suffixes.append( name )
-        prefix_suffixes.reverse()
-        prefixed_name = ""
-        for prefix_suffix in prefix_suffixes:
-            prefixed_name = "%s%s" % ( prefix_suffix, prefixed_name )
-            if prefixed_name in declared_inputs:
-                return declared_inputs[prefixed_name]
-        return None
+        print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( cond.test_param.name, declared_value )
 
     def __split_if_str( self, value ):
         split = isinstance(value, str)
@@ -211,6 +113,7 @@ class ToolTestBuilder( object ):
         # history, but we'll keep it unique per set of tests - use i (test #)
         # and composite_data_names_counter (instance per test #)
         composite_data_names_counter = 0
+        raw_inputs = {}
         for param_elem in test_elem.findall( "param" ):
             attrib = dict( param_elem.attrib )
             if 'values' in attrib:
@@ -250,7 +153,56 @@ class ToolTestBuilder( object ):
                     # inserted at front of list so explicit declarations
                     # take precedence
                     attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-            self.__add_param( attrib.pop( 'name' ), value, attrib )
+            name = attrib.pop( 'name' )
+            if name not in raw_inputs:
+                raw_inputs[ name ] = []
+            raw_inputs[ name ].append( ( value, attrib ) )
+        self.inputs = self.__process_raw_inputs( self.tool.inputs, raw_inputs )
+
+    def __process_raw_inputs( self, tool_inputs, raw_inputs, parent_context=None ):
+        """
+        Recursively expand flat list of inputs into "tree" form of flat list
+        (| using to nest to new levels) structure and expand dataset
+        information as proceeding to populate self.required_files.
+        """
+        parent_context = parent_context or RootParamContext()
+        expanded_inputs = {}
+        for key, value in tool_inputs.items():
+            if isinstance( value, grouping.Conditional ):
+                cond_context = ParamContext( name=value.name, parent_context=parent_context )
+                case_context = ParamContext( name=value.test_param.name, parent_context=cond_context )
+                raw_input = case_context.value( raw_inputs )
+                case = self.__matching_case_for_value( value, raw_input )
+                if case:
+                    expanded_value = self.__split_if_str( case.value )
+                    expanded_inputs[ case_context.for_state() ] = expanded_value
+                    for input_name, input_value in case.inputs.items():
+                        expanded_inputs.update( self.__process_raw_inputs( { input_name: input_value }, raw_inputs, parent_context=cond_context ) )
+            elif isinstance( value, grouping.Repeat ):
+                repeat_index = 0
+                while True:
+                    context = ParamContext( name=value.name, index=repeat_index, parent_context=parent_context )
+                    updated = False
+                    for r_name, r_value in value.inputs.iteritems():
+                        expanded_input = self.__process_raw_inputs( { context.for_state() : r_value }, raw_inputs, parent_context=context )
+                        if expanded_input:
+                            expanded_inputs.update( expanded_input )
+                            updated = True
+                    if not updated:
+                        break
+                    repeat_index += 1
+            else:
+                context = ParamContext( name=value.name, parent_context=parent_context )
+                raw_input = context.value( raw_inputs )
+                if raw_input:
+                    (param_value, param_extra) = raw_input
+                    if isinstance( value, basic.DataToolParameter ):
+                        processed_value = [ self.__add_uploaded_dataset( context.for_state(), param_value, param_extra, value ) ]
+                    else:
+                        param_value = self.__split_if_str( param_value )
+                        processed_value = param_value
+                    expanded_inputs[ context.for_state() ] = processed_value
+        return expanded_inputs
 
     def __parse_output_elems( self, test_elem ):
         for output_elem in test_elem.findall( "output" ):
@@ -324,77 +276,8 @@ class ToolTestBuilder( object ):
         extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
         return extra_type, extra_value, extra_name, extra_attributes
 
-    def __add_param( self, name, value, extra ):
-        try:
-            if name not in self.tool.inputs:
-                found_parameter = False
-                for input_name, input_value in self.tool.inputs.items():
-                    if isinstance( input_value, grouping.Group ):
-                        found_parameter, new_value = self.__expand_grouping_for_data_input(name, value, extra, input_name, input_value)
-                        if found_parameter:
-                            value = new_value
-                            break
-                if not found_parameter:
-                    raise ValueError( "Unable to determine parameter type of test input '%s'. "
-                                      "Ensure that the parameter exists and that any container groups are defined first."
-                                      % name )
-            elif isinstance( self.tool.inputs[name], basic.DataToolParameter ):
-                value = self.__add_uploaded_dataset( name, value, extra, self.tool.inputs[name] )
-        except Exception, e:
-            log.debug( "Error for tool %s: could not add test parameter %s. %s" % ( self.tool.id, name, e ) )
-        self.inputs.append( ( name, value, extra ) )
-
     def __add_output( self, name, file, extra ):
         self.outputs.append( ( name, file, extra ) )
-
-    def __expand_grouping_for_data_input( self, name, value, extra, grouping_name, grouping_value ):
-        # Currently handles grouping.Conditional and grouping.Repeat
-        if isinstance( grouping_value, grouping.Conditional  ):
-            if name == grouping_value.test_param.name:
-                return True, value
-            case_test_param_value = None
-            for input in self.inputs:
-                if input[0] == grouping_value.test_param.name:
-                    case_test_param_value = input[1]
-                    break
-            if case_test_param_value is None:
-                #case for this group has not been set yet
-                return False, value
-            for case in grouping_value.cases:
-                if case.value == case_test_param_value:
-                    break
-            if case.value != case_test_param_value:
-                return False, value
-            #assert case.value == case_test_param_value, "Current case could not be determined for parameter '%s'. Provided value '%s' could not be found in '%s'." % ( grouping_value.name, value, grouping_value.test_param.name )
-            if name in case.inputs:
-                if isinstance( case.inputs[name], basic.DataToolParameter ):
-                    return True, self.__add_uploaded_dataset( name, value, extra, case.inputs[name] )
-                else:
-                    return True, value
-            else:
-                for input_name, input_parameter in case.inputs.iteritems():
-                    if isinstance( input_parameter, grouping.Group ):
-                        found_parameter, new_value = self.__expand_grouping_for_data_input( name, value, extra, input_name, input_parameter )
-                        if found_parameter:
-                            return True, new_value
-        elif isinstance( grouping_value, grouping.Repeat ):
-            # FIXME: grouping.Repeat can only handle 1 repeat param element since the param name
-            # is something like "input2" and the expanded page display is something like "queries_0|input2".
-            # The problem is that the only param name on the page is "input2", and adding more test input params
-            # with the same name ( "input2" ) is not yet supported in our test code ( the last one added is the only
-            # one used ).
-            if name in grouping_value.inputs:
-                if isinstance( grouping_value.inputs[name], basic.DataToolParameter ):
-                    return True, self.__add_uploaded_dataset( name, value, extra, grouping_value.inputs[name] )
-                else:
-                    return True, value
-            else:
-                for input_name, input_parameter in grouping_value.inputs.iteritems():
-                    if isinstance( input_parameter, grouping.Group ):
-                        found_parameter, new_value = self.__expand_grouping_for_data_input( name, value, extra, input_name, input_parameter )
-                        if found_parameter:
-                            return True, new_value
-        return False, value
 
     def __add_uploaded_dataset( self, name, value, extra, input_parameter ):
         if value is None:
@@ -413,3 +296,58 @@ class ToolTestBuilder( object ):
                     break
             value = os.path.basename( value )  # if uploading a file in a path other than root of test-data
         return value
+
+
+class ParamContext(object):
+
+    def __init__( self, name, index=None, parent_context=None ):
+        self.parent_context = parent_context
+        self.name = name
+        self.index = None if index is None else int( index )
+
+    def for_state( self ):
+        name = self.name if self.index is None else "%s_%d" % ( self.name, self.index )
+        parent_for_state = self.parent_context.for_state()
+        if parent_for_state:
+            return "%s|%s" % ( parent_for_state, name )
+        else:
+            return name
+
+    def __str__( self ):
+        return "Context[for_state=%s]" % self.for_state()
+
+    def param_names( self ):
+        for parent_context_param in self.parent_context.param_names():
+            yield "%s|%s" % ( parent_context_param, self.name )
+        yield self.name
+
+    def value( self, declared_inputs ):
+        for param_name in self.param_names():
+            if param_name in declared_inputs:
+                index = self.get_index()
+                try:
+                    return declared_inputs[ param_name ][ index ]
+                except IndexError:
+                    return None
+        return None
+
+    def get_index( self ):
+        if self.index is not None:
+            return self.index
+        else:
+            return self.parent_context.get_index()
+
+
+class RootParamContext(object):
+
+    def __init__( self ):
+        pass
+
+    def for_state( self ):
+        return ""
+
+    def param_names( self ):
+        return []
+
+    def get_index( self ):
+        return 0
