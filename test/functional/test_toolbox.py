@@ -73,7 +73,7 @@ class GalaxyInteractorApi( object ):
     def __init__( self, twill_test_case ):
         self.twill_test_case = twill_test_case
         self.api_url = "%s/api" % twill_test_case.url.rstrip("/")
-        self.api_key = self.__get_user_key( twill_test_case.master_api_key )
+        self.api_key = self.__get_user_key( twill_test_case.user_api_key, twill_test_case.master_api_key )
         self.uploads = {}
 
     def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
@@ -161,7 +161,9 @@ class GalaxyInteractorApi( object ):
         )
         return self.__post( "tools", files=files, data=data )
 
-    def __get_user_key( self, admin_key ):
+    def __get_user_key( self, user_key, admin_key ):
+        if user_key:
+            return user_key
         all_users = self.__get( 'users', key=admin_key ).json()
         try:
             test_user = [ user for user in all_users if user["email"] == 'test@bx.psu.edu' ][0]
@@ -336,7 +338,7 @@ class GalaxyInteractorTwill( object ):
         return expanded_inputs
 
 
-def build_tests( testing_shed_tools=False, master_api_key=None ):
+def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=None ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -372,6 +374,7 @@ def build_tests( testing_shed_tools=False, master_api_key=None ):
                 namespace[ 'test_tool_%06d' % j ] = test_method
                 namespace[ 'shed_tool_id' ] = shed_tool_id
                 namespace[ 'master_api_key' ] = master_api_key
+                namespace[ 'user_api_key' ] = user_api_key
             # The new.classobj function returns a new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = new.classobj( name, baseclasses, namespace )

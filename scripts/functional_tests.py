@@ -63,6 +63,7 @@ default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 default_galaxy_master_key = "TEST123"
+default_galaxy_user_key = None
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
@@ -425,6 +426,7 @@ def main():
             functional.test_toolbox.build_tests(
                 testing_shed_tools=testing_shed_tools,
                 master_api_key=master_api_key,
+                user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
             )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )
