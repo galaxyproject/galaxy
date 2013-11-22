@@ -57,32 +57,20 @@ class ToolTestCase( TwillTestCase ):
 
     def __setup_test_data( self, testdef, shed_tool_id ):
         # Upload any needed files
-        for fname, extra in testdef.required_files:
-            metadata = extra.get( 'metadata', [] )
-            composite_data = extra.get( 'composite_data', [] )
-            self.upload_file( fname,
-                              ftype=extra.get( 'ftype', 'auto' ),
-                              dbkey=extra.get( 'dbkey', 'hg17' ),
-                              metadata=metadata,
-                              composite_data=composite_data,
+        for test_data in testdef.test_data():
+            self.upload_file( test_data['fname'],
+                              ftype=test_data['ftype'],
+                              dbkey=test_data['dbkey'],
+                              metadata=test_data['metadata'],
+                              composite_data=test_data['composite_data'],
                               shed_tool_id=shed_tool_id )
-
-            print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
-            #Post upload attribute editing
-            edit_attributes = extra.get( 'edit_attributes', [] )
-
-            #currently only renaming is supported
-            for edit_att in edit_attributes:
-                if edit_att.get( 'type', None ) == 'name':
-                    new_name = edit_att.get( 'value', None )
-                    assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
-                    hda_id = self.get_history_as_data_list()[-1].get( 'id' )
-                    try:
-                        self.edit_hda_attribute_info( hda_id=str(hda_id), new_name=new_name )
-                    except:
-                        print "### call to edit_hda failed for hda_id %s, new_name=%s" % (hda_id, new_name)
-                else:
-                    raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
+            name = test_data.get('name', None)
+            if name:
+                hda_id = self.get_history_as_data_list()[-1].get( 'id' )
+                try:
+                    self.edit_hda_attribute_info( hda_id=str(hda_id), new_name=name )
+                except:
+                    print "### call to edit_hda failed for hda_id %s, new_name=%s" % (hda_id, name)
 
     def __run_tool( self, testdef ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload

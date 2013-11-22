@@ -6,6 +6,9 @@ import logging
 
 log = logging.getLogger( __name__ )
 
+DEFAULT_FTYPE = 'auto'
+DEFAULT_DBKEY = 'hg17'
+
 
 class ToolTestBuilder( object ):
     """
@@ -28,6 +31,31 @@ class ToolTestBuilder( object ):
         self.exception = None
 
         self.__parse_elem( test_elem, i )
+
+    def test_data( self ):
+        """
+        Iterator over metadata representing the required files for upload.
+        """
+        for fname, extra in self.required_files:
+            data_dict = dict(
+                fname=fname,
+                metadata=extra.get( 'metadata', [] ),
+                composite_data=extra.get( 'composite_data', [] ),
+                ftype=extra.get( 'ftype', DEFAULT_FTYPE ),
+                dbkey=extra.get( 'dbkey', DEFAULT_DBKEY ),
+            )
+            edit_attributes = extra.get( 'edit_attributes', [] )
+
+            #currently only renaming is supported
+            for edit_att in edit_attributes:
+                if edit_att.get( 'type', None ) == 'name':
+                    new_name = edit_att.get( 'value', None )
+                    assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
+                    data_dict['name'] = new_name
+                else:
+                    raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
+
+            yield data_dict
 
     def __parse_elem( self, test_elem, i ):
         # Composite datasets need a unique name: each test occurs in a fresh
