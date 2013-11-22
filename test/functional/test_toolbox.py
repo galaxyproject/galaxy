@@ -126,12 +126,14 @@ class GalaxyInteractorApi( object ):
         # tool will have uncompressed it on the fly.
         all_inputs = {}
         for name, value, _ in testdef.inputs:
-            all_inputs[ name ] = value
-
-        for key, value in all_inputs.iteritems():
             # TODO: Restrict this to param inputs.
             if value in self.uploads:
-                all_inputs[key] = self.uploads[ value ]
+                value = self.uploads[ value ]
+
+            if name in all_inputs:
+                all_inputs[name].append( value )
+            else:
+                all_inputs[name] = [ value ]
 
         # TODO: Handle pages?
         # TODO: Handle force_history_refresh?
@@ -139,9 +141,9 @@ class GalaxyInteractorApi( object ):
         if flat_inputs:
             # Build up tool_input flately (e.g {"a_repeat_0|a_repeat_param" : "value1"})
             expanded_inputs = {}
-            expanded_inputs.update(testdef.expand_grouping(testdef.tool.inputs_by_page[0], all_inputs))
+            expanded_inputs.update(testdef.expand_multi_grouping(testdef.tool.inputs_by_page[0], all_inputs))
             for i in range( 1, testdef.tool.npages ):
-                expanded_inputs.update(testdef.expand_grouping(testdef.tool.inputs_by_page[i], all_inputs))
+                expanded_inputs.update(testdef.expand_multi_grouping(testdef.tool.inputs_by_page[i], all_inputs))
 
             # # HACK: Flatten single-value lists. Required when using expand_grouping
             for key, value in expanded_inputs.iteritems():

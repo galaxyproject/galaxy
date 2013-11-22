@@ -103,6 +103,41 @@ class ToolTestBuilder( object ):
                 return case
         print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( param.name, declared_value )
 
+    def expand_multi_grouping( self, tool_inputs, declared_inputs, prefix='', index=0 ):
+        """
+        Used by API, slight generalization of expand_grouping used by Twill based interactor. Still
+        not quite the context/tree based specification that should exist!
+        """
+        expanded_inputs = {}
+        for key, value in tool_inputs.items():
+            expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
+            if isinstance( value, grouping.Conditional ):
+                new_prefix = expanded_key
+                case = self.__matching_case( value, declared_inputs )
+                if case:
+                    expanded_value = self.__split_if_str(case.value)
+                    expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
+                    for input_name, input_value in case.inputs.items():
+                        expanded_inputs.update( self.expand_multi_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ), index=index )
+            elif isinstance( value, grouping.Repeat ):
+                repeat_index = 0
+                any_children_matched = True
+                while any_children_matched:
+                    any_children_matched = False
+                    for r_name, r_value in value.inputs.iteritems():
+                        new_prefix = "%s_%d" % ( value.name, repeat_index )
+                        if prefix:
+                            new_prefix = "%s|%s" % ( prefix, new_prefix )
+                        expanded_input = self.expand_multi_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix, index=repeat_index )
+                        if expanded_input:
+                            any_children_matched = True
+                            expanded_inputs.update( expanded_input )
+                    repeat_index += 1
+            elif value.name in declared_inputs and len(declared_inputs[ value.name ]) > index:
+                value = self.__split_if_str( declared_inputs[ value.name ][ index ] )
+                expanded_inputs[ expanded_key ] = value
+        return expanded_inputs
+
     def expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
         for key, value in tool_inputs.items():
