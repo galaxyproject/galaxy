@@ -411,6 +411,7 @@ def get_repositories_to_install( tool_shed_url ):
     error_message = ''
     latest_revision_only = '-check_all_revisions' not in sys.argv
     repository_dicts = []
+    results_dict = {}
     # We are testing deprecated repositories because it is possible that a deprecated repository contains valid tools that
     # someone has previously installed. Deleted repositories have never been installed, so should not be tested. If they are
     # undeleted, this script will then test them the next time it runs. We don't need to check if a repository has been deleted
