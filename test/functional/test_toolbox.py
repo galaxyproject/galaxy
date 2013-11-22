@@ -101,24 +101,42 @@ class GalaxyInteractorApi( object ):
 
     def stage_data_async( self, test_data, history_id, shed_tool_id, async=True ):
         fname = test_data[ 'fname' ]
-        file_name = self.twill_test_case.get_filename( fname, shed_tool_id=shed_tool_id )
-        name = test_data.get( 'name', None )
-        if not name:
-            name = os.path.basename( file_name )
         tool_input = {
             "file_type": test_data[ 'ftype' ],
-            "dbkey": test_data[ 'dbkey' ],  # TODO: Handle it! Doesn't work if undefined, does seem to in Twill.
-            "files_0|NAME": name,
-            "files_0|type": "upload_dataset",
+            "dbkey": test_data[ 'dbkey' ],
         }
-        files = {
-            "files_0|file_data": open( file_name, 'rb')
-        }
-        submit_response = self.__submit_tool( history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files ).json()
+        composite_data = test_data[ 'composite_data' ]
+        if composite_data:
+            files = {}
+            for i, composite_file in enumerate( composite_data ):
+                file_name = self.twill_test_case.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
+                files["files_%s|file_data" % i] = open( file_name, 'rb' )
+                tool_input.update({
+                    #"files_%d|NAME" % i: name,
+                    "files_%d|type" % i: "upload_dataset",
+                    ## TODO:
+                    #"files_%d|space_to_tab" % i: composite_file.get( 'space_to_tab', False )
+                })
+            name = test_data[ 'name' ]
+        else:
+            file_name = self.twill_test_case.get_filename( fname, shed_tool_id=shed_tool_id )
+            name = test_data.get( 'name', None )
+            if not name:
+                name = os.path.basename( file_name )
+
+            tool_input.update({
+                "files_0|NAME": name,
+                "files_0|type": "upload_dataset",
+            })
+            files = {
+                "files_0|file_data": open( file_name, 'rb')
+            }
+        submit_response_object = self.__submit_tool( history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files )
+        submit_response = submit_response_object.json()
         dataset = submit_response["outputs"][0]
         #raise Exception(str(dataset))
         hid = dataset['id']
-        self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = {"src": "hda", "id": hid}
+        self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = self.uploads[ name ] = {"src": "hda", "id": hid}
         return self.__wait_for_history( history_id )
 
     def run_tool( self, testdef, history_id ):

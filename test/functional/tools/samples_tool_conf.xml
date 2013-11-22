@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox>
   <tool file="upload.xml"/>
+  <tool file="composite.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
 </toolbox>
