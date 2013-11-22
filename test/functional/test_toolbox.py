@@ -12,10 +12,12 @@ toolbox = None
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
 
-    def do_it( self, testdef, shed_tool_id=None ):
+    def do_it( self, testdef ):
         """
         Run through a tool test case.
         """
+        shed_tool_id = self.shed_tool_id
+
         self.__handle_test_def_errors( testdef )
 
         latest_history = self.__setup_test_history()
@@ -206,22 +208,21 @@ def build_tests( testing_shed_tools=False ):
     for i, tool_id in enumerate( toolbox.tools_by_id ):
         tool = toolbox.get_tool( tool_id )
         if tool.tests:
+            shed_tool_id = None if not testing_shed_tools else tool.id
             # Create a new subclass of ToolTestCase, dynamically adding methods
             # named test_tool_XXX that run each test defined in the tool config.
             name = "TestForTool_" + tool.id.replace( ' ', '_' )
             baseclasses = ( ToolTestCase, )
             namespace = dict()
             for j, testdef in enumerate( tool.tests ):
-                def make_test_method( td, shed_tool_id=None ):
+                def make_test_method( td ):
                     def test_tool( self ):
-                        self.do_it( td, shed_tool_id=shed_tool_id )
+                        self.do_it( td )
                     return test_tool
-                if testing_shed_tools:
-                    test_method = make_test_method( testdef, shed_tool_id=tool.id )
-                else:
-                    test_method = make_test_method( testdef )
+                test_method = make_test_method( testdef )
                 test_method.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
                 namespace[ 'test_tool_%06d' % j ] = test_method
+                namespace[ 'shed_tool_id' ] = shed_tool_id
             # The new.classobj function returns a new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = new.classobj( name, baseclasses, namespace )
