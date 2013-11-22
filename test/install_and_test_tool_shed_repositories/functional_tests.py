@@ -508,6 +508,7 @@ def handle_missing_dependencies( app, repository, metadata_revision_id, missing_
     # and functional tests should be skipped, since the tool dependency needs to be correctly installed
     # for the test to be considered reliable.
     log.debug( 'The following dependencies of this repository are missing, so skipping functional tests.' )
+    params = {}
     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
     for dependency in repository.missing_tool_dependencies:
         log.debug( 'Missing tool dependency %s of type %s version %s: %s' % \
