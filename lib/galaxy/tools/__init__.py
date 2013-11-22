@@ -1219,14 +1219,9 @@ class Tool( object, Dictifiable ):
             for key, value in uihints_elem.attrib.iteritems():
                 self.uihints[ key ] = value
         # Tests
-        tests_elem = root.find( "tests" )
-        if tests_elem:
-            try:
-                self.tests = parse_tests_elem( self, tests_elem )
-            except:
-                log.exception( "Failed to parse tool tests" )
-        else:
-            self.tests = None
+        self.__tests_elem = root.find( "tests" )
+        self.__tests_populated = False
+
         # Requirements (dependencies)
         self.requirements = parse_requirements_from_xml( root )
         # Determine if this tool can be used in workflows
@@ -1237,6 +1232,21 @@ class Tool( object, Dictifiable ):
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
+
+    @property
+    def tests( self ):
+        if not self.__tests_populated:
+            tests_elem = self.__tests_elem
+            if tests_elem:
+                try:
+                    self.__tests = parse_tests_elem( self, tests_elem )
+                except:
+                    log.exception( "Failed to parse tool tests" )
+            else:
+                self.__tests = None
+            self.__tests_populated = True
+        return self.__tests
+
     def parse_inputs( self, root ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
