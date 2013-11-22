@@ -1,0 +1,50 @@
+<tool id="handle_cond" name="handle_cond">
+    <description>tail-to-head</description>
+    <command>
+        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1
+    </command>
+    <inputs>
+        <conditional name="p1">
+            <param type="boolean" name="use" />
+            <when value="true">
+                <param name="p1v" value="4" type="integer" />
+            </when>
+            <when value="false">
+                <param name="p1v" value="7" type="integer" />
+            </when>
+        </conditional>
+        <conditional name="p2">
+            <param type="boolean" name="use" />
+            <when value="true">
+                <param name="p2v" value="4" type="integer" />
+            </when>
+            <when value="false">
+                <param name="p2v" value="7" type="integer" />
+            </when>            
+        </conditional>
+        <conditional name="p3">
+            <param type="boolean" name="use" />
+            <when value="true">
+                <param name="p3v" value="4" type="integer" />
+            </when>
+            <when value="false">
+                <param name="p3v" value="7" type="integer" />
+            </when>            
+        </conditional>                
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="p1|use" value="True"/>
+            <param name="p2|use" value="False"/>
+            <param name="p3|use" value="True"/>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="4 7 4" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

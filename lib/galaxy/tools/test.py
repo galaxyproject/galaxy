@@ -3,6 +3,7 @@ import os.path
 from parameters import basic
 from parameters import grouping
 from galaxy.util import string_as_bool
+from galaxy.util.bunch import Bunch
 import logging
 
 log = logging.getLogger( __name__ )
@@ -92,15 +93,20 @@ class ToolTestBuilder( object ):
                 expanded_inputs[ value.name ] = declared_inputs[value.name]
         return expanded_inputs
 
-    def __matching_case( self, cond, declared_inputs ):
+    def __matching_case( self, cond, declared_inputs, prefix, index=None ):
         param = cond.test_param
-        declared_value = declared_inputs.get( param.name, None )
+        declared_value = self.__declared_match( declared_inputs, param.name, prefix)
+        if index is not None:
+            declared_value = declared_value[index]
         for i, case in enumerate( cond.cases ):
-            if declared_value and (case.value == declared_value):
+            if declared_value is not None and (case.value == declared_value):
                 return case
-            if not declared_value:
+            if declared_value is None:
                 # TODO: Default might not be top value, fix this.
+                # TODO: Also may be boolean, got to look at checked.
                 return case
+        else:
+            return Bunch(value=declared_value, inputs=Bunch(items=lambda: []))
         print "Not matching case found for %s value %s. Test may fail in unexpected ways." % ( param.name, declared_value )
 
     def expand_multi_grouping( self, tool_inputs, declared_inputs, prefix='', index=0 ):
@@ -113,9 +119,9 @@ class ToolTestBuilder( object ):
             expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
             if isinstance( value, grouping.Conditional ):
                 new_prefix = expanded_key
-                case = self.__matching_case( value, declared_inputs )
+                case = self.__matching_case( value, declared_inputs, new_prefix, index=index )
                 if case:
-                    expanded_value = self.__split_if_str(case.value)
+                    expanded_value = self.__split_if_str( case.value )
                     expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
                     for input_name, input_value in case.inputs.items():
                         expanded_inputs.update( self.expand_multi_grouping( { input_name: input_value }, declared_inputs, prefix=new_prefix ), index=index )
@@ -133,9 +139,11 @@ class ToolTestBuilder( object ):
                             any_children_matched = True
                             expanded_inputs.update( expanded_input )
                     repeat_index += 1
-            elif value.name in declared_inputs and len(declared_inputs[ value.name ]) > index:
-                value = self.__split_if_str( declared_inputs[ value.name ][ index ] )
-                expanded_inputs[ expanded_key ] = value
+            else:
+                declared_value = self.__declared_match( declared_inputs, value.name, prefix )
+                if declared_value and len(declared_value) > index:
+                    value = self.__split_if_str( declared_value[ index ] )
+                    expanded_inputs[ expanded_key ] = value
         return expanded_inputs
 
     def expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
@@ -144,7 +152,7 @@ class ToolTestBuilder( object ):
             expanded_key = value.name if not prefix else "%s|%s" % (prefix, value.name)
             if isinstance( value, grouping.Conditional ):
                 new_prefix = expanded_key
-                case = self.__matching_case( value, declared_inputs )
+                case = self.__matching_case( value, declared_inputs, new_prefix )
                 if case:
                     expanded_value = self.__split_if_str(case.value)
                     expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = expanded_value
@@ -157,12 +165,25 @@ class ToolTestBuilder( object ):
                         if prefix:
                             new_prefix = "%s|%s" % ( prefix, new_prefix )
                         expanded_inputs.update( self.expand_grouping( { new_prefix : r_value }, declared_inputs, prefix=new_prefix ) )
-            elif value.name not in declared_inputs:
-                print "%s not declared in tool test, will not change default value." % value.name
             else:
-                value = self.__split_if_str(declared_inputs[value.name])
-                expanded_inputs[expanded_key] = value
+                declared_value = self.__declared_match( declared_inputs, value.name, prefix )
+                if not declared_value:
+                    print "%s not declared in tool test, will not change default value." % value.name
+                else:
+                    value = self.__split_if_str(declared_value)
+                    expanded_inputs[expanded_key] = value
         return expanded_inputs
+
+    def __declared_match( self, declared_inputs, name, prefix ):
+        prefix_suffixes = [ "%s|" % part for part in prefix.split( "|" ) ] if prefix else []
+        prefix_suffixes.append( name )
+        prefix_suffixes.reverse()
+        prefixed_name = ""
+        for prefix_suffix in prefix_suffixes:
+            prefixed_name = "%s%s" % ( prefix_suffix, prefixed_name )
+            if prefixed_name in declared_inputs:
+                return declared_inputs[prefixed_name]
+        return None
 
     def __split_if_str( self, value ):
         split = isinstance(value, str)
