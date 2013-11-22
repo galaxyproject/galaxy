@@ -52,7 +52,7 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.filters import FilterFactory
-from galaxy.tools.test import ToolTestBuilder
+from galaxy.tools.test import parse_tests_elem
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -1222,7 +1222,7 @@ class Tool( object, Dictifiable ):
         tests_elem = root.find( "tests" )
         if tests_elem:
             try:
-                self.parse_tests( tests_elem )
+                self.tests = parse_tests_elem( self, tests_elem )
             except:
                 log.exception( "Failed to parse tool tests" )
         else:
@@ -1563,16 +1563,6 @@ class Tool( object, Dictifiable ):
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
         return return_level
-
-    def parse_tests( self, tests_elem ):
-        """
-        Parse any "<test>" elements, create a `ToolTestBuilder` for each and
-        store in `self.tests`.
-        """
-        self.tests = []
-        for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
-            test = ToolTestBuilder( self, test_elem, i )
-            self.tests.append( test )
 
     def parse_input_page( self, input_elem, enctypes ):
         """

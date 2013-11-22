@@ -1,3 +1,4 @@
+import os
 import os.path
 from parameters import basic
 from parameters import grouping
@@ -8,6 +9,21 @@ log = logging.getLogger( __name__ )
 
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
+DEFAULT_INTERACTOR = "twill"  # Default mechanism test code uses for interacting with Galaxy instance.
+
+
+def parse_tests_elem(tool, tests_elem):
+    """
+    Build ToolTestBuilder objects for each "<test>" elements and
+    return default interactor (if any).
+    """
+    default_interactor = os.environ.get( 'GALAXY_TEST_DEFAULT_INTERACTOR', DEFAULT_INTERACTOR )
+    tests_default_interactor = tests_elem.get( 'interactor', default_interactor )
+    tests = []
+    for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
+        test = ToolTestBuilder( tool, test_elem, i, default_interactor=tests_default_interactor )
+        tests.append( test )
+    return tests
 
 
 class ToolTestBuilder( object ):
@@ -17,7 +33,7 @@ class ToolTestBuilder( object ):
     doing dynamic tests in this way allows better integration)
     """
 
-    def __init__( self, tool, test_elem, i ):
+    def __init__( self, tool, test_elem, i, default_interactor ):
         name = test_elem.get( 'name', 'Test-%d' % (i + 1) )
         maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
 
@@ -30,7 +46,7 @@ class ToolTestBuilder( object ):
         self.error = False
         self.exception = None
 
-        self.__parse_elem( test_elem, i )
+        self.__parse_elem( test_elem, i, default_interactor )
 
     def test_data( self ):
         """
@@ -57,12 +73,18 @@ class ToolTestBuilder( object ):
 
             yield data_dict
 
-    def __parse_elem( self, test_elem, i ):
+    def __parse_elem( self, test_elem, i, default_interactor ):
         # Composite datasets need a unique name: each test occurs in a fresh
         # history, but we'll keep it unique per set of tests - use i (test #)
         # and composite_data_names_counter (instance per test #)
         composite_data_names_counter = 0
         try:
+            # Mechanism test code uses for interacting with Galaxy instance,
+            # until 'api' is the default switch this to API to use its new
+            # features. Once 'api' is the default set to 'twill' to use legacy
+            # features or workarounds.
+            self.interactor = test_elem.get( 'interactor', default_interactor )
+
             for param_elem in test_elem.findall( "param" ):
                 attrib = dict( param_elem.attrib )
                 if 'values' in attrib:

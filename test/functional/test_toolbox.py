@@ -1,6 +1,8 @@
 import sys
 import new
+import os
 from galaxy.tools.parameters import grouping
+from galaxy.util import string_as_bool
 from base.twilltestcase import TwillTestCase
 import galaxy.model
 from galaxy.model.orm import and_, desc
@@ -20,7 +22,7 @@ class ToolTestCase( TwillTestCase ):
 
         self.__handle_test_def_errors( testdef )
 
-        galaxy_interactor = GalaxyInteractorTwill( self )
+        galaxy_interactor = self.__galaxy_interactor( testdef )
 
         test_history = galaxy_interactor.new_history()
 
@@ -37,6 +39,11 @@ class ToolTestCase( TwillTestCase ):
         self.__verify_outputs( testdef, shed_tool_id, data_list )
 
         galaxy_interactor.delete_history( test_history )
+
+    def __galaxy_interactor( self, testdef ):
+        interactor_key = testdef.interactor
+        interactor_class = GALAXY_INTERACTORS[ interactor_key ]
+        return interactor_class( self )
 
     def __handle_test_def_errors(self, testdef):
         # If the test generation had an error, raise
@@ -66,6 +73,25 @@ class ToolTestCase( TwillTestCase ):
                 print >>sys.stderr, self.get_job_stdout( elem.get( 'id' ), format=True )
                 print >>sys.stderr, self.get_job_stderr( elem.get( 'id' ), format=True )
                 raise
+
+
+class GalaxyInteractorApi( object ):
+
+    def __init__( self, twill_test_case ):
+        self.twill_test_case = twill_test_case
+        self.master_api_key = twill_test_case.master_api_key
+
+    def new_history( self ):
+        return None
+
+    def stage_data_async( self, test_data, shed_tool_id, async=True ):
+        return lambda: True
+
+    def run_tool( self, testdef ):
+        return []
+
+    def delete_history( self, history ):
+        return None
 
 
 class GalaxyInteractorTwill( object ):
@@ -231,3 +257,9 @@ def build_tests( testing_shed_tools=False, master_api_key=None ):
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = new.classobj( name, baseclasses, namespace )
             G[ name ] = new_class_obj
+
+
+GALAXY_INTERACTORS = {
+    'api': GalaxyInteractorApi,
+    'twill': GalaxyInteractorTwill,
+}
