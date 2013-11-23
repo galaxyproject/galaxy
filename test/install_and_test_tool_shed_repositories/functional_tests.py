@@ -672,12 +672,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 repository_status_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
 
                 # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
-                log.debug( 'Attempting to uninstall repository %s' % str( name ) )
+                log.debug( 'Attempting to uninstall repository %s owned by %s.' % ( name, owner ) )
                 try:
                     repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-                except:
-                    log.exception( 'No installed repository found.' )
-                error_message = '%s\n%s' % ( error_message, extract_log_data( result, from_tool_test=False ) )
+                except Exception, e:
+                    error_message = 'Unable to find installed repository %s owned by %s: %s.' % ( name, owner, str( e ) )
+                    log.exception( error_message )
                 test_result = dict( tool_shed=galaxy_tool_shed_url,
                                     name=name,
                                     owner=owner,
