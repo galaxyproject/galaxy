@@ -135,6 +135,7 @@
     
     ## Build script that augments tags using progressive javascript.
     <script type="text/javascript">
+        $(function() {
         //
         // Set up autocomplete tagger.
         //
@@ -212,6 +213,8 @@
          };
          
         $('#${elt_id}').autocomplete_tagging(options);
+        
+        });
     </script>
     
     ## Use style to hide/display the tag area.

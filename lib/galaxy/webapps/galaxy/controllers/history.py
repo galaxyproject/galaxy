@@ -34,14 +34,14 @@ class HistoryListGrid( grids.Grid ):
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
                 if count:
-                    rval += '<div class="count-box state-color-%s">%s</div>' % (state, count)
+                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
             return rval
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
-                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
+                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True )
             return link
 
 
@@ -85,10 +85,10 @@ class HistoryListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "View", allow_multiple=False ),
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "View", allow_multiple=False, inbound=True ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),

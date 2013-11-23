@@ -56,7 +56,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_action = 'list_history_datasets'
     datasets_param = "f-history"
     columns = [
-        NameColumn( "History Name", key="name", filterable="standard" ),
+        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
@@ -77,7 +77,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard" )
+        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -196,15 +196,15 @@ class VisualizationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ) )
+        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='copy') ),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
     ]
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
@@ -327,6 +327,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
+        
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -338,6 +339,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                     item.deleted = True
                 if operation == "share or publish":
                     return self.sharing( trans, **kwargs )
+                if operation == "copy":
+                    self.copy( trans, **kwargs )
             session.flush()
 
         # Build list of visualizations shared with user.
@@ -350,8 +353,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             .all()
 
         return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
-
-
+    
     #
     # -- Functions for operating on visualizations. --
     #
@@ -364,7 +366,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     @web.require_login()
-    def copy(self, trans, id, *args, **kwargs):
+    def copy(self, trans, id, **kwargs):
         visualization = self.get_visualization( trans, id, check_ownership=False )
         user = trans.get_user()
         owner = ( visualization.user == user )
@@ -381,7 +383,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Display the management page
         trans.set_message( 'Created new visualization with name "%s"' % copied_viz.title )
-        return self.list( trans )
+        return
 
     @web.expose
     @web.require_login( "use Galaxy visualizations" )

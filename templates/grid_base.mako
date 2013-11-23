@@ -16,6 +16,20 @@
 <%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
+<%def name="load(embedded = False)">
+<%
+    self.grid_javascripts()
+    if embedded:
+        self.init()
+        self.stylesheets()
+        self.render_grid_header( grid, False )
+        self.render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )
+    else:
+        self.make_grid( grid )
+    endif
+%>
+</%def>
+
 <%def name="init()">
 <%
     self.has_left_panel         = False
@@ -47,7 +61,8 @@
         'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
-        'current_item_id'               : ''
+        'current_item_id'               : False,
+        'use_panels'                    : context.get('use_panels')
     }
 
     ## add current item if exists
@@ -94,6 +109,7 @@
             'target'                : operation.target,
             'label'                 : operation.label,
             'confirm'               : operation.confirm,
+            'inbound'               : operation.inbound,
             'global_operation'      : False
         })
         if operation.allow_multiple:
@@ -107,7 +123,8 @@
     for action in grid.global_actions:
         self.grid_config['global_actions'].append({
             'url_args'  : url(**action.url_args),
-            'label'     : action.label
+            'label'     : action.label,
+            'inbound'   : action.inbound
         })
     endfor
 
@@ -144,6 +161,9 @@
                     link = None
                 endif
 
+                ## inbound
+                inbound = column.inbound
+
                 ## get value
                 value = column.get_value( trans, grid, item )
 
@@ -158,7 +178,8 @@
                 ## Item dictionary
                 item_dict['column_config'][column.label] = {
                     'link'      : link,
-                    'value'     : value
+                    'value'     : value,
+                    'inbound'  : inbound
                 }
             endif
         endfor
@@ -181,36 +202,29 @@
 ##
 
 <%def name="center_panel()">
-    ${self.grid_body( grid )}
+    ${self.grid_body()}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-    ${self.grid_body( grid )}
+    ${self.grid_body()}
 </%def>
 
 ## Because body() is special and always exists even if not explicitly defined,
 ## it's not possible to override body() in the topmost template in the chain.
 ## Because of this, override grid_body() instead.
-<%def name="grid_body( grid )">
-    ${self.make_grid( grid )}
+<%def name="grid_body()">
+    ${self.load()}
 </%def>
 
 <%def name="title()">${self.grid_config['title']}</%def>
 
-<%def name="javascripts()">
-   ${parent.javascripts()}
-   ${self.grid_javascripts()}
-</%def>
-
 <%def name="grid_javascripts()">
-    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating", "galaxy.grids" )}
+    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
     ${handle_refresh_frames()}
     
     <script type="text/javascript">
-
         var gridView = null;
-
         function add_tag_to_grid_filter (tag_name, tag_value)
         {
             // Put tag name and value together.
@@ -218,23 +232,6 @@
             $('#advanced-search').show('fast');
             gridView.add_filter_condition("tags", tag, true);
         };
-
-        $(function() {
-            ## get configuration
-            var grid_config = ${ h.to_json_string( self.grid_config ) };
-            
-            // Create grid.
-            var grid = new Grid(grid_config);
-            
-            // strip protocol and domain
-            var url = grid.get('url_base');
-            url = url.replace(/^.*\/\/[^\/]+/, '');
-            grid.set('url_base', url);
-
-            // Create view.
-            gridView = new GridView(grid);
-        });
-
     </script>
 </%def>
 
@@ -290,16 +287,25 @@
 
         %if self.grid_config['global_actions']:
             <ul class="manage-table-actions">
-                %if len( self.grid_config['global_actions'] ) < 3:
-                    %for action in self.grid_config['global_actions']:
-                        <li><a class="action-button" href="${action['url_args']}">${action['label']}</a></li>
-                    %endfor
-                %else:
-                    <li><a class="action-button" id="action-8675309-popup" class="menubutton">Actions</a></li>
-                    <div popupmenu="action-8675309-popup">
-                        %for action in self.grid_config['global_actions']:
-                            <a class="action-button" href="${action['url_args']}">${action['label']}</a>
-                        %endfor
+                <%
+                    show_popup = len( self.grid_config['global_actions'] ) >= 3
+                %>
+                %if show_popup:
+                    <li><a class="action-button" id="popup-global-actions" class="menubutton">Actions</a></li>
+                    <div popupmenu="popup-global-actions">
+                %endif
+                %for action in self.grid_config['global_actions']:
+                    <%
+                        label_cls = ""
+                        if action['inbound']:
+                            label_cls = "use-inbound"
+                        else:
+                            label_cls = "use-outbound"
+                        endif
+                    %>
+                    <li><a class="action-button ${label_cls}" href="${action['url_args']}" onclick="return false;">${action['label']}</a></li>
+                %endfor
+                %if show_popup:
                     </div>
                 %endif
             </ul>
@@ -396,23 +402,21 @@
                             # load attributes
                             link = column_settings['link']
                             value = column_settings['value']
+                            inbound = column_settings['inbound']
                             
                             # check if formatting is defined
                             value = str(value).replace('//', '/')
                             
                             # Attach popup menu?
                             id = ""
-                            if column['attach_popup']:
-                                id = 'grid-%d-popup' % i
-                            endif
-
-                            # Determine appropriate class
                             cls = ""
                             if column['attach_popup']:
+                                id = 'grid-%d-popup' % i
                                 cls = "menubutton"
                                 if link:
                                     cls += " split"
                                 endif
+                                cls += " popup"
                             endif
                         %>
                         <td ${nowrap}>
@@ -420,7 +424,16 @@
                             %if len(self.grid_config['operations']) != 0:
                                 <div id="${id}" class="${cls}" style="float: left;">
                             %endif
-                                    <a class="label" href="${link}">${value}</a>
+
+                            <%
+                                label_class = ""
+                                if inbound:
+                                    label_class = "use-inbound"
+                                else:
+                                    label_class = "use-outbound"
+                                endif
+                            %>
+                            <a class="label ${label_class}" href="${link}" onclick="return false;">${value}</a>
                             %if len(self.grid_config['operations']) != 0:
                                 </div>
                             %endif
@@ -430,32 +443,33 @@
                         </td>
                     %endif
                 %endfor
-                ## Actions column
-                <td>
-                    <div popupmenu="${popupmenu_id}">
-                        %for operation in self.grid_config['operations']:
-                            <%
-                                operation_id = operation['label']
-                                operation_settings = item['operation_config'][operation_id]
-                            %>
-                            %if operation_settings['allowed'] and operation['allow_popup']:
-                                <%
-                                target = ""
-                                if operation['target']:
-                                    target = "target='" + operation['target'] + "'"
-                                %>
-                                %if operation['confirm']:
-                                    <a class="action-button" ${target} confirm="${operation['confirm']}" href="${operation_settings['url_args']}">${operation_id}</a>
-                                %else:
-                                    <a class="action-button" ${target} href="${operation_settings['url_args']}">${operation_id}</a>
-                                %endif  
-                            %endif
-                        %endfor
-                    </div>
-                </td>
             </tr>
             <% num_rows_rendered += 1 %>
         %endfor
+
+        ## update configuration
+        <script type="text/javascript">
+        $(function() {
+            require(['galaxy.grids'], function(mod_grids) {
+                ## get configuration
+                var grid_config = ${ h.to_json_string( self.grid_config ) };
+                
+                // Create grid.
+                var grid = new mod_grids.Grid(grid_config);
+                
+                // strip protocol and domain
+                var url = grid.get('url_base');
+                url = url.replace(/^.*\/\/[^\/]+/, '');
+                grid.set('url_base', url);
+
+                // Create view.
+                if (!gridView)
+                    gridView = new mod_grids.GridView(grid);
+                else
+                    gridView.init_grid(grid);
+            });
+        });
+        </script>
 </%def>
 
 ## Render grid table footer contents.
@@ -510,24 +524,24 @@
                     %>
                     Page:
                     % if min_page > 1:
-                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1">1</a></span> ...
+                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1" onclick="return false;">1</a></span> ...
                     % endif
                     %for page_index in range(min_page, max_page + 1):
                         %if page_index == cur_page_num:
                             <span class='page-link inactive-link' id="page-link-${page_index}">${page_index}</span>
                         %else:
                             <% args = { 'page' : page_index } %>
-                            <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" page_num='${page_index}'>${page_index}</a></span>
+                            <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" onclick="return false;" page_num='${page_index}'>${page_index}</a></span>
                         %endif
                     %endfor
                     %if max_page < num_pages:
                         ...
-                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" page_num="${num_pages}">${num_pages}</a></span>
+                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>
                     %endif
                 </span>
                 
                 ## Show all link
-                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" page_num="all">Show All</a></span>
+                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" onclick="return false;" page_num="all">Show All</a></span>
             </td>
         </tr>    
     %endif

@@ -341,7 +341,7 @@
                     </div>
                 </div><!--end left-->
             %endif
-            <div id="center">
+            <div id="center" class="inbound">
                 ${self.center_panel()}
             </div><!--end center-->
             %if self.has_right_panel:

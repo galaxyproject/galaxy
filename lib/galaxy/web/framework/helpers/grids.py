@@ -323,7 +323,7 @@ class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, \
                   link=None, attach_popup=False, visible=True, nowrap=False, \
                   # Valid values for filterable are ['standard', 'advanced', None]
-                  filterable=None, sortable=True, label_id_prefix=None ):
+                  filterable=None, sortable=True, label_id_prefix=None, inbound=False ):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -331,6 +331,7 @@ class GridColumn( object ):
         self.method = method
         self.format = format
         self.link = link
+        self.inbound = inbound
         self.nowrap = nowrap
         self.attach_popup = attach_popup
         self.visible = visible
@@ -734,7 +735,7 @@ class SharingStatusColumn( GridColumn ):
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
                   target=None, url_args=None, async_compatible=False, confirm=None,
-                  global_operation=None ):
+                  global_operation=None, inbound=False ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -743,6 +744,7 @@ class GridOperation( object ):
         self.target = target
         self.url_args = url_args
         self.async_compatible = async_compatible
+        self.inbound = inbound
         # if 'confirm' is set, then ask before completing the operation
         self.confirm = confirm
         # specify a general operation that acts on the full grid
@@ -772,9 +774,10 @@ class DisplayByUsernameAndSlugGridOperation( GridOperation ):
         return { 'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug }
 
 class GridAction( object ):
-    def __init__( self, label=None, url_args=None ):
+    def __init__( self, label=None, url_args=None, inbound=False ):
         self.label = label
         self.url_args = url_args
+        self.inbound = inbound
 
 class GridColumnFilter( object ):
     def __init__( self, label, args=None ):

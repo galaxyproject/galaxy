@@ -232,7 +232,7 @@ var PopupMenu = Backbone.View.extend({
 
                 // if the option has 'func', call that function when the anchor is clicked
                 if( option.func ){
-                    $( this ).children( 'a.popupmenu-option' ).click( function( event ){
+                    $( this ).children( 'a.popupmenu-option' ).mousedown( function( event ){
                         option.func.call( menu, event, option );
                         // bubble up so that an option click will call the close behavior
                         //return false;
@@ -292,7 +292,7 @@ var PopupMenu = Backbone.View.extend({
         // function to close popup and unbind itself
         var menu = this;
         var closePopupWhenClicked = function( $elClicked ){
-            $elClicked.one( "click.close_popup", function(){
+            $elClicked.one( "mousedown.close_popup", function(){
                 menu.remove();
             });
         };
