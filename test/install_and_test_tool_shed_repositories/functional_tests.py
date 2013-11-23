@@ -506,7 +506,7 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
             ( str( dependency.name ), str( dependency.type ), str( dependency.version ), unicodify( dependency.error_message ) ) )
         test_result = dict( type=dependency.type,
                             name=dependency.name,
-                            version=sdependency.version,
+                            version=dependency.version,
                             error_message=dependency.error_message )
         repository_status_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
     for dependency in repository.missing_repository_dependencies:
