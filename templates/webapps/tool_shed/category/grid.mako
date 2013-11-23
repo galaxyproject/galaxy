@@ -48,7 +48,7 @@
     ${render_grid_table( grid, show_item_checkboxes )}
 </%def>
 
-<%def name="grid_body( grid )">
+<%def name="grid_body()">
     <%
         from tool_shed.grids.repository_grids import RepositoryGrid
         repo_grid = RepositoryGrid()
