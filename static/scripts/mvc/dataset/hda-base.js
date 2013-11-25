@@ -93,8 +93,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
         $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
         $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
-        //this._renderSelectable( $newRender );
         this._setUpBehaviors( $newRender );
+        //this._renderSelectable( $newRender );
 
         // fade the old render out (if desired)
         if( fade ){

@@ -3,6 +3,44 @@ define([
     "mvc/dataset/hda-base",
     "mvc/dataset/hda-edit"
 ], function( historyModel, hdaBase, hdaEdit ){
+
+
+// ============================================================================
+/** session storage for individual history preferences
+ */
+var HistoryPanelPrefs = SessionStorageModel.extend({
+    defaults : {
+        //TODO:?? expandedHdas to array?
+        expandedHdas : {},
+        //TODO:?? move to user?
+        show_deleted : false,
+        show_hidden  : false
+        //TODO: add scroll position?
+    },
+    /** add an hda id to the hash of expanded hdas */
+    addExpandedHda : function( id ){
+        this.save( 'expandedHdas', _.extend( this.get( 'expandedHdas' ), _.object([ id ], [ true ]) ) );
+    },
+    /** remove an hda id from the hash of expanded hdas */
+    removeExpandedHda : function( id ){
+        this.save( 'expandedHdas', _.omit( this.get( 'expandedHdas' ), id ) );
+    },
+    toString : function(){
+        return 'HistoryPanelPrefs(' + this.id + ')';
+    }
+});
+
+/** key string to store each histories settings under */
+HistoryPanelPrefs.historyStorageKey = function historyStorageKey( historyId ){
+    // class lvl for access w/o instantiation
+    if( !historyId ){
+        throw new Error( 'HistoryPanelPrefs.historyStorageKey needs valid id: ' + historyId );
+    }
+    // single point of change
+    return ( 'history:' + historyId );
+};
+
+
 /* =============================================================================
 Backbone.js implementation of history panel
 
@@ -216,8 +254,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //  - hdas w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
 
     /** (re-)loads the user's current history & hdas w/ details */
-    // implemented as a 'fresh start' or for when there is no model (intial panel render)
     loadCurrentHistory : function( attributes ){
+        // implemented as a 'fresh start' or for when there is no model (intial panel render)
         var panel = this;
         return this.loadHistoryWithHDADetails( 'current', attributes )
             .then(function( historyData, hdaData ){
@@ -334,7 +372,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
-    // alias to the model. Updates the hda list only (not the history)
+    /** alias to the model. Updates the hda list only (not the history) */
     refreshHdas : function( detailIds, options ){
         if( this.model ){
             return this.model.refresh( detailIds, options );
@@ -344,8 +382,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     // ------------------------------------------------------------------------ browser stored prefs
-//TODO: simplify
-
     /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
      *  @param {Object} initiallyExpanded
      *  @param {Boolean} show_deleted whether to show deleted HDAs (overrides stored)
@@ -353,53 +389,29 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @see PersistentStorage
      */
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
-        //this.log( '_setUpWebStorage, initiallyExpanded:', initiallyExpanded,
-        //    'show_deleted:', show_deleted, 'show_hidden', show_hidden );
-
-        //TODO: add scroll position?
-
-        // data that needs to be persistent over page refreshes
-        //  (note the key function which uses the history id as well)
-        this.storage = new PersistentStorage( this._getStorageKey( this.model.get( 'id' ) ), {
-            expandedHdas : {},
-            show_deleted : false,
-            show_hidden  : false
+        //console.debug( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
+        this.storage = new HistoryPanelPrefs({
+            id: HistoryPanelPrefs.historyStorageKey( this.model.get( 'id' ) )
         });
-        this.log( this + ' (prev) storage:', JSON.stringify( this.storage.get(), null, 2 ) );
 
-        // expanded Hdas is a map of hda.ids -> a boolean rep'ing whether this hda's body is expanded
+        // expanded Hdas is a map of hda.ids -> a boolean repr'ing whether this hda's body is already expanded
         // store any pre-expanded ids passed in
-        if( initiallyExpanded ){
+        if( _.isObject( initiallyExpanded ) ){
             this.storage.set( 'exandedHdas', initiallyExpanded );
         }
 
-        //TODO: should be global pref? (not specific to each history)
-
-        // get the show_deleted/hidden settings giving priority to values passed in,
-        //  using web storage otherwise
+        // get the show_deleted/hidden settings giving priority to values passed in, using web storage otherwise
         // if the page has specifically requested show_deleted/hidden, these will be either true or false
         //  (as opposed to undefined, null) - and we give priority to that setting
-        if( ( show_deleted === true ) || ( show_deleted === false ) ){
-            // save them to web storage
+        if( _.isBoolean( show_deleted ) ){
             this.storage.set( 'show_deleted', show_deleted );
         }
-        if( ( show_hidden === true ) || ( show_hidden === false ) ){
+        if( _.isBoolean( show_hidden ) ){
             this.storage.set( 'show_hidden', show_hidden );
         }
-        // if the page hasn't specified whether to show_deleted/hidden, pull show_deleted/hidden from the web storage
-        this.show_deleted = this.storage.get( 'show_deleted' );
-        this.show_hidden  = this.storage.get( 'show_hidden' );
-        //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
+
         this.trigger( 'new-storage', this.storage, this );
         this.log( this + ' (init\'d) storage:', this.storage.get() );
-    },
-
-    /** key string to store each histories settings under */
-    _getStorageKey : function( id ){
-        if( !id ){
-            throw new Error( '_getStorageKey needs valid id: ' + id );
-        }
-        return ( 'history:' + id );
     },
 
     /** clear all stored history panel data */
@@ -417,11 +429,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             return ( this.storage )?( this.storage.get() ):( {} );
         }
         //TODO: make storage engine generic
-        var item = sessionStorage.getItem( this._getStorageKey( historyId ) );
+        var item = sessionStorage.getItem( HistoryPanelPrefs.historyStorageKey( historyId ) );
         return ( item === null )?( {} ):( JSON.parse( item ) );
     },
 
-    /** get all the map of expaneded hda ids for the given history id */
+    /** get an array of expanded hda ids for the given history id */
     getExpandedHdaIds : function( historyId ){
         var expandedHdas = this.getStoredOptions( historyId ).expandedHdas;
         return (( _.isEmpty( expandedHdas ) )?( [] ):( _.keys( expandedHdas ) ));
@@ -509,7 +521,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
-            expanded = this.storage.get( 'expandedHdas' ).get( hdaId ),
+            expanded = this.storage.get( 'expandedHdas' )[ hdaId ],
             hdaView = new this.HDAView({
                     model           : hda,
                     expanded        : expanded,
@@ -529,10 +541,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var historyView = this;
         // maintain a list of hdas whose bodies are expanded
         hdaView.on( 'body-expanded', function( id ){
-            historyView.storage.get( 'expandedHdas' ).set( id, true );
+            historyView.storage.addExpandedHda( id );
         });
         hdaView.on( 'body-collapsed', function( id ){
-            historyView.storage.get( 'expandedHdas' ).deleteKey( id );
+            historyView.storage.removeExpandedHda( id );
         });
 //TODO: remove?
         hdaView.on( 'error', function( model, xhr, options, msg ){

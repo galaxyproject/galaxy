@@ -92,18 +92,30 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
 /** Backbone model that syncs to the browser's sessionStorage API.
  */
 var SessionStorageModel = Backbone.Model.extend({
-    initialize : function( hash, x, y, z ){
-        if( !hash || !hash.hasOwnProperty( 'id' ) ){
-            throw new Error( 'SessionStorageModel needs an id on init' );
-        }
-        // immed. save the passed in model and save on any change to it
-        this.save();
+    initialize : function( initialAttrs ){
+        // create unique id if none provided
+        initialAttrs.id = ( !_.isString( initialAttrs.id ) )?( _.uniqueId() ):( initialAttrs.id );
+        this.id = initialAttrs.id;
+
+        // load existing from storage (if any), clear any attrs set by bbone before init is called,
+        //  layer initial over existing and defaults, and save
+        var existing = ( !this.isNew() )?( this._read( this ) ):( {} );
+        this.clear({ silent: true });
+        this.save( _.extend( {}, this.defaults, existing, initialAttrs ), { silent: true });
+
+        // save on any change to it immediately
         this.on( 'change', function(){
             this.save();
         });
     },
+
+    /** override of bbone sync to save to sessionStorage rather than REST
+     *      bbone options (success, errror, etc.) should still apply
+     */
     sync : function( method, model, options ){
-        model.trigger('request', model, {}, options);
+        if( !options.silent ){
+            model.trigger( 'request', model, {}, options );
+        }
         var returned;
         switch( method ){
             case 'create'   : returned = this._create( model ); break;
@@ -118,157 +130,45 @@ var SessionStorageModel = Backbone.Model.extend({
         }
         return returned;
     },
+
+    /** set storage to the stringified item */
     _create : function( model ){
         var json = model.toJSON(),
             set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
         return ( set === null )?( set ):( json );
     },
+
+    /** read and parse json from storage */
     _read : function( model ){
-        return JSON.parse( sessionStorage.getItem( model.id, JSON.stringify( model.toJSON() ) ) );
+        return JSON.parse( sessionStorage.getItem( model.id ) );
     },
+
+    /** set storage to the item (alias to create) */
     _update : function( model ){
         return model._create( model );
     },
+
+    /** remove the item from storage */
     _delete : function( model ){
         return sessionStorage.removeItem( model.id );
     },
+
+    /** T/F whether sessionStorage contains the model's id (data is present) */
     isNew : function(){
         return !sessionStorage.hasOwnProperty( this.id );
+    },
+
+    _log : function(){
+        return JSON.stringify( this.toJSON(), null, '  ' );
+    },
+    toString : function(){
+        return 'SessionStorageModel(' + this.id + ')';
     }
+
 });
 (function(){
     SessionStorageModel.prototype = _.omit( SessionStorageModel.prototype, 'url', 'urlRoot' );
 }());
-
-
-//==============================================================================
-/**
- *  @class persistent storage adapter.
- *      Provides an easy interface to object based storage using method chaining.
- *      Allows easy change of the storage engine used (h5's local storage?).
- *  @augments StorageRecursionHelper
- *
- *  @param {String} storageKey : the key the storage engine will place the storage object under
- *  @param {Object} storageDefaults : [optional] initial object to set up storage with
- *
- *  @example
- *  // example of construction and use
- *  HistoryPanel.storage = new PersistanStorage( HistoryPanel.toString(), { visibleItems, {} });
- *  itemView.bind( 'toggleBodyVisibility', function( id, visible ){
- *      if( visible ){
- *          HistoryPanel.storage.get( 'visibleItems' ).set( id, true );
- *      } else {
- *          HistoryPanel.storage.get( 'visibleItems' ).deleteKey( id );
- *      }
- *  });
- *  @constructor
- */
-var PersistentStorage = function( storageKey, storageDefaults ){
-    if( !storageKey ){
-        throw( "PersistentStorage needs storageKey argument" );
-    }
-    storageDefaults = storageDefaults || {};
-
-    // ~constants for the current engine
-    var STORAGE_ENGINE = sessionStorage,
-        STORAGE_ENGINE_GETTER = function sessionStorageGet( key ){
-            var item = this.getItem( key );
-            return ( item !== null )?( JSON.parse( this.getItem( key ) ) ):( null );
-        },
-        STORAGE_ENGINE_SETTER = function sessionStorageSet( key, val ){
-            return this.setItem( key, JSON.stringify( val ) );
-        },
-        STORAGE_ENGINE_KEY_DELETER  = function sessionStorageDel( key ){ return this.removeItem( key ); };
-
-    /** Inner, recursive, private class for method chaining access.
-     *  @name StorageRecursionHelper
-     *  @constructor
-     */
-    function StorageRecursionHelper( data, parent ){
-        //console.debug( 'new StorageRecursionHelper. data:', data );
-        data = data || {};
-        parent = parent || null;
-
-        return /** @lends StorageRecursionHelper.prototype */{
-            /** get a value from the storage obj named 'key',
-             *  if it's an object - return a new StorageRecursionHelper wrapped around it
-             *  if it's something simpler - return the value
-             *  if this isn't passed a key - return the data at this level of recursion
-             */
-            get : function( key ){
-                //console.debug( this + '.get', key );
-                if( key === undefined ){
-                    return data;
-                } else if( data.hasOwnProperty( key ) ){
-                    return ( jQuery.type( data[ key ] ) === 'object' )?
-                        ( new StorageRecursionHelper( data[ key ], this ) )
-                        :( data[ key ] );
-                }
-                return undefined;
-            },
-            /** get the underlying data based on this key */
-            // set a value on the current data - then pass up to top to save current entire object in storage
-            set : function( key, value ){
-                //TODO: add parameterless variation setting the data somehow
-                //  ??: difficult bc of obj by ref, closure
-                //console.debug( this + '.set', key, value );
-                data[ key ] = value;
-                this._save();
-                return this;
-            },
-            // remove a key at this level - then save entire (as 'set' above)
-            deleteKey : function( key ){
-                //console.debug( this + '.deleteKey', key );
-                delete data[ key ];
-                this._save();
-                return this;
-            },
-            // pass up the recursion chain (see below for base case)
-            _save : function(){
-                //console.debug( this + '.save', parent );
-                return parent._save();
-            },
-            toString : function(){
-                return ( 'StorageRecursionHelper(' + data + ')' );
-            }
-        };
-    }
-
-    //??: more readable to make another class?
-    var returnedStorage = {},
-        // attempt to get starting data from engine...
-        data = STORAGE_ENGINE_GETTER.call( STORAGE_ENGINE, storageKey );
-
-    // ...if that fails, use the defaults (and store them)
-    if( data === null || data === undefined ){
-        data = jQuery.extend( true, {}, storageDefaults );
-        STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, data );
-    }
-
-    // the object returned by this constructor will be a modified StorageRecursionHelper
-    returnedStorage = new StorageRecursionHelper( data );
-    jQuery.extend( returnedStorage, /**  @lends PersistentStorage.prototype */{
-        /** The base case for save()'s upward recursion - save everything to storage.
-         *  @private
-         *  @param {Any} newData data object to save to storage
-         */
-        _save : function( newData ){
-            //console.debug( returnedStorage, '._save:', JSON.stringify( returnedStorage.get() ) );
-            return STORAGE_ENGINE_SETTER.call( STORAGE_ENGINE, storageKey, returnedStorage.get() );
-        },
-        /** Delete function to remove the entire base data object from the storageEngine.
-         */
-        destroy : function(){
-            //console.debug( returnedStorage, '.destroy:' );
-            return STORAGE_ENGINE_KEY_DELETER.call( STORAGE_ENGINE, storageKey );
-        },
-        /** String representation.
-         */
-        toString : function(){ return 'PersistentStorage(' + storageKey + ')'; }
-    });
-    
-    return returnedStorage;
-};
 
 
 //==============================================================================
