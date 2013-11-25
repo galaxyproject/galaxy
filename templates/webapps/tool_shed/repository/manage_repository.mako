@@ -209,7 +209,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <div class="toolFormTitle">Automated tool tests</div>
         %endif
         <div class="toolFormBody">
-            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository_metadata.changeset_revision )}" method="post" >
+            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}" method="post" >
                 <div class="form-row">
                     %if repository.type == TOOL_DEPENDENCY_DEFINITION:
                         <label>Skip automated testing of this tool dependency recipe</label>
