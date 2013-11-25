@@ -28,7 +28,9 @@ import galaxy.webapps.tool_shed.model.mapping
 from base.util import get_database_version
 from base.util import get_repository_current_revision
 from base.util import get_test_environment
-from galaxy.model.orm import and_, not_, select
+from galaxy.model.orm import and_
+from galaxy.model.orm import not_
+from galaxy.model.orm import select
 from galaxy.web import url_for
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 
@@ -138,21 +140,6 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                                                         app.model.RepositoryMetadata.table.c.repository_id.in_( tool_dependency_defintion_repository_ids ),
                                                         not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
-        # Create the repository_status dictionary, using the dictionary from the previous test run if available.
-        if repository_metadata.tool_test_results:
-            repository_status = repository_metadata.tool_test_results
-        else:
-            repository_status = {}
-        # Initialize the repository_status dictionary with the information about the current test environment.
-        last_test_environment = repository_status.get( 'test_environment', None )
-        if last_test_environment is None:
-            test_environment = get_test_environment()
-        else:
-            test_environment = get_test_environment( last_test_environment )
-        test_environment[ 'tool_shed_database_version' ] = get_database_version( app )
-        test_environment[ 'tool_shed_mercurial_version' ] = __version__.version
-        test_environment[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
-        repository_status[ 'test_environment' ] = test_environment
         # Check the next repository revision.
         changeset_revision = str( repository_metadata.changeset_revision )
         name = repository.name
@@ -174,7 +161,18 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                     print 'Revision %s of %s owned by %s has invalid metadata.' % ( changeset_revision, name, owner )
                 invalid_metadata += 1
             if not info_only:
-                repository_metadata.tool_test_results = repository_status
+                # Create the tool_test_results_dict dictionary, using the dictionary from the previous test run if available.
+                if repository_metadata.tool_test_results:
+                    tool_test_results_dict = repository_metadata.tool_test_results
+                else:
+                    tool_test_results_dict = {}
+                # Initialize the tool_test_results_dict dictionary with the information about the current test environment.
+                test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
+                test_environment_dict[ 'tool_shed_database_version' ] = get_database_version( app )
+                test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
+                test_environment_dict[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
+                tool_test_results_dict[ 'test_environment' ] = test_environment_dict
+                repository_metadata.tool_test_results = tool_test_results_dict
                 app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()
