@@ -673,7 +673,7 @@ def handle_tool_panel_section( trans, tool_panel_section=None, new_tool_panel_se
                                                                            tool_panel_section_id=section_id,
                                                                            new_tool_panel_section=new_tool_panel_section )
     elif tool_panel_section:
-        tool_panel_section_key = 'section_%s' % str( tool_panel_section )
+        tool_panel_section_key = 'section_%s' % str( tool_panel_section.id )
         tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
     else:
         return None, None
