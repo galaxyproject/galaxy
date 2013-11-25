@@ -61,10 +61,13 @@ def activate_repository( trans, repository ):
             repository_install_dir = os.path.abspath( relative_install_dir )
         # Activate proprietary datatypes.
         installed_repository_dict = datatype_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
-        if installed_repository_dict and 'converter_path' in installed_repository_dict:
-            datatype_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
-        if installed_repository_dict and 'display_path' in installed_repository_dict:
-            datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
+        if installed_repository_dict:
+            converter_path = installed_repository_dict.get( 'converter_path' )
+            if converter_path is not None:
+                datatype_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
+            display_path = installed_repository_dict.get( 'display_path' )
+            if display_path is not None:
+                datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
 
 def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
     """
