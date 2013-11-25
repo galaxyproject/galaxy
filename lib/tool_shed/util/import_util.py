@@ -164,7 +164,7 @@ def get_repository_status_from_tool_shed( trans, repository_info_dicts ):
             # No repository with the specified name and owner currently exists, so make sure the current user can create one.
             if trans.user_is_admin():
                 repository_info_dict[ 'status' ] = None
-            elif trans.app.security_agent.user_can_import_repository_archive( trans.user, owner ):
+            elif trans.app.security_agent.user_can_import_repository_archive( trans.user, repository_info_dict[ 'owner' ] ):
                 repository_info_dict[ 'status' ] = None
             else:
                 repository_info_dict[ 'status' ] = 'Not authorized to import'
