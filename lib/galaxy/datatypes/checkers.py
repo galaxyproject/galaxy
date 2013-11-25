@@ -32,7 +32,7 @@ def check_html( file_path, chunk=None ):
     regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
     regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
     regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
-    regexp4 = re.compile( "<META[^>]*>", re.I )
+    regexp4 = re.compile( "<META[\W][^>]*>", re.I )
     regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
     lineno = 0
     for line in temp:
