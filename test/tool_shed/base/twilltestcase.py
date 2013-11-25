@@ -618,13 +618,11 @@ class ShedTwillTestCase( TwillTestCase ):
         return temp_path
         
     def get_datatypes_count( self ):
-        url = '/admin/view_datatypes_registry'
+        url = '/api/datatypes?upload_only=false'
         self.visit_galaxy_url( url )
         html = self.last_page()
-        datatypes_count = re.search( 'registry contains (\d+) data types', html )
-        if datatypes_count:
-            return datatypes_count.group( 1 )
-        return None
+        datatypes = from_json_string( html )
+        return len( datatypes )
         
     def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
         '''Return the absolute path to an installed repository's env.sh file.'''
@@ -735,6 +733,13 @@ class ShedTwillTestCase( TwillTestCase ):
         repo = self.get_hg_repo( self.get_repo_path( repository ) )
         return str( repo.changectx( repo.changelog.tip() ) )
         
+    def get_sniffers_count( self ):
+        url = '/api/datatypes/sniffers'
+        self.visit_galaxy_url( url )
+        html = self.last_page()
+        sniffers = from_json_string( html )
+        return len( sniffers )
+
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
         '''Get a list of valid and (optionally) invalid tool dicts from the repository metadata.'''
         valid_tools = []
