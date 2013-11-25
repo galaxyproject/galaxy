@@ -235,7 +235,7 @@ class RepositoryInstallationError( object ):
 class TestEnvironment( object ):
     """Tool test environment object"""
 
-    def __init__( self, id=None, architecture=None, galaxy_database_version=None, galaxy_revision=None, python_version=None, system=None, time_last_tested=None,
+    def __init__( self, id=None, architecture=None, galaxy_database_version=None, galaxy_revision=None, python_version=None, system=None, time_tested=None,
                   tool_shed_database_version=None, tool_shed_mercurial_version=None, tool_shed_revision=None ):
         self.id = id
         self.architecture = architecture
@@ -243,7 +243,7 @@ class TestEnvironment( object ):
         self.galaxy_revision = galaxy_revision
         self.python_version = python_version
         self.system = system
-        self.time_last_tested = time_last_tested
+        self.time_tested = time_tested
         self.tool_shed_database_version = tool_shed_database_version
         self.tool_shed_mercurial_version = tool_shed_mercurial_version
         self.tool_shed_revision = tool_shed_revision
@@ -743,11 +743,6 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                              )
     if repository_metadata:
         metadata = repository_metadata.metadata
-        tool_test_results = repository_metadata.tool_test_results
-        try:
-            time_last_tested = time_ago( repository_metadata.time_last_tested )
-        except:
-            time_last_tested = None
         lock = threading.Lock()
         lock.acquire( True )
         try:
@@ -836,12 +831,17 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                              label='Valid tools' )
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
-            if 'tool_test_results' not in exclude and tool_test_results and len( tool_test_results ) > 1:
-                # Only create and populate this folder if there are actual tool test results to display, since the display of the 'Test environment'
-                # folder by itself can be misleading.  We check for more than a single entry in the tool_test_results dictionary because it may have
-                # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests", "installation_errors", "missing_test_components"
-                # "skipped_tests", "not_tested" or any other entry that may be added in the future.
-                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
+            tool_test_results = repository_metadata.tool_test_results
+            # Only create and populate this folder if there are actual tool test results to display.
+            if can_display_tool_test_results( tool_test_results, exclude=exclude ):
+                time_tested = repository_metadata.time_last_tested
+                if time_tested is not None:
+                    time_tested = time_ago( time_tested )
+                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans,
+                                                                                           folder_id,
+                                                                                           tool_test_results,
+                                                                                           time_tested,
+                                                                                           label='Tool test results' )
                 containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
             if metadata:
@@ -1052,30 +1052,39 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
 
-def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, label='Tool test results', time_last_tested=None ):
+def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, time_tested, label='Tool test results' ):
     """Return a folder hierarchy containing tool dependencies."""
     # This container is displayed only in the tool shed.
     if tool_test_results_dict:
         folder_id += 1
         tool_test_results_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-        if test_environment_dict:
+        if test_environment_dict is not None:
             folder_id += 1
             test_results_folder = Folder( id=folder_id, key='test_results', label=label, parent=tool_test_results_root_folder )
             tool_test_results_root_folder.folders.append( test_results_folder )
             folder_id += 1
             folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=test_results_folder )
             test_results_folder.folders.append( folder )
+            architecture = test_environment_dict.get( 'architecture', '' )
+            galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
+            galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
+            python_version = test_environment_dict.get( 'python_version', '' )
+            system = test_environment_dict.get( 'system', '' )
+            time_tested = time_tested
+            tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
+            tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
+            tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
             test_environment = TestEnvironment( id=1,
-                                                architecture=test_environment_dict.get( 'architecture', '' ),
-                                                galaxy_database_version=test_environment_dict.get( 'galaxy_database_version', '' ),
-                                                galaxy_revision=test_environment_dict.get( 'galaxy_revision', '' ),
-                                                python_version=test_environment_dict.get( 'python_version', '' ),
-                                                system=test_environment_dict.get( 'system', '' ),
-                                                time_last_tested=time_last_tested,
-                                                tool_shed_database_version=test_environment_dict.get( 'tool_shed_database_version', '' ),
-                                                tool_shed_mercurial_version=test_environment_dict.get( 'tool_shed_mercurial_version', '' ),
-                                                tool_shed_revision=test_environment_dict.get( 'tool_shed_revision', '' ) )
+                                                architecture=architecture,
+                                                galaxy_database_version=galaxy_database_version,
+                                                galaxy_revision=galaxy_revision,
+                                                python_version=python_version,
+                                                system=system,
+                                                time_tested=time_tested,
+                                                tool_shed_database_version=tool_shed_database_version,
+                                                tool_shed_mercurial_version=tool_shed_mercurial_version,
+                                                tool_shed_revision=tool_shed_revision )
             folder.test_environments.append( test_environment )
         not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
         if not_tested_dict:
@@ -1237,6 +1246,26 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=
     else:
         workflows_root_folder = None
     return folder_id, workflows_root_folder
+
+def can_display_tool_test_results( tool_test_results_dict, exclude=None ):
+    # Only create and populate the tool_test_results container if there are actual tool test results to display.
+    if exclude is None:
+        exclude = []
+    if 'tool_test_results' in exclude:
+        return False
+    if tool_test_results_dict:
+        # We check for more than a single entry in the tool_test_results dictionary because it may have
+        # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests",
+        # "installation_errors", "missing_test_components" "skipped_tests", "not_tested" or any other
+        # entry that may be added in the future.
+        display_entries = [ 'failed_tests', 'installation_errors', 'missing_test_components', 'not_tested', 'passed_tests', 'skipped_tests' ]
+        for k, v in tool_test_results_dict.items():
+            if k in display_entries:
+                # We've discovered an entry that can be displayed, so see if it has a value since displaying
+                # empty lists is not desired.
+                if v:
+                    return True
+    return False
 
 def cast_empty_repository_dependency_folders( folder, repository_dependency_id ):
     """

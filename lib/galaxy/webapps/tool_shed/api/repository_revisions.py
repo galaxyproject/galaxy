@@ -170,6 +170,7 @@ class RepositoryRevisionsController( BaseAPIController ):
                     if key in [ 'tools_functionally_correct', 'time_last_tested' ]:
                         # Automatically update repository_metadata.time_last_tested.
                         repository_metadata.time_last_tested = datetime.datetime.utcnow()
+                        flush_needed = True
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository_metadata )

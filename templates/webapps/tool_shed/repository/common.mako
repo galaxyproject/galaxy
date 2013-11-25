@@ -909,7 +909,7 @@
         id="libraryItem-rte-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table class="grid" id="test_environment">
-                <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
+                <tr><td><b>Time tested:</b> ${test_environment.time_tested | h}</td></tr>
                 <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
                 <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
                 <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>

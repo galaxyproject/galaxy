@@ -7,7 +7,6 @@ import sys
 import tempfile
 import time
 
-from datetime import datetime
 from optparse import OptionParser
 from time import strftime
 
@@ -119,21 +118,11 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
         missing_test_components = []
         repository = repository_metadata.repository
         records_checked += 1
-        # Create the repository_status dictionary, using the dictionary from the previous test run if available.
+        # Create the tool_test_results_dict dictionary, using the dictionary from the previous test run if available.
         if repository_metadata.tool_test_results:
-            repository_status = repository_metadata.tool_test_results
+            tool_test_results_dict = repository_metadata.tool_test_results
         else:
-            repository_status = {}
-        # Initialize the repository_status dictionary with the information about the current test environment.
-        last_test_environment = repository_status.get( 'test_environment', None )
-        if last_test_environment is None:
-            test_environment = get_test_environment()
-        else:
-            test_environment = get_test_environment( last_test_environment )
-        test_environment[ 'tool_shed_database_version' ] = get_database_version( app )
-        test_environment[ 'tool_shed_mercurial_version' ] = __version__.version
-        test_environment[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
-        repository_status[ 'test_environment' ] = test_environment
+            tool_test_results_dict = {}
         # Check the next repository revision.
         changeset_revision = str( repository_metadata.changeset_revision )
         name = repository.name
@@ -262,6 +251,11 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                             if 'missing_components' in invalid_test:
                                 print '# %s' % invalid_test[ 'missing_components' ]
             if not info_only:
+                test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
+                test_environment_dict[ 'tool_shed_database_version' ] = get_database_version( app )
+                test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
+                test_environment_dict[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
+                tool_test_results_dict[ 'test_environment' ] = test_environment_dict
                 # The repository_metadata.time_last_tested column is not changed by this script since no testing is performed here.
                 if missing_test_components:
                     # If functional test definitions or test data are missing, set do_not_test = True if no tool with valid tests has been
@@ -278,8 +272,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                         repository_metadata.do_not_test = True
                     repository_metadata.tools_functionally_correct = False
                     repository_metadata.missing_test_components = True
-                    repository_status[ 'missing_test_components' ] = missing_test_components
-                repository_metadata.tool_test_results = repository_status
+                    tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
+                repository_metadata.tool_test_results = tool_test_results_dict
                 app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()
