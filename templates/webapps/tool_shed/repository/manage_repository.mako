@@ -72,6 +72,17 @@
         tip_str = ''
         sharable_link_label = 'Sharable link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
+
+    if repository_metadata is None:
+        can_render_skip_tool_test_section = False
+    else:
+        if repository_metadata.changeset_revision is None:
+            can_render_skip_tool_test_section = False
+        else:
+            if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
+                can_render_skip_tool_test_section = True
+            else:
+                can_render_skip_tool_test_section = False
 %>
 
 <%!
@@ -200,7 +211,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     </div>
 </div>
 ${render_repository_items( metadata, containers_dict, can_set_metadata=True, render_repository_actions_for='tool_shed' )}
-%if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
+%if can_render_skip_tool_test_section:
     <p/>
     <div class="toolForm">
         %if repository.type == TOOL_DEPENDENCY_DEFINITION:
@@ -209,7 +220,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <div class="toolFormTitle">Automated tool tests</div>
         %endif
         <div class="toolFormBody">
-            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}" method="post" >
+            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=str( repository_metadata.changeset_revision ) )}" method="post" >
                 <div class="form-row">
                     %if repository.type == TOOL_DEPENDENCY_DEFINITION:
                         <label>Skip automated testing of this tool dependency recipe</label>
