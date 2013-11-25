@@ -92,8 +92,9 @@ def get_webapp_global_conf():
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
-    <tool_shed name="Embedded tool shed for functional tests" url="http://${shed_url}:${shed_port}/"/>
     <tool_shed name="Galaxy main tool shed" url="http://toolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="Galaxy test tool shed" url="http://testtoolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="Embedded tool shed for functional tests" url="http://${shed_url}:${shed_port}/"/>
 </tool_sheds>
 '''
 

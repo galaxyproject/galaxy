@@ -4,6 +4,7 @@ import os
 import re
 import test_db_util
 import simplejson
+import shutil
 import logging
 import time
 import tempfile
@@ -12,6 +13,7 @@ import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model as galaxy_model
 import galaxy.util as util
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util import xml_util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
 from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
@@ -98,6 +100,16 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
         
+    def check_exported_repository_dependency( self, dependency_filename, repository_name, repository_owner ):
+        root, error_message = xml_util.parse_xml( dependency_filename )
+        for elem in root.findall( 'repository' ):
+            if 'changeset_revision' in elem:
+                raise AssertionError( 'Exported repository %s with owner %s has a dependency with a defined changeset revision.' % \
+                                      ( repository_name, repository_owner ) )
+            if 'toolshed' in elem:
+                raise AssertionError( 'Exported repository %s with owner %s has a dependency with a defined tool shed.' % \
+                                      ( repository_name, repository_owner ) )
+
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )
@@ -144,6 +156,24 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def check_manifest( self, manifest_filepath, owner=None ):
+        root, error_message = xml_util.parse_xml( manifest_filepath )
+        for elem in root.findall( 'repository' ):
+            repository_name = elem.get( 'name' )
+            manifest_owner = elem.get( 'username' )
+            if owner is not None:
+                assert manifest_owner == owner, 'Expected repository %s to be owned by %s, but found %s' % \
+                    ( elem.get( 'name' ), owner, manifest_owner )
+            toolshed = elem.get( 'toolshed' )
+            changeset_revision = elem.get( 'changeset_revision' )
+            assert toolshed is None, 'Repository definition %s has a tool shed attribute %s.' % ( repository_name, toolshed )
+            assert changeset_revision is None, 'Repository definition %s specifies a changeset revision %s.' % \
+                ( repository_name, changeset_revision )
+            repository_archive = elem.find( 'archive' ).text
+            filepath, filename = os.path.split( manifest_filepath )
+            repository_path = os.path.join( filepath, repository_archive )
+            self.verify_repository_in_capsule( repository_path, repository_name, owner )
+
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -1207,6 +1237,15 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
+    def verify_capsule_contents( self, capsule_filepath, owner ):
+        tar_object = tarfile.open( capsule_filepath, 'r:*' )
+        extraction_path = tempfile.mkdtemp()
+        tar_object.extractall( extraction_path )
+        for root, dirs, files in os.walk( extraction_path ):
+            if 'manifest.xml' in files:
+                self.check_manifest( os.path.join( root, 'manifest.xml' ), owner=owner )
+        shutil.rmtree( extraction_path )
+
     def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
@@ -1279,6 +1318,17 @@ class ShedTwillTestCase( TwillTestCase ):
         # or we know that the repository was not correctly installed!
         assert found, 'No entry for %s in %s.' % ( required_data_table_entry, self.shed_tool_data_table_conf )
         
+    def verify_repository_in_capsule( self, repository_archive, repository_name, repository_owner ):
+        repository_extraction_dir = tempfile.mkdtemp()
+        repository_tar_object = tarfile.open( repository_archive, 'r:*' )
+        repository_tar_object.extractall( repository_extraction_dir )
+        for root, dirs, files in os.walk( repository_extraction_dir ):
+            for filename in files:
+                if filename in [ 'tool_dependencies.xml', 'repository_dependencies.xml' ]:
+                    dependency_filepath = os.path.join( root, filename )
+                    self.check_exported_repository_dependency( dependency_filepath, repository_name, repository_owner )
+        shutil.rmtree( repository_extraction_dir )
+
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
