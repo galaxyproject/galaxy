@@ -288,7 +288,14 @@ class Data( object ):
         return open( dataset.file_name )
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
-        """ Old display method, for transition """
+        """ Old display method, for transition - though still used by API and
+        test framework. Datatypes should be very careful if overridding this
+        method and this interface between datatypes and Galaxy will likely
+        change.
+
+        TOOD: Document alternatives to overridding this method (data
+        providers?).
+        """
         #Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
         composite_extensions.append('html') # for archiving composite datatypes
