@@ -221,8 +221,7 @@
 
 <%def name="grid_javascripts()">
     ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
-    ${handle_refresh_frames()}
-    
+
     <script type="text/javascript">
         var gridView = null;
         function add_tag_to_grid_filter (tag_name, tag_value)
@@ -470,6 +469,8 @@
             });
         });
         </script>
+        
+        ${handle_refresh_frames()}
 </%def>
 
 ## Render grid table footer contents.
