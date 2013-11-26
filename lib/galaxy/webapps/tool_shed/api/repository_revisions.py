@@ -143,7 +143,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                    value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -180,7 +181,8 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )

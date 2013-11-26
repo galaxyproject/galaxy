@@ -1,16 +1,10 @@
 #!/usr/bin/env python
-import ConfigParser
-import logging
+
 import os
-import shutil
 import sys
-import tempfile
-import time
 
-from optparse import OptionParser
-from time import strftime
-
-new_path = [ os.path.join( os.getcwd(), "lib" ), os.path.join( os.getcwd(), "test" ) ]
+new_path = [ os.path.join( os.getcwd(), "lib" ),
+            os.path.join( os.getcwd(), "test" ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
@@ -18,48 +12,56 @@ from galaxy import eggs
 eggs.require( "SQLAlchemy >= 0.4" )
 eggs.require( 'mercurial' )
 
+import ConfigParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
+import logging
+import shutil
+import tempfile
+import time
 
-from base.util import get_test_environment
 from base.util import get_database_version
 from base.util import get_repository_current_revision
-from galaxy.model.orm import and_, not_, select
+from galaxy.model.orm import and_
+from galaxy.model.orm import not_
+from galaxy.model.orm import select
 from mercurial import hg
 from mercurial import ui
 from mercurial import __version__
+from optparse import OptionParser
+from time import strftime
 from tool_shed.util.shed_util_common import clone_repository
 from tool_shed.util.shed_util_common import get_configured_ui
 
-log = logging.getLogger()
-log.setLevel( 10 )
-log.addHandler( logging.StreamHandler( sys.stdout ) )
-
+log = logging.getLogger( 'check_repositories_for_functional_tests' )
 assert sys.version_info[ :2 ] >= ( 2, 6 )
 
 
-class FlagRepositoriesApplication( object ):
-    """Encapsulates the state of a Universe application"""
+class RepositoryMetadataApplication( object ):
+    """Application that enables updating repository_metadata table records in the Tool Shed."""
+
     def __init__( self, config ):
         if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
+            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % str( config.database )
+        log.debug( 'Using database connection: %s' % str( config.database_connection ) )
         # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False )
+        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path,
+                                                                  config.database_connection,
+                                                                  engine_options={},
+                                                                  create_tables=False )
         self.hgweb_config_manager = self.model.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = config.hgweb_config_dir
-        print "# Using configured hgweb.config file: ", self.hgweb_config_manager.hgweb_config
+        log.debug( 'Using hgweb.config file: %s' % str( self.hgweb_config_manager.hgweb_config ) )
+
     @property
     def sa_session( self ):
-        """
-        Returns a SQLAlchemy session -- currently just gets the current
-        session from the threadlocal session context, but this is provided
-        to allow migration toward a more SQLAlchemy 0.4 style of use.
-        """
+        """Returns a SQLAlchemy session."""
         return self.model.context.current
+
     def shutdown( self ):
         pass
 
-def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
+def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     """
     This method will iterate through all records in the repository_metadata table, checking each one for tool metadata,
     then checking the tool metadata for tests.  Each tool's metadata should look something like:
@@ -352,12 +354,12 @@ def main():
     print "# %s - Checking repositories for tools with functional tests." % now
     print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( config_section, 'host' ),
                                                                    config_parser.get( config_section, 'port' ) )
-    app = FlagRepositoriesApplication( config )
+    app = RepositoryMetadataApplication( config )
     if options.info_only:
         print "# Displaying info only ( --info_only )"
     if options.verbosity:
         print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
-    check_and_flag_repositories( app, info_only=options.info_only, verbosity=options.verbosity )
+    check_and_update_repository_metadata( app, info_only=options.info_only, verbosity=options.verbosity )
 
 def should_set_do_not_test_flag( app, repository, changeset_revision ):
     '''

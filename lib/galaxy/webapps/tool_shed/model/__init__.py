@@ -251,7 +251,7 @@ class RepositoryMetadata( object, Dictifiable ):
         self.do_not_test = do_not_test
         self.test_install_error = test_install_error
         self.time_last_tested = time_last_tested
-        self.tool_test_results = tool_test_results
+        self.tool_test_results = tool_test_results or dict()
         self.has_repository_dependencies = has_repository_dependencies
         # We don't consider the special case has_repository_dependencies_only_if_compiling_contained_td here.
         self.includes_datatypes = includes_datatypes
