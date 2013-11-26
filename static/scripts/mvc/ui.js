@@ -297,18 +297,26 @@ var PopupMenu = Backbone.View.extend({
         function closePopup( event ){
             $( document ).off( 'click.close_popup' );
             if( window.parent !== window ){
-                $( window.parent.document ).off( "click.close_popup" );
+                try {
+                    $( window.parent.document ).off( "click.close_popup" );
+                } catch( err ){}
             } else {
-                $( 'iframe#galaxy_main' ).contents().off( "click.close_popup" );
+                try {
+                    $( 'iframe#galaxy_main' ).contents().off( "click.close_popup" );
+                } catch( err ){}
             }
             menu.remove();
         }
 
         $( 'html' ).one( "click.close_popup", closePopup );
         if( window.parent !== window ){
-            $( window.parent.document ).find( 'html' ).one( "click.close_popup", closePopup );
+            try {
+                $( window.parent.document ).find( 'html' ).one( "click.close_popup", closePopup );
+            } catch( err ){}
         } else {
-            $( 'iframe#galaxy_main' ).contents().one( "click.close_popup", closePopup );
+            try {
+                $( 'iframe#galaxy_main' ).contents().one( "click.close_popup", closePopup );
+            } catch( err ){}
         }
     },
 
