@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_masthead, mod_utils) {
+define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox"], function(mod_modal, mod_masthead, mod_utils) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(

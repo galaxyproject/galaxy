@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.utils", "libs/backbone/backbone-relational"], function(mod_utils) {
+define(["utils/galaxy.utils"], function(mod_utils) {
 
 // masthead
 var GalaxyMasthead = Backbone.View.extend(

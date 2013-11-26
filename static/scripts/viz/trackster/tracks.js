@@ -1618,6 +1618,8 @@ var TracksterTool = tools_mod.Tool.extend({
     },
 
     initialize: function(options) {
+        tools_mod.Tool.prototype.initialize.call(this, options);
+
         // Restore tool visibility from state; default to hidden.
         var hidden = true;
         if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
@@ -1787,7 +1789,7 @@ var TracksterToolView = Backbone.View.extend({
             },
             current_track = track,
             // Set name of track to include tool name, parameters, and region used.
-            track_name = url_params.tool_id +
+            track_name = tool.get('name') +
                          current_track.tool_region_and_parameters_str(region),
             container;
             
@@ -1909,7 +1911,9 @@ var Config = Backbone.Model.extend({
 
         // Set default values.
         _.each(options.params, function(p) {
-            values[p.key] = p.default_value;
+            // For color parameters without a default value, assign a random color.
+            values[p.key] = (p.type === 'color' && !p.default_value ? util.get_random_color() : p.default_value );
+
         });
 
         // Restore saved values.
@@ -2341,7 +2345,7 @@ var Track = function(view, container, obj_dict) {
     this.dataset = null;
     if (obj_dict.dataset) {
         // Dataset can be a Backbone model or a dict that can be used to create a model.
-        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : data.Dataset.findOrCreate(obj_dict.dataset) );
+        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset) );
     }
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
@@ -2430,7 +2434,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                 // Update track name.
                 if (track.tool.is_visible()) {
-                    track.set_name(track.name + track.tool_region_and_parameters_str());
+                    track.set_name(track.prefs.name + track.tool_region_and_parameters_str());
                 }
                 else {
                     track.revert_name();
@@ -2446,8 +2450,8 @@ extend(Track.prototype, Drawable.prototype, {
             css_class: "arrow-split",
             on_click_fn: function(track) {
                 var template =
-                    '<strong>Tool</strong>: <%= track.tool.name %><br/>' + 
-                    '<strong>Dataset</strong>: <%= track.name %><br/>' +
+                    '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' + 
+                    '<strong>Dataset</strong>: <%= track.prefs.name %><br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +
@@ -3821,7 +3825,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
     config_params: _.union( Drawable.prototype.config_params, [
-            { key: 'color', label: 'Color', type: 'color', default_value: util.get_random_color() },
+            { key: 'color', label: 'Color', type: 'color' },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3919,8 +3923,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block color', type: 'color', default_value: util.get_random_color() },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'block_color', label: 'Block color', type: 'color' },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
           help: 'Show the number of items in each bin when drawing summary histogram' },
@@ -4217,7 +4221,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'color', label: 'Histogram color', type: 'color', default_value: util.get_random_color() },
+        { key: 'color', label: 'Histogram color', type: 'color' },
         { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
@@ -4361,8 +4365,8 @@ var ReadTrack = function (view, container, obj_dict) {
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: util.get_random_color() },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'block_color', label: 'Block and sense strand color', type: 'color' },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },

@@ -13,7 +13,6 @@
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
                 "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
 

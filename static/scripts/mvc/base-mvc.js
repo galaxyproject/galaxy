@@ -2,7 +2,7 @@
  * Simple base model for any visible element. Includes useful attributes and ability
  * to set and track visibility.
  */
-var BaseModel = Backbone.RelationalModel.extend({
+var BaseModel = Backbone.Model.extend({
     defaults: {
         name: null,
         hidden: false

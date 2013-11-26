@@ -47,7 +47,6 @@
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
-        "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
         "galaxy.base",
         "mvc/ui",
@@ -76,8 +75,7 @@
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
                 "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+                "libs/backbone/backbone": { exports: "Backbone" }
             }
         });
     </script>

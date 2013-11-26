@@ -20,7 +20,7 @@ var ToolInputsSettings = Backbone.Model.extend({
 /**
  * Tree for a tool's parameters.
  */
-var ToolParameterTree = Backbone.RelationalModel.extend({
+var ToolParameterTree = Backbone.Model.extend({
     defaults: {
         tool: null,
         tree_data: null
@@ -248,23 +248,16 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
     }
 });
 
-var SweepsterTrack = Backbone.RelationalModel.extend({
+var SweepsterTrack = Backbone.Model.extend({
     defaults: {
         track: null,
         mode: 'Pack',
         settings: null,
         regions: null
     },
-
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'regions',
-            relatedModel: visualization.GenomeRegion
-        }
-    ],
-
+    
     initialize: function(options) {
+        this.set('regions', new visualization.GenomeRegionCollection(options.regions));
         if (options.track) {
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend({
@@ -313,31 +306,12 @@ var SweepsterVisualization = visualization.Visualization.extend({
         default_mode: 'Pack'
     }),
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'dataset',
-            relatedModel: data.Dataset
-        },
-        {
-            type: Backbone.HasOne,
-            key: 'tool',
-            relatedModel: tools.Tool
-        },
-        {
-            type: Backbone.HasMany,
-            key: 'regions',
-            relatedModel: visualization.GenomeRegion
-        },
-        {
-            type: Backbone.HasMany,
-            key: 'tracks',
-            relatedModel: SweepsterTrack
-        }
-        // NOTE: cannot use relationship for parameter tree because creating tree is complex.
-    ],
-    
     initialize: function(options) {
+        this.set('dataset', new data.Dataset(options.dataset));
+        this.set('tool', new tools.Tool(options.tool));
+        this.set('regions', new visualization.GenomeRegionCollection(options.regions));
+        this.set('tracks', new SweepsterTrackCollection(options.tracks));
+
         var tool_with_samplable_inputs = this.get('tool');
         this.set('tool_with_samplable_inputs', tool_with_samplable_inputs);
         // Remove complex parameters for now.
@@ -354,7 +328,6 @@ var SweepsterVisualization = visualization.Visualization.extend({
     },
 
     toJSON: function() {
-        // TODO: could this be easier by using relational models?
         return {
             id: this.get('id'),
             title: 'Parameter exploration for dataset \''  + this.get('dataset').get('name') + '\'',

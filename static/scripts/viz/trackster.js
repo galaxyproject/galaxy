@@ -29,8 +29,8 @@ require(
 });
 
 // trackster viewer
-define( ["libs/backbone/backbone-relational", "viz/visualization", "viz/trackster_ui"],
-        function(backbone, visualization, trackster_ui)
+define( ["viz/visualization", "viz/trackster_ui"],
+        function(visualization, trackster_ui)
 {
 
 var TracksterView = Backbone.View.extend(
