@@ -50,6 +50,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # otherwise, check permissions for the history first
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
+
             # if ids, return _FULL_ data (as show) for each id passed
             if ids:
                 ids = ids.split( ',' )
@@ -58,19 +59,39 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         rval.append( self._detailed_hda_dict( trans, hda ) )
+
             # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
+                # details param allows a mixed set of summary and detailed hdas
+                #TODO: this is getting convoluted due to backwards compat
                 details = kwd.get( 'details', None ) or []
                 if details and details != 'all':
                     details = util.listify( details )
 
+                # by default return all datasets - even if deleted or hidden (defaulting the next switches to None)
+                #   if specified return those datasets that match the setting
+                # backwards compat
+                return_deleted = util.string_as_bool_or_none( kwd.get( 'deleted', None ) )
+                return_visible = util.string_as_bool_or_none( kwd.get( 'visible', None ) )
+
                 for hda in history.datasets:
+                    # if either return_ setting has been requested (!= None), skip hdas that don't match the request
+                    if return_deleted is not None:
+                        if( ( return_deleted and not hda.deleted )
+                        or  ( not return_deleted and hda.deleted ) ):
+                            continue
+                    if return_visible is not None:
+                        if( ( return_visible and not hda.visible )
+                        or  ( not return_visible and hda.visible ) ):
+                            continue
+
                     encoded_hda_id = trans.security.encode_id( hda.id )
                     if( ( encoded_hda_id in details )
                     or  ( details == 'all' ) ):
                         rval.append( self._detailed_hda_dict( trans, hda ) )
                     else:
                         rval.append( self._summary_hda_dict( trans, history_id, hda ) )
+
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
