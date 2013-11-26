@@ -868,34 +868,41 @@ class ShedTwillTestCase( TwillTestCase ):
               ( changeset_revision, repository_id, self.galaxy_url )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to 
+        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
         form = tc.browser.get_form( 'select_tool_panel_section' )
-        submit_button = 'select_tool_panel_section_button'
         if form is None:
             form = tc.browser.get_form( 'select_shed_tool_panel_config' )
-            submit_button = 'select_shed_tool_panel_config_button'
-        if 'install_tool_dependencies' in self.last_page():
-            checkbox = form.find_control( id="install_tool_dependencies" )
-            checkbox.disabled = False
-            if install_tool_dependencies:
-                checkbox.selected = True
-                kwd[ 'install_tool_dependencies' ] = 'True'
-            else:
-                checkbox.selected = False
-                kwd[ 'install_tool_dependencies' ] = 'False'
-        if 'install_repository_dependencies' in self.last_page():
-            kwd[ 'install_repository_dependencies' ] = str( install_repository_dependencies ).lower()
-        if 'shed_tool_conf' not in kwd:
-            kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
-        if new_tool_panel_section:
-            kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        if not includes_tools_for_display_in_tool_panel:
-            self.check_for_strings( strings_displayed=[ 'Choose the configuration file' ] )
-        self.submit_form( 1, submit_button, **kwd )
+        assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
+        kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
+        if new_tool_panel_section is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        submit_button_control = form.find_control( type='submit' )
+        assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
+        self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
+
+    def set_form_value( self, form, kwd, field_name, field_value ):
+        '''
+        Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
+        the field does not exist in the provided form, return a dict without that index.
+        '''
+        form_id = form.attrs.get( 'id' )
+        controls = [ control for control in form.controls if str( control.name ) == field_name ]
+        if len( controls ) > 0:
+            log.debug( 'Setting field %s of form %s to %s.' % ( field_name, form_id, str( field_value ) ) )
+            tc.formvalue( form_id, field_name, str( field_value ) )
+            kwd[ field_name ] = str( field_value )
+        else:
+            if field_name in kwd:
+                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                del( kwd[ field_name ] )
+        return kwd
         
     def load_citable_url( self, 
                           username, 

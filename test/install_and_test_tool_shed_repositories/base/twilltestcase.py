@@ -27,6 +27,21 @@ class InstallTestRepository( TwillTestCase ):
         self.shed_tools_dict = {}
         self.home()
 
+    def deactivate_or_uninstall_repository( self, installed_repository, deactivate=False ):
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_url( url )
+        if deactivate:
+            tc.fv ( 1, "remove_from_disk", 'false' )
+        else:
+            tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'The repository named' ]
+        if deactivate:
+            strings_displayed.append( 'has been deactivated' )
+        else:
+            strings_displayed.append( 'has been uninstalled' )
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+
     def initiate_installation_process( self,
                                        install_tool_dependencies=False,
                                        install_repository_dependencies=True,
@@ -80,36 +95,40 @@ class InstallTestRepository( TwillTestCase ):
         self.visit_url( url )
         # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
-        if 'install_tool_dependencies' in self.last_page():
-            form = tc.browser.get_form( 'select_tool_panel_section' )
-            checkbox = form.find_control( id="install_tool_dependencies" )
-            checkbox.disabled = False
-            if install_tool_dependencies:
-                checkbox.selected = True
-                kwd[ 'install_tool_dependencies' ] = 'True'
-            else:
-                checkbox.selected = False
-                kwd[ 'install_tool_dependencies' ] = 'False'
-        if 'install_repository_dependencies' in self.last_page():
-            form = tc.browser.get_form( 'select_tool_panel_section' )
-            checkbox = form.find_control( id="install_repository_dependencies" )
-            checkbox.disabled = False
-            if install_repository_dependencies:
-                checkbox.selected = True
-                kwd[ 'install_repository_dependencies' ] = 'True'
-            else:
-                checkbox.selected = False
-                kwd[ 'install_repository_dependencies' ] = 'False'
-        if 'shed_tool_conf' not in kwd:
-            kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
-        if new_tool_panel_section:
-            kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+        form = tc.browser.get_form( 'select_tool_panel_section' )
+        if form is None:
+            form = tc.browser.get_form( 'select_shed_tool_panel_config' )
+        assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
+        kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
+        if new_tool_panel_section is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        submit_button_control = form.find_control( type='submit' )
+        assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
+        self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
+    def set_form_value( self, form, kwd, field_name, field_value ):
+        '''
+        Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
+        the field does not exist in the provided form, return a dict without that index.
+        '''
+        form_id = form.attrs.get( 'id' )
+        controls = [ control for control in form.controls if str( control.name ) == field_name ]
+        if len( controls ) > 0:
+            log.debug( 'Setting field %s of form %s to %s.' % ( field_name, form_id, str( field_value ) ) )
+            tc.formvalue( form_id, field_name, str( field_value ) )
+            kwd[ field_name ] = str( field_value )
+        else:
+            if field_name in kwd:
+                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                del( kwd[ field_name ] )
+        return kwd
+        
     def visit_url( self, url, allowed_codes=[ 200 ] ):
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
@@ -140,17 +159,3 @@ class InstallTestRepository( TwillTestCase ):
                         break
                     time.sleep( 1 )
 
-    def deactivate_or_uninstall_repository( self, installed_repository, deactivate=False ):
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
-        self.visit_url( url )
-        if deactivate:
-            tc.fv ( 1, "remove_from_disk", 'false' )
-        else:
-            tc.fv ( 1, "remove_from_disk", 'true' )
-        tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'The repository named' ]
-        if deactivate:
-            strings_displayed.append( 'has been deactivated' )
-        else:
-            strings_displayed.append( 'has been uninstalled' )
-        self.check_for_strings( strings_displayed, strings_not_displayed=[] )

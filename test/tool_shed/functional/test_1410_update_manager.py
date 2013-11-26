@@ -126,9 +126,6 @@ class TestUpdateManager( ShedTwillTestCase ):
         ok_icon = '/static/june_2007_style/blue/ok_small.png'
         ok_title = 'This is the latest installable revision of this repository'
         updates_icon = '/static/images/icon_warning_sml.gif'
-        repository_id = self.security.encode_id( repository.id )
-        html = '<label id="%s" for="%s"><img src="%s" class="icon-button" title="%s"/><img src="%s' % \
-            ( repository_id, repository_id, ok_icon, ok_title, updates_icon )
-        strings_displayed = [ html ]
+        strings_displayed = [ '<img src="%s" class="icon-button" title="%s"/><img src="%s' % ( ok_icon, ok_title, updates_icon ) ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         
