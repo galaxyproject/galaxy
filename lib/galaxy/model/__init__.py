@@ -3140,7 +3140,8 @@ class UserOpenID( object ):
         self.session = session
         self.openid = openid
 
-class Page( object ):
+class Page( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug' ]
     def __init__( self ):
         self.id = None
         self.user = None
@@ -3151,11 +3152,26 @@ class Page( object ):
         self.importable = None
         self.published = None
 
-class PageRevision( object ):
+    def to_dict( self, view='element' ):
+        rval = super( Page, self ).to_dict( view=view )
+        rev = []
+        for a in self.revisions:
+            rev.append(a.id)
+        rval['revision_ids'] = rev
+        return rval
+
+class PageRevision( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'page_id', 'title', 'content' ]
     def __init__( self ):
         self.user = None
         self.title = None
         self.content = None
+
+    def to_dict( self, view='element' ):
+        rval = super( PageRevision, self ).to_dict( view=view )
+        rval['create_time'] = str(self.create_time)
+        rval['update_time'] = str(self.update_time)
+        return rval
 
 class PageUserShareAssociation( object ):
     def __init__( self ):
