@@ -190,6 +190,7 @@ var GridView = Backbone.View.extend({
  * view for a popup menu
  */
 var PopupMenu = Backbone.View.extend({
+//TODO: maybe better as singleton off the Galaxy obj
     /** Cache the desired button element and options, set up the button click handler
      *  NOTE: attaches this view as HTML/jQ data on the button for later use.
      */
@@ -201,6 +202,8 @@ var PopupMenu = Backbone.View.extend({
         // set up button click -> open menu behavior
         var menu = this;
         this.$button.click( function( event ){
+            // if there's already a menu open, remove it
+            $( '.popmenu-wrapper' ).remove();
             menu._renderAndShow( event );
             return false;
         });
@@ -209,10 +212,8 @@ var PopupMenu = Backbone.View.extend({
     // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
     _renderAndShow: function( clickEvent ){
         this.render();
-        this.$el.appendTo( 'body' );
-        this.$el.css( this._getShownPosition( clickEvent ));
+        this.$el.appendTo( 'body' ).css( this._getShownPosition( clickEvent )).show();
         this._setUpCloseBehavior();
-        this.$el.show();
     },
 
     // render the menu
@@ -289,20 +290,26 @@ var PopupMenu = Backbone.View.extend({
     // bind an event handler to all available frames so that when anything is clicked
     // the menu is removed from the DOM and the event handler unbinds itself
     _setUpCloseBehavior: function(){
-        // function to close popup and unbind itself
         var menu = this;
-        var closePopupWhenClicked = function( $elClicked ){
-            $elClicked.one( "click.close_popup", function(){
-                menu.remove();
-            });
-        };
+//TODO: alternately: focus hack, blocking overlay, jquery.blockui
 
-        // bind to current, parent, and sibling frames
-        closePopupWhenClicked( $( window.document ));
-        closePopupWhenClicked( $( window.top.document ));
-        _.each( window.top.frames, function( siblingFrame ){
-            closePopupWhenClicked( $( siblingFrame.document ));
-        });
+        // function to close popup and unbind itself
+        function closePopup( event ){
+            $( document ).off( 'click.close_popup' );
+            if( window.parent !== window ){
+                $( window.parent.document ).off( "click.close_popup" );
+            } else {
+                $( 'iframe#galaxy_main' ).contents().off( "click.close_popup" );
+            }
+            menu.remove();
+        }
+
+        $( 'html' ).one( "click.close_popup", closePopup );
+        if( window.parent !== window ){
+            $( window.parent.document ).find( 'html' ).one( "click.close_popup", closePopup );
+        } else {
+            $( 'iframe#galaxy_main' ).contents().one( "click.close_popup", closePopup );
+        }
     },
 
     // add a menu option/item at the given index
