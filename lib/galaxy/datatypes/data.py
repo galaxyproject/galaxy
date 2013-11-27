@@ -199,6 +199,29 @@ class Data( object ):
             out = "Can't create peek %s" % str( exc )
         return out
 
+    def _archive_main_file(self, archive, outfname, data_filename):
+        """Called from _archive_composite_dataset to add central file to archive.
+
+        Unless subclassed, this will add the main dataset file (argument data_filename)
+        to the archive, as an HTML file with its filename derived from the dataset name
+        (argument outfname).
+
+        Returns a tuple of boolean, string, string: (error, msg, messagetype)
+        """
+        error, msg, messagetype = False, "", ""
+        htmlname = os.path.splitext(outfname)[0]
+        if not htmlname.endswith(ext):
+            htmlname = '%s_%s' % (htmlname, ext)
+        archname = '%s.html' % htmlname # fake the real nature of the html file
+        try:
+            archive.add(data_filename, archname)
+        except IOError:
+            error = True
+            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            msg = "Unable to create archive for download, please report this error"
+            messagetype = "error"
+        return error, msg, messagetype
+
     def _archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
@@ -233,33 +256,25 @@ class Data( object ):
                 messagetype = 'error'
             if not error:
                 current_user_roles = trans.get_current_user_roles()
-                ext = data.extension
                 path = data.file_name
                 fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
-                htmlname = os.path.splitext(outfname)[0]
-                if not htmlname.endswith(ext):
-                    htmlname = '%s_%s' % (htmlname,ext)
-                archname = '%s.html' % htmlname # fake the real nature of the html file
-                try:
-                    archive.add(data.file_name,archname)
-                except IOError:
-                    error = True
-                    log.exception( "Unable to add composite parent %s to temporary library download archive" % data.file_name)
-                    msg = "Unable to create archive for download, please report this error"
-                    messagetype = 'error'
-                for root, dirs, files in os.walk(efp):
-                    for fname in files:
-                        fpath = os.path.join(root,fname)
-                        rpath = os.path.relpath(fpath,efp)
-                        try:
-                            archive.add( fpath,rpath )
-                        except IOError:
-                            error = True
-                            log.exception( "Unable to add %s to temporary library download archive" % rpath)
-                            msg = "Unable to create archive for download, please report this error"
-                            messagetype = 'error'
-                            continue
+                #Add any central file to the archive,
+                error, msg, messagetype = self._archive_main_file(archive, outfname, path)
+                if not error:
+                    #Add any child files to the archive,
+                    for root, dirs, files in os.walk(efp):
+                        for fname in files:
+                            fpath = os.path.join(root,fname)
+                            rpath = os.path.relpath(fpath,efp)
+                            try:
+                                archive.add( fpath,rpath )
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                                msg = "Unable to create archive for download, please report this error"
+                                messagetype = 'error'
+                                continue
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
