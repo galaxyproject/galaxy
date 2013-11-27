@@ -453,5 +453,7 @@ class RepositoriesController( BaseAPIController ):
         value_mapper = { 'id' : trans.security.encode_id,
                          'repository_id' : trans.security.encode_id }
         if repository_metadata.time_last_tested is not None:
-            value_mapper[ 'time_last_tested' ] = time_ago 
+            # For some reason the Dictifiable.to_dict() method in ~/galaxy/model/item_attrs.py requires
+            # a function rather than a mapped value, so just pass the time_ago function here.
+            value_mapper[ 'time_last_tested' ] = time_ago
         return value_mapper

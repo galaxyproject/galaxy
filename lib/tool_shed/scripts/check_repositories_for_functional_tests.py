@@ -25,6 +25,7 @@ from base.util import get_repository_current_revision
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
+from galaxy.util import listify
 from mercurial import hg
 from mercurial import ui
 from mercurial import __version__
@@ -41,16 +42,17 @@ class RepositoryMetadataApplication( object ):
     """Application that enables updating repository_metadata table records in the Tool Shed."""
 
     def __init__( self, config ):
-        if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % str( config.database )
-        log.debug( 'Using database connection: %s' % str( config.database_connection ) )
+        self.config = config
+        if self.config.database_connection is False:
+            self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % str( config.database )
+        log.debug( 'Using database connection: %s' % str( self.config.database_connection ) )
         # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path,
-                                                                  config.database_connection,
+        self.model = galaxy.webapps.tool_shed.model.mapping.init( self.config.file_path,
+                                                                  self.config.database_connection,
                                                                   engine_options={},
                                                                   create_tables=False )
         self.hgweb_config_manager = self.model.hgweb_config_manager
-        self.hgweb_config_manager.hgweb_config_dir = config.hgweb_config_dir
+        self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         log.debug( 'Using hgweb.config file: %s' % str( self.hgweb_config_manager.hgweb_config ) )
 
     @property
@@ -72,19 +74,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
       "id": "tool_wrapper",
       "name": "Map with Tool Wrapper",
       "requirements": [],
-      "tests": [
-        {
-          "inputs": [ [ "parameter", "value" ], [ "other_parameter", "other_value" ], ],
-          "name": "Test-1",
-          "outputs": [
-            [
-              "output_field_name",
-              "output_file_name.bed"
-            ]
-          ],
-          "required_files": [ '1.bed', '2.bed', '3.bed' ]
-        }
-      ],
+      "tests": [],
       "tool_config": "database/community_files/000/repo_1/tool_wrapper.xml",
       "tool_type": "default",
       "version": "1.2.3",
@@ -120,11 +110,6 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         missing_test_components = []
         repository = repository_metadata.repository
         records_checked += 1
-        # Create the tool_test_results_dict dictionary, using the dictionary from the previous test run if available.
-        if repository_metadata.tool_test_results:
-            tool_test_results_dict = repository_metadata.tool_test_results
-        else:
-            tool_test_results_dict = {}
         # Check the next repository revision.
         changeset_revision = str( repository_metadata.changeset_revision )
         name = repository.name
@@ -141,7 +126,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         tool_dicts = metadata.get( 'tools', None )
         if tool_dicts is not None:
             has_test_data = False
-            testable_revision_found = False
+            testable_revision = False
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
             repo = hg.repository( get_configured_ui(), repo_dir )
@@ -236,7 +221,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     if test_errors not in missing_test_components:
                         missing_test_components.append( test_errors )
                 if tool_has_tests and has_test_files:
-                    testable_revision_found = True
+                    testable_revision = True
             # Remove the cloned repository path. This has to be done after the check for required test files, for obvious reasons.
             if os.path.exists( work_dir ):
                 shutil.rmtree( work_dir )
@@ -253,6 +238,27 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                             if 'missing_components' in invalid_test:
                                 print '# %s' % invalid_test[ 'missing_components' ]
             if not info_only:
+                # Get or create the list of tool_test_results dictionaries.
+                if repository_metadata.tool_test_results is not None:
+                    # We'll listify the column value in case it uses the old approach of storing the results of only a single test run.
+                    tool_test_results_dicts = listify( repository_metadata.tool_test_results )
+                else:
+                    tool_test_results_dicts = []
+                if tool_test_results_dicts:
+                    # Inspect the tool_test_results_dict for the last test run in case it contains only a test_environment
+                    # entry.  This will occur with multiple runs of this script without running the associated
+                    # install_and_test_tool_sed_repositories.sh script which will further populate the tool_test_results_dict.
+                    tool_test_results_dict = tool_test_results_dicts[ 0 ]
+                    if len( tool_test_results_dict ) <= 1:
+                        # We can re-use the mostly empty tool_test_results_dict for this run, but we need to eliminate it from
+                        # the list of tool_test_results_dicts since it will be re-inserted later.
+                        tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                    else:
+                        # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
+                        tool_test_results_dict = {}
+                else:
+                    # Create a new dictionary for the most recent test run.
+                    tool_test_results_dict = {}
                 test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
                 test_environment_dict[ 'tool_shed_database_version' ] = get_database_version( app )
                 test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
@@ -270,12 +276,24 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     #    changeset revision will be created, either of which will be automatically checked and flagged as appropriate.
                     #    In the install and test script, this behavior is slightly different, since we do want to always run functional
                     #    tests on the most recent downloadable changeset revision.
-                    if should_set_do_not_test_flag( app, repository_metadata.repository, changeset_revision ) and not testable_revision_found:
+                    if should_set_do_not_test_flag( app, repository, changeset_revision, testable_revision ):
+                        print "# Setting do_not_test to True on revision %s of repository %s because it is missing test components" % \
+                            ( changeset_revision, name )
+                        print "# and it is not the latest downloadable revision."
                         repository_metadata.do_not_test = True
                     repository_metadata.tools_functionally_correct = False
                     repository_metadata.missing_test_components = True
                     tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
-                repository_metadata.tool_test_results = tool_test_results_dict
+                # Store only the configured number of test runs.
+                num_tool_test_results_saved = int( app.config.num_tool_test_results_saved )
+                if len( tool_test_results_dicts ) >= num_tool_test_results_saved:
+                    test_results_index = num_tool_test_results_saved - 1
+                    new_tool_test_results_dicts = tool_test_results_dicts[ :test_results_index ]
+                else:
+                    new_tool_test_results_dicts = [ d for d in tool_test_results_dicts ]
+                # Insert the new element into the first position in the list.
+                new_tool_test_results_dicts.insert( 0, tool_test_results_dict )
+                repository_metadata.tool_test_results = new_tool_test_results_dicts
                 app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()
@@ -313,19 +331,6 @@ def get_repo_changelog_tuples( repo_path ):
         changelog_tuples.append( ( ctx.rev(), str( ctx ) ) )
     return changelog_tuples
 
-def is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions ):
-    # Get a list of ( numeric revision, changeset hash ) tuples from the changelog.
-    changelog = get_repo_changelog_tuples( repository.repo_path( app ) )
-    latest_downloadable_revision = None
-    for ctx_rev, changeset_hash in changelog:
-        if changeset_hash in downloadable_revisions:
-            # The last changeset hash in the changelog that is present in the list of downloadable revisions will always be the most
-            # recent downloadable revision, since the changelog tuples are ordered from earliest to most recent.
-            latest_downloadable_revision = changeset_hash
-    if latest_downloadable_revision == changeset_revision:
-        return True
-    return False
-
 def main():
     '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
     parser = OptionParser()
@@ -345,7 +350,7 @@ def main():
     config_parser.read( ini_file )
     config_dict = {}
     for key, value in config_parser.items( "app:main" ):
-        config_dict[key] = value
+        config_dict[ key ] = value
     config = tool_shed_config.Configuration( **config_dict )
     config_section = options.section
     now = strftime( "%Y-%m-%d %H:%M:%S" )
@@ -361,34 +366,27 @@ def main():
         print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
     check_and_update_repository_metadata( app, info_only=options.info_only, verbosity=options.verbosity )
 
-def should_set_do_not_test_flag( app, repository, changeset_revision ):
-    '''
-    Returns True if:
-    a) There are multiple downloadable revisions, and the provided changeset revision is not the most recent downloadable revision. In this case,
-       the revision will never be updated with correct data, and re-testing it would be redundant.
-    b) There are one or more downloadable revisions, and the provided changeset revision is the most recent downloadable revision. In this case, if
-       the repository is updated with test data or functional tests, the downloadable changeset revision that was tested will either be replaced
-       with the new changeset revision, or a new downloadable changeset revision will be created, either of which will be automatically checked and
-       flagged as appropriate. In the install and test script, this behavior is slightly different, since we do want to always run functional tests
-       on the most recent downloadable changeset revision.
-    '''
-    repository_revisions = app.sa_session.query( app.model.RepositoryMetadata ) \
-                                     .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
-                                                    app.model.RepositoryMetadata.table.c.repository_id == repository.id ) ) \
-                                     .all()
-    downloadable_revisions = [ repository_metadata.changeset_revision for repository_metadata in repository_revisions ]
-    is_latest_revision = is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions )
-    if len( downloadable_revisions ) == 1:
-        return True
-    elif len( downloadable_revisions ) > 1 and is_latest_revision:
-        return True
-    elif len( downloadable_revisions ) > 1 and not is_latest_revision:
-        return True
-    else:
-        return False
+def should_set_do_not_test_flag( app, repository, changeset_revision, testable_revision ):
+    """
+    The received testable_revision is True if the tool has defined tests and test files are in the repository
+    This method returns True if the received repository has multiple downloadable revisions and the received
+    changeset_revision is not the most recent downloadable revision and the received testable_revision is False.
+    In this case, the received changeset_revision will never be updated with correct data, and re-testing it
+    would be redundant.
+    """
+    if not testable_revision:
+        repo_dir = repository.repo_path( app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
+        if len( changeset_revisions ) > 1:
+            latest_downloadable_revision = changeset_revisions[ -1 ]
+            if changeset_revision != latest_downloadable_revision:
+                return True
+    return False
 
 if __name__ == "__main__":
-    # The repository_metadata.tool_test_results json value should have the following structure:
+    # The repository_metadata.tool_test_results json value should have the following list structure:
+    # [
     # {
     #     "test_environment":
     #         {
@@ -467,6 +465,7 @@ if __name__ == "__main__":
     #             },
     #         ]
     # }
+    # ]
     #
     # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
     # than the list relevant to what it is testing.

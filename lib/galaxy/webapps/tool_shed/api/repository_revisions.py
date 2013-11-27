@@ -166,12 +166,11 @@ class RepositoryRevisionsController( BaseAPIController ):
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
             flush_needed = False
             for key, new_value in payload.items():
-                if hasattr( repository_metadata, key ):
+                if key == 'time_last_tested':
+                    repository_metadata.time_last_tested = datetime.datetime.utcnow()
+                    flush_needed = True
+                elif hasattr( repository_metadata, key ):
                     setattr( repository_metadata, key, new_value )
-                    if key in [ 'tools_functionally_correct', 'time_last_tested' ]:
-                        # Automatically update repository_metadata.time_last_tested.
-                        repository_metadata.time_last_tested = datetime.datetime.utcnow()
-                        flush_needed = True
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository_metadata )
@@ -192,5 +191,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         value_mapper = { 'id' : trans.security.encode_id,
                          'repository_id' : trans.security.encode_id }
         if repository_metadata.time_last_tested is not None:
+            # For some reason the Dictifiable.to_dict() method in ~/galaxy/model/item_attrs.py requires
+            # a function rather than a mapped value, so just pass the time_ago function here.
             value_mapper[ 'time_last_tested' ] = time_ago
         return value_mapper

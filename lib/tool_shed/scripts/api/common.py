@@ -158,7 +158,7 @@ def update( api_key, url, data, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'

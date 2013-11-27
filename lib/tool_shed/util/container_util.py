@@ -1,7 +1,7 @@
 import logging
 import os
 import threading
-from galaxy.util import asbool
+import galaxy.util
 from galaxy.web.framework.helpers import time_ago
 from tool_shed.util import common_util
 from tool_shed.util import readme_util
@@ -72,8 +72,8 @@ class Folder( object ):
                                      repository_name=name,
                                      repository_owner=owner,
                                      changeset_revision=changeset_revision,
-                                     prior_installation_required=asbool( prior_installation_required ),
-                                     only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ) )
+                                     prior_installation_required=galaxy.util.asbool( prior_installation_required ),
+                                     only_if_compiling_contained_td=galaxy.util.asbool( only_if_compiling_contained_td ) )
 
 
 class DataManager( object ):
@@ -497,8 +497,8 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
                                                repository_name=name,
                                                repository_owner=owner,
                                                changeset_revision=changeset_revision,
-                                               prior_installation_required=asbool( prior_installation_required ),
-                                               only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ),
+                                               prior_installation_required=galaxy.util.asbool( prior_installation_required ),
+                                               only_if_compiling_contained_td=galaxy.util.asbool( only_if_compiling_contained_td ),
                                                error=error )
             folder.invalid_repository_dependencies.append( ird )
             invalid_repository_dependencies_folder.folders.append( folder )
@@ -831,16 +831,12 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                              label='Valid tools' )
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
-            tool_test_results = repository_metadata.tool_test_results
+            tool_test_results = galaxy.util.listify( repository_metadata.tool_test_results )
             # Only create and populate this folder if there are actual tool test results to display.
             if can_display_tool_test_results( tool_test_results, exclude=exclude ):
-                time_tested = repository_metadata.time_last_tested
-                if time_tested is not None:
-                    time_tested = time_ago( time_tested )
                 folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans,
                                                                                            folder_id,
                                                                                            tool_test_results,
-                                                                                           time_tested,
                                                                                            label='Tool test results' )
                 containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
@@ -1052,153 +1048,165 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
 
-def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, time_tested, label='Tool test results' ):
+def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, label='Tool test results' ):
     """Return a folder hierarchy containing tool dependencies."""
     # This container is displayed only in the tool shed.
-    if tool_test_results_dict:
+    if tool_test_results_dicts:
+        multiple_tool_test_results_dicts = len( tool_test_results_dicts ) > 1
+        test_results_dict_id = 0
         folder_id += 1
         tool_test_results_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
-        test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-        if test_environment_dict is not None:
-            folder_id += 1
-            test_results_folder = Folder( id=folder_id, key='test_results', label=label, parent=tool_test_results_root_folder )
-            tool_test_results_root_folder.folders.append( test_results_folder )
-            folder_id += 1
-            folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=test_results_folder )
-            test_results_folder.folders.append( folder )
-            architecture = test_environment_dict.get( 'architecture', '' )
-            galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
-            galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
-            python_version = test_environment_dict.get( 'python_version', '' )
-            system = test_environment_dict.get( 'system', '' )
-            time_tested = time_tested
-            tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
-            tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
-            tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
-            test_environment = TestEnvironment( id=1,
-                                                architecture=architecture,
-                                                galaxy_database_version=galaxy_database_version,
-                                                galaxy_revision=galaxy_revision,
-                                                python_version=python_version,
-                                                system=system,
-                                                time_tested=time_tested,
-                                                tool_shed_database_version=tool_shed_database_version,
-                                                tool_shed_mercurial_version=tool_shed_mercurial_version,
-                                                tool_shed_revision=tool_shed_revision )
-            folder.test_environments.append( test_environment )
-        not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
-        if not_tested_dict:
-            folder_id += 1
-            folder = Folder( id=folder_id, key='not_tested', label='Not tested', parent=test_results_folder )
-            test_results_folder.folders.append( folder )
-            not_tested_id = 0
-            not_tested = NotTested( id=not_tested_id,
-                                    reason=not_tested_dict.get( 'reason', '' ) )
-            folder.not_tested.append( not_tested )
-        passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
-        if passed_tests_dicts:
-            folder_id += 1
-            folder = Folder( id=folder_id, key='passed_tests', label='Tests that passed successfully', parent=test_results_folder )
-            test_results_folder.folders.append( folder )
-            passed_test_id = 0
-            for passed_tests_dict in passed_tests_dicts:
-                passed_test_id += 1
-                passed_test = PassedTest( id=passed_test_id,
-                                          test_id=passed_tests_dict.get( 'test_id' '' ),
-                                          tool_id=passed_tests_dict.get( 'tool_id', '' ),
-                                          tool_version=passed_tests_dict.get( 'tool_version', '' ) )
-                folder.passed_tests.append( passed_test )
-        failed_tests_dicts = tool_test_results_dict.get( 'failed_tests', [] )
-        if failed_tests_dicts:
-            folder_id += 1
-            folder = Folder( id=folder_id, key='failed_tests', label='Tests that failed', parent=test_results_folder )
-            test_results_folder.folders.append( folder )
-            failed_test_id = 0
-            for failed_tests_dict in failed_tests_dicts:
-                failed_test_id += 1
-                failed_test = FailedTest( id=failed_test_id,
-                                          stderr=failed_tests_dict.get( 'stderr', '' ),
-                                          test_id=failed_tests_dict.get( 'test_id', '' ),
-                                          tool_id=failed_tests_dict.get( 'tool_id', '' ),
-                                          tool_version=failed_tests_dict.get( 'tool_version', '' ),
-                                          traceback=failed_tests_dict.get( 'traceback', '' ) )
-                folder.failed_tests.append( failed_test )
-        missing_test_components_dicts = tool_test_results_dict.get( 'missing_test_components', [] )
-        if missing_test_components_dicts:
-            folder_id += 1
-            folder = Folder( id=folder_id, key='missing_test_components', label='Tools missing tests or test data', parent=test_results_folder )
-            test_results_folder.folders.append( folder )
-            missing_test_component_id = 0
-            for missing_test_components_dict in missing_test_components_dicts:
-                missing_test_component_id += 1
-                missing_test_component = MissingTestComponent( id=missing_test_component_id,
-                                                               missing_components=missing_test_components_dict.get( 'missing_components', '' ),
-                                                               tool_guid=missing_test_components_dict.get( 'tool_guid', '' ),
-                                                               tool_id=missing_test_components_dict.get( 'tool_id', '' ),
-                                                               tool_version=missing_test_components_dict.get( 'tool_version', '' ) )
-                folder.missing_test_components.append( missing_test_component )
-        installation_error_dicts = tool_test_results_dict.get( 'installation_errors', {} )
-        if installation_error_dicts:
-            current_repository_errors = installation_error_dicts.get( 'current_repository', [] )
-            repository_dependency_errors = installation_error_dicts.get( 'repository_dependencies', [] )
-            tool_dependency_errors = installation_error_dicts.get( 'tool_dependencies', [] )
-            if current_repository_errors or repository_dependency_errors or tool_dependency_errors:
+        for index, tool_test_results_dict in enumerate( tool_test_results_dicts ):
+            test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
+            if test_environment_dict is not None:
+                time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
+                if multiple_tool_test_results_dicts:
+                    folder_id += 1
+                    containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=tool_test_results_root_folder )
+                else:
+                    containing_folder = tool_test_results_root_folder
+                test_results_dict_id += 1
+                #folder_id += 1
+                #test_results_folder = Folder( id=folder_id, key='test_results', label='Automated test environment', parent=containing_folder )
+                #containing_folder.folders.append( test_results_folder )
                 folder_id += 1
-                installation_error_base_folder = Folder( id=folder_id,
-                                                         key='installation_errors',
-                                                         label='Installation errors',
-                                                         parent=test_results_folder )
-                if current_repository_errors:
+                folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
+                containing_folder.folders.append( folder )
+                architecture = test_environment_dict.get( 'architecture', '' )
+                galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
+                galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
+                python_version = test_environment_dict.get( 'python_version', '' )
+                system = test_environment_dict.get( 'system', '' )
+                tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
+                tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
+                tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
+                test_environment = TestEnvironment( id=1,
+                                                    architecture=architecture,
+                                                    galaxy_database_version=galaxy_database_version,
+                                                    galaxy_revision=galaxy_revision,
+                                                    python_version=python_version,
+                                                    system=system,
+                                                    time_tested=time_tested,
+                                                    tool_shed_database_version=tool_shed_database_version,
+                                                    tool_shed_mercurial_version=tool_shed_mercurial_version,
+                                                    tool_shed_revision=tool_shed_revision )
+                folder.test_environments.append( test_environment )
+            not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
+            if not_tested_dict:
+                folder_id += 1
+                folder = Folder( id=folder_id, key='not_tested', label='Not tested', parent=containing_folder )
+                containing_folder.folders.append( folder )
+                not_tested_id = 0
+                not_tested = NotTested( id=not_tested_id,
+                                        reason=not_tested_dict.get( 'reason', '' ) )
+                folder.not_tested.append( not_tested )
+            passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
+            if passed_tests_dicts:
+                folder_id += 1
+                folder = Folder( id=folder_id, key='passed_tests', label='Tests that passed successfully', parent=containing_folder )
+                containing_folder.folders.append( folder )
+                passed_test_id = 0
+                for passed_tests_dict in passed_tests_dicts:
+                    passed_test_id += 1
+                    passed_test = PassedTest( id=passed_test_id,
+                                              test_id=passed_tests_dict.get( 'test_id' '' ),
+                                              tool_id=passed_tests_dict.get( 'tool_id', '' ),
+                                              tool_version=passed_tests_dict.get( 'tool_version', '' ) )
+                    folder.passed_tests.append( passed_test )
+            failed_tests_dicts = tool_test_results_dict.get( 'failed_tests', [] )
+            if failed_tests_dicts:
+                folder_id += 1
+                folder = Folder( id=folder_id, key='failed_tests', label='Tests that failed', parent=containing_folder )
+                containing_folder.folders.append( folder )
+                failed_test_id = 0
+                for failed_tests_dict in failed_tests_dicts:
+                    failed_test_id += 1
+                    failed_test = FailedTest( id=failed_test_id,
+                                              stderr=failed_tests_dict.get( 'stderr', '' ),
+                                              test_id=failed_tests_dict.get( 'test_id', '' ),
+                                              tool_id=failed_tests_dict.get( 'tool_id', '' ),
+                                              tool_version=failed_tests_dict.get( 'tool_version', '' ),
+                                              traceback=failed_tests_dict.get( 'traceback', '' ) )
+                    folder.failed_tests.append( failed_test )
+            missing_test_components_dicts = tool_test_results_dict.get( 'missing_test_components', [] )
+            if missing_test_components_dicts:
+                folder_id += 1
+                folder = Folder( id=folder_id, key='missing_test_components', label='Tools missing tests or test data', parent=containing_folder )
+                containing_folder.folders.append( folder )
+                missing_test_component_id = 0
+                for missing_test_components_dict in missing_test_components_dicts:
+                    missing_test_component_id += 1
+                    missing_test_component = MissingTestComponent( id=missing_test_component_id,
+                                                                   missing_components=missing_test_components_dict.get( 'missing_components', '' ),
+                                                                   tool_guid=missing_test_components_dict.get( 'tool_guid', '' ),
+                                                                   tool_id=missing_test_components_dict.get( 'tool_id', '' ),
+                                                                   tool_version=missing_test_components_dict.get( 'tool_version', '' ) )
+                    folder.missing_test_components.append( missing_test_component )
+            installation_error_dicts = tool_test_results_dict.get( 'installation_errors', {} )
+            if installation_error_dicts:
+                current_repository_errors = installation_error_dicts.get( 'current_repository', [] )
+                repository_dependency_errors = installation_error_dicts.get( 'repository_dependencies', [] )
+                tool_dependency_errors = installation_error_dicts.get( 'tool_dependencies', [] )
+                if current_repository_errors or repository_dependency_errors or tool_dependency_errors:
                     folder_id += 1
-                    subfolder = Folder( id=folder_id,
-                                        key='current_repository_errors',
-                                        label='This repository',
-                                        parent=installation_error_base_folder )
-                    repository_error_id = 0
-                    for repository_error_dict in current_repository_errors:
-                        repository_error_id += 1
-                        repository_installation_error = RepositoryInstallationError( id=repository_error_id,
-                                                                             tool_shed=repository_error_dict.get( 'tool_shed', '' ),
-                                                                             name=repository_error_dict.get( 'name', '' ),
-                                                                             owner=repository_error_dict.get( 'owner', '' ),
-                                                                             changeset_revision=repository_error_dict.get( 'changeset_revision', '' ),
-                                                                             error_message=repository_error_dict.get( 'error_message', '' ) )
-                        subfolder.current_repository_installation_errors.append( repository_installation_error )
-                    installation_error_base_folder.folders.append( subfolder )
-                if repository_dependency_errors:
-                    folder_id += 1
-                    subfolder = Folder( id=folder_id,
-                                        key='repository_dependency_errors',
-                                        label='Repository dependencies',
-                                        parent=installation_error_base_folder )
-                    repository_error_id = 0
-                    for repository_error_dict in repository_dependency_errors:
-                        repository_error_id += 1
-                        repository_installation_error = RepositoryInstallationError( id=repository_error_id,
-                                                                                     tool_shed=repository_error_dict.get( 'tool_shed', '' ),
-                                                                             name=repository_error_dict.get( 'name', '' ),
-                                                                             owner=repository_error_dict.get( 'owner', '' ),
-                                                                             changeset_revision=repository_error_dict.get( 'changeset_revision', '' ),
-                                                                             error_message=repository_error_dict.get( 'error_message', '' ) )
-                        subfolder.repository_installation_errors.append( repository_installation_error )
-                    installation_error_base_folder.folders.append( subfolder )
-                if tool_dependency_errors:
-                    folder_id += 1
-                    subfolder = Folder( id=folder_id,
-                                        key='tool_dependency_errors',
-                                        label='Tool dependencies',
-                                        parent=installation_error_base_folder )
-                    tool_dependency_error_id = 0
-                    for tool_dependency_error_dict in tool_dependency_errors:
-                        tool_dependency_error_id += 1
-                        tool_dependency_installation_error = ToolDependencyInstallationError( id=tool_dependency_error_id,
-                                                                                              type=tool_dependency_error_dict.get( 'type', '' ),
-                                                                                              name=tool_dependency_error_dict.get( 'name', '' ),
-                                                                                              version=tool_dependency_error_dict.get( 'version', '' ),
-                                                                                              error_message=tool_dependency_error_dict.get( 'error_message', '' ) )
-                        subfolder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
-                    installation_error_base_folder.folders.append( subfolder )
-                test_results_folder.installation_errors.append( installation_error_base_folder )
+                    installation_error_base_folder = Folder( id=folder_id,
+                                                             key='installation_errors',
+                                                             label='Installation errors',
+                                                             parent=containing_folder )
+                    if current_repository_errors:
+                        folder_id += 1
+                        subfolder = Folder( id=folder_id,
+                                            key='current_repository_errors',
+                                            label='This repository',
+                                            parent=installation_error_base_folder )
+                        repository_error_id = 0
+                        for repository_error_dict in current_repository_errors:
+                            repository_error_id += 1
+                            repository_installation_error = RepositoryInstallationError( id=repository_error_id,
+                                                                                 tool_shed=repository_error_dict.get( 'tool_shed', '' ),
+                                                                                 name=repository_error_dict.get( 'name', '' ),
+                                                                                 owner=repository_error_dict.get( 'owner', '' ),
+                                                                                 changeset_revision=repository_error_dict.get( 'changeset_revision', '' ),
+                                                                                 error_message=repository_error_dict.get( 'error_message', '' ) )
+                            subfolder.current_repository_installation_errors.append( repository_installation_error )
+                        installation_error_base_folder.folders.append( subfolder )
+                    if repository_dependency_errors:
+                        folder_id += 1
+                        subfolder = Folder( id=folder_id,
+                                            key='repository_dependency_errors',
+                                            label='Repository dependencies',
+                                            parent=installation_error_base_folder )
+                        repository_error_id = 0
+                        for repository_error_dict in repository_dependency_errors:
+                            repository_error_id += 1
+                            repository_installation_error = RepositoryInstallationError( id=repository_error_id,
+                                                                                         tool_shed=repository_error_dict.get( 'tool_shed', '' ),
+                                                                                 name=repository_error_dict.get( 'name', '' ),
+                                                                                 owner=repository_error_dict.get( 'owner', '' ),
+                                                                                 changeset_revision=repository_error_dict.get( 'changeset_revision', '' ),
+                                                                                 error_message=repository_error_dict.get( 'error_message', '' ) )
+                            subfolder.repository_installation_errors.append( repository_installation_error )
+                        installation_error_base_folder.folders.append( subfolder )
+                    if tool_dependency_errors:
+                        folder_id += 1
+                        subfolder = Folder( id=folder_id,
+                                            key='tool_dependency_errors',
+                                            label='Tool dependencies',
+                                            parent=installation_error_base_folder )
+                        tool_dependency_error_id = 0
+                        for tool_dependency_error_dict in tool_dependency_errors:
+                            tool_dependency_error_id += 1
+                            tool_dependency_installation_error = ToolDependencyInstallationError( id=tool_dependency_error_id,
+                                                                                                  type=tool_dependency_error_dict.get( 'type', '' ),
+                                                                                                  name=tool_dependency_error_dict.get( 'name', '' ),
+                                                                                                  version=tool_dependency_error_dict.get( 'version', '' ),
+                                                                                                  error_message=tool_dependency_error_dict.get( 'error_message', '' ) )
+                            subfolder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
+                        installation_error_base_folder.folders.append( subfolder )
+                    containing_folder.installation_errors.append( installation_error_base_folder )
+            #containing_folder.folders.append( containing_folder )
+            if multiple_tool_test_results_dicts:
+                tool_test_results_root_folder.folders.append( containing_folder )
     else:
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder
@@ -1247,13 +1255,13 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=
         workflows_root_folder = None
     return folder_id, workflows_root_folder
 
-def can_display_tool_test_results( tool_test_results_dict, exclude=None ):
+def can_display_tool_test_results( tool_test_results_dicts, exclude=None ):
     # Only create and populate the tool_test_results container if there are actual tool test results to display.
     if exclude is None:
         exclude = []
     if 'tool_test_results' in exclude:
         return False
-    if tool_test_results_dict:
+    for tool_test_results_dict in tool_test_results_dicts:
         # We check for more than a single entry in the tool_test_results dictionary because it may have
         # only the "test_environment" entry, but we want at least 1 of "passed_tests", "failed_tests",
         # "installation_errors", "missing_test_components" "skipped_tests", "not_tested" or any other
@@ -1288,7 +1296,7 @@ def generate_repository_dependencies_folder_label_from_key( repository_name, rep
     if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, key ):
         label = 'Repository dependencies'
     else:
-        if asbool( prior_installation_required ):
+        if galaxy.util.asbool( prior_installation_required ):
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""
@@ -1432,8 +1440,8 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
                                                           repository_name=repository_name,
                                                           repository_owner=repository_owner,
                                                           changeset_revision=changeset_revision,
-                                                          prior_installation_required=asbool( prior_installation_required ),
-                                                          only_if_compiling_contained_td=asbool( only_if_compiling_contained_td ),
+                                                          prior_installation_required=galaxy.util.asbool( prior_installation_required ),
+                                                          only_if_compiling_contained_td=galaxy.util.asbool( only_if_compiling_contained_td ),
                                                           installation_status=installation_status,
                                                           tool_shed_repository_id=tool_shed_repository_id )
             # Insert the repository_dependency into the folder.
