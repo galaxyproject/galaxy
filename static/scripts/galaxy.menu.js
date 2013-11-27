@@ -223,14 +223,11 @@ var GalaxyMenu = Backbone.Model.extend(
             });
 
             // login
-            if (this.options.allow_user_creation)
-            {
-                tab_user.addMenu({
-                    title   : "Login",
-                    content : "user/login",
-                    target  : "galaxy_main"
-                });
-            }
+            tab_user.addMenu({
+                title   : "Login",
+                content : "user/login",
+                target  : "galaxy_main"
+            });
 
             // register
             if (this.options.allow_user_creation)
