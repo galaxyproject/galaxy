@@ -32,6 +32,7 @@ import atexit, logging, os, os.path, sys, tempfile
 import twill, unittest, time
 import sys, threading, random
 import httplib, socket
+import urllib
 from paste import httpserver
 # This is for the tool shed application.
 import galaxy.webapps.tool_shed.app
@@ -186,10 +187,20 @@ def main():
         toolshed_database_connection = os.environ[ 'TOOL_SHED_TEST_DBURI' ]
     else:
         toolshed_database_connection = 'sqlite:///' + os.path.join( shed_db_path, 'community_test.sqlite' )
+    galaxy_database_auto_migrate = False
     if 'GALAXY_TEST_DBURI' in os.environ:
         galaxy_database_connection = os.environ[ 'GALAXY_TEST_DBURI' ]
     else:
-        galaxy_database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe_test.sqlite' )
+        db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
+        if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+            # Middle ground between recreating a completely new
+            # database and pointing at existing database with
+            # GALAXY_TEST_DBURI. The former requires a lot of setup
+            # time, the latter results in test failures in certain
+            # cases (namely tool shed tests expecting clean database).
+            __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+            galaxy_database_auto_migrate = True
+        galaxy_database_connection = 'sqlite:///%s' % db_path
     tool_shed_global_conf = get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users = 'test@bx.psu.edu',
@@ -311,6 +322,7 @@ def main():
                        admin_users = 'test@bx.psu.edu',
                        allow_library_path_paste = True,
                        database_connection = galaxy_database_connection,
+                       database_auto_migrate = galaxy_database_auto_migrate,
                        datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                        enable_tool_shed_check = True,
                        file_path = galaxy_file_path,
@@ -448,6 +460,22 @@ def main():
         return 0
     else:
         return 1
+
+
+def __copy_database_template( source, db_path ):
+    """
+    Copy a 'clean' sqlite template database (from file or URL) to specified
+    database path.
+    """
+    os.makedirs( os.path.dirname( db_path ) )
+    if os.path.exists( source ):
+        shutil.copy( source, db_path )
+        assert os.path.exists( db_path )
+    elif source.startswith("http"):
+        urllib.urlretrieve( source, db_path )
+    else:
+        raise Exception( "Failed to copy database template from source %s" % source )
+
 
 if __name__ == "__main__":
     try:
