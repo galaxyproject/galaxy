@@ -1066,9 +1066,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                 else:
                     containing_folder = tool_test_results_root_folder
                 test_results_dict_id += 1
-                #folder_id += 1
-                #test_results_folder = Folder( id=folder_id, key='test_results', label='Automated test environment', parent=containing_folder )
-                #containing_folder.folders.append( test_results_folder )
                 folder_id += 1
                 folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
                 containing_folder.folders.append( folder )
@@ -1204,7 +1201,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                             subfolder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
                         installation_error_base_folder.folders.append( subfolder )
                     containing_folder.installation_errors.append( installation_error_base_folder )
-            #containing_folder.folders.append( containing_folder )
             if multiple_tool_test_results_dicts:
                 tool_test_results_root_folder.folders.append( containing_folder )
     else:
