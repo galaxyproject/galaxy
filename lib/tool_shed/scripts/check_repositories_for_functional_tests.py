@@ -15,6 +15,7 @@ eggs.require( 'mercurial' )
 import ConfigParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
+import tool_shed.util.shed_util_common as suc
 import logging
 import shutil
 import tempfile
@@ -31,8 +32,6 @@ from mercurial import ui
 from mercurial import __version__
 from optparse import OptionParser
 from time import strftime
-from tool_shed.util.shed_util_common import clone_repository
-from tool_shed.util.shed_util_common import get_configured_ui
 
 log = logging.getLogger( 'check_repositories_for_functional_tests' )
 assert sys.version_info[ :2 ] >= ( 2, 6 )
@@ -129,9 +128,9 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
             testable_revision = False
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
-            repo = hg.repository( get_configured_ui(), repo_dir )
+            repo = hg.repository( suc.get_configured_ui(), repo_dir )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
-            cloned_ok, error_message = clone_repository( repo_dir, work_dir, changeset_revision )
+            cloned_ok, error_message = suc.clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a
                 # directory named test-data. If this directory is not present update the metadata record for the changeset
