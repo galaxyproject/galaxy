@@ -1122,6 +1122,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                 containing_folder.folders.append( folder )
                 failed_test_id = 0
                 for failed_tests_dict in failed_tests_dicts:
+                    # TODO: Remove this when invalid test data is eliminated.
+                    if isinstance( failed_tests_dict, list ):
+                        failed_tests_dict = failed_tests_dict[ 0 ]
                     failed_test_id += 1
                     failed_test = FailedTest( id=failed_test_id,
                                               stderr=failed_tests_dict.get( 'stderr', '' ),

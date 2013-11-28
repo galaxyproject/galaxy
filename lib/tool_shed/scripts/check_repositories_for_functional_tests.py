@@ -104,8 +104,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                                                             app.model.RepositoryMetadata.table.c.includes_tools == True,
                                                             app.model.RepositoryMetadata.table.c.do_not_test == False,
                                                             not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
-        # Clear any old invalid tests for this metadata revision, since this could lead to duplication of invalid test rows,
-        # or tests incorrectly labeled as invalid.
+        # Initialize some items.
         missing_test_components = []
         repository = repository_metadata.repository
         records_checked += 1
@@ -154,8 +153,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                 tool_version = tool_dict[ 'version' ]
                 tool_guid = tool_dict[ 'guid' ]
                 if verbosity >= 1:
-                    print "# Checking tool ID '%s' in changeset revision %s of %s." % \
-                        ( tool_id, changeset_revision, name )
+                    print "# Checking tool ID '%s' in changeset revision %s of %s." % ( tool_id, changeset_revision, name )
                 # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
                 # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
                 # automated functional test framework produces.
@@ -282,7 +280,11 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         print "# and it is not the latest downloadable revision."
                         repository_metadata.do_not_test = True
                     repository_metadata.tools_functionally_correct = False
-                    repository_metadata.missing_test_components = True
+                    if not testable_revision:
+                        # Even though some tools may be missing test components, it may be possible to test other tools.  Since the
+                        # install and test framework filters out repositories marked as missing test components, we'll set it only if
+                        # no tools can be tested.
+                        repository_metadata.missing_test_components = True
                     tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
                 # Store only the configured number of test runs.
                 num_tool_test_results_saved = int( app.config.num_tool_test_results_saved )
