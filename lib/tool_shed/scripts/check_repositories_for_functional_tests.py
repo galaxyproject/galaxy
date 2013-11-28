@@ -117,9 +117,8 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         repository = repository_metadata.repository
         if repository.id not in checked_repository_ids:
             checked_repository_ids.append( repository.id )
-        if verbosity >= 1:
-            print '# -------------------------------------------------------------------------------------------'
-            print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
+        print '# -------------------------------------------------------------------------------------------'
+        print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         tool_dicts = metadata.get( 'tools', None )
@@ -142,20 +141,19 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         has_test_data = True
                         test_data_path = os.path.join( root, dirs[ dirs.index( 'test-data' ) ] )
                         break
-            if verbosity >= 1:
-                if has_test_data:
-                    print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                else:
-                    print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
-                    ( changeset_revision,  name, owner )
+            if has_test_data:
+                print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            else:
+                print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
+                ( changeset_revision,  name, owner )
             # Inspect each tool_dict for defined functional tests.
             for tool_dict in tool_dicts:
                 tool_count += 1
                 tool_id = tool_dict[ 'id' ]
                 tool_version = tool_dict[ 'version' ]
                 tool_guid = tool_dict[ 'guid' ]
-                if verbosity >= 2:
+                if verbosity >= 1:
                     print "# Checking tool ID '%s' in changeset revision %s of %s." % \
                         ( tool_id, changeset_revision, name )
                 # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
@@ -185,12 +183,12 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                             tool_has_tests = True
                             break
                 if tool_has_tests:
-                    if verbosity >= 2:
+                    if verbosity >= 1:
                         print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
                             ( tool_id, changeset_revision, name )
                     has_tests += 1
                 else:
-                    if verbosity >= 2:
+                    if verbosity >= 1:
                         print '# No functional tests defined for %s.' % tool_id
                     no_tests += 1
                 failure_reason = ''
@@ -200,7 +198,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                 if tool_has_tests and has_test_data:
                     missing_test_files = check_for_missing_test_files( defined_test_dicts, test_data_path )
                     if missing_test_files:
-                        if verbosity >= 2:
+                        if verbosity >= 1:
                             print "# Tool ID '%s' in changeset revision %s of %s is missing one or more required test files: %s" % \
                                 ( tool_id, changeset_revision, name, ', '.join( missing_test_files ) )
                     else:
@@ -226,16 +224,14 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                 shutil.rmtree( work_dir )
             if not missing_test_components:
                 valid_revisions += 1
-                if verbosity >= 1:
-                    print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             else:
                 invalid_revisions += 1
+                print '# Some tools have problematic functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                 if verbosity >= 1:
-                    print '# Some tools have problematic functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                    if verbosity >= 2:
-                        for invalid_test in missing_test_components:
-                            if 'missing_components' in invalid_test:
-                                print '# %s' % invalid_test[ 'missing_components' ]
+                    for invalid_test in missing_test_components:
+                        if 'missing_components' in invalid_test:
+                            print '# %s' % invalid_test[ 'missing_components' ]
             if not info_only:
                 # Get or create the list of tool_test_results dictionaries.
                 if repository_metadata.tool_test_results is not None:
