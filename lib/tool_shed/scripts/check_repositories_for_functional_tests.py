@@ -259,6 +259,11 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     # Create a new dictionary for the most recent test run.
                     tool_test_results_dict = {}
                 test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
+                # Add the current time as the approximate time that this test run occurs.  A similar value will also be
+                # set to the repository_metadata.time_last_tested column, but we also store it here because the Tool Shed
+                # may be configured to store multiple test run results, so each must be associated with a time stamp.
+                now = time.strftime( "%Y-%m-%d %H:%M:%S" )
+                test_environment_dict[ 'time_tested' ] = now
                 test_environment_dict[ 'tool_shed_database_version' ] = get_database_version( app )
                 test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
                 test_environment_dict[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )

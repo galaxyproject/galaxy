@@ -1052,17 +1052,22 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
     """Return a folder hierarchy containing tool dependencies."""
     # This container is displayed only in the tool shed.
     if tool_test_results_dicts:
-        multiple_tool_test_results_dicts = len( tool_test_results_dicts ) > 1
         test_results_dict_id = 0
         folder_id += 1
         tool_test_results_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        multiple_tool_test_results_dicts = len( tool_test_results_dicts ) > 1
+        if multiple_tool_test_results_dicts:
+            folder_id += 1
+            test_runs_folder = Folder( id=folder_id, key='test_runs', label='Test runs', parent=tool_test_results_root_folder )
+            tool_test_results_root_folder.folders.append( test_runs_folder )
         for index, tool_test_results_dict in enumerate( tool_test_results_dicts ):
             test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
             if test_environment_dict is not None:
                 time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
                 if multiple_tool_test_results_dicts:
                     folder_id += 1
-                    containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=tool_test_results_root_folder )
+                    containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=test_runs_folder )
+                    test_runs_folder.folders.append( containing_folder )
                 else:
                     containing_folder = tool_test_results_root_folder
                 test_results_dict_id += 1
@@ -1150,6 +1155,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              key='installation_errors',
                                                              label='Installation errors',
                                                              parent=containing_folder )
+                    containing_folder.installation_errors.append( installation_error_base_folder )
                     if current_repository_errors:
                         folder_id += 1
                         subfolder = Folder( id=folder_id,
@@ -1200,9 +1206,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                                                                   error_message=tool_dependency_error_dict.get( 'error_message', '' ) )
                             subfolder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
                         installation_error_base_folder.folders.append( subfolder )
-                    containing_folder.installation_errors.append( installation_error_base_folder )
-            if multiple_tool_test_results_dicts:
-                tool_test_results_root_folder.folders.append( containing_folder )
     else:
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder

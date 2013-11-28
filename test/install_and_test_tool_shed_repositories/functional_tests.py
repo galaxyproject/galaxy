@@ -1206,7 +1206,8 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
         log.debug( 'Revision %s of repository %s installed and passed functional tests.' % ( str( changeset_revision ), str( name ) ) )
     else:
-        tool_test_results_dict[ 'failed_tests' ].append( extract_log_data( result, from_tool_test=True ) )
+        # The extract_log_data() netod returns a list.
+        tool_test_results_dict[ 'failed_tests' ] = extract_log_data( result, from_tool_test=True )
         results_dict[ 'repositories_failed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
         set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_dict )
         params = dict( tools_functionally_correct=False,
