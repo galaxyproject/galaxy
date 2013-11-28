@@ -380,7 +380,7 @@ def get_repositories_to_install( tool_shed_url ):
         # module that will generate the install methods.
         repository_dict, error_message = get_repository_dict( galaxy_tool_shed_url, baseline_repository_dict )
         if error_message:
-            log.debug( 'Error getting additional details about repository %s from the API: %s' % ( str( name ), error_message ) )
+            log.debug( 'Error getting additional details from the API: %s' % str(  error_message ) )
         else:
             # Don't test empty repositories.
             changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
