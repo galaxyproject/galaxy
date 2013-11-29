@@ -363,6 +363,8 @@ def get_repositories_to_install( tool_shed_url ):
     """
     error_message = ''
     latest_revision_only = '-check_all_revisions' not in sys.argv
+    if latest_revision_only:
+        log.debug( 'Testing is restricted to the latest downloadable revision in this test run.' )
     repository_dicts = []
     params = urllib.urlencode( dict( do_not_test='false',
                                      downloadable='true',
@@ -374,7 +376,6 @@ def get_repositories_to_install( tool_shed_url ):
     baseline_repository_dicts, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
-    log.debug( 'The Tool Shed API returned %d metadata revisions for installation and testing.' % len( baseline_repository_dicts ) )
     for baseline_repository_dict in baseline_repository_dicts:
         # We need to get some details from the tool shed API, such as repository name and owner, to pass on to the
         # module that will generate the install methods.
@@ -393,10 +394,6 @@ def get_repositories_to_install( tool_shed_url ):
                         repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
                 else:
                     repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
-    if latest_revision_only:
-        skipped_previous = ' and metadata revisions that are not the most recent'
-    else:
-        skipped_previous = ''
     if testing_single_repository:
         tsr_name = testing_single_repository[ 'name' ]
         tsr_owner = testing_single_repository[ 'owner' ]
@@ -414,14 +411,15 @@ def get_repositories_to_install( tool_shed_url ):
                         return repository_dicts, error_message
         return repository_dicts, error_message
     # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
-    log.debug( "Retrieved %d repositories from the API url: %s." % ( len( repository_dicts ), str( galaxy_tool_shed_url ) ) )
-    if '-list_repositories' in sys.argv:
-        log.debug( "Repositories for testing:" )
-        for repository_dict in repository_dicts:
-            log.debug( "Revision %s of repository %s owned by %s" % \
-                ( str( repository_dict.get( 'changeset_revision', None ) ), \
-                  str( repository_dict.get( 'name', None ) ), \
-                  str( repository_dict.get( 'owner', None ) ) ) )
+    log.debug( "The Tool Shed's API url...\n%s" % str( api_url ) )
+    log.debug( "...retrieved %d repository revisions for testing." % len( repository_dicts ) )
+    #if '-list_repositories' in sys.argv:
+    log.debug( "Repository revisions for testing:" )
+    for repository_dict in repository_dicts:
+        log.debug( "Revision %s of repository %s owned by %s" % \
+            ( str( repository_dict.get( 'changeset_revision', None ) ), \
+              str( repository_dict.get( 'name', None ) ), \
+              str( repository_dict.get( 'owner', None ) ) ) )
     return repository_dicts, error_message
 
 def get_static_settings():
@@ -503,7 +501,7 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
     params = dict( tools_functionally_correct=False,
                    do_not_test=False,
                    test_install_error=True )
-    # TODO: do something usefule with response_dict
+    # TODO: do something useful with response_dict
     response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
     # Since this repository is missing components, we do not want to test it, so deactivate it or uninstall it.
     # The deactivate flag is set to True if the environment variable GALAXY_INSTALL_TEST_KEEP_TOOL_DEPENDENCIES
@@ -618,6 +616,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         name = str( repository_dict[ 'name' ] )
         owner = str( repository_dict[ 'owner' ] )
         changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+        log.debug( "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner ) )
         # Populate the tool_test_results_dict.
         tool_test_results_dicts, error_message = get_tool_test_results_dicts( galaxy_tool_shed_url, encoded_repository_metadata_id )
         if error_message:
@@ -633,124 +632,122 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 log.exception( "Invalid list of tool_test_results_dicts %s: %s" % ( str( tool_test_results_dicts ), str( e ) ) )
                 continue
             # See if this repository should be skipped for any reason.
-            skip_this_repository = False
+            this_repository_is_in_the_exclude_lost = False
             skip_reason = None
             for exclude_dict in exclude_list:
                 reason = exclude_dict[ 'reason' ]
                 exclude_repositories = exclude_dict[ 'repositories' ]
                 if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
-                    skip_this_repository = True
+                    this_repository_is_in_the_exclude_lost = True
                     skip_reason = reason
                     break
-            if skip_this_repository:
+            if this_repository_is_in_the_exclude_lost:
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=skip_reason )
                 params = dict( tools_functionally_correct=False,
                                do_not_test=False )
-                # TODO: do something usefule with response_dict
+                # TODO: do something useful with response_dict
                 response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
-                log.debug( "Not testing revision %s of repository %s owned by %s." % ( changeset_revision, name, owner ) )
+                log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
+                           ( changeset_revision, name, owner ) )
             else:
+                test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
+                test_environment_dict = get_test_environment( test_environment_dict )
+                # Add the current time as the approximate time that this test run occurs.  A similar value will also be
+                # set to the repository_metadata.time_last_tested column, but we also store it here because the Tool Shed
+                # may be configured to store multiple test run results, so each must be associated with a time stamp.
+                now = time.strftime( "%Y-%m-%d %H:%M:%S" )
+                test_environment_dict[ 'time_tested' ] = now
+                test_environment_dict[ 'galaxy_database_version' ] = get_database_version( app )
+                test_environment_dict[ 'galaxy_revision' ] = get_repository_current_revision( os.getcwd() )
+                tool_test_results_dict[ 'test_environment' ] = test_environment_dict
+                tool_test_results_dict[ 'passed_tests' ] = []
+                tool_test_results_dict[ 'failed_tests' ] = []
+                tool_test_results_dict[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
+                repository, error_message = install_repository( app, repository_dict )
                 if error_message:
-                    log.debug( error_message )
-                else:
-                    test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-                    test_environment_dict = get_test_environment( test_environment_dict )
-                    # Add the current time as the approximate time that this test run occurs.  A similar value will also be
-                    # set to the repository_metadata.time_last_tested column, but we also store it here because the Tool Shed
-                    # may be configured to store multiple test run results, so each must be associated with a time stamp.
-                    now = time.strftime( "%Y-%m-%d %H:%M:%S" )
-                    test_environment_dict[ 'time_tested' ] = now
-                    test_environment_dict[ 'galaxy_database_version' ] = get_database_version( app )
-                    test_environment_dict[ 'galaxy_revision' ] = get_repository_current_revision( os.getcwd() )
-                    tool_test_results_dict[ 'test_environment' ] = test_environment_dict
-                    tool_test_results_dict[ 'passed_tests' ] = []
-                    tool_test_results_dict[ 'failed_tests' ] = []
-                    tool_test_results_dict[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
-                    repository, error_message = install_repository( app, repository_dict )
-                    if error_message:
-                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                        # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
-                        log.debug( 'Attempting to uninstall repository %s owned by %s.' % ( name, owner ) )
-                        try:
-                            repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-                        except Exception, e:
-                            error_message = 'Unable to find installed repository %s owned by %s: %s.' % ( name, owner, str( e ) )
-                            log.exception( error_message )
-                        test_result = dict( tool_shed=galaxy_tool_shed_url,
-                                            name=name,
-                                            owner=owner,
-                                            changeset_revision=changeset_revision,
-                                            error_message=error_message )
-                        tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                        params = dict( tools_functionally_correct=False,
-                                       test_install_error=True,
-                                       do_not_test=False )
-                        # TODO: do something usefule with response_dict
-                        response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
-                        try:
-                            if deactivate:
-                                # We are deactivating this repository and all of its repository dependencies.
-                                deactivate_repository( app, repository_dict )
-                            else:
-                                # We are uninstalling this repository and all of its repository dependencies.
-                                uninstall_repository( app, repository_dict )
-                        except:
-                            log.exception( 'Encountered error attempting to deactivate or uninstall %s.', str( repository_dict[ 'name' ] ) )
-                        results_dict[ 'repositories_failed_install' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                        log.debug( 'Repository %s failed to install correctly.' % str( name ) )
-                    else:
-                        # Configure and run functional tests for this repository. This is equivalent to sh run_functional_tests.sh -installed
-                        remove_install_tests()
-                        log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
-                        # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository
-                        # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
-                        # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
-                        file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
-                        has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file,
-                                                                                  from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
-                        # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
-                        # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
-                        # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
-                        # missing test components.
-                        if 'missing_test_components' not in tool_test_results_dict:
-                            tool_test_results_dict[ 'missing_test_components' ] = []
-                        missing_tool_dependencies = get_missing_tool_dependencies( repository )
-                        if missing_tool_dependencies or repository.missing_repository_dependencies:
-                            results_dict = handle_missing_dependencies( app,
-                                                                        repository,
-                                                                        missing_tool_dependencies,
-                                                                        repository_dict,
-                                                                        tool_test_results_dicts,
-                                                                        tool_test_results_dict,
-                                                                        results_dict )
+                    tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
+                    # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
+                    log.debug( 'Attempting to uninstall repository %s owned by %s.' % ( name, owner ) )
+                    try:
+                        repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+                    except Exception, e:
+                        error_message = 'Unable to find installed repository %s owned by %s: %s.' % ( name, owner, str( e ) )
+                        log.exception( error_message )
+                    test_result = dict( tool_shed=galaxy_tool_shed_url,
+                                        name=name,
+                                        owner=owner,
+                                        changeset_revision=changeset_revision,
+                                        error_message=error_message )
+                    tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
+                    params = dict( tools_functionally_correct=False,
+                                   test_install_error=True,
+                                   do_not_test=False )
+                    # TODO: do something useful with response_dict
+                    response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
+                    try:
+                        if deactivate:
+                            # We are deactivating this repository and all of its repository dependencies.
+                            deactivate_repository( app, repository_dict )
                         else:
-                            # If the repository has a test-data directory we write the generated shed_tools_dict to a file, so the functional
-                            # test framework can find it.
-                            file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
-                            log.debug( 'Saved generated shed_tools_dict to %s\nContents: %s' % ( str( galaxy_shed_tools_dict ), str( shed_tools_dict ) ) )
-                            try:
-                                results_dict = test_repository_tools( app,
-                                                                      repository,
-                                                                      repository_dict,
-                                                                      tool_test_results_dicts,
-                                                                      tool_test_results_dict,
-                                                                      results_dict )
-                            except Exception, e:
-                                exception_message = 'Error executing tests for repository %s: %s' % ( name, str( e ) )
-                                log.exception( exception_message )
-                                tool_test_results_dict[ 'failed_tests' ].append( exception_message )
-                                # Record the status of this repository in the tool shed.
-                                params = dict( tools_functionally_correct=False,
-                                               do_not_test=False,
-                                               test_install_error=False )
-                                # TODO: do something usefule with response_dict
-                                response_dict =  register_test_result( galaxy_tool_shed_url,
-                                                                       tool_test_results_dicts,
-                                                                       tool_test_results_dict,
-                                                                       repository_dict,
-                                                                       params )
-                                results_dict[ 'repositories_failed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                            total_repositories_tested += 1
+                            # We are uninstalling this repository and all of its repository dependencies.
+                            uninstall_repository( app, repository_dict )
+                    except:
+                        log.exception( 'Encountered error attempting to deactivate or uninstall %s.', str( repository_dict[ 'name' ] ) )
+                    results_dict[ 'repositories_failed_install' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
+                    log.debug( 'Repository %s failed to install correctly.' % str( name ) )
+                else:
+                    # Configure and run functional tests for this repository. This is equivalent to sh run_functional_tests.sh -installed
+                    remove_install_tests()
+                    log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
+                    # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository
+                    # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
+                    # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
+                    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
+                    has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file,
+                                                                              from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
+                    # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
+                    # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
+                    # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
+                    # missing test components.
+                    if 'missing_test_components' not in tool_test_results_dict:
+                        tool_test_results_dict[ 'missing_test_components' ] = []
+                    missing_tool_dependencies = get_missing_tool_dependencies( repository )
+                    if missing_tool_dependencies or repository.missing_repository_dependencies:
+                        results_dict = handle_missing_dependencies( app,
+                                                                    repository,
+                                                                    missing_tool_dependencies,
+                                                                    repository_dict,
+                                                                    tool_test_results_dicts,
+                                                                    tool_test_results_dict,
+                                                                    results_dict )
+                    else:
+                        # If the repository has a test-data directory we write the generated shed_tools_dict to a file, so the functional
+                        # test framework can find it.
+                        file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
+                        log.debug( 'Saved generated shed_tools_dict to %s\nContents: %s' % ( str( galaxy_shed_tools_dict ), str( shed_tools_dict ) ) )
+                        try:
+                            results_dict = test_repository_tools( app,
+                                                                  repository,
+                                                                  repository_dict,
+                                                                  tool_test_results_dicts,
+                                                                  tool_test_results_dict,
+                                                                  results_dict )
+                        except Exception, e:
+                            exception_message = 'Error executing tests for repository %s: %s' % ( name, str( e ) )
+                            log.exception( exception_message )
+                            tool_test_results_dict[ 'failed_tests' ].append( exception_message )
+                            # Record the status of this repository in the tool shed.
+                            params = dict( tools_functionally_correct=False,
+                                           do_not_test=False,
+                                           test_install_error=False )
+                            # TODO: do something useful with response_dict
+                            response_dict =  register_test_result( galaxy_tool_shed_url,
+                                                                   tool_test_results_dicts,
+                                                                   tool_test_results_dict,
+                                                                   repository_dict,
+                                                                   params )
+                            results_dict[ 'repositories_failed' ].append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
+                        total_repositories_tested += 1
     results_dict[ 'total_repositories_tested' ] = total_repositories_tested
     return results_dict, error_message
 
@@ -1073,13 +1070,14 @@ def parse_exclude_list( xml_filename ):
                 exclude_count += 1
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
-    log.debug( '%s repositories will be excluded from testing...' % str( exclude_count ) )
-    if '-list_repositories' in sys.argv:
-        for name, owner, changeset_revision in exclude_verbose:
-            if changeset_revision:
-                log.debug( 'Repository %s owned by %s, changeset revision %s.' % ( str( name ), str( owner ), str( changeset_revision ) ) )
-            else:
-                log.debug( 'Repository %s owned by %s, all revisions.' % ( str( name ), str( owner ) ) )
+    log.debug( 'The xml document %s containing the exclude list %s defines the following %s repositories to be excluded from testing...' % \
+        ( str( xml_filename ), str( exclude_count ) ) )
+    #if '-list_repositories' in sys.argv:
+    for name, owner, changeset_revision in exclude_verbose:
+        if changeset_revision:
+            log.debug( 'Repository %s owned by %s, changeset revision %s.' % ( str( name ), str( owner ), str( changeset_revision ) ) )
+        else:
+            log.debug( 'Repository %s owned by %s, all revisions.' % ( str( name ), str( owner ) ) )
     return exclude_list
 
 def register_test_result( url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params ):
@@ -1209,7 +1207,7 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         params = dict( tools_functionally_correct=True,
                        do_not_test=False,
                        test_install_error=False )
-        # TODO: do something usefule with response_dict
+        # TODO: do something useful with response_dict
         response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
         log.debug( 'Revision %s of repository %s installed and passed functional tests.' % ( str( changeset_revision ), str( name ) ) )
     else:
@@ -1220,7 +1218,7 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         params = dict( tools_functionally_correct=False,
                        test_install_error=False,
                        do_not_test=str( set_do_not_test ) )
-        # TODO: do something usefule with response_dict
+        # TODO: do something useful with response_dict
         response_dict = register_test_result( galaxy_tool_shed_url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params )
         log.debug( 'Revision %s of repository %s installed successfully but did not pass functional tests.' % \
             ( str( changeset_revision ), str( name ) ) )
