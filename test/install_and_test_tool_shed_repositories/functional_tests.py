@@ -1070,7 +1070,7 @@ def parse_exclude_list( xml_filename ):
                 exclude_count += 1
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
-    log.debug( 'The xml document %s containing the exclude list %s defines the following %s repositories to be excluded from testing...' % \
+    log.debug( 'The xml document %s containing the exclude list defines the following %s repositories to be excluded from testing...' % \
         ( str( xml_filename ), str( exclude_count ) ) )
     #if '-list_repositories' in sys.argv:
     for name, owner, changeset_revision in exclude_verbose:
