@@ -31,8 +31,13 @@
     border: none;
 }
 
+.chrom-nav {
+    width: 15em;
+}
+
 .content {
     font: 10px verdana;
+    position: relative;
 }
 
 .nav-controls {
@@ -70,15 +75,6 @@
     display: inline-block;
     width: 15em;
     margin: 0 10px;
-}
-
-.draghandle {
-    margin-top: 2px;
-    cursor: move;
-    float: left;
-    background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
-    width: 10px;
-    height: 12px;
 }
 
 .intro {
@@ -244,6 +240,8 @@
 }
 
 .track {
+    position: relative;
+
     // Separates tracks.
     border-bottom: 1px solid @separator-color;
 
@@ -340,7 +338,12 @@ input {
     // Override Galaxy defaults to make a smaller button.
     &[type="submit"] {
         padding: 0px;
+        margin-right: 20px;
         font-size: inherit;
+    }
+
+    &.color-input {
+        float: left;
     }
 }
 
@@ -413,6 +416,10 @@ input {
 .exclamation {
     background: transparent url(../images/fugue/exclamation.png) no-repeat;
     margin-left: 5em;
+}
+
+.track-icons {
+    float: left
 }
 
 // Defines icons that change from black/white to normal on hover. Note that the images
@@ -523,4 +530,19 @@ input {
     background-color: #ccf;
     opacity: 0.5;
     z-index: @overlay-index; 
+}
+
+.draghandle {
+    margin-top: 2px;
+    cursor: move;
+    float: left;
+    background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+    width: 10px;
+    height: 12px;
+}
+
+// Highlight for element(s) being dragged. This definition must be after definition of draggable 
+// elements (e.g. track, group) in order to take precedence.
+.dragging {
+    border: 1px solid blue;
 }

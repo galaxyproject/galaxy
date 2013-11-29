@@ -32,8 +32,7 @@ var is_container = function(element, obj) {
 var moveable = function(element, handle_class, container_selector, element_js_obj) {
     // HACK: set default value for container selector.
     container_selector = ".group";
-    var css_border_props = {};
-
+    
     // Register element with its object.
     html_elt_js_obj_dict[element.attr("id")] = element_js_obj;
     
@@ -130,14 +129,9 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
             html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, (d.deltaY > 0 ? i-1 : i) );
         }
     }).bind("dragstart", function() {
-        css_border_props["border-top"] = element.css("border-top");
-        css_border_props["border-bottom"] = element.css("border-bottom");
-        $(this).css({
-            "border-top": "1px solid blue",
-            "border-bottom": "1px solid blue"
-        });
+        $(this).addClass('dragging');
     }).bind("dragend", function() {
-        $(this).css(css_border_props);
+        $(this).removeClass('dragging');
     });
 };
 
@@ -236,7 +230,7 @@ var Drawable = function(view, container, obj_dict) {
         this.container_div.append(this.header_div);
         
         // Icons container.
-        this.icons_div = $("<div/>").css("float", "left").hide().appendTo(this.header_div);
+        this.icons_div = $("<div/>").addClass('track-icons').hide().appendTo(this.header_div);
         this.build_action_icons(this.action_icons_def);
                 
         this.header_div.append( $("<div style='clear: both'/>") );
@@ -930,7 +924,7 @@ var TracksterView = Backbone.View.extend({
         // Top container for things that are fixed at the top
         this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
         // Browser content, primary tracks are contained in here
-        this.browser_content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        this.browser_content_div = $("<div/>").addClass("content").appendTo(parent_element);
         // Bottom container for things that are fixed at the bottom
         this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
         // Label track fixed at top 
@@ -967,7 +961,7 @@ var TracksterView = Backbone.View.extend({
         this.default_overview_height = this.overview_box.height();
         
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
-        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
+        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).addClass('chrom-nav').append("<option value=''>Loading</option>").appendTo(this.nav_controls);
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
@@ -1708,7 +1702,7 @@ var TracksterToolView = Backbone.View.extend({
         // Add buttons for running on dataset, region.
         var run_tool_row = $("<div>").addClass("param-row").appendTo(parent_div);
         var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
-        var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
+        var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").appendTo(run_tool_row);
         run_on_region_button.click( function() {
             // Run tool to create new track.
             self.run_on_region();
@@ -2027,7 +2021,10 @@ var ConfigView = Backbone.View.extend({
                 else if ( param.type === 'color' ) {
                     var 
                         container_div = $("<div/>").appendTo(row),
-                        input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
+                        input = $('<input/>').attr({
+                            id: id,
+                            name: id
+                        }).val( value ).addClass('color-input') 
                             .appendTo(container_div).click(function(e) {
                             // Hide other pickers.
                             $(".tooltip").removeClass( "in" );
@@ -2517,7 +2514,7 @@ extend(Track.prototype, Drawable.prototype, {
     },
 
     build_container_div: function () {
-        return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+        return $("<div/>").addClass('track').attr("id", "track_" + this.id);
     },
 
     build_header_div: function() {
@@ -3532,7 +3529,6 @@ extend(LabelTrack.prototype, Track.prototype, {
         while ( position < view.high ) {
             var screenPosition = ( position - view.low ) / range * width;
             new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
-                // Reduce by one to account for border
                 left: screenPosition
             }));
             position += tickDistance;
