@@ -390,7 +390,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         with settings( warn_only=True ):
                             for tarball_name in tarball_names:
-                                cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
+                                cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS; &&
                                     Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
@@ -432,24 +432,24 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 gem, gem_version = ruby_package_tup
                                 if os.path.isfile( gem ):
                                     # we assume a local shipped gem file
-                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                    cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install --local %s''' % ( gem )
                                 elif gem.find( '://' ) != -1:
                                     # We assume a URL to a gem file.
                                     url = gem
                                     gem_name = url.split( '/' )[ -1 ]
                                     td_common_util.url_download( work_dir, gem_name, url, extract=False )
-                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                    cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install --local %s ''' % ( gem_name )
                                 else:
                                     # gem file from rubygems.org with or without version number
                                     if gem_version:
                                         # version number was specified
-                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install %s --version "=%s"''' % ( gem, gem_version)
                                     else:
                                         # no version number given
-                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install %s''' % ( gem )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
@@ -490,7 +490,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for perl_package in perl_packages:
                                 # If set to a true value then MakeMaker's prompt function will always
                                 # return the default without waiting for user input.
-                                cmd = '''export PERL_MM_USE_DEFAULT=1 && '''
+                                cmd = '''PERL_MM_USE_DEFAULT=1; export PERL_MM_USE_DEFAULT; '''
                                 if perl_package.find( '://' ) != -1:
                                     # We assume a URL to a gem file.
                                     url = perl_package
