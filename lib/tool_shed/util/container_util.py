@@ -1062,37 +1062,41 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
             tool_test_results_root_folder.folders.append( test_runs_folder )
         for index, tool_test_results_dict in enumerate( tool_test_results_dicts ):
             test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-            if test_environment_dict is not None:
-                time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
-                if multiple_tool_test_results_dicts:
-                    folder_id += 1
-                    containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=test_runs_folder )
-                    test_runs_folder.folders.append( containing_folder )
-                else:
-                    containing_folder = tool_test_results_root_folder
-                test_results_dict_id += 1
+            if test_environment_dict is None:
+                # the test environment entry will exist only if the preparation script check_re;ositories_for_functional_tests.py
+                # was executed prior to the ~/install_and_test_repositories/functional_tests.py script.  If that did not occur,
+                # we'll display test result, but the test_environment entries will not be complete.
+                test_environment_dict = {}
+            time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
+            if multiple_tool_test_results_dicts:
                 folder_id += 1
-                folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
-                containing_folder.folders.append( folder )
-                architecture = test_environment_dict.get( 'architecture', '' )
-                galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
-                galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
-                python_version = test_environment_dict.get( 'python_version', '' )
-                system = test_environment_dict.get( 'system', '' )
-                tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
-                tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
-                tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
-                test_environment = TestEnvironment( id=1,
-                                                    architecture=architecture,
-                                                    galaxy_database_version=galaxy_database_version,
-                                                    galaxy_revision=galaxy_revision,
-                                                    python_version=python_version,
-                                                    system=system,
-                                                    time_tested=time_tested,
-                                                    tool_shed_database_version=tool_shed_database_version,
-                                                    tool_shed_mercurial_version=tool_shed_mercurial_version,
-                                                    tool_shed_revision=tool_shed_revision )
-                folder.test_environments.append( test_environment )
+                containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=test_runs_folder )
+                test_runs_folder.folders.append( containing_folder )
+            else:
+                containing_folder = tool_test_results_root_folder
+            test_results_dict_id += 1
+            folder_id += 1
+            folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
+            containing_folder.folders.append( folder )
+            architecture = test_environment_dict.get( 'architecture', '' )
+            galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
+            galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
+            python_version = test_environment_dict.get( 'python_version', '' )
+            system = test_environment_dict.get( 'system', '' )
+            tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
+            tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
+            tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
+            test_environment = TestEnvironment( id=1,
+                                                architecture=architecture,
+                                                galaxy_database_version=galaxy_database_version,
+                                                galaxy_revision=galaxy_revision,
+                                                python_version=python_version,
+                                                system=system,
+                                                time_tested=time_tested,
+                                                tool_shed_database_version=tool_shed_database_version,
+                                                tool_shed_mercurial_version=tool_shed_mercurial_version,
+                                                tool_shed_revision=tool_shed_revision )
+            folder.test_environments.append( test_environment )
             not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
             if not_tested_dict:
                 folder_id += 1
