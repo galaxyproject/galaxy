@@ -3471,6 +3471,29 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
 
+    @property
+    def installing( self ):
+        """
+        Used to determine if tool dependencies can denote this repository as
+        installing.
+        """
+        return self.status not in [ self.installation_status.DEACTIVATED,
+                                    self.installation_status.UNINSTALLED,
+                                    self.installation_status.ERROR,
+                                    self.installation_status.INSTALLED,
+                                    self.installation_status.NEW,
+                                  ]
+
+    @property
+    def installation_complete( self ):
+        """
+        Used to determine if tool dependency installations can proceed.
+        Installed artifacts must be available on disk.
+        """
+        return self.status in [ self.installation_status.DEACTIVATED,
+                                self.installation_status.INSTALLED,
+                              ]
+
     def to_dict( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
