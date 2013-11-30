@@ -1052,45 +1052,51 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
     """Return a folder hierarchy containing tool dependencies."""
     # This container is displayed only in the tool shed.
     if tool_test_results_dicts:
-        multiple_tool_test_results_dicts = len( tool_test_results_dicts ) > 1
         test_results_dict_id = 0
         folder_id += 1
         tool_test_results_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        multiple_tool_test_results_dicts = len( tool_test_results_dicts ) > 1
+        if multiple_tool_test_results_dicts:
+            folder_id += 1
+            test_runs_folder = Folder( id=folder_id, key='test_runs', label='Test runs', parent=tool_test_results_root_folder )
+            tool_test_results_root_folder.folders.append( test_runs_folder )
         for index, tool_test_results_dict in enumerate( tool_test_results_dicts ):
             test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-            if test_environment_dict is not None:
-                time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
-                if multiple_tool_test_results_dicts:
-                    folder_id += 1
-                    containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=tool_test_results_root_folder )
-                else:
-                    containing_folder = tool_test_results_root_folder
-                test_results_dict_id += 1
-                #folder_id += 1
-                #test_results_folder = Folder( id=folder_id, key='test_results', label='Automated test environment', parent=containing_folder )
-                #containing_folder.folders.append( test_results_folder )
+            if test_environment_dict is None:
+                # the test environment entry will exist only if the preparation script check_re;ositories_for_functional_tests.py
+                # was executed prior to the ~/install_and_test_repositories/functional_tests.py script.  If that did not occur,
+                # we'll display test result, but the test_environment entries will not be complete.
+                test_environment_dict = {}
+            time_tested = test_environment_dict.get( 'time_tested', 'unknown_%d' % index )
+            if multiple_tool_test_results_dicts:
                 folder_id += 1
-                folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
-                containing_folder.folders.append( folder )
-                architecture = test_environment_dict.get( 'architecture', '' )
-                galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
-                galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
-                python_version = test_environment_dict.get( 'python_version', '' )
-                system = test_environment_dict.get( 'system', '' )
-                tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
-                tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
-                tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
-                test_environment = TestEnvironment( id=1,
-                                                    architecture=architecture,
-                                                    galaxy_database_version=galaxy_database_version,
-                                                    galaxy_revision=galaxy_revision,
-                                                    python_version=python_version,
-                                                    system=system,
-                                                    time_tested=time_tested,
-                                                    tool_shed_database_version=tool_shed_database_version,
-                                                    tool_shed_mercurial_version=tool_shed_mercurial_version,
-                                                    tool_shed_revision=tool_shed_revision )
-                folder.test_environments.append( test_environment )
+                containing_folder = Folder( id=folder_id, key='test_results', label=time_tested, parent=test_runs_folder )
+                test_runs_folder.folders.append( containing_folder )
+            else:
+                containing_folder = tool_test_results_root_folder
+            test_results_dict_id += 1
+            folder_id += 1
+            folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=containing_folder )
+            containing_folder.folders.append( folder )
+            architecture = test_environment_dict.get( 'architecture', '' )
+            galaxy_database_version = test_environment_dict.get( 'galaxy_database_version', '' )
+            galaxy_revision = test_environment_dict.get( 'galaxy_revision', '' )
+            python_version = test_environment_dict.get( 'python_version', '' )
+            system = test_environment_dict.get( 'system', '' )
+            tool_shed_database_version = test_environment_dict.get( 'tool_shed_database_version', '' )
+            tool_shed_mercurial_version = test_environment_dict.get( 'tool_shed_mercurial_version', '' )
+            tool_shed_revision = test_environment_dict.get( 'tool_shed_revision', '' )
+            test_environment = TestEnvironment( id=1,
+                                                architecture=architecture,
+                                                galaxy_database_version=galaxy_database_version,
+                                                galaxy_revision=galaxy_revision,
+                                                python_version=python_version,
+                                                system=system,
+                                                time_tested=time_tested,
+                                                tool_shed_database_version=tool_shed_database_version,
+                                                tool_shed_mercurial_version=tool_shed_mercurial_version,
+                                                tool_shed_revision=tool_shed_revision )
+            folder.test_environments.append( test_environment )
             not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
             if not_tested_dict:
                 folder_id += 1
@@ -1120,6 +1126,9 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                 containing_folder.folders.append( folder )
                 failed_test_id = 0
                 for failed_tests_dict in failed_tests_dicts:
+                    # TODO: Remove this when invalid test data is eliminated.
+                    if isinstance( failed_tests_dict, list ):
+                        failed_tests_dict = failed_tests_dict[ 0 ]
                     failed_test_id += 1
                     failed_test = FailedTest( id=failed_test_id,
                                               stderr=failed_tests_dict.get( 'stderr', '' ),
@@ -1153,6 +1162,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              key='installation_errors',
                                                              label='Installation errors',
                                                              parent=containing_folder )
+                    containing_folder.installation_errors.append( installation_error_base_folder )
                     if current_repository_errors:
                         folder_id += 1
                         subfolder = Folder( id=folder_id,
@@ -1203,10 +1213,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                                                                   error_message=tool_dependency_error_dict.get( 'error_message', '' ) )
                             subfolder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
                         installation_error_base_folder.folders.append( subfolder )
-                    containing_folder.installation_errors.append( installation_error_base_folder )
-            #containing_folder.folders.append( containing_folder )
-            if multiple_tool_test_results_dicts:
-                tool_test_results_root_folder.folders.append( containing_folder )
     else:
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder

@@ -107,10 +107,9 @@ class RepositoryRevisionsController( BaseAPIController ):
         skip_tool_test = kwd.get( 'skip_tool_test', None )
         if skip_tool_test is not None:
             skip_tool_test = util.string_as_bool( skip_tool_test )
+        if skip_tool_test:
             skipped_metadata_ids_subquery = select( [ trans.app.model.SkipToolTest.table.c.repository_metadata_id ] )
-            if skip_tool_test:
-                clause_list.append( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) )
-            else:
+            if skipped_metadata_ids_subquery:
                 clause_list.append( not_( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) ) )
         # Generate and execute the query.
         try:

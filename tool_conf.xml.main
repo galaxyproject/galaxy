@@ -280,8 +280,6 @@
   <section id="peak_calling" name="NGS: Peak Calling">
    <tool file="peak_calling/macs_wrapper.xml" />
    <tool file="peak_calling/sicer_wrapper.xml" />
-   <tool file="genetrack/genetrack_indexer.xml" />
-   <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>
   <section id="ngs-rna-tools" name="NGS: RNA Analysis">
    <label id="rna_seq" text="RNA-seq" />

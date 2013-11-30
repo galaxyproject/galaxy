@@ -95,18 +95,25 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     invalid_revisions = 0
     records_checked = 0
     # Do not check metadata records that have an entry in the skip_tool_tests table, since they won't be tested anyway.
-    skip_metadata_ids = select( [ app.model.SkipToolTest.table.c.repository_metadata_id ] )
+    print '# -------------------------------------------------------------------------------------------'
+    print '# The skip_tool_test setting has been set for the following repository revision, so they will not be tested.'
+    skip_metadata_ids = []
+    for skip_tool_test in app.sa_session.query( app.model.SkipToolTest ):
+        print '# repository_metadata_id: %s, changeset_revision: %s' % \
+            ( str( skip_tool_test.repository_metadata_id ), str( skip_tool_test.initial_changeset_revision ) )
+        print 'reason: %s' % str( skip_tool_test.comment )
+        skip_metadata_ids.append( skip_tool_test.repository_metadata_id )
     # Get the list of metadata records to check for functional tests and test data. Limit this to records that have not been flagged do_not_test,
     # since there's no need to check them again if they won't be tested anyway. Also filter out changeset revisions that are not downloadable,
     # because it's redundant to test a revision that a user can't install.
     for repository_metadata in app.sa_session.query( app.model.RepositoryMetadata ) \
                                              .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
                                                             app.model.RepositoryMetadata.table.c.includes_tools == True,
-                                                            app.model.RepositoryMetadata.table.c.do_not_test == False,
-                                                            not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
-        # Clear any old invalid tests for this metadata revision, since this could lead to duplication of invalid test rows,
-        # or tests incorrectly labeled as invalid.
+                                                            app.model.RepositoryMetadata.table.c.do_not_test == False ) ):
+        # Initialize some items.
         missing_test_components = []
+        revision_has_test_data = False
+        testable_revision = False
         repository = repository_metadata.repository
         records_checked += 1
         # Check the next repository revision.
@@ -117,15 +124,14 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         repository = repository_metadata.repository
         if repository.id not in checked_repository_ids:
             checked_repository_ids.append( repository.id )
-        if verbosity >= 1:
-            print '# -------------------------------------------------------------------------------------------'
-            print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner )
+        print '# -------------------------------------------------------------------------------------------'
+        print '# Checking revision %s of %s owned by %s.' % ( changeset_revision,  name, owner )
+        if repository_metadata.id in skip_metadata_ids:
+            print'# Skipping revision %s of %s owned by %s because the skip_tool_test setting has been set.' % ( changeset_revision,  name, owner )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         tool_dicts = metadata.get( 'tools', None )
         if tool_dicts is not None:
-            has_test_data = False
-            testable_revision = False
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
@@ -139,29 +145,30 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     if '.hg' in dirs:
                         dirs.remove( '.hg' )
                     if 'test-data' in dirs:
-                        has_test_data = True
+                        revision_has_test_data = True
                         test_data_path = os.path.join( root, dirs[ dirs.index( 'test-data' ) ] )
                         break
-            if verbosity >= 1:
-                if has_test_data:
-                    print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                else:
-                    print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
-                    ( changeset_revision,  name, owner )
-            # Inspect each tool_dict for defined functional tests.
+            if revision_has_test_data:
+                print '# Test data directory found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            else:
+                print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
+                ( changeset_revision,  name, owner )
+            # Inspect each tool_dict for defined functional tests.  If there are no tests, this tool should not be tested, since the
+            # tool functional tests only report failure if the test itself fails, not if it's missing or undefined. Filtering out those
+            # repositories at this step will reduce the number of "false negatives" the automated functional test framework produces.
             for tool_dict in tool_dicts:
+                failure_reason = ''
+                problem_found = False
+                tool_has_defined_tests = False
+                tool_has_test_files = False
+                missing_test_files = []
                 tool_count += 1
                 tool_id = tool_dict[ 'id' ]
                 tool_version = tool_dict[ 'version' ]
                 tool_guid = tool_dict[ 'guid' ]
-                if verbosity >= 2:
-                    print "# Checking tool ID '%s' in changeset revision %s of %s." % \
-                        ( tool_id, changeset_revision, name )
-                # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
-                # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
-                # automated functional test framework produces.
-                tool_has_tests = False
+                if verbosity >= 1:
+                    print "# Checking tool ID '%s' in changeset revision %s of %s." % ( tool_id, changeset_revision, name )
                 defined_test_dicts = tool_dict.get( 'tests', None )
                 if defined_test_dicts is not None:
                     # We need to inspect the <test> tags because the following tags...
@@ -182,33 +189,26 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         outputs = defined_test_dict.get( 'outputs', [] )
                         if inputs and outputs:
                             # At least one tool within the repository has a valid <test> tag.
-                            tool_has_tests = True
+                            tool_has_defined_tests = True
                             break
-                if tool_has_tests:
-                    if verbosity >= 2:
-                        print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
-                            ( tool_id, changeset_revision, name )
+                if tool_has_defined_tests:
+                    print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
+                        ( tool_id, changeset_revision, name )
                     has_tests += 1
                 else:
-                    if verbosity >= 2:
-                        print '# No functional tests defined for %s.' % tool_id
+                    print '# No functional tests defined for %s.' % tool_id
                     no_tests += 1
-                failure_reason = ''
-                problem_found = False
-                missing_test_files = []
-                has_test_files = False
-                if tool_has_tests and has_test_data:
+                if tool_has_defined_tests and revision_has_test_data:
                     missing_test_files = check_for_missing_test_files( defined_test_dicts, test_data_path )
                     if missing_test_files:
-                        if verbosity >= 2:
-                            print "# Tool ID '%s' in changeset revision %s of %s is missing one or more required test files: %s" % \
-                                ( tool_id, changeset_revision, name, ', '.join( missing_test_files ) )
+                        print "# Tool id '%s' in changeset revision %s of %s is missing one or more required test files: %s" % \
+                            ( tool_id, changeset_revision, name, ', '.join( missing_test_files ) )
                     else:
-                        has_test_files = True
-                if not has_test_data:
+                        tool_has_test_files = True
+                if not revision_has_test_data:
                     failure_reason += 'Repository does not have a test-data directory. '
                     problem_found = True
-                if not tool_has_tests:
+                if not tool_has_defined_tests:
                     failure_reason += 'Functional test definitions missing for %s. ' % tool_id
                     problem_found = True
                 if missing_test_files:
@@ -219,23 +219,22 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                 if problem_found:
                     if test_errors not in missing_test_components:
                         missing_test_components.append( test_errors )
-                if tool_has_tests and has_test_files:
+                if tool_has_defined_tests and tool_has_test_files:
+                    print '# Revision %s of %s owned by %s is a testable revision.' % ( changeset_revision,  name, owner )
                     testable_revision = True
             # Remove the cloned repository path. This has to be done after the check for required test files, for obvious reasons.
             if os.path.exists( work_dir ):
                 shutil.rmtree( work_dir )
             if not missing_test_components:
                 valid_revisions += 1
-                if verbosity >= 1:
-                    print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             else:
                 invalid_revisions += 1
+                print '# Some tools have problematic functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                 if verbosity >= 1:
-                    print '# Some tools have problematic functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                    if verbosity >= 2:
-                        for invalid_test in missing_test_components:
-                            if 'missing_components' in invalid_test:
-                                print '# %s' % invalid_test[ 'missing_components' ]
+                    for missing_test_component in missing_test_components:
+                        if 'missing_components' in missing_test_component:
+                            print '# %s' % missing_test_component[ 'missing_components' ]
             if not info_only:
                 # Get or create the list of tool_test_results dictionaries.
                 if repository_metadata.tool_test_results is not None:
@@ -249,8 +248,9 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     # install_and_test_tool_sed_repositories.sh script which will further populate the tool_test_results_dict.
                     tool_test_results_dict = tool_test_results_dicts[ 0 ]
                     if len( tool_test_results_dict ) <= 1:
-                        # We can re-use the mostly empty tool_test_results_dict for this run, but we need to eliminate it from
-                        # the list of tool_test_results_dicts since it will be re-inserted later.
+                        # We can re-use the mostly empty tool_test_results_dict for this run because it is either empty or it contains only
+                        # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
+                        # since it will be re-inserted later.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                     else:
                         # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
@@ -259,6 +259,11 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     # Create a new dictionary for the most recent test run.
                     tool_test_results_dict = {}
                 test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
+                # Add the current time as the approximate time that this test run occurs.  A similar value will also be
+                # set to the repository_metadata.time_last_tested column, but we also store it here because the Tool Shed
+                # may be configured to store multiple test run results, so each must be associated with a time stamp.
+                now = time.strftime( "%Y-%m-%d %H:%M:%S" )
+                test_environment_dict[ 'time_tested' ] = now
                 test_environment_dict[ 'tool_shed_database_version' ] = get_database_version( app )
                 test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
                 test_environment_dict[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
@@ -281,7 +286,13 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         print "# and it is not the latest downloadable revision."
                         repository_metadata.do_not_test = True
                     repository_metadata.tools_functionally_correct = False
-                    repository_metadata.missing_test_components = True
+                    if not testable_revision:
+                        # Even though some tools may be missing test components, it may be possible to test other tools.  Since the
+                        # install and test framework filters out repositories marked as missing test components, we'll set it only if
+                        # no tools can be tested.
+                        print '# Setting missing_test_components to True for revision %s of %s owned by %s because all tools are missing test components.' % \
+                            ( changeset_revision,  name, owner )
+                        repository_metadata.missing_test_components = True
                     tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
                 # Store only the configured number of test runs.
                 num_tool_test_results_saved = int( app.config.num_tool_test_results_saved )
