@@ -54,6 +54,8 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
         for p in job.parameters:
             out[p.name] = p.value
         for in_d in job.input_datasets:
+            if not in_d.dataset:
+                continue
             if follow:
                 out[in_d.name] = self._get_record(trans, in_d.dataset, follow)
             else:
