@@ -3,7 +3,7 @@
 @overlay-index: @base-index + 1;
 @track-header-height: 16px;
 @min-track-height: (@track-header-height + 4);
-@separator-color: #BBB;
+@separator-color: #888;
 
 .viewport-container {
     overflow-x: hidden;
@@ -246,22 +246,15 @@
     border-bottom: 1px solid @separator-color;
 
     &.error {
-        background-color: #ECB4AF;
-        background-image: none;
+        background: #ECB4AF;
     }
 
     &.nodata {
-        .track-content {
-            background-color: white;
-            background-image: none;
-        }
+        background: #EEEEEE;
     }
 
     &.pending {
-        .track-content {
-            background-color: white;
-            background-image: none;
-        }
+        background: #FFFFCC;
     }
 }
 
@@ -270,6 +263,12 @@
     position: relative;
     min-height: @min-track-height;
     padding: 0px 0px 1px 0px;
+
+    .message {
+        position: relative;
+        // To vertically center message in track:
+        top: 4px;
+    }
 }
 
 .loading {

@@ -2667,23 +2667,35 @@ extend(Track.prototype, Drawable.prototype, {
     },
 
     /**
+     * Remove visualization content and display message.
+     */
+    show_message: function(msg_html) {
+        this.tiles_div.remove();
+        return $('<span/>').addClass('message').html(msg_html).appendTo(this.content_div);
+    },
+
+    /**
      * Initialize and draw the track.
      */
     init: function(retry) {
+        // FIXME: track should have a 'state' attribute that is checked on load; this state attribute should be
+        // used in this function to determine what action(s) to take.
+
         var track = this;
         track.enabled = false;
         track.tile_cache.clear();    
         track.data_manager.clear();
-        track.tiles_div.css("height", "auto");
         /*
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
         */
         // Remove old track content (e.g. tiles, messages).
-        track.tiles_div.text('').children().remove();
+        track.content_div.children().remove();
         track.container_div.removeClass("nodata error pending");
-        
+
+        track.tiles_div = $("<div/>").addClass("tiles").appendTo(track.content_div);
+
         //
         // Tracks with no dataset id are handled differently.
         // FIXME: is this really necessary?
@@ -2705,16 +2717,16 @@ extend(Track.prototype, Drawable.prototype, {
             if (!result || result === "error" || result.kind === "error") {
                 // Dataset is in error state.
                 track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
+                var msg_elt = track.show_message(DATA_ERROR);
                 if (result.message) {
                     // Add links to (a) show error and (b) try again.
-                    track.content_div.append(
+                    msg_elt.append(
                         $("<a href='javascript:void(0);'></a>").text("View error").click(function() {
                             Galaxy.modal.show({title: "Trackster Error", body: "<pre>" + result.message + "</pre>", buttons : {'Close' : function() { Galaxy.modal.hide(); } } });
                         })
                     );
-                    track.content_div.append( $('<span/>').text(' ') );
-                    track.content_div.append(
+                    msg_elt.append( $('<span/>').text(' ') );
+                    msg_elt.append(
                         $("<a href='javascript:void(0);'></a>").text("Try again").click(function() {
                             track.init(true);
                         })
@@ -2723,15 +2735,15 @@ extend(Track.prototype, Drawable.prototype, {
             } 
             else if (result === "no converter") {
                 track.container_div.addClass("error");
-                track.tiles_div.text(DATA_NOCONVERTER);
+                track.show_message(DATA_NOCONVERTER);
             } 
             else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
                 track.container_div.addClass("nodata");
-                track.tiles_div.text(DATA_NONE);
+                track.show_message(DATA_NONE);
             } 
             else if (result === "pending") {
                 track.container_div.addClass("pending");
-                track.tiles_div.html(DATA_PENDING);
+                track.show_message(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
             } 
