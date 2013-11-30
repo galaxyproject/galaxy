@@ -345,8 +345,6 @@
     <tool file="peak_calling/macs_wrapper.xml" />
     <tool file="peak_calling/sicer_wrapper.xml" />
     <tool file="peak_calling/ccat_wrapper.xml" />
-    <tool file="genetrack/genetrack_indexer.xml" />
-    <tool file="genetrack/genetrack_peak_prediction.xml" />
   </section>
   <section id="ngs-simulation" name="NGS: Simulation">
     <tool file="ngs_simulation/ngs_simulation.xml" />
