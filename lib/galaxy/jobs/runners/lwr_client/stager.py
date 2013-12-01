@@ -1,6 +1,7 @@
 from os.path import abspath, basename, join, exists
 from os import listdir, sep
 from re import findall
+from io import open
 
 from .action_mapper import FileActionMapper
 
@@ -24,21 +25,23 @@ class JobInputs(object):
     >>> import tempfile
     >>> tf = tempfile.NamedTemporaryFile()
     >>> def setup_inputs(tf):
-    ...     open(tf.name, "w").write("world /path/to/input the rest")
-    ...     inputs = JobInputs("hello /path/to/input", [tf.name])
+    ...     open(tf.name, "w").write(u"world /path/to/input the rest")
+    ...     inputs = JobInputs(u"hello /path/to/input", [tf.name])
     ...     return inputs
     >>> inputs = setup_inputs(tf)
-    >>> inputs.rewrite_paths("/path/to/input", 'C:\\input')
-    >>> inputs.rewritten_command_line
-    'hello C:\\\\input'
-    >>> inputs.rewritten_config_files[tf.name]
-    'world C:\\\\input the rest'
+    >>> inputs.rewrite_paths(u"/path/to/input", u'C:\\input')
+    >>> inputs.rewritten_command_line == u'hello C:\\\\input'
+    True
+    >>> inputs.rewritten_config_files[tf.name] == u'world C:\\\\input the rest'
+    True
     >>> tf.close()
     >>> tf = tempfile.NamedTemporaryFile()
     >>> inputs = setup_inputs(tf)
-    >>> inputs.find_referenced_subfiles('/path/to')
-    ['/path/to/input']
+    >>> inputs.find_referenced_subfiles('/path/to') == [u'/path/to/input']
+    True
     >>> inputs.path_referenced('/path/to')
+    True
+    >>> inputs.path_referenced(u'/path/to')
     True
     >>> inputs.path_referenced('/path/to/input')
     True
@@ -92,7 +95,7 @@ class JobInputs(object):
         self.rewritten_command_line = self.rewritten_command_line.replace(local_path, remote_path)
 
     def __rewrite_config_files(self, local_path, remote_path):
-        for config_file, rewritten_contents in self.rewritten_config_files.iteritems():
+        for config_file, rewritten_contents in self.rewritten_config_files.items():
             self.rewritten_config_files[config_file] = rewritten_contents.replace(local_path, remote_path)
 
     def __items(self):
@@ -140,7 +143,7 @@ class TransferTracker(object):
         For each file that has been transferred and renamed, updated
         command_line and configfiles to reflect that rewrite.
         """
-        for local_path, remote_path in self.file_renames.iteritems():
+        for local_path, remote_path in self.file_renames.items():
             self.job_inputs.rewrite_paths(local_path, remote_path)
 
     def __action(self, path, type):
@@ -283,7 +286,7 @@ class FileStager(object):
         self.transfer_tracker.rewrite_input_paths()
 
     def __upload_rewritten_config_files(self):
-        for config_file, new_config_contents in self.job_inputs.rewritten_config_files.iteritems():
+        for config_file, new_config_contents in self.job_inputs.rewritten_config_files.items():
             self.client.put_file(config_file, input_type='config', contents=new_config_contents)
 
     def get_rewritten_command_line(self):
@@ -304,7 +307,7 @@ def finish_job(client, cleanup_job, job_completed_normally, working_directory, w
             try:
                 action = action_mapper.action(output_file, 'output')
                 client.fetch_work_dir_output(source_file, working_directory, output_file, action[0])
-            except Exception, e:
+            except Exception as e:
                 download_failure_exceptions.append(e)
             # Remove from full output_files list so don't try to download directly.
             output_files.remove(output_file)
@@ -312,7 +315,7 @@ def finish_job(client, cleanup_job, job_completed_normally, working_directory, w
             try:
                 action = action_mapper.action(output_file, 'output')
                 client.fetch_output(output_file, working_directory=working_directory, action=action[0])
-            except Exception, e:
+            except Exception as e:
                 download_failure_exceptions.append(e)
     return __clean(download_failure_exceptions, cleanup_job, client)
 
@@ -340,9 +343,9 @@ def submit_job(client, tool, command_line, config_files, input_files, output_fil
 def _read(path):
     """
     Utility method to quickly read small files (config files and tool
-    wrappers) into memory as strings.
+    wrappers) into memory as bytes.
     """
-    input = open(path, "r")
+    input = open(path, "r", encoding="utf-8")
     try:
         return input.read()
     finally:

@@ -5,8 +5,18 @@ except ImportError:
     from queue import Queue
 from threading import Thread
 from os import getenv
-from urllib import urlencode
-from StringIO import StringIO
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+try:
+    from StringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+try:
+    from six import text_type
+except ImportError:
+    from galaxy.util import unicodify as text_type
 
 from .client import Client, InputCachingClient
 from .transport import get_transport
@@ -27,10 +37,10 @@ class ClientManager(object):
     """
     def __init__(self, **kwds):
         if 'job_manager' in kwds:
-            self.job_manager_interface_class = LocalJobManagerInterface
+            self.job_manager_interface_class = LocalLwrInterface
             self.job_manager_interface_args = dict(job_manager=kwds['job_manager'], file_cache=kwds['file_cache'])
         else:
-            self.job_manager_interface_class = HttpJobManagerInterface
+            self.job_manager_interface_class = HttpLwrInterface
             transport_type = kwds.get('transport_type', None)
             transport = get_transport(transport_type)
             self.job_manager_interface_args = dict(transport=transport)
@@ -55,7 +65,11 @@ class ClientManager(object):
         return self.client_class(destination_params, job_id, job_manager_interface, **self.extra_client_kwds)
 
     def __parse_destination_params(self, destination_params):
-        if isinstance(destination_params, str) or isinstance(destination_params, unicode):
+        try:
+            unicode_type = unicode
+        except NameError:
+            unicode_type = str
+        if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
             destination_params = url_to_destination_params(destination_params)
         return destination_params
 
@@ -76,7 +90,7 @@ class JobManagerInteface(object):
         """
 
 
-class HttpJobManagerInterface(object):
+class HttpLwrInterface(object):
 
     def __init__(self, destination_params, transport):
         self.transport = transport
@@ -92,12 +106,13 @@ class HttpJobManagerInterface(object):
     def __build_url(self, command, args):
         if self.private_key:
             args["private_key"] = self.private_key
-        data = urlencode(args)
+        arg_bytes = dict([(k, text_type(args[k]).encode('utf-8')) for k in args])
+        data = urlencode(arg_bytes)
         url = self.remote_host + command + "?" + data
         return url
 
 
-class LocalJobManagerInterface(object):
+class LocalLwrInterface(object):
 
     def __init__(self, destination_params, job_manager, file_cache):
         self.job_manager = job_manager
@@ -113,6 +128,7 @@ class LocalJobManagerInterface(object):
         }
 
     def execute(self, command, args={}, data=None, input_path=None, output_path=None):
+        # If data set, should be unicode (on Python 2) or str (on Python 3).
         from lwr import routes
         from lwr.framework import build_func_args
         controller = getattr(routes, command)
@@ -129,9 +145,9 @@ class LocalJobManagerInterface(object):
 
     def __build_body(self, data, input_path):
         if data is not None:
-            return StringIO(data)
+            return BytesIO(data.encode('utf-8'))
         elif input_path is not None:
-            return open(input_path, 'r')
+            return open(input_path, 'rb')
         else:
             return None
 
@@ -188,4 +204,4 @@ def _environ_default_int(variable, default="0"):
         int_val = int(val)
     return int_val
 
-__all__ = [ClientManager, HttpJobManagerInterface]
+__all__ = [ClientManager, HttpLwrInterface]

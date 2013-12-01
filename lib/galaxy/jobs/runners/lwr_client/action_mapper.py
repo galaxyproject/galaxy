@@ -21,7 +21,7 @@ class FileActionMapper(object):
     >>> from tempfile import NamedTemporaryFile
     >>> from os import unlink
     >>> f = NamedTemporaryFile(delete=False)
-    >>> f.write(json_string)
+    >>> write_result = f.write(json_string.encode('UTF-8'))
     >>> f.close()
     >>> class MockClient():
     ...     default_file_action = 'none'
@@ -30,23 +30,23 @@ class FileActionMapper(object):
     >>> mapper = FileActionMapper(MockClient())
     >>> unlink(f.name)
     >>> # Test first config line above, implicit path prefix mapper
-    >>> mapper.action('/opt/galaxy/tools/filters/catWrapper.py', 'input')
-    ('none',)
+    >>> mapper.action('/opt/galaxy/tools/filters/catWrapper.py', 'input')[0] == u'none'
+    True
     >>> # Test another (2nd) mapper, this one with a different action
-    >>> mapper.action('/galaxy/data/files/000/dataset_1.dat', 'input')
-    ('transfer',)
+    >>> mapper.action('/galaxy/data/files/000/dataset_1.dat', 'input')[0] == u'transfer'
+    True
     >>> # Always at least copy work_dir outputs.
-    >>> mapper.action('/opt/galaxy/database/working_directory/45.sh', 'work_dir')
-    ('copy',)
+    >>> mapper.action('/opt/galaxy/database/working_directory/45.sh', 'work_dir')[0] == u'copy'
+    True
     >>> # Test glob mapper (matching test)
-    >>> mapper.action('/cool/bamfiles/projectABC/study1/patient3.bam', 'input')
-    ('copy',)
+    >>> mapper.action('/cool/bamfiles/projectABC/study1/patient3.bam', 'input')[0] == u'copy'
+    True
     >>> # Test glob mapper (non-matching test)
-    >>> mapper.action('/cool/bamfiles/projectABC/study1/patient3.bam.bai', 'input')
-    ('none',)
+    >>> mapper.action('/cool/bamfiles/projectABC/study1/patient3.bam.bai', 'input')[0] == u'none'
+    True
     >>> # Regex mapper test.
-    >>> mapper.action('/old/galaxy/data/dataset_10245.dat', 'input')
-    ('copy',)
+    >>> mapper.action('/old/galaxy/data/dataset_10245.dat', 'input')[0] == u'copy'
+    True
     """
 
     def __init__(self, client):
