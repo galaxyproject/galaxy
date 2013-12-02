@@ -10,7 +10,7 @@ import shutil
 import logging
 import threading
 
-from galaxy import util
+from galaxy.util import umask_fix_perms, parse_xml, force_symlink
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
@@ -291,7 +291,7 @@ class DiskObjectStore(ObjectStore):
             # Create the file if it does not exist
             if not dir_only:
                 open(path, 'w').close()
-                util.umask_fix_perms(path, self.config.umask, 0666)
+                umask_fix_perms(path, self.config.umask, 0666)
 
     def empty(self, obj, **kwargs):
         return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
@@ -345,7 +345,7 @@ class DiskObjectStore(ObjectStore):
         if file_name and self.exists(obj, **kwargs):
             try:
                 if preserve_symlinks and os.path.islink( file_name ):
-                    util.force_symlink( os.readlink( file_name ), self.get_filename( obj, **kwargs ) )
+                    force_symlink( os.readlink( file_name ), self.get_filename( obj, **kwargs ) )
                 else:
                     shutil.copy( file_name, self.get_filename( obj, **kwargs ) )
             except IOError, ex:
@@ -464,7 +464,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __parse_distributed_config(self, config, config_xml=None):
         if not config_xml:
-            tree = util.parse_xml(self.distributed_config)
+            tree = parse_xml(self.distributed_config)
             root = tree.getroot()
             log.debug('Loading backends for distributed object store from %s' % self.distributed_config)
         else:
@@ -598,7 +598,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
         # This is a top level invocation of build_object_store_from_config, and
         # we have an object_store_conf.xml -- read the .xml and build
         # accordingly
-        tree = util.parse_xml(config.object_store_config_file)
+        tree = parse_xml(config.object_store_config_file)
         root = tree.getroot()
         store = root.get('type')
         config_xml = root

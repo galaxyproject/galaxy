@@ -15,9 +15,14 @@ from posixpath import dirname as path_dirname
 from galaxy.objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 from galaxy.exceptions import ObjectNotFound
 
-import galaxy.eggs
-galaxy.eggs.require( 'PyRods' )
-import irods
+try:
+    import galaxy.eggs
+    galaxy.eggs.require( 'PyRods' )
+    import irods
+except ImportError:
+    irods = None
+
+NO_PYRODS_ERROR_MESSAGE = "IRODS object store configured, but no PyRods dependency available. Please install and properly configure PyRods or modify object store configuration."
 
 log = logging.getLogger( __name__ )
 
@@ -27,6 +32,8 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     Galaxy object store based on iRODS
     """
     def __init__( self, config, file_path=None, extra_dirs=None ):
+        if irods is None:
+            raise Exception(NO_PYRODS_ERROR_MESSAGE)
         super( IRODSObjectStore, self ).__init__( config, file_path=file_path, extra_dirs=extra_dirs )
         self.cache_path = config.object_store_cache_path
         self.default_resource = config.irods_default_resource or None
@@ -310,7 +317,8 @@ def _rods_strerror( errno ):
                 irods.__rods_strerror_map[ v ] = name
     return irods.__rods_strerror_map.get( errno, 'GALAXY_NO_ERRNO_MAPPING_FOUND' )
 
-irods.strerror = _rods_strerror
+if irods is not None:
+    irods.strerror = _rods_strerror
 
 
 def rods_connect():

@@ -10,7 +10,7 @@ import threading
 import subprocess
 from datetime import datetime
 
-from galaxy import util
+from galaxy.util import umask_fix_perms
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.objectstore import ObjectStore, convert_bytes
@@ -18,10 +18,16 @@ from galaxy.exceptions import ObjectNotFound
 
 import multiprocessing
 from galaxy.objectstore.s3_multipart_upload import multipart_upload
-import boto
-from boto.s3.key import Key
-from boto.s3.connection import S3Connection
-from boto.exception import S3ResponseError
+try:
+    import boto
+    from boto.s3.key import Key
+    from boto.s3.connection import S3Connection
+    from boto.exception import S3ResponseError
+except ImportError:
+    boto = None
+
+NO_BOTO_ERROR_MESSAGE = "S3/Swift object store configured, but no boto dependency available. Please install and properly configure boto or modify object store configuration."
+
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
@@ -34,6 +40,8 @@ class S3ObjectStore(ObjectStore):
     Galaxy and S3.
     """
     def __init__(self, config, config_xml):
+        if boto is None:
+            raise Exception(NO_BOTO_ERROR_MESSAGE)
         super(S3ObjectStore, self).__init__(config, config_xml)
         self.config = config
         self.staging_path = self.config.file_path
@@ -163,13 +171,13 @@ class S3ObjectStore(ObjectStore):
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
         for basedir, dirs, files in os.walk(rel_path):
-            util.umask_fix_perms(basedir, self.config.umask, 0777, self.config.gid)
+            umask_fix_perms(basedir, self.config.umask, 0777, self.config.gid)
             for f in files:
                 path = os.path.join(basedir, f)
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
-                util.umask_fix_perms( path, self.config.umask, 0666, self.config.gid )
+                umask_fix_perms( path, self.config.umask, 0666, self.config.gid )
 
     def _construct_path(self, obj, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, **kwargs):
         rel_path = os.path.join(*directory_hash_id(obj.id))
