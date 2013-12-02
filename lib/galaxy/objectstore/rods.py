@@ -146,7 +146,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
                 doi = irods.dataObjInp_t()
                 doi.objPath = rods_path
                 doi.createMode = 0640
-                doi.dataSize = 0 # 0 actually means "unknown", although literally 0 would be preferable
+                doi.dataSize = 0  # 0 actually means "unknown", although literally 0 would be preferable
                 irods.addKeyVal( doi.condInput, irods.DEST_RESC_NAME_KW, self.default_resource )
                 status = irods.rcDataObjCreate( self.rods_conn, doi )
                 assert status >= 0, 'create(): rcDataObjCreate() failed: %s: %s: %s' % ( rods_path, status, irods.strerror( status ) )
@@ -237,7 +237,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
         incoming_path = os.path.join( os.path.dirname( cached_path ), "__incoming_%s" % os.path.basename( cached_path ) )
         doi = irods.dataObjInp_t()
         doi.objPath = self.__get_rods_path( obj, **kwargs )
-        doi.dataSize = 0 # TODO: does this affect performance? should we get size?
+        doi.dataSize = 0  # TODO: does this affect performance? should we get size?
         doi.numThreads = 0
         # TODO: might want to VERIFY_CHKSUM_KW
         log.debug( 'get_filename(): caching %s to %s', doi.objPath, incoming_path )
@@ -296,6 +296,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     def get_store_usage_percent(self):
         return 0.0
 
+
 # monkeypatch an strerror method into the irods module
 def _rods_strerror( errno ):
     """
@@ -310,6 +311,7 @@ def _rods_strerror( errno ):
     return irods.__rods_strerror_map.get( errno, 'GALAXY_NO_ERRNO_MAPPING_FOUND' )
 
 irods.strerror = _rods_strerror
+
 
 def rods_connect():
     """

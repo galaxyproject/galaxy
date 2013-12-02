@@ -358,7 +358,7 @@ class DiskObjectStore(ObjectStore):
 
     def get_store_usage_percent(self):
         st = os.statvfs(self.file_path)
-        return (float(st.f_blocks - st.f_bavail)/st.f_blocks) * 100
+        return ( float( st.f_blocks - st.f_bavail ) / st.f_blocks ) * 100
 
 
 class CachingObjectStore(ObjectStore):
@@ -428,7 +428,7 @@ class NestedObjectStore(ObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
-                %( method, str( obj ), str( kwargs ) ) )
+                % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -462,7 +462,7 @@ class DistributedObjectStore(NestedObjectStore):
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
-    def __parse_distributed_config(self, config, config_xml = None):
+    def __parse_distributed_config(self, config, config_xml=None):
         if not config_xml:
             tree = util.parse_xml(self.distributed_config)
             root = tree.getroot()
@@ -512,7 +512,7 @@ class DistributedObjectStore(NestedObjectStore):
                 if pct > maxpct:
                     new_weighted_backend_ids = filter(lambda x: x != id, new_weighted_backend_ids)
             self.weighted_backend_ids = new_weighted_backend_ids
-            self.sleeper.sleep(120) # Test free space every 2 minutes
+            self.sleeper.sleep(120)  # Test free space every 2 minutes
 
     def create(self, obj, **kwargs):
         """
@@ -524,7 +524,7 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
                     raise ObjectInvalid( 'objectstore.create, could not generate obj.object_store_id: %s, kwargs: %s'
-                        %( str( obj ), str( kwargs ) ) )
+                        % ( str( obj ), str( kwargs ) ) )
                 object_session( obj ).add( obj )
                 object_session( obj ).flush()
                 log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
@@ -538,7 +538,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
-                %( method, str( obj ), str( kwargs ) ) )
+                % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -625,6 +625,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
 
+
 def local_extra_dirs( func ):
     """ A decorator for non-local plugins to utilize local directories for their extra_dirs (job_working_directory and temp).
     """
@@ -637,6 +638,7 @@ def local_extra_dirs( func ):
                     return getattr( c, func.__name__ )( self, *args, **kwargs )
             raise Exception( "Could not call DiskObjectStore's %s method, does your Object Store plugin inherit from DiskObjectStore?" % func.__name__ )
     return wraps
+
 
 def convert_bytes(bytes):
     """ A helper function used for pretty printing disk usage """
