@@ -4,6 +4,10 @@ import uuid
 from parameters import basic
 from parameters import grouping
 from galaxy.util import string_as_bool
+try:
+    from nose.tools import nottest
+except ImportError:
+    nottest = lambda x: x
 import logging
 
 log = logging.getLogger( __name__ )
@@ -14,6 +18,7 @@ DEFAULT_INTERACTOR = "twill"  # Default mechanism test code uses for interacting
 DEFAULT_MAX_SECS = 120
 
 
+@nottest
 def parse_tests_elem(tool, tests_elem):
     """
     Build ToolTestBuilder objects for each "<test>" elements and
@@ -196,6 +201,7 @@ class ToolTestBuilder( object ):
         return require_file( name, value, extra, self.required_files )
 
 
+@nottest
 def test_data_iter( required_files ):
     for fname, extra in required_files:
         data_dict = dict(
