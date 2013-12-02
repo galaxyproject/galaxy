@@ -12,7 +12,7 @@ import threading
 
 from galaxy import util
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.jobs import Sleeper
+from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.odict import odict
 

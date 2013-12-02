@@ -14,7 +14,6 @@ import re
 import shutil
 import subprocess
 import sys
-import threading
 import traceback
 from galaxy import model, util
 from galaxy.datatypes import metadata
@@ -39,21 +38,6 @@ DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
-class Sleeper( object ):
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless*
-    the notify method is called (from a different thread).
-    """
-    def __init__( self ):
-        self.condition = threading.Condition()
-    def sleep( self, seconds ):
-        self.condition.acquire()
-        self.condition.wait( seconds )
-        self.condition.release()
-    def wake( self ):
-        self.condition.acquire()
-        self.condition.notify()
-        self.condition.release()
 
 class JobDestination( Bunch ):
     """
