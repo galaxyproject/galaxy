@@ -12,7 +12,7 @@ from datetime import datetime
 
 from galaxy import util
 from galaxy.jobs import Sleeper
-from galaxy.model import directory_hash_id
+from galaxy.util.directory_hash import directory_hash_id
 from galaxy.objectstore import ObjectStore, convert_bytes
 from galaxy.exceptions import ObjectNotFound
 

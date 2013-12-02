@@ -29,6 +29,7 @@ from galaxy.security import get_permitted_actions
 from galaxy.util import asbool, is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.directory_hash import directory_hash_id
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -4029,18 +4030,3 @@ class MigrateTools( object ):
         self.repository_id = repository_id
         self.repository_path = repository_path
         self.version = version
-
-## ---- Utility methods -------------------------------------------------------
-
-def directory_hash_id( id ):
-    s = str( id )
-    l = len( s )
-    # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
-        return [ "000" ]
-    # Pad with zeros until a multiple of three
-    padded = ( ( 3 - len( s ) % 3 ) * "0" ) + s
-    # Drop the last three digits -- 1000 files per directory
-    padded = padded[:-3]
-    # Break into chunks of three
-    return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
