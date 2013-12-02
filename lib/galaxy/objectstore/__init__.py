@@ -15,8 +15,12 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.odict import odict
+try:
+    from sqlalchemy.orm import object_session
+except ImportError:
+    object_session = None
 
-from sqlalchemy.orm import object_session
+NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
 
 log = logging.getLogger( __name__ )
 
@@ -525,8 +529,7 @@ class DistributedObjectStore(NestedObjectStore):
                 except IndexError:
                     raise ObjectInvalid( 'objectstore.create, could not generate obj.object_store_id: %s, kwargs: %s'
                         % ( str( obj ), str( kwargs ) ) )
-                object_session( obj ).add( obj )
-                object_session( obj ).flush()
+                create_object_in_session( obj )
                 log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
                 log.debug("Using preferred backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
@@ -554,8 +557,7 @@ class DistributedObjectStore(NestedObjectStore):
                 if store.exists(obj, **kwargs):
                     log.warning('%s object with ID %s found in backend object store with ID %s' % (obj.__class__.__name__, obj.id, id))
                     obj.object_store_id = id
-                    object_session( obj ).add( obj )
-                    object_session( obj ).flush()
+                    create_object_in_session( obj )
                     return id
         return None
 
@@ -661,3 +663,12 @@ def convert_bytes(bytes):
     else:
         size = '%.2fb' % bytes
     return size
+
+
+def create_object_in_session( obj ):
+    session = object_session( obj ) if object_session is not None else None
+    if session is not None:
+        object_session( obj ).add( obj )
+        object_session( obj ).flush()
+    else:
+        raise Exception( NO_SESSION_ERROR_MESSAGE )
