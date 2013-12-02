@@ -9,8 +9,9 @@ import random
 import shutil
 import logging
 import threading
+from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, parse_xml, force_symlink
+from galaxy.util import umask_fix_perms, force_symlink
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
@@ -206,7 +207,7 @@ class DiskObjectStore(ObjectStore):
         self.extra_dirs['job_work'] = config.job_working_directory
         self.extra_dirs['temp'] = config.new_file_path
         #The new config_xml overrides universe settings.
-        if config_xml:
+        if config_xml is not None:
             for e in config_xml:
                 if e.tag == 'files_dir':
                     self.file_path = e.get('path')
@@ -294,7 +295,7 @@ class DiskObjectStore(ObjectStore):
                 os.makedirs(dir)
             # Create the file if it does not exist
             if not dir_only:
-                open(path, 'w').close()
+                open(path, 'w').close()  # Should be rb?
                 umask_fix_perms(path, self.config.umask, 0666)
 
     def empty(self, obj, **kwargs):
@@ -324,7 +325,7 @@ class DiskObjectStore(ObjectStore):
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
-        data_file = open(self.get_filename(obj, **kwargs), 'r')
+        data_file = open(self.get_filename(obj, **kwargs), 'r')  # Should be rb?
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
@@ -446,7 +447,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_xml=None, fsmon=False):
         super(DistributedObjectStore, self).__init__(config, config_xml=config_xml)
-        if not config_xml:
+        if config_xml is None:
             self.distributed_config = config.distributed_object_store_config_file
             assert self.distributed_config is not None, "distributed object store ('object_store = distributed') " \
                                                         "requires a config file, please set one in " \
@@ -467,9 +468,8 @@ class DistributedObjectStore(NestedObjectStore):
             log.info("Filesystem space monitor started")
 
     def __parse_distributed_config(self, config, config_xml=None):
-        if not config_xml:
-            tree = parse_xml(self.distributed_config)
-            root = tree.getroot()
+        if config_xml is None:
+            root = ElementTree.parse(self.distributed_config).getroot()
             log.debug('Loading backends for distributed object store from %s' % self.distributed_config)
         else:
             root = config_xml.find('backends')
@@ -596,15 +596,14 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Depending on the configuration setting, invoke the appropriate object store
     """
 
-    if not config_xml and config.object_store_config_file:
+    if config_xml is None and config.object_store_config_file:
         # This is a top level invocation of build_object_store_from_config, and
         # we have an object_store_conf.xml -- read the .xml and build
         # accordingly
-        tree = parse_xml(config.object_store_config_file)
-        root = tree.getroot()
+        root = ElementTree.parse(config.object_store_config_file).getroot()
         store = root.get('type')
         config_xml = root
-    elif config_xml:
+    elif config_xml is not None:
         store = config_xml.get('type')
     else:
         store = config.object_store
