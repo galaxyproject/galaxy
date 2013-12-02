@@ -19,6 +19,7 @@ except ImportError:
     from galaxy.util import unicodify as text_type
 
 from .client import Client, InputCachingClient
+from .client import ObjectStoreClient
 from .transport import get_transport
 from .util import TransferEventManager
 from .destination import url_to_destination_params
@@ -74,6 +75,26 @@ class ClientManager(object):
         return destination_params
 
 
+class ObjectStoreClientManager(object):
+
+    def __init__(self, **kwds):
+        if 'object_store' in kwds:
+            self.interface_class = LocalLwrInterface
+            self.interface_args = dict(object_store=kwds['object_store'])
+        else:
+            self.interface_class = HttpLwrInterface
+            transport_type = kwds.get('transport_type', None)
+            transport = get_transport(transport_type)
+            self.interface_args = dict(transport=transport)
+        self.extra_client_kwds = {}
+
+    def get_client(self, client_params):
+        interface_class = self.interface_class
+        interface_args = dict(destination_params=client_params, **self.interface_args)
+        interface = interface_class(**interface_args)
+        return ObjectStoreClient(interface)
+
+
 class JobManagerInteface(object):
     """
     Abstract base class describes how client communicates with remote job
@@ -114,9 +135,10 @@ class HttpLwrInterface(object):
 
 class LocalLwrInterface(object):
 
-    def __init__(self, destination_params, job_manager, file_cache):
+    def __init__(self, destination_params, job_manager=None, file_cache=None, object_store=None):
         self.job_manager = job_manager
         self.file_cache = file_cache
+        self.object_store = object_store
 
     def __app_args(self):
         ## Arguments that would be specified from LwrApp if running
@@ -124,6 +146,7 @@ class LocalLwrInterface(object):
         return {
             'manager': self.job_manager,
             'file_cache': self.file_cache,
+            'object_store': self.object_store,
             'ip': None
         }
 
@@ -204,4 +227,4 @@ def _environ_default_int(variable, default="0"):
         int_val = int(val)
     return int_val
 
-__all__ = [ClientManager, HttpLwrInterface]
+__all__ = [ClientManager, ObjectStoreClientManager, HttpLwrInterface]
