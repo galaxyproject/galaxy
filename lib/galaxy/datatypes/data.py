@@ -199,7 +199,7 @@ class Data( object ):
             out = "Can't create peek %s" % str( exc )
         return out
 
-    def _archive_main_file(self, archive, outfname, data_filename):
+    def _archive_main_file(self, archive, display_name, data_filename):
         """Called from _archive_composite_dataset to add central file to archive.
 
         Unless subclassed, this will add the main dataset file (argument data_filename)
@@ -209,10 +209,7 @@ class Data( object ):
         Returns a tuple of boolean, string, string: (error, msg, messagetype)
         """
         error, msg, messagetype = False, "", ""
-        htmlname = os.path.splitext(outfname)[0]
-        if not htmlname.endswith(ext):
-            htmlname = '%s_%s' % (htmlname, ext)
-        archname = '%s.html' % htmlname # fake the real nature of the html file
+        archname = '%s.html' % display_name  # fake the real nature of the html file
         try:
             archive.add(data_filename, archname)
         except IOError:
@@ -256,11 +253,17 @@ class Data( object ):
                 messagetype = 'error'
             if not error:
                 current_user_roles = trans.get_current_user_roles()
+                ext = data.extension
                 path = data.file_name
                 fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
                 #Add any central file to the archive,
-                error, msg, messagetype = self._archive_main_file(archive, outfname, path)
+
+                display_name = os.path.splitext(outfname)[0]
+                if not display_name.endswith(ext):
+                    display_name = '%s_%s' % (display_name, ext)
+
+                error, msg, messagetype = self._archive_main_file(archive, display_name, path)
                 if not error:
                     #Add any child files to the archive,
                     for root, dirs, files in os.walk(efp):
