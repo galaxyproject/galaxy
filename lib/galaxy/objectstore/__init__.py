@@ -610,17 +610,17 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     if store == 'disk':
         return DiskObjectStore(config=config, config_xml=config_xml)
     elif store == 's3':
-        from galaxy.objectstore.s3 import S3ObjectStore
+        from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
     elif store == 'swift':
-        from galaxy.objectstore.s3 import SwiftObjectStore
+        from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)
     elif store == 'distributed':
         return DistributedObjectStore(config=config, fsmon=fsmon, config_xml=config_xml)
     elif store == 'hierarchical':
         return HierarchicalObjectStore(config=config, config_xml=config_xml)
     elif store == 'irods':
-        from galaxy.objectstore.rods import IRODSObjectStore
+        from .rods import IRODSObjectStore
         return IRODSObjectStore(config=config, config_xml=config_xml)
     else:
         log.error("Unrecognized object store definition: {0}".format(store))

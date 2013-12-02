@@ -13,11 +13,11 @@ from datetime import datetime
 from galaxy.util import umask_fix_perms
 from galaxy.util.sleeper import Sleeper
 from galaxy.util.directory_hash import directory_hash_id
-from galaxy.objectstore import ObjectStore, convert_bytes
+from ..objectstore import ObjectStore, convert_bytes
 from galaxy.exceptions import ObjectNotFound
 
 import multiprocessing
-from galaxy.objectstore.s3_multipart_upload import multipart_upload
+from .s3_multipart_upload import multipart_upload
 try:
     import boto
     from boto.s3.key import Key
@@ -27,7 +27,6 @@ except ImportError:
     boto = None
 
 NO_BOTO_ERROR_MESSAGE = "S3/Swift object store configured, but no boto dependency available. Please install and properly configure boto or modify object store configuration."
-
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy

@@ -12,8 +12,8 @@ from posixpath import join as path_join
 from posixpath import basename as path_basename
 from posixpath import dirname as path_dirname
 
-from galaxy.objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 from galaxy.exceptions import ObjectNotFound
+from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
 try:
     import galaxy.eggs
