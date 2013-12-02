@@ -293,7 +293,7 @@ def test_uses_tool_shed_dependencies():
 
 def test_config_module_defaults():
     with __parse_resolvers('''<dependency_resolvers>
-  <modules />
+  <modules prefetch="false" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         module_resolver = dependency_resolvers[0]
