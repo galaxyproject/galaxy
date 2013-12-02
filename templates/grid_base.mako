@@ -403,9 +403,10 @@
                             value = column_settings['value']
                             inbound = column_settings['inbound']
                             
-                            # check if formatting is defined
-                            value = str(value).replace('//', '/')
-                            
+                            # unescape value
+                            if isinstance(value, unicode):
+                                value = value.replace('//', '/')
+
                             # Attach popup menu?
                             id = ""
                             cls = ""
