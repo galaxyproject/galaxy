@@ -28,7 +28,7 @@
 </%def>
 
 ## masthead head generator
-<%def name="load()">
+<%def name="load(active_view = None)">
     <%
         ## get configuration
         masthead_config = {
@@ -51,7 +51,8 @@
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
             'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
-            
+            'active_view'               : active_view,
+
             ## user details
             'user'          : {
                 'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),

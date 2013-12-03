@@ -14,20 +14,11 @@ var GalaxyMasthead = Backbone.View.extend(
     // options
     options : null,
     
-    // item list
-    list : {},
-    
-    // keeps track of the last element
-    itemLast: null,
-    
-    // counter
-    itemCounter: 0,
-    
     // background
     $background: null,
     
-    // flag indicating visibility of background
-    backgroundVisible: false,
+    // list
+    list: [],
     
     // initialize
     initialize : function(options)
@@ -47,9 +38,7 @@ var GalaxyMasthead = Backbone.View.extend(
         // assign background
         this.$background = $(this.el).find('#masthead-background');
         
-        // loop through item specific unload functions
-        // and collect all there warning messages, regarding
-        // the user's attempt to unload the page
+        // loop through unload functions if the user attempts to unload the page
         var self = this;
         window.onbeforeunload = function()
         {
@@ -68,7 +57,7 @@ var GalaxyMasthead = Backbone.View.extend(
     // configure events
     events:
     {
-        'click'     : '_eventRefresh',
+        'click'     : '_click',
         'mousedown' : function(e) { e.preventDefault() }
     },
 
@@ -84,32 +73,36 @@ var GalaxyMasthead = Backbone.View.extend(
         return this._add(item, false);
     },
     
+    // activate
+    highlight: function(id)
+    {
+        var current = $(this.el).find('#' + id + '> li');
+        if (current) {
+            current.addClass('active');
+        }
+    },
+    
     // adds a new item to the masthead
     _add : function(item, append)
     {
-        var $loc = $(this.el).find('#' + item.mastheadLocation);
+        var $loc = $(this.el).find('#' + item.location);
         if ($loc)
         {
             // create frame for new item
-            var itemId = 'masthead-item-' + this.itemCounter++;
-            var $itemNew = $(item.el);
+            var $current = $(item.el);
             
-            // configure id and class in order to mark new items
-            $itemNew.attr('id', itemId);
-            $itemNew.addClass('masthead-item');
+            // configure class in order to mark new items
+            $current.addClass('masthead-item');
             
             // append to masthead
             if (append) {
-                $loc.append($itemNew);
+                $loc.append($current);
             } else {
-                $loc.prepend($itemNew);
+                $loc.prepend($current);
             }
             
             // add to list
-            this.list[itemId] = item;
-            
-            // return item id
-            return itemId;
+            this.list.push(item);
         }
         
         // location not found
@@ -117,63 +110,27 @@ var GalaxyMasthead = Backbone.View.extend(
     },
 
     // handle click event
-    _eventRefresh: function(e)
+    _click: function(e)
     {
-        // identify current item
-        var itemCurrent = $(e.target).closest('.masthead-item');
-        
-        // get identifier
-        if (itemCurrent.length)
-            itemCurrent = itemCurrent.attr('id');
-                
-        // check last item
-        if (this.itemLast && this.itemLast != itemCurrent)
-        {
-            var it = this.list[this.itemLast];
-            if (it) {
-                if (it.mastheadReset) {
-                    it.mastheadReset();
-                }
-            }
+        // close all popups
+        var $all = $(this.el).find('.popup');
+        if ($all) {
+            $all.hide();
         }
         
-        // check if current item is in active state
-        var useBackground = false;
-        if (itemCurrent)
-        {
-            var it = this.list[itemCurrent];
-            if (it) {
-                if (it.mastheadReset) {
-                    if (this.itemLast == itemCurrent) {
-                        useBackground = this.backgroundVisible ? false : true;
-                    } else {
-                        useBackground = true;
-                    }
-                }
-            }
-        }
-        
-        // decide wether to show/hide  background
-        if (useBackground) {
+        // open current item
+        var $current = $(e.target).closest('.masthead-item').find('.popup');
+        if ($(e.target).hasClass('head')) {
+            $current.show();
             this.$background.show();
         } else {
             this.$background.hide();
         }
-        
-        // backup
-        this.backgroundVisible = useBackground;
-        this.itemLast = itemCurrent;
     },
     
     /*
         HTML TEMPLATES
     */
- 
-    // template item
-    _templateItem: function(id)
-    {
-        return '<div id="' + id + '" class="masthead-item"></div>';
-    },
     
     // fill template
     _template: function(options)
@@ -202,9 +159,9 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     // icon options
     options:
     {
-        id              : "galaxy-icon",
-        icon            : "fa-cog",
-        tooltip         : "galaxy-icon",
+        id              : '',
+        icon            : 'fa-cog',
+        tooltip         : '',
         with_number     : false,
         on_click        : function() { alert ('clicked') },
         on_unload       : null,
@@ -212,7 +169,7 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     },
     
     // location identifier for masthead class
-    mastheadLocation: 'iconbar',
+    location: 'iconbar',
     
     // initialize
     initialize: function (options)
@@ -278,7 +235,7 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     // fill template icon
     _template: function (options)
     {
-        var tmpl =  '<div id=' + options.id + ' class="symbol">' +
+        var tmpl =  '<div id="' + options.id + '" class="symbol">' +
                         '<div class="icon fa fa-2x ' + options.icon + '"></div>';
         if (options.with_number)
             tmpl+=      '<div class="number"></div>';
@@ -296,7 +253,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
     options:
     {
         id              : '',
-        title           : 'Title',
+        title           : '',
         target          : '_parent',
         content         : '',
         type            : 'url',
@@ -306,18 +263,15 @@ var GalaxyMastheadTab = Backbone.View.extend(
     },
     
     // location
-    mastheadLocation: 'navbar',
+    location: 'navbar',
     
     // optional sub menu
     $menu: null,
     
-    // flag if menu is visible
-    menuVisible: false,
-    
     // events
     events:
     {
-        'click .head' : '_eventClickHead'
+        'click .head' : '_head'
     },
     
     // initialize
@@ -352,7 +306,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
     },
     
     // add menu item
-    addMenu: function (options)
+    add: function (options)
     {
         // menu option defaults
         var menuOptions = {
@@ -382,7 +336,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
             $(this.el).find('.symbol').addClass('caret');
             
             // update element link
-            this.$menu = $(this.el).find('.menu');
+            this.$menu = $(this.el).find('.popup');
         }
         
         // create
@@ -397,9 +351,6 @@ var GalaxyMastheadTab = Backbone.View.extend(
         {
             // prevent default
             e.preventDefault();
-
-            // check for menu options
-            self._hideMenu();
         
             // no modifications if new tab is requested
             if (self.options.target === '_blank')
@@ -414,42 +365,14 @@ var GalaxyMastheadTab = Backbone.View.extend(
             this.$menu.append($(this._templateDivider()));
     },
     
-    // add reset function called by masthead
-    mastheadReset: function()
-    {
-        this._hideMenu();
-    },
-    
-    // hide menu
-    _hideMenu: function()
-    {
-        if (this.$menu && this.menuVisible)
-        {
-            this.$menu.hide();
-            this.menuVisible = false;
-        }
-    },
-    
     // show menu on header click
-    _eventClickHead: function(e)
+    _head: function(e)
     {
         // prevent default
         e.preventDefault();
         
         // check for menu options
-        if (this.$menu)
-        {
-            // show/hide menu
-            if (!this.menuVisible)
-            {
-                this.$menu.show();
-                this.menuVisible = true;
-            } else {
-                this.$menu.hide();
-                this.menuVisible = false;
-            }
-        } else {
-            // open new frame
+        if (!this.$menu) {
             Galaxy.frame.add(this.options);
         }
     },
@@ -463,7 +386,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
     // fill template header
     _templateMenu: function ()
     {
-        return '<ul class="menu dropdown-menu"></ul>';
+        return '<ul class="popup dropdown-menu"></ul>';
     },
     
     _templateDivider: function()
@@ -475,7 +398,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
     _template: function (options)
     {
         // start template
-        var tmpl =  '<ul class="nav navbar-nav" border="0" cellspacing="0">' +
+        var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
                         '<li class="root dropdown" style="">' +
                             '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '">' +
                                 options.title + '<b class="symbol"></b>' +
