@@ -590,7 +590,7 @@ var searchInput = function( options ){
 
     // a button for clearing the search bar, placed on the right hand side
     function clearBtnTemplate(){
-        return '<span class="search-clear fa fa-times-circle"></span>';
+        return '<span class="search-clear fa fa-times-circle" title="' + _l( 'clear search (esc)' ) + '"></span>';
     }
     function $clearBtn(){
 //TODO: to base.less
@@ -602,6 +602,7 @@ var searchInput = function( options ){
             'line-height': '23px',
             color       : 'grey'
         })
+        .tooltip({ placement: 'bottom' })
         .click( function( event ){
             clearSearchInput.call( this, event );
         });

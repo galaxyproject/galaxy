@@ -34,13 +34,14 @@
     // center the icon
     text-align: center;
     line-height: @icon-btn-size - 3;
+    font-size: 1.2em;
+
     // colors and borders
     border-radius: 3px;
     border: 1px solid @icon-btn-border;
     background-color: @icon-btn-bg;
     color           : @icon-btn-color;
 
-    font-size: 1.2em;
     cursor: pointer;
 
     // tweaks
@@ -57,6 +58,19 @@
 .icon-btn.disabled {
     background-color: transparent;
     color: @icon-btn-bg;
+}
+
+// ---------------------------------------------------------------------------- panel header buttons
+#history-refresh-button,
+#history-options-button {
+    display : inline-block;
+    height  : @icon-btn-size;
+    width   : @icon-btn-size;
+    text-align  : center;
+    line-height : @icon-btn-size - 3;
+    font-size   : 1.2em;
+
+    padding: 0px;
 }
 
 

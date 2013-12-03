@@ -664,6 +664,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             this._renderTags( $newRender );
             this._renderAnnotation( $newRender );
         }
+        // button for opening search
+        faIconButton({
+            title   : _l( 'Search datasets' ),
+            classes : 'history-search-btn',
+            faIcon  : 'fa-search'
+        }).prependTo( $newRender.find( '.history-secondary-actions' ) );
+
         this._setUpBehaviours( $newRender );
 
         // render hda views (if any and any shown (show_deleted/hidden)
@@ -696,10 +703,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
 
-    /** Set up HistoryPanel js/widget behaviours
-     */
-    //TODO: these should be either sub-MVs, or handled by events
+    /** Set up HistoryPanel js/widget behaviours */
     _setUpBehaviours : function( $where ){
+        //TODO: these should be either sub-MVs, or handled by events
         $where = $where || this.$el;
         $where.find( '[title]' ).tooltip({ placement: 'bottom' });
 
@@ -757,7 +763,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     events : {
         // allow (error) messages to be clicked away
         //TODO: switch to common close (X) idiom
-        'click .message-container'   : 'clearMessages'
+        'click .message-container'      : 'clearMessages',
+        'click .history-search-btn'     : 'toggleSearchControls'
     },
 
     /** Update the history size display (curr. upper right of panel).
@@ -843,7 +850,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             $searchInput = this.renderSearchControls().hide();
             this.$el.find( '.history-title' ).before( $searchInput );
         }
-        $searchInput.slideToggle( this.fxSpeed );
+        $searchInput.slideToggle( this.fxSpeed, function(){
+            if( $( this ).is( ':visible' ) ){
+                $( this ).find( 'input' ).focus();
+            }
+        });
     },
 
     // ........................................................................ multi-select of hdas
