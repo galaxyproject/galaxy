@@ -98,9 +98,9 @@ def create_tool_dependency_with_initialized_env_sh_file( app, dependent_install_
                                                                                                               tool_dependency,
                                                                                                               error_message,
                                                                                                               remove_installation_path=False )
-                        elif required_tool_dependency.in_error_state:
-                            error_message = "This tool dependency's required tool dependency %s has status %s." % \
-                                ( str( required_tool_dependency.name ), str( required_tool_dependency.status ) )
+                        elif required_tool_dependency is not None and required_tool_dependency.in_error_state:
+                            error_message = "This tool dependency's required tool dependency %s version %s has status %s." % \
+                                ( str( required_tool_dependency.name ), str( required_tool_dependency.version ), str( required_tool_dependency.status ) )
                             tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
                                                                                                               tool_dependency,
                                                                                                               error_message,
