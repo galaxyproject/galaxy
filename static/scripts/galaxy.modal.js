@@ -20,9 +20,28 @@ var GalaxyModal = Backbone.View.extend(
     
     // initialize
     initialize : function(options) {
+        self = this;
         // create
         if (options)
             this.create(options);
+            // bind the ESC key to hide() function
+            $(document).on('keyup', function(event){
+                if (event.keyCode == 27) { self.hide(); }
+            })
+            // bind the click anywhere to hide() function...
+            $('html').on('click', function(event){
+                self.hide();
+            })
+            // ...but don't hide if the click is on modal content
+            $('.modal-content').on('click', function(event){
+                event.stopPropagation();
+            })
+    },
+
+    // destroy
+    destroy : function(){
+        this.hide();
+        $('.modal').html('');
     },
 
     // adds and displays a new frame/window

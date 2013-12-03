@@ -1,5 +1,5 @@
 """
-API operations on the contents of a dataset.
+API operations on the contents of a history dataset.
 """
 from galaxy import web
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider

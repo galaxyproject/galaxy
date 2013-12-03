@@ -52,6 +52,7 @@ class LibrariesController( BaseAPIController ):
             item = library.to_dict( view='element' )
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
             item['id'] = 'F' + trans.security.encode_id( item['id'] )
+            item['root_folder_id'] = 'F' + trans.security.encode_id( item['root_folder_id'] )
             rval.append( item )
         return rval
 

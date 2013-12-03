@@ -146,6 +146,7 @@ def app_factory( global_conf, **kwargs ):
     # =======================
 
     webapp.mapper.connect( 'show_lda_item', '/api/libraries/datasets/:id', controller='lda_datasets', action='show', conditions=dict(method=["GET"]) )
+    webapp.mapper.connect( 'download_lda_items', '/api/libraries/datasets/download/:format', controller='lda_datasets', action='download', conditions=dict(method=["POST"]) )
 
     webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.mapper.resource( 'folder', 'folders', path_prefix='/api' )

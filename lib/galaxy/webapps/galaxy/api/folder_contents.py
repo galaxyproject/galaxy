@@ -42,19 +42,34 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         GET /api/folders/{encoded_folder_id}/contents
         Displays a collection (list) of a folder's contents (files and folders).
         Encoded folder ID is prepended with 'F' if it is a folder as opposed to a data set which does not have it.
+        Full path is provided as a separate object in response providing data for breadcrumb path building.
         """
         folder_container = []
         current_user_roles = trans.get_current_user_roles()
+        
+#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX GOT id: ' + folder_id )
+#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX decode id: ' + folder_id[1:] )
+#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX call decode: ' + str(trans.security.decode_id( folder_id[1:] )) )
 
-        try:
-            decoded_folder_id = trans.security.decode_id( folder_id[-16:] )
-        except TypeError:
-            trans.response.status = 400
-            return "Malformed folder id ( %s ) specified, unable to decode." % str( folder_id )
+#         try:
+#             decoded_folder_id = trans.security.decode_id( folder_id[-16:] )
+#         except TypeError:
+#             trans.response.status = 400
+#             return "Malformed folder id ( %s ) specified, unable to decode." % str( folder_id )
+#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX decoded id: ' + decoded_folder_id )
+
+        if ( folder_id.startswith( 'F' ) ):
+            try:
+                decoded_folder_id = trans.security.decode_id( folder_id[1:] )
+            except TypeError:
+                trans.response.status = 400
+                return "Malformed folder id ( %s ) specified, unable to decode." % str( folder_id )
 
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
-            parent_library = folder.parent_library
+#             log.debug( 'XXXXXXXXXXXXXXXXXXXXX FOLDER id: ' + str(folder.id) )
+#             log.debug( 'XXXXXXXXXXXXXXXXXXXXX FOLDER name: ' + str(folder.name) )
+#             parent_library = folder.parent_library
         except:
             folder = None
             log.error( "FolderContentsController.index: Unable to retrieve folder with ID: %s" % folder_id )
@@ -77,13 +92,17 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             path_to_root = []
             # We are almost in root
             if folder.parent_id is None:
-                log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING: " + str( folder.name ) )
+                
+#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING ID: " + str( folder.id ) )
+#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING NAME: " + str( folder.name ) )
                 path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
 #                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_library.id )
 #                 path_to_root.append( ( upper_folder.id, upper_folder.name ) )
             else:
             # We add the current folder and traverse up one folder.
-                log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ADDING THIS FOLDER AND TRAVERSING UP:  " + str( folder.name ) )
+#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id " + str( folder.parent_id ) )
+#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING ID: " + str( folder.id ) )
+#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ADDING THIS FOLDER AND TRAVERSING UP:  " + str( folder.name ) )
                 path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
                 path_to_root.extend( build_path( upper_folder ) )
