@@ -1988,8 +1988,18 @@ def db_next_hid( self ):
     table = self.table
     trans = conn.begin()
     try:
-        next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
+        
+#         log.debug("XXXXXXXXXXXXXXX NEW GENERATOOOOOR")
+#         next_hid = table.update() \
+#         .returning( table.c.hid_counter ) \
+#         .where( table.c.id == self.id ) \
+#         .values( hid_counter = hid_counter + 1 )
+#         log.debug('XXXXXXXXXXXXXXXXXXXXXXXXXXX NEXT HID: ' + str(next_hid))
+        
+    
+        current_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
+        next_hid = current_hid + 1
+        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid ) )
         trans.commit()
         return next_hid
     except:
