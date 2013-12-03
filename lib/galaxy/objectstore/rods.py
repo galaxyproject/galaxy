@@ -18,6 +18,9 @@ from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 try:
     import galaxy.eggs
     galaxy.eggs.require( 'PyRods' )
+except Exception:
+    pass
+try:
     import irods
 except ImportError:
     irods = None
