@@ -2,6 +2,7 @@ from os.path import join
 from contextlib import contextmanager
 from galaxy.util import parse_xml_string
 
+from tool_shed.galaxy_install.tool_dependencies import fabric_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
 
@@ -14,26 +15,26 @@ class MockApp( object ):
     def __init__( self ):
         pass
 
-
-def test_create_or_update_env_shell_file( ):
+def test_create_or_update_env_shell_file():
     test_path = "/usr/share/R/libs"
-    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="append_to", name="R_LIBS", value=test_path))
+    env_file_builder = fabric_util.EnvFileBuilder( test_path )
+    line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="append_to", name="R_LIBS", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == "R_LIBS=$R_LIBS:/usr/share/R/libs; export R_LIBS"
 
-    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="prepend_to", name="R_LIBS", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="prepend_to", name="R_LIBS", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == "R_LIBS=/usr/share/R/libs:$R_LIBS; export R_LIBS"
 
-    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="set_to", name="R_LIBS", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="set_to", name="R_LIBS", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == "R_LIBS=/usr/share/R/libs; export R_LIBS"
 
-    line, path = td_common_util.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict(action="source", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="source", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == ". /usr/share/R/libs"
 
-def test_get_env_shell_file_paths_from_setup_environment_elem( ):
+def test_get_env_shell_file_paths_from_setup_environment_elem():
     xml = """<action name="setup_r_environment">
         <repository name="package_r_3_0_1" owner="bgruening" toolshed="toolshed.g2.bx.psu.edu" changeset_revision="1234567">
             <package name="R" version="3.0.1" />
@@ -70,10 +71,10 @@ def test_get_env_shell_file_paths_from_setup_environment_elem( ):
 ## Poor man's mocking. Need to get a real mocking library as real Galaxy development
 ## dependnecy.
 @contextmanager
-def __mock_common_util_method(name, mock_method):
-    real_method = getattr(td_common_util, name)
+def __mock_common_util_method( name, mock_method ):
+    real_method = getattr( td_common_util, name )
     try:
-        setattr(td_common_util, name, mock_method)
+        setattr( td_common_util, name, mock_method )
         yield
     finally:
-        setattr(td_common_util, name, real_method)
+        setattr( td_common_util, name, real_method )

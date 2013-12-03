@@ -41,8 +41,9 @@ class EnvFileBuilder( object ):
         return_code = file_append( env_entry, env_file, skip_if_contained=skip_if_contained, make_executable=make_executable )
         self.return_code = self.return_code or return_code
         return self.return_code
-
-    def create_or_update_env_shell_file( self, install_dir, env_var_dict ):
+    
+    @staticmethod
+    def create_or_update_env_shell_file( install_dir, env_var_dict ):
         env_var_action = env_var_dict[ 'action' ]
         env_var_value = env_var_dict[ 'value' ]
         if env_var_action in [ 'prepend_to', 'set_to', 'append_to' ]:
@@ -417,7 +418,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return tool_dependency
                             # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
                             env_file_builder = EnvFileBuilder( install_dir )
-                            handle_action_shell_file_paths( env_file_builder, action_dict )   # Pull in R environment (runtime).
+                            # Pull in R environment (runtime).
+                            handle_action_shell_file_paths( env_file_builder, action_dict )
                             env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_dir )
                             return_code = env_file_builder.return_code
                             if return_code:
