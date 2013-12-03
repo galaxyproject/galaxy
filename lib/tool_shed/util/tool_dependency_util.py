@@ -7,6 +7,7 @@ from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import xml_util
+from tool_shed.galaxy_install.tool_dependencies import fabric_util
 
 log = logging.getLogger( __name__ )
 
@@ -276,6 +277,18 @@ def get_platform_info_dict():
     platform_dict[ 'architecture' ] = machine.lower()
     return platform_dict
 
+def get_required_repository_package_env_sh_path( app, package_name, package_version, required_repository ):
+    """Return path to env.sh file in required repository if the required repository has been installed."""
+    env_sh_file_dir = get_tool_dependency_install_dir( app=app,
+                                                       repository_name=required_repository.name,
+                                                       repository_owner=required_repository.owner,
+                                                       repository_changeset_revision=required_repository.installed_changeset_revision,
+                                                       tool_dependency_type='package',
+                                                       tool_dependency_name=package_name,
+                                                       tool_dependency_version=package_version )
+    env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
+    return env_sh_file_path
+
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
@@ -366,6 +379,18 @@ def handle_tool_dependency_installation_error( app, tool_dependency, error_messa
     tool_dependency.error_message = error_message
     sa_session.add( tool_dependency )
     sa_session.flush()
+    return tool_dependency
+
+def mark_tool_dependency_installed( app, tool_dependency ):
+    if tool_dependency.status not in [ app.model.ToolDependency.installation_status.ERROR,
+                                       app.model.ToolDependency.installation_status.INSTALLED ]:
+        log.debug( 'Changing status for tool dependency %s from %s to %s.' % \
+            ( str( tool_dependency.name ), str( tool_dependency.status ), str( app.model.ToolDependency.installation_status.INSTALLED ) ) )
+        tool_dependency = set_tool_dependency_attributes( app,
+                                                          tool_dependency=tool_dependency,
+                                                          status=app.model.ToolDependency.installation_status.INSTALLED,
+                                                          error_message=None,
+                                                          remove_from_disk=False )
     return tool_dependency
 
 def merge_missing_tool_dependencies_to_installed_container( containers_dict ):
@@ -490,6 +515,72 @@ def set_tool_dependency_attributes( app, tool_dependency, status, error_message=
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
+
+def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version, tool_dependency_install_dir,
+                                    tool_dependency_type='package' ):
+    """
+    The installation directory defined by the received tool_dependency_install_dir exists, so check for the presence
+    of fabric_util.INSTALLATION_LOG.  If the files exists, we'll assume the tool dependency is installed, but not
+    necessarily successfully (it could be in an error state on disk.  However, we can justifiably assume here that no
+    matter the state, an associated database record will exist.
+    """
+    # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
+    # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
+    # Shed's install and test framework is running.
+    sa_session = app.model.context.current
+    can_install_tool_dependency = False
+    tool_dependency = get_tool_dependency_by_name_version_type_repository( app,
+                                                                           tool_shed_repository,
+                                                                           tool_dependency_name,
+                                                                           tool_dependency_version,
+                                                                           tool_dependency_type )
+    if tool_dependency.status == app.model.ToolDependency.installation_status.INSTALLING:
+        # The tool dependency is in an Installing state, so we don't want to do anything to it.  If the tool
+        # dependency is being installed by someone else, we don't want to interfere with that.  This assumes
+        # the installation by "someone else" is not hung in an Installing state, which is a weakness if that
+        # "someone else" never repaired it.
+        log.debug( 'Skipping installation of tool dependency %s version %s because it has a status of %s' % \
+            ( str( tool_dependency.name ), str( tool_dependency.version ), str( tool_dependency.status ) ) )
+    else:
+        # We have a pre-existing installation directory on the file system, but our associated database record is
+        # in a state that allowed us to arrive here - see the comment in common_install_util.handle_tool_dependencies().
+        # At this point, we'll inspect the installation directory to see if we have a "proper installation" and
+        # if so, synchronize the database record rather than reinstalling the dependency if we're "running_functional_tests".
+        # If we're not "running_functional_tests, we'll set the tool dependency's installation status to ERROR.
+        tool_dependency_installation_directory_contents = os.listdir( tool_dependency_install_dir )
+        if fabric_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
+            # Since this tool dependency's installation directory contains an installation log, we consider it to be
+            # installed.  In some cases the record may be missing from the database due to some activity outside of
+            # the control of the Tool Shed.  Since a new record was created for it and we don't know the state of the
+            # files on disk, we will set it to an error state (unless we are running Tool Shed functional tests - see
+            # below).
+            log.debug( 'Skipping installation of tool dependency %s version %s because it is installed in %s' % \
+                ( str( tool_dependency.name ), str( tool_dependency.version ), str( tool_dependency_install_dir ) ) )
+            if app.config.running_functional_tests:
+                # If we are running functional tests, the state will be set to Installed because previously compiled
+                # tool dependencies are not deleted by default, from the "install and test" framework..
+                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+            else:
+                error_message = 'The installation directory for this tool dependency had contents, but the database had no record. '
+                error_message += 'The installation log may show this tool dependency to be correctly installed, but due to the '
+                error_message += 'missing database record, it is automatically set to Error.'
+                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                tool_dependency.error_message = error_message
+        else:
+            error_message = '\nInstallation path %s for tool dependency %s version %s exists, but the expected file %s' % \
+                ( str( tool_dependency_install_dir ),
+                  str( tool_dependency_name ),
+                  str( tool_dependency_version ),
+                  str( fabric_util.INSTALLATION_LOG ) )
+            error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
+            error_message += ' prepared for re-installation.'
+            print error_message
+            tool_dependency.status = app.model.ToolDependency.installation_status.NEVER_INSTALLED
+            suc.remove_dir( tool_dependency_install_dir )
+            can_install_tool_dependency = True
+        sa_session.add( tool_dependency )
+        sa_session.flush()
+    return tool_dependency, can_install_tool_dependency
 
 def tool_dependency_is_orphan( type, name, version, tools ):
     """

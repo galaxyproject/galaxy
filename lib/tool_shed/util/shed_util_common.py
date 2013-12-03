@@ -1521,11 +1521,21 @@ def pretty_print( dict=None ):
 
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""
-    if os.path.exists( dir ):
-        try:
-            shutil.rmtree( dir )
-        except:
-            pass
+    if dir:
+        if os.path.exists( dir ):
+            try:
+                shutil.rmtree( dir )
+            except:
+                pass
+
+def remove_file( file_name ):
+    """Attempt to remove a file from disk."""
+    if file_name:
+        if os.path.exists( file_name ):
+            try:
+                os.remove( dir )
+            except:
+                pass
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """

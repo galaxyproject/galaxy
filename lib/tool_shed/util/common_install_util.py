@@ -458,6 +458,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
                     if tool_dependency.can_install:
+                        # The database record is currently in a state that allows us to install the package on the file system.
                         try:
                             dependencies_ignored = app.toolbox.dependency_manager and not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
                             if dependencies_ignored:

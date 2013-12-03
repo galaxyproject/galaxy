@@ -3471,46 +3471,6 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
 
-    @property
-    def installing( self ):
-        """
-        Used to determine if tool dependencies can denote this repository as
-        installing.
-        """
-        return self.status not in [ self.installation_status.DEACTIVATED,
-                                    self.installation_status.UNINSTALLED,
-                                    self.installation_status.ERROR,
-                                    self.installation_status.INSTALLED,
-                                    self.installation_status.NEW,
-                                  ]
-
-    @property
-    def installation_complete( self ):
-        """
-        Used to determine if tool dependency installations can proceed.
-        Installed artifacts must be available on disk.
-        """
-        return self.status in [ self.installation_status.DEACTIVATED,
-                                self.installation_status.INSTALLED,
-                              ]
-
-    def to_dict( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
-
     def get_shed_config_filename( self ):
         shed_config_filename = None
         if self.metadata:
@@ -3659,7 +3619,8 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are currently installed."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED, ToolDependency.installation_status.ERROR ]:
+            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED,
+                                           ToolDependency.installation_status.ERROR ]:
                 installed_dependencies.append( tool_dependency )
         return installed_dependencies
 
@@ -3668,6 +3629,11 @@ class ToolShedRepository( object ):
         if self.tool_shed_status:
             return galaxy.util.asbool( self.tool_shed_status.get( 'repository_deprecated', False ) )
         return False
+
+    @property
+    def is_installed( self ):
+        return self.status in [ self.installation_status.DEACTIVATED,
+                                self.installation_status.INSTALLED ]
 
     @property
     def is_latest_installable_revision( self ):
@@ -3803,6 +3769,23 @@ class ToolShedRepository( object ):
         self.metadata[ 'shed_config_filename' ] = value
 
     shed_config_filename = property( get_shed_config_filename, set_shed_config_filename )
+
+    def to_dict( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'dict_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        return rval
 
     @property
     def tool_dependencies_being_installed( self ):

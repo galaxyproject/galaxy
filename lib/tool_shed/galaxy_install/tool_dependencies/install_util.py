@@ -40,14 +40,22 @@ def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, 
         raise Exception( message )
         return None
 
-
-def find_complex_dependency_package( app, dependent_install_dir, required_install_dir, tool_shed_repository, required_repository, package_name, package_version, tool_dependencies_config ):
+def create_tool_dependency_with_initialized_env_sh_file( app, dependent_install_dir, tool_shed_repository, required_repository, package_name,
+                                                         package_version, tool_dependencies_config ):
     """
+    Create or get a tool_dependency record that is defined by the received package_name and package_version.  An env.sh file will be
+    created for the tool_dependency in the received dependent_install_dir.
     """
+    #The received required_repository refers to a tool_shed_repository record that is defined as a complex repository dependency for this
+    # tool_dependency.  The required_repository may or may not be currently installed (it doesn't matter).  If it is installed, it is
+    # associated with a tool_dependency that has an env.sh file that this new tool_dependency must be able to locate and "source".  If it
+    # is not installed, we can still determine where that env.sh file will be, so we'll initialize this new tool_dependency's env.sh file
+    # in either case.  If the require repository end up with an installation error, this new tool dependency will still be fine because its
+    # containing repository will be defined as missing dependencies.
     tool_dependencies = []
     if not os.path.exists( dependent_install_dir ):
         os.makedirs( dependent_install_dir )
-    env_file = None
+    required_tool_dependency_env_file_path = None
     if tool_dependencies_config:
         required_td_tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if required_td_tree:
@@ -58,51 +66,52 @@ def find_complex_dependency_package( app, dependent_install_dir, required_instal
                     # <package name="bwa" version="0.5.9">
                     required_td_package_name = required_td_elem.get( 'name', None )
                     required_td_package_version = required_td_elem.get( 'version', None )
+                    # Check the database to see if we have a record for the required tool dependency (we may not which is ok).  If we
+                    # find a record, we need to see if it is in an error state and if so handle it appropriately.
+                    required_tool_dependency = \
+                        tool_dependency_util.get_tool_dependency_by_name_version_type_repository( app,
+                                                                                                  required_repository,
+                                                                                                  required_td_package_name,
+                                                                                                  required_td_package_version,
+                                                                                                  'package' )
                     if required_td_package_name == package_name and required_td_package_version == package_version:
-                        tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
-                                                                                                 tool_shed_repository=tool_shed_repository,
-                                                                                                 name=package_name,
-                                                                                                 version=package_version,
-                                                                                                 type='package',
-                                                                                                 status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                                                                 set_status=True )
-
-                        if required_repository.installing:
-                            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
-                                                                                                   tool_dependency=tool_dependency,
-                                                                                                   status=app.model.ToolDependency.installation_status.INSTALLING )
-                        # What happens if dependent repository fails or is
-                        # uninstalled during this process.
-                        env_file = required_repository_package_env( app, package_name, package_version, required_repository )
-                        if required_repository.installation_complete:
-                            if not os.path.exists( env_file ):
-                                error_message = 'env.sh file %s for package %s in dependendent repository could not be found. Required repository has status %s.' % ( package_name, env_file, required_repository.status )
-                                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
+                        # Get or create a database tool_dependency record with which the installed package on disk will be associated.
+                        tool_dependency = \
+                            tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                                                                   tool_shed_repository=tool_shed_repository,
+                                                                                   name=package_name,
+                                                                                   version=package_version,
+                                                                                   type='package',
+                                                                                   status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                                   set_status=True )
+                        # Create an env.sh file for the tool_dependency whose first line will source the env.sh file located in
+                        # the path defined by required_tool_dependency_env_file_path.  It doesn't matter if the required env.sh
+                        # file currently exists..
+                        required_tool_dependency_env_file_path = \
+                            tool_dependency_util.get_required_repository_package_env_sh_path( app, package_name, package_version, required_repository )
+                        env_file_builder = fabric_util.EnvFileBuilder( tool_dependency.installation_directory( app ) )
+                        env_file_builder.append_line( action="source", value=required_tool_dependency_env_file_path )
+                        return_code = env_file_builder.return_code
+                        if return_code:
+                            error_message = 'Error defining env.sh file for package %s, return_code: %s' % ( str( package_name, str( return_code ) ) )
+                            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
                                                                                                               tool_dependency,
                                                                                                               error_message,
                                                                                                               remove_installation_path=False )
-                            else:
-                                tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
-                                                                                                       tool_dependency=tool_dependency,
-                                                                                                       status=app.model.ToolDependency.installation_status.INSTALLED )
+                        elif required_tool_dependency.in_error_state:
+                            error_message = "This tool dependency's required tool dependency %s has status %s." % \
+                                ( str( required_tool_dependency.name ), str( required_tool_dependency.status ) )
+                            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
+                                                                                                              tool_dependency,
+                                                                                                              error_message,
+                                                                                                              remove_installation_path=False )
                         else:
-                            # Ekk - handling tool depednencies for a dependent
-                            # repository that is not installed.
-                            #
-                            # Go ahead a return the env.sh file - Galaxy will
-                            # proceed to create an invalid symbolic link.
-                            # This is subtle-ly different than the previous
-                            # behavior which would have recreated an env.sh
-                            # from the the required repository's
-                            # tool_dependencies.xml but since it was not
-                            # installed all of the values inside would be
-                            # invalid path modifications. Either way, this file
-                            # is junk until the required repository is
-                            # installed properly.
-                            pass
+                            tool_dependency = \
+                                tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                     tool_dependency=tool_dependency,
+                                                                                     status=app.model.ToolDependency.installation_status.INSTALLED )
                         tool_dependencies.append( tool_dependency )
-    return tool_dependencies, env_file
-
+    return tool_dependencies
 
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
     """Return the absolute path to a specified disk file contained in a repository."""
@@ -157,6 +166,12 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
 
 
 def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository ):
+    """
+    Inspect the repository defined by a complex repository dependency definition and take certain steps to enable installation
+    of the received package name and version to proceed.  The received elem is the <repository> tag set which defines the complex
+    repository dependency.  The received tool_shed_repository is the installed tool shed repository for which the tool dependency
+    defined by the received package_name and package_version is being installed.
+    """
     handled_tool_dependencies = []
     tool_shed = elem.attrib[ 'toolshed' ]
     required_repository_name = elem.attrib[ 'name' ]
@@ -179,7 +194,7 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                   tool_dependency_type='package',
                                                                   tool_dependency_name=package_name,
                                                                   tool_dependency_version=package_version )
-        # Define the this dependent repository's tool dependency installation directory that will contain the env.sh file with a path to the
+        # Define this dependent repository's tool dependency installation directory that will contain the env.sh file with a path to the
         # required repository's installed tool dependency package.
         dependent_install_dir = tool_dependency_util.get_tool_dependency_install_dir( app=app,
                                                                                       repository_name=tool_shed_repository.name,
@@ -188,65 +203,64 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                                       tool_dependency_type='package',
                                                                                       tool_dependency_name=package_name,
                                                                                       tool_dependency_version=package_version )
-        # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
-        # We can get everything we need from the discovered installed required_repository.
-        if required_repository.installation_complete:
-            if not os.path.exists( required_repository_package_install_dir ):
-                print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
-            repo_files_dir = required_repository.repo_files_directory( app )
-            tool_dependencies_config = get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
-            if tool_dependencies_config:
-                config_to_use = tool_dependencies_config
-            else:
-                message = "Unable to locate required tool_dependencies.xml file for revision %s of installed repository %s owned by %s." % \
-                    ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
-                raise Exception( message )
+        if os.path.exists( dependent_install_dir ):
+            # Notice that we'll throw away the following tool_dependency if it can be installed.
+            tool_dependency, can_install_tool_dependency = tool_dependency_util.sync_database_with_file_system( app,
+                                                                                                                tool_shed_repository,
+                                                                                                                package_name,
+                                                                                                                package_version,
+                                                                                                                dependent_install_dir,
+                                                                                                                tool_dependency_type='package' )
         else:
-            # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
-            # should be updated if it's not current.
-            text = get_updated_changeset_revisions_from_tool_shed( app=app,
-                                                                   tool_shed_url=tool_shed,
-                                                                   name=required_repository_name,
-                                                                   owner=required_repository_owner,
-                                                                   changeset_revision=required_repository_changeset_revision )
-            if text:
-                updated_changeset_revisions = listify( text )
-                # The list of changeset revisions is in reverse order, so the newest will be first.
-                required_repository_changeset_revision = updated_changeset_revisions[ 0 ]
-            # Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
-            tmp_filename = create_temporary_tool_dependencies_config( app,
-                                                                      tool_shed,
-                                                                      required_repository_name,
-                                                                      required_repository_owner,
-                                                                      required_repository_changeset_revision )
-            config_to_use = tmp_filename
-
-        tool_dependencies, package_env_sh_file = find_complex_dependency_package(
-            app=app,
-            dependent_install_dir=dependent_install_dir,
-            required_install_dir=required_repository_package_install_dir,
-            tool_shed_repository=tool_shed_repository,
-            required_repository=required_repository,
-            package_name=package_name,
-            package_version=package_version,
-            tool_dependencies_config=config_to_use
-        )
-        if package_env_sh_file:
-            os.symlink( package_env_sh_file, os.path.join( dependent_install_dir, "env.sh" ) )
-        if tmp_filename:
-            try:
-                os.remove( tmp_filename )
-            except:
-                pass
-        for tool_dependency in tool_dependencies:
-            tool_dependency = __mark_tool_dependency_installed( app, tool_dependency)
+            can_install_tool_dependency = True
+        if can_install_tool_dependency:
+            # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
+            # We can get everything we need from the discovered installed required_repository.
+            if required_repository.is_installed:
+                if not os.path.exists( required_repository_package_install_dir ):
+                    print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
+                repo_files_dir = required_repository.repo_files_directory( app )
+                tool_dependencies_config = get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
+                if tool_dependencies_config:
+                    config_to_use = tool_dependencies_config
+                else:
+                    message = "Unable to locate required tool_dependencies.xml file for revision %s of installed repository %s owned by %s." % \
+                        ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
+                    raise Exception( message )
+            else:
+                # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
+                # should be updated if it's not current.
+                text = get_updated_changeset_revisions_from_tool_shed( app=app,
+                                                                       tool_shed_url=tool_shed,
+                                                                       name=required_repository_name,
+                                                                       owner=required_repository_owner,
+                                                                       changeset_revision=required_repository_changeset_revision )
+                if text:
+                    updated_changeset_revisions = listify( text )
+                    # The list of changeset revisions is in reverse order, so the newest will be first.
+                    required_repository_changeset_revision = updated_changeset_revisions[ 0 ]
+                # Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
+                tmp_filename = create_temporary_tool_dependencies_config( app,
+                                                                          tool_shed,
+                                                                          required_repository_name,
+                                                                          required_repository_owner,
+                                                                          required_repository_changeset_revision )
+                config_to_use = tmp_filename
+            handled_tool_dependencies = create_tool_dependency_with_initialized_env_sh_file( app=app,
+                                                                                            dependent_install_dir=dependent_install_dir,
+                                                                                            tool_shed_repository=tool_shed_repository,
+                                                                                            required_repository=required_repository,
+                                                                                            package_name=package_name,
+                                                                                            package_version=package_version,
+                                                                                            tool_dependencies_config=config_to_use )
+            suc.remove_file( tmp_filename )
+        else:
             handled_tool_dependencies.append( tool_dependency )
     else:
         message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
             ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
         raise Exception( message )
     return handled_tool_dependencies
-
 
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     sa_session = app.model.context.current
@@ -262,9 +276,8 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
                                                                                           tool_dependency, 
                                                                                           error_message, 
                                                                                           remove_installation_path=False )
-    tool_dependency = __mark_tool_dependency_installed( app, tool_dependency)
+    tool_dependency = tool_dependency_util.mark_tool_dependency_installed( app, tool_dependency )
     return tool_dependency
-
 
 def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
     # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
@@ -298,57 +311,14 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                                     tool_dependency_version=package_version )
                 can_install_tool_dependency = True
                 if os.path.exists( install_dir ):
-                    # The tool dependency installation directory exists, check for the presence of fabric_util.INSTALLATION_LOG,
-                    # which indicates a successful installation. This currently assumes that the tool dependency record will
-                    # always exist in the database.
-                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type_repository( app,
-                                                                                                                tool_shed_repository,
-                                                                                                                package_name,
-                                                                                                                package_version,
-                                                                                                                'package' )
-                    if tool_dependency.status == app.model.ToolDependency.installation_status.INSTALLING:
-                        # The tool dependency is in an Installing state, so we don't want to do anything to it.  If the tool
-                        # dependency is being installed by someone else, we don't want to interfere with that.  This assumes
-                        # the installation by "someone else" is not hung in an Installing state, which is a weakness if that
-                        # "someone else" never repaired it.
-                        log.debug( 'Skipping installation of tool dependency %s version %s because it has a status of %s' % \
-                            ( str( tool_dependency.name ), str( tool_dependency.version ), str( tool_dependency.status ) ) )
-                        can_install_tool_dependency = False
-                    else:
-                        tool_dependency_installation_directory_contents = os.listdir( install_dir )
-                        if fabric_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
-                            # Since this tool dependency's installation directory contains an installation log, we consider it to be
-                            # installed.  In some cases the record may be missing from the database due to some activity outside of
-                            # the control of the Tool Shed.  Since a new record was created for it and we don't know the state of the
-                            # files on disk, we will set it to an error state (unless we are running Tool Shed functional tests - see
-                            # below).
-                            log.debug( 'Skipping installation of tool dependency %s version %s because it is installed in %s' % \
-                                ( str( tool_dependency.name ), str( tool_dependency.version ), str( install_dir ) ) )
-                            can_install_tool_dependency = False
-                            if app.config.running_functional_tests:
-                                # If we are running functional tests, the state will be set to Installed because previously compiled
-                                # tool dependencies are not deleted by default, from the "install and test" framework..
-                                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
-                            else:
-                                error_message = 'The installation directory for this tool dependency had contents, but the database had no record. '
-                                error_message += 'The installation log may show this tool dependency to be correctly installed, but due to the '
-                                error_message += 'missing database record, it is automatically set to Error.'
-                                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-                                tool_dependency.error_message = error_message
-                        else:
-                            error_message = '\nInstallation path %s for tool dependency %s version %s exists, but the expected file %s' % \
-                                ( str( install_dir ), str( package_name ), str( package_version ), str( fabric_util.INSTALLATION_LOG ) )
-                            error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
-                            error_message += ' prepared for re-installation.'
-                            print error_message
-                            tool_dependency.status = app.model.ToolDependency.installation_status.NEVER_INSTALLED
-                            try:
-                                shutil.rmtree( install_dir )
-                            except Exception, e:
-                                log.exception( 'Unable to remove installation path %s.', install_dir )
-                            can_install_tool_dependency = True
-                        sa_session.add( tool_dependency )
-                        sa_session.flush()
+                    # Notice that we'll throw away the following tool_dependency if it can be installed.
+                    tool_dependency, can_install_tool_dependency = \
+                        tool_dependency_util.sync_database_with_file_system( app,
+                                                                             tool_shed_repository,
+                                                                             package_name,
+                                                                             package_version,
+                                                                             install_dir,
+                                                                             tool_dependency_type='package' )
                 else:
                     can_install_tool_dependency = True
                 if can_install_tool_dependency:
@@ -775,23 +745,6 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
         tool_dependency = install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
     return tool_dependency
 
-
-# TODO: Move to tool_dependency_util?
-def required_repository_package_env( app, package_name, package_version, required_repository ):
-    """
-    Return path to env.sh file in required repository if the required repository has been installed.
-    """
-    env_sh_file_dir = tool_dependency_util.get_tool_dependency_install_dir( app=app,
-                                                                            repository_name=required_repository.name,
-                                                                            repository_owner=required_repository.owner,
-                                                                            repository_changeset_revision=required_repository.installed_changeset_revision,
-                                                                            tool_dependency_type='package',
-                                                                            tool_dependency_name=package_name,
-                                                                            tool_dependency_version=package_version )
-    env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
-    return env_sh_file_path
-
-
 def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_dir, package_name=None, **kwd ):
     """
     TODO: Handle this using the fabric api.
@@ -846,10 +799,7 @@ def run_subprocess( app, cmd ):
         tmp_stderr = open( tmp_name, 'rb' )
         message = '%s\n' % str( tmp_stderr.read() )
         tmp_stderr.close()
-    try:
-        os.remove( tmp_name )
-    except:
-        pass
+    suc.remove_file( tmp_name )
     return returncode, message
 
 def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install ):
@@ -935,17 +885,3 @@ def url_join( *args ):
     for arg in args:
         parts.append( arg.strip( '/' ) )
     return '/'.join( parts )
-
-
-# TODO: Move to tool_dependency_util?
-def __mark_tool_dependency_installed( app, tool_dependency ):
-    if tool_dependency.status not in [ app.model.ToolDependency.installation_status.ERROR,
-                                       app.model.ToolDependency.installation_status.INSTALLED ]:
-        log.debug( 'Changing status for tool dependency %s from %s to %s.' % \
-            ( str( tool_dependency.name ), str( tool_dependency.status ), str( app.model.ToolDependency.installation_status.INSTALLED ) ) )
-        tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
-                                                                               tool_dependency=tool_dependency,
-                                                                               status=app.model.ToolDependency.installation_status.INSTALLED,
-                                                                               error_message=None,
-                                                                               remove_from_disk=False )
-    return tool_dependency
