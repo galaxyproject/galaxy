@@ -1533,7 +1533,7 @@ def remove_file( file_name ):
     if file_name:
         if os.path.exists( file_name ):
             try:
-                os.remove( dir )
+                os.remove( file_name )
             except:
                 pass
 
