@@ -216,7 +216,7 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
         if can_install_tool_dependency:
             # Set this dependent repository's tool dependency env.sh file with a path to the required repository's installed tool dependency package.
             # We can get everything we need from the discovered installed required_repository.
-            if required_repository.is_installed:
+            if required_repository.is_deactivated_or_installed:
                 if not os.path.exists( required_repository_package_install_dir ):
                     print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
                 repo_files_dir = required_repository.repo_files_directory( app )
@@ -848,20 +848,29 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                                                                                              type='set_environment',
                                                                                              status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                                              set_status=True )
-                    env_entry, env_file = td_common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                     if env_var_version == '1.0':
-                        # Handle setting environment variables using a fabric method.
-                        fabric_util.file_append( env_entry, env_file, skip_if_contained=True, make_executable=True )
-                        sa_session.refresh( tool_dependency )
-                        if tool_dependency.status not in [ app.model.ToolDependency.installation_status.ERROR,
-                                                          app.model.ToolDependency.installation_status.INSTALLED ]:
+                        # Create this tool dependency's env.sh file.
+                        env_file_builder = fabric_util.EnvFileBuilder( install_dir )
+                        return_code = env_file_builder.append_line( skip_if_contained=True, make_executable=True, **env_var_dict )
+                        if return_code:
+                            error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
+                                ( str( tool_dependency.name ), str( return_code ) )
+                            log.debug( error_message )
                             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
                                                                                                    tool_dependency=tool_dependency,
-                                                                                                   status=app.model.ToolDependency.installation_status.INSTALLED,
-                                                                                                   error_message=None,
+                                                                                                   status=app.model.ToolDependency.installation_status.ERROR,
+                                                                                                   error_message=error_message,
                                                                                                    remove_from_disk=False )
-                            log.debug( 'Environment variable %s set in %s for tool dependency %s.' % \
-                                ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
+                        else:
+                            if tool_dependency.status not in [ app.model.ToolDependency.installation_status.ERROR,
+                                                              app.model.ToolDependency.installation_status.INSTALLED ]:
+                                tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                                       tool_dependency=tool_dependency,
+                                                                                                       status=app.model.ToolDependency.installation_status.INSTALLED,
+                                                                                                       error_message=None,
+                                                                                                       remove_from_disk=False )
+                                log.debug( 'Environment variable %s set in %s for tool dependency %s.' % \
+                                    ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
                     else:
                         error_message = 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).'
                         tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,

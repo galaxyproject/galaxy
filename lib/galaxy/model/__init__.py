@@ -3631,6 +3631,11 @@ class ToolShedRepository( object ):
         return False
 
     @property
+    def is_deactivated_or_installed( self ):
+        return self.status in [ self.installation_status.DEACTIVATED,
+                                self.installation_status.INSTALLED ]
+
+    @property
     def is_latest_installable_revision( self ):
         if self.tool_shed_status:
             return galaxy.util.asbool( self.tool_shed_status.get( 'latest_installable_revision', False ) )
