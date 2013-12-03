@@ -383,7 +383,7 @@ function program12(depth0,data) {
   buffer += "\n        </div>\n\n        <div class=\"history-subtitle clear\">\n            ";
   stack1 = helpers['if'].call(depth0, depth0.nice_size, {hash:{},inverse:self.noop,fn:self.program(4, program4, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n        </div>\n\n        <div class=\"message-container\">\n            ";
+  buffer += "\n\n            <div class=\"history-secondary-actions\"></div>\n        </div>\n\n        <div class=\"message-container\">\n            ";
   stack1 = helpers['if'].call(depth0, depth0.message, {hash:{},inverse:self.noop,fn:self.program(6, program6, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n        </div>\n\n        <div class=\"quota-message errormessage\">\n            ";
