@@ -6,7 +6,7 @@ bwa_base_repository_description = "BWA Base"
 bwa_base_repository_long_description = "BWA tool that depends on bwa 0.5.9, with a complex repository dependency pointing at package_bwa_0_5_9_0100"
 
 bwa_package_repository_name = 'package_bwa_0_5_9_0100'
-bwa_package_repository_description = "BWA Tool"
+bwa_package_repository_description = "BWA Package"
 bwa_package_repository_long_description = "BWA repository with a package tool dependency defined to compile and install BWA 0.5.9."
 
 category_name = 'Test 0100 Complex Repository Dependencies'
@@ -31,7 +31,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
 
     def test_0005_create_bwa_package_repository( self ):
-        '''Create and populate bwa_tool_0100.'''
+        '''Create and populate package_bwa_0_5_9_0100.'''
         global running_standalone
         category = self.create_category( name=category_name, description=category_description )
         self.logout()

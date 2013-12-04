@@ -616,7 +616,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if not os.path.exists( temp_path ):
             os.makedirs( temp_path )
         return temp_path
-        
+
     def get_datatypes_count( self ):
         url = '/api/datatypes?upload_only=false'
         self.visit_galaxy_url( url )
@@ -887,23 +887,6 @@ class ShedTwillTestCase( TwillTestCase ):
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
-    def set_form_value( self, form, kwd, field_name, field_value ):
-        '''
-        Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
-        the field does not exist in the provided form, return a dict without that index.
-        '''
-        form_id = form.attrs.get( 'id' )
-        controls = [ control for control in form.controls if str( control.name ) == field_name ]
-        if len( controls ) > 0:
-            log.debug( 'Setting field %s of form %s to %s.' % ( field_name, form_id, str( field_value ) ) )
-            tc.formvalue( form_id, field_name, str( field_value ) )
-            kwd[ field_name ] = str( field_value )
-        else:
-            if field_name in kwd:
-                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
-                del( kwd[ field_name ] )
-        return kwd
-        
     def load_citable_url( self, 
                           username, 
                           repository_name, 
@@ -941,6 +924,17 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def load_checkable_revisions( self, strings_displayed=[], strings_not_displayed=[] ):
+        params = urllib.urlencode( dict( do_not_test='false',
+                                         downloadable='true',
+                                         includes_tools='true',
+                                         malicious='false',
+                                         missing_test_components='false',
+                                         skip_tool_test='false' ) )
+        api_url = '%s?%s' % ( '/'.join( [ self.url, 'api', 'repository_revisions' ] ), params )
+        self.visit_url( api_url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
@@ -1104,6 +1098,23 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit()
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed ) 
         
+    def set_form_value( self, form, kwd, field_name, field_value ):
+        '''
+        Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
+        the field does not exist in the provided form, return a dict without that index.
+        '''
+        form_id = form.attrs.get( 'id' )
+        controls = [ control for control in form.controls if str( control.name ) == field_name ]
+        if len( controls ) > 0:
+            log.debug( 'Setting field %s of form %s to %s.' % ( field_name, form_id, str( field_value ) ) )
+            tc.formvalue( form_id, field_name, str( field_value ) )
+            kwd[ field_name ] = str( field_value )
+        else:
+            if field_name in kwd:
+                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                del( kwd[ field_name ] )
+        return kwd
+
     def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
         self.visit_url( url )
@@ -1116,21 +1127,25 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def set_skip_tool_tsts_flag( self, repository, flag_value, reason, changeset_revision=None ):
-        '''
-        NOTE: As with certain other methods in this test suite, the form can't easily be filled out, so we're emulating the
-        form's expected behavior with url parameters, in particular the checkbox behavior.
-        '''
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip( repository )
         self.display_manage_repository_page( repository, changeset_revision=changeset_revision )
-        params = 'skip_tool_tests=true&%s' % ( urllib.urlencode( dict( changeset_revision=changeset_revision,
-                                                                       id=self.security.encode_id( repository.id ),
-                                                                       skip_tool_tests=str( flag_value ), 
-                                                                       skip_tool_tests_comment=reason, 
-                                                                       skip_tool_tests_button='Save' ) ) )
-        url = '/repository/manage_repository?%s' % params
-        self.visit_url( url )
-        self.check_for_strings( strings_displayed=[ 'Tools in this revision', 'automated test framework' ] )
+        form = tc.browser.get_form( 'skip_tool_tests' )
+        assert form is not None, 'Could not find form skip_tool_tests.'
+        for control in form.controls:
+            control_name = str( control.name )
+            if control_name == 'skip_tool_tests' and control.type == 'checkbox':
+                checkbox = control.get()
+                checkbox.selected = flag_value
+            elif control_name == 'skip_tool_tests_comment':
+                tc.browser.clicked( form, control )
+                tc.formvalue( 'skip_tool_tests', control_name, reason )
+        kwd = dict()
+        self.submit_form( 'skip_tool_tests', 'skip_tool_tests_button', **kwd )
+        if flag_value is True:
+            self.check_for_strings( strings_displayed=[ 'Tools in this revision will not be tested by the automated test framework' ] )
+        else:
+            self.check_for_strings( strings_displayed=[ 'Tools in this revision will be tested by the automated test framework' ] )
         
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
