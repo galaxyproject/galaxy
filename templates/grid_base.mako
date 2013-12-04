@@ -1,5 +1,7 @@
 <%!
-    from galaxy.web.framework.helpers.grids import TextColumn
+    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
+    from galaxy.web.framework.helpers import iff
+
     import galaxy.util
     def inherit(context):
         if context.get('use_panels'):
@@ -12,16 +14,16 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="./grid_common.mako" import="*" />
 <%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
-<%def name="load(embedded = False)">
+<%def name="load(embedded = False, insert = None)">
 <%
+    self.init(insert)
+    self.stylesheets()
+    self.javascripts()
     self.grid_javascripts()
     if embedded:
-        self.init()
-        self.stylesheets()
         self.render_grid_header( grid, False )
         self.render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )
     else:
@@ -30,7 +32,7 @@
 %>
 </%def>
 
-<%def name="init()">
+<%def name="init(insert=None)">
 <%
     self.has_left_panel         = False
     self.has_right_panel        = False
@@ -62,9 +64,12 @@
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
         'current_item_id'               : False,
-        'use_panels'                    : context.get('use_panels')
+        'use_panels'                    : context.get('use_panels'),
+        'insert'                        : insert,
+        'default_filter_dict'           : default_filter_dict,
+        'advanced_search'               : advanced_search
     }
-
+    
     ## add current item if exists
     if current_item:
         self.grid_config['current_item_id'] = current_item.id
@@ -96,6 +101,8 @@
             'label_id_prefix'   : column.label_id_prefix,
             'sortable'          : column.sortable,
             'label'             : column.label,
+            'filterable'        : column.filterable,
+            'is_text'           : isinstance(column, TextColumn),
             'href'              : href,
             'extra'             : extra
         })
@@ -309,7 +316,9 @@
                 %endif
             </ul>
         %endif
-    
+        %if self.grid_config['insert']:
+            ${self.grid_config['insert']}
+        %endif
         ${render_grid_filters( grid )}
     </div>
 </%def>
@@ -581,5 +590,193 @@
             </td>
          </tr>
     %endif
+</%def>
+
+## Print grid search/filtering UI.
+<%def name="render_grid_filters( grid, render_advanced_search=True )">
+    <%
+        default_filter_dict = self.grid_config['default_filter_dict']
+        filters = self.grid_config['filters']
+
+        # Show advanced search if flag set or if there are filters for advanced search fields.
+        advanced_search_display = "none"
+
+        if self.grid_config['advanced_search']:
+            advanced_search_display = "block"
+
+        for column in self.grid_config['columns']:
+            if column['filterable'] == "advanced":
+                ## Show div if current filter has value that is different from the default filter.
+                column_key = column['key']
+                if column_key in filters and column_key in default_filter_dict and \
+                    filters[column_key] != default_filter_dict[column_key]:
+                        advanced_search_display = "block"
+
+        # do not show standard search if showing adv.
+        standard_search_display = "block"
+        if advanced_search_display == "block":
+            standard_search_display = "none"
+    %>
+    ## Standard search.
+    <div id="standard-search" style="display: ${standard_search_display};">
+        <table>
+            <tr><td style="padding: 0;">
+                <table>
+                %for column in self.grid_config['columns']:
+                    %if column['filterable'] == "standard":
+                       ${render_grid_column_filter( grid, column )}
+                    %endif
+                %endfor
+                </table>
+            </td></tr>
+            <tr><td>
+                ## Only show advanced search if there are filterable columns.
+                <%
+                    show_advanced_search_link = False
+                    if render_advanced_search:
+                        for column in self.grid_config['columns']:
+                            if column['filterable'] == "advanced":
+                                show_advanced_search_link = True
+                                break
+                            endif
+                %>
+                %if show_advanced_search_link:
+                    <a href="" class="advanced-search-toggle">Advanced Search</a>
+                %endif
+            </td></tr>
+        </table>
+    </div>
+    
+    ## Advanced search.
+    <div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
+        <table>
+            <tr><td style="text-align: left" colspan="100">
+                <a href="" class="advanced-search-toggle">Close Advanced Search</a>
+            </td></tr>
+            %for column in self.grid_config['columns']:
+                %if column['filterable'] == "advanced":
+                    ## Show div if current filter has value that is different from the default filter.
+                    <%
+                        column_key = column['key']
+                    %>
+                    % if column_key in filters and column_key in default_filter_dict and \
+                        filters[column_key] != default_filter_dict[column_key]:
+                        <script type="text/javascript">
+                            $('#advanced-search').css("display", "block");
+                        </script>
+                    % endif
+            
+                    ${render_grid_column_filter( grid, column )}
+                %endif
+            %endfor
+        </table>
+    </div>
+</%def>
+
+## Render a filter UI for a grid column. Filter is rendered as a table row.
+<%def name="render_grid_column_filter( grid, column )">
+    <tr>
+        <%
+            default_filter_dict = self.grid_config['default_filter_dict']
+            filters = self.grid_config['filters']
+            column_label = column['label']
+            column_key = column['key']
+            if column['filterable'] == "advanced":
+                column_label = column_label.lower()
+        %>
+        %if column['filterable'] == "advanced":
+            <td align="left" style="padding-left: 10px">${column_label}:</td>
+        %endif
+        <td style="padding: 0;">
+            %if column['is_text']:
+                <form class="text-filter-form" column_key="${column_key}" action="${url(dict())}" method="get" >
+                    ## Carry forward filtering criteria with hidden inputs.
+                    %for temp_column in self.grid_config['columns']:
+                        %if temp_column['key'] in filters:
+                            <% value = filters[ temp_column['key'] ] %>
+                            %if value != "All":
+                                <%
+                                    if temp_column['is_text']:
+                                        value = h.to_json_string( value )
+                                %>
+                                <input type="hidden" id="${temp_column['key']}" name="f-${temp_column['key']}" value='${value}'/>
+                            %endif
+                        %endif
+                    %endfor
+                    ## Print current filtering criteria and links to delete.
+                    <span id="${column_key}-filtering-criteria">
+                        %if column_key in filters:
+                            <% column_filter = filters[column_key] %>
+                            %if isinstance( column_filter, basestring ):
+                                %if column_filter != "All":
+                                    <span class='text-filter-val'>
+                                        ${filters[column_key]}
+                                        <% filter_all = GridColumnFilter( "", { column_key : "All" } ) %>
+                                        <a href="${url(filter_all.get_url_args())}"><span class="delete-search-icon" /></a>
+                                    </span>
+                                %endif
+                            %elif isinstance( column_filter, list ):
+                                %for i, filter in enumerate( column_filter ):
+                                    <span class='text-filter-val'>${filter}
+                                        <%
+                                            new_filter = list( column_filter )
+                                            del new_filter[ i ]
+                                            new_column_filter = GridColumnFilter( "", { column_key : h.to_json_string( new_filter ) } )
+                                        %>
+                                        <a href="${url(new_column_filter.get_url_args())}"><span class="delete-search-icon" /></a>
+                                    </span>
+                                %endfor
+                            %endif
+                        %endif
+                    </span>
+                    ## Print input field for column.
+                    <span class="search-box">
+                        <% 
+                            # Set value, size of search input field. Minimum size is 20 characters.
+                            value = iff( column['filterable'] == "standard", column['label'].lower(), "")
+                            size = len( value )
+                            if size < 20:
+                                size = 20
+                            # +4 to account for search icon/button.
+                            size = size + 4
+                        %>
+                        <input class="search-box-input" id="input-${column_key}-filter" name="f-${column_key}" type="text" value="${value}" size="${size}"/>
+                        <button class="submit-image" type="submit" title='Search'><span style="display: none;"></button>
+                    </span>
+                </form>
+            %else:
+                <span id="${column_key}-filtering-criteria">
+                    <%
+                        seperator = False
+                    %>
+                    %for filter_label in self.grid_config['categorical_filters'][column_key]:
+                        <%
+                            # get filter
+                            filter = self.grid_config['categorical_filters'][column_key][filter_label]
+                            
+                            # each filter will have only a single argument, so get that single argument
+                            for key in filter:
+                                filter_key = key
+                                filter_arg = filter[key]
+                        %>
+                        %if seperator:
+                            |
+                        %endif
+
+                        <%
+                            seperator = True
+                        %>
+                        %if column_key in cur_filter_dict and column_key in filter and cur_filter_dict[column_key] == filter_arg:
+                            <span class="categorical-filter ${column_key}-filter current-filter">${filter_label}</span>
+                        %else:
+                            <span class="categorical-filter ${column_key}-filter">
+                                <a href="" filter_key="${filter_key}" filter_val="${filter_arg}">${filter_label}</a>
+                            </span>
+                        %endif
+                    %endfor
+                </span>
+            %endif
+        </td>
+    </tr>
 </%def>
 

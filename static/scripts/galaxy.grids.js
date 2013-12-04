@@ -19,6 +19,7 @@ var Grid = Backbone.Model.extend({
         filters: {},
         sort_key: null,
         show_item_checkboxes: false,
+        advanced_search: false,
         cur_page: 1,
         num_pages: 1,
         operation: undefined,
@@ -110,7 +111,8 @@ var Grid = Backbone.Model.extend({
             async: this.attributes.async,
             sort: this.attributes.sort_key,
             page: this.attributes.cur_page,
-            show_item_checkboxes: this.attributes.show_item_checkboxes
+            show_item_checkboxes: this.attributes.show_item_checkboxes,
+            advanced_search: this.attributes.advanced_search
         };
 
         // Add operation, item_ids only if they have values.
@@ -343,7 +345,7 @@ var GridView = Backbone.View.extend({
         this.grid.add_filter(name, value, append);
         
         // Add button that displays filter and provides a button to delete it.
-        var t = $("<span>" + value + "<a href='javascript:void(0);'><span class='delete-search-icon' /></a></span>");
+        var t = $("<span>" + value + "<a href='javascript:void(0);'><span class='delete-search-icon' /></span></a>");
         t.addClass('text-filter-val');
         var self = this;
         t.click(function() {
@@ -579,15 +581,19 @@ var GridView = Backbone.View.extend({
 
     // go to url
     go_to: function (inbound, href) {
-    
+        // get aysnc status
         var async = this.grid.get('async');
         this.grid.set('async', false);
+        
+        // get slide status
+        advanced_search = $('#advanced-search').is(":visible");
+        this.grid.set('advanced_search', advanced_search);
         
         // get default url
         if(!href)
             href = this.grid.get('url_base') + "?" + $.param(this.grid.get_url_data());
             
-        // Clear grid of transient request attributes.
+        // clear grid of transient request attributes.
         this.grid.set({
             operation: undefined,
             item_ids: undefined,

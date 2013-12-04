@@ -264,6 +264,7 @@ class Grid( object ):
             return url_for( **new_kwargs)
 
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
+        self.advanced_search = ( kwargs.get( 'advanced_search', False ) in [ True, 'True', 'true' ] )
         async_request = ( ( self.use_async ) and ( kwargs.get( 'async', False ) in [ True, 'True', 'true'] ) )
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
@@ -285,6 +286,7 @@ class Grid( object ):
                                     status = status,
                                     message = message,
                                     use_panels=self.use_panels,
+                                    advanced_search=self.advanced_search,
                                     show_item_checkboxes = ( self.show_item_checkboxes or
                                                              kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
