@@ -128,6 +128,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         print '# Checking revision %s of %s owned by %s.' % ( changeset_revision,  name, owner )
         if repository_metadata.id in skip_metadata_ids:
             print'# Skipping revision %s of %s owned by %s because the skip_tool_test setting has been set.' % ( changeset_revision,  name, owner )
+            continue
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         tool_dicts = metadata.get( 'tools', None )
