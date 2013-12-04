@@ -13,7 +13,7 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from base.util import parse_tool_panel_config
+from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy import eggs
 

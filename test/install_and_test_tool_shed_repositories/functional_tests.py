@@ -10,9 +10,9 @@ import sys
 cwd = os.getcwd()
 sys.path.append( cwd )
 new_path = [ os.path.join( cwd, "scripts" ),
-            os.path.join( cwd, "lib" ),
-            os.path.join( cwd, 'test' ),
-            os.path.join( cwd, 'scripts', 'api' ) ]
+             os.path.join( cwd, "lib" ),
+             os.path.join( cwd, 'test' ),
+             os.path.join( cwd, 'scripts', 'api' ) ]
 new_path.extend( sys.path )
 sys.path = new_path
 
@@ -30,6 +30,7 @@ import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
 import logging
 import nose
+import platform
 import random
 import re
 import shutil
@@ -41,10 +42,9 @@ import threading
 import tool_shed.util.shed_util_common as suc
 import urllib
 
-from base.util import get_database_version
-from base.util import get_repository_current_revision
-from base.util import get_test_environment
-from base.util import parse_tool_panel_config
+from base.tool_shed_util import parse_tool_panel_config
+from install_and_test_tool_shed_repositories.base.util import get_database_version
+from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
 from common import update
 from datetime import datetime
 from galaxy.app import UniverseApplication
@@ -614,31 +614,38 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         owner = str( repository_dict[ 'owner' ] )
         changeset_revision = str( repository_dict[ 'changeset_revision' ] )
         log.debug( "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner ) )
-        # Populate the tool_test_results_dict.
+        # Retrieve the stored list of tool_test_results_dicts.
         tool_test_results_dicts, error_message = get_tool_test_results_dicts( galaxy_tool_shed_url, encoded_repository_metadata_id )
         if error_message:
             log.debug( error_message )
         else:
-            # The preparation script ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered
-            # information in the 'test_environment' and possibly the 'missing_test_components' entries of the first
-            # tool_test_results_dict in the list of tool_test_results_dicts. We need to be careful to not lose this
-            # information.
-            try:
-                tool_test_results_dict = tool_test_results_dicts.pop( 0 )
-            except Exception, e:
-                log.exception( "Invalid list of tool_test_results_dicts %s: %s" % ( str( tool_test_results_dicts ), str( e ) ) )
-                continue
+            if tool_test_results_dicts:
+                # Inspect the tool_test_results_dict for the last test run to make sure it contains only a test_environment
+                # entry.  If it contains more entries, then the script ~/tool_shed/api/check_repositories_for_functional_tests.py
+                # was not executed in preparation for this script's execution, so we'll just create an empty dictionary.
+                tool_test_results_dict = tool_test_results_dicts[ 0 ]
+                if len( tool_test_results_dict ) <= 1:
+                    # We can re-use the mostly empty tool_test_results_dict for this run because it is either empty or it contains only
+                    # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
+                    # since it will be re-inserted later.
+                    tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                else:
+                    # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
+                    tool_test_results_dict = {}
+            else:
+                # Create a new dictionary for this test test run, 
+                tool_test_results_dict = {}
             # See if this repository should be skipped for any reason.
-            this_repository_is_in_the_exclude_lost = False
+            this_repository_is_in_the_exclude_list = False
             skip_reason = None
             for exclude_dict in exclude_list:
                 reason = exclude_dict[ 'reason' ]
                 exclude_repositories = exclude_dict[ 'repositories' ]
                 if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
-                    this_repository_is_in_the_exclude_lost = True
+                    this_repository_is_in_the_exclude_list = True
                     skip_reason = reason
                     break
-            if this_repository_is_in_the_exclude_lost:
+            if this_repository_is_in_the_exclude_list:
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=skip_reason )
                 params = dict( tools_functionally_correct=False,
                                do_not_test=False )
@@ -647,19 +654,32 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
                            ( changeset_revision, name, owner ) )
             else:
-                test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
-                test_environment_dict = get_test_environment( test_environment_dict )
+                test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
+                if len( test_environment_dict ) == 0:
+                    # Set information about the tool shed to nothing since we cannot currently determine it from here.
+                    # We could eventually add an API method...
+                    test_environment_dict = dict( tool_shed_database_version='',
+                                                  tool_shed_mercurial_version='',
+                                                  tool_shed_revision='' )
                 # Add the current time as the approximate time that this test run occurs.  A similar value will also be
                 # set to the repository_metadata.time_last_tested column, but we also store it here because the Tool Shed
                 # may be configured to store multiple test run results, so each must be associated with a time stamp.
                 now = time.strftime( "%Y-%m-%d %H:%M:%S" )
+                # Add information about the current platform.
                 test_environment_dict[ 'time_tested' ] = now
+                test_environment_dict[ 'python_version' ] = platform.python_version()
+                test_environment_dict[ 'architecture' ] = platform.machine()
+                operating_system, hostname, operating_system_version, uname, arch, processor = platform.uname()
+                test_environment_dict[ 'system' ] = '%s %s' % ( operating_system, operating_system_version )
+                # Add information about the current Galaxy environment.
                 test_environment_dict[ 'galaxy_database_version' ] = get_database_version( app )
                 test_environment_dict[ 'galaxy_revision' ] = get_repository_current_revision( os.getcwd() )
+                # Initialize and populate the tool_test_results_dict.
                 tool_test_results_dict[ 'test_environment' ] = test_environment_dict
                 tool_test_results_dict[ 'passed_tests' ] = []
                 tool_test_results_dict[ 'failed_tests' ] = []
                 tool_test_results_dict[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
+                # Proceed with installing repositories and testing contained tools.
                 repository, error_message = install_repository( app, repository_dict )
                 if error_message:
                     tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message

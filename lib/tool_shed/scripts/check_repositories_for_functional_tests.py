@@ -4,7 +4,7 @@ import os
 import sys
 
 new_path = [ os.path.join( os.getcwd(), "lib" ),
-            os.path.join( os.getcwd(), "test" ) ]
+             os.path.join( os.getcwd(), "test" ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
@@ -21,8 +21,8 @@ import shutil
 import tempfile
 import time
 
-from base.util import get_database_version
-from base.util import get_repository_current_revision
+from install_and_test_tool_shed_repositories.base.util import get_database_version
+from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select

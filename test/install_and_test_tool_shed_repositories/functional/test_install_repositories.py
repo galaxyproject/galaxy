@@ -1,6 +1,8 @@
-import new, logging
+import logging
+import new
 import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 from install_and_test_tool_shed_repositories.base.twilltestcase import InstallTestRepository
+
 log = logging.getLogger(__name__)
 
 
@@ -80,4 +82,3 @@ def generate_deactivate_or_uninstall_method( repository_dict=None, deactivate=Fa
     # from baseclasses (which should be a tuple of classes) and with namespace dict.
     new_class_obj = new.classobj( str( name ), baseclasses, namespace )
     G[ name ] = new_class_obj
-    

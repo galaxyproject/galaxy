@@ -25,9 +25,8 @@ from mercurial import __version__
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 
-from base.util import get_database_version
-from base.util import get_repository_current_revision
-from base.util import get_test_environment
+from install_and_test_tool_shed_repositories.base.util import get_database_version
+from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
