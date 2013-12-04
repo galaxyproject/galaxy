@@ -1199,6 +1199,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                             key='current_repository_installation_errors',
                                                             label='This repository',
                                                             parent=installation_error_base_folder )
+                        installation_error_base_folder.folders.append( current_repository_folder )
                         for current_repository_error_dict in current_repository_installation_error_dicts:
                             repository_installation_error_id += 1
                             repository_installation_error = \
@@ -1209,13 +1210,13 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              changeset_revision=str( current_repository_error_dict.get( 'changeset_revision', '' ) ),
                                                              error_message=current_repository_error_dict.get( 'error_message', '' ) )
                             current_repository_folder.current_repository_installation_errors.append( repository_installation_error )
-                        installation_error_base_folder.folders.append( current_repository_folder )
                     if len( repository_dependency_installation_error_dicts ) > 0:
                         folder_id += 1
                         repository_dependencies_folder = Folder( id=folder_id,
                                                                  key='repository_dependency_installation_errors',
                                                                  label='Repository dependencies',
                                                                  parent=installation_error_base_folder )
+                        installation_error_base_folder.folders.append( repository_dependencies_folder )
                         for repository_dependency_error_dict in repository_dependency_installation_error_dicts:
                             repository_installation_error_id += 1
                             repository_installation_error = \
@@ -1226,7 +1227,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              changeset_revision=str( repository_dependency_error_dict.get( 'changeset_revision', '' ) ),
                                                              error_message=repository_dependency_error_dict.get( 'error_message', '' ) )
                             repository_dependencies_folder.repository_installation_errors.append( repository_installation_error )
-                        installation_error_base_folder.folders.append( repository_dependencies_folder )
                     if len( tool_dependency_installation_error_dicts ) > 0:
                         # [{'error_message': 'some traceback string' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
                         folder_id += 1
@@ -1234,6 +1234,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                            key='tool_dependency_installation_errors',
                                                            label='Tool dependencies',
                                                            parent=installation_error_base_folder )
+                        installation_error_base_folder.folders.append( tool_dependencies_folder )
                         tool_dependency_error_id = 0
                         for tool_dependency_error_dict in tool_dependency_installation_error_dicts:
                             tool_dependency_error_id += 1
@@ -1244,7 +1245,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                                  version=str( tool_dependency_error_dict.get( 'version', '' ) ),
                                                                  error_message=tool_dependency_error_dict.get( 'error_message', '' ) )
                             tool_dependencies_folder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
-                        installation_error_base_folder.folders.append( tool_dependencies_folder )
     else:
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder

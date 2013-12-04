@@ -688,14 +688,13 @@
         from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "td_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rtdie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table">
+            <table id="test_environment">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -720,14 +719,13 @@
         from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "rd_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rrie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table">
+            <table id="test_environment">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
