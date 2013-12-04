@@ -892,7 +892,7 @@ def build_repository_dependencies_folder( trans, folder_id, repository_dependenc
 def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools' ):
     """Return a folder hierarchy containing valid tools."""
     if tool_dicts:
-        tool_id = 0
+        container_object_tool_id = 0
         folder_id += 1
         tools_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
@@ -901,8 +901,8 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
             folder.description = 'click the name to inspect the tool metadata'
         tools_root_folder.folders.append( folder )
         # Insert a header row.
-        tool_id += 1
-        tool = Tool( id=tool_id,
+        container_object_tool_id += 1
+        tool = Tool( id=container_object_tool_id,
                      tool_config='',
                      tool_id='',
                      name='Name',
@@ -922,21 +922,34 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
             repository_id = None
             repository_installation_status = None
         for tool_dict in tool_dicts:
-            tool_id += 1
-            if 'requirements' in tool_dict:
-                requirements = tool_dict[ 'requirements' ]
+            if not isinstance( tool_dict, dict ):
+                # Due to some previous bug (hopefully not current) invalid tool strings may be included in the recived
+                # list of tool_dicts.  For example, the picard repository metadata has 2 invalid tools in the recieved
+                # list of supposedly valid tools:  'rgPicardASMetrics.xml', 'rgPicardGCBiasMetrics.xml'.
+                continue
+            container_object_tool_id += 1
+            requirements = tool_dict.get( 'requirements', None )
+            if requirements is not None:
+                # 'requirements': [{'version': '1.56.0', 'type': 'package', 'name': 'picard'}], 
                 requirements_str = ''
                 for requirement_dict in requirements:
-                    requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
+                    requirement_name = str( requirement_dict.get( 'name', 'unknown' ) )
+                    requirement_type = str( requirement_dict.get( 'type', 'unknown' ) )
+                    requirements_str += '%s (%s), ' % ( requirement_name, requirement_type )
                 requirements_str = requirements_str.rstrip( ', ' )
             else:
                 requirements_str = 'none'
-            tool = Tool( id=tool_id,
-                         tool_config=tool_dict[ 'tool_config' ],
-                         tool_id=tool_dict[ 'id' ],
-                         name=tool_dict[ 'name' ],
-                         description=tool_dict[ 'description' ],
-                         version=tool_dict[ 'version' ],
+            tool_config = str( tool_dict.get( 'tool_config', 'missing' ) )
+            tool_id = str( tool_dict.get( 'id', 'missing' ) )
+            name = str( tool_dict.get( 'name', 'missing' ) )
+            description = str( tool_dict.get( 'description', '' ) )
+            version = str( tool_dict.get( 'description', 'missing' ) )
+            tool = Tool( id=container_object_tool_id,
+                         tool_config=tool_config,
+                         tool_id=tool_id,
+                         name=name,
+                         description=description,
+                         version=version,
                          requirements=requirements_str,
                          repository_id=repository_id,
                          changeset_revision=changeset_revision,
