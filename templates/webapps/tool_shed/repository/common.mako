@@ -392,11 +392,6 @@
             ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
         %endfor
     %endif
-    %if folder.installation_errors:
-        %for installation_error in folder.installation_errors:
-            ${render_folder( installation_error, pad, my_row, row_counter )}
-        %endfor
-    %endif
     %if folder.tool_dependency_installation_errors:
         %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
             ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
@@ -690,6 +685,7 @@
 
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
     ${render_table_wrap_style( "td_install_error_table" )}
@@ -709,7 +705,7 @@
                     <td>${installation_error.version | h}</td>
                 </tr>
                 <tr><th>Error</th></tr>
-                <tr><td colspan="3">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="3">${unicodify( installation_error.error_message ) | h}</td></tr>
             </table>
         </td>
     </tr>
@@ -721,6 +717,7 @@
 
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
     ${render_table_wrap_style( "rd_install_error_table" )}
@@ -743,7 +740,7 @@
                     </tr>
                 %endif
                 <tr><th>Error</th></tr>
-                <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="4">${unicodify( installation_error.error_message ) | h}</td></tr>
             </table>
         </td>
     </tr>

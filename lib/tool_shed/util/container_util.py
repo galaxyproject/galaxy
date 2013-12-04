@@ -28,7 +28,6 @@ class Folder( object ):
         self.invalid_repository_dependencies = []
         self.invalid_tool_dependencies = []
         self.invalid_tools = []
-        self.installation_errors = []
         self.current_repository_installation_errors = []
         self.repository_installation_errors = []
         self.tool_dependency_installation_errors = []
@@ -1117,7 +1116,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                 tool_shed_revision=tool_shed_revision )
             test_environment_folder.test_environments.append( test_environment )
             not_tested_dict = tool_test_results_dict.get( 'not_tested', {} )
-            if not_tested_dict:
+            if len( not_tested_dict ) > 0:
                 folder_id += 1
                 not_tested_folder = Folder( id=folder_id, key='not_tested', label='Not tested', parent=containing_folder )
                 containing_folder.folders.append( not_tested_folder )
@@ -1126,7 +1125,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                         reason=not_tested_dict.get( 'reason', '' ) )
                 not_tested_folder.not_tested.append( not_tested )
             passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
-            if passed_tests_dicts:
+            if len( passed_tests_dicts ) > 0:
                 folder_id += 1
                 passed_tests_folder = Folder( id=folder_id, key='passed_tests', label='Tests that passed successfully', parent=containing_folder )
                 containing_folder.folders.append( passed_tests_folder )
@@ -1139,7 +1138,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                               tool_version=passed_tests_dict.get( 'tool_version', '' ) )
                     passed_tests_folder.passed_tests.append( passed_test )
             failed_tests_dicts = tool_test_results_dict.get( 'failed_tests', [] )
-            if failed_tests_dicts:
+            if len( failed_tests_dicts ) > 0:
                 folder_id += 1
                 failed_tests_folder = Folder( id=folder_id, key='failed_tests', label='Tests that failed', parent=containing_folder )
                 containing_folder.folders.append( failed_tests_folder )
@@ -1174,28 +1173,33 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                                    tool_version=missing_test_components_dict.get( 'tool_version', '' ) )
                     missing_test_components_folder.missing_test_components.append( missing_test_component )
             installation_error_dict = tool_test_results_dict.get( 'installation_errors', {} )
-            if installation_error_dict:
-                # 'installation_errors': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []}},
-                current_repository_installation_errors = installation_error_dict.get( 'current_repository', [] )
-                repository_dependency_installation_errors = installation_error_dict.get( 'repository_dependencies', [] )
-                tool_dependency_installation_errors = installation_error_dict.get( 'tool_dependencies', [] )
-                if len( current_repository_installation_errors ) > 0 or \
-                    len( repository_dependency_installation_errors ) > 0 or \
-                    len( tool_dependency_installation_errors ) > 0:
+            if len( installation_error_dict ) > 0:
+                # 'installation_errors':
+                #    {'current_repository': [], 
+                #     'repository_dependencies': [], 
+                #     'tool_dependencies': 
+                #        [{'error_message': 'some traceback string' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
+                #    }
+                current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
+                repository_dependency_installation_error_dicts = installation_error_dict.get( 'repository_dependencies', [] )
+                tool_dependency_installation_error_dicts = installation_error_dict.get( 'tool_dependencies', [] )
+                if len( current_repository_installation_error_dicts ) > 0 or \
+                    len( repository_dependency_installation_error_dicts ) > 0 or \
+                    len( tool_dependency_installation_error_dicts ) > 0:
                     repository_installation_error_id = 0
                     folder_id += 1
                     installation_error_base_folder = Folder( id=folder_id,
                                                              key='installation_errors',
                                                              label='Installation errors',
                                                              parent=containing_folder )
-                    containing_folder.installation_errors.append( installation_error_base_folder )
-                    if len( current_repository_installation_errors ) > 0:
+                    containing_folder.folders.append( installation_error_base_folder )
+                    if len( current_repository_installation_error_dicts ) > 0:
                         folder_id += 1
                         current_repository_folder = Folder( id=folder_id,
                                                             key='current_repository_installation_errors',
                                                             label='This repository',
                                                             parent=installation_error_base_folder )
-                        for current_repository_error_dict in current_repository_installation_errors:
+                        for current_repository_error_dict in current_repository_installation_error_dicts:
                             repository_installation_error_id += 1
                             repository_installation_error = \
                                 RepositoryInstallationError( id=repository_installation_error_id,
@@ -1206,13 +1210,13 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              error_message=current_repository_error_dict.get( 'error_message', '' ) )
                             current_repository_folder.current_repository_installation_errors.append( repository_installation_error )
                         installation_error_base_folder.folders.append( current_repository_folder )
-                    if len( repository_dependency_installation_errors ) > 0:
+                    if len( repository_dependency_installation_error_dicts ) > 0:
                         folder_id += 1
                         repository_dependencies_folder = Folder( id=folder_id,
                                                                  key='repository_dependency_installation_errors',
                                                                  label='Repository dependencies',
                                                                  parent=installation_error_base_folder )
-                        for repository_dependency_error_dict in repository_dependency_installation_errors:
+                        for repository_dependency_error_dict in repository_dependency_installation_error_dicts:
                             repository_installation_error_id += 1
                             repository_installation_error = \
                                 RepositoryInstallationError( id=repository_installation_error_id,
@@ -1223,14 +1227,15 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                              error_message=repository_dependency_error_dict.get( 'error_message', '' ) )
                             repository_dependencies_folder.repository_installation_errors.append( repository_installation_error )
                         installation_error_base_folder.folders.append( repository_dependencies_folder )
-                    if len( tool_dependency_installation_errors ) > 0:
+                    if len( tool_dependency_installation_error_dicts ) > 0:
+                        # [{'error_message': 'some traceback string' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
                         folder_id += 1
                         tool_dependencies_folder = Folder( id=folder_id,
                                                            key='tool_dependency_installation_errors',
                                                            label='Tool dependencies',
                                                            parent=installation_error_base_folder )
                         tool_dependency_error_id = 0
-                        for tool_dependency_error_dict in tool_dependency_installation_errors:
+                        for tool_dependency_error_dict in tool_dependency_installation_error_dicts:
                             tool_dependency_error_id += 1
                             tool_dependency_installation_error = \
                                 ToolDependencyInstallationError( id=tool_dependency_error_id,
