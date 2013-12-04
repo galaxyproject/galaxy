@@ -8,13 +8,14 @@ Unit tests for base DataProviders.
 #TODO: fix off by ones in FilteredDataProvider counters
 
 import imp
+import os
 import unittest
 import StringIO
 
 import tempfilecache
 import test_base_dataproviders
 
-utility = imp.load_source( 'utility', '../../util/utility.py' )
+utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
 log = utility.set_up_filelogger( __name__ + '.log' )
 utility.add_galaxy_lib_to_path( 'test/unit/datatypes/dataproviders' )
 
