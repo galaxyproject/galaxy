@@ -8,7 +8,7 @@ import logging
 import pkg_resources
 import inspect
 
-from sqlalchemy import and_, asc, Boolean, Column, create_engine, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
+from sqlalchemy import and_, asc, Boolean, Column, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
@@ -16,11 +16,10 @@ from sqlalchemy.orm import backref, object_session, relation, scoped_session, se
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
-from galaxy.model.orm import load_egg_for_url
+from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.security import GalaxyRBACAgent
 from galaxy.util.bunch import Bunch
-
 
 log = logging.getLogger( __name__ )
 
@@ -2008,19 +2007,8 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    load_egg_for_url( url )
-    # Should we use the logging proxy?
-    if database_query_profiling_proxy:
-        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        proxy = logging_connection_proxy.LoggingProxy()
-    # If metlog is enabled, do micrologging
-    elif trace_logger:
-        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
-    else:
-        proxy = None
-    # Create the database engine
-    engine = create_engine( url, proxy=proxy, **engine_options )
+    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger )
+
     # Connect the metadata to the database.
     metadata.bind = engine
     # Clear any existing contextual sessions and reconfigure

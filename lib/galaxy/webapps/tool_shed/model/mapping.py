@@ -11,7 +11,7 @@ from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.model.orm import load_egg_for_url
+from galaxy.model.orm.engine_factory import build_engine
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
@@ -309,10 +309,8 @@ mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
 
 def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    # Load the appropriate db module
-    load_egg_for_url( url )
     # Create the database engine
-    engine = create_engine( url, **engine_options )
+    engine = build_engine( url, engine_options )
     # Connect the metadata to the database.
     metadata.bind = engine
     # Clear any existing contextual sessions and reconfigure
