@@ -77,10 +77,12 @@ class UniverseApplication( object ):
                                    use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
 
         if combined_install_database:
+            log.info("Install database targetting Galaxy's database configuration.")
             self.install_model = self.model
         else:
             from galaxy.model.tool_shed_install import mapping as install_mapping
             install_db_url = self.config.install_database_connection
+            log.info("Install database using its own connection %s" % install_db_url)
             install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init( install_db_url,
                                                        install_db_engine_options )

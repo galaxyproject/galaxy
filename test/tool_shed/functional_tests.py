@@ -41,11 +41,13 @@ from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 # This is for the galaxy application.
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
+from galaxy.util import asbool
 
 import nose.core
 import nose.config
 import nose.loader
 import nose.plugins.manager
+
 
 from functional import database_contexts
 
@@ -58,6 +60,11 @@ default_tool_shed_locales = 'en'
 default_galaxy_test_port_min = 9000
 default_galaxy_test_port_max = 9999
 default_galaxy_test_host = 'localhost'
+
+# Use separate databases for Galaxy and tool shed install info by default,
+# set GALAXY_TEST_INSTALL_DB_MERGED to True to revert to merged databases
+# behavior.
+default_install_db_merged = False
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -203,6 +210,13 @@ def main():
             __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
             galaxy_database_auto_migrate = True
         galaxy_database_connection = 'sqlite:///%s' % db_path
+    if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
+        install_galaxy_database_connection = os.environ[ 'GALAXY_TEST_INSTALL_DBURI' ]
+    elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
+        install_galaxy_database_connection = galaxy_database_connection
+    else:
+        install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
+        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     tool_shed_global_conf = get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users = 'test@bx.psu.edu',
@@ -323,6 +337,7 @@ def main():
                        allow_user_deletion = True,
                        admin_users = 'test@bx.psu.edu',
                        allow_library_path_paste = True,
+                       install_database_connection = install_galaxy_database_connection,
                        database_connection = galaxy_database_connection,
                        database_auto_migrate = galaxy_database_auto_migrate,
                        datatype_converters_config_file = "datatype_converters_conf.xml.sample",
