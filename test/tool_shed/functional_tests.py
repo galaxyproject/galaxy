@@ -365,6 +365,7 @@ def main():
                                                    static_enabled=True,
                                                    app=galaxyapp )
         database_contexts.galaxy_context = galaxyapp.model.context
+        database_contexts.install_context = galaxyapp.install_model.context
         if galaxy_test_port is not None:
             galaxy_server = httpserver.serve( galaxywebapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:

@@ -143,8 +143,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Example URL: http://localhost:8763/api/tool_shed_repositories
         tool_shed_repository_dicts = []
         try:
-            query = trans.sa_session.query( trans.app.model.ToolShedRepository ) \
-                                    .order_by( trans.app.model.ToolShedRepository.table.c.name ) \
+            query = trans.install_model.context.query( trans.app.install_model.ToolShedRepository ) \
+                                    .order_by( trans.app.install_model.ToolShedRepository.table.c.name ) \
                                     .all()
             for tool_shed_repository in query:
                 tool_shed_repository_dict = tool_shed_repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
@@ -325,9 +325,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
             for index, tsr_id in enumerate( ordered_tsr_ids ):
-                tool_shed_repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
-                if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
-                                                    trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                tool_shed_repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                if tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
+                                                    trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
 
                     repo_info_dict = ordered_repo_info_dicts[ index ]
                     tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
@@ -470,7 +470,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
         if ordered_tsr_ids and ordered_repo_info_dicts:
             for index, tsr_id in enumerate( ordered_tsr_ids ):
-                repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                 repo_info_dict = ordered_repo_info_dicts[ index ]
                 # TODO: handle errors in repair_dict.
                 repair_dict = repository_util.repair_tool_shed_repository( trans,

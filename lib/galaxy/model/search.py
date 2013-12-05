@@ -272,7 +272,7 @@ class ToolView(ViewQueryBaseClass):
 
     def search(self, trans):
         # Likely this will break in subsequent model refactoring. Need to revisit.
-        self.query = trans.sa_session.query( ToolVersion )
+        self.query = trans.install_model.context.query( ToolVersion )
 
 ##################
 #History Dataset Searching

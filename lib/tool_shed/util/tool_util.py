@@ -512,17 +512,17 @@ def get_tool_index_sample_files( sample_files ):
     return tool_index_sample_files
 
 def get_tool_version( app, tool_id ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolVersion ) \
-                     .filter( app.model.ToolVersion.table.c.tool_id == tool_id ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolVersion ) \
+                     .filter( app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                      .first()
 
 def get_tool_version_association( app, parent_tool_version, tool_version ):
     """Return a ToolVersionAssociation if one exists that associates the two received tool_versions"""
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolVersionAssociation ) \
-                     .filter( and_( app.model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
-                                    app.model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolVersionAssociation ) \
+                     .filter( and_( app.install_model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
+                                    app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
 
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
@@ -684,28 +684,28 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     Using the list of tool_version_dicts retrieved from the tool shed (one per changeset revison up to the currently installed changeset revision),
     create the parent / child pairs of tool versions.  Each dictionary contains { tool id : parent tool id } pairs.
     """
-    sa_session = app.model.context.current
+    context = app.install_model.context
     for tool_version_dict in tool_version_dicts:
         for tool_guid, parent_id in tool_version_dict.items():
             tool_version_using_tool_guid = get_tool_version( app, tool_guid )
             tool_version_using_parent_id = get_tool_version( app, parent_id )
             if not tool_version_using_tool_guid:
-                tool_version_using_tool_guid = app.model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
-                sa_session.add( tool_version_using_tool_guid )
-                sa_session.flush()
+                tool_version_using_tool_guid = app.install_model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
+                context.add( tool_version_using_tool_guid )
+                context.flush()
             if not tool_version_using_parent_id:
-                tool_version_using_parent_id = app.model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
-                sa_session.add( tool_version_using_parent_id )
-                sa_session.flush()
+                tool_version_using_parent_id = app.install_model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
+                context.add( tool_version_using_parent_id )
+                context.flush()
             tool_version_association = get_tool_version_association( app,
                                                                      tool_version_using_parent_id,
                                                                      tool_version_using_tool_guid )
             if not tool_version_association:
                 # Associate the two versions as parent / child.
-                tool_version_association = app.model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
+                tool_version_association = app.install_model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
                                                                              parent_id=tool_version_using_parent_id.id )
-                sa_session.add( tool_version_association )
-                sa_session.flush()
+                context.add( tool_version_association )
+                context.flush()
 
 def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
     """Only ever called from Galaxy end when installing"""
@@ -967,8 +967,8 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     # in the same way when the repository is activated or reinstalled.
     tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
     repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
+    trans.install_model.context.add( repository )
+    trans.install_model.context.flush()
     # Create a list of guids for all tools that will be removed from the in-memory tool panel and config file on disk.
     guids_to_remove = [ k for k in tool_panel_dict.keys() ]
     # Remove the tools from the toolbox's tools_by_id dictionary.

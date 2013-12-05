@@ -103,7 +103,7 @@ class BaseController( object ):
         elif class_name == 'LibraryDataset':
             item_class = self.app.model.LibraryDataset
         elif class_name == 'ToolShedRepository':
-            item_class = self.app.model.ToolShedRepository
+            item_class = self.app.install_model.ToolShedRepository
         else:
             item_class = None
         return item_class

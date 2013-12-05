@@ -3,3 +3,4 @@
 # code base.
 galaxy_context = None
 tool_shed_context = None
+install_context = None

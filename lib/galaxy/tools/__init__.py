@@ -414,15 +414,15 @@ class ToolBox( object, Dictifiable ):
 
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                               .first()
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        return self.sa_session.query( self.app.model.ToolShedRepository ) \
-                              .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                             self.app.model.ToolShedRepository.table.c.name == name,
-                                             self.app.model.ToolShedRepository.table.c.owner == owner,
-                                             self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                              .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                             self.app.install_model.ToolShedRepository.table.c.name == name,
+                                             self.app.install_model.ToolShedRepository.table.c.owner == owner,
+                                             self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
@@ -503,9 +503,9 @@ class ToolBox( object, Dictifiable ):
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
                 if not self.__get_tool_version( tool.id ):
-                    tool_version = self.app.model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
-                    self.sa_session.add( tool_version )
-                    self.sa_session.flush()
+                    tool_version = self.app.install_model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
+                    self.app.install_model.context.add( tool_version )
+                    self.app.install_model.context.flush()
                 # Load the tool's lineage ids.
                 tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
@@ -1003,8 +1003,8 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == self.id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
                               .first()
     @property
     def tool_versions( self ):
@@ -1698,9 +1698,9 @@ class Tool( object, Dictifiable ):
         return param
 
     def populate_tool_shed_info( self ):
-        if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
+        if self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id( self.repository_id )
-            tool_shed_repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( repository_id )
+            tool_shed_repository = self.app.install_model.context.query( self.app.install_model.ToolShedRepository ).get( repository_id )
             if tool_shed_repository:
                 self.tool_shed = tool_shed_repository.tool_shed
                 self.repository_name = tool_shed_repository.name

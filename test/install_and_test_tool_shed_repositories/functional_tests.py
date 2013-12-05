@@ -220,7 +220,7 @@ class ReportResults( Plugin ):
 def deactivate_repository( app, repository_dict ):
     # Clean out any generated tests. This is necessary for Twill.
     remove_generated_tests( app )
-    sa_session = app.model.context.current
+    sa_session = app.install_model.context.current
     # The dict contains the only repository the app should have installed at this point.
     repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( str( repository_dict[ 'name' ] ),
                                                                                          str( repository_dict[ 'owner' ] ),
@@ -938,6 +938,7 @@ def main():
     kwargs[ 'config_file' ] = galaxy_config_file
     app = UniverseApplication( **kwargs )
     database_contexts.galaxy_context = app.model.context
+    database_contexts.install_context = app.install_model.context
 
     log.debug( "Embedded Galaxy application started..." )
     # ---- Run galaxy webserver ------------------------------------------------------

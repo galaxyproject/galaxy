@@ -35,17 +35,17 @@ ${render_galaxy_repository_actions( repository )}
                     else:
                         error_message = ''
                     if not can_install:
-                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                       trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                       trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
-                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                           trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_uninstall = True
                 %>
                 <tr>
                     <td>
-                        %if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        %if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
                                 ${tool_dependency.name}
                             </a>

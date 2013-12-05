@@ -1487,8 +1487,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         invalid_tools = metadata.get( 'invalid_tools', None )
         # Handle README files.
         if repository.has_readme_files:
-            if reinstalling or repository.status not in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                          trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+            if reinstalling or repository.status not in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                          trans.install_model.ToolShedRepository.installation_status.INSTALLED ]:
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
@@ -1582,8 +1582,8 @@ def reset_all_metadata_on_installed_repository( trans, id ):
         repository.metadata = metadata_dict
         if metadata_dict != original_metadata_dict:
             suc.update_in_shed_tool_config( trans.app, repository )
-            trans.sa_session.add( repository )
-            trans.sa_session.flush()
+            trans.install_model.context.add( repository )
+            trans.install_model.context.flush()
             log.debug( 'Metadata has been reset on repository %s.' % repository.name )
         else:
             log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
@@ -1916,7 +1916,7 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
         dependency_install_dir = tool_dependency.installation_directory( app )
         removed_from_disk, error_message = tool_dependency_util.remove_tool_dependency_installation_directory( dependency_install_dir )
         if removed_from_disk:
-            sa_session = app.model.context.current
+            context = app.install_model.context
             new_dependency_name = None
             new_dependency_type = None
             new_dependency_version = None
@@ -1933,17 +1933,17 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                            ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ), str( new_dependency_type ), str( new_dependency_version ) ) )
                 tool_dependency.type = new_dependency_type
                 tool_dependency.version = new_dependency_version
-                tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
+                tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
                 tool_dependency.error_message = None
-                sa_session.add( tool_dependency )
-                sa_session.flush()
+                context.add( tool_dependency )
+                context.flush()
                 new_tool_dependency = tool_dependency
             else:
                 # We have no new tool dependency definition based on a matching dependency name, so remove the existing tool dependency record from the database.
                 log.debug( "Deleting tool dependency with name '%s', type '%s' and version '%s' from the database since it is no longer defined." % \
                            ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ) ) )
-                sa_session.delete( tool_dependency )
-                sa_session.flush()
+                context.delete( tool_dependency )
+                context.flush()
     return new_tool_dependency
 
 def update_repository_dependencies_metadata( metadata, repository_dependency_tups, is_valid, description ):

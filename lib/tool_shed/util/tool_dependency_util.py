@@ -42,7 +42,7 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
 
 def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
-    sa_session = app.model.context.current
+    context = app.install_model.context
     # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     if version:
         tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
@@ -58,9 +58,9 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
         # Create a new tool_dependency record for the tool_shed_repository.
         log.debug( 'Creating a new record for tool dependency %s version %s for tool shed repository %s with changeset revision %s.' % 
                    ( str( name ), str( version ), str( tool_shed_repository.name ), str( tool_shed_repository.changeset_revision ) ) )
-        tool_dependency = app.model.ToolDependency( tool_shed_repository.id, name, version, type, status )
-    sa_session.add( tool_dependency )
-    sa_session.flush()
+        tool_dependency = app.install_model.ToolDependency( tool_shed_repository.id, name, version, type, status )
+    context.add( tool_dependency )
+    context.flush()
     return tool_dependency
 
 def create_tool_dependency_objects( app, tool_shed_repository, relative_install_dir, set_status=True ):
@@ -87,7 +87,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                     name=name,
                                                                     version=version,
                                                                     type=tool_dependency_type,
-                                                                    status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                    status=app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                     set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
         elif tool_dependency_type == 'set_environment':
@@ -101,7 +101,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                         name=name,
                                                                         version=None,
                                                                         type=tool_dependency_type,
-                                                                        status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                        status=app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                         set_status=set_status )
                     tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
@@ -243,7 +243,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                             tool_dependency_status = 'Never installed'
                         td_info_dict[ 'status' ] = tool_dependency_status
                         val[ index ] = td_info_dict
-                        if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
+                        if tool_dependency.status == trans.install_model.ToolDependency.installation_status.INSTALLED:
                             tool_dependencies[ td_key ] = val
                         else:
                             missing_tool_dependencies[ td_key ] = val
@@ -260,7 +260,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                     else:
                         tool_dependency_status = 'Never installed'
                     val[ 'status' ] = tool_dependency_status
-                    if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
+                    if tool_dependency.status == trans.install_model.ToolDependency.installation_status.INSTALLED:
                         tool_dependencies[ td_key ] = val
                     else:
                         missing_tool_dependencies[ td_key ] = val
@@ -291,31 +291,31 @@ def get_required_repository_package_env_sh_path( app, package_name, package_vers
 
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
-    return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
+    return trans.install_model.context.query( trans.install_model.ToolDependency ).get( trans.security.decode_id( id ) )
 
 def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolDependency ) \
-                     .filter( and_( app.model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                    app.model.ToolDependency.table.c.name == name,
-                                    app.model.ToolDependency.table.c.type == type ) ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolDependency ) \
+                     .filter( and_( app.install_model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
+                                    app.install_model.ToolDependency.table.c.name == name,
+                                    app.install_model.ToolDependency.table.c.type == type ) ) \
                      .first()
 
 def get_tool_dependency_by_name_version_type( app, name, version, type ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolDependency ) \
-                     .filter( and_( app.model.ToolDependency.table.c.name == name,
-                                    app.model.ToolDependency.table.c.version == version,
-                                    app.model.ToolDependency.table.c.type == type ) ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolDependency ) \
+                     .filter( and_( app.install_model.ToolDependency.table.c.name == name,
+                                    app.install_model.ToolDependency.table.c.version == version,
+                                    app.install_model.ToolDependency.table.c.type == type ) ) \
                      .first()
 
 def get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolDependency ) \
-                     .filter( and_( app.model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                    app.model.ToolDependency.table.c.name == name,
-                                    app.model.ToolDependency.table.c.version == version,
-                                    app.model.ToolDependency.table.c.type == type ) ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolDependency ) \
+                     .filter( and_( app.install_model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
+                                    app.install_model.ToolDependency.table.c.name == name,
+                                    app.install_model.ToolDependency.table.c.version == version,
+                                    app.install_model.ToolDependency.table.c.type == type ) ) \
                      .first()
 
 def get_tool_dependency_ids( as_string=False, **kwd ):
@@ -357,7 +357,7 @@ def handle_tool_dependency_installation_error( app, tool_dependency, error_messa
     # Since there was an installation error, remove the installation directory because the install_package method uses 
     # this: "if os.path.exists( install_dir ):". Setting remove_installation_path to True should rarely occur. It is
     # currently set to True only to handle issues with installing tool dependencies into an Amazon S3 bucket. 
-    sa_session = app.model.context.current
+    sa_session = app.install_model.context
     tool_shed_repository = tool_dependency.tool_shed_repository
     install_dir = get_tool_dependency_install_dir( app=app,
                                                    repository_name=tool_shed_repository.name,
@@ -375,20 +375,20 @@ def handle_tool_dependency_installation_error( app, tool_dependency, error_messa
                 shutil.rmtree( install_dir )
             except Exception, e:
                 log.exception( 'Error removing existing installation directory %s.', install_dir )
-    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+    tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
     tool_dependency.error_message = error_message
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
 
 def mark_tool_dependency_installed( app, tool_dependency ):
-    if tool_dependency.status not in [ app.model.ToolDependency.installation_status.ERROR,
-                                       app.model.ToolDependency.installation_status.INSTALLED ]:
+    if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.ERROR,
+                                       app.install_model.ToolDependency.installation_status.INSTALLED ]:
         log.debug( 'Changing status for tool dependency %s from %s to %s.' % \
-            ( str( tool_dependency.name ), str( tool_dependency.status ), str( app.model.ToolDependency.installation_status.INSTALLED ) ) )
+            ( str( tool_dependency.name ), str( tool_dependency.status ), str( app.install_model.ToolDependency.installation_status.INSTALLED ) ) )
         tool_dependency = set_tool_dependency_attributes( app,
                                                           tool_dependency=tool_dependency,
-                                                          status=app.model.ToolDependency.installation_status.INSTALLED,
+                                                          status=app.install_model.ToolDependency.installation_status.INSTALLED,
                                                           error_message=None,
                                                           remove_from_disk=False )
     return tool_dependency
@@ -479,14 +479,14 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
     return installed_tool_dependencies, missing_tool_dependencies
 
 def remove_tool_dependency( app, tool_dependency ):
-    sa_session = app.model.context.current
+    context = app.install_model.context
     dependency_install_dir = tool_dependency.installation_directory( app )
     removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
-        tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
+        tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
-        sa_session.add( tool_dependency )
-        sa_session.flush()
+        context.add( tool_dependency )
+        context.flush()
     return removed, error_message
 
 def remove_tool_dependency_installation_directory( dependency_install_dir ):
@@ -506,7 +506,7 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
     return removed, error_message
 
 def set_tool_dependency_attributes( app, tool_dependency, status, error_message=None, remove_from_disk=False ):
-    sa_session = app.model.context.current
+    sa_session = app.install_model.context
     if remove_from_disk:
         installation_directory = tool_dependency.installation_directory( app )
         removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
@@ -527,14 +527,14 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
     # Shed's install and test framework is running.
-    sa_session = app.model.context.current
+    sa_session = app.install_model.context.current
     can_install_tool_dependency = False
     tool_dependency = get_tool_dependency_by_name_version_type_repository( app,
                                                                            tool_shed_repository,
                                                                            tool_dependency_name,
                                                                            tool_dependency_version,
                                                                            tool_dependency_type )
-    if tool_dependency.status == app.model.ToolDependency.installation_status.INSTALLING:
+    if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLING:
         # The tool dependency is in an Installing state, so we don't want to do anything to it.  If the tool
         # dependency is being installed by someone else, we don't want to interfere with that.  This assumes
         # the installation by "someone else" is not hung in an Installing state, which is a weakness if that
@@ -559,12 +559,12 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             if app.config.running_functional_tests:
                 # If we are running functional tests, the state will be set to Installed because previously compiled
                 # tool dependencies are not deleted by default, from the "install and test" framework..
-                tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
+                tool_dependency.status = app.install_model.ToolDependency.installation_status.INSTALLED
             else:
                 error_message = 'The installation directory for this tool dependency had contents, but the database had no record. '
                 error_message += 'The installation log may show this tool dependency to be correctly installed, but due to the '
                 error_message += 'missing database record, it is automatically set to Error.'
-                tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
                 tool_dependency.error_message = error_message
         else:
             error_message = '\nInstallation path %s for tool dependency %s version %s exists, but the expected file %s' % \
@@ -575,7 +575,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
             error_message += ' prepared for re-installation.'
             print error_message
-            tool_dependency.status = app.model.ToolDependency.installation_status.NEVER_INSTALLED
+            tool_dependency.status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
             suc.remove_dir( tool_dependency_install_dir )
             can_install_tool_dependency = True
         sa_session.add( tool_dependency )

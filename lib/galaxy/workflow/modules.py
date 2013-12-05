@@ -261,8 +261,8 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
-        return trans.sa_session.query( trans.app.model.ToolVersion ) \
-                               .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
+                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                                .first()
 
     def save_to_step( self, step ):

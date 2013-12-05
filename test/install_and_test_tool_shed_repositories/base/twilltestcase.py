@@ -159,4 +159,3 @@ class InstallTestRepository( TwillTestCase ):
                                               ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )
-

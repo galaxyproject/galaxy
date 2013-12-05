@@ -428,8 +428,9 @@ class ToolVersionListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+    
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.install_model.context.query( self.model_class )
 
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
 

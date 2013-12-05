@@ -12,8 +12,8 @@ log = logging.getLogger( __name__ )
 class InstalledRepositoryManager( object ):
     def __init__( self, app ):
         self.app = app
-        self.model = self.app.model
-        self.sa_session = self.model.context.current
+        self.install_model = self.app.install_model
+        self.context = self.install_model.context
         self.tool_configs = self.app.config.tool_configs
         if self.app.config.migrated_tools_config not in self.tool_configs:
             self.tool_configs.append( self.app.config.migrated_tools_config )
@@ -37,10 +37,10 @@ class InstalledRepositoryManager( object ):
                     return relative_path
         return None
     def load_proprietary_datatypes( self ):
-        for tool_shed_repository in self.sa_session.query( self.model.ToolShedRepository ) \
-                                                   .filter( and_( self.model.ToolShedRepository.table.c.includes_datatypes==True,
-                                                                  self.model.ToolShedRepository.table.c.deleted==False ) ) \
-                                                   .order_by( self.model.ToolShedRepository.table.c.id ):
+        for tool_shed_repository in self.context.query( self.install_model.ToolShedRepository ) \
+                                                   .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
+                                                                  self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
+                                                   .order_by( self.install_model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
                 installed_repository_dict = tool_shed.util.datatype_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )

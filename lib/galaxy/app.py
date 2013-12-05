@@ -66,6 +66,10 @@ class UniverseApplication( object ):
                                    object_store = self.object_store,
                                    trace_logger=self.trace_logger,
                                    use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+        # Want tool_shed_install models accessed through new attribute
+        # (install_model). This is the same object for now, but should ultimately
+        # be allowed to be a separate ModelMapping instances.
+        self.install_model = self.model
         # Manage installed tool shed repositories.
         self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.

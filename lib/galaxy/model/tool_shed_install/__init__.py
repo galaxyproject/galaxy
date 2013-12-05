@@ -547,24 +547,24 @@ class ToolVersion( object, Dictifiable ):
         self.tool_shed_repository = tool_shed_repository
 
     def get_previous_version( self, app ):
-        sa_session = app.model.context.current
-        tva = sa_session.query( app.model.ToolVersionAssociation ) \
-                        .filter( app.model.ToolVersionAssociation.table.c.tool_id == self.id ) \
+        context = app.install_model.context
+        tva = context.query( app.install_model.ToolVersionAssociation ) \
+                        .filter( app.install_model.ToolVersionAssociation.table.c.tool_id == self.id ) \
                         .first()
         if tva:
-            return sa_session.query( app.model.ToolVersion ) \
-                             .filter( app.model.ToolVersion.table.c.id == tva.parent_id ) \
+            return context.query( app.install_model.ToolVersion ) \
+                             .filter( app.install_model.ToolVersion.table.c.id == tva.parent_id ) \
                              .first()
         return None
 
     def get_next_version( self, app ):
-        sa_session = app.model.context.current
-        tva = sa_session.query( app.model.ToolVersionAssociation ) \
-                        .filter( app.model.ToolVersionAssociation.table.c.parent_id == self.id ) \
+        context = app.install_model.context
+        tva = context.query( app.install_model.ToolVersionAssociation ) \
+                        .filter( app.install_model.ToolVersionAssociation.table.c.parent_id == self.id ) \
                         .first()
         if tva:
-            return sa_session.query( app.model.ToolVersion ) \
-                             .filter( app.model.ToolVersion.table.c.id == tva.tool_id ) \
+            return context.query( app.install_model.ToolVersion ) \
+                             .filter( app.install_model.ToolVersion.table.c.id == tva.tool_id ) \
                              .first()
         return None
 
