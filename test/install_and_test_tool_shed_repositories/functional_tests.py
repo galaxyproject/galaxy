@@ -24,7 +24,7 @@ eggs.require( 'mercurial' )
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import functional.test_toolbox as test_toolbox
+test_toolbox = None
 import httplib
 import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
@@ -939,6 +939,9 @@ def main():
     app = UniverseApplication( **kwargs )
     database_contexts.galaxy_context = app.model.context
     database_contexts.install_context = app.install_model.context
+    global test_toolbox
+    import functional.test_toolbox as imported_test_toolbox
+    test_toolbox = imported_test_toolbox
 
     log.debug( "Embedded Galaxy application started..." )
     # ---- Run galaxy webserver ------------------------------------------------------
