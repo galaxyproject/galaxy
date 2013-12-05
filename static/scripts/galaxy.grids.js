@@ -200,7 +200,7 @@ var GridView = Backbone.View.extend({
                 var text_input_obj = $('#input-' + column_key + '-filter');
                 var text_input = text_input_obj.val();
                 text_input_obj.val('');
-                self.add_filter_condition(column_key, text_input, true);
+                self.add_filter_condition(column_key, text_input);
                 return false;
             });
         });
@@ -221,7 +221,7 @@ var GridView = Backbone.View.extend({
         // Initialize standard, advanced search toggles.
         $('.advanced-search-toggle').each( function() {
             $(this).click( function() {
-                $("#standard-search").slideToggle('fast');
+                $('#standard-search').slideToggle('fast');
                 $('#advanced-search').slideToggle('fast');
                 return false;
             });
@@ -335,14 +335,14 @@ var GridView = Backbone.View.extend({
     },
 
     // Add a condition to the grid filter; this adds the condition and refreshes the grid.
-    add_filter_condition: function (name, value, append) {
+    add_filter_condition: function (name, value) {
         // Do nothing is value is empty.
         if (value === "") {
             return false;
         }
         
         // Add condition to grid.
-        this.grid.add_filter(name, value, append);
+        this.grid.add_filter(name, value, true);
         
         // Add button that displays filter and provides a button to delete it.
         var t = $("<span>" + value + "<a href='javascript:void(0);'><span class='delete-search-icon' /></span></a>");

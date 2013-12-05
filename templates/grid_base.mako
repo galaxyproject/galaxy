@@ -235,8 +235,13 @@
         {
             // Put tag name and value together.
             var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "");
-            $('#advanced-search').show('fast');
-            gridView.add_filter_condition("tags", tag, true);
+            var advanced_search = $('#advanced-search').is(":visible");
+            if (!advanced_search)
+            {
+                $('#standard-search').slideToggle('fast');
+                $('#advanced-search').slideToggle('fast');
+            }
+            gridView.add_filter_condition("tags", tag);
         };
     </script>
 </%def>
