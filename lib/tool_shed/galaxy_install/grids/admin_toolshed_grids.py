@@ -1,6 +1,7 @@
 import logging
 
-from galaxy import model, util
+from galaxy import util
+from galaxy.model import tool_shed_install
 from galaxy.web.framework.helpers import iff, grids
 from galaxy.web import url_for
 from galaxy.model.orm import or_
@@ -123,7 +124,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                 return accepted_filters
     # Grid definition
     title = "Installed tool shed repositories"
-    model_class = model.ToolShedRepository
+    model_class = tool_shed_install.ToolShedRepository
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
     columns = [
@@ -131,7 +132,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                               attach_popup=False ),
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: iff( item.status in [ model.ToolShedRepository.installation_status.CLONING ],
+                    link=( lambda item: iff( item.status in [ tool_shed_install.ToolShedRepository.installation_status.CLONING ],
                                              None,
                                              dict( operation="manage_repository", id=item.id ) ) ),
                     attach_popup=True ),
@@ -164,23 +165,23 @@ class InstalledRepositoryGrid( grids.Grid ):
                    grids.GridOperation( "Get updates",
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted and item.revision_update_available and item.status not in \
-                                            [ model.ToolShedRepository.installation_status.ERROR, model.ToolShedRepository.installation_status.NEW ] ),
+                                            [ tool_shed_install.ToolShedRepository.installation_status.ERROR, tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='get updates' ) ),
                    grids.GridOperation( "Install",
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.status == model.ToolShedRepository.installation_status.NEW ),
+                                        condition=( lambda item: not item.deleted and item.status == tool_shed_install.ToolShedRepository.installation_status.NEW ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='manage_repository', operation='install' ) ),
                    grids.GridOperation( "Deactivate or uninstall",
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted and item.status not in \
-                                            [ model.ToolShedRepository.installation_status.ERROR, model.ToolShedRepository.installation_status.NEW ] ),
+                                            [ tool_shed_install.ToolShedRepository.installation_status.ERROR, tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='deactivate or uninstall' ) ),
                    grids.GridOperation( "Reset to install",
                                         allow_multiple=False,
-                                        condition=( lambda item: ( item.status == model.ToolShedRepository.installation_status.ERROR ) ),
+                                        condition=( lambda item: ( item.status == tool_shed_install.ToolShedRepository.installation_status.ERROR ) ),
                                         async_compatible=False,
                                         url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='reset to install' ) ),
                    grids.GridOperation( "Activate or reinstall",
@@ -274,7 +275,7 @@ class RepositoryInstallationGrid( grids.Grid ):
 
     title = "Monitor installing tool shed repositories"
     template = "admin/tool_shed_repository/repository_installation_grid.mako"
-    model_class = model.ToolShedRepository
+    model_class = tool_shed_install.ToolShedRepository
     default_sort_key = "-create_time"
     num_rows_per_page = 50
     preserve_state = True
@@ -282,13 +283,13 @@ class RepositoryInstallationGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     link=( lambda item: iff( item.status in \
-                                             [ model.ToolShedRepository.installation_status.NEW,
-                                               model.ToolShedRepository.installation_status.CLONING,
-                                               model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                                               model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                                               model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                                               model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
-                                               model.ToolShedRepository.installation_status.UNINSTALLED ], \
+                                             [ tool_shed_install.ToolShedRepository.installation_status.NEW,
+                                               tool_shed_install.ToolShedRepository.installation_status.CLONING,
+                                               tool_shed_install.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
+                                               tool_shed_install.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
+                                               tool_shed_install.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
+                                               tool_shed_install.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
+                                               tool_shed_install.ToolShedRepository.installation_status.UNINSTALLED ], \
                                              None, dict( action="manage_repository", id=item.id ) ) ),
                     filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -372,16 +373,16 @@ class ToolDependencyGrid( grids.Grid ):
 
     title = "Tool Dependencies"
     template = "admin/tool_shed_repository/tool_dependencies_grid.mako"
-    model_class = model.ToolDependency
+    model_class = tool_shed_install.ToolDependency
     default_sort_key = "-create_time"
     num_rows_per_page = 50
     preserve_state = True
     use_paging = False
     columns = [
         NameColumn( "Name",
-                    link=( lambda item: iff( item.status in [ model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                              model.ToolDependency.installation_status.INSTALLING,
-                                                              model.ToolDependency.installation_status.UNINSTALLED ],
+                    link=( lambda item: iff( item.status in [ tool_shed_install.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                              tool_shed_install.ToolDependency.installation_status.INSTALLING,
+                                                              tool_shed_install.ToolDependency.installation_status.UNINSTALLED ],
                                              None,
                                              dict( action="manage_tool_dependencies", operation='browse', id=item.id ) ) ),
                     filterable="advanced" ),

@@ -1,4 +1,5 @@
 import galaxy.model as model
+import galaxy.model.tool_shed_install as install_model
 import common, string, os, re, test_db_util, simplejson, logging, time, sys
 import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
@@ -137,8 +138,8 @@ class InstallTestRepository( TwillTestCase ):
         return new_url
 
     def wait_for_repository_installation( self, repository_ids ):
-        final_states = [ model.ToolShedRepository.installation_status.ERROR,
-                         model.ToolShedRepository.installation_status.INSTALLED ]
+        final_states = [ install_model.ToolShedRepository.installation_status.ERROR,
+                         install_model.ToolShedRepository.installation_status.INSTALLED ]
         # Wait until all repositories are in a final state before returning. This ensures that subsequent tests
         # are running against an installed repository, and not one that is still in the process of installing.
         if repository_ids:

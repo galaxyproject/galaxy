@@ -1,5 +1,6 @@
 import logging
 import galaxy.model as model
+import galaxy.model.tool_shed_install as install_model
 from galaxy.model.orm import and_
 from functional.database_contexts import galaxy_context as sa_session
 
@@ -19,15 +20,15 @@ def flush( obj ):
     sa_session.flush()
 
 def get_repository( repository_id ):
-    return sa_session.query( model.ToolShedRepository ) \
-                     .filter( model.ToolShedRepository.table.c.id == repository_id ) \
+    return sa_session.query( install_model.ToolShedRepository ) \
+                     .filter( install_model.ToolShedRepository.table.c.id == repository_id ) \
                      .first()
 
 def get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision ):
-    return sa_session.query( model.ToolShedRepository ) \
-                     .filter( and_( model.ToolShedRepository.table.c.name == name,
-                                    model.ToolShedRepository.table.c.owner == owner,
-                                    model.ToolShedRepository.table.c.installed_changeset_revision == changeset_revision ) ) \
+    return sa_session.query( install_model.ToolShedRepository ) \
+                     .filter( and_( install_model.ToolShedRepository.table.c.name == name,
+                                    install_model.ToolShedRepository.table.c.owner == owner,
+                                    install_model.ToolShedRepository.table.c.installed_changeset_revision == changeset_revision ) ) \
                      .one()
 
 
@@ -39,18 +40,18 @@ def get_private_role( user ):
 
 def get_tool_dependencies_for_installed_repository( repository_id, status=None, exclude_status=None ):
     if status is not None:
-        return sa_session.query( model.ToolDependency ) \
-                         .filter( and_( model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
-                                        model.ToolDependency.table.c.status == status ) ) \
+        return sa_session.query( install_model.ToolDependency ) \
+                         .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
+                                        install_model.ToolDependency.table.c.status == status ) ) \
                          .all()
     elif exclude_status is not None:
-        return sa_session.query( model.ToolDependency ) \
-                         .filter( and_( model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
-                                        model.ToolDependency.table.c.status != exclude_status ) ) \
+        return sa_session.query( install_model.ToolDependency ) \
+                         .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
+                                        install_model.ToolDependency.table.c.status != exclude_status ) ) \
                          .all()
     else:
-        return sa_session.query( model.ToolDependency ) \
-                         .filter( model.ToolDependency.table.c.tool_shed_repository_id == repository_id ) \
+        return sa_session.query( install_model.ToolDependency ) \
+                         .filter( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id ) \
                          .all()
 
 def mark_obj_deleted( obj ):
