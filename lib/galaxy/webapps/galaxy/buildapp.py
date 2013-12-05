@@ -221,6 +221,12 @@ def app_factory( global_conf, **kwargs ):
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+
     # Return
     return webapp
 

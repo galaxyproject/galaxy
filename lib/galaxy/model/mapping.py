@@ -14,7 +14,6 @@ from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapp
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
-from galaxy.model import tool_shed_install
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
@@ -24,10 +23,6 @@ from galaxy.security import GalaxyRBACAgent
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-
-# import tool shed mappings, TODO: update all references to eliminate
-# need for this import.
-from .tool_shed_install.mapping import *
 
 
 model.User.table = Table( "galaxy_user", metadata,
@@ -1894,7 +1889,7 @@ def db_next_hid( self ):
 model.History._next_hid = db_next_hid
 
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
+def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
@@ -1908,7 +1903,13 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     # Connect the metadata to the database.
     metadata.bind = engine
 
-    result = ModelMapping([model, tool_shed_install], engine=engine)
+    model_modules = [model]
+    if map_install_models:
+        import galaxy.model.tool_shed_install.mapping
+        from galaxy.model import tool_shed_install
+        model_modules.append(tool_shed_install)
+
+    result = ModelMapping(model_modules, engine=engine)
 
     # Create tables if needed
     if create_tables:

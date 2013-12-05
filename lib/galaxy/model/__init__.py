@@ -43,11 +43,6 @@ datatypes_registry = galaxy.datatypes.registry.Registry()
 # Default Value Required for unit tests
 datatypes_registry.load_datatypes()
 
-# TODO: Refactor references to these classes to eliminate need for this
-# import.
-from .tool_shed_install import ToolShedRepository, RepositoryRepositoryDependencyAssociation, RepositoryDependency
-from .tool_shed_install import ToolDependency, ToolVersion, ToolVersionAssociation, MigrateTools
-
 
 class NoConverterException(Exception):
     def __init__(self, value):

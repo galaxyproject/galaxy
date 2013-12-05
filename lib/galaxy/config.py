@@ -33,15 +33,22 @@ class Configuration( object ):
         self.umask = os.umask( 077 ) # get the current umask
         os.umask( self.umask ) # can't get w/o set, so set it back
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
         self.database_auto_migrate = string_as_bool( kwargs.get( "database_auto_migrate", "False" ) )
+
+        # Install database related configuration (if different).
+        self.install_database_connection = kwargs.get( "install_database_connection", None )
+        self.install_database_engine_options = get_database_engine_options( kwargs, model_prefix="install_" )
+
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -439,7 +446,7 @@ class Configuration( object ):
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
 
-def get_database_engine_options( kwargs ):
+def get_database_engine_options( kwargs, model_prefix='' ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
@@ -455,7 +462,7 @@ def get_database_engine_options( kwargs ):
         'pool_threadlocal': string_as_bool,
         'server_side_cursors': string_as_bool
     }
-    prefix = "database_engine_option_"
+    prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
     for key, value in kwargs.iteritems():

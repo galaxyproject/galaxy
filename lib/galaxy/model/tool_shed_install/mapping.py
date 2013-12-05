@@ -1,11 +1,14 @@
-#from galaxy.model import tool_shed_models as install_model
-from galaxy import model as install_model
-#from sqlalchemy import MetaData
+from galaxy.model import tool_shed_install as install_model
+from sqlalchemy import MetaData
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, TEXT
 from sqlalchemy.orm import relation, mapper
 from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.now import now
-from galaxy.model.mapping import metadata
+from galaxy.model.base import ModelMapping
+from galaxy.model.orm.engine_factory import build_engine
+
+
+metadata = MetaData()
 
 
 install_model.ToolShedRepository.table = Table( "tool_shed_repository", metadata,
@@ -103,3 +106,23 @@ mapper( install_model.ToolVersion, install_model.ToolVersion.table,
  )
 
 mapper( install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table )
+
+
+def init( url, engine_options={}, create_tables=False ):
+    """Connect mappings to the database"""
+    # Load the appropriate db module
+    engine = build_engine( url, engine_options )
+
+    # Connect the metadata to the database.
+    metadata.bind = engine
+
+    result = ModelMapping([install_model], engine=engine)
+
+    # Create tables if needed
+    if create_tables:
+        metadata.create_all()
+        # metadata.engine.commit()
+
+    result.create_tables = create_tables
+    #load local galaxy security policy
+    return result
