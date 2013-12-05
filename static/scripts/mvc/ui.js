@@ -196,7 +196,10 @@ var PopupMenu = Backbone.View.extend({
      */
     initialize: function( $button, options ){
         // default settings
-        this.$button = $button || $( '<div/>' );
+        this.$button = $button;
+        if( !this.$button.size() ){
+            this.$button = $( '<div/>' );
+        }
         this.options = options || [];
 
         // set up button click -> open menu behavior
