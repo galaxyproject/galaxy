@@ -1802,6 +1802,10 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
             if new_val == old_val:
                 continue
 
+            # special cases here
+            if key == 'deleted' and new_val is False and self.purged:
+                raise Exception( 'Cannot undelete a purged dataset' )
+
             self.__setattr__( key, new_val )
             changed[ key ] = new_val
 
