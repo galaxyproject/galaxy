@@ -120,6 +120,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'state'  : hda.state,
             'deleted': hda.deleted,
             'visible': hda.visible,
+            'purged': hda.purged,
             'hid'   : hda.hid,
             'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
         }
@@ -309,8 +310,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( exception ) }
         return changed
 
+    #TODO: allow anonymous del/purge and test security on this
     @web.expose_api
-    def delete( self, trans, history_id, id, **kwd ):
+    def delete( self, trans, history_id, id, purge=False, **kwd ):
         """
         delete( self, trans, history_id, id, **kwd )
         * DELETE /api/histories/{history_id}/contents/{id}
@@ -319,11 +321,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
+        :type   purge:  bool
+        :param  purge:  if True, purge the HDA
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the HDA
+
+        .. note:: that payload optionally can be placed in the query string of the request.
+            This allows clients that strip the request body to still purge the dataset.
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
@@ -331,10 +338,12 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             * deleted:    if the history was marked as deleted,
             * purged:     if the history was purged
         """
-        # a request body is optional here
-        purge = False
+        # get purge from the query or from the request body payload (a request body is optional here)
+        purge = util.string_as_bool( purge )
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+            # payload takes priority
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
+
         rval = { 'id' : id }
         try:
             hda = self.get_dataset( trans, id,
@@ -356,8 +365,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
                 rval[ 'purged' ] = True
+
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
+
         except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
