@@ -5,13 +5,12 @@ are encapsulated here.
 import logging
 log = logging.getLogger( __name__ )
 
-import datetime
-
 from galaxy.webapps.tool_shed.model import *
 import galaxy.webapps.tool_shed.model
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
 from galaxy.model.base import ModelMapping
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
@@ -19,15 +18,6 @@ from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 metadata = MetaData()
 
-# NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the
-#   database in a portable way, so we're doing it in the client. This
-#   also saves us from needing to postfetch on postgres. HOWEVER: it
-#   relies on the client's clock being set correctly, so if clustering
-#   web servers, use a time server to ensure synchronization
-
-# Return the current time in UTC without any timezone information
-now = datetime.datetime.utcnow
 
 APIKeys.table = Table( "api_keys", metadata,
     Column( "id", Integer, primary_key=True ),

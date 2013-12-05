@@ -3,7 +3,6 @@ Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
 
-import datetime
 import logging
 import pkg_resources
 
@@ -16,6 +15,7 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
 from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
@@ -24,15 +24,6 @@ log = logging.getLogger( __name__ )
 
 metadata = MetaData()
 
-# NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the
-#   database in a portable way, so we're doing it in the client. This
-#   also saves us from needing to postfetch on postgres. HOWEVER: it
-#   relies on the client's clock being set correctly, so if clustering
-#   web servers, use a time server to ensure synchronization
-
-# Return the current time in UTC without any timezone information
-now = datetime.datetime.utcnow
 
 model.User.table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
