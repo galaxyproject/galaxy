@@ -282,7 +282,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True, 
-                                 new_tool_panel_section='column_maker' )
+                                 new_tool_panel_section_label='column_maker' )
         # This should result in column_maker and convert_chars being installed, and the rest never installed.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
                                    ( convert_repository_name, common.test_user_1_name ) ]
@@ -300,7 +300,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True, 
-                                 new_tool_panel_section='emboss_5_0050' )
+                                 new_tool_panel_section_label='emboss_5_0050' )
         if running_standalone:
             assert original_datatypes < self.get_datatypes_count(), 'Installing a repository that depends on emboss_datatypes did not add datatypes.'
         # Now we have emboss_datatypes, emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed.
@@ -358,7 +358,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                  strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True, 
-                                 new_tool_panel_section='freebayes' )
+                                 new_tool_panel_section_label='freebayes' )
         assert original_datatypes < self.get_datatypes_count(), 'Installing a repository that depends on emboss_datatypes did not add datatypes.'
         emboss_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         datatypes_repository = test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )

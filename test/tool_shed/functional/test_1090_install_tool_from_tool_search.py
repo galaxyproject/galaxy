@@ -226,7 +226,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=False, 
-                                 new_tool_panel_section='freebayes_1090' )
+                                 new_tool_panel_section_label='freebayes_1090' )
         installed_repositories = [ ( freebayes_repository_name, common.test_user_1_name ) ]
         strings_displayed = [ 'freebayes_0090' ]
         strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
@@ -246,7 +246,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=False, 
-                                 new_tool_panel_section='filtering_1090' )
+                                 new_tool_panel_section_label='filtering_1090' )
         installed_repositories = [ ( filtering_repository_name, common.test_user_1_name ), 
                                    ( freebayes_repository_name, common.test_user_1_name ) ]
         strings_displayed = [ 'filtering_0090', 'freebayes_0090' ]
@@ -307,7 +307,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         self.install_repositories_from_search_results( repositories_to_install, 
                                                        install_repository_dependencies='True', 
                                                        install_tool_dependencies=False, 
-                                                       new_tool_panel_section='bwa_1090',
+                                                       new_tool_panel_section_label='bwa_1090',
                                                        strings_displayed=strings_displayed )
         
         installed_repositories = [ ( emboss_repository_name, common.test_user_1_name ),

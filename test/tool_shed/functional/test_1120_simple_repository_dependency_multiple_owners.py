@@ -175,7 +175,7 @@ class TestInstallRepositoryMultipleOwners( ShedTwillTestCase ):
                                  category_name='Test 0120',
                                  install_repository_dependencies=True,
                                  post_submit_strings_displayed=post_submit_strings_displayed,
-                                 new_tool_panel_section='Test 0120' )
+                                 new_tool_panel_section_label='Test 0120' )
   
     def test_0050_verify_repository_installation( self ):
         '''Verify installation of blastxml_to_top_descr_0120 and blast_datatypes_0120.'''

@@ -140,7 +140,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                                  'Test 0030 Repository Dependency Revisions',
                                  strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1030' )
+                                 new_tool_panel_section_label='test_1030' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
         strings_displayed = [ 'emboss_0030',
                               'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030',

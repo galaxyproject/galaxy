@@ -90,7 +90,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  category_name,
                                  strings_displayed=strings_displayed,
-                                 new_tool_panel_section='test_1450' )
+                                 new_tool_panel_section_label='test_1450' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'proteomics_datatypes_1450', common.test_user_1_name )
         strings_displayed = [ 'user1', 
                               self.url.replace( 'http://', '' ), 

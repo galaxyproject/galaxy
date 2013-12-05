@@ -91,7 +91,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  'Test 0020 Basic Repository Dependencies',
                                  strings_displayed=strings_displayed,
-                                 new_tool_panel_section='test_1210' )
+                                 new_tool_panel_section_label='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         strings_displayed = [ 'emboss_0020',
                               'Galaxy wrappers for Emboss version 5.0.0 tools',

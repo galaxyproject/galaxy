@@ -47,7 +47,7 @@ class InstallTestRepository( TwillTestCase ):
                                        install_tool_dependencies=False,
                                        install_repository_dependencies=True,
                                        no_changes=True,
-                                       new_tool_panel_section=None ):
+                                       new_tool_panel_section_label=None ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
@@ -71,7 +71,7 @@ class InstallTestRepository( TwillTestCase ):
 
     def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True,
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[],
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, **kwd ):
+                            post_submit_strings_displayed=[], new_tool_panel_section_label=None, **kwd ):
         name = repository_info_dict[ 'name' ]
         owner = repository_info_dict[ 'owner' ]
         changeset_revision = repository_info_dict[ 'changeset_revision' ]
@@ -103,13 +103,13 @@ class InstallTestRepository( TwillTestCase ):
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
-        if new_tool_panel_section is not None:
-            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        if new_tool_panel_section_label is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
         submit_button_control = form.find_control( type='submit' )
         assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
         self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        repository_ids = self.initiate_installation_process( new_tool_panel_section_label=new_tool_panel_section_label )
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 

@@ -109,7 +109,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False,
                                  install_repository_dependencies=False,
-                                 new_tool_panel_section='convert_chars' )
+                                 new_tool_panel_section_label='convert_chars' )
         installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
@@ -135,7 +135,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  category_name,
                                  install_repository_dependencies=True,
-                                 new_tool_panel_section='column_maker',
+                                 new_tool_panel_section_label='column_maker',
                                  strings_displayed=[ 'install_repository_dependencies' ] )
         installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
@@ -363,7 +363,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         self.reinstall_repository( installed_convert_repository, 
                                    install_repository_dependencies=True, 
                                    no_changes=False, 
-                                   new_tool_panel_section='convert_maker' )
+                                   new_tool_panel_section_label='convert_maker' )
         strings_displayed = [ 'column_maker_0080',
                               'Add column',
                               self.url.replace( 'http://', '' ), 

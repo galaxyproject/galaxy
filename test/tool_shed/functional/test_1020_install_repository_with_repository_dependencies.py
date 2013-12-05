@@ -97,7 +97,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                  'Test 0020 Basic Repository Dependencies',
                                  strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1020' )
+                                 new_tool_panel_section_label='test_1020' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0020', common.test_user_1_name )
         strings_displayed = [ 'emboss_0020',
                               'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020',

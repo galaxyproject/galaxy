@@ -75,7 +75,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         self.install_repository( 'filtering_0000', 
                                  common.test_user_1_name, 
                                  'Test 0000 Basic Repository Features 1', 
-                                 new_tool_panel_section='test_1000' )
+                                 new_tool_panel_section_label='test_1000' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         strings_displayed = [ 'filtering_0000',
                               "Galaxy's filtering tool for test 0000",

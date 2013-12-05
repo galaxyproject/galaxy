@@ -78,7 +78,7 @@ class TestUpdateManager( ShedTwillTestCase ):
         self.install_repository( 'filtering_1410', 
                                  common.test_user_1_name, 
                                  category_name, 
-                                 new_tool_panel_section='test_1410' )
+                                 new_tool_panel_section_label='test_1410' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_1410', common.test_user_1_name )
         strings_displayed = [ 'filtering_1410',
                               "Galaxy's filtering tool",

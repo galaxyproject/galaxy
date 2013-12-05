@@ -126,7 +126,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.reinstall_repository( installed_freebayes_repository, 
                                    install_tool_dependencies=False, 
                                    install_repository_dependencies=True, 
-                                   new_tool_panel_section='freebayes',
+                                   new_tool_panel_section_label='freebayes',
                                    no_changes=False )
    
     def test_0040_uninstall_filtering_repository( self ):

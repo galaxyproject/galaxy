@@ -71,7 +71,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  category_name, 
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1070' )
+                                 new_tool_panel_section_label='test_1070' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'bismark_0070',
                               "Galaxy's bismark wrapper",

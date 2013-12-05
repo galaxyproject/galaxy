@@ -94,7 +94,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  'Test 0010 Repository With Tool Dependencies', 
                                  strings_displayed=strings_displayed,
-                                 new_tool_panel_section='test_1210' )
+                                 new_tool_panel_section_label='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
         strings_displayed = [ 'freebayes_0010',
                               "Galaxy's freebayes tool",

@@ -99,7 +99,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False,
                                  install_repository_dependencies=True,
-                                 new_tool_panel_section='column_maker',
+                                 new_tool_panel_section_label='column_maker',
                                  strings_displayed=[ 'install_repository_dependencies' ] )
         installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
@@ -145,7 +145,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         self.reinstall_repository( installed_column_repository, 
                                    install_tool_dependencies=False, 
                                    install_repository_dependencies=False, 
-                                   new_tool_panel_section='new_column_maker',
+                                   new_tool_panel_section_label='new_column_maker',
                                    no_changes=False )
         strings_displayed = [ 'column_maker_1085',
                               'Add column',
@@ -161,7 +161,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         self.reinstall_repository( installed_convert_repository, 
                                    install_tool_dependencies=False, 
                                    install_repository_dependencies=False, 
-                                   new_tool_panel_section='new_convert_chars',
+                                   new_tool_panel_section_label='new_convert_chars',
                                    no_changes=False )
         strings_displayed = [ 'convert_chars_1085',
                               'Convert delimiters',

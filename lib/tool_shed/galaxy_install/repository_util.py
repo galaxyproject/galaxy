@@ -244,9 +244,10 @@ def get_repo_info_dict_for_repair( trans, repository ):
             tool_panel_section_id = section_dict[ 'id' ]
             tool_panel_section_name = section_dict[ 'name' ]
             if tool_panel_section_id:
-                tool_panel_section_key, tool_panel_section = tool_util.get_or_create_tool_section( trans,
-                                                                                                   tool_panel_section_id=tool_panel_section_id,
-                                                                                                   new_tool_panel_section=tool_panel_section_name )
+                tool_panel_section_key, tool_panel_section = \
+                    tool_util.get_or_create_tool_section( trans,
+                                                          tool_panel_section_id=tool_panel_section_id,
+                                                          new_tool_panel_section_label=tool_panel_section_name )
     else:
         tool_dependencies = None
     repo_info_dict = create_repo_info_dict( trans=trans,
@@ -432,10 +433,10 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
 def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
     # The following installation_dict entries are all required.
     install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
-    new_tool_panel_section = installation_dict[ 'new_tool_panel_section' ]
+    new_tool_panel_section_label = installation_dict[ 'new_tool_panel_section_label' ]
     no_changes_checked = installation_dict[ 'no_changes_checked' ]
     repo_info_dicts = installation_dict[ 'repo_info_dicts' ]
-    tool_panel_section = installation_dict[ 'tool_panel_section' ]
+    tool_panel_section_id = installation_dict[ 'tool_panel_section_id' ]
     tool_path = installation_dict[ 'tool_path' ]
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
     created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
@@ -445,8 +446,8 @@ def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
                                                                          repo_info_dicts=repo_info_dicts,
                                                                          install_repository_dependencies=install_repository_dependencies,
                                                                          no_changes_checked=no_changes_checked,
-                                                                         tool_panel_section=tool_panel_section,
-                                                                         new_tool_panel_section=new_tool_panel_section )
+                                                                         tool_panel_section_id=tool_panel_section_id,
+                                                                         new_tool_panel_section_label=new_tool_panel_section_label )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts
 
 def initiate_repository_installation( trans, installation_dict ):
@@ -460,18 +461,19 @@ def initiate_repository_installation( trans, installation_dict ):
     install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
     install_tool_dependencies = installation_dict[ 'install_tool_dependencies' ]
     message = installation_dict[ 'message' ]
-    new_tool_panel_section = installation_dict[ 'new_tool_panel_section' ]
+    new_tool_panel_section_label = installation_dict[ 'new_tool_panel_section_label' ]
     shed_tool_conf = installation_dict[ 'shed_tool_conf' ]
     status = installation_dict[ 'status' ]
-    tool_panel_section = installation_dict[ 'tool_panel_section' ]
+    tool_panel_section_id = installation_dict[ 'tool_panel_section_id' ]
     tool_panel_section_keys = installation_dict[ 'tool_panel_section_keys' ]
     tool_path = installation_dict[ 'tool_path' ]
     tool_shed_url = installation_dict[ 'tool_shed_url' ]
     # Handle contained tools.
-    if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section or tool_panel_section ):
-        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
-                                                                                    tool_panel_section=tool_panel_section,
-                                                                                    new_tool_panel_section=new_tool_panel_section )
+    if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section_label or tool_panel_section_id ):
+        tool_panel_section_key, tool_section = \
+            tool_util.handle_tool_panel_section( trans,
+                                                 tool_panel_section_id=tool_panel_section_id,
+                                                 new_tool_panel_section_label=new_tool_panel_section_label )
     else:
         tool_panel_section_key = None
         tool_section = None
@@ -667,16 +669,19 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
 
 def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys ):
     """
-    Some repositories may have repository dependencies that are required to be installed before the dependent repository.  This method will inspect the list of
-    repositories about to be installed and make sure to order them appropriately.  For each repository about to be installed, if required repositories are not
-    contained in the list of repositories about to be installed, then they are not considered.  Repository dependency definitions that contain circular dependencies
-    should not result in an infinite loop, but obviously prior installation will not be handled for one or more of the repositories that require prior installation.
+    Some repositories may have repository dependencies that are required to be installed before the dependent repository. 
+    This method will inspect the list of repositories about to be installed and make sure to order them appropriately.
+    For each repository about to be installed, if required repositories are not contained in the list of repositories about
+    to be installed, then they are not considered.  Repository dependency definitions that contain circular dependencies
+    should not result in an infinite loop, but obviously prior installation will not be handled for one or more of the
+    repositories that require prior installation.
     """
     ordered_tsr_ids = []
     ordered_repo_info_dicts = []
     ordered_tool_panel_section_keys = []
-    # Create a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
-    # and whose associated repository must be installed prior to the repository associated with the tsr_id key.
+    # Create a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is
+    # contained in the received list of tsr_ids and whose associated repository must be installed prior to the repository
+    # associated with the tsr_id key.
     prior_install_required_dict = suc.get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
     processed_tsr_ids = []
     while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
@@ -688,17 +693,19 @@ def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_pan
             for prior_install_required_id in prior_install_required_ids:
                 if prior_install_required_id not in ordered_tsr_ids:
                     # Install the associated repository dependency first.
-                    prior_repo_info_dict, prior_tool_panel_section_key = get_repository_components_for_installation( prior_install_required_id,
-                                                                                                                     tsr_ids,
-                                                                                                                     repo_info_dicts,
-                                                                                                                     tool_panel_section_keys=tool_panel_section_keys )
+                    prior_repo_info_dict, prior_tool_panel_section_key = \
+                        get_repository_components_for_installation( prior_install_required_id,
+                                                                    tsr_ids,
+                                                                    repo_info_dicts,
+                                                                    tool_panel_section_keys=tool_panel_section_keys )
                     ordered_tsr_ids.append( prior_install_required_id )
                     ordered_repo_info_dicts.append( prior_repo_info_dict )
                     ordered_tool_panel_section_keys.append( prior_tool_panel_section_key )
-            repo_info_dict, tool_panel_section_key = get_repository_components_for_installation( tsr_id,
-                                                                                                 tsr_ids,
-                                                                                                 repo_info_dicts,
-                                                                                                 tool_panel_section_keys=tool_panel_section_keys )
+            repo_info_dict, tool_panel_section_key = \
+                get_repository_components_for_installation( tsr_id,
+                                                            tsr_ids,
+                                                            repo_info_dicts,
+                                                            tool_panel_section_keys=tool_panel_section_keys )
             ordered_tsr_ids.append( tsr_id )
             ordered_repo_info_dicts.append( repo_info_dict )
             ordered_tool_panel_section_keys.append( tool_panel_section_key )
@@ -763,11 +770,12 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         # Reset the repository attributes to the New state for installation.
         if metadata:
-            tool_section, new_tool_panel_section, tool_panel_section_key = tool_util.handle_tool_panel_selection( trans,
-                                                                                                                  metadata,
-                                                                                                                  no_changes_checked=True,
-                                                                                                                  tool_panel_section=None,
-                                                                                                                  new_tool_panel_section=None )
+            tool_section, tool_panel_section_key = \
+                tool_util.handle_tool_panel_selection( trans,
+                                                       metadata,
+                                                       no_changes_checked=True,
+                                                       tool_panel_section_id=None,
+                                                       new_tool_panel_section_label=None )
         else:
             # The tools will be loaded outside of any sections in the tool panel.
             tool_panel_section_key = None

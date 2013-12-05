@@ -133,7 +133,7 @@ class TestRepairRepository( ShedTwillTestCase ):
         self.install_repository( 'column_1430', 
                                  common.test_user_1_name, 
                                  category_name,
-                                 new_tool_panel_section='repair',
+                                 new_tool_panel_section_label='repair',
                                  post_submit_strings_displayed=post_submit_strings_displayed,
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True )

@@ -804,7 +804,7 @@ class ShedTwillTestCase( TwillTestCase ):
                                        install_tool_dependencies=False, 
                                        install_repository_dependencies=True, 
                                        no_changes=True, 
-                                       new_tool_panel_section=None ):
+                                       new_tool_panel_section_label=None ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
@@ -855,7 +855,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools_for_display_in_tool_panel=True,
+                            post_submit_strings_displayed=[], new_tool_panel_section_label=None, includes_tools_for_display_in_tool_panel=True,
                             **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
@@ -877,13 +877,13 @@ class ShedTwillTestCase( TwillTestCase ):
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
-        if new_tool_panel_section is not None:
-            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        if new_tool_panel_section_label is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
         submit_button_control = form.find_control( type='submit' )
         assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
         self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        repository_ids = self.initiate_installation_process( new_tool_panel_section_label=new_tool_panel_section_label )
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
@@ -1000,7 +1000,7 @@ class ShedTwillTestCase( TwillTestCase ):
                               install_repository_dependencies=True, 
                               install_tool_dependencies=False, 
                               no_changes=True, 
-                              new_tool_panel_section='',
+                              new_tool_panel_section_label='',
                               strings_displayed=[],
                               strings_not_displayed=[] ):
         url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id( installed_repository.id )
@@ -1011,15 +1011,15 @@ class ShedTwillTestCase( TwillTestCase ):
         repo_dependencies = self.create_checkbox_query_string( field_name='install_repository_dependencies', value=install_repository_dependencies )
         tool_dependencies = self.create_checkbox_query_string( field_name='install_tool_dependencies', value=install_tool_dependencies )
         encoded_repository_id = self.security.encode_id( installed_repository.id )
-        url = '/admin_toolshed/reinstall_repository?id=%s&%s&%s&no_changes=%s&new_tool_panel_section=%s' % \
-            ( encoded_repository_id, repo_dependencies, tool_dependencies, str( no_changes ), new_tool_panel_section )
+        url = '/admin_toolshed/reinstall_repository?id=%s&%s&%s&no_changes=%s&new_tool_panel_section_label=%s' % \
+            ( encoded_repository_id, repo_dependencies, tool_dependencies, str( no_changes ), new_tool_panel_section_label )
         self.visit_galaxy_url( url )
         # Manually initiate the install process, as with installing a repository. See comments in the 
         # initiate_installation_process method for details.
         repository_ids = self.initiate_installation_process( install_tool_dependencies, 
                                                              install_repository_dependencies, 
                                                              no_changes, 
-                                                             new_tool_panel_section )
+                                                             new_tool_panel_section_label )
         # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.
         self.wait_for_repository_installation( repository_ids )
         

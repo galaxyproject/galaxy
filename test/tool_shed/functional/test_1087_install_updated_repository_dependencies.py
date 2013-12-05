@@ -89,7 +89,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  install_tool_dependencies=False,
                                  install_repository_dependencies=True,
-                                 new_tool_panel_section='column_maker',
+                                 new_tool_panel_section_label='column_maker',
                                  strings_not_displayed=[ 'install_repository_dependencies' ] )
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=True )
