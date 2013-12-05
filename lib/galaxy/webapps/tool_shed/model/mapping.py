@@ -5,14 +5,13 @@ are encapsulated here.
 import logging
 log = logging.getLogger( __name__ )
 
-import sys
 import datetime
 
 from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.model.orm import dialect_to_egg
+from galaxy.model.orm import load_egg_for_url
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
@@ -307,23 +306,6 @@ mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
         category=relation( Category ),
         repository=relation( Repository ) ) )
 
-def guess_dialect_for_url( url ):
-    return (url.split(':', 1))[0]
-
-def load_egg_for_url( url ):
-    # Load the appropriate db module
-    dialect = guess_dialect_for_url( url )
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""

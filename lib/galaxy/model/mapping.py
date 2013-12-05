@@ -16,7 +16,7 @@ from sqlalchemy.orm import backref, object_session, relation, scoped_session, se
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
-from galaxy.model.orm import dialect_to_egg
+from galaxy.model.orm import load_egg_for_url
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.security import GalaxyRBACAgent
 from galaxy.util.bunch import Bunch
@@ -1998,23 +1998,6 @@ def db_next_hid( self ):
 
 model.History._next_hid = db_next_hid
 
-def guess_dialect_for_url( url ):
-    return (url.split(':', 1))[0]
-
-def load_egg_for_url( url ):
-    # Load the appropriate db module
-    dialect = guess_dialect_for_url( url )
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
     """Connect mappings to the database"""
