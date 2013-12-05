@@ -8,19 +8,16 @@ log = logging.getLogger( __name__ )
 import datetime
 
 from galaxy.webapps.tool_shed.model import *
+import galaxy.webapps.tool_shed.model
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
-from galaxy.util.bunch import Bunch
 from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.base import ModelMapping
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
-
-# For backward compatibility with "context.current"
-context.current = Session
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the
@@ -313,17 +310,14 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     engine = build_engine( url, engine_options )
     # Connect the metadata to the database.
     metadata.bind = engine
-    # Clear any existing contextual sessions and reconfigure
-    Session.remove()
-    Session.configure( bind=engine )
-    # Create tables if needed
+
+    result = ModelMapping([galaxy.webapps.tool_shed.model], engine=engine)
+
     if create_tables:
         metadata.create_all()
-    # Pack everything into a bunch
-    result = Bunch( **globals() )
-    result.engine = engine
-    result.session = Session
+
     result.create_tables = create_tables
+
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent( result )
     result.shed_counter = shed_statistics.ShedCounter( result )

@@ -61,6 +61,9 @@ from paste import httpserver
 from tool_shed.util import tool_dependency_util
 from tool_shed.util.xml_util import parse_xml
 
+from functional import database_contexts
+
+
 log = logging.getLogger( 'install_and_test_repositories' )
 
 assert sys.version_info[ :2 ] >= ( 2, 6 )
@@ -934,6 +937,8 @@ def main():
         kwargs[ 'database_engine_option_pool_size' ] = '10'
     kwargs[ 'config_file' ] = galaxy_config_file
     app = UniverseApplication( **kwargs )
+    database_contexts.galaxy_context = app.model.context
+
     log.debug( "Embedded Galaxy application started..." )
     # ---- Run galaxy webserver ------------------------------------------------------
     server = None

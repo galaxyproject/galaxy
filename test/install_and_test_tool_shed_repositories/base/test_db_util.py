@@ -1,7 +1,7 @@
 import logging
 import galaxy.model as model
 from galaxy.model.orm import and_
-from galaxy.model.mapping import context as sa_session
+from functional.database_contexts import galaxy_context as sa_session
 
 log = logging.getLogger(__name__)
 

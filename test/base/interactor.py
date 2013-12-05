@@ -4,7 +4,7 @@ from galaxy.tools.parameters import grouping
 from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
-from galaxy.model.mapping import context as sa_session
+from base.test_db_util import sa_session
 from simplejson import dumps, loads
 
 from logging import getLogger

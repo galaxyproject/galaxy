@@ -6,29 +6,23 @@ are encapsulated here.
 import datetime
 import logging
 import pkg_resources
-import inspect
 
 from sqlalchemy import and_, asc, Boolean, Column, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, scoped_session, sessionmaker, mapper, class_mapper
+from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
+from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
-from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
-
-# For backward compatibility with "context.current"
-context.current = Session
-
 
 # NOTE REGARDING TIMESTAMPS:
 #   It is currently difficult to have the timestamps calculated by the
@@ -2011,23 +2005,14 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
 
     # Connect the metadata to the database.
     metadata.bind = engine
-    # Clear any existing contextual sessions and reconfigure
-    Session.remove()
-    Session.configure( bind=engine )
+
+    result = ModelMapping([model], engine=engine)
+
     # Create tables if needed
     if create_tables:
         metadata.create_all()
         # metadata.engine.commit()
-    # Pack everything into a bunch -- inspecting should work better than
-    # grabbing everything in globals(), but it's possible that there's code
-    # working somewhere that expects random stuff we'd incidentally included.
-    m_obs = inspect.getmembers(model, inspect.isclass)
-    m_obs = dict([m for m in m_obs if m[1].__module__ == 'galaxy.model'])
-    result = Bunch( **m_obs )
-    result.engine = engine
-    result.session = Session
-    # For backward compatibility with "model.context.current"
-    result.context = Session
+
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
@@ -2037,4 +2022,3 @@ def get_suite():
     """Get unittest suite for this module"""
     import unittest, mapping_tests
     return unittest.makeSuite( mapping_tests.MappingTests )
-

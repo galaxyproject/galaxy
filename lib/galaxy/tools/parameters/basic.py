@@ -1062,7 +1062,8 @@ class ColumnListParameter( SelectToolParameter ):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.model.mapping import context as sa_session
+    >>> from galaxy.model.mapping import init
+    >>> sa_session = init( "/tmp", "sqlite:///:memory:", create_tables=True ).session
     >>> hist = History()
     >>> sa_session.add( hist )
     >>> sa_session.flush()

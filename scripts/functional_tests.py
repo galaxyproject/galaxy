@@ -50,6 +50,8 @@ from galaxy.util import bunch
 from galaxy import util
 from galaxy.util.json import to_json_string
 
+from functional import database_contexts
+
 import nose.core
 import nose.config
 import nose.loader
@@ -368,6 +370,7 @@ def main():
         kwargs[ 'config_file' ] = galaxy_config_file
         # Build the Universe Application
         app = UniverseApplication( **kwargs )
+        database_contexts.galaxy_context = app.model.context
         log.info( "Embedded Universe application started" )
 
     # ---- Run webserver ------------------------------------------------------

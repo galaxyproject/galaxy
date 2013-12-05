@@ -33,8 +33,6 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exc import *
 
-engine = create_engine(db_url, echo=True)
-db_session = scoped_session( sessionmaker( bind=engine ) )
-from galaxy.model.mapping import context as sa_session
-sa_session.bind = engine
+from galaxy.model.mapping import init
+sa_session = init( '/tmp/', db_url ).context
 from galaxy.model import *
