@@ -91,6 +91,7 @@ else:
 # Should this serve static resources (scripts, images, styles, etc.)?
 STATIC_ENABLED = True
 
+# Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
 job_conf_xml = '''<?xml version="1.0"?>
 <!-- A test job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
 <job_conf>

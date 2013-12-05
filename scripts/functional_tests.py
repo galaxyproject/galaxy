@@ -72,6 +72,24 @@ installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
 
+# Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
+job_conf_xml = '''<?xml version="1.0"?>
+<!-- A test job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations>
+        <destination id="local" runner="local"/>
+    </destinations>
+    <limits>
+        <limit type="walltime">00:10:00</limit>
+    </limits>
+</job_conf>
+'''
 
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
@@ -230,6 +248,11 @@ def main():
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
+
+    galaxy_job_conf_file = os.environ.get( 'GALAXY_TEST_JOB_CONF',
+                                           os.path.join( galaxy_test_tmp_dir, 'test_job_conf.xml' ) )
+    # Generate the job_conf.xml file.
+    file( galaxy_job_conf_file, 'w' ).write( job_conf_xml )
 
     database_auto_migrate = False
 

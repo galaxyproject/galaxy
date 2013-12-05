@@ -1424,20 +1424,21 @@ class TwillTestCase( unittest.TestCase ):
         """Waits for the tools to finish"""
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
-    def wait_for(self, func, maxseconds=120):
+    def wait_for( self, func, **kwd ):
         sleep_amount = 0.1
         slept = 0
-        while slept <= maxseconds:
+        walltime_exceeded = 86400
+        while slept <= walltime_exceeded:
             result = func()
             if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
-                if slept + sleep_amount > maxseconds:
-                    sleep_amount = maxseconds - slept  # don't overshoot maxseconds
+                if slept + sleep_amount > walltime_exceeded:
+                    sleep_amount = walltime_exceeded - slept  # don't overshoot maxseconds
             else:
                 break
-        assert slept < maxseconds
+        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
 
     # Dataset Security stuff
     # Tests associated with users
