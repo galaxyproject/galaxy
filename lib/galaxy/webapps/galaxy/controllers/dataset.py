@@ -887,8 +887,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             # If the user is known, make sure the HDA is owned by the current user.
             else:
                 assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'
-            # HDA is not deleted
-            assert hda.deleted, 'History dataset is not marked as deleted'
+            # Ensure HDA is deleted
+            hda.deleted = True
             # HDA is purgeable
             # Decrease disk usage first
             if user:
