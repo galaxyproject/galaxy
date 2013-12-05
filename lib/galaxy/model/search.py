@@ -32,11 +32,11 @@ eggs.require("Parsley")
 import parsley
 
 from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
-History, Library, LibraryFolder, LibraryDataset,StoredWorkflowTagAssociation,
-StoredWorkflow, HistoryTagAssociation,HistoryDatasetAssociationTagAssociation,
+History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
+StoredWorkflow, HistoryTagAssociation, HistoryDatasetAssociationTagAssociation,
 ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
 JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
-Page, PageRevision )
+Page, PageRevision)
 from galaxy.model.tool_shed_install import ToolVersion
 
 from galaxy.util.json import to_json_string
@@ -95,7 +95,6 @@ class ViewQueryBaseClass(object):
                 if field.id_decode:
                     conditional.right = trans.security.decode_id( conditional.right )
 
-
     def filter(self, left, operator, right):
         if operator == 'and':
             self.filter(left.left, left.operator, left.right)
@@ -110,7 +109,7 @@ class ViewQueryBaseClass(object):
                         #print field.sqlalchemy_field == right, field.sqlalchemy_field, right
                         self.query = self.query.filter( field.sqlalchemy_field == right )
                     elif operator == "!=":
-                        self.query = self.query.filter( field.sqlalchemy_field != right )                        
+                        self.query = self.query.filter( field.sqlalchemy_field != right )
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
                     else:
@@ -133,7 +132,7 @@ class ViewQueryBaseClass(object):
             for row in self.query.distinct().all():
                 selected = True
                 for f in self.post_filter:
-                    if not f[0](row, f[1],f[2],f[3]):
+                    if not f[0](row, f[1], f[2], f[3]):
                         selected = False
                 if selected:
                     yield row
@@ -142,6 +141,7 @@ class ViewQueryBaseClass(object):
 ##################
 #Library Dataset Searching
 ##################
+
 
 def library_extended_metadata_filter(view, left, operator, right):
     view.do_query = True
@@ -159,6 +159,7 @@ def library_extended_metadata_filter(view, left, operator, right):
         )
     )
 
+
 def ldda_parent_library_filter(item, left, operator, right):
     if operator == '=':
         return right == item.library_dataset.folder.parent_library.id
@@ -170,12 +171,12 @@ def ldda_parent_library_filter(item, left, operator, right):
 class LibraryDatasetDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset_dataset"
     FIELDS = {
-        'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter),
-        'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
-        'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
-        'parent_library_id' : ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
-        'data_type' :  ViewField('data_type', sqlalchemy_field=LibraryDatasetDatasetAssociation.extension)
+        'extended_metadata': ViewField('extended_metadata', handler=library_extended_metadata_filter),
+        'name': ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name),
+        'id': ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
+        'deleted': ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
+        'parent_library_id': ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
+        'data_type':  ViewField('data_type', sqlalchemy_field=LibraryDatasetDatasetAssociation.extension)
     }
 
     def search(self, trans):
@@ -189,26 +190,25 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
 class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
     FIELDS = {
-        'name' : ViewField('name', sqlalchemy_field=Library.name ),
-        'id' : ViewField('id', sqlalchemy_field=Library.id, id_decode=True),
-        'deleted' : ViewField('deleted', sqlalchemy_field=Library.deleted)
+        'name': ViewField('name', sqlalchemy_field=Library.name),
+        'id': ViewField('id', sqlalchemy_field=Library.id, id_decode=True),
+        'deleted': ViewField('deleted', sqlalchemy_field=Library.deleted)
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( Library )
 
 
-
 ##################
 #Library Folder Searching
 ##################
-
 def library_folder_parent_library_id_filter(item, left, operator, right):
     if operator == '=':
         return item.parent_library.id == right
     if operator == '!=':
         return item.parent_library.id != right
     raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
 
 def library_path_filter(item, left, operator, right):
     lpath = "/" + "/".join(item.library_path)
@@ -222,22 +222,20 @@ def library_path_filter(item, left, operator, right):
 class LibraryFolderView(ViewQueryBaseClass):
     VIEW_NAME = "library_folder"
     FIELDS = {
-        'name' : ViewField('name', sqlalchemy_field=LibraryFolder.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id, id_decode=True),
-        'parent_id' : ViewField('parent_id', sqlalchemy_field=LibraryFolder.parent_id, id_decode=True ),
-        'parent_library_id' : ViewField('parent_library_id', post_filter=library_folder_parent_library_id_filter, id_decode=True),
-        'library_path' : ViewField('library_path', post_filter=library_path_filter)
+        'name': ViewField('name', sqlalchemy_field=LibraryFolder.name),
+        'id': ViewField('id', sqlalchemy_field=LibraryFolder.id, id_decode=True),
+        'parent_id': ViewField('parent_id', sqlalchemy_field=LibraryFolder.parent_id, id_decode=True),
+        'parent_library_id': ViewField('parent_library_id', post_filter=library_folder_parent_library_id_filter, id_decode=True),
+        'library_path': ViewField('library_path', post_filter=library_path_filter)
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( LibraryFolder )
 
 
-
 ##################
 #Library Dataset Searching
 ##################
-
 def library_dataset_name_filter(item, left, operator, right):
     if operator == '=':
         return item.name == right
@@ -249,35 +247,33 @@ def library_dataset_name_filter(item, left, operator, right):
 class LibraryDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset"
     FIELDS = {
-        'name' : ViewField('name', post_filter=library_dataset_name_filter),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True),
-        'folder_id' : ViewField('folder_id', sqlalchemy_field=LibraryDataset.folder_id, id_decode=True)
+        'name': ViewField('name', post_filter=library_dataset_name_filter),
+        'id': ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True),
+        'folder_id': ViewField('folder_id', sqlalchemy_field=LibraryDataset.folder_id, id_decode=True)
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( LibraryDataset )
 
 
-
 ##################
 #Tool Searching
 ##################
-
 class ToolView(ViewQueryBaseClass):
     VIEW_NAME = "tool"
     FIELDS = {
-        'tool_id' : ViewField('name', sqlalchemy_field=ToolVersion.tool_id ),
-        'id' : ViewField('id', sqlalchemy_field=ToolVersion.id)
+        'tool_id': ViewField('name', sqlalchemy_field=ToolVersion.tool_id),
+        'id': ViewField('id', sqlalchemy_field=ToolVersion.id)
     }
 
     def search(self, trans):
         # Likely this will break in subsequent model refactoring. Need to revisit.
         self.query = trans.install_model.context.query( ToolVersion )
 
+
 ##################
 #History Dataset Searching
 ##################
-
 def history_dataset_handle_tag(view, left, operator, right):
     if operator == "=":
         view.do_query = True
@@ -298,17 +294,17 @@ def history_dataset_handle_tag(view, left, operator, right):
 class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
-        'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
-        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
-        'history_id' : ViewField('history_id',sqlalchemy_field=HistoryDatasetAssociation.history_id, id_decode=True),
-        'tag' : ViewField("tag", handler=history_dataset_handle_tag),
-        'copied_from_ldda_id' : ViewField("copied_from_ldda_id", 
+        'name': ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
+        'id': ViewField('id', sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True),
+        'history_id': ViewField('history_id', sqlalchemy_field=HistoryDatasetAssociation.history_id, id_decode=True),
+        'tag': ViewField("tag", handler=history_dataset_handle_tag),
+        'copied_from_ldda_id': ViewField("copied_from_ldda_id",
             sqlalchemy_field=HistoryDatasetAssociation.copied_from_library_dataset_dataset_association_id,
             id_decode=True),
-        'copied_from_hda_id' : ViewField("copied_from_hda_id", 
+        'copied_from_hda_id': ViewField("copied_from_hda_id",
             sqlalchemy_field=HistoryDatasetAssociation.copied_from_history_dataset_association_id,
             id_decode=True),
-        'deleted' : ViewField('deleted', sqlalchemy_field=HistoryDatasetAssociation.deleted)
+        'deleted': ViewField('deleted', sqlalchemy_field=HistoryDatasetAssociation.deleted)
     }
 
     def search(self, trans):
@@ -357,10 +353,10 @@ def history_handle_annotation(view, left, operator, right):
 class HistoryView(ViewQueryBaseClass):
     DOMAIN = "history"
     FIELDS = {
-        'name' : ViewField('name', sqlalchemy_field=History.name),
-        'id' : ViewField('id', sqlalchemy_field=History.id, id_decode=True),
-        'tag' : ViewField("tag", handler=history_handle_tag),
-        'annotation' : ViewField("annotation", handler=history_handle_annotation)
+        'name': ViewField('name', sqlalchemy_field=History.name),
+        'id': ViewField('id', sqlalchemy_field=History.id, id_decode=True),
+        'tag': ViewField("tag", handler=history_handle_tag),
+        'annotation': ViewField("annotation", handler=history_handle_annotation)
     }
 
     def search(self, trans):
@@ -389,20 +385,18 @@ def workflow_tag_handler(view, left, operator, right):
 class WorkflowView(ViewQueryBaseClass):
     DOMAIN = "workflow"
     FIELDS = {
-        'name' : ViewField('name', sqlalchemy_field=StoredWorkflow.name),
-        'id' : ViewField('id', sqlalchemy_field=StoredWorkflow.id, id_decode=True),
-        'tag' : ViewField('tag', handler=workflow_tag_handler)
+        'name': ViewField('name', sqlalchemy_field=StoredWorkflow.name),
+        'id': ViewField('id', sqlalchemy_field=StoredWorkflow.id, id_decode=True),
+        'tag': ViewField('tag', handler=workflow_tag_handler)
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( StoredWorkflow )
 
 
-
 ##################
 #Job Searching
 ##################
-
 
 
 def job_param_filter(view, left, operator, right):
@@ -417,6 +411,7 @@ def job_param_filter(view, left, operator, right):
         )
     )
 
+
 def job_input_hda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased( JobToInputDatasetAssociation )
@@ -429,6 +424,7 @@ def job_input_hda_filter(view, left, operator, right):
         )
     )
 
+
 def job_input_ldda_filter(view, left, operator, right):
     view.do_query = True
     alias = aliased( JobToInputLibraryDatasetAssociation )
@@ -440,7 +436,6 @@ def job_input_ldda_filter(view, left, operator, right):
             alias.ldda_id == right
         )
     )
-
 
 
 def job_output_hda_filter(view, left, operator, right):
@@ -459,34 +454,32 @@ def job_output_hda_filter(view, left, operator, right):
 class JobView(ViewQueryBaseClass):
     DOMAIN = "job"
     FIELDS = {
-        'tool_name' : ViewField('tool_name', sqlalchemy_field=Job.tool_id),
-        'state' : ViewField('state', sqlalchemy_field=Job.state),
-        'param' : ViewField('param', handler=job_param_filter),
-        'input_ldda' : ViewField('input_ldda', handler=job_input_ldda_filter, id_decode=True),
-        'input_hda' : ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
-        'output_hda' : ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
+        'tool_name': ViewField('tool_name', sqlalchemy_field=Job.tool_id),
+        'state': ViewField('state', sqlalchemy_field=Job.state),
+        'param': ViewField('param', handler=job_param_filter),
+        'input_ldda': ViewField('input_ldda', handler=job_input_ldda_filter, id_decode=True),
+        'input_hda': ViewField('input_hda', handler=job_input_hda_filter, id_decode=True),
+        'output_hda': ViewField('output_hda', handler=job_output_hda_filter, id_decode=True)
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( Job )
 
 
-
 ##################
 #Page Searching
 ##################
 
+
 class PageView(ViewQueryBaseClass):
     DOMAIN = "page"
     FIELDS = {
-        'id' : ViewField('id', sqlalchemy_field=Page.id, id_decode=True),
-        'title' : ViewField('title', sqlalchemy_field=Page.title),
+        'id': ViewField('id', sqlalchemy_field=Page.id, id_decode=True),
+        'title': ViewField('title', sqlalchemy_field=Page.title),
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( Page )
-
-
 
 
 ##################
@@ -497,14 +490,13 @@ class PageView(ViewQueryBaseClass):
 class PageRevisionView(ViewQueryBaseClass):
     DOMAIN = "page_revision"
     FIELDS = {
-        'id' : ViewField('id', sqlalchemy_field=PageRevision.id, id_decode=True),
-        'title' : ViewField('title', sqlalchemy_field=PageRevision.title),
-        'page_id' : ViewField('page_id', sqlalchemy_field=PageRevision.page_id, id_decode=True),
+        'id': ViewField('id', sqlalchemy_field=PageRevision.id, id_decode=True),
+        'title': ViewField('title', sqlalchemy_field=PageRevision.title),
+        'page_id': ViewField('page_id', sqlalchemy_field=PageRevision.page_id, id_decode=True),
     }
 
     def search(self, trans):
         self.query = trans.sa_session.query( PageRevision )
-
 
 
 """
@@ -512,20 +504,20 @@ The view mapping takes a user's name for a table and maps it to a View class tha
 handle queries
 """
 view_mapping = {
-    'library' : LibraryView,
-    'library_folder' : LibraryFolderView,
-    'library_dataset_dataset' : LibraryDatasetDatasetView,
-    'library_dataset' : LibraryDatasetView,
-    'lda' : LibraryDatasetView,
-    'ldda' : LibraryDatasetDatasetView,
-    'history_dataset' : HistoryDatasetView,
-    'hda' : HistoryDatasetView,
-    'history' : HistoryView,
-    'workflow' : WorkflowView,
-    'tool' : ToolView,
-    'job' : JobView,
-    'page' : PageView,
-    'page_revision' : PageRevisionView,
+    'library': LibraryView,
+    'library_folder': LibraryFolderView,
+    'library_dataset_dataset': LibraryDatasetDatasetView,
+    'library_dataset': LibraryDatasetView,
+    'lda': LibraryDatasetView,
+    'ldda': LibraryDatasetDatasetView,
+    'history_dataset': HistoryDatasetView,
+    'hda': HistoryDatasetView,
+    'history': HistoryView,
+    'workflow': WorkflowView,
+    'tool': ToolView,
+    'job': JobView,
+    'page': PageView,
+    'page_revision': PageRevisionView,
 }
 
 """
@@ -575,6 +567,7 @@ not_quote = anything:x ?(x != "'") -> x
 not_dquote = anything:x ?(x != '"') -> x
 """
 
+
 class GalaxyQuery:
     """
     This class represents a data structure of a compiled GQL query
@@ -583,6 +576,7 @@ class GalaxyQuery:
         self.field_list = field_list
         self.table_name = table_name
         self.conditional = conditional
+
 
 class GalaxyQueryComparison:
     """
@@ -593,6 +587,7 @@ class GalaxyQueryComparison:
         self.left = left
         self.operator = operator
         self.right = right
+
 
 class GalaxyQueryAnd:
     """
@@ -607,6 +602,7 @@ class GalaxyQueryAnd:
 
 class GalaxyParseError(Exception):
     pass
+
 
 class SearchQuery:
     def __init__(self, view, query):
@@ -623,7 +619,8 @@ class SearchQuery:
             self.view.filter(
                 self.query.conditional.left,
                 self.query.conditional.operator,
-                self.query.conditional.right )
+                self.query.conditional.right
+            )
         return self.view.get_results(True)
 
     def item_to_api_value(self, item):
@@ -637,17 +634,16 @@ class SearchQuery:
         return o
 
 
-
 class GalaxySearchEngine:
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, {
-            're' : re,
-            'GalaxyQuery' : GalaxyQuery,
-            'GalaxyQueryComparison' : GalaxyQueryComparison,
-            'GalaxyQueryAnd' : GalaxyQueryAnd
+            're': re,
+            'GalaxyQuery': GalaxyQuery,
+            'GalaxyQueryComparison': GalaxyQueryComparison,
+            'GalaxyQueryAnd': GalaxyQueryAnd
         })
 
     def query(self, query_text):
@@ -657,4 +653,3 @@ class GalaxySearchEngine:
             view = view_mapping[q.table_name]()
             return SearchQuery(view, q)
         raise GalaxyParseError("No such table %s" % (q.table_name))
-
