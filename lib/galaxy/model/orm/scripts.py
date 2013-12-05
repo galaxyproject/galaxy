@@ -34,6 +34,12 @@ DATABASE = {
             'config_file': 'tool_shed_wsgi.ini',
             'default_sqlite_file': './database/community.sqlite',
         },
+    "install":
+        {
+            'repo': 'lib/galaxy/model/tool_shed_install/migrate',
+            'config_prefix': 'install_',
+            'default_sqlite_file': './database/install.sqlite',
+        },
 }
 
 

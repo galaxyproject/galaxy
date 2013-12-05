@@ -25,6 +25,7 @@ sys.path = new_path
 
 from galaxy.model.orm.scripts import get_config
 from galaxy.model.migrate.check import create_or_verify_database as create_db
+from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as create_install_db
 from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database as create_tool_shed_db
 
 
@@ -34,6 +35,8 @@ def invoke_create():
         create_db(config['db_url'], config['config_file'])
     elif config['database'] == 'tool_shed':
         create_tool_shed_db(config['db_url'])
+    elif config['database'] == 'install':
+        create_install_db(config['db_url'])
 
 if __name__ == "__main__":
     invoke_create()
