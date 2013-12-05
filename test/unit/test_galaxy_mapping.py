@@ -1,7 +1,6 @@
 import unittest
 import galaxy.model.mapping as mapping
-from galaxy.model import directory_hash_id
-import os.path
+
 
 class MappingTests( unittest.TestCase ):
     def test_basic( self ):
@@ -17,7 +16,8 @@ class MappingTests( unittest.TestCase ):
         h2 = model.History( name=( "H" * 1024 ) )
         model.session.add_all( ( u, h1, h2 ) )
         #q1 = model.Query( "h2->q1" )
-        d1 = model.HistoryDatasetAssociation( extension="interval", metadata=dict(chromCol=1,startCol=2,endCol=3 ), history=h2, create_dataset=True, sa_session=model.session )
+        metadata = dict( chromCol=1, startCol=2, endCol=3 )
+        d1 = model.HistoryDatasetAssociation( extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=model.session )
         #h2.queries.append( q1 )
         #h2.queries.append( model.Query( "h2->q2" ) )
         model.session.add( ( d1 ) )
@@ -47,6 +47,7 @@ class MappingTests( unittest.TestCase ):
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
 
 def get_suite():
     suite = unittest.TestSuite()

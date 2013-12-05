@@ -2017,8 +2017,3 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     return result
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import unittest, mapping_tests
-    return unittest.makeSuite( mapping_tests.MappingTests )
