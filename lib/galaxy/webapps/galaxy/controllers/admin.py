@@ -4,6 +4,7 @@ import os
 
 import galaxy.util
 from galaxy import model
+from galaxy.model import tool_shed_install as install_model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
@@ -406,7 +407,7 @@ class ToolVersionListGrid( grids.Grid ):
             return tool_ids_str
     # Grid definition
     title = "Tool versions"
-    model_class = model.ToolVersion
+    model_class = install_model.ToolVersion
     template='/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [

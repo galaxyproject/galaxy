@@ -14,6 +14,7 @@ from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapp
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
+from galaxy.model import tool_shed_install
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
@@ -23,6 +24,10 @@ from galaxy.security import GalaxyRBACAgent
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
+
+# import tool shed mappings, TODO: update all references to eliminate
+# need for this import.
+from .tool_shed_install.mapping import *
 
 
 model.User.table = Table( "galaxy_user", metadata,
@@ -39,6 +44,7 @@ model.User.table = Table( "galaxy_user", metadata,
     Column( "disk_usage", Numeric( 15, 0 ), index=True ) ,
     Column( "active", Boolean, index=True, default=True, nullable=False ),
     Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
+
 
 model.UserAddress.table = Table( "user_address", metadata,
     Column( "id", Integer, primary_key=True),
@@ -377,67 +383,6 @@ model.LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_datas
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
-
-model.ToolShedRepository.table = Table( "tool_shed_repository", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed", TrimmedString( 255 ), index=True ),
-    Column( "name", TrimmedString( 255 ), index=True ),
-    Column( "description" , TEXT ),
-    Column( "owner", TrimmedString( 255 ), index=True ),
-    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
-    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-    Column( "ctx_rev", TrimmedString( 10 ) ),
-    Column( "metadata", JSONType, nullable=True ),
-    Column( "includes_datatypes", Boolean, index=True, default=False ),
-    Column( "tool_shed_status", JSONType, nullable=True ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "uninstalled", Boolean, default=False ),
-    Column( "dist_to_shed", Boolean, default=False ),
-    Column( "status", TrimmedString( 255 ) ),
-    Column( "error_message", TEXT ) )
-
-model.RepositoryRepositoryDependencyAssociation.table = Table( 'repository_repository_dependency_association', metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
-    Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
-
-model.RepositoryDependency.table = Table( "repository_dependency", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ) )
-
-model.ToolDependency.table = Table( "tool_dependency", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "version", TEXT ),
-    Column( "type", TrimmedString( 40 ) ),
-    Column( "status", TrimmedString( 255 ), nullable=False ),
-    Column( "error_message", TEXT ) )
-
-model.ToolVersion.table = Table( "tool_version", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_id", String( 255 ) ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=True ) )
-
-model.ToolVersionAssociation.table = Table( "tool_version_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ),
-    Column( "parent_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ) )
-
-model.MigrateTools.table = Table( "migrate_tools", metadata,
-    Column( "repository_id", TrimmedString( 255 ) ),
-    Column( "repository_path", TEXT ),
-    Column( "version", Integer ) )
 
 model.Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1775,40 +1720,6 @@ mapper( model.Page, model.Page.table,
                      ratings=relation( model.PageRatingAssociation, order_by=model.PageRatingAssociation.table.c.id, backref="pages" )
                    ) )
 
-mapper( model.ToolShedRepository, model.ToolShedRepository.table,
-    properties=dict( tool_versions=relation( model.ToolVersion,
-                                             primaryjoin=( model.ToolShedRepository.table.c.id == model.ToolVersion.table.c.tool_shed_repository_id ),
-                                             backref='tool_shed_repository' ),
-                     tool_dependencies=relation( model.ToolDependency,
-                                                 primaryjoin=( model.ToolShedRepository.table.c.id == model.ToolDependency.table.c.tool_shed_repository_id ),
-                                                 order_by=model.ToolDependency.table.c.name,
-                                                 backref='tool_shed_repository' ),
-                     required_repositories=relation( model.RepositoryRepositoryDependencyAssociation,
-                                                    primaryjoin=( model.ToolShedRepository.table.c.id == model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id ) ) ) )
-
-mapper( model.RepositoryRepositoryDependencyAssociation, model.RepositoryRepositoryDependencyAssociation.table,
-    properties=dict( repository=relation( model.ToolShedRepository,
-                                          primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ),
-                     repository_dependency=relation( model.RepositoryDependency,
-                                                     primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == model.RepositoryDependency.table.c.id ) ) ) )
-
-mapper( model.RepositoryDependency, model.RepositoryDependency.table,
-    properties=dict( repository=relation( model.ToolShedRepository,
-                                          primaryjoin=( model.RepositoryDependency.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ) ) )
-
-mapper( model.ToolDependency, model.ToolDependency.table )
-
-mapper( model.ToolVersion, model.ToolVersion.table,
-    properties=dict(
-        parent_tool_association=relation( model.ToolVersionAssociation,
-            primaryjoin=( model.ToolVersion.table.c.id == model.ToolVersionAssociation.table.c.tool_id ) ),
-        child_tool_association=relation( model.ToolVersionAssociation,
-            primaryjoin=( model.ToolVersion.table.c.id == model.ToolVersionAssociation.table.c.parent_id ) )
-    )
- )
-
-mapper( model.ToolVersionAssociation, model.ToolVersionAssociation.table )
-
 # Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
@@ -1997,7 +1908,7 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     # Connect the metadata to the database.
     metadata.bind = engine
 
-    result = ModelMapping([model], engine=engine)
+    result = ModelMapping([model, tool_shed_install], engine=engine)
 
     # Create tables if needed
     if create_tables:
