@@ -559,10 +559,11 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                 tool_version_dicts = json.from_json_string( text )
                 tool_util.handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )
             else:
-                message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
-                message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
-                message += "from the installed repository's <b>Repository Actions</b> menu.  "
-                status = 'error'
+                if not error_message:
+                    error_message = ""
+                error_message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % tool_shed_repository.name
+                error_message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
+                error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
         if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
             # Install tool dependencies.
