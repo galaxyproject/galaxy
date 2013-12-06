@@ -42,9 +42,9 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         
         /** is the view currently in selection mode? */
         //this.selectable = attributes.selectable || false;
-        this.selectable = false;
+        this.selectable = attributes.selectable || false;
         /** is the view currently selected? */
-        this.selected = false;
+        this.selected = attributes.selected || false;
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
         this._setUpListeners();
@@ -105,6 +105,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             this.$el.empty()
                 .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
                 .append( $newRender.children() );
+            if( this.selectable ){ this.showSelector( 0 ); }
             next();
         });
         // fade the new in
@@ -117,7 +118,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             if( this.model.inReadyState() ){
                 this.trigger( 'rendered:ready', view );
             }
-            if( this.selectable ){ this.showSelect(); }
             next();
         });
         return this;
@@ -398,7 +398,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // expand the body when the title is clicked
         'click .dataset-title-bar'  : 'toggleBodyVisibility',
         // toggle selected state
-        'click .dataset-selector'   : 'select'
+        'click .dataset-selector'   : 'toggleSelect'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -462,59 +462,107 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
      *      Note: this also hides the primary actions
      */
-    showSelect : function( speed ){
+    showSelector : function( speed ){
         // if already shown, do nothing
         if( this.$el.find( '.dataset-selector' ).css( 'display' ) !== 'none' ){ return; }
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // make sure selected state is represented properly
+        if( this.selected ){
+            this.select( null, true );
+        }
 
         // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
         var hdaView = this,
             SELECTOR_WIDTH = 32;
 
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
-        });
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-selector' ).show()
-                // height is height of titlebar, width will animate from 0 to WIDTH
-                .css({
-                    height: $( this ).find( '.dataset-title-bar' ).innerHeight()
-                })
-                .animate({ width: SELECTOR_WIDTH }, speed, next );
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
+            });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-selector' ).show().animate({ width: SELECTOR_WIDTH }, speed, next );
+                $( this ).find( '.dataset-title-bar' ).animate({ 'margin-left': SELECTOR_WIDTH }, speed, next );
+                hdaView.selectable = true;
+                hdaView.trigger( 'selectable', true, hdaView );
+            });
+        // no animation
+        } else {
+            this.$el.find( '.dataset-primary-actions' ).hide();
+            this.$el.find( '.dataset-selector' ).show().css({ width : SELECTOR_WIDTH });
+            this.$el.find( '.dataset-title-bar' ).show().css({ 'margin-left' : SELECTOR_WIDTH });
             hdaView.selectable = true;
             hdaView.trigger( 'selectable', true, hdaView );
-        });
+        }
     },
 
     /** remove the selection checkbox */
-    hideSelect : function( speed ){
+    hideSelector : function( speed ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
 
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
-                $( this ).hide();
-                next();
+
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-title-bar' ).show().css({ 'margin-left' : '0' });
+                $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
+                    $( this ).hide();
+                    next();
+                });
             });
-        });
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
-        });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
+            });
+
+        // no animation
+        } else {
+            $( this ).find( '.dataset-selector' ).css({ width : '0px' }).hide();
+            $( this ).find( '.dataset-primary-actions' ).show();
+        }
+    },
+
+    toggleSelector : function( speed ){
+        if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
+            this.showSelector( speed );
+        } else {
+            this.hideSelector( speed );
+        }
     },
 
     /** event handler for selection (also programmatic selection)
-     *  @param {boolean} selected   T/F select/de-select this hda
      */
-    select : function( event, selected ){
-        // do nothing if selected is passed and selector already in desired state
-        if( selected !== undefined && selected === this.selected ){ return false; }
+    select : function( event ){
         // switch icon, set selected, and trigger event
-        this.$el.find( '.dataset-selector span' ).toggleClass( 'fa-square-o fa-check-square-o' );
-        this.selected = !this.selected;
-        this.trigger( ( this.selected )?( 'selected' ):( 'de-selected' ), this );
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
+        if( !this.selected ){
+            this.trigger( 'selected', this );
+            this.selected = true;
+        }
         return false;
+    },
+
+    /** event handler for clearing selection (also programmatic deselection)
+     */
+    deselect : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
+        if( this.selected ){
+            this.trigger( 'de-selected', this );
+            this.selected = false;
+        }
+        return false;
+    },
+
+    toggleSelect : function( event ){
+        if( this.selected ){
+            this.deselect( event );
+        } else {
+            this.select( event );
+        }
     },
 
     // ......................................................................... removal

@@ -94,6 +94,7 @@
     }
     .message-container [class$=message] {
         margin: 0px;
+        margin-bottom: 8px;
     }
 
     .history-controls {
@@ -186,6 +187,19 @@
                 width: 100%;
             }
         }
+
+        .history-dataset-actions {
+            display: none;
+            .clear;
+            .btn {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                font-size: 90%;
+            }
+            .history-dataset-action-popup-btn {
+                float: right;
+            }
+        }
     }
 
     // display only a top border on all
@@ -256,13 +270,12 @@
     }
 
     .dataset-selector {
-        //background-color: red;
         float: left;
         // always initially hidden and zero width
         display: none;
         width: 0px;
         //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 8px -@spacing-bottom 0px;
+        margin: 0px 0px -@spacing-bottom 0px;
         padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
         cursor: pointer;
         //text-align: center;

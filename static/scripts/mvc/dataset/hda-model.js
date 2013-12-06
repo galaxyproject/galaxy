@@ -111,6 +111,9 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
                 this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
+        this.on( 'change', function(){
+            console.debug( 'change', arguments );
+        });
     },
 
     // ........................................................................ common queries
@@ -172,26 +175,70 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
 
     /** save this HDA, _Mark_ing it as deleted (just a flag) */
     'delete' : function _delete( options ){
+        if( this.get( 'deleted' ) ){ return jQuery.when(); }
         return this.save( { deleted: true }, options );
     },
     /** save this HDA, _Mark_ing it as undeleted */
     undelete : function _undelete( options ){
+        if( !this.get( 'deleted' ) || this.get( 'purged' ) ){ return jQuery.when(); }
         return this.save( { deleted: false }, options );
     },
 
     /** save this HDA as not visible */
     hide : function _hide( options ){
+        if( !this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: false }, options );
     },
     /** save this HDA as visible */
     unhide : function _uhide( options ){
+        if( this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: true }, options );
     },
 
     /** purge this HDA and remove the underlying dataset file from the server's fs */
 //TODO: use, override model.destroy, HDA.delete({ purge: true })
     purge : function _purge( options ){
+        if( this.get( 'purged' ) ){ return jQuery.when(); }
         options = options || {};
+        //var hda = this,
+        //    //xhr = jQuery.ajax( this.url() + '?' + jQuery.param({ purge: true }), _.extend({
+        //    xhr = jQuery.ajax( this.url(), _.extend({
+        //        type : 'DELETE',
+        //        data : {
+        //            purge : true
+        //        }
+        //    }, options ));
+        //
+        //xhr.done( function( response ){
+        //    console.debug( 'response', response );
+        //    //hda.set({ deleted: true, purged: true });
+        //    hda.set( response );
+        //});
+        //return xhr;
+
+        ////TODO: ideally this would be a DELETE call to the api
+        ////  using purge async for now
+        //var hda = this,
+        //    xhr = jQuery.ajax( options );
+        //xhr.done( function( message, status, responseObj ){
+        //    hda.set( 'purged', true );
+        //});
+        //xhr.fail( function( xhr, status, message ){
+        //    // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
+        //    // unbury and re-add to xhr
+        //    var error = _l( "Unable to purge this dataset" );
+        //    var messageBuriedInUnfortunatelyFormattedError = ( 'Removal of datasets by users '
+        //        + 'is not allowed in this Galaxy instance' );
+        //    if( xhr.responseJSON && xhr.responseJSON.error ){
+        //        error = xhr.responseJSON.error;
+        //    } else if( xhr.responseText.indexOf( messageBuriedInUnfortunatelyFormattedError ) !== -1 ){
+        //        error = messageBuriedInUnfortunatelyFormattedError;
+        //    }
+        //    xhr.responseText = error;
+        //    hda.trigger( 'error', hda, xhr, options, _l( error ), { error: error } );
+        //});
+        //return xhr;
+
         options.url = galaxy_config.root + 'datasets/' + this.get( 'id' ) + '/purge_async';
 
         //TODO: ideally this would be a DELETE call to the api
@@ -199,12 +246,12 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         var hda = this,
             xhr = jQuery.ajax( options );
         xhr.done( function( message, status, responseObj ){
-            hda.set( 'purged', true );
+            hda.set({ deleted: true, purged: true });
         });
         xhr.fail( function( xhr, status, message ){
             // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
             // unbury and re-add to xhr
-            var error = _l( "Unable to purge this dataset" );
+            var error = _l( "Unable to purge dataset" );
             var messageBuriedInUnfortunatelyFormattedError = ( 'Removal of datasets by users '
                 + 'is not allowed in this Galaxy instance' );
             if( xhr.responseJSON && xhr.responseJSON.error ){
@@ -215,6 +262,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
             xhr.responseText = error;
             hda.trigger( 'error', hda, xhr, options, _l( error ), { error: error } );
         });
+        return xhr;
     },
 
     // ........................................................................ sorting/filtering
@@ -487,6 +535,45 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
         var detailsFlag = { details: 'all' };
         options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
         return this.fetch( options );
+    },
+
+    /** using a queue, perform hdaModelAjaxFn on each of the hdas in this collection */
+    ajaxQueue : function( hdaAjaxFn, options ){
+        var deferred = jQuery.Deferred(),
+            startingLength = this.length,
+            responses = [];
+
+        if( !startingLength ){
+            console.debug( 'no hdas in collection' );
+            deferred.resolve([]);
+            return deferred;
+        }
+        
+        // use reverse order (stylistic choice)
+        var ajaxFns = this.chain().reverse().map( function( hda, i ){
+            console.debug( 'adding:', hda, i, hdaAjaxFn );
+            return function(){
+                var xhr = hdaAjaxFn.call( hda, options );
+                // if successful, notify using the deferred to allow tracking progress
+                xhr.done( function( response ){
+                    deferred.notify({ curr: i, total: startingLength, response: response, model: hda });
+                });
+                // (regardless of previous error or success) if not last ajax call, shift and call the next
+                //  if last fn, resolve deferred
+                xhr.always( function( response ){
+                    responses.push( response );
+                    if( ajaxFns.length ){
+                        ajaxFns.shift()();
+                    } else {
+                        deferred.resolve( responses );
+                    }
+                });
+            };
+        }).value();
+        // start the queue
+        ajaxFns.shift()();
+
+        return deferred;
     },
 
     // ........................................................................ sorting/filtering

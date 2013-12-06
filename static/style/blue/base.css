@@ -1515,7 +1515,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .editable-text{border:solid transparent 1px}
 .history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
 .history-panel .message-container{cursor:pointer}
-.history-panel .message-container [class$=message]{margin:0px}
+.history-panel .message-container [class$=message]{margin:0px;margin-bottom:8px}
 .history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-title{margin-bottom:4px}
 .history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
 .history-panel .history-controls .history-title input{font-weight:bold;width:100%;margin:-2px 0 -2px -4px}
@@ -1531,6 +1531,12 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .annotation-display .annotation:empty{height:20px}
 .history-panel .history-controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
+.history-panel .history-controls .history-dataset-actions{display:none}.history-panel .history-controls .history-dataset-actions:before,.history-panel .history-controls .history-dataset-actions:after{content:" ";display:table;}
+.history-panel .history-controls .history-dataset-actions:after{clear:both}
+.history-panel .history-controls .history-dataset-actions:before,.history-panel .history-controls .history-dataset-actions:after{content:" ";display:table;}
+.history-panel .history-controls .history-dataset-actions:after{clear:both}
+.history-panel .history-controls .history-dataset-actions .btn{padding-top:2px;padding-bottom:2px;font-size:90%}
+.history-panel .history-controls .history-dataset-actions .history-dataset-action-popup-btn{float:right}
 .history-panel .dataset{border-width:1px 0px 0px 0px}
 .history-panel .dataset:last-child{border-width:1px 0px 1px 0px}
 .history-panel .empty-history-message{display:none;margin:0px 10px 0px 10px}
@@ -1540,7 +1546,7 @@ div.permissionContainer{padding-left:20px}
 .dataset .dataset-padding{padding:6px 10px 6px 8px}
 .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
 .dataset .help-text{font-weight:normal;font-style:italic;font-size:90%;color:#555}
-.dataset .dataset-selector{float:left;display:none;width:0px;margin:0 8px -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
+.dataset .dataset-selector{float:left;display:none;width:0px;margin:0 0 -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
 .dataset .dataset-title-bar{cursor:pointer;padding:6px 10px 6px 8px}
 .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
 .dataset .dataset-primary-actions{float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
