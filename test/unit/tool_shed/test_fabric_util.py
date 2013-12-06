@@ -23,7 +23,7 @@ def test_env_file_builder():
         mock_return["value"] = 1
 
         env_file_builder.append_line( action="source", value="/usr/bin/local/R/env.sh" )
-        assert added_lines == [ ". /usr/bin/local/R/env.sh" ]
+        assert added_lines == [ "if [ -f /usr/bin/local/R/env.sh ] ; then . /usr/bin/local/R/env.sh ; fi" ]
         # Check failure
         assert env_file_builder.return_code == 1
 

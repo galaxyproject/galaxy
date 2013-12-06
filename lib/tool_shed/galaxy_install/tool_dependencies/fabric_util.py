@@ -56,7 +56,7 @@ class EnvFileBuilder( object ):
                 changed_value = '$%s:%s' % ( env_var_name, env_var_value )
             line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
         elif env_var_action == "source":
-            line = ". %s" % env_var_value
+            line = "if [ -f %s ] ; then . %s ; fi" % ( env_var_value, env_var_value )
         else:
             raise Exception( "Unknown shell file action %s" % env_var_action )
         env_shell_file_path = os.path.join( install_dir, 'env.sh' )
