@@ -169,9 +169,7 @@
 
             $(function firstVizLoad(){       // calls when viz is loaded for the first time
                 var config = ${ h.to_json_string( config )};
-                window.config = config;
-                var data = ${h.to_json_string(data)};
-                window.data = data;
+                var data = ${h.to_json_string(data['data'])};
                 initPhyloViz(data, config);
             });
         });
@@ -197,7 +195,7 @@
                 <div id = "phylovizNexInfo" class="navControl">
                 <p>Select a tree to view: &nbsp;&nbsp;
                 <select id="phylovizNexSelector">
-                    % for tree, index in config["trees"]:
+                    % for tree, index in data["trees"]:
                         <option value="${index}">${tree}</option>
                     % endfor
                 </select>

@@ -170,9 +170,6 @@ class VisualizationListGrid( grids.Grid ):
         """
         controller = "visualization"
         action = item.type
-        if item.type == "phyloviz":
-            controller = "phyloviz"
-            action = "visualization"
         return dict( controller=controller, action=action, id=item.id )
 
     # Grid definition
@@ -898,22 +895,35 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                          query_args=kwargs )
 
     @web.expose
-    def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):
-        # Get HDA.
-        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+    def phyloviz( self, trans, id=None, dataset_id=None, tree_index=0, **kwargs ):
+        config = None
+        data = None
 
-        # Get data.
+        # if id, then this is a saved visualization; get it's config and the dataset_id from there
+        if id:
+            visualization = self.get_visualization( trans, id )
+            config = self.get_visualization_config( trans, visualization )
+            dataset_id = config.get( 'dataset_id', None )
+
+        # get the hda if we can, then it's data using the phyloviz parsers
+        if dataset_id:
+            hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return trans.show_message( "Phyloviz couldn't find a dataset_id" )
+
         pd = PhylovizDataProvider( original_dataset=hda )
-        config = pd.get_data( tree_index=tree_index )
+        data = pd.get_data( tree_index=tree_index )
 
-        config["title"] = hda.display_name()
-        config["ext"] = hda.datatype.file_ext
-        config["dataset_id"] = dataset_id
-        config["treeIndex"] = tree_index
-        config["saved_visualization"] = False
-
-        # Return viz.
-        return trans.fill_template_mako( "visualization/phyloviz.mako", data = config[ "data" ], config=config )
+        # ensure at least a default configuration (gen. an new/unsaved visualization)
+        if not config:
+            config = {
+                'dataset_id': dataset_id,
+                'title'     : hda.display_name(),
+                'ext'       : hda.datatype.file_ext,
+                'treeIndex' : tree_index,
+                'saved_visualization' : False
+            }
+        return trans.fill_template_mako( "visualization/phyloviz.mako", data=data, config=config )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
