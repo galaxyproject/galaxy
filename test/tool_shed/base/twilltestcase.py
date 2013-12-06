@@ -410,6 +410,20 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def display_installed_manage_data_manager_page( self, installed_repository, data_manager_names=None, strings_displayed=[], strings_not_displayed=[] ):
+        data_managers = installed_repository.metadata.get( 'data_manager', {} ).get( 'data_managers', {} )
+        if data_manager_names:
+            if not isinstance( data_manager_names, list ):
+                data_manager_names = [data_manager_names]
+            for data_manager_name in data_manager_names:
+                assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
+        else:
+            data_manager_name = data_managers.keys()
+        for data_manager_name in data_manager_names:
+            url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
+            self.visit_galaxy_url( url )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
@@ -1314,6 +1328,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #        <file path="tool-data/sam_fa_indices.loc" />
         #     </table>
         # </tables>
+        required_data_table_entry = None
         for table_elem in data_tables.findall( 'table' ):
             # The value of table_elem will be something like: <table comment_char="#" name="sam_fa_indexes">
             for required_data_table_entry in required_data_table_entries:

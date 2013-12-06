@@ -126,6 +126,11 @@ tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 </tables>
 '''
 
+shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
+<data_managers>
+</data_managers>
+'''
+
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
     plug_loader = test_config.plugins.prepareTestLoader( loader )
@@ -165,6 +170,7 @@ def main():
         tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         shed_db_path = os.path.join( tempdir, 'database' )
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
+    galaxy_shed_data_manager_conf_file = os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_data_manager_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
@@ -330,6 +336,9 @@ def main():
         migrated_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
         file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
         os.environ[ 'GALAXY_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
+        # Generate shed_data_manager_conf.xml
+        if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
+            open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
         galaxy_global_conf = get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'universe_wsgi.ini.sample'
         
@@ -351,6 +360,7 @@ def main():
                        migrated_tools_config = galaxy_migrated_tool_conf_file,
                        new_file_path = galaxy_tempfiles,
                        running_functional_tests=True,
+                       shed_data_manager_config_file = galaxy_shed_data_manager_conf_file,
                        shed_tool_data_table_config = shed_tool_data_table_conf_file,
                        shed_tool_path = galaxy_shed_tool_path,
                        template_path = "templates",
