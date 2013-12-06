@@ -875,10 +875,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *      clicking the clear button will clear the search
      *      uses searchInput in ui.js
      */
-    renderSearchControls : function(){
+    renderSearchControls : function( $where ){
         var panel = this;
-        //TODO: needs proper async
-        panel.model.hdas.fetchAllDetails({ silent: true });
 
         function onSearch( searchFor ){
             //console.debug( 'onSearch', searchFor, panel );
@@ -887,6 +885,17 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             panel.trigger( 'search:searching', searchFor, panel );
             panel.renderHdas();
         }
+        function onFirstSearch( searchFor ){
+            //console.debug( 'onSearch', searchFor, panel );
+            panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+            panel.model.hdas.fetchAllDetails({ silent: true })
+                .always( function(){
+                    panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+                })
+                .done( function(){
+                    onSearch( searchFor );
+                });
+        }
         function onSearchClear(){
             //console.debug( 'onSearchClear', panel );
             panel.searchFor = '';
@@ -894,26 +903,24 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             panel.trigger( 'search:clear', panel );
             panel.renderHdas();
         }
-        return searchInput({
+        return $where.searchInput({
                 initialVal      : panel.searchFor,
                 name            : 'history-search',
                 placeholder     : 'search datasets',
                 classes         : 'history-search',
+                onfirstsearch   : onFirstSearch,
                 onsearch        : onSearch,
                 onclear         : onSearchClear
-            })
-            .addClass( 'history-search-controls' )
-            .css( 'padding', '0px 0px 8px 0px' );
+            });
     },
 
     /** toggle showing/hiding the search controls (rendering first on the initial show) */
     toggleSearchControls : function(){
-        var $searchInput = this.$el.find( '.history-search-controls' );
-        if( !$searchInput.size() ){
-            $searchInput = this.renderSearchControls().hide();
-            this.$el.find( '.history-title' ).before( $searchInput );
+        var $searchControls = this.$el.find( '.history-search-controls' );
+        if( !$searchControls.children().size() ){
+            $searchControls = this.renderSearchControls( $searchControls ).hide();
         }
-        $searchInput.slideToggle( this.fxSpeed, function(){
+        $searchControls.slideToggle( this.fxSpeed, function(){
             if( $( this ).is( ':visible' ) ){
                 this.searching = true;
                 $( this ).find( 'input' ).focus();

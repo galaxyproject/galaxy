@@ -60,6 +60,26 @@
     color: @icon-btn-bg;
 }
 
+.search-input {
+    .search-query {
+        width           : 100%;
+        padding-right   : 24px;
+    }
+    .search-clear,
+    .search-loading {
+        // it places the icons on the right of the bar (and puts the lotion on its skin)
+        position    : absolute;
+        right       : 15px;
+        top         : 10px;
+        font-size   : 1.4em;
+        line-height : 23px;
+        color       : grey;
+    }
+
+    .search-clear:hover {
+        color       : @link-color;
+    }
+}
 // ---------------------------------------------------------------------------- panel header buttons
 #history-refresh-button,
 #history-options-button {
@@ -100,6 +120,11 @@
     .history-controls {
         margin: 10px;
         padding: 0px;
+
+        .history-search-controls {
+            display: none;
+            padding: 0px 0px 8px 0px;
+        }
 
         .history-title {
             margin-bottom: 4px;

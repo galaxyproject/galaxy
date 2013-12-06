@@ -1510,13 +1510,17 @@ div.permissionContainer{padding-left:20px}
 .icon-btn{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;font-size:1.2em;border-radius:3px;border:1px solid rgba(0,0,0,0.1);background-color:rgba(0,0,0,0.05);color:#555;cursor:pointer}
 .icon-btn:hover{background-color:white;color:maroon}
 .icon-btn.disabled{background-color:transparent;color:rgba(0,0,0,0.05)}
+.search-input .search-query{width:100%;padding-right:24px}
+.search-input .search-clear,.search-input .search-loading{position:absolute;right:15px;top:10px;font-size:1.4em;line-height:23px;color:grey}
+.search-input .search-clear:hover{color:#303030}
 #history-refresh-button,#history-options-button{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;font-size:1.2em;padding:0px}
 .history-panel [class$="messagesmall"]{margin:0px}
 .history-panel .editable-text{border:solid transparent 1px}
 .history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
 .history-panel .message-container{cursor:pointer}
 .history-panel .message-container [class$=message]{margin:0px;margin-bottom:8px}
-.history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-title{margin-bottom:4px}
+.history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-search-controls{display:none;padding:0px 0px 8px 0px}
+.history-panel .history-controls .history-title{margin-bottom:4px}
 .history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
 .history-panel .history-controls .history-title input{font-weight:bold;width:100%;margin:-2px 0 -2px -4px}
 .history-panel .history-controls .history-subtitle{margin-bottom:8px}
