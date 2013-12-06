@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <tool id="mosaik_wrapper" name="Map with Mosaik" version="1.1.1">
   <description/>
-  <requirements><requirement type="package">mosaik</requirement></requirements>
+  <requirements>
+    <requirement type="package" version="1.1.0021">mosaik</requirement>
+    <requirement type="package" version="0.1.18">samtools</requirement>
+  </requirements>
   <command>
     #set $processors = '-p ${GALAXY_SLOTS:-4}'
     #set $lm = ''
