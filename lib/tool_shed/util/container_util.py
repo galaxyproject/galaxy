@@ -987,7 +987,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
                 tool_id = str( tool_dict.get( 'id', 'unknown' ) )
                 name = str( tool_dict.get( 'name', 'unknown' ) )
                 description = str( tool_dict.get( 'description', '' ) )
-                version = str( tool_dict.get( 'description', 'unknown' ) )
+                version = str( tool_dict.get( 'version', 'unknown' ) )
             except Exception, e:
                 tool_config = str( e )
                 tool_id = 'unknown'
