@@ -332,6 +332,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
      *  @returns {Boolean} was term found in (any) attribute(s)
      */
     matches : function( term ){
+        console.debug( 'matches: "' + term + '"' );
         var ATTR_SPECIFIER = '=',
             split = term.split( ATTR_SPECIFIER );
         // attribute is specified - search only that
@@ -355,6 +356,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         // break the terms up by whitespace and filter out the empty strings
         terms = terms.match( /(".*"|\w*=".*"|\S*)/g ).filter( function( s ){ return !!s; });
         return _.all( terms, function( term ){
+            term = term.replace( /"/g, '' );
             return model.matches( term );
         });
     },
