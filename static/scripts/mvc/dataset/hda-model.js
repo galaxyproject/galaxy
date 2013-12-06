@@ -111,9 +111,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
                 this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
-        this.on( 'change', function(){
-            console.debug( 'change', arguments );
-        });
     },
 
     // ........................................................................ common queries
@@ -216,29 +213,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         //});
         //return xhr;
 
-        ////TODO: ideally this would be a DELETE call to the api
-        ////  using purge async for now
-        //var hda = this,
-        //    xhr = jQuery.ajax( options );
-        //xhr.done( function( message, status, responseObj ){
-        //    hda.set( 'purged', true );
-        //});
-        //xhr.fail( function( xhr, status, message ){
-        //    // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
-        //    // unbury and re-add to xhr
-        //    var error = _l( "Unable to purge this dataset" );
-        //    var messageBuriedInUnfortunatelyFormattedError = ( 'Removal of datasets by users '
-        //        + 'is not allowed in this Galaxy instance' );
-        //    if( xhr.responseJSON && xhr.responseJSON.error ){
-        //        error = xhr.responseJSON.error;
-        //    } else if( xhr.responseText.indexOf( messageBuriedInUnfortunatelyFormattedError ) !== -1 ){
-        //        error = messageBuriedInUnfortunatelyFormattedError;
-        //    }
-        //    xhr.responseText = error;
-        //    hda.trigger( 'error', hda, xhr, options, _l( error ), { error: error } );
-        //});
-        //return xhr;
-
         options.url = galaxy_config.root + 'datasets/' + this.get( 'id' ) + '/purge_async';
 
         //TODO: ideally this would be a DELETE call to the api
@@ -332,7 +306,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
      *  @returns {Boolean} was term found in (any) attribute(s)
      */
     matches : function( term ){
-        console.debug( 'matches: "' + term + '"' );
         var ATTR_SPECIFIER = '=',
             split = term.split( ATTR_SPECIFIER );
         // attribute is specified - search only that
@@ -546,14 +519,12 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
             responses = [];
 
         if( !startingLength ){
-            console.debug( 'no hdas in collection' );
             deferred.resolve([]);
             return deferred;
         }
         
         // use reverse order (stylistic choice)
         var ajaxFns = this.chain().reverse().map( function( hda, i ){
-            console.debug( 'adding:', hda, i, hdaAjaxFn );
             return function(){
                 var xhr = hdaAjaxFn.call( hda, options );
                 // if successful, notify using the deferred to allow tracking progress
