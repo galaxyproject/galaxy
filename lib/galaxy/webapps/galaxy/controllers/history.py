@@ -377,7 +377,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         galaxy_session = trans.get_galaxy_session()
         try:
             association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                          .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
                                           .first()
         except:
             association = None
