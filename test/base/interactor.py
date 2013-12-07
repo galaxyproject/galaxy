@@ -10,7 +10,7 @@ from simplejson import dumps, loads
 from logging import getLogger
 log = getLogger( __name__ )
 
-VERBOSE_ERRORS = True
+VERBOSE_ERRORS = False
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 
 
