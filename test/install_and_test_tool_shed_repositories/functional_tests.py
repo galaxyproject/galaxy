@@ -80,7 +80,9 @@ os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
 default_galaxy_test_port_min = 10000
 default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
-default_galaxy_master_api_key = None
+# The following should be an actual value (not None).  If developers manually specify their
+# tests to use the API it will not work unless a master API key is specified.
+default_galaxy_master_api_key = 123456
 
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
