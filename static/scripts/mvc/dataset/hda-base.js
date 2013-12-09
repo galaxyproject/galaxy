@@ -47,6 +47,9 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.selected = attributes.selected || false;
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
+        /** is the body of this hda view expanded/not. */
+        this.draggable = attributes.draggable || false;
+        
         this._setUpListeners();
     },
 
@@ -118,6 +121,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             if( this.model.inReadyState() ){
                 this.trigger( 'rendered:ready', view );
             }
+            if( this.draggable ){ this.draggableOn(); }
             next();
         });
         return this;
@@ -399,7 +403,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         'click .dataset-title-bar'      : 'toggleBodyVisibility',
         'keydown .dataset-title-bar'    : 'toggleBodyVisibility',
         // toggle selected state
-        'click .dataset-selector'       : 'toggleSelect'
+        'click .dataset-selector'       : 'toggleSelect',
+
+        // dragging - don't work, originalEvent === null
+        //'dragstart .dataset-title-bar'  : 'dragStartHandler',
+        //'dragend .dataset-title-bar'    : 'dragEndHandler'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -571,6 +579,48 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         } else {
             this.select( event );
         }
+    },
+
+    // ......................................................................... drag/drop
+    draggableOn : function(){
+        this.draggable = true;
+        //TODO: I have no idea why this doesn't work with the events hash or jq.on()...
+        //this.$el.find( '.dataset-title-bar' )
+        //    .attr( 'draggable', true )
+        //    .bind( 'dragstart', this.dragStartHandler, false )
+        //    .bind( 'dragend',   this.dragEndHandler,   false );
+        this.dragStartHandler = _.bind( this._dragStartHandler, this );
+        this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
+
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', true ).get(0);
+        titleBar.addEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.addEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    draggableOff : function(){
+        this.draggable = false;
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', false ).get(0);
+        titleBar.removeEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.removeEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    toggleDraggable : function(){
+        if( this.draggable ){
+            this.draggableOff();
+        } else {
+            this.draggableOn();
+        }
+    },
+    _dragStartHandler : function( event ){
+        //console.debug( 'dragStartHandler:', this, event, arguments )
+        this.trigger( 'dragstart', this );
+        event.dataTransfer.effectAllowed = 'move';
+        //TODO: all except IE: should be 'application/json', IE: must be 'text'
+        event.dataTransfer.setData( 'text', JSON.stringify( this.model.toJSON() ) );
+        return false;
+    },
+    _dragEndHandler : function( event ){
+        this.trigger( 'dragend', this );
+        //console.debug( 'dragEndHandler:', event )
+        return false;
     },
 
     // ......................................................................... removal
