@@ -395,10 +395,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     // ......................................................................... events
     /** event map */
     events : {
-        // expand the body when the title is clicked
-        'click .dataset-title-bar'  : 'toggleBodyVisibility',
+        // expand the body when the title is clicked or when in focus and space or enter is pressed
+        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+        'keydown .dataset-title-bar'    : 'toggleBodyVisibility',
         // toggle selected state
-        'click .dataset-selector'   : 'toggleSelect'
+        'click .dataset-selector'       : 'toggleSelect'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -409,6 +410,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expand ){
+        // bail (with propagation) if keydown and not space or enter
+        var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
+        if( ( event.type === 'keydown' )
+        &&  !( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
+            return true;
+        }
+
         var $body = this.$el.find( '.dataset-body' );
         expand = ( expand === undefined )?( !$body.is( ':visible' ) ):( expand );
         if( expand ){
