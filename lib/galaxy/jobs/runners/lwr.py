@@ -12,6 +12,7 @@ import os
 from .lwr_client import ClientManager, url_to_destination_params
 from .lwr_client import finish_job as lwr_finish_job
 from .lwr_client import submit_job as lwr_submit_job
+from .lwr_client import ClientJobDescription
 
 log = logging.getLogger( __name__ )
 
@@ -78,12 +79,15 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
         try:
             client = self.get_client_from_wrapper(job_wrapper)
-            output_files = self.get_output_files(job_wrapper)
-            input_files = job_wrapper.get_input_fnames()
-            working_directory = job_wrapper.working_directory
-            tool = job_wrapper.tool
-            config_files = job_wrapper.extra_filenames
-            job_id = lwr_submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory)
+            client_job_description = ClientJobDescription(
+                command_line=command_line,
+                output_files=self.get_output_files(job_wrapper),
+                input_files=job_wrapper.get_input_fnames(),
+                working_directory=job_wrapper.working_directory,
+                tool=job_wrapper.tool,
+                config_files=job_wrapper.extra_filenames,
+            )
+            job_id = lwr_submit_job(client, client_job_description)
             log.info("lwr job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )

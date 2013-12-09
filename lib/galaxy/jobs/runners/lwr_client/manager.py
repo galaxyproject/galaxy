@@ -18,7 +18,8 @@ try:
 except ImportError:
     from galaxy.util import unicodify as text_type
 
-from .client import Client, InputCachingClient
+from .client import JobClient
+from .client import InputCachingJobClient
 from .client import ObjectStoreClient
 from .transport import get_transport
 from .util import TransferEventManager
@@ -51,11 +52,11 @@ class ClientManager(object):
         if cache:
             log.info("Setting LWR client class to caching variant.")
             self.client_cacher = ClientCacher(**kwds)
-            self.client_class = InputCachingClient
+            self.client_class = InputCachingJobClient
             self.extra_client_kwds = {"client_cacher": self.client_cacher}
         else:
             log.info("Setting LWR client class to standard, non-caching variant.")
-            self.client_class = Client
+            self.client_class = JobClient
             self.extra_client_kwds = {}
 
     def get_client(self, destination_params, job_id):

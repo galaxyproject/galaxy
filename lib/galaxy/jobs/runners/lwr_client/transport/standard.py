@@ -2,6 +2,7 @@
 LWR HTTP Client layer based on Python Standard Library (urllib2)
 """
 from __future__ import with_statement
+from os.path import getsize
 import mmap
 try:
     from urllib2 import urlopen
@@ -23,8 +24,11 @@ class Urllib2Transport(object):
         input = None
         try:
             if input_path:
-                input = open(input_path, 'rb')
-                data = mmap.mmap(input.fileno(), 0, access=mmap.ACCESS_READ)
+                if getsize(input_path):
+                    input = open(input_path, 'rb')
+                    data = mmap.mmap(input.fileno(), 0, access=mmap.ACCESS_READ)
+                else:
+                    data = b""
             response = self._url_open(request, data)
         finally:
             if input:

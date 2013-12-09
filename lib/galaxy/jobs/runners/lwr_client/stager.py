@@ -1,12 +1,19 @@
 from os.path import abspath, basename, join, exists
 from os import listdir, sep
 from re import findall
+from re import compile
 from io import open
 
 from .action_mapper import FileActionMapper
 
 from logging import getLogger
 log = getLogger(__name__)
+
+# All output files marked with from_work_dir attributes will copied or downloaded
+# this pattern picks up attiditional files to copy back - such as those
+# associated with multiple outputs and metadata configuration. Set to .* to just
+# copy everything
+COPY_FROM_WORKING_DIRECTORY_PATTERN = compile(r"primary_.*|galaxy.json|metadata_.*")
 
 
 class JobInputs(object):
@@ -157,35 +164,24 @@ class FileStager(object):
 
     **Parameters**
 
-    client : Client
+    client : JobClient
         LWR client object.
-    command_line : str
-        The local command line to execute, this will be rewritten for the remote server.
-    config_files : list
-        List of Galaxy 'configfile's produced for this job. These will be rewritten and sent to remote server.
-    input_files :  list
-        List of input files used by job. These will be transferred and references rewritten.
-    output_files : list
-        List of output_files produced by job.
-    tool_dir : str
-        Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
-    working_directory : str
-        Local path created by Galaxy for running this job.
-
+    client_job_description : client_job_description
+        Description of client view of job to stage and execute remotely.
     """
 
-    def __init__(self, client, tool, command_line, config_files, input_files, output_files, working_directory):
+    def __init__(self, client, client_job_description, job_config):
         """
         """
         self.client = client
-        self.command_line = command_line
-        self.config_files = config_files
-        self.input_files = input_files
-        self.output_files = output_files
-        self.tool_id = tool.id
-        self.tool_version = tool.version
-        self.tool_dir = abspath(tool.tool_dir)
-        self.working_directory = working_directory
+        self.command_line = client_job_description.command_line
+        self.config_files = client_job_description.config_files
+        self.input_files = client_job_description.input_files
+        self.output_files = client_job_description.output_files
+        self.tool_id = client_job_description.tool.id
+        self.tool_version = client_job_description.tool.version
+        self.tool_dir = abspath(client_job_description.tool.tool_dir)
+        self.working_directory = client_job_description.working_directory
 
         # Setup job inputs, these will need to be rewritten before
         # shipping off to remote LWR server.
@@ -193,7 +189,7 @@ class FileStager(object):
 
         self.transfer_tracker = TransferTracker(client, self.job_inputs)
 
-        self.__handle_setup()
+        self.__handle_setup(job_config)
         self.__initialize_referenced_tool_files()
         self.__upload_tool_files()
         self.__upload_input_files()
@@ -204,8 +200,9 @@ class FileStager(object):
         self.__handle_rewrites()
         self.__upload_rewritten_config_files()
 
-    def __handle_setup(self):
-        job_config = self.client.setup(self.tool_id, self.tool_version)
+    def __handle_setup(self, job_config):
+        if not job_config:
+            job_config = self.client.setup(self.tool_id, self.tool_version)
 
         self.new_working_directory = job_config['working_directory']
         self.new_outputs_directory = job_config['outputs_directory']
@@ -297,32 +294,49 @@ class FileStager(object):
         return self.job_inputs.rewritten_command_line
 
 
-def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files):
+def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files, working_directory_contents=[]):
     """
     """
     action_mapper = FileActionMapper(client)
     download_failure_exceptions = []
+    downloaded_working_directory_files = []
     if job_completed_normally:
+        # Fetch explicit working directory outputs.
         for source_file, output_file in work_dir_outputs:
+            name = basename(source_file)
             try:
                 action = action_mapper.action(output_file, 'output')
-                client.fetch_work_dir_output(source_file, working_directory, output_file, action[0])
+                client.fetch_work_dir_output(name, working_directory, output_file, action[0])
+                downloaded_working_directory_files.append(name)
             except Exception as e:
                 download_failure_exceptions.append(e)
             # Remove from full output_files list so don't try to download directly.
             output_files.remove(output_file)
+
+        # Fetch output files.
         for output_file in output_files:
             try:
                 action = action_mapper.action(output_file, 'output')
                 client.fetch_output(output_file, working_directory=working_directory, action=action[0])
             except Exception as e:
                 download_failure_exceptions.append(e)
+
+        # Fetch remaining working directory outputs of interest.
+        for name in working_directory_contents:
+            if name in downloaded_working_directory_files:
+                continue
+            if COPY_FROM_WORKING_DIRECTORY_PATTERN.match(name):
+                output_file = join(working_directory, name)
+                action = action_mapper.action(output_file, 'output')
+                client.fetch_work_dir_output(name, working_directory, output_file, action=action[0])
+                downloaded_working_directory_files.append(name)
+
     return __clean(download_failure_exceptions, cleanup_job, client)
 
 
 def __clean(download_failure_exceptions, cleanup_job, client):
     failed = (len(download_failure_exceptions) > 0)
-    if not failed or cleanup_job == "always":
+    if (not failed and cleanup_job != "never") or cleanup_job == "always":
         try:
             client.clean()
         except:
@@ -330,10 +344,10 @@ def __clean(download_failure_exceptions, cleanup_job, client):
     return failed
 
 
-def submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory):
+def submit_job(client, client_job_description, job_config=None):
     """
     """
-    file_stager = FileStager(client, tool, command_line, config_files, input_files, output_files, working_directory)
+    file_stager = FileStager(client, client_job_description, job_config)
     rebuilt_command_line = file_stager.get_rewritten_command_line()
     job_id = file_stager.job_id
     client.launch(rebuilt_command_line)
@@ -351,4 +365,33 @@ def _read(path):
     finally:
         input.close()
 
-__all__ = [submit_job, finish_job]
+
+class ClientJobDescription(object):
+    """ A description of how client views job - command_line, inputs, etc..
+
+    **Parameters**
+
+    command_line : str
+        The local command line to execute, this will be rewritten for the remote server.
+    config_files : list
+        List of Galaxy 'configfile's produced for this job. These will be rewritten and sent to remote server.
+    input_files :  list
+        List of input files used by job. These will be transferred and references rewritten.
+    output_files : list
+        List of output_files produced by job.
+    tool_dir : str
+        Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
+    working_directory : str
+        Local path created by Galaxy for running this job.
+    """
+
+    def __init__(self, tool, command_line, config_files, input_files, output_files, working_directory):
+        self.tool = tool
+        self.command_line = command_line
+        self.config_files = config_files
+        self.input_files = input_files
+        self.output_files = output_files
+        self.working_directory = working_directory
+
+
+__all__ = [submit_job, ClientJobDescription, finish_job]
