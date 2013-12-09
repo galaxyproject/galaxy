@@ -67,7 +67,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                         raise Exception('Error running file staging command: %s' % cmd)
                 job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
             command_line = self.build_command_line( job_wrapper, include_metadata=False, include_work_dir_outputs=False )
-        except:
+        except Exception:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
@@ -91,7 +91,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             log.info("lwr job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )
-        except:
+        except Exception:
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
@@ -152,7 +152,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
             if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
-        except:
+        except Exception:
             message = "Failed to communicate with remote job server."
             job_wrapper.fail( message, exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
@@ -161,7 +161,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         # Finish the job
         try:
             job_wrapper.finish( stdout, stderr )
-        except:
+        except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
