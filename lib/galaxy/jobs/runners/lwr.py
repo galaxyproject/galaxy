@@ -55,30 +55,14 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return job_state
 
     def queue_job(self, job_wrapper):
-        command_line = ''
         job_destination = job_wrapper.job_destination
 
-        try:
-            job_wrapper.prepare()
-            if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
-                for cmd in job_wrapper.prepare_input_files_cmds:  # run the commands to stage the input files
-                    #log.debug( 'executing: %s' % cmd )
-                    if 0 != os.system(cmd):
-                        raise Exception('Error running file staging command: %s' % cmd)
-                job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
-            command_line = self.build_command_line( job_wrapper, include_metadata=False, include_work_dir_outputs=False )
-        except Exception:
-            job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
-            return
+        command_line, client = self.__prepare_job( job_wrapper, job_destination )
 
-        # If we were able to get a command line, run the job
         if not command_line:
-            job_wrapper.finish( '', '' )
             return
 
         try:
-            client = self.get_client_from_wrapper(job_wrapper)
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 output_files=self.get_output_files(job_wrapper),
@@ -103,6 +87,37 @@ class LwrJobRunner( AsynchronousJobRunner ):
         lwr_job_state.running = False
         lwr_job_state.job_destination = job_destination
         self.monitor_job(lwr_job_state)
+
+    def __prepare_job(self, job_wrapper, job_destination):
+        """ Build command-line and LWR client for this job. """
+        command_line = None
+        client = None
+
+        try:
+            job_wrapper.prepare()
+            self.__prepare_input_files_locally(job_wrapper)
+            command_line = self.build_command_line( job_wrapper, include_metadata=False, include_work_dir_outputs=False )
+            client = self.get_client_from_wrapper(job_wrapper)
+        except Exception:
+            job_wrapper.fail( "failure preparing job", exception=True )
+            log.exception("failure running job %d" % job_wrapper.job_id)
+            return
+
+        # If we were able to get a command line, run the job
+        if not command_line:
+            job_wrapper.finish( '', '' )
+            return
+
+        return command_line, client
+
+    def __prepare_input_files_locally(self, job_wrapper):
+        """Run task splitting commands locally."""
+        prepare_input_files_cmds = getattr(job_wrapper, 'prepare_input_files_cmds', None)
+        if prepare_input_files_cmds is not None:
+            for cmd in prepare_input_files_cmds:  # run the commands to stage the input files
+                if 0 != os.system(cmd):
+                    raise Exception('Error running file staging command: %s' % cmd)
+            job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def get_output_files(self, job_wrapper):
         output_fnames = job_wrapper.get_output_fnames()
