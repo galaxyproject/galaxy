@@ -146,11 +146,13 @@ class BaseJobRunner( object ):
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
         return build_command( self, job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
 
-    def get_work_dir_outputs( self, job_wrapper ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
+        if not job_working_directory:
+            job_working_directory = os.path.abspath( job_wrapper.working_directory )
 
         def in_directory( file, directory ):
             """
@@ -186,7 +188,7 @@ class BaseJobRunner( object ):
                         if hda_tool_output and hda_tool_output.from_work_dir:
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
-                            source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
+                            source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 output_pairs.append( ( source_file, destination ) )

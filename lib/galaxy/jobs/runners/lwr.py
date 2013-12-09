@@ -3,7 +3,9 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import JobDestination
+from galaxy.jobs.command_factory import build_command
 from galaxy.util import string_as_bool_or_none
+from galaxy.util.bunch import Bunch
 
 import errno
 from time import sleep
@@ -17,6 +19,9 @@ from .lwr_client import ClientJobDescription
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'LwrJobRunner' ]
+
+NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "LWR misconfiguration - LWR client configured to set metadata remotely, but remote LWR isn't properly configured with a galaxy_home directory."
+NO_REMOTE_DATATYPES_CONFIG = "LWR client is configured to use remote datatypes configuration when setting metadata externally, but LWR is not configured with this information. Defaulting to datatypes_conf.xml."
 
 
 class LwrJobRunner( AsynchronousJobRunner ):
@@ -57,7 +62,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
 
-        command_line, client = self.__prepare_job( job_wrapper, job_destination )
+        command_line, client, remote_job_config = self.__prepare_job( job_wrapper, job_destination )
 
         if not command_line:
             return
@@ -71,7 +76,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
             )
-            job_id = lwr_submit_job(client, client_job_description)
+            job_id = lwr_submit_job(client, client_job_description, remote_job_config)
             log.info("lwr job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )
@@ -92,23 +97,33 @@ class LwrJobRunner( AsynchronousJobRunner ):
         """ Build command-line and LWR client for this job. """
         command_line = None
         client = None
-
+        remote_job_config = None
         try:
             job_wrapper.prepare()
             self.__prepare_input_files_locally(job_wrapper)
-            command_line = self.build_command_line( job_wrapper, include_metadata=False, include_work_dir_outputs=False )
             client = self.get_client_from_wrapper(job_wrapper)
+            tool = job_wrapper.tool
+            remote_job_config = client.setup(tool.id, tool.version)
+            remote_metadata = LwrJobRunner.__remote_metadata( client )
+            remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
+            metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            command_line = build_command(
+                self,
+                job_wrapper=job_wrapper,
+                include_metadata=remote_metadata,
+                include_work_dir_outputs=remote_work_dir_copy,
+                metadata_kwds=metadata_kwds,
+                job_working_directory=remote_job_config['working_directory']
+            )
         except Exception:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
-            return
 
         # If we were able to get a command line, run the job
         if not command_line:
             job_wrapper.finish( '', '' )
-            return
 
-        return command_line, client
+        return command_line, client, remote_job_config
 
     def __prepare_input_files_locally(self, job_wrapper):
         """Run task splitting commands locally."""
@@ -149,20 +164,27 @@ class LwrJobRunner( AsynchronousJobRunner ):
             run_results = client.raw_check_complete()
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
-
+            working_directory_contents = run_results.get('working_directory_contents', [])
             # Use LWR client code to transfer/copy files back
             # and cleanup job if needed.
             completed_normally = \
                 job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]
             cleanup_job = self.app.config.cleanup_job
-            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
+            remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
+            if not remote_work_dir_copy:
+                work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
+            else:
+                # They have already been copied over to look like regular outputs remotely,
+                # no need to handle them differently here.
+                work_dir_outputs = []
             output_files = self.get_output_files( job_wrapper )
             finish_args = dict( client=client,
                                 working_directory=job_wrapper.working_directory,
                                 job_completed_normally=completed_normally,
                                 cleanup_job=cleanup_job,
                                 work_dir_outputs=work_dir_outputs,
-                                output_files=output_files )
+                                output_files=output_files,
+                                working_directory_contents=working_directory_contents )
             failed = lwr_finish_job( **finish_args )
 
             if failed:
@@ -172,7 +194,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.fail( message, exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
-        self._handle_metadata_externally( job_wrapper )
+        if not LwrJobRunner.__remote_metadata( client ):
+            self._handle_metadata_externally( job_wrapper )
         # Finish the job
         try:
             job_wrapper.finish( stdout, stderr )
@@ -244,3 +267,64 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
+
+    @staticmethod
+    def __remote_metadata( lwr_client ):
+        remote_metadata = string_as_bool_or_none( lwr_client.destination_params.get( "remote_metadata", False ) )
+        return remote_metadata
+
+    @staticmethod
+    def __remote_work_dir_copy( lwr_client ):
+        # Right now remote metadata handling assumes from_work_dir outputs
+        # have been copied over before it runs. So do that remotely. This is
+        # not the default though because adding it to the command line is not
+        # cross-platform (no cp on Windows) and its un-needed work outside
+        # the context of metadata settting (just as easy to download from
+        # either place.)
+        return LwrJobRunner.__remote_metadata( lwr_client )
+
+    @staticmethod
+    def __use_remote_datatypes_conf( lwr_client ):
+        """ When setting remote metadata, use integrated datatypes from this
+        Galaxy instance or use the datatypes config configured via the remote
+        LWR.
+
+        Both options are broken in different ways for same reason - datatypes
+        may not match. One can push the local datatypes config to the remote
+        server - but there is no guarentee these datatypes will be defined
+        there. Alternatively, one can use the remote datatype config - but
+        there is no guarentee that it will contain all the datatypes available
+        to this Galaxy.
+        """
+        use_remote_datatypes = string_as_bool_or_none( lwr_client.destination_params.get( "use_remote_datatypes", False ) )
+        return use_remote_datatypes
+
+    def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
+        metadata_kwds = {}
+        if remote_metadata:
+            remote_system_properties = remote_job_config.get("system_properties", {})
+            remote_galaxy_home = remote_system_properties.get("galaxy_home", None)
+            if not remote_galaxy_home:
+                raise Exception(NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE)
+            metadata_kwds['exec_dir'] = remote_galaxy_home
+            outputs_directory = remote_job_config['outputs_directory']
+            configs_directory = remote_job_config['configs_directory']
+            outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
+            metadata_kwds['output_fnames'] = outputs
+            metadata_kwds['config_root'] = remote_galaxy_home
+            default_config_file = os.path.join(remote_galaxy_home, 'universe_wsgi.ini')
+            metadata_kwds['config_file'] = remote_system_properties.get('galaxy_config_file', default_config_file)
+            metadata_kwds['dataset_files_path'] = remote_system_properties.get('galaxy_dataset_files_path', None)
+            if LwrJobRunner.__use_remote_datatypes_conf( client ):
+                remote_datatypes_config = remote_system_properties.get('galaxy_datatypes_config_file', None)
+                if not remote_datatypes_config:
+                    log.warn(NO_REMOTE_DATATYPES_CONFIG)
+                    remote_datatypes_config = os.path.join(remote_galaxy_home, 'datatypes_conf.xml')
+                metadata_kwds['datatypes_config'] = remote_datatypes_config
+            else:
+                integrates_datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
+                # Ensure this file gets pushed out to the remote config dir.
+                job_wrapper.extra_filenames.append(integrates_datatypes_config)
+
+                metadata_kwds['datatypes_config'] = os.path.join(configs_directory, os.path.basename(integrates_datatypes_config))
+        return metadata_kwds

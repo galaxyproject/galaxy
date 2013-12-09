@@ -2,7 +2,7 @@ from os import getcwd
 from os.path import abspath
 
 
-def build_command( job, job_wrapper, include_metadata=False, include_work_dir_outputs=True, metadata_kwds={} ):
+def build_command( job, job_wrapper, include_metadata=False, include_work_dir_outputs=True, metadata_kwds={}, job_working_directory=None ):
     """
     Compose the sequence of commands necessary to execute a job. This will
     currently include:
@@ -43,7 +43,7 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
 
     # Append commands to copy job outputs based on from_work_dir attribute.
     if include_work_dir_outputs:
-        work_dir_outputs = job.get_work_dir_outputs( job_wrapper )
+        work_dir_outputs = job.get_work_dir_outputs( job_wrapper, job_working_directory=job_working_directory )
         if work_dir_outputs:
             if not captured_return_code:
                 commands += capture_return_code_command
@@ -59,12 +59,18 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
         tmp_dir = metadata_kwds.get( 'tmp_dir', job_wrapper.working_directory )
         dataset_files_path = metadata_kwds.get( 'dataset_files_path', job.app.model.Dataset.file_path )
         output_fnames = metadata_kwds.get( 'output_fnames', job_wrapper.get_output_fnames() )
+        config_root = metadata_kwds.get( 'config_root', None )
+        config_file = metadata_kwds.get( 'config_file', None )
+        datatypes_config = metadata_kwds.get( 'datatypes_config', None )
         metadata_command = job_wrapper.setup_external_metadata(
             exec_dir=exec_dir,
             tmp_dir=tmp_dir,
             dataset_files_path=dataset_files_path,
             output_fnames=output_fnames,
             set_extension=False,
+            config_root=config_root,
+            config_file=config_file,
+            datatypes_config=datatypes_config,
             kwds={ 'overwrite' : False }
         ) or ''
         metadata_command = metadata_command.strip()
@@ -72,7 +78,7 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
             if not captured_return_code:
                 commands += capture_return_code_command
                 captured_return_code = True
-            commands += "; cd %s; %s" % (abspath( getcwd() ), metadata_command)
+            commands += "; cd %s; %s" % (exec_dir, metadata_command)
 
     if captured_return_code:
         commands += '; sh -c "exit $return_code"'
