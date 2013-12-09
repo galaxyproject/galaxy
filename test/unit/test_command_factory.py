@@ -5,13 +5,15 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.util.bunch import Bunch
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
+TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
+TEST_FILES_PATH = "file_path"
 
 
 class TestCommandFactory(TestCase):
 
     def setUp(self):
         self.job_wrapper = MockJobWrapper()
-        self.job = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path="file_path"))))
+        self.job = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))))
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
@@ -40,9 +42,8 @@ class TestCommandFactory(TestCase):
     def _test_set_metadata(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
-        metadata_line = "set_metadata_and_stuff.sh"
-        self.job_wrapper.metadata_line = metadata_line
-        expected_command = '%s; return_code=$?; cd %s; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, getcwd(), metadata_line)
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        expected_command = '%s; return_code=$?; cd %s; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, getcwd(), TEST_METADATA_LINE)
         self.__assert_command_is( expected_command )
 
     def test_empty_metadata(self):
@@ -55,18 +56,47 @@ class TestCommandFactory(TestCase):
         # Empty metadata command do not touch command line.
         expected_command = '%s' % (MOCK_COMMAND_LINE)
         self.__assert_command_is( expected_command )
-        
-        
-    def __assert_command_is(self, expected_command):
-        command = self.__command()
+
+    def test_metadata_kwd_defaults(self):
+        configured_kwds = self.__set_metadata_with_kwds()
+        assert configured_kwds['exec_dir'] == getcwd()
+        assert configured_kwds['tmp_dir'] == self.job_wrapper.working_directory
+        assert configured_kwds['dataset_files_path'] == TEST_FILES_PATH
+        assert configured_kwds['output_fnames'] == ['output1']
+
+    def test_metadata_kwds_overrride(self):
+        configured_kwds = self.__set_metadata_with_kwds(
+            exec_dir="/path/to/remote/galaxy",
+            tmp_dir="/path/to/remote/staging/directory/job1",
+            dataset_files_path="/path/to/remote/datasets/",
+            output_fnames=['/path/to/remote_output1'],
+        )
+        assert configured_kwds['exec_dir'] == "/path/to/remote/galaxy"
+        assert configured_kwds['tmp_dir'] == "/path/to/remote/staging/directory/job1"
+        assert configured_kwds['dataset_files_path'] == "/path/to/remote/datasets/"
+        assert configured_kwds['output_fnames'] == ['/path/to/remote_output1']
+
+    def __set_metadata_with_kwds(self, **kwds):
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        if kwds:
+            self.__command(metadata_kwds=kwds)
+        else:
+            self.__command()
+        return self.job_wrapper.configured_external_metadata_kwds
+
+    def __assert_command_is(self, expected_command, **command_kwds):
+        command = self.__command(**command_kwds)
         self.assertEqual(command, expected_command)
 
-    def __command(self):
+    def __command(self, **extra_kwds):
         kwds = dict(
             job=self.job,
             job_wrapper=self.job_wrapper,
             include_metadata=self.include_metadata,
             include_work_dir_outputs=self.include_work_dir_outputs,
+            **extra_kwds
         )
         return build_command(**kwds)
 
@@ -78,6 +108,7 @@ class MockJobWrapper(object):
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None
+        self.configured_external_metadata_kwds = None
         self.working_directory = "job1"
 
     def get_command_line(self):
@@ -88,10 +119,11 @@ class MockJobWrapper(object):
         return self.metadata_line is not None
 
     def setup_external_metadata(self, *args, **kwds):
+        self.configured_external_metadata_kwds = kwds
         return self.metadata_line
 
     def get_output_fnames(self):
-        return []
+        return ["output1"]
 
 
 class MockJob(object):

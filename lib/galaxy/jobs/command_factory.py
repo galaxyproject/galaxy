@@ -2,7 +2,7 @@ from os import getcwd
 from os.path import abspath
 
 
-def build_command( job, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+def build_command( job, job_wrapper, include_metadata=False, include_work_dir_outputs=True, metadata_kwds={} ):
     """
     Compose the sequence of commands necessary to execute a job. This will
     currently include:
@@ -55,11 +55,15 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
     if include_metadata and job_wrapper.requires_setting_metadata:
+        exec_dir = metadata_kwds.get( 'exec_dir', abspath( getcwd() ) )
+        tmp_dir = metadata_kwds.get( 'tmp_dir', job_wrapper.working_directory )
+        dataset_files_path = metadata_kwds.get( 'dataset_files_path', job.app.model.Dataset.file_path )
+        output_fnames = metadata_kwds.get( 'output_fnames', job_wrapper.get_output_fnames() )
         metadata_command = job_wrapper.setup_external_metadata(
-            exec_dir=abspath( getcwd() ),
-            tmp_dir=job_wrapper.working_directory,
-            dataset_files_path=job.app.model.Dataset.file_path,
-            output_fnames=job_wrapper.get_output_fnames(),
+            exec_dir=exec_dir,
+            tmp_dir=tmp_dir,
+            dataset_files_path=dataset_files_path,
+            output_fnames=output_fnames,
             set_extension=False,
             kwds={ 'overwrite' : False }
         ) or ''
