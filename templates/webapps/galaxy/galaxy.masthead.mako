@@ -68,6 +68,11 @@
 
     ## load the frame manager
     <script type="text/javascript">
+        if( !window.Galaxy ){
+            window.Galaxy = {};
+        }
+        ## fetch the current user data from trans
+        Galaxy.currUser = new User(${ h.to_json_string( get_user_json(), indent=2 ) });
 
         ## load additional style sheet
         if (window != window.top)
@@ -85,9 +90,6 @@
                 ## get configuration
                 var masthead_config = ${ h.to_json_string( masthead_config ) };
 
-                ## set up the quota meter (And fetch the current user data from trans)
-                Galaxy.currUser = new User(masthead_config.user.json);
-
                 ## load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
                 Galaxy.modal = new mod_modal.GalaxyModal();
@@ -102,6 +104,7 @@
                 ## add upload plugin
                 ##Galaxy.upload = new mod_upload.GalaxyUpload(masthead_config);
 
+                ## set up the quota meter (And fetch the current user data from trans)
                 ## add quota meter to masthead
                 Galaxy.quotaMeter = new UserQuotaMeter({
                     model   : Galaxy.currUser,
