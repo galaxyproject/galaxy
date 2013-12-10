@@ -335,6 +335,11 @@ def main():
             except OSError:
                 pass
 
+    #Data Manager testing temp path
+    #For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
+    galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
+    
     # ---- Build Application --------------------------------------------------
     master_api_key = os.environ.get( "GALAXY_TEST_MASTER_API_KEY", default_galaxy_master_key )
     app = None
@@ -360,6 +365,7 @@ def main():
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,
                        tool_path=tool_path,
+                       galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        tool_parse_help=False,
                        update_integrated_tool_panel=False,
                        use_heartbeat=False,
@@ -469,13 +475,24 @@ def main():
                 functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
                 functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
                 functional.test_workflow.WorkflowTestCase.user_api_key = os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key )
-            import functional.test_toolbox
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests(
-                testing_shed_tools=testing_shed_tools,
-                master_api_key=master_api_key,
-                user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
-            )
+            data_manager_test = __check_arg( '-data_managers', param=False )
+            if data_manager_test:
+                import functional.test_data_managers
+                functional.test_data_managers.data_managers = app.data_managers #seems like a hack...
+                functional.test_data_managers.build_tests(
+                    tmp_dir=data_manager_test_tmp_path,
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                )
+            else: #when testing data managers, do not test toolbox
+                import functional.test_toolbox
+                functional.test_toolbox.toolbox = app.toolbox
+                functional.test_toolbox.build_tests(
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )
             result = run_tests( test_config )

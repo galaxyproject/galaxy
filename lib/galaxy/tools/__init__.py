@@ -394,6 +394,10 @@ class ToolBox( object, Dictifiable ):
                             return tool
                 #No tool matches by version, simply return the first available tool found
                 return rval[0]
+        #We now likely have a Toolshed guid passed in, but no supporting database entries
+        #If the tool exists by exact id and is loaded then provide exact match within a list
+        if tool_id in self.tools_by_id:
+            return[ self.tools_by_id[ tool_id ] ]
         return None
 
     def get_loaded_tools_by_lineage( self, tool_id ):

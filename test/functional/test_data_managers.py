@@ -1,18 +1,17 @@
 import new
 import sys
-from base.twilltestcase import TwillTestCase
+import tempfile
+import os.path
+import shutil
+from test_toolbox import ToolTestCase
 from base.interactor import build_interactor, stage_data_in_history
-from galaxy.tools import DataManagerTool
 import logging
 log = logging.getLogger( __name__ )
 
-toolbox = None
+data_managers = None
 
-#Do not test Data Managers as part of the standard Tool Test Framework.
-TOOL_TYPES_NO_TEST = ( DataManagerTool, )
-
-class ToolTestCase( TwillTestCase ):
-    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
+class DataManagerToolTestCase( ToolTestCase ):
+    """Test case that runs Data Manager tests based on a `galaxy.tools.test.ToolTest`"""
 
     def do_it( self, testdef ):
         """
@@ -24,17 +23,33 @@ class ToolTestCase( TwillTestCase ):
 
         galaxy_interactor = self.__galaxy_interactor( testdef )
 
-        test_history = galaxy_interactor.new_history()
+        test_history = galaxy_interactor.new_history() #history where inputs will be put, if any
 
         stage_data_in_history( galaxy_interactor, testdef.test_data(), test_history, shed_tool_id )
 
-        data_list = galaxy_interactor.run_tool( testdef, test_history )
+        data_list = galaxy_interactor.run_tool( testdef, test_history ) #test_history will have inputs only, outputs are placed in the specialized data manager history
+        
+        #FIXME: Move history determination and switching into the interactor
+        data_manager_history = None
+        for assoc in reversed( test_history.user.data_manager_histories ):
+            if not assoc.history.deleted:
+                data_manager_history = assoc.history
+                break
+        self.switch_history( id=self.security.encode_id( data_manager_history.id ) )
+        data_list = self.get_history_as_data_list()
+        #end
+        
         self.assertTrue( data_list )
 
-        self.__verify_outputs( testdef, test_history, shed_tool_id, data_list, galaxy_interactor )
+        self.__verify_outputs( testdef, data_manager_history, shed_tool_id, data_list, galaxy_interactor )
+        
+        self.switch_history( id=self.security.encode_id( test_history.id ) )
 
         galaxy_interactor.delete_history( test_history )
-
+    
+    
+    #Methods below are from test_toolbox.py:ToolTestCase, but are not inherited properly
+    
     def __galaxy_interactor( self, testdef ):
         return build_interactor( self, testdef.interactor )
 
@@ -71,35 +86,51 @@ class ToolTestCase( TwillTestCase ):
                     print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
                 raise
 
-
-def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=None ):
+def build_tests( tmp_dir=None, testing_shed_tools=False, master_api_key=None, user_api_key=None ):
     """
-    If the module level variable `toolbox` is set, generate `ToolTestCase`
+    If the module level variable `data_managers` is set, generate `DataManagerToolTestCase`
     classes for all of its tests and put them into this modules globals() so
     they can be discovered by nose.
     """
-    if toolbox is None:
+    
+    if data_managers is None:
+        log.warning( 'data_managers was not set for Data Manager functional testing. Will not test.' )
         return
 
-    # Push all the toolbox tests to module level
+    # Push all the data_managers tests to module level
     G = globals()
 
     # Eliminate all previous tests from G.
     for key, val in G.items():
-        if key.startswith( 'TestForTool_' ):
+        if key.startswith( 'TestForDataManagerTool_' ):
             del G[ key ]
 
-    for i, tool_id in enumerate( toolbox.tools_by_id ):
-        tool = toolbox.get_tool( tool_id )
-        if isinstance( tool, TOOL_TYPES_NO_TEST ):
-            #We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase 
-            continue
+    #first we will loop through data table loc files and copy them to temporary location, then swap out filenames:
+    for data_table_name, data_table in data_managers.app.tool_data_tables.get_tables().iteritems():
+        for filename, value in list( data_table.filenames.items() ):
+            new_filename = tempfile.NamedTemporaryFile( prefix=os.path.basename( filename ), dir=tmp_dir ).name
+            try:
+                shutil.copy( filename, new_filename )
+            except IOError, e:
+                log.warning( "Failed to copy '%s' to '%s', will create empty file at '%s': %s", filename, new_filename, new_filename, e )
+                open( new_filename, 'wb' ).close()
+            if 'filename' in value:
+                value[ 'filename' ] = new_filename
+            del data_table.filenames[ filename ] #remove filename:value pair
+            data_table.filenames[ new_filename ] = value #add new value by 
+    
+    for i, ( data_manager_id, data_manager ) in enumerate( data_managers.data_managers.iteritems() ):
+        tool = data_manager.tool
+        if not tool:
+            log.warning( "No Tool has been specified for Data Manager: %s", data_manager_id )
+        tool_data_tables = data_manager.data_managers.app.tool_data_tables
         if tool.tests:
+            ##fixme data_manager.tool_shed_repository_info_dict should be filled when is toolshed based
             shed_tool_id = None if not testing_shed_tools else tool.id
             # Create a new subclass of ToolTestCase, dynamically adding methods
             # named test_tool_XXX that run each test defined in the tool config.
-            name = "TestForTool_" + tool.id.replace( ' ', '_' )
-            baseclasses = ( ToolTestCase, )
+            name = "TestForDataManagerTool_" + data_manager_id.replace( ' ', '_' )
+            baseclasses = ( DataManagerToolTestCase, )
             namespace = dict()
             for j, testdef in enumerate( tool.tests ):
                 def make_test_method( td ):
