@@ -100,8 +100,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             encoded_id = trans.security.encode_id( content_item.id )
             time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
             time_created = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
-#             log.debug('XXXXXXXXXXXXXXXXXXX api type: ' + str(content_item.api_type))
-#             log.debug('XXXXXXXX ALL: ' + str(content_item.__dict__))
             
             # For folder return also hierarchy values
             if content_item.api_type == 'folder':
@@ -110,7 +108,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 return_item.update ( dict ( item_count = content_item.item_count ) )
 
             if content_item.api_type == 'file':
-#                 log.debug('XXXXX content item class: ' + str(content_item.__class__))
                 library_dataset_dict = content_item.to_dict()
                 library_dataset_dict['data_type']
                 library_dataset_dict['file_size']

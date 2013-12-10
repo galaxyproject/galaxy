@@ -115,7 +115,3 @@ doc/build
 .DS_Store
 *.rej
 *~
-
-
-syntax: regexp
-^static/AAA_scratch$

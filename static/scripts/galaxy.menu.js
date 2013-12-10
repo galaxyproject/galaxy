@@ -57,7 +57,6 @@ var GalaxyMenu = Backbone.Model.extend(
 
         tab_shared.add({
             title   : "Data Libraries",
-            content : "library/index",
             content : "library/index"
         });
 
