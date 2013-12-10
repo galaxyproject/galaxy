@@ -53,6 +53,14 @@ def get_user_id_by_name(username):
         sys.stderr.write("error: User name (%s) is not valid.\n" % username)
         exit(1)
     return pw.pw_uid
+    
+def json_file_exists(json_filename):
+    if not os.path.exists(json_filename):
+        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % ( json_filename ) )
+        exit(1)
+        
+    return True
+
 def validate_paramters():
     if len(sys.argv)<3:
         sys.stderr.write("usage: %s [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n" % sys.argv[0])
@@ -70,10 +78,6 @@ def validate_paramters():
         sys.stderr.write("error: userid must not be 0 (root)\n")
         exit(1)
 
-    if not os.path.exists(json_filename):
-        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % ( json_filename ) )
-        exit(1)
-
     return uid, json_filename
 
 def set_user(uid):
@@ -81,8 +85,15 @@ def set_user(uid):
         # Get user's default group and set it to current process to make sure file permissions are inherited correctly
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
+        import grp
         os.setgid(gid)
+        # Added lines to assure read/write permission for groups
+        user = pwd.getpwuid(uid).pw_name
+        groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
+
+        os.setgroups(groups)
         os.setuid(uid)
+
     except OSError, e:
         if e.errno == errno.EPERM:
             sys.stderr.write("error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
@@ -97,7 +108,8 @@ def set_user(uid):
         exit(1)
 def main():
     userid, json_filename = validate_paramters()
-    set_user(userid)        
+    set_user(userid)
+    json_file_exists(json_filename)
     s = drmaa.Session()
     s.initialize()
     jt = s.createJobTemplate()
