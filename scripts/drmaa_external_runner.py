@@ -67,6 +67,10 @@ def json_file_exists(json_filename):
 
 
 def validate_paramters():
+    assign_all_groups = False
+    if "--assign_all_groups" in sys.argv:
+        assign_all_groups = True
+        sys.argv.remove("--assign_all_groups")
 
     if len(sys.argv) < 3:
         sys.stderr.write("usage: %s [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n" % sys.argv[0])
@@ -84,21 +88,22 @@ def validate_paramters():
         sys.stderr.write("error: userid must not be 0 (root)\n")
         exit(1)
 
-    return uid, json_filename
+    return uid, json_filename, assign_all_groups
 
 
-def set_user(uid):
+def set_user(uid, assign_all_groups):
     try:
         # Get user's default group and set it to current process to make sure file permissions are inherited correctly
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
         import grp
         os.setgid(gid)
-        # Added lines to assure read/write permission for groups
-        user = pwd.getpwuid(uid).pw_name
-        groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
+        if assign_all_groups:
+            # Added lines to assure read/write permission for groups
+            user = pwd.getpwuid(uid).pw_name
+            groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
 
-        os.setgroups(groups)
+            os.setgroups(groups)
         os.setuid(uid)
 
     except OSError, e:
@@ -118,8 +123,8 @@ def set_user(uid):
 
 
 def main():
-    userid, json_filename = validate_paramters()
-    set_user(userid)
+    userid, json_filename, assign_all_groups = validate_paramters()
+    set_user(userid, assign_all_groups)
     json_file_exists(json_filename)
     s = drmaa.Session()
     s.initialize()
