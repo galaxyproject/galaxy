@@ -474,6 +474,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict[ 'user_id' ] = None
+        if history.user_id:
+            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
