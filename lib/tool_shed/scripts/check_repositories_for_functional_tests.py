@@ -282,11 +282,10 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     #    In the install and test script, this behavior is slightly different, since we do want to always run functional
                     #    tests on the most recent downloadable changeset revision.
                     if should_set_do_not_test_flag( app, repository, changeset_revision, testable_revision ):
-                        print "# Setting do_not_test to True on revision %s of repository %s because it is missing test components" % \
-                            ( changeset_revision, name )
+                        print "# Setting do_not_test to True on revision %s of %s owned by %s because it is missing test components" % \
+                            ( changeset_revision,  name, owner )
                         print "# and it is not the latest downloadable revision."
                         repository_metadata.do_not_test = True
-                    repository_metadata.tools_functionally_correct = False
                     if not testable_revision:
                         # Even though some tools may be missing test components, it may be possible to test other tools.  Since the
                         # install and test framework filters out repositories marked as missing test components, we'll set it only if
@@ -294,6 +293,9 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         print '# Setting missing_test_components to True for revision %s of %s owned by %s because all tools are missing test components.' % \
                             ( changeset_revision,  name, owner )
                         repository_metadata.missing_test_components = True
+                        print "# Setting tools_functionally_correct to False on revision %s of %s owned by %s because it is missing test components" % \
+                            ( changeset_revision,  name, owner )
+                        repository_metadata.tools_functionally_correct = False
                     tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
                 # Store only the configured number of test runs.
                 num_tool_test_results_saved = int( app.config.num_tool_test_results_saved )
