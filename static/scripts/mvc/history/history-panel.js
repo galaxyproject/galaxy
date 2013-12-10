@@ -109,6 +109,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.log( this + '.initialize:', attributes );
 //TODO: pass show_del'd/hidden through
 
+        /** where should pages from links be displayed? (default to new tab/window) */
+        this.linkTarget = attributes.linkTarget || '_blank';
+
+        // set up (non-model related) event handlers
         this._setUpListeners();
 
         // ---- set up instance vars
@@ -719,6 +723,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             expanded = this.storage.get( 'expandedHdas' )[ hdaId ],
             hdaView = new this.HDAView({
                     model           : hda,
+                    linkTarget      : this.linkTarget,
                     expanded        : expanded,
                     selectable      : this.selecting,
                     hasUser         : this.model.hasUser(),

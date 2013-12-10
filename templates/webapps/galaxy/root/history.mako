@@ -44,8 +44,6 @@ ${history_panel_javascripts()}
 
 <script type="text/javascript">
 function onModuleReady( historyPanel ){
-    // attach a panel to selector_to_attach_to and use a history model with bootstrapped data
-
     // history module is already in the dpn chain from the panel. We can re-scope it here.
     var historyModel    = require( 'mvc/history/history-model' ),
         debugging       = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,

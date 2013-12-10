@@ -39,9 +39,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.defaultPrimaryActionButtonRenderers = [
             this._render_showParamsButton
         ];
+
+        /** where should pages from links be displayed? (default to new tab/window) */
+        this.linkTarget = attributes.linkTarget || '_blank';
         
         /** is the view currently in selection mode? */
-        //this.selectable = attributes.selectable || false;
         this.selectable = attributes.selectable || false;
         /** is the view currently selected? */
         this.selected = attributes.selected || false;
@@ -160,7 +162,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
         
         var displayBtnData = {
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             classes     : 'dataset-display'
         };
 
@@ -183,12 +185,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.onclick = function(){
-                Galaxy.frame.add({
-                    title       : "Data Viewer: " + self.model.get('name'),
-                    type        : "url",
-                    target      : "galaxy_main",
-                    content     : self.urls.display
-                });
+                if( Galaxy.frame && Galaxy.frame.active ){
+                    Galaxy.frame.add({
+                        title       : "Data Viewer: " + self.model.get('name'),
+                        type        : "url",
+                        content     : self.urls.display
+                    });
+                }
             };
         }
         displayBtnData.faIcon = 'fa-eye';
@@ -251,7 +254,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View details' ),
             href        : this.urls.show_params,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-info-circle'
         });
     },

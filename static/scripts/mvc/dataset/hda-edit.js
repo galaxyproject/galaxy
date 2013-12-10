@@ -69,7 +69,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             editBtnData = {
                 title       : _l( 'Edit Attributes' ),
                 href        : this.urls.edit,
-                target      : 'galaxy_main',
+                target      : this.linkTarget,
                 classes     : 'dataset-edit'
             };
             
@@ -133,7 +133,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
     },
@@ -145,7 +145,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
     },
@@ -262,7 +262,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_body_failed_metadata : function(){
         // add a message box about the failure at the top of the body then render the remaining body as STATES.OK
-        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: 'galaxy_main' })
+        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: this.linkTarget })
                 .text( _l( 'set it manually or retry auto-detection' ) ),
             $span = $( '<span/>' ).text( '. ' + _l( 'You may be able to' ) + ' ' ).append( $link ),
             $body = hdaBase.HDABaseView.prototype._render_body_failed_metadata.call( this );
@@ -332,7 +332,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
             $body.find( '.dataset-dbkey .value' ).replaceWith(
-                $( '<a target="galaxy_main">?</a>' ).attr( 'href', this.urls.edit ) );
+                $( '<a target="' + this.linkTarget + '">?</a>' ).attr( 'href', this.urls.edit ) );
         }
     },
 
@@ -376,7 +376,7 @@ function create_scatterplot_action_fn( url, params ){
             title       : "Scatterplot",
             type        : "url",
             content     : url + '/scatterplot?' + $.param(params),
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             scratchbook : true
         });
 

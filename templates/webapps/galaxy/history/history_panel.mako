@@ -11,6 +11,7 @@ function onModuleReady( historyPanel ){
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
         el              : $( "${selector_to_attach_to}" ),
+        linkTarget      : 'galaxy_main',
         onready         : function loadAsCurrentHistoryPanel(){
             var panel = this;
             this.connectToQuotaMeter( Galaxy.quotaMeter ).connectToOptionsMenu( Galaxy.historyOptionsMenu );
