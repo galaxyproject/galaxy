@@ -182,7 +182,7 @@ def __copy_database_template( source, db_path ):
     if os.path.exists( source ):
         shutil.copy( source, db_path )
         assert os.path.exists( db_path )
-    elif source.lower().startswith( "http" ):
+    elif source.lower().startswith( ( "http://", "https://", "ftp://" ) ):
         urllib.urlretrieve( source, db_path )
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
@@ -323,6 +323,7 @@ def main():
                     # GALAXY_TEST_DBURI. The former requires a lot of setup
                     # time, the latter results in test failures in certain
                     # cases (namely tool shed tests expecting clean database).
+                    log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
                     __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
                     database_auto_migrate = True
                 database_connection = 'sqlite:///%s' % db_path
