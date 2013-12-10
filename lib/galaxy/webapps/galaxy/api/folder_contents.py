@@ -46,17 +46,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         folder_container = []
         current_user_roles = trans.get_current_user_roles()
-        
-#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX GOT id: ' + folder_id )
-#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX decode id: ' + folder_id[1:] )
-#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX call decode: ' + str(trans.security.decode_id( folder_id[1:] )) )
-
-#         try:
-#             decoded_folder_id = trans.security.decode_id( folder_id[-16:] )
-#         except TypeError:
-#             trans.response.status = 400
-#             return "Malformed folder id ( %s ) specified, unable to decode." % str( folder_id )
-#         log.debug( 'XXXXXXXXXXXXXXXXXXXXX decoded id: ' + decoded_folder_id )
 
         if ( folder_id.startswith( 'F' ) ):
             try:
@@ -67,9 +56,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
-#             log.debug( 'XXXXXXXXXXXXXXXXXXXXX FOLDER id: ' + str(folder.id) )
-#             log.debug( 'XXXXXXXXXXXXXXXXXXXXX FOLDER name: ' + str(folder.name) )
-#             parent_library = folder.parent_library
         except:
             folder = None
             log.error( "FolderContentsController.index: Unable to retrieve folder with ID: %s" % folder_id )
@@ -92,17 +78,9 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             path_to_root = []
             # We are almost in root
             if folder.parent_id is None:
-                
-#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING ID: " + str( folder.id ) )
-#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING NAME: " + str( folder.name ) )
                 path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
-#                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_library.id )
-#                 path_to_root.append( ( upper_folder.id, upper_folder.name ) )
             else:
             # We add the current folder and traverse up one folder.
-#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX folder.parent_id " + str( folder.parent_id ) )
-#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ALMOST ROOT FOLDER! ADDING ID: " + str( folder.id ) )
-#                 log.debug( "XXXXXXXXXXXXXXXXXXXXXXX ADDING THIS FOLDER AND TRAVERSING UP:  " + str( folder.name ) )
                 path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
                 path_to_root.extend( build_path( upper_folder ) )
@@ -113,25 +91,40 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         folder_container.append( dict( full_path = full_path ) )
         
         folder_contents = []
+        time_updated = ''
+        time_created = ''
         # Go through every item in the folder and include its meta-data.
         for content_item in self.load_folder_contents( trans, folder ):
+#             rval = content_item.to_dict()
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
+            time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+            time_created = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+#             log.debug('XXXXXXXXXXXXXXXXXXX api type: ' + str(content_item.api_type))
+#             log.debug('XXXXXXXX ALL: ' + str(content_item.__dict__))
             
             # For folder return also hierarchy values
             if content_item.api_type == 'folder':
-#                 encoded_parent_library_id = trans.security.encode_id( content_item.parent_library.id )
                 encoded_id = 'F' + encoded_id
-#                 if content_item.parent_id is not None: # Return folder's parent id for browsing back.
-#                     encoded_parent_id = 'F' + trans.security.encode_id( content_item.parent_id )
-                last_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                return_item.update ( dict ( item_count = content_item.item_count, last_updated = last_updated ) )
-            
+#                 time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                return_item.update ( dict ( item_count = content_item.item_count ) )
+
+            if content_item.api_type == 'file':
+#                 log.debug('XXXXX content item class: ' + str(content_item.__class__))
+                library_dataset_dict = content_item.to_dict()
+                library_dataset_dict['data_type']
+                library_dataset_dict['file_size']
+                library_dataset_dict['date_uploaded']
+                return_item.update ( dict ( data_type = library_dataset_dict['data_type'],
+                                            file_size = library_dataset_dict['file_size'],
+                                            date_uploaded = library_dataset_dict['date_uploaded'] ) )
+
             # For every item return also the default meta-data
             return_item.update( dict( id = encoded_id,
                                type = content_item.api_type,
-                               name = content_item.name
-                               
+                               name = content_item.name,
+                               time_updated = time_updated,
+                               time_created = time_created
                                 ) )
             folder_contents.append( return_item )
         # Put the data in the container

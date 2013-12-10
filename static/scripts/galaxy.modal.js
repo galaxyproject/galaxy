@@ -1,6 +1,5 @@
-/*
-    galaxy modal
-*/
+// galaxy modal
+
 
 // dependencies
 define(["libs/backbone/backbone-relational"], function() {
@@ -24,24 +23,48 @@ var GalaxyModal = Backbone.View.extend(
         // create
         if (options)
             this.create(options);
-            // bind the ESC key to hide() function
-            $(document).on('keyup', function(event){
-                if (event.keyCode == 27) { self.hide(); }
-            })
-            // bind the click anywhere to hide() function...
-            $('html').on('click', function(event){
-                self.hide();
-            })
-            // ...but don't hide if the click is on modal content
-            $('.modal-content').on('click', function(event){
-                event.stopPropagation();
-            })
+
+        this.bindClick(event, self);
     },
+
+    // bind the click-to-hide function
+    bindClick: function(event, that) {
+        // bind the ESC key to hide() function
+        $(document).on('keyup', function(event){
+            if (event.keyCode == 27) { self.hide(); }
+        })
+        // bind the click anywhere to hide() function...
+        $('html').on('click', function(event){
+            that.hide();
+        })
+        // ...but don't hide if the click is on modal content
+        $('.modal-content').on('click', function(event){
+            event.stopPropagation();
+        })
+    },
+
+    // unbind the click-to-hide function
+    unbindClick: function(event, that){
+        // bind the ESC key to hide() function
+        $(document).off('keyup', function(event){
+            if (event.keyCode == 27) { that.hide(); }
+        })
+        // unbind the click anywhere to hide() function...
+        $('html').off('click', function(event){
+            that.hide();
+        })
+        // ...but don't hide if the click is on modal content
+        $('.modal-content').off('click', function(event){
+            event.stopPropagation();
+        })
+    },
+
 
     // destroy
     destroy : function(){
         this.hide();
-        $('.modal').html('');
+        this.unbindClick();
+        $('.modal').remove();
     },
 
     // adds and displays a new frame/window
@@ -152,16 +175,28 @@ var GalaxyModal = Backbone.View.extend(
     },
 
     // show notification
-    showNotification : function(message, duration, bgColor, txtColor) {
+    showNotification : function(message, duration, type) {
         // defaults
         var duration = typeof duration !== 'undefined' ? duration : 1500;
-        var bgColor = typeof bgColor !== 'undefined' ? bgColor : "#F4E0E1";
-        var txtColor = typeof txtColor !== 'undefined' ? txtColor : "#A42732";
+        // var bgColor = typeof bgColor !== 'undefined' ? bgColor : "#F4E0E1";
+        // var txtColor = typeof txtColor !== 'undefined' ? txtColor : "#A42732";
+        var bgColor;
+        var txtColor;
+
+        if (type === 'error'){
+            bgColor = '#f4e0e1';
+            txtColor = '#a42732';
+        // } else if (type === 'success'){
+        } else { // success is default
+            bgColor = '#e1f4e0';
+            txtColor = '#32a427'; 
+        }
 
         var HTMLmessage = "<div class='notification-message' style='text-align:center; line-height:16px; '> " + message + " </div>";
         this.$notification.html("<div id='notification-bar' style='display:none; float: right; height: 16px; width:100%; background-color: " + bgColor + "; z-index: 100; color: " + txtColor + ";border-bottom: 1px solid " + txtColor + ";'>" + HTMLmessage + "</div>");
 
         var self = this;
+        
         /*animate the bar*/
         $('#notification-bar').slideDown(function() {
             setTimeout(function() {
