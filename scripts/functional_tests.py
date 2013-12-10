@@ -182,7 +182,7 @@ def __copy_database_template( source, db_path ):
     if os.path.exists( source ):
         shutil.copy( source, db_path )
         assert os.path.exists( db_path )
-    elif source.startswith("http"):
+    elif source.lower().startswith( "http" ):
         urllib.urlretrieve( source, db_path )
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
