@@ -49,6 +49,7 @@ from common import update
 from datetime import datetime
 from galaxy.app import UniverseApplication
 from galaxy.util import asbool
+from galaxy.util import listify
 from galaxy.util import unicodify
 from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
@@ -465,7 +466,9 @@ def get_tool_test_results_dicts( tool_shed_url, encoded_repository_metadata_id )
     repository_metadata, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
-    tool_test_results = repository_metadata.get( 'tool_test_results', [] )
+    # The tool_test_results used to be stored as a single dictionary rather than a list, but we currently
+    # return a list.
+    tool_test_results = listify( repository_metadata.get( 'tool_test_results', [] ) )
     return tool_test_results, error_message
 
 def get_webapp_global_conf():
