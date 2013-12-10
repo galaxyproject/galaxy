@@ -184,7 +184,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
-            href        : this.urls.visualization,
             faIcon      : 'fa-bar-chart-o'
         });
 
@@ -199,9 +198,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
                 case 'scatterplot':
                     return create_scatterplot_action_fn( visualization_url, params, hdaView.linkTarget );
                 default:
-                    return function(){// add widget
-                        Galaxy.frame.add(
-                        {
+                    return function(){
+                        Galaxy.frame.add({
                             title       : "Visualization",
                             type        : "url",
                             content     : visualization_url + '/' + visualization + '?' + $.param( params )
@@ -210,16 +208,19 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             }
         }
 
+        function titleCase( string ){
+            return string.charAt( 0 ).toUpperCase() + string.slice( 1 );
+        }
+
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ){
-            $icon.attr( 'data-original-title', visualizations[0] );
+            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + _l( titleCase( visualizations[0] ) ) );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
         } else {
             _.each( visualizations, function( visualization ) {
-                var titleCaseVisualization = visualization.charAt( 0 ).toUpperCase() + visualization.slice( 1 );
-                popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
+                popup_menu_dict[ _l( titleCase( visualization ) ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
         }
