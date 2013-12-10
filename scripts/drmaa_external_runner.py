@@ -14,7 +14,7 @@ import pwd
 #import simplejson as json
 #import drmaa
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
@@ -25,14 +25,16 @@ pkg_resources.require("drmaa")
 import drmaa
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                    'jobName','email','project' ]
+                                 'jobName', 'email', 'project' ]
+
 
 def load_job_template_from_file(jt, filename):
-    f = open(filename,'r')
+    f = open(filename, 'r')
     data = json.load(f)
     for attr in DRMAA_jobTemplate_attributes:
         if attr in data:
             setattr(jt, attr, data[attr])
+
 
 def valid_numeric_userid(userid):
     try:
@@ -40,11 +42,12 @@ def valid_numeric_userid(userid):
     except:
         return False
     try:
-        pw = pwd.getpwuid(uid)
+        pwd.getpwuid(uid)
     except KeyError:
         sys.stderr.write("error: User-ID (%d) is not valid.\n" % uid)
         exit(1)
     return True
+
 
 def get_user_id_by_name(username):
     try:
@@ -53,16 +56,19 @@ def get_user_id_by_name(username):
         sys.stderr.write("error: User name (%s) is not valid.\n" % username)
         exit(1)
     return pw.pw_uid
-    
+
+
 def json_file_exists(json_filename):
     if not os.path.exists(json_filename):
         sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % ( json_filename ) )
         exit(1)
-        
+
     return True
 
+
 def validate_paramters():
-    if len(sys.argv)<3:
+
+    if len(sys.argv) < 3:
         sys.stderr.write("usage: %s [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n" % sys.argv[0])
         exit(1)
 
@@ -80,6 +86,7 @@ def validate_paramters():
 
     return uid, json_filename
 
+
 def set_user(uid):
     try:
         # Get user's default group and set it to current process to make sure file permissions are inherited correctly
@@ -96,16 +103,20 @@ def set_user(uid):
 
     except OSError, e:
         if e.errno == errno.EPERM:
-            sys.stderr.write("error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
+            sys.stderr.write( "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
             exit(1)
         else:
             pass
-    if os.getuid()==0:
-        sys.stderr.write("error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
+
+    if os.getuid() == 0:
+        sys.stderr.write( "error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
         exit(1)
-    if os.geteuid()==0:
-        sys.stderr.write("error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
+
+    if os.geteuid() == 0:
+        sys.stderr.write( "error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
         exit(1)
+
+
 def main():
     userid, json_filename = validate_paramters()
     set_user(userid)
@@ -124,4 +135,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
