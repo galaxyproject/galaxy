@@ -190,13 +190,14 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
+        var hdaView = this;
         /** @inner */
         function create_viz_action( visualization ) {
             switch( visualization ){
                 case 'trackster':
                     return create_trackster_action_fn( visualization_url, params, dbkey );
                 case 'scatterplot':
-                    return create_scatterplot_action_fn( visualization_url, params );
+                    return create_scatterplot_action_fn( visualization_url, params, hdaView.linkTarget );
                 default:
                     return function(){// add widget
                         Galaxy.frame.add(
@@ -368,15 +369,13 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
  *  @returns function that loads the scatterplot
  */
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
-function create_scatterplot_action_fn( url, params ){
+function create_scatterplot_action_fn( url, params, target ){
     action = function() {
-        // add widget
-        Galaxy.frame.add(
-        {
+        Galaxy.frame.add({
             title       : "Scatterplot",
             type        : "url",
             content     : url + '/scatterplot?' + $.param(params),
-            target      : this.linkTarget,
+            target      : target,
             scratchbook : true
         });
 
