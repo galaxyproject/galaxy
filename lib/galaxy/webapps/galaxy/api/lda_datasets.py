@@ -21,42 +21,6 @@ from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixinItems
 import logging
 log = logging.getLogger( __name__ )
 
-# Test for available compression types
-# tmpd = tempfile.mkdtemp()
-# comptypes = []
-# for comptype in ( 'gz', 'bz2' ):
-#     tmpf = os.path.join( tmpd, 'compression_test.tar.' + comptype )
-#     try:
-#         archive = tarfile.open( tmpf, 'w:' + comptype )
-#         archive.close()
-#         comptypes.append( comptype )
-#     except tarfile.CompressionError:
-#         log.exception( "Compression error when testing %s compression.  This option will be disabled for library downloads." % comptype )
-#     try:
-#         os.unlink( tmpf )
-#     except OSError:
-#         pass
-ziptype = '32'
-# tmpf = os.path.join( tmpd, 'compression_test.zip' )
-# try:
-#     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-#     archive.close()
-#     comptypes.append( 'zip' )
-#     ziptype = '64'
-# except RuntimeError:
-#     log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-# except (TypeError, zipfile.LargeZipFile):
-#     # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-#     log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-#     comptypes.append( 'zip' )
-# try:
-#     os.unlink( tmpf )
-# except OSError:
-#     pass
-# os.rmdir( tmpd )
-
-
-
 class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
 
     @web.expose_api
@@ -77,13 +41,13 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
             trans.response.status = 500
-        
+
         rval['id'] = trans.security.encode_id(rval['id']);
         rval['ldda_id'] = trans.security.encode_id(rval['ldda_id']);
         rval['folder_id'] = 'f' + trans.security.encode_id(rval['folder_id'])
-        
+
         return rval
-    
+
     @web.expose
     def download( self, trans, format, **kwd ):
         """
@@ -94,9 +58,9 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
         lddas = []
 #         is_admin = trans.user_is_admin()
 #         current_user_roles = trans.get_current_user_roles()
-        
+
         datasets_to_download = kwd['ldda_ids%5B%5D']
-        
+
         if ( datasets_to_download != None ):
             datasets_to_download = util.listify( datasets_to_download )
             for dataset_id in datasets_to_download:
@@ -107,7 +71,7 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
                 except:
                     ldda = None
                     message += "Invalid library dataset id (%s) specified.  " % str( dataset_id )
-                    
+
         if format in [ 'zip','tgz','tbz' ]:
                 error = False
                 killme = string.punctuation + string.whitespace
@@ -119,14 +83,10 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
                         tmpd = tempfile.mkdtemp()
                         util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
                         tmpf = os.path.join( tmpd, 'library_download.' + format )
-                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                        if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        elif ziptype == '64':
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        elif trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
                         else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif format == 'tgz':
                         if trans.app.config.upstream_gzip:
