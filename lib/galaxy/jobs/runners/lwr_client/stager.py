@@ -3,6 +3,7 @@ from os import listdir, sep
 from re import findall
 from re import compile
 from io import open
+from contextlib import contextmanager
 
 from .action_mapper import FileActionMapper
 
@@ -297,41 +298,58 @@ class FileStager(object):
 def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files, working_directory_contents=[]):
     """
     """
-    action_mapper = FileActionMapper(client)
     download_failure_exceptions = []
-    downloaded_working_directory_files = []
     if job_completed_normally:
-        # Fetch explicit working directory outputs.
-        for source_file, output_file in work_dir_outputs:
-            name = basename(source_file)
-            try:
-                action = action_mapper.action(output_file, 'output')
-                client.fetch_work_dir_output(name, working_directory, output_file, action[0])
-                downloaded_working_directory_files.append(name)
-            except Exception as e:
-                download_failure_exceptions.append(e)
-            # Remove from full output_files list so don't try to download directly.
-            output_files.remove(output_file)
+        download_failure_exceptions = __download_results(client, working_directory, work_dir_outputs, output_files, working_directory_contents)
+    return __clean(download_failure_exceptions, cleanup_job, client)
 
-        # Fetch output files.
-        for output_file in output_files:
-            try:
-                action = action_mapper.action(output_file, 'output')
-                client.fetch_output(output_file, working_directory=working_directory, action=action[0])
-            except Exception as e:
-                download_failure_exceptions.append(e)
 
-        # Fetch remaining working directory outputs of interest.
-        for name in working_directory_contents:
-            if name in downloaded_working_directory_files:
-                continue
-            if COPY_FROM_WORKING_DIRECTORY_PATTERN.match(name):
+def __download_results(client, working_directory, work_dir_outputs, output_files, working_directory_contents):
+    action_mapper = FileActionMapper(client)
+    downloaded_working_directory_files = []
+    exception_tracker = DownloadExceptionTracker()
+
+    # Fetch explicit working directory outputs.
+    for source_file, output_file in work_dir_outputs:
+        name = basename(source_file)
+        with exception_tracker():
+            action = action_mapper.action(output_file, 'output')
+            client.fetch_work_dir_output(name, working_directory, output_file, action[0])
+            downloaded_working_directory_files.append(name)
+        # Remove from full output_files list so don't try to download directly.
+        output_files.remove(output_file)
+
+    # Fetch output files.
+    for output_file in output_files:
+        with exception_tracker():
+            action = action_mapper.action(output_file, 'output')
+            client.fetch_output(output_file, working_directory=working_directory, action=action[0])
+
+    # Fetch remaining working directory outputs of interest.
+    for name in working_directory_contents:
+        if name in downloaded_working_directory_files:
+            continue
+        if COPY_FROM_WORKING_DIRECTORY_PATTERN.match(name):
+            with exception_tracker():
                 output_file = join(working_directory, name)
                 action = action_mapper.action(output_file, 'output')
                 client.fetch_work_dir_output(name, working_directory, output_file, action=action[0])
                 downloaded_working_directory_files.append(name)
 
-    return __clean(download_failure_exceptions, cleanup_job, client)
+    return exception_tracker.download_failure_exceptions
+
+
+class DownloadExceptionTracker(object):
+
+    def __init__(self):
+        self.download_failure_exceptions = []
+
+    @contextmanager
+    def __call__(self):
+        try:
+            yield
+        except Exception as e:
+            self.download_failure_exceptions.append(e)
 
 
 def __clean(download_failure_exceptions, cleanup_job, client):
@@ -350,7 +368,7 @@ def submit_job(client, client_job_description, job_config=None):
     file_stager = FileStager(client, client_job_description, job_config)
     rebuilt_command_line = file_stager.get_rewritten_command_line()
     job_id = file_stager.job_id
-    client.launch(rebuilt_command_line)
+    client.launch(rebuilt_command_line, requirements=client_job_description.requirements)
     return job_id
 
 
@@ -383,15 +401,17 @@ class ClientJobDescription(object):
         Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
     working_directory : str
         Local path created by Galaxy for running this job.
+    requirements : list
+        List of requirements for tool execution.
     """
 
-    def __init__(self, tool, command_line, config_files, input_files, output_files, working_directory):
+    def __init__(self, tool, command_line, config_files, input_files, output_files, working_directory, requirements):
         self.tool = tool
         self.command_line = command_line
         self.config_files = config_files
         self.input_files = input_files
         self.output_files = output_files
         self.working_directory = working_directory
-
+        self.requirements = requirements
 
 __all__ = [submit_job, ClientJobDescription, finish_job]

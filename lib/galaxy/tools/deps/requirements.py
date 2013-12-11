@@ -15,6 +15,16 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
+    def to_dict( self ):
+        return dict(name=self.name, type=self.type, version=self.version)
+
+    @staticmethod
+    def from_dict( dict ):
+        version = dict.get( "version", None )
+        name = dict.get("name", None)
+        type = dict.get("type", None)
+        return ToolRequirement( name=name, type=type, version=version )
+
 
 def parse_requirements_from_xml( xml_root ):
     """

@@ -68,6 +68,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
             return
 
         try:
+            dependency_resolution = LwrJobRunner.__dependency_resolution( client )
+            remote_dependency_resolution = dependency_resolution == "remote"
+            requirements = job_wrapper.tool.requirements if remote_dependency_resolution else []
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 output_files=self.get_output_files(job_wrapper),
@@ -75,6 +78,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 working_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
+                requirements=requirements,
             )
             job_id = lwr_submit_job(client, client_job_description, remote_job_config)
             log.info("lwr job submitted with job_id %s" % job_id)

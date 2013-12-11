@@ -197,7 +197,7 @@ class JobClient(object):
         }
         self._raw_execute("download_output", output_params, output_path=output_path)
 
-    def launch(self, command_line):
+    def launch(self, command_line, requirements=[]):
         """
         Run or queue up the execution of the supplied
         `command_line` on the remote server.
@@ -211,6 +211,8 @@ class JobClient(object):
         submit_params = self._submit_params
         if submit_params:
             launch_params['params'] = dumps(submit_params)
+        if requirements:
+            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
         return self._raw_execute("launch", launch_params)
 
     def kill(self):
