@@ -838,8 +838,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Set imported history to be user's current history.
             trans.set_history( new_history )
             return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
+                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
         elif not user_history or not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
