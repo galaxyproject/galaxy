@@ -2,7 +2,7 @@ from os import getcwd
 from os.path import abspath
 
 
-def build_command( job, job_wrapper, include_metadata=False, include_work_dir_outputs=True, remote_command_params={} ):
+def build_command( runner, job_wrapper, include_metadata=False, include_work_dir_outputs=True, remote_command_params={} ):
     """
     Compose the sequence of commands necessary to execute a job. This will
     currently include:
@@ -47,7 +47,7 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
         work_dir_outputs_kwds = {}
         if 'working_directory' in remote_command_params:
             work_dir_outputs_kwds['job_working_directory'] = remote_command_params['working_directory']
-        work_dir_outputs = job.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
+        work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
         if work_dir_outputs:
             if not captured_return_code:
                 commands += capture_return_code_command
@@ -62,7 +62,7 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
         metadata_kwds = remote_command_params.get('metadata_kwds', {})
         exec_dir = metadata_kwds.get( 'exec_dir', abspath( getcwd() ) )
         tmp_dir = metadata_kwds.get( 'tmp_dir', job_wrapper.working_directory )
-        dataset_files_path = metadata_kwds.get( 'dataset_files_path', job.app.model.Dataset.file_path )
+        dataset_files_path = metadata_kwds.get( 'dataset_files_path', runner.app.model.Dataset.file_path )
         output_fnames = metadata_kwds.get( 'output_fnames', job_wrapper.get_output_fnames() )
         config_root = metadata_kwds.get( 'config_root', None )
         config_file = metadata_kwds.get( 'config_file', None )

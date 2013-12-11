@@ -13,7 +13,7 @@ class TestCommandFactory(TestCase):
 
     def setUp(self):
         self.job_wrapper = MockJobWrapper()
-        self.job = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))))
+        self.runner = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))))
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
@@ -105,7 +105,7 @@ class TestCommandFactory(TestCase):
 
     def __command(self, **extra_kwds):
         kwds = dict(
-            job=self.job,
+            runner=self.runner,
             job_wrapper=self.job_wrapper,
             include_metadata=self.include_metadata,
             include_work_dir_outputs=self.include_work_dir_outputs,
@@ -137,7 +137,3 @@ class MockJobWrapper(object):
 
     def get_output_fnames(self):
         return ["output1"]
-
-
-class MockJob(object):
-    app = Bunch()
