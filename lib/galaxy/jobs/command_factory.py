@@ -13,34 +13,25 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
         - commands to set metadata (if include_metadata is True)
     """
 
-    commands = job_wrapper.get_command_line()
+    commands_builder = CommandsBuilder(job_wrapper.get_command_line())
 
     # All job runners currently handle this case which should never occur
-    if not commands:
+    if not commands_builder.commands:
         return None
-
-    # Remove trailing semi-colon so we can start hacking up this command.
-    # TODO: Refactor to compose a list and join with ';', would be more clean.
-    commands = commands.rstrip("; ")
 
     # Prepend version string
     if job_wrapper.version_string_cmd:
-        commands = "%s &> %s; " % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() ) + commands
+        version_command = "%s &> %s" % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() )
+        commands_builder.prepend_command(version_command)
 
     # prepend getting input files (if defined)
     if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
-        commands = "; ".join( job_wrapper.prepare_input_files_cmds + [ commands ] )
+        commands_builder.prepend_commands(job_wrapper.prepare_input_files_cmds)
 
     local_dependency_resolution = "dependency_resolution" not in remote_command_params or (remote_command_params["dependency_resolution"] == "local")
     # Prepend dependency injection
     if job_wrapper.dependency_shell_commands and local_dependency_resolution:
-        commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] )
-
-    # Coping work dir outputs or setting metadata will mask return code of
-    # tool command. If these are used capture the return code and ensure
-    # the last thing that happens is an exit with return code.
-    capture_return_code_command = "; return_code=$?"
-    captured_return_code = False
+        commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
     # Append commands to copy job outputs based on from_work_dir attribute.
     if include_work_dir_outputs:
@@ -49,12 +40,9 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
             work_dir_outputs_kwds['job_working_directory'] = remote_command_params['working_directory']
         work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
         if work_dir_outputs:
-            if not captured_return_code:
-                commands += capture_return_code_command
-                captured_return_code = True
-
-            commands += "; " + "; ".join( [ "if [ -f %s ] ; then cp %s %s ; fi" %
-                ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
+            commands_builder.capture_return_code()
+            commands_builder.append_commands([ "if [ -f %s ] ; then cp %s %s ; fi" %
+                ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ])
 
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
@@ -80,12 +68,44 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
         ) or ''
         metadata_command = metadata_command.strip()
         if metadata_command:
-            if not captured_return_code:
-                commands += capture_return_code_command
-                captured_return_code = True
-            commands += "; cd %s; %s" % (exec_dir, metadata_command)
+            commands_builder.capture_return_code()
+            commands_builder.append_command("cd %s; %s" % (exec_dir, metadata_command))
 
-    if captured_return_code:
-        commands += '; sh -c "exit $return_code"'
+    return commands_builder.build()
 
-    return commands
+
+class CommandsBuilder(object):
+
+    def __init__(self, initial_command):
+        # Remove trailing semi-colon so we can start hacking up this command.
+        # TODO: Refactor to compose a list and join with ';', would be more clean.
+        commands = initial_command.rstrip("; ")
+        self.commands = commands
+
+        # Coping work dir outputs or setting metadata will mask return code of
+        # tool command. If these are used capture the return code and ensure
+        # the last thing that happens is an exit with return code.
+        self.return_code_captured = False
+
+    def prepend_command(self, command):
+        self.commands = "%s; %s" % (command, self.commands)
+        return self
+
+    def prepend_commands(self, commands):
+        return self.prepend_command("; ".join(commands))
+
+    def append_command(self, command):
+        self.commands = "%s; %s" % (self.commands, command)
+
+    def append_commands(self, commands):
+        self.append_command("; ".join(commands))
+
+    def capture_return_code(self):
+        if not self.return_code_captured:
+            self.return_code_captured = True
+            self.append_command("return_code=$?")
+
+    def build(self):
+        if self.return_code_captured:
+            self.append_command('sh -c "exit $return_code"')
+        return self.commands
