@@ -348,7 +348,7 @@ class Registry( object ):
                             try:
                                 aclass = getattr( module, datatype_class_name )()
                             except Exception, e:
-                                self.log.exception( 'Error calling method %s from class %s: %s' ( str( datatype_class_name ), str( module ), str( e ) ) )
+                                self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
                             if ok: 
                                 if deactivate:
