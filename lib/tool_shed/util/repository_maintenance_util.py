@@ -56,15 +56,18 @@ def create_hgrc_file( trans, repository ):
     fp.write( 'hgext.purge=' )
     fp.close()
 
-def validate_repository_name( name, user ):
+def validate_repository_name( app, name, user ):
     # Repository names must be unique for each user, must be at least four characters
     # in length and must contain only lower-case letters, numbers, and the '_' character.
     if name in [ 'None', None, '' ]:
         return 'Enter the required repository name.'
     if name in [ 'repos' ]:
         return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
-    for repository in user.active_repositories:
-        if repository.name == name:
+    check_existing = suc.get_repository_by_name_and_owner( app, name, user.username )
+    if check_existing is not None:
+        if check_existing.deleted:
+            return 'You have a deleted repository named <b>%s</b>, so choose a different name.' % name
+        else:
             return "You already have a repository named <b>%s</b>, so choose a different name." % name
     if len( name ) < 4:
         return "Repository names must be at least 4 characters in length."
