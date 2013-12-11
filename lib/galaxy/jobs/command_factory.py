@@ -1,6 +1,9 @@
 from os import getcwd
 from os.path import abspath
 
+CAPTURE_RETURN_CODE = "return_code=$?"
+YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
+
 
 def build_command( runner, job_wrapper, include_metadata=False, include_work_dir_outputs=True, remote_command_params={} ):
     """
@@ -46,7 +49,8 @@ def __handle_task_splitting(commands_builder, job_wrapper):
 
 
 def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
-    local_dependency_resolution = "dependency_resolution" not in remote_command_params or (remote_command_params["dependency_resolution"] == "local")
+    local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
+
     # Prepend dependency injection
     if job_wrapper.dependency_shell_commands and local_dependency_resolution:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
@@ -60,8 +64,8 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
     work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
     if work_dir_outputs:
         commands_builder.capture_return_code()
-        commands_builder.append_commands([ "if [ -f %s ] ; then cp %s %s ; fi" %
-            ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ])
+        copy_commands = map(__copy_if_exists_command, work_dir_outputs)
+        commands_builder.append_commands(copy_commands)
 
 
 def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params):
@@ -90,6 +94,11 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     if metadata_command:
         commands_builder.capture_return_code()
         commands_builder.append_command("cd %s; %s" % (exec_dir, metadata_command))
+
+
+def __copy_if_exists_command(work_dir_output):
+    source_file, destination = work_dir_output
+    return "if [ -f %s ] ; then cp %s %s ; fi" % ( source_file, source_file, destination )
 
 
 class CommandsBuilder(object):
@@ -121,9 +130,11 @@ class CommandsBuilder(object):
     def capture_return_code(self):
         if not self.return_code_captured:
             self.return_code_captured = True
-            self.append_command("return_code=$?")
+            self.append_command(CAPTURE_RETURN_CODE)
 
     def build(self):
         if self.return_code_captured:
-            self.append_command('sh -c "exit $return_code"')
+            self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
+
+__all__ = [build_command]
