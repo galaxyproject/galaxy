@@ -81,7 +81,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
         if kwds:
-            self.__command(metadata_kwds=kwds)
+            self.__command(remote_command_params=dict(metadata_kwds=kwds))
         else:
             self.__command()
         return self.job_wrapper.configured_external_metadata_kwds

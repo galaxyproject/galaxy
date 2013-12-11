@@ -107,13 +107,16 @@ class LwrJobRunner( AsynchronousJobRunner ):
             remote_metadata = LwrJobRunner.__remote_metadata( client )
             remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            remote_command_params = dict(
+                working_directory=remote_job_config['working_directory'],
+                metadata_kwds=metadata_kwds,
+            )
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
                 include_metadata=remote_metadata,
                 include_work_dir_outputs=remote_work_dir_copy,
-                metadata_kwds=metadata_kwds,
-                job_working_directory=remote_job_config['working_directory']
+                remote_command_params=remote_command_params,
             )
         except Exception:
             job_wrapper.fail( "failure preparing job", exception=True )
