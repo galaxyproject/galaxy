@@ -76,6 +76,7 @@ class DependencyManager( object ):
         return [
             ToolShedPackageDependencyResolver(self),
             GalaxyPackageDependencyResolver(self),
+            GalaxyPackageDependencyResolver(self, versionless=True),
         ]
 
     def __parse_resolver_conf_xml(self, root):
