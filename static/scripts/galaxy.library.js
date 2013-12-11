@@ -7,16 +7,6 @@ var view            = null;
 var library_router  = null;
 var responses = [];
 
-
-// load required libraries
-// require([
-//     // load js libraries
-//     'utils/galaxy.css',
-//     ], function(css){
-//         // load css
-//         css.load_file("static/style/library.css");
-// });
-
 // dependencies
 define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils"], function(mod_modal, mod_masthead, mod_utils) {
 
@@ -42,7 +32,7 @@ define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils"], function(mod_m
 
     // FOLDER
     var Folder = Backbone.Collection.extend({
-      model: Item      
+      model: Item
   })
 
     // CONTAINER for folder contents (folders, items and metadata).
@@ -78,7 +68,7 @@ define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils"], function(mod_m
     });
 
     //ROUTER
-    var LibraryRouter = Backbone.Router.extend({    
+    var LibraryRouter = Backbone.Router.extend({
         routes: {
             "" :                 "libraries",
             "folders/:id" :      "folder_content",
@@ -98,26 +88,26 @@ var FolderContentView = Backbone.View.extend({
     // progress percentage
     progress: 0,
     // progress rate per one item
-    progressStep: 1, 
+    progressStep: 1,
     // last selected history in modal for UX
     lastSelectedHistory: '',
     // self modal
     modal : null,
     // loaded folders
     folders : null,
-    
+
     // initialize
     initialize : function(){
         this.folders = [];
         this.queue = jQuery.Deferred();
         this.queue.resolve();
-    },    
+    },
 
 // MMMMMMMMMMMMMMMMMM
 // === TEMPLATES ====
 // MMMMMMMMMMMMMMMMMM
 
-    // set up 
+    // set up
     templateFolder : function (){
         var tmpl_array = [];
 
@@ -127,12 +117,12 @@ var FolderContentView = Backbone.View.extend({
 
         // TOOLBAR
         tmpl_array.push('<div id="library_folder_toolbar" >');
-        tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="btn btn-primary" type="button"><span class="fa fa-icon-plus"></span> <span class="fa fa-icon-folder-close"></span> folder</button>');
-        tmpl_array.push('   <button id="toolbtn_bulk_import" class="btn btn-primary" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-icon-external-link"></span> to history</button>');
-        
+        tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="btn btn-primary" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder-close"></span> folder</button>');
+        tmpl_array.push('   <button id="toolbtn_bulk_import" class="btn btn-primary" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-external-link"></span> to history</button>');
+
         tmpl_array.push('   <div id="toolbtn_dl" class="btn-group" style="margin-left: 0.5em; display: none; ">');
         tmpl_array.push('       <button id="drop_toggle" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">');
-        tmpl_array.push('       <span class="fa fa-icon-download"></span> download <span class="caret"></span>');
+        tmpl_array.push('       <span class="fa fa-download"></span> download <span class="caret"></span>');
         tmpl_array.push('       </button>');
         tmpl_array.push('       <ul class="dropdown-menu" role="menu">');
         tmpl_array.push('          <li><a href="#/folders/<%= id %>/download/tgz">.tar.gz</a></li>');
@@ -166,20 +156,20 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('       <th>date</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody>');
-        tmpl_array.push('       <td></td>');        
-        tmpl_array.push('       <td><button title="Go to parent folder" type="button" data-id="<%- upper_folder_id %>" class="btn_open_folder btn btn-default btn-xs">');        
-        tmpl_array.push('       <span class="fa fa-icon-arrow-up"></span> .. go up</td>');        
-        tmpl_array.push('       <td></td>');        
-        tmpl_array.push('       <td></td>');        
-        tmpl_array.push('       <td></td>');        
-        tmpl_array.push('       <td></td>');        
-        tmpl_array.push('       </tr>');        
+        tmpl_array.push('       <td></td>');
+        tmpl_array.push('       <td><button title="Go to parent folder" type="button" data-id="<%- upper_folder_id %>" class="btn_open_folder btn btn-default btn-xs">');
+        tmpl_array.push('       <span class="fa fa-arrow-up"></span> .. go up</td>');
+        tmpl_array.push('       <td></td>');
+        tmpl_array.push('       <td></td>');
+        tmpl_array.push('       <td></td>');
+        tmpl_array.push('       <td></td>');
+        tmpl_array.push('       </tr>');
         tmpl_array.push('       <% _.each(items, function(content_item) { %>');
         tmpl_array.push('       <tr class="folder_row light" id="<%- content_item.id %>">');
         tmpl_array.push('           <% if (content_item.get("type") === "folder") { %>'); // folder
         tmpl_array.push('               <td></td>');
         tmpl_array.push('               <td><button title="Open this folder" type="button" data-id="<%- content_item.id %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('               <span class="fa fa-icon-folder-open"></span> browse</td>');
+        tmpl_array.push('               <span class="fa fa-folder-open"></span> browse</td>');
         tmpl_array.push('               <td><%- content_item.get("name") %>');
         tmpl_array.push('           <% if (content_item.get("item_count") === 0) { %>'); // empty folder
         tmpl_array.push('           <span class="muted">(empty folder)</span>');
@@ -191,7 +181,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
         tmpl_array.push('       <td>');
         tmpl_array.push('       <button title="See details of this dataset" type="button" class="library-dataset btn btn-default btn-xs">');
-        tmpl_array.push('       <span class="fa fa-icon-eye-open"></span> details');
+        tmpl_array.push('       <span class="fa fa-eye"></span> details');
         tmpl_array.push('       </button>');
         tmpl_array.push('       </td>');
         tmpl_array.push('           <td><%- content_item.get("name") %></td>'); // dataset
@@ -241,11 +231,11 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <th scope="row">Comment Lines</th>');
-        tmpl_array.push('           <% if (item.get("metadata_comment_lines") === "") { %>'); //folder        
+        tmpl_array.push('           <% if (item.get("metadata_comment_lines") === "") { %>'); //folder
         tmpl_array.push('               <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>');
-        tmpl_array.push('           <% } else { %>'); 
-        tmpl_array.push('               <td scope="row">unknown</td>');    
-        tmpl_array.push('           <% } %>'); 
+        tmpl_array.push('           <% } else { %>');
+        tmpl_array.push('               <td scope="row">unknown</td>');
+        tmpl_array.push('           <% } %>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <tr>');
         tmpl_array.push('           <th scope="row">Number of Columns</th>');
@@ -280,7 +270,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('</span>');
 
         return tmpl_array.join('');
-        },   
+        },
 
     templateBulkImportInModal : function(){
         var tmpl_array = [];
@@ -295,7 +285,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('</span>');
 
         return tmpl_array.join('');
-        },    
+        },
 
       // convert size to nice string
       size_to_string : function (size)
@@ -380,12 +370,12 @@ var FolderContentView = Backbone.View.extend({
       showDatasetDetails : function(event){
         // prevent default
         event.preventDefault();
-        
+
 //TODO check whether we already have the data
 
         //load the ID of the row
         var id = $(event.target).parent().parent().attr('id');
-        
+
         //create new item
         var item = new Item();
         var histories = new GalaxyHistories();
@@ -474,12 +464,12 @@ var FolderContentView = Backbone.View.extend({
                 self.modal.showNotification('An error occured! Dataset not imported. Please try again later.', 5000, 'error');
                 //enable the buttons
                 self.modal.enableButton('Import');
-                self.modal.enableButton('Download');                
+                self.modal.enableButton('Download');
             }
         });
         },
 
-        // select all datasets 
+        // select all datasets
         selectAll : function (event) {
            var selected = event.target.checked;
                  // Iterate each checkbox
@@ -562,7 +552,7 @@ var FolderContentView = Backbone.View.extend({
             });
             var progress_bar_tmpl = _.template(this.templateProgressBar(), { history_name : history_name });
             $(this.modal.elMain).find('.modal-body').html(progress_bar_tmpl);
-            
+
             // init the progress bar
             var progressStep = 100 / dataset_ids.length;
             this.initProgress(progressStep);
@@ -610,7 +600,7 @@ var FolderContentView = Backbone.View.extend({
             $('.completion_span').text(txt_representation);
         },
 
-      // progress bar 
+      // progress bar
       templateProgressBar : function (){
         var tmpl_array = [];
 
@@ -644,14 +634,14 @@ var FolderContentView = Backbone.View.extend({
       // create hidden form and submit through POST to initialize download
       processDownload: function(url, data, method){
         //url and data options required
-        if( url && data ){ 
+        if( url && data ){
                 //data can be string of parameters or array/object
                 data = typeof data == 'string' ? data : $.param(data);
                 //split params into form inputs
                 var inputs = '';
-                $.each(data.split('&'), function(){ 
+                $.each(data.split('&'), function(){
                         var pair = this.split('=');
-                        inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />'; 
+                        inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />';
                 });
                 //send request
                 $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
@@ -676,7 +666,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 
     // initialize
     initialize : function(){
-    },    
+    },
 
     // template
     template_library_list : function (){
@@ -685,7 +675,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 
         tmpl_array.push('');
         tmpl_array.push('<h3>New Data Libraries. This is work in progress. Report problems & ideas to <a href="mailto:marten@bx.psu.edu?Subject=DataLibraries_Feedback" target="_blank">Marten</a>.</h3>');
-        tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary icon-file ">New Library</a>');
+        tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
         tmpl_array.push('<table class="table table-condensed">');
         tmpl_array.push('   <thead>');
         tmpl_array.push('     <th class="button_heading"></th>');
@@ -698,7 +688,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('       <% _.each(libraries, function(library) { %>');
         tmpl_array.push('           <tr>');
         tmpl_array.push('               <td><button title="Open this library" type="button" data-id="<%- library.get("root_folder_id") %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('               <span class="fa fa-icon-folder-open"></span> browse</td>');
+        tmpl_array.push('               <span class="fa fa-folder-open"></span> browse</td>');
         tmpl_array.push('               <td><%- library.get("name") %></td>');
         tmpl_array.push('               <td><%= _.escape(library.get("description")) %></td>');
         tmpl_array.push('               <td><%= _.escape(library.get("synopsis")) %></td>');
@@ -707,7 +697,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('       <% }); %>');
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');
-        
+
         tmpl_array.push('</div>');
         return tmpl_array.join('');
     },
@@ -735,7 +725,7 @@ var GalaxyLibraryview = Backbone.View.extend({
     show_library_modal : function (event){
         event.preventDefault();
         event.stopPropagation();
-        
+
         // create modal
             var self = this;
             this.modal = new mod_modal.GalaxyModal(
@@ -747,7 +737,7 @@ var GalaxyLibraryview = Backbone.View.extend({
                     'Close'  : function() {self.modal.hide()}
                 }
             });
-        
+
         // show prepared modal
         this.modal.show();
     },
@@ -828,7 +818,7 @@ var GalaxyLibrary = Backbone.View.extend({
         library_router.on('route:folder_content', function(id) {
           // render folder's contents
           folderContentView.render({id: id});
-      });    
+      });
 
        library_router.on('route:download', function(folder_id, format) {
           // send download stream
@@ -844,9 +834,9 @@ var GalaxyLibrary = Backbone.View.extend({
             library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
           }
 
-      });      
+      });
 
-Backbone.history.start();   
+Backbone.history.start();
 
 return this
 }
