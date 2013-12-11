@@ -3003,10 +3003,10 @@ class Tool( object, Dictifiable ):
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
-            if not self.tool_type.startswith( 'data_source' ):
-                link = url_for( '/tool_runner', tool_id=self.id )
+            if not isinstance( self, DataSourceTool ):
+                link = url_for( controller='tool_runner', tool_id=self.id )
             else:
-                link = url_for( self.action, **self.get_static_param_values( trans ) )
+                link = url_for( controller='tool_runner', action='data_source_redirect', tool_id=self.id )
 
             # Basic information
             tool_dict.update( { 'link': link,
