@@ -46,12 +46,6 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
-    # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
-    webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
-                      controller='admin_toolshed',
-                      action='display_image_in_repository',
-                      repository_id=None,
-                      image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
@@ -187,7 +181,6 @@ def app_factory( global_conf, **kwargs ):
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
-    webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current", controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
 
     webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
         controller="users", action="api_key", user_id=None, conditions=dict( method=["POST"] ) )
@@ -195,7 +188,6 @@ def app_factory( global_conf, **kwargs ):
     # visualizations registry generic template renderer
     webapp.add_route( '/visualization/show/:visualization_name',
         controller='visualization', action='render', visualization_name=None )
-    webapp.add_route( '/visualization/show/:visualization_name', controller='visualization', action='render', visualization_name=None )
 
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
