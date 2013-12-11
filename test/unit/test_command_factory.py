@@ -27,6 +27,19 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.dependency_shell_commands = dep_commands
         self.__assert_command_is( "%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
 
+    def test_remote_dependency_resolution(self):
+        self.include_work_dir_outputs = False
+        dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
+        self.job_wrapper.dependency_shell_commands = dep_commands
+        self.__assert_command_is(MOCK_COMMAND_LINE, remote_command_params=dict(dependency_resolution="remote"))
+
+    def test_explicit_local_dependency_resolution(self):
+        self.include_work_dir_outputs = False
+        dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
+        self.job_wrapper.dependency_shell_commands = dep_commands
+        self.__assert_command_is("%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE),
+                                 remote_command_params=dict(dependency_resolution="local"))
+
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False

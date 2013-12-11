@@ -31,8 +31,9 @@ def build_command( job, job_wrapper, include_metadata=False, include_work_dir_ou
     if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
         commands = "; ".join( job_wrapper.prepare_input_files_cmds + [ commands ] )
 
+    local_dependency_resolution = "dependency_resolution" not in remote_command_params or (remote_command_params["dependency_resolution"] == "local")
     # Prepend dependency injection
-    if job_wrapper.dependency_shell_commands:
+    if job_wrapper.dependency_shell_commands and local_dependency_resolution:
         commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] )
 
     # Coping work dir outputs or setting metadata will mask return code of

@@ -106,10 +106,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
             remote_job_config = client.setup(tool.id, tool.version)
             remote_metadata = LwrJobRunner.__remote_metadata( client )
             remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
+            dependency_resolution = LwrJobRunner.__dependency_resolution( client )
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
             remote_command_params = dict(
                 working_directory=remote_job_config['working_directory'],
                 metadata_kwds=metadata_kwds,
+                dependency_resolution=dependency_resolution,
             )
             command_line = build_command(
                 self,
@@ -270,6 +272,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
+
+    @staticmethod
+    def __dependency_resolution( lwr_client ):
+        dependency_resolution = lwr_client.destination_params.get( "dependency_resolution", "local" )
+        if dependency_resolution not in ["none", "local", "remote"]:
+            raise Exception("Unknown dependency_resolution value encountered %s" % dependency_resolution)
+        return dependency_resolution
 
     @staticmethod
     def __remote_metadata( lwr_client ):
