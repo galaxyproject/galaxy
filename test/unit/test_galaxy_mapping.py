@@ -3,10 +3,10 @@ import galaxy.model.mapping as mapping
 
 
 class MappingTests( unittest.TestCase ):
+
     def test_basic( self ):
-        # Start the database and connect the mapping
-        model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
-        assert model.engine is not None
+        model = self.model
+
         # Make some changes and commit them
         u = model.User( email="james@foo.bar.baz", password="password" )
         # gs = model.GalaxySession()
@@ -14,15 +14,14 @@ class MappingTests( unittest.TestCase ):
         #h1.queries.append( model.Query( "h1->q1" ) )
         #h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History( name=( "H" * 1024 ) )
-        model.session.add_all( ( u, h1, h2 ) )
+        self.persist( u, h1, h2 )
         #q1 = model.Query( "h2->q1" )
         metadata = dict( chromCol=1, startCol=2, endCol=3 )
         d1 = model.HistoryDatasetAssociation( extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=model.session )
         #h2.queries.append( q1 )
         #h2.queries.append( model.Query( "h2->q2" ) )
-        model.session.add( ( d1 ) )
-        model.session.flush()
-        model.session.expunge_all()
+        self.persist( d1 )
+
         # Check
         users = model.session.query( model.User ).all()
         assert len( users ) == 1
@@ -41,12 +40,32 @@ class MappingTests( unittest.TestCase ):
         #assert hists[1].datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
         # Do an update and check
         hists[1].name = "History 2b"
-        model.session.flush()
-        model.session.expunge_all()
+        self.expunge()
         hists = model.session.query( model.History ).all()
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
+    @classmethod
+    def setUpClass(cls):
+        # Start the database and connect the mapping
+        cls.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
+        assert cls.model.engine is not None
+
+    @classmethod
+    def query( cls, type ):
+        return cls.model.session.query( type )
+
+    @classmethod
+    def persist(cls, *args):
+        for arg in args:
+            cls.model.session.add( arg )
+        cls.expunge()
+
+    @classmethod
+    def expunge(cls):
+        cls.model.session.flush()
+        cls.model.session.expunge_all()
 
 
 def get_suite():
