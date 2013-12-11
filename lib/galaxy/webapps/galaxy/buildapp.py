@@ -46,7 +46,6 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
-    # Add the controllers folder
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
     webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
                       controller='admin_toolshed',
@@ -54,17 +53,11 @@ def app_factory( global_conf, **kwargs ):
                       repository_id=None,
                       image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
-    # Add the api folder
-    webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
-    # Add the api folder VERSION 2
-    webapp.add_api_controllers( 'galaxy.webapps.galaxy.api.v2', app )
-
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
     # These two routes handle our simple needs at the moment
-    
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
@@ -73,8 +66,8 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
     webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
-                              controller='dataset', action='display_application', dataset_id=None, user_id=None,
-                              app_name = None, link_name = None, app_action = None, action_param = None )
+        controller='dataset', action='display_application', dataset_id=None, user_id=None,
+        app_name = None, link_name = None, app_action = None, action_param = None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
@@ -82,22 +75,12 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
 
-    # Add the web API
+    # ================
+    # =====  API =====
+    # ================
+
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
-    # The /folders section is experimental at this point:
-    log.debug( "app.config.api_folders: %s" % app.config.api_folders )
-    webapp.mapper.resource( 'folder', 'folders', path_prefix='/api' )
-    webapp.mapper.resource( 'content', 'contents',
-                                controller='folder_contents',
-                                name_prefix='folder_',
-                                path_prefix='/api/folders/:folder_id',
-                                parent_resources=dict( member_name='folder', collection_name='folders' ) )
-    webapp.mapper.resource( 'content',
-                                'contents',
-                                controller='library_contents',
-                                name_prefix='library_',
-                                path_prefix='/api/libraries/:library_id',
-                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
+
     webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
@@ -109,10 +92,6 @@ def app_factory( global_conf, **kwargs ):
                               controller="datasets",
                               action="display",
                               conditions=dict(method=["GET"]))
-    webapp.mapper.resource( 'permission',
-                                'permissions',
-                                path_prefix='/api/libraries/:library_id',
-                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
     webapp.mapper.resource( 'user',
                                 'users',
                                 controller='group_users',
@@ -134,11 +113,6 @@ def app_factory( global_conf, **kwargs ):
     _add_item_tags_controller( webapp,
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
-
-    _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
-
     _add_item_annotation_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -148,7 +122,6 @@ def app_factory( global_conf, **kwargs ):
     _add_item_annotation_controller( webapp,
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
-
     _add_item_provenance_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -178,13 +151,12 @@ def app_factory( global_conf, **kwargs ):
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
 
-    webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
-    webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
-    webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
-
     # =======================
     # ===== LIBRARY API =====
     # =======================
+    
+    # The /folders section is experimental at this point:
+    log.debug( "app.config.api_folders: %s" % app.config.api_folders )
 
     webapp.mapper.connect( 'show_lda_item', '/api/libraries/datasets/:id', controller='lda_datasets', action='show', conditions=dict(method=["GET"]) )
     webapp.mapper.connect( 'download_lda_items', '/api/libraries/datasets/download/:format', controller='lda_datasets', action='download', conditions=dict(method=["POST"]) )
@@ -232,6 +204,9 @@ def app_factory( global_conf, **kwargs ):
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     
+    # ====================
+    # ===== TOOLSHED =====
+    # ====================
     
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
     webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
@@ -239,7 +214,7 @@ def app_factory( global_conf, **kwargs ):
                       action='display_image_in_repository',
                       repository_id=None,
                       image_file=None )
-
+    
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
@@ -253,6 +228,7 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api',
                             new={ 'install_repository_revision' : 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
@@ -271,11 +247,6 @@ def app_factory( global_conf, **kwargs ):
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
-    except:
-        pass
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
 
