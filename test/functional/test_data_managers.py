@@ -19,9 +19,9 @@ class DataManagerToolTestCase( ToolTestCase ):
         """
         shed_tool_id = self.shed_tool_id
 
-        self.__handle_test_def_errors( testdef )
+        self._handle_test_def_errors( testdef )
 
-        galaxy_interactor = self.__galaxy_interactor( testdef )
+        galaxy_interactor = self._galaxy_interactor( testdef )
 
         test_history = galaxy_interactor.new_history() #history where inputs will be put, if any
 
@@ -41,50 +41,11 @@ class DataManagerToolTestCase( ToolTestCase ):
         
         self.assertTrue( data_list )
 
-        self.__verify_outputs( testdef, data_manager_history, shed_tool_id, data_list, galaxy_interactor )
+        self._verify_outputs( testdef, data_manager_history, shed_tool_id, data_list, galaxy_interactor )
         
         self.switch_history( id=self.security.encode_id( test_history.id ) )
 
         galaxy_interactor.delete_history( test_history )
-    
-    
-    #Methods below are from test_toolbox.py:ToolTestCase, but are not inherited properly
-    
-    def __galaxy_interactor( self, testdef ):
-        return build_interactor( self, testdef.interactor )
-
-    def __handle_test_def_errors(self, testdef):
-        # If the test generation had an error, raise
-        if testdef.error:
-            if testdef.exception:
-                raise testdef.exception
-            else:
-                raise Exception( "Test parse failure" )
-
-    def __verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
-        maxseconds = testdef.maxseconds
-
-        for output_index, output_tuple in enumerate(testdef.outputs):
-            # Get the correct hid
-            name, outfile, attributes = output_tuple
-            try:
-                output_data = data_list[ name ]
-            except (TypeError, KeyError):
-                # Legacy - fall back on ordered data list access if data_list is
-                # just a list (case with twill variant or if output changes its
-                # name).
-                if hasattr(data_list, "values"):
-                    output_data = data_list.values()[ output_index ]
-                else:
-                    output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
-            self.assertTrue( output_data is not None )
-            try:
-                galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
-            except Exception:
-                for stream in ['stdout', 'stderr']:
-                    stream_output = galaxy_interactor.get_job_stream( history, output_data, stream=stream )
-                    print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
-                raise
 
 def build_tests( tmp_dir=None, testing_shed_tools=False, master_api_key=None, user_api_key=None ):
     """
