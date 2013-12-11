@@ -121,6 +121,10 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         return !!( user && user.id );
     },
 
+    hdaCount : function(){
+        return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
+    },
+
     // ........................................................................ ajax
     /** does the HDA collection indicate they're still running and need to be updated later? delay + update if needed
      *  @param {Function} onReadyCallback   function to run when all HDAs are in the ready state

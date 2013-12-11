@@ -1511,7 +1511,7 @@ div.permissionContainer{padding-left:20px}
 .icon-btn:hover{background-color:white;color:maroon}
 .icon-btn.disabled{background-color:transparent;color:rgba(0,0,0,0.05)}
 .search-input .search-query{width:100%;padding-right:24px}
-.search-input .search-clear,.search-input .search-loading{position:absolute;right:15px;top:10px;font-size:1.4em;line-height:23px;color:grey}
+.search-input .search-clear,.search-input .search-loading{position:relative;float:right;left:-4px;top:-23px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
 #history-refresh-button,#history-options-button{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;font-size:1.2em;padding:0px}
 .history-panel [class$="messagesmall"]{margin:0px}
@@ -1522,7 +1522,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-search-controls{display:none;padding:0px 0px 8px 0px}
 .history-panel .history-controls .history-title{margin-bottom:4px}
 .history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
-.history-panel .history-controls .history-title input{font-weight:bold;width:100%;margin:-2px 0 -2px -4px}
+.history-panel .history-controls .history-title input{width:100%;margin:-2px 0 -2px -4px;font-weight:bold}
 .history-panel .history-controls .history-subtitle{margin-bottom:8px}
 .history-panel .history-controls .history-size{float:left}
 .history-panel .history-controls .history-secondary-actions{float:right}.history-panel .history-controls .history-secondary-actions .icon-btn{margin-left:2px}

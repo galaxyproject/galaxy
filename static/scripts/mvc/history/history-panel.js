@@ -79,8 +79,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //logger              : console,
 
     /** which class to use for constructing the HDA views */
-    //HDAView             : hdaBase.HDABaseView,
-    HDAView             : hdaEdit.HDAEditView,
+    //defaultHDAViewClass : hdaBase.HDABaseView,
+    defaultHDAViewClass : hdaEdit.HDAEditView,
 
     tagName             : 'div',
     className           : 'history-panel',
@@ -107,15 +107,12 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             this.logger = attributes.logger;
         }
         this.log( this + '.initialize:', attributes );
-//TODO: pass show_del'd/hidden through
 
+        // ---- set up instance vars
+        this.HDAViewClass = attributes.HDAViewClass || this.defaultHDAViewClass;
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
 
-        // set up (non-model related) event handlers
-        this._setUpListeners();
-
-        // ---- set up instance vars
         /** map of hda model ids to hda views */
         this.hdaViews = {};
         /** loading indicator */
@@ -129,6 +126,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.searching = attributes.searching || false;
         /** is the panel currently showing the dataset selection controls? */
         this.selecting = attributes.selecting || false;
+
+        this._setUpListeners();
 
         // ---- handle models passed on init
         if( this.model ){
@@ -559,8 +558,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         } else {
             $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
-            this._renderTags( $newRender );
-            this._renderAnnotation( $newRender );
+            if( Galaxy.currUser.id && Galaxy.currUser.id === this.model.get( 'user_id' ) ){
+                this._renderTags( $newRender );
+                this._renderAnnotation( $newRender );
+            }
         }
         // search and select available to both anon/logged-in users
         //$newRender.find( '.history-secondary-actions' ).prepend( this._renderSelectButton() );
@@ -622,18 +623,24 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         $where.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // anon users shouldn't have access to any of the following
-        if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
+        if( ( !this.model )
+        ||  ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
+        ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
+            return;
+        }
 
-        var panel = this;//,
-        $where.find( '.history-name' ).make_text_editable({
-            on_finish: function( newName ){
-                $where.find( '.history-name' ).text( newName );
-                panel.model.save({ name: newName })
-                    .fail( function(){
-                        $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
-                    });
-            }
-        });
+        var panel = this;
+        $where.find( '.history-name' )
+            .attr( 'title', _l( 'Click to rename history' ) ).tooltip({ placement: 'bottom' })
+            .make_text_editable({
+                on_finish: function( newName ){
+                    $where.find( '.history-name' ).text( newName );
+                    panel.model.save({ name: newName })
+                        .fail( function(){
+                            $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
+                        });
+                }
+            });
         this._setUpDatasetActionsPopup( $where );
     },
 
@@ -721,10 +728,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
             expanded = this.storage.get( 'expandedHdas' )[ hdaId ],
-            hdaView = new this.HDAView({
+            hdaView = new this.HDAViewClass({
                     model           : hda,
                     linkTarget      : this.linkTarget,
                     expanded        : expanded,
+                    //draggable       : true,
                     selectable      : this.selecting,
                     hasUser         : this.model.hasUser(),
                     logger          : this.logger
@@ -830,8 +838,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // allow (error) messages to be clicked away
         //TODO: switch to common close (X) idiom
         'click .message-container'      : 'clearMessages',
+
         'click .history-search-btn'     : 'toggleSearchControls',
-        'click .history-select-btn'     : function( e ){ this.toggleSelect( this.fxSpeed ); },
+        'click .history-select-btn'     : function( e ){ this.toggleSelectors( this.fxSpeed ); },
         'click .history-select-all-datasets-btn' : 'selectAllDatasets'
     },
 
@@ -892,6 +901,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
         function onFirstSearch( searchFor ){
             //console.debug( 'onSearch', searchFor, panel );
+            if( panel.model.hdas.haveDetails() ){
+                onSearch( searchFor );
+                return;
+            }
             panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
             panel.model.hdas.fetchAllDetails({ silent: true })
                 .always( function(){
@@ -952,7 +965,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
 
-    toggleSelect : function( speed ){
+    toggleSelectors : function( speed ){
         if( !this.selecting ){
             this.showSelectors( speed );
         } else {
