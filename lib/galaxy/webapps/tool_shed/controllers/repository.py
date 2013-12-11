@@ -932,7 +932,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_type = kwd.get( 'repository_type', rt_util.UNRESTRICTED )
         if kwd.get( 'create_repository_button', False ):
             error = False
-            message = repository_maintenance_util.validate_repository_name( name, trans.user )
+            message = repository_maintenance_util.validate_repository_name( trans.app, name, trans.user )
             if message:
                 error = True
             if not description:
@@ -2085,7 +2085,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repository.long_description = long_description
                 flush_needed = True
             if repository.times_downloaded == 0 and repo_name != repository.name:
-                message = repository_maintenance_util.validate_repository_name( repo_name, user )
+                message = repository_maintenance_util.validate_repository_name( trans.app, repo_name, user )
                 if message:
                     error = True
                 else:

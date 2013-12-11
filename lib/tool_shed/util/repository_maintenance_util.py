@@ -137,7 +137,7 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                         results_message += 'This Tool Shed does not have the category <b>%s</b> so it will not be associated with this repository.' % \
                             str( category_name )
                     else:
-                       category_ids.append( trans.security.encode_id( category.id ) )
+                        category_ids.append( trans.security.encode_id( category.id ) )
                 # Create the repository record in the database.
                 repository, create_message = create_repository( trans,
                                                                 name,
@@ -157,15 +157,18 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
             import_results_tups.append( ( ( str( name ), str( username ) ), results_message ) )
     return import_results_tups
 
-def validate_repository_name( name, user ):
+def validate_repository_name( app, name, user ):
     # Repository names must be unique for each user, must be at least four characters
     # in length and must contain only lower-case letters, numbers, and the '_' character.
     if name in [ 'None', None, '' ]:
         return 'Enter the required repository name.'
     if name in [ 'repos' ]:
         return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
-    for repository in user.active_repositories:
-        if repository.name == name:
+    check_existing = suc.get_repository_by_name_and_owner( app, name, user.username )
+    if check_existing is not None:
+        if check_existing.deleted:
+            return 'You have a deleted repository named <b>%s</b>, so choose a different name.' % name
+        else:
             return "You already have a repository named <b>%s</b>, so choose a different name." % name
     if len( name ) < 4:
         return "Repository names must be at least 4 characters in length."
