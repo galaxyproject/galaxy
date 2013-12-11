@@ -655,6 +655,147 @@ var faIconButton = function( options ){
 
 
 //==============================================================================
+(function(){
+    /** Multi 'mode' button (or any element really) that changes the html
+     *      contents of itself when clicked. Pass in an ordered list of
+     *      objects with 'html' and (optional) onclick functions.
+     *
+     *      When clicked in a particular node, the onclick function will
+     *      be called (with the element as this) and the element will
+     *      switch to the next mode, replacing it's html content with
+     *      that mode's html.
+     *
+     *      If there is no next mode, the element will switch back to
+     *      the first mode.
+     * @example:
+     *     $( '.myElement' ).modeButton({
+     *         modes : [
+     *             {
+     *                 mode: 'bler',
+     *                 html: '<h5>Bler</h5>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'red' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'bloo',
+     *                 html: '<h4>Bloo</h4>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'blue' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'blah',
+     *                 html: '<h3>Blah</h3>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'grey' );
+     *                 }
+     *             },
+     *         ]
+     *     });
+     *     $( '.myElement' ).modeButton( 'callModeFn', 'bler' );
+     */
+    function ModeButton( element, options ){
+		this.currModeIndex = 0;
+		return this.init( element, options );
+    }
+
+	ModeButton.prototype.DATA_KEY = 'mode-button';
+	ModeButton.prototype.defaults = {
+		modes : [
+			{ mode: 'default' }
+		]
+	};
+
+	ModeButton.prototype.init = function _init( element, options ){
+		options = options || {};
+		this.$element = $( element );
+		this.options = jQuery.extend( true, this.defaults, options );
+
+		var modeButton = this;
+		this.$element.click( function _ModeButtonClick( event ){
+
+			// call the curr mode fn
+			modeButton.callModeFn();
+			// inc the curr mode index
+			modeButton._incModeIndex();
+			// set the element html
+			$( this ).html( modeButton.options.modes[ modeButton.currModeIndex ].html );
+		});
+
+		this.currModeIndex = 0;
+		if( this.options.initialMode ){
+			this.currModeIndex = this._getModeIndex( this.options.initialMode );
+		}
+		return this;
+	};
+
+
+	ModeButton.prototype._getModeIndex = function __getModeIndex( modeKey ){
+		for( var i=0; i<this.options.modes.length; i+=1 ){
+			if( this.options.modes[ i ].mode === modeKey ){ return i; }
+		}
+		throw new Error( 'mode not found: ' + modeKey );
+	};
+	ModeButton.prototype.getCurrMode = function _getCurrMode(){
+		return this.options.modes[ this.currModeIndex ];
+	};
+	ModeButton.prototype.getMode = function _getMode( modeKey ){
+		if( !modeKey ){ return this.getCurrMode(); }
+		return this.options.modes[( this._getModeIndex( modeKey ) )];
+	};
+	ModeButton.prototype.hasMode = function _hasMode( modeKey ){
+		return !!this.getMode( modeKey );
+	};
+	ModeButton.prototype.currentMode = function _currentMode(){
+		return this.options.modes[ this.currModeIndex ];
+	};
+	ModeButton.prototype.setMode = function _setMode( newModeKey ){
+		var newMode = this.getMode( newModeKey );
+		this.$element.html( newMode.html || null );
+		return this;
+	};
+	ModeButton.prototype._incModeIndex = function __incModeIndex(){
+		this.currModeIndex += 1;
+		if( this.currModeIndex >= this.options.modes.length ){
+			this.currModeIndex = 0;
+		}
+		return this;
+	};
+	ModeButton.prototype.callModeFn = function _callModeFn( modeKey ){
+		var modeFn = this.getMode( modeKey ).onclick;
+		if( modeFn && jQuery.type( modeFn === 'function' ) ){
+			return modeFn.call( this );
+		}
+		return undefined;
+	};
+
+    // as jq plugin
+    jQuery.fn.extend({
+        modeButton : function $modeButton( options ){
+			var nonOptionsArgs = jQuery.makeArray( arguments ).slice( 1 );
+            return this.each( function(){
+				var $this = $( this ),
+					data = $this.data( 'mode-button' );
+
+				if( jQuery.type( options ) === 'object' ){
+					data = new ModeButton( $this, options );
+					$this.data( 'mode-button', data );
+				}
+				if( data && jQuery.type( options ) === 'string' ){
+					var fn = data[ options ];
+					if( jQuery.type( fn ) === 'function' ){
+						return fn.apply( data, nonOptionsArgs );
+					}
+				}
+				return this;
+            });
+        }
+    });
+}());
+
+
+//==============================================================================
 function LoadingIndicator( $where, options ){
 //TODO: move out of global
 //TODO: too specific to history panel
