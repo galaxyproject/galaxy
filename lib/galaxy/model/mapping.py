@@ -1878,8 +1878,9 @@ def db_next_hid( self ):
     table = self.table
     trans = conn.begin()
     try:
-        next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
+        current_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
+        next_hid = current_hid + 1
+        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid ) )
         trans.commit()
         return next_hid
     except:
