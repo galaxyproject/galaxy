@@ -217,11 +217,12 @@ var GalaxyModal = Backbone.View.extend(
         return  '<div class="modal">' +
                     '<div class="modal-backdrop fade in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
+                        '<div class="modal-content">' +
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
                                 '<span class="notification-modal"></span>' + 
-                            '</div>' +
+                                '</div>' +
                             '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +
