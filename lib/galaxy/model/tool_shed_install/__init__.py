@@ -1,10 +1,7 @@
 import os
-
 from galaxy.model.item_attrs import Dictifiable
-
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
-
 from tool_shed.util import common_util
 
 
@@ -61,9 +58,38 @@ class ToolShedRepository( object ):
     def can_reset_metadata( self ):
         return self.status == self.installation_status.INSTALLED
 
-    @property
-    def can_uninstall( self ):
-        return self.status != self.installation_status.UNINSTALLED
+    def can_uninstall( self, app ):
+        # An installed repository cannot be uninstalled if other installed repositories or installed repository
+        # contents (i.e., tool dependencies) require it.
+        if self.status == self.installation_status.UNINSTALLED:
+            return False
+        irm = app.installed_repository_manager
+        # Find other installed repositories that require this repository.
+        for repository in irm.repository_dependencies_of_installed_repositories:
+            if repository.id == self.id:
+                installed_repository_dependencies = \
+                    irm.installed_repository_dependencies_of_installed_repositories[ repository ]
+                if installed_repository_dependencies:
+                    # This repository cannot be uninstalled because other installed repositories require it.
+                    return False
+        # Find installed tool dependencies that require this repository's installed tool dependencies.
+        installed_tool_dependencies = []
+        for repository in irm.installed_tool_dependencies_of_installed_repositories:
+            if repository.id == self.id:
+                installed_tool_dependencies = \
+                    irm.installed_tool_dependencies_of_installed_repositories[ repository ]
+                break
+        for td in installed_tool_dependencies:
+            if td.id in irm.ids_of_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies_keys:
+                for installed_td in irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies:
+                    if installed_td.id == td.id:
+                        installed_dependent_tds = \
+                            irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[ installed_td ]
+                        if installed_dependent_tds:
+                            # This repository cannot be uninstalled because it contains installed tool dependencies that
+                            # are required at run time by other installed tool dependencies.
+                            return False
+        return True
 
     @property
     def can_deactivate( self ):
@@ -218,7 +244,7 @@ class ToolShedRepository( object ):
 
     @property
     def installed_tool_dependencies( self ):
-        """Return the repository's tool dependencies that are currently installed."""
+        """Return the repository's tool dependencies that are currently installed, but possibly in an error state."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
             if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED,
@@ -313,9 +339,9 @@ class ToolShedRepository( object ):
         required_repositories_missing_or_being_installed = []
         for required_repository in self.repository_dependencies:
             if required_repository.status in [ self.installation_status.ERROR,
-                                              self.installation_status.INSTALLING,
-                                              self.installation_status.NEVER_INSTALLED,
-                                              self.installation_status.UNINSTALLED ]:
+                                               self.installation_status.INSTALLING,
+                                               self.installation_status.NEVER_INSTALLED,
+                                               self.installation_status.UNINSTALLED ]:
                 required_repositories_missing_or_being_installed.append( required_repository )
         return required_repositories_missing_or_being_installed
 
@@ -507,7 +533,9 @@ class ToolDependency( object ):
 
     @property
     def can_uninstall( self ):
-        return self.status in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
+        # A tool dependency can be uninstalled only if it is currently in an error state.  Only the containing
+        # repository can be uninstalled if a tool dependency is properly installed.
+        return self.status in [ self.installation_status.ERROR ]
 
     @property
     def can_update( self ):
@@ -515,6 +543,13 @@ class ToolDependency( object ):
                                 self.installation_status.INSTALLED,
                                 self.installation_status.ERROR,
                                 self.installation_status.UNINSTALLED ]
+
+    def get_env_shell_file_path( self, app ):
+        installation_directory = self.installation_directory( app )
+        file_path = os.path.join( installation_directory, 'env.sh' )
+        if os.path.exists( file_path ):
+            return file_path
+        return None
 
     @property
     def in_error_state( self ):
@@ -536,6 +571,10 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
+    @property
+    def is_installed( self ):
+        return self.status == self.installation_status.INSTALLED
+
 
 class ToolVersion( object, Dictifiable ):
     dict_element_visible_keys = ( 'id', 'tool_shed_repository' )
@@ -549,23 +588,23 @@ class ToolVersion( object, Dictifiable ):
     def get_previous_version( self, app ):
         context = app.install_model.context
         tva = context.query( app.install_model.ToolVersionAssociation ) \
-                        .filter( app.install_model.ToolVersionAssociation.table.c.tool_id == self.id ) \
-                        .first()
+                     .filter( app.install_model.ToolVersionAssociation.table.c.tool_id == self.id ) \
+                     .first()
         if tva:
             return context.query( app.install_model.ToolVersion ) \
-                             .filter( app.install_model.ToolVersion.table.c.id == tva.parent_id ) \
-                             .first()
+                          .filter( app.install_model.ToolVersion.table.c.id == tva.parent_id ) \
+                          .first()
         return None
 
     def get_next_version( self, app ):
         context = app.install_model.context
         tva = context.query( app.install_model.ToolVersionAssociation ) \
-                        .filter( app.install_model.ToolVersionAssociation.table.c.parent_id == self.id ) \
-                        .first()
+                     .filter( app.install_model.ToolVersionAssociation.table.c.parent_id == self.id ) \
+                     .first()
         if tva:
             return context.query( app.install_model.ToolVersion ) \
-                             .filter( app.install_model.ToolVersion.table.c.id == tva.tool_id ) \
-                             .first()
+                          .filter( app.install_model.ToolVersion.table.c.id == tva.tool_id ) \
+                          .first()
         return None
 
     def get_versions( self, app ):

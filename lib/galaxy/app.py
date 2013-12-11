@@ -87,7 +87,8 @@ class UniverseApplication( object ):
             self.install_model = install_mapping.init( install_db_url,
                                                        install_db_engine_options )
         # Manage installed tool shed repositories.
-        self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
+        from tool_shed.galaxy_install import installed_repository_manager
+        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
         # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We

@@ -4,6 +4,7 @@ import shutil
 from galaxy import eggs
 from galaxy import util
 from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import xml_util
@@ -13,9 +14,10 @@ log = logging.getLogger( __name__ )
 
 def add_installation_directories_to_tool_dependencies( trans, tool_dependencies ):
     """
-    Determine the path to the installation directory for each of the received tool dependencies.  This path will be displayed within the tool dependencies
-    container on the select_tool_panel_section or reselect_tool_panel_section pages when installing or reinstalling repositories that contain tools with the
-    defined tool dependencies.  The list of tool dependencies may be associated with more than a single repository.
+    Determine the path to the installation directory for each of the received tool dependencies.  This path will be
+    displayed within the tool dependencies container on the select_tool_panel_section or reselect_tool_panel_section
+    pages when installing or reinstalling repositories that contain tools with the defined tool dependencies.  The
+    list of tool dependencies may be associated with more than a single repository.
     """
     for dependency_key, requirements_dict in tool_dependencies.items():
         if dependency_key in [ 'set_environment' ]:
@@ -64,7 +66,10 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     return tool_dependency
 
 def create_tool_dependency_objects( app, tool_shed_repository, relative_install_dir, set_status=True ):
-    """Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository."""
+    """
+    Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when
+    installing a new tool_shed_repository.
+    """
     tool_dependency_objects = []
     shed_config_dict = tool_shed_repository.get_shed_config_dict( app )
     if shed_config_dict.get( 'tool_path' ):
@@ -82,12 +87,13 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
             name = elem.get( 'name', None )
             version = elem.get( 'version', None )
             if name and version:
+                status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                 tool_dependency = create_or_update_tool_dependency( app,
                                                                     tool_shed_repository,
                                                                     name=name,
                                                                     version=version,
                                                                     type=tool_dependency_type,
-                                                                    status=app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                    status=status,
                                                                     set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
         elif tool_dependency_type == 'set_environment':
@@ -96,12 +102,13 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                 name = env_elem.get( 'name', None )
                 action = env_elem.get( 'action', None )
                 if name and action:
+                    status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
                     tool_dependency = create_or_update_tool_dependency( app,
                                                                         tool_shed_repository,
                                                                         name=name,
                                                                         version=None,
                                                                         type=tool_dependency_type,
-                                                                        status=app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                                        status=status,
                                                                         set_status=set_status )
                     tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
@@ -185,12 +192,38 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
 def generate_message_for_repository_type_change( trans, repository ):
     message = ''
     if repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-        tool_dependency_definition_type_class = trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
-        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
-        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % tool_dependency_definition_type_class.label
+        tool_dependency_definition_type_class = \
+            trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
+        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
+            suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
+        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % \
+            tool_dependency_definition_type_class.label
     return message
-                
-                
+
+def get_runtime_dependent_tool_dependencies( app, tool_dependency, status=None ):
+    """
+    Return the list of tool dependency objects that require the received tool dependency at run time.  The returned
+    list will be filtered by the received status if it is not None.  This method is called only from Galaxy.
+    """
+    runtime_dependent_tool_dependencies = []
+    required_env_shell_file_path = tool_dependency.get_env_shell_file_path( app )
+    if required_env_shell_file_path:
+        required_env_shell_file_path = os.path.abspath( required_env_shell_file_path )
+    if required_env_shell_file_path is not None:
+        for td in app.install_model.context.query( app.install_model.ToolDependency ):
+            if status is None or td.status == status:
+                env_shell_file_path = td.get_env_shell_file_path( app )
+                if env_shell_file_path is not None:
+                    try:
+                        contents = open( env_shell_file_path, 'r' ).read()
+                    except Exception, e:
+                        contents = None
+                        log.debug( 'Error reading file %s, so cannot determine if package %s requires package %s at run time: %s' % \
+                            ( str( env_shell_file_path ), str( td.name ), str( tool_dependency.name ), str( e ) ) )
+                    if contents is not None and contents.find( required_env_shell_file_path ) >= 0:
+                        runtime_dependent_tool_dependencies.append( td )
+    return runtime_dependent_tool_dependencies
+
 def get_download_url_for_platform( url_templates, platform_info_dict ):
     '''
     Compare the dict returned by get_platform_info() with the values specified in the url_template element. Return

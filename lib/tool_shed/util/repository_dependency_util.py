@@ -355,13 +355,42 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
                                                           handled_key_rd_dicts,
                                                           circular_repository_dependencies )
             elif key_rd_dicts_to_be_processed:
-                handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies )
+                handle_next_repository_dependency( trans,
+                                                   key_rd_dicts_to_be_processed,
+                                                   all_repository_dependencies,
+                                                   handled_key_rd_dicts,
+                                                   circular_repository_dependencies )
         elif key_rd_dicts_to_be_processed:
-            handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies )
+            handle_next_repository_dependency( trans,
+                                               key_rd_dicts_to_be_processed,
+                                               all_repository_dependencies,
+                                               handled_key_rd_dicts,
+                                               circular_repository_dependencies )
     elif key_rd_dicts_to_be_processed:
-        handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies )
+        handle_next_repository_dependency( trans,
+                                           key_rd_dicts_to_be_processed,
+                                           all_repository_dependencies,
+                                           handled_key_rd_dicts,
+                                           circular_repository_dependencies )
     all_repository_dependencies = prune_invalid_repository_dependencies( all_repository_dependencies )
     return all_repository_dependencies
+
+def get_repository_dependency_tree_for_repository( app, repository, dependency_tree=None, status=None ):
+    """
+    Return a list of of tool_shed_repository ids (whose status can be anything) required by the received repository.  The
+    returned list defines the entire repository dependency tree.
+    """
+    if dependency_tree is None:
+        dependency_tree = []
+    tree_object_ids = [ r.id for r in dependency_tree ]
+    for rrda in repository.required_repositories:
+        repository_dependency = rrda.repository_dependency
+        required_repository = repository_dependency.repository
+        if status is None or required_repository.status == status:
+            if required_repository.id not in tree_object_ids:
+                dependency_tree.append( required_repository )
+                return get_repository_dependency_tree_for_repository( app, required_repository, dependency_tree=dependency_tree )
+    return dependency_tree
 
 def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_dicts ):
     updated_key_rd_dicts = []
