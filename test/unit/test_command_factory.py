@@ -13,7 +13,13 @@ class TestCommandFactory(TestCase):
 
     def setUp(self):
         self.job_wrapper = MockJobWrapper()
-        self.runner = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))))
+        self.workdir_outputs = []
+
+        def workdir_outputs(job_wrapper, **kwds):
+            assert job_wrapper == self.job_wrapper
+            return self.workdir_outputs
+
+        self.runner = Bunch(app=Bunch(model=Bunch(Dataset=Bunch(file_path=TEST_FILES_PATH))), get_work_dir_outputs=workdir_outputs)
         self.include_metadata = False
         self.include_work_dir_outputs = True
 
@@ -39,6 +45,16 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.dependency_shell_commands = dep_commands
         self.__assert_command_is("%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE),
                                  remote_command_params=dict(dependency_resolution="local"))
+
+    def test_task_prepare_inputs(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
+        self.__assert_command_is( "/opt/split1; /opt/split2; %s" % MOCK_COMMAND_LINE )
+
+    def test_workdir_outputs(self):
+        self.include_work_dir_outputs = True
+        self.workdir_outputs = [("foo", "bar")]
+        self.__assert_command_is( '%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi; sh -c "exit $return_code"' % MOCK_COMMAND_LINE )
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
@@ -123,6 +139,7 @@ class MockJobWrapper(object):
         self.metadata_line = None
         self.configured_external_metadata_kwds = None
         self.working_directory = "job1"
+        self.prepare_input_files_cmds = None
 
     def get_command_line(self):
         return self.command_line
