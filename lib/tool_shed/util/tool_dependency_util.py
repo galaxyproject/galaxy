@@ -512,6 +512,7 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
     return installed_tool_dependencies, missing_tool_dependencies
 
 def remove_tool_dependency( app, tool_dependency ):
+    """The received tool_dependency must be in an error state."""
     context = app.install_model.context
     dependency_install_dir = tool_dependency.installation_directory( app )
     removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
@@ -520,6 +521,9 @@ def remove_tool_dependency( app, tool_dependency ):
         tool_dependency.error_message = None
         context.add( tool_dependency )
         context.flush()
+        # Since the received tool_dependency is in an error state, nothing will need to be changed in any
+        # of the in-memory dictionaries in the installed_repository_manager because changing the state from
+        # error to uninstalled requires no in-memory changes..
     return removed, error_message
 
 def remove_tool_dependency_installation_directory( dependency_install_dir ):

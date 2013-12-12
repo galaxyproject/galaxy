@@ -160,7 +160,7 @@ class InstalledRepositoryManager( object ):
                     return relative_path
         return None
 
-    def handle_install( self, repository ):
+    def handle_repository_install( self, repository ):
         """Load the dependency relationships for a repository that was just installed or reinstalled."""
         # Populate self.repository_dependencies_of_installed_repositories.
         self.add_entry_to_repository_dependencies_of_installed_repositories( repository )
@@ -176,10 +176,10 @@ class InstalledRepositoryManager( object ):
             # Populate self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
             self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies( tool_dependency )
 
-    def handle_uninstall( self, repository ):
+    def handle_repository_uninstall( self, repository ):
         """Remove the dependency relationships for a repository that was just uninstalled."""
         for tool_dependency in repository.tool_dependencies:
-            # Remove all this tool_dependency from all values in
+            # Remove this tool_dependency from all values in
             # self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies
             altered_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
             for td, installed_runtime_dependent_tool_dependencies in \
@@ -207,6 +207,19 @@ class InstalledRepositoryManager( object ):
         self.remove_entry_from_installed_repository_dependencies_of_installed_repositories( repository )
         # Remove this repository's entry from self.repository_dependencies_of_installed_repositories.
         self.remove_entry_from_repository_dependencies_of_installed_repositories( repository )
+
+    def handle_tool_dependency_install( self, repository, tool_dependency ):
+        """Load the dependency relationships for a tool dependency that was just installed independently of its containing repository."""
+        # The received repository must have a status of 'Installed'.  The value of tool_dependency.status will either be
+        # 'Installed' or 'Error', but we only need to change the in-memory dictionaries if it is 'Installed'.
+        if tool_dependency.is_installed:
+            # Populate self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.
+            self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies( tool_dependency )
+            # Populate self.installed_tool_dependencies_of_installed_repositories.
+            for r in self.installed_tool_dependencies_of_installed_repositories:
+                if r.id == repository.id:
+                    self.installed_tool_dependencies_of_installed_repositories[ r ].append( tool_dependency )
+                    break
 
     @property
     def ids_of_installed_repository_dependencies_of_installed_repositories_keys( self ):

@@ -583,7 +583,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                 tool_shed_repository,
                                                 trans.install_model.ToolShedRepository.installation_status.INSTALLED )
         # Add the installed repository and any tool dependencies to the in-memory dictionaries in the installed_repository_manager.
-        trans.app.installed_repository_manager.handle_install( tool_shed_repository )
+        trans.app.installed_repository_manager.handle_repository_install( tool_shed_repository )
     else:
         # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
         set_repository_attributes( trans,
