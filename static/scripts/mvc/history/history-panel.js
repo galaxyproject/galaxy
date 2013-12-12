@@ -109,6 +109,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.log( this + '.initialize:', attributes );
 
         // ---- set up instance vars
+        /** which backbone view class to use when displaying the hda list */
         this.HDAViewClass = attributes.HDAViewClass || this.defaultHDAViewClass;
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
@@ -126,6 +127,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.searching = attributes.searching || false;
         /** is the panel currently showing the dataset selection controls? */
         this.selecting = attributes.selecting || false;
+
+        /** should the tags editor be shown or hidden initially? */
+        this.tagsEditorShown        = attributes.tagsShown || false;
+        /** should the tags editor be shown or hidden initially? */
+        this.annotationEditorShown  = attributes.annotationEditorShown || false;
 
         this._setUpListeners();
 
@@ -576,10 +582,20 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     _renderTags : function( $where ){
+        var panel = this;
         this.tagsEditor = new TagsEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .tags-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // show hide hda view tag editors when this is shown/hidden
+            onshow          : function(){
+                panel.tagsEditorShown = true;
+                panel.toggleHDATagEditors( true,  panel.fxSpeed );
+            },
+            onhide          : function(){
+                panel.tagsEditorShown = false;
+                panel.toggleHDATagEditors( false, panel.fxSpeed );
+            },
             $activator      : faIconButton({
                 title   : _l( 'Edit history tags' ),
                 classes : 'history-tag-btn',
@@ -588,12 +604,22 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
     _renderAnnotation : function( $where ){
+        var panel = this;
         this.annotationEditor = new AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // show hide hda view annotation editors when this is shown/hidden
+            onshow          : function(){
+                panel.annotationEditorShown = true;
+                panel.toggleHDAAnnotationEditors( true,  panel.fxSpeed );
+            },
+            onhide          : function(){
+                panel.annotationEditorShown = false;
+                panel.toggleHDAAnnotationEditors( false, panel.fxSpeed );
+            },
             $activator      : faIconButton({
-                title   : _l( 'Edit history tags' ),
+                title   : _l( 'Edit history Annotation' ),
                 classes : 'history-annotate-btn',
                 faIcon  : 'fa-comment'
             }).appendTo( $where.find( '.history-secondary-actions' ) )
@@ -733,8 +759,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     linkTarget      : this.linkTarget,
                     expanded        : expanded,
                     //draggable       : true,
+                    tagsEditorShown       : this.tagsEditorShown,
+                    annotationEditorShown : this.annotationEditorShown,
                     selectable      : this.selecting,
-                    hasUser         : this.model.hasUser(),
+                    hasUser         : this.model.ownedByCurrUser(),
                     logger          : this.logger
                 });
         this._setUpHdaListeners( hdaView );
@@ -830,6 +858,26 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             $whereTo.find( this.emptyMsgSelector ).show();
         }
         return this.hdaViews;
+    },
+
+    /** toggle the visibility of each hdaView's tagsEditor applying all the args sent to this function */
+    toggleHDATagEditors : function(){
+        var args = arguments;
+        _.each( this.hdaViews, function( hdaView ){
+            if( hdaView.tagsEditor ){
+                hdaView.tagsEditor.toggle.apply( hdaView.tagsEditor, args );
+            }
+        });
+    },
+
+    /** toggle the visibility of each hdaView's annotationEditor applying all the args sent to this function */
+    toggleHDAAnnotationEditors : function( showOrHide ){
+        var args = arguments;
+        _.each( this.hdaViews, function( hdaView ){
+            if( hdaView.annotationEditor ){
+                hdaView.annotationEditor.toggle.apply( hdaView.annotationEditor, args );
+            }
+        });
     },
 
     // ------------------------------------------------------------------------ panel events

@@ -46,11 +46,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         /** is the view currently in selection mode? */
         this.selectable = attributes.selectable || false;
         /** is the view currently selected? */
-        this.selected = attributes.selected || false;
-        /** is the body of this hda view expanded/not. */
-        this.expanded = attributes.expanded || false;
-        /** is the body of this hda view expanded/not. */
-        this.draggable = attributes.draggable || false;
+        this.selected   = attributes.selected || false;
+        /** is the body of this hda view expanded/not? */
+        this.expanded   = attributes.expanded || false;
+        /** is the body of this hda view expanded/not? */
+        this.draggable  = attributes.draggable || false;
         
         this._setUpListeners();
     },

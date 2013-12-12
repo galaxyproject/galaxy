@@ -173,6 +173,7 @@ var SessionStorageModel = Backbone.Model.extend({
 
 //==============================================================================
 var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
+//TODO: since this is a mixin, consider moving toggle, hidden into HUAVOptions
 
     /** */
     hiddenUntilActivated : function( $activator, options ){
@@ -184,7 +185,9 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
             showSpeed       : 'fast'
         };
         _.extend( this.HUAVOptions, options || {});
+        /** has this been shown already (and onshowFirstTime called)? */
         this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is( ':visible' );
+        this.hidden = this.isHidden();
 
         if( $activator ){
             var mixin = this;
@@ -194,22 +197,34 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
         }
     },
 
+    isHidden : function(){
+        return ( this.HUAVOptions.$elementShown.is( ':hidden' ) );
+    },
+
     /** */
     toggle : function(){
         // can be called manually as well with normal toggle arguments
-        if( this.HUAVOptions.$elementShown.is( ':hidden' ) ){
+        if( this.isHidden() ){
             // fire the optional fns on the first/each showing - good for render()
             if( !this.HUAVOptions.hasBeenShown ){
                 if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
                     this.HUAVOptions.hasBeenShown = true;
                     this.HUAVOptions.onshowFirstTime.call( this );
                 }
-            } else {
-                if( _.isFunction( this.HUAVOptions.onshow ) ){
-                    this.HUAVOptions.onshow.call( this );
-                }
             }
+            if( _.isFunction( this.HUAVOptions.onshow ) ){
+                this.HUAVOptions.onshow.call( this );
+            }
+            this.hidden = false;
+
+        } else {
+            if( _.isFunction( this.HUAVOptions.onhide ) ){
+                this.HUAVOptions.onhide.call( this );
+            }
+            this.hidden = true;
         }
+        //TODO: better as a callback (when the show/hide is actually done)
+        this.trigger( 'hiddenUntilActivated:' + (( this.isHidden() )?( 'shown' ):( 'hidden' )), this );
         return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
     }
 };
