@@ -56,12 +56,12 @@ ${render_galaxy_repository_actions( repository )}
                     <%
                         irm = trans.app.installed_repository_manager
 
-                        # Get installed repositories that require this repository.
-                        installed_repository_dependencies = []
+                        # Get installed repositories that this repository requires.
+                        installed_dependent_repositories = []
                         installed_runtime_dependent_tool_dependencies = []
-                        for r in irm.installed_repository_dependencies_of_installed_repositories:
+                        for r in irm.installed_dependent_repositories_of_installed_repositories:
                             if r.id == repository.id:
-                                installed_repository_dependencies = irm.installed_repository_dependencies_of_installed_repositories[ r ]
+                                installed_dependent_repositories = irm.installed_dependent_repositories_of_installed_repositories[ r ]
                                 break
 
                         # Get this repository's installed tool dependencies.
@@ -81,7 +81,7 @@ ${render_galaxy_repository_actions( repository )}
                                     if installed_dependent_tds:
                                         installed_runtime_dependent_tool_dependencies.extend( installed_dependent_tds )
                     %>
-                    %if installed_repository_dependencies or installed_runtime_dependent_tool_dependencies:
+                    %if installed_dependent_repositories or installed_runtime_dependent_tool_dependencies:
                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td bgcolor="#D8D8D8">
@@ -89,14 +89,14 @@ ${render_galaxy_repository_actions( repository )}
                                 </td>
                             </tr>
                         </table>
-                        %if installed_repository_dependencies:
+                        %if installed_dependent_repositories:
                             <label>Dependent repositories:</label>
                             <ul>
-                            %for installed_repository_dependency in installed_repository_dependencies:
+                            %for installed_dependent_repository in installed_dependent_repositories:
                                 <%
-                                    changeset_revision = installed_repository_dependency.changeset_revision
-                                    name = installed_repository_dependency.name
-                                    owner = installed_repository_dependency.owner
+                                    changeset_revision = installed_dependent_repository.changeset_revision
+                                    name = installed_dependent_repository.name
+                                    owner = installed_dependent_repository.owner
                                 %>
                                 <li>Revision <b>${ changeset_revision | h}</b> of repository <b>${name | h}</b> owned by <b>${owner | h}</b></li>
                             %endfor

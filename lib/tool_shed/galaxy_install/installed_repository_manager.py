@@ -41,6 +41,9 @@ class InstalledRepositoryManager( object ):
         # entire repository dependency tree.
         self.installed_repository_dependencies_of_installed_repositories = {}
         # Keep an in-memory dictionary whose keys are tool_shed_repository objects (whose status is 'Installed') and whose values
+        # are a list of tool_shed_repository objects (whose status is 'Installed') that require the key.
+        self.installed_dependent_repositories_of_installed_repositories = {}
+        # Keep an in-memory dictionary whose keys are tool_shed_repository objects (whose status is 'Installed') and whose values
         # are a list of its immediate tool_dependency objects (whose status can be anything).  The value defines only the immediate
         # tool dependencies of the repository and does not include any dependencies of the tool dependencies.
         self.tool_dependencies_of_installed_repositories = {}
@@ -60,19 +63,39 @@ class InstalledRepositoryManager( object ):
         self.load_dependency_relationships()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories( self, repository ):
-        """Add an entry to self.installed_repository_dependencies_of_installed_repositories."""
+        """
+        Add an entry to self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
+        is the population of self.installed_dependent_repositories_of_installed_repositories.  Since this method discovers
+        all repositories required by the received repository, it can use the list to add entries to the reverse dictionary.
+        """
+        # Get the list of repository dependencies for this repository.
+        status = self.install_model.ToolShedRepository.installation_status.INSTALLED
+        repository_dependency_tree = \
+            repository_dependency_util.get_repository_dependency_tree_for_repository( self.app,
+                                                                                      repository,
+                                                                                      status=status )
+        # Add an entry to self.installed_repository_dependencies_of_installed_repositories.
         if repository.id not in self.ids_of_installed_repository_dependencies_of_installed_repositories_keys:
             debug_msg = "Adding an entry for revision %s of repository %s owned by %s " % \
                 ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) )
             debug_msg += "to installed_repository_dependencies_of_installed_repositories."
             log.debug( debug_msg )
-            status = self.install_model.ToolShedRepository.installation_status.INSTALLED
-            repository_dependency_tree = \
-                repository_dependency_util.get_repository_dependency_tree_for_repository( self.app,
-                                                                                          repository,
-                                                                                          status=status )
             self.installed_repository_dependencies_of_installed_repositories[ repository ] = \
                 repository_dependency_tree
+        # Use the repository_dependency_tree to add entries to the reverse dictionary
+        # self.installed_dependent_repositories_of_installed_repositories.
+        for required_repository in repository_dependency_tree:
+            debug_msg = "Appending revision %s of repository %s owned by %s " % \
+                ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) )
+            debug_msg += "to all dependent repositories in installed_dependent_repositories_of_installed_repositories."
+            log.debug( debug_msg )
+            if required_repository.id in self.ids_of_installed_dependent_repositories_of_installed_repositories_keys:
+                for rd in self.installed_dependent_repositories_of_installed_repositories:
+                    if rd.id == required_repository.id:
+                        self.installed_dependent_repositories_of_installed_repositories[ rd ].append( repository )
+                        break
+            else:
+                self.installed_dependent_repositories_of_installed_repositories[ required_repository ] = [ repository ]
 
     def add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies( self, tool_dependency ):
         """Add an entry to self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies."""
@@ -222,6 +245,10 @@ class InstalledRepositoryManager( object ):
                     break
 
     @property
+    def ids_of_installed_dependent_repositories_of_installed_repositories_keys( self ):
+        return [ r.id for r in self.installed_dependent_repositories_of_installed_repositories.keys() ]
+
+    @property
     def ids_of_installed_repository_dependencies_of_installed_repositories_keys( self ):
         return [ r.id for r in self.installed_repository_dependencies_of_installed_repositories.keys() ]
 
@@ -287,7 +314,26 @@ class InstalledRepositoryManager( object ):
                 datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories( self, repository ):
-        """Remove an entry from self.installed_repository_dependencies_of_installed_repositories"""
+        """
+        Remove an entry from self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
+        is removal of appropriate value items from self.installed_dependent_repositories_of_installed_repositories.
+        """
+        # Remove this repository from value lists in self.installed_dependent_repositories_of_installed_repositories.
+        for r, v in self.installed_dependent_repositories_of_installed_repositories.items():
+            rd_ids = [ rd.id for rd in v ]
+            if repository.id in rd_ids:
+                debug_msg = "Removing entry for revision %s of repository %s owned by %s " % \
+                    ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) )
+                debug_msg += "from the dependent list for revision %s of repository %s owned by %s " \
+                    ( str( r.changeset_revision ), str( r.name ), str( r.owner ) )
+                debug_msg += "in installed_repository_dependencies_of_installed_repositories."
+                log.debug( debug_msg )
+                new_v = []
+                for rd in v:
+                    if rd.id != repository.id:
+                        new_v.append( rd )
+                self.installed_dependent_repositories_of_installed_repositories[ r ] = new_v
+        # Remove this repository's entry from self.installed_repository_dependencies_of_installed_repositories.
         for r in self.installed_repository_dependencies_of_installed_repositories:
             if r.id == repository.id:
                 debug_msg = "Removing entry for revision %s of repository %s owned by %s " % \
@@ -309,7 +355,7 @@ class InstalledRepositoryManager( object ):
                 break
 
     def remove_entry_from_installed_tool_dependencies_of_installed_repositories( self, repository ):
-        """Remove an entry from self.installed_tool_dependencies_of_installed_repositories"""
+        """Remove an entry from self.installed_tool_dependencies_of_installed_repositories."""
         for r in self.installed_tool_dependencies_of_installed_repositories:
             if r.id == repository.id:
                 debug_msg = "Removing entry for revision %s of repository %s owned by %s " % \

@@ -65,11 +65,11 @@ class ToolShedRepository( object ):
             return False
         irm = app.installed_repository_manager
         # Find other installed repositories that require this repository.
-        for repository in irm.repository_dependencies_of_installed_repositories:
+        for repository in irm.installed_dependent_repositories_of_installed_repositories:
             if repository.id == self.id:
-                installed_repository_dependencies = \
-                    irm.installed_repository_dependencies_of_installed_repositories[ repository ]
-                if installed_repository_dependencies:
+                installed_dependent_repositories = \
+                    irm.installed_dependent_repositories_of_installed_repositories[ repository ]
+                if installed_dependent_repositories:
                     # This repository cannot be uninstalled because other installed repositories require it.
                     return False
         # Find installed tool dependencies that require this repository's installed tool dependencies.
