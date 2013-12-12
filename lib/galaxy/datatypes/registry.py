@@ -598,6 +598,9 @@ class Registry( object ):
         tool_xml_text = """
             <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>
+              <requirements>
+                  <requirement type="package">samtools</requirement>
+              </requirements>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
               <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
               <inputs>
