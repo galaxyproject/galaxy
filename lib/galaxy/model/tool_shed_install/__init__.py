@@ -1,8 +1,11 @@
+import logging
 import os
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
 from tool_shed.util import common_util
+
+log = logging.getLogger( __name__ )
 
 
 class ToolShedRepository( object ):
@@ -64,6 +67,32 @@ class ToolShedRepository( object ):
         if self.status == self.installation_status.UNINSTALLED:
             return False
         irm = app.installed_repository_manager
+        # See if this repository's current dependencies are restricted to a single circular relationship.  This
+        # means that this repository has a single repository dependency which itself depends upon this repository.
+        # The repository dependency may have other dependent repositories, but that is not relevant here.
+        single_repository_dependency = None
+        for repository in irm.installed_repository_dependencies_of_installed_repositories:
+            if repository.id == self.id:
+                installed_repository_dependencies = irm.installed_repository_dependencies_of_installed_repositories[ repository ]
+                # If this repository defines a circular relationship to another repository, then the list of installed
+                # repository dependencies will include itself.
+                if len( installed_repository_dependencies ) == 2:
+                    installed_repository_dependency_ids = [ rd.id for rd in installed_repository_dependencies ]
+                    if self.id in installed_repository_dependency_ids:
+                        # We have a single circular dependency definition, so get the other repository.
+                        for installed_repository_dependency in installed_repository_dependencies:
+                            if installed_repository_dependency != self.id:
+                                single_repository_dependency = installed_repository_dependency
+                                break
+        if single_repository_dependency is not None:
+             for repository in irm.installed_repository_dependencies_of_installed_repositories:
+                 if repository.id == single_repository_dependency.id:
+                     installed_repository_dependencies = irm.installed_repository_dependencies_of_installed_repositories[ repository ]
+                     installed_repository_dependency_ids = [ rd.id for rd in installed_repository_dependencies ]
+                     if self.id in installed_repository_dependency_ids:
+                         # This repository is a dependency of the single repository upon which it depends, so we have
+                         # a single circular relationship and this repository can be uninstalled.
+                         return True
         # Find other installed repositories that require this repository.
         for repository in irm.installed_dependent_repositories_of_installed_repositories:
             if repository.id == self.id:
