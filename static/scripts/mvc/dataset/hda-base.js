@@ -423,7 +423,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     toggleBodyVisibility : function( event, expand ){
         // bail (with propagation) if keydown and not space or enter
         var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
-        if( ( event.type === 'keydown' )
+        if( event && ( event.type === 'keydown' )
         &&  !( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
             return true;
         }
