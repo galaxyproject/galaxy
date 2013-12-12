@@ -8,7 +8,7 @@ var library_router  = null;
 var responses = [];
 
 // dependencies
-define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils"], function(mod_modal, mod_masthead, mod_utils) {
+define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "libs/toastr"], function(mod_modal, mod_masthead, mod_utils, mod_toastr) {
 
 // MMMMMMMMMMMMMMM
 // === Models ====
@@ -706,16 +706,33 @@ var GalaxyLibraryview = Backbone.View.extend({
     render: function () {
         //hack to show scrollbars
         $("#center").css('overflow','auto');
+        
         var that = this;
-        // if (typeof libraries === "undefined") {
-          libraries = new Libraries();
-        // }
+        libraries = new Libraries();
+
         libraries.fetch({
           success: function (libraries) {
             var template = _.template(that.template_library_list(), { libraries : libraries.models });
             that.$el.html(template);
-        }
+          },
+          error: function(model, response){
+            if (response.statusCode().status === 403){
+                //show notification
+                // var toast = mod_toastr;
+                mod_toastr.error('Please log in first. Redirecting to login page in 3s.');   
+                setTimeout(that.redirectToLogin, 3000);
+            } else {
+                library_router.navigate('#', {trigger: true, replace: true});
+            }
+          }
     })
+    },
+
+    redirectToSplash: function(){
+        window.location = '../';
+    },    
+    redirectToLogin: function(){
+        window.location = '/user/login';
     },
 
     // own modal

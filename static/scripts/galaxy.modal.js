@@ -172,10 +172,7 @@ var GalaxyModal = Backbone.View.extend(
 
     // show notification
     showNotification : function(message, duration, type) {
-        // defaults
-        var duration = typeof duration !== 'undefined' ? duration : 1500;
-        // var bgColor = typeof bgColor !== 'undefined' ? bgColor : "#F4E0E1";
-        // var txtColor = typeof txtColor !== 'undefined' ? txtColor : "#A42732";
+        var duration = typeof duration !== 'undefined' ? duration : 3000;
         var bgColor;
         var txtColor;
 
