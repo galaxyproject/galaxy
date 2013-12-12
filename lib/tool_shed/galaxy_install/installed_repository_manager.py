@@ -324,7 +324,7 @@ class InstalledRepositoryManager( object ):
             if repository.id in rd_ids:
                 debug_msg = "Removing entry for revision %s of repository %s owned by %s " % \
                     ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) )
-                debug_msg += "from the dependent list for revision %s of repository %s owned by %s " \
+                debug_msg += "from the dependent list for revision %s of repository %s owned by %s " % \
                     ( str( r.changeset_revision ), str( r.name ), str( r.owner ) )
                 debug_msg += "in installed_repository_dependencies_of_installed_repositories."
                 log.debug( debug_msg )
