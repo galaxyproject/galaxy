@@ -212,13 +212,13 @@ class BaseJobRunner( object ):
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
-            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
                 if dependency_shell_commands:
                     if isinstance( dependency_shell_commands, list ):
                         dependency_shell_commands = "&&".join( dependency_shell_commands )
                     external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
+            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
                                                        env=os.environ,
