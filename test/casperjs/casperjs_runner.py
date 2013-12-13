@@ -13,6 +13,16 @@ Note: that you can enable (lots of) debugging info using cli options:
 * casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
+
+Note: This seems to not work with CasperJS 1.1 (and PhantomJS 1.9) - Casper 1.0.xx and
+PhantomJS 1.8 work for me (John).
+
+Note: Example of specifing user and admin user credentials.
+
+casperjs api-configuration-tests.js --url="http://localhost:8080" \
+    --admin='{"email": "foo@example.com", "password": "123456" }' \
+    '{ "testUser": { "email": "foo@example.com", "password": "123456" } }'
+
 """
 # -------------------------------------------------------------------- can't do 2.5
 import sys
