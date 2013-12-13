@@ -462,13 +462,11 @@ var FolderContentView = Backbone.View.extend({
             // save the dataset into selected history
             historyItem.save({ content : library_dataset_id, source : 'library' }, { success : function(){
                 mod_toastr.success('Dataset imported');
-                // self.modal.showNotification('Dataset imported', 3000, 'success');
                 //enable the buttons
                 self.modal.enableButton('Import');
                 self.modal.enableButton('Download');
             }, error : function(){
                 mod_toastr.error('An error occured! Dataset not imported. Please try again.')
-                // self.modal.showNotification('An error occured! Dataset not imported. Please try again later.', 5000, 'error');
                 //enable the buttons
                 self.modal.enableButton('Import');
                 self.modal.enableButton('Download');
@@ -618,7 +616,6 @@ var FolderContentView = Backbone.View.extend({
             if (typeof popped_item === "undefined") {
                 mod_toastr.success('All datasets imported');
                 this.modal.hide();
-                // self.modal.showNotification('All datasets imported', 3000, 'success');
                 // enable button again
                 self.modal.enableButton('Import');
                 return
@@ -669,7 +666,7 @@ var FolderContentView = Backbone.View.extend({
 
         var url = '/api/libraries/datasets/download/' + format;
         var data = {'ldda_ids' : dataset_ids};
-        this.processDownload(url, data);
+        this.processDownload(url, data, 'get');
       },
 
       // create hidden form and submit through POST to initialize download
