@@ -360,7 +360,7 @@ $.extend( Node.prototype, {
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
                             })))
-                    .tooltip({delay:500, title: "Flag this as a workflow output.  All non-flagged outputs will be hidden." });
+                    .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
                 callout.css({
                         top: '50%',
                         margin:'-8px 0px 0px 0px',
