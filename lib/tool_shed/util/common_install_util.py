@@ -462,7 +462,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     if tool_dependency.can_install:
                         # The database record is currently in a state that allows us to install the package on the file system.
                         try:
-                            dependencies_ignored = app.toolbox.dependency_manager and not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
+                            dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
                             if dependencies_ignored:
                                 log.debug( "Skipping package %s because tool shed dependency resolver not enabled." % str( package_name ) )
                                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
