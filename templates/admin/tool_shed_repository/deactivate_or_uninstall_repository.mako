@@ -89,7 +89,7 @@ ${render_galaxy_repository_actions( repository )}
                             <ul>
                             %for installed_dependent_repository_tup in installed_dependent_repositories:
                                 <%
-                                    tool_shed, name, owner, installed_changeset_revision, status = installed_dependent_repository_tup
+                                    tool_shed, name, owner, installed_changeset_revision = installed_dependent_repository_tup
                                 %>
                                 <li>Revision <b>${ installed_changeset_revision | h}</b> of repository <b>${name | h}</b> owned by <b>${owner | h}</b></li>
                             %endfor
@@ -100,7 +100,7 @@ ${render_galaxy_repository_actions( repository )}
                             <ul>
                                 %for td_tup in installed_runtime_dependent_tool_dependencies:
                                     <%
-                                        tool_shed_repository_id, name, version, type, status = td_tup
+                                        tool_shed_repository_id, name, version, type = td_tup
                                         containing_repository = irm.get_containing_repository_for_tool_dependency( td_tup )
                                         repository_name = containing_repository.name
                                         changeset_revision = containing_repository.changeset_revision
