@@ -133,7 +133,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
