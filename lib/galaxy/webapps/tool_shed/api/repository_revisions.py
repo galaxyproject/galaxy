@@ -66,7 +66,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, **kwd ):
         """
         GET /api/repository_revisions
