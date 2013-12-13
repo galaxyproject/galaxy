@@ -66,58 +66,47 @@ class ToolShedRepository( object ):
         # contents (i.e., tool dependencies) require it.
         if self.status == self.installation_status.UNINSTALLED:
             return False
+        this_repository_tup = ( str( self.tool_shed ),
+                                str( self.name ),
+                                str( self.owner ),
+                                str( self.installed_changeset_revision ) )
         irm = app.installed_repository_manager
         # See if this repository's current dependencies are restricted to a single circular relationship.  This
         # means that this repository has a single repository dependency which itself depends upon this repository.
-        # The repository dependency may have other dependent repositories, but that is not relevant here.
-        single_repository_dependency = None
-        for repository in irm.installed_repository_dependencies_of_installed_repositories:
-            if repository.id == self.id:
-                installed_repository_dependencies = irm.installed_repository_dependencies_of_installed_repositories[ repository ]
-                # If this repository defines a circular relationship to another repository, then the list of installed
-                # repository dependencies will include itself.
-                if len( installed_repository_dependencies ) == 2:
-                    installed_repository_dependency_ids = [ rd.id for rd in installed_repository_dependencies ]
-                    if self.id in installed_repository_dependency_ids:
-                        # We have a single circular dependency definition, so get the other repository.
-                        for installed_repository_dependency in installed_repository_dependencies:
-                            if installed_repository_dependency != self.id:
-                                single_repository_dependency = installed_repository_dependency
-                                break
-        if single_repository_dependency is not None:
-             for repository in irm.installed_repository_dependencies_of_installed_repositories:
-                 if repository.id == single_repository_dependency.id:
-                     installed_repository_dependencies = irm.installed_repository_dependencies_of_installed_repositories[ repository ]
-                     installed_repository_dependency_ids = [ rd.id for rd in installed_repository_dependencies ]
-                     if self.id in installed_repository_dependency_ids:
-                         # This repository is a dependency of the single repository upon which it depends, so we have
-                         # a single circular relationship and this repository can be uninstalled.
-                         return True
+        # The repository dependency may have other repository dependencies, but that is not relevant here.
+        single_repository_dependency_tup = None
+        installed_repository_dependency_tups = \
+            irm.installed_repository_dependencies_of_installed_repositories.get( this_repository_tup, [] )
+        # If this repository defines a circular relationship to another repository, then the list of tuples
+        # defining installed repository dependencies will include itself.
+        if len( installed_repository_dependency_tups ) == 2:
+            if this_repository_tup in installed_repository_dependency_tups:
+                # We have a single circular dependency definition, so get the other repository.
+                for installed_repository_dependency_tup in installed_repository_dependency_tups:
+                    if installed_repository_dependency_tup != this_repository_tup:
+                        single_repository_dependency_tup = installed_repository_dependency_tup
+                        break
+        if single_repository_dependency_tup is not None:
+            installed_repository_dependency_tups = \
+                irm.installed_repository_dependencies_of_installed_repositories.get( this_repository_tup, [] )
+            if this_repository_tup in installed_repository_dependency_tups:
+                # This repository is a dependency of the single repository upon which it depends, so we have
+                # a single circular relationship and this repository can be uninstalled.
+                return True
         # Find other installed repositories that require this repository.
-        for repository in irm.installed_dependent_repositories_of_installed_repositories:
-            if repository.id == self.id:
-                installed_dependent_repositories = \
-                    irm.installed_dependent_repositories_of_installed_repositories[ repository ]
-                if installed_dependent_repositories:
-                    # This repository cannot be uninstalled because other installed repositories require it.
-                    return False
+        installed_dependent_repositories = \
+                    irm.installed_dependent_repositories_of_installed_repositories.get( this_repository_tup, [] )
+        if installed_dependent_repositories:
+            # This repository cannot be uninstalled because other installed repositories require it.
+            return False
         # Find installed tool dependencies that require this repository's installed tool dependencies.
-        installed_tool_dependencies = []
-        for repository in irm.installed_tool_dependencies_of_installed_repositories:
-            if repository.id == self.id:
-                installed_tool_dependencies = \
-                    irm.installed_tool_dependencies_of_installed_repositories[ repository ]
-                break
-        for td in installed_tool_dependencies:
-            if td.id in irm.ids_of_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies_keys:
-                for installed_td in irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies:
-                    if installed_td.id == td.id:
-                        installed_dependent_tds = \
-                            irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[ installed_td ]
-                        if installed_dependent_tds:
-                            # This repository cannot be uninstalled because it contains installed tool dependencies that
-                            # are required at run time by other installed tool dependencies.
-                            return False
+        installed_tool_dependencies = irm.installed_tool_dependencies_of_installed_repositories.get( this_repository_tup, [] )
+        for td_tup in installed_tool_dependencies:
+            installed_dependent_td_tups = irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.get( td_tup, [] )
+            if installed_dependent_td_tups:
+                # This repository cannot be uninstalled because it contains installed tool dependencies that
+                # are required at run time by other installed tool dependencies.
+                return False
         return True
 
     @property

@@ -375,22 +375,32 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
     all_repository_dependencies = prune_invalid_repository_dependencies( all_repository_dependencies )
     return all_repository_dependencies
 
-def get_repository_dependency_tree_for_repository( app, repository, dependency_tree=None, status=None ):
+def get_repository_dependency_tups_for_repository( app, repository, dependency_tups=None, status=None ):
     """
-    Return a list of of tool_shed_repository ids (whose status can be anything) required by the received repository.  The
-    returned list defines the entire repository dependency tree.
+    Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
+    received repository.  The returned list defines the entire repository dependency tree.
     """
-    if dependency_tree is None:
-        dependency_tree = []
-    tree_object_ids = [ r.id for r in dependency_tree ]
+    if dependency_tups is None:
+        dependency_tups = []
+    repository_tup = get_repository_tuple_for_installed_repository_manager( repository )
     for rrda in repository.required_repositories:
         repository_dependency = rrda.repository_dependency
         required_repository = repository_dependency.repository
         if status is None or required_repository.status == status:
-            if required_repository.id not in tree_object_ids:
-                dependency_tree.append( required_repository )
-                return get_repository_dependency_tree_for_repository( app, required_repository, dependency_tree=dependency_tree )
-    return dependency_tree
+            required_repository_tup = get_repository_tuple_for_installed_repository_manager( required_repository )
+            if required_repository_tup == repository_tup:
+                # We have a circular repository dependency relationship, skip this entry.
+                continue
+            if required_repository_tup not in dependency_tups:
+                dependency_tups.append( required_repository_tup )
+                return get_repository_dependency_tups_for_repository( app, required_repository, dependency_tups=dependency_tups )
+    return dependency_tups
+
+def get_repository_tuple_for_installed_repository_manager( repository ):
+    return ( str( repository.tool_shed ),
+             str( repository.name ),
+             str( repository.owner ),
+             str( repository.installed_changeset_revision ) )
 
 def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_dicts ):
     updated_key_rd_dicts = []
@@ -402,9 +412,10 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
         if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
             repository = suc.get_repository_by_name_and_owner( trans.app, rd_name, rd_owner )
             if repository:
-                repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
-                                                                                                                 trans.security.encode_id( repository.id ),
-                                                                                                                 rd_changeset_revision )
+                repository_metadata = \
+                    metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                               trans.security.encode_id( repository.id ),
+                                                                                               rd_changeset_revision )
                 if repository_metadata:
                     # The repository changeset_revision is installable, so no updates are available.
                     new_key_rd_dict = {}

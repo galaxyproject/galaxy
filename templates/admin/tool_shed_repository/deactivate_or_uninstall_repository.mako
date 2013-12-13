@@ -54,32 +54,27 @@ ${render_galaxy_repository_actions( repository )}
                 %endif
                 %if not can_uninstall_repository:
                     <%
+                        from tool_shed.util.repository_dependency_util import get_repository_tuple_for_installed_repository_manager
+                        from tool_shed.util.tool_dependency_util import get_tool_dependency_tuple_for_installed_repository_manager
+                        
                         irm = trans.app.installed_repository_manager
+                        repository_tup = get_repository_tuple_for_installed_repository_manager( repository )
 
                         # Get installed repositories that this repository requires.
                         installed_dependent_repositories = []
                         installed_runtime_dependent_tool_dependencies = []
-                        for r in irm.installed_dependent_repositories_of_installed_repositories:
-                            if r.id == repository.id:
-                                installed_dependent_repositories = irm.installed_dependent_repositories_of_installed_repositories[ r ]
-                                break
+                        installed_dependent_repositories = irm.installed_dependent_repositories_of_installed_repositories.get( repository_tup, [] )
 
                         # Get this repository's installed tool dependencies.
-                        installed_tool_dependencies = []
-                        for r in irm.installed_tool_dependencies_of_installed_repositories:
-                            if r.id == repository.id:
-                                installed_tool_dependencies = irm.installed_tool_dependencies_of_installed_repositories[ r ]
-                                break
+                        installed_tool_dependencies = irm.installed_tool_dependencies_of_installed_repositories.get( repository_tup, [] )
 
                         # Get installed runtime dependent tool dependencies of this repository's installed tool dependencies.
                         installed_runtime_dependent_tool_dependencies = []
-                        for itd in installed_tool_dependencies:
-                            for td in irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies:
-                                if td.id == itd.id:
-                                    installed_dependent_tds = \
-                                        irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[ td ]
-                                    if installed_dependent_tds:
-                                        installed_runtime_dependent_tool_dependencies.extend( installed_dependent_tds )
+                        for itd_tup in installed_tool_dependencies:
+                            installed_dependent_td_tups = \
+                                irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.get( itd_tup, [] )
+                            if installed_dependent_td_tups:
+                                installed_runtime_dependent_tool_dependencies.extend( installed_dependent_td_tups )
                     %>
                     %if installed_dependent_repositories or installed_runtime_dependent_tool_dependencies:
                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -92,29 +87,28 @@ ${render_galaxy_repository_actions( repository )}
                         %if installed_dependent_repositories:
                             <label>Dependent repositories:</label>
                             <ul>
-                            %for installed_dependent_repository in installed_dependent_repositories:
+                            %for installed_dependent_repository_tup in installed_dependent_repositories:
                                 <%
-                                    changeset_revision = installed_dependent_repository.changeset_revision
-                                    name = installed_dependent_repository.name
-                                    owner = installed_dependent_repository.owner
+                                    tool_shed, name, owner, installed_changeset_revision, status = installed_dependent_repository_tup
                                 %>
-                                <li>Revision <b>${ changeset_revision | h}</b> of repository <b>${name | h}</b> owned by <b>${owner | h}</b></li>
+                                <li>Revision <b>${ installed_changeset_revision | h}</b> of repository <b>${name | h}</b> owned by <b>${owner | h}</b></li>
                             %endfor
                             </ul>
                         %endif
                         %if installed_runtime_dependent_tool_dependencies:
                             <label>Runtime dependent tool dependencies of this repository's tool dependencies:</label>
                             <ul>
-                                %for td in installed_runtime_dependent_tool_dependencies:
+                                %for td_tup in installed_runtime_dependent_tool_dependencies:
                                     <%
-                                        containing_repository = irm.get_containing_repository_for_tool_dependency( td )
+                                        tool_shed_repository_id, name, version, type, status = td_tup
+                                        containing_repository = irm.get_containing_repository_for_tool_dependency( td_tup )
                                         repository_name = containing_repository.name
                                         changeset_revision = containing_repository.changeset_revision
                                         owner = containing_repository.owner
                                     %>
                                     <li>
-                                        Version <b>${td.version}</b> of ${td.type} <b>${td.name}</b> contained in revision 
-                                        <b>${changeset_revision | h}</b> of repository <b>${repository_name | h}</b> owned by <b>${owner}</b>
+                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision 
+                                        <b>${changeset_revision | h}</b> of repository <b>${repository_name | h}</b> owned by <b>${owner | h}</b>
                                     </li>
                                 %endfor
                             </ul>

@@ -71,8 +71,8 @@ def activate_repository( trans, repository ):
 
 def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
     """
-    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated with the repository defined
-    by the received repo_info_dict.
+    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated
+    with the repository defined by the received repo_info_dict.
     """
     repository = None
     installed_rd = {}
@@ -102,7 +102,8 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # Discover all repository dependencies and retrieve information for installing them.
         all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
-        has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
+        has_repository_dependencies_only_if_compiling_contained_td = \
+            all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
         includes_tools = all_repo_info_dict.get( 'includes_tools', False )
@@ -138,7 +139,8 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # We have a single repository with (possibly) no defined repository dependencies.
         all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
-        has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
+        has_repository_dependencies_only_if_compiling_contained_td = \
+            all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
         includes_tools = all_repo_info_dict.get( 'includes_tools', False )
@@ -202,8 +204,8 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
             # Get the description from the metadata in case it has a value.
             repository_dependencies = metadata.get( 'repository_dependencies', {} )
             description = repository_dependencies.get( 'description', None )
-            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the missing_repository_dependencies
-            # dictionaries for proper display parsing.
+            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the
+            # missing_repository_dependencies dictionaries for proper display parsing.
             root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
                                                                                            repository.name,
                                                                                            repository.owner,
