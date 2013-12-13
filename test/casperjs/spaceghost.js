@@ -1129,7 +1129,7 @@ SpaceGhost.prototype.data = {
         },
 
         masthead : {
-            adminLink : '#masthead a[href="/admin"]',
+            adminLink : '#masthead a[href="/admin/index"]',
             userMenu : {
                 userEmail       : 'a #user-email',
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'
