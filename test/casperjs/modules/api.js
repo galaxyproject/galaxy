@@ -338,16 +338,16 @@ ToolsAPI.prototype.show = function show( id ){
     });
 };
 
-//ToolsAPI.prototype.create = function create( payload ){
-//    this.api.spaceghost.info( 'tools.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
-//
-//    // py.payload <-> ajax.data
-//    payload = this.api.ensureObject( payload );
-//    return this.api._ajax( utils.format( this.urlTpls.create, this.api.ensureId( historyId ) ), {
-//        type : 'POST',
-//        data : payload
-//    });
-//};
+ToolsAPI.prototype.create = function create( payload ){
+    this.api.spaceghost.info( 'tools.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
+
+    // py.payload <-> ajax.data
+    payload = this.api.ensureObject( payload );
+    return this.api._ajax( utils.format( this.urlTpls.create ), {
+        type : 'POST',
+        data : payload
+    });
+};
 
 
 // =================================================================== WORKFLOWS
