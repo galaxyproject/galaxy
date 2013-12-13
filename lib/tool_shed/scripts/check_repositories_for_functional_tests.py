@@ -253,6 +253,11 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
                         # since it will be re-inserted later.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                    elif len( tool_test_results_dict ) == 2 and \
+                        'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                        # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
+                        # In this case, some tools are missing tests components while others are not.
+                        tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                     else:
                         # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
                         tool_test_results_dict = {}

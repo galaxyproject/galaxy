@@ -41,6 +41,7 @@ assert sys.version_info[ :2 ] >= ( 2, 6 )
 
 class RepositoriesApplication( object ):
     """Encapsulates the state of a Universe application"""
+
     def __init__( self, config ):
         if config.database_connection is False:
             config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
@@ -133,11 +134,12 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
     # Do not check metadata records that have an entry in the skip_tool_tests table, since they won't be tested anyway.
     skip_metadata_ids = select( [ app.model.SkipToolTest.table.c.repository_metadata_id ] )
     # Get the list of metadata records to check, restricting it to records that have not been flagged do_not_test.
-    for repository_metadata in app.sa_session.query( app.model.RepositoryMetadata ) \
-                                         .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
-                                                        app.model.RepositoryMetadata.table.c.do_not_test == False,
-                                                        app.model.RepositoryMetadata.table.c.repository_id.in_( tool_dependency_defintion_repository_ids ),
-                                                        not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
+    for repository_metadata in \
+        app.sa_session.query( app.model.RepositoryMetadata ) \
+                      .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
+                                     app.model.RepositoryMetadata.table.c.do_not_test == False,
+                                     app.model.RepositoryMetadata.table.c.repository_id.in_( tool_dependency_defintion_repository_ids ),
+                                     not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
         # Check the next repository revision.
         changeset_revision = str( repository_metadata.changeset_revision )
@@ -161,9 +163,31 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                 invalid_metadata += 1
             if not info_only:
                 # Create the tool_test_results_dict dictionary, using the dictionary from the previous test run if available.
-                if repository_metadata.tool_test_results:
-                    tool_test_results_dict = repository_metadata.tool_test_results
+                if repository_metadata.tool_test_results is not None:
+                    # We'll listify the column value in case it uses the old approach of storing the results of only a single test run.
+                    tool_test_results_dicts = listify( repository_metadata.tool_test_results )
                 else:
+                    tool_test_results_dicts = []
+                if tool_test_results_dicts:
+                    # Inspect the tool_test_results_dict for the last test run in case it contains only a test_environment
+                    # entry.  This will occur with multiple runs of this script without running the associated
+                    # install_and_test_tool_sed_repositories.sh script which will further populate the tool_test_results_dict.
+                    tool_test_results_dict = tool_test_results_dicts[ 0 ]
+                    if len( tool_test_results_dict ) <= 1:
+                        # We can re-use the mostly empty tool_test_results_dict for this run because it is either empty or it contains only
+                        # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
+                        # since it will be re-inserted later.
+                        tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                    elif len( tool_test_results_dict ) == 2 and \
+                        'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                        # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
+                        # In this case, some tools are missing tests components while others are not.
+                        tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                    else:
+                        # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
+                        tool_test_results_dict = {}
+                else:
+                    # Create a new dictionary for the most recent test run.
                     tool_test_results_dict = {}
                 # Initialize the tool_test_results_dict dictionary with the information about the current test environment.
                 test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
