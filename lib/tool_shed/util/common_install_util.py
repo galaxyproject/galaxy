@@ -458,7 +458,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     tool_dependency = tool_dependencies[ index ]
                     if tool_dependency.can_install:
                         try:
-                            dependencies_ignored = app.toolbox.dependency_manager and not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
+                            dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
                             if dependencies_ignored:
                                 log.info("Skipping package %s, tool shed dependency resolver not enabled." % package_name)
                                 # Tool dependency resolves have been configured and they do not

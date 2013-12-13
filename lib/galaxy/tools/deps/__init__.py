@@ -15,6 +15,31 @@ from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 from galaxy.util.submodules import submodules
 
 
+def build_dependency_manager( config ):
+    if config.use_tool_dependencies:
+        dependency_manager_kwds = {
+            'default_base_path': config.tool_dependency_dir,
+            'conf_file': config.dependency_resolvers_config_file,
+        }
+        dependency_manager = DependencyManager( **dependency_manager_kwds )
+    else:
+        dependency_manager = NullDependencyManager()
+
+    return dependency_manager
+
+
+class NullDependencyManager( object ):
+
+    def uses_tool_shed_dependencies(self):
+        return False
+
+    def dependency_shell_commands( self, requirements, **kwds ):
+        return []
+
+    def find_dep( self, name, version=None, type='package', **kwds ):
+        return INDETERMINATE_DEPENDENCY
+
+
 class DependencyManager( object ):
     """
     A DependencyManager attempts to resolve named and versioned dependencies by

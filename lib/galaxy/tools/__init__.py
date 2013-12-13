@@ -40,7 +40,7 @@ from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -696,14 +696,7 @@ class ToolBox( object, Dictifiable ):
         return stored.latest_workflow
 
     def init_dependency_manager( self ):
-        if self.app.config.use_tool_dependencies:
-            dependency_manager_kwds = {
-                'default_base_path': self.app.config.tool_dependency_dir,
-                'conf_file': self.app.config.dependency_resolvers_config_file,
-            }
-            self.dependency_manager = DependencyManager( **dependency_manager_kwds )
-        else:
-            self.dependency_manager = None
+        self.dependency_manager = build_dependency_manager( self.app.config )
 
     @property
     def sa_session( self ):

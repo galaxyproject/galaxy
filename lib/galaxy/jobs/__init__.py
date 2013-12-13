@@ -704,10 +704,7 @@ class JobWrapper( object ):
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
         # Shell fragment to inject dependencies
-        if self.app.config.use_tool_dependencies:
-            self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
-        else:
-            self.dependency_shell_commands = None
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = self.command_line
@@ -1451,10 +1448,7 @@ class TaskWrapper(JobWrapper):
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
         # Shell fragment to inject dependencies
-        if self.app.config.use_tool_dependencies:
-            self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
-        else:
-            self.dependency_shell_commands = None
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line
