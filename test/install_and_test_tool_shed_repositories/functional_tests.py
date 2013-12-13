@@ -307,12 +307,8 @@ def get_api_url( base, parts=[], params=None ):
         parts.insert( 0, 'api' )
     url = suc.url_join( base, *parts )
     if params is not None:
-        if 'key' not in params:
-            params[ 'key' ] = tool_shed_api_key
         query_string = urllib.urlencode( params )
         url += '?%s' % query_string
-    else:
-        url += '?key=%s' % tool_shed_api_key
     return url
 
 def get_latest_downloadable_changeset_revision( url, name, owner ):
