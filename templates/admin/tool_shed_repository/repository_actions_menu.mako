@@ -30,7 +30,6 @@
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get repository updates</a>
-                <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ) )}">Repair repository</a>
                 %if repository.can_reset_metadata:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='reset_repository_metadata', id=trans.security.encode_id( repository.id ) )}">Reset repository metadata</a>
                 %endif
@@ -42,6 +41,7 @@
                 %endif
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
             %endif
+            <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ) )}">Repair repository</a>
         </div>
     </ul>
 </%def>
