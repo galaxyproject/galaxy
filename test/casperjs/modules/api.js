@@ -331,6 +331,8 @@ ToolsAPI.prototype.show = function show( id ){
     this.api.spaceghost.info( 'tools.show: ' + [ id ] );
     var data = {};
 
+    data.io_details = true;
+
     return this.api._ajax( utils.format( this.urlTpls.show, id ), {
         data : data
     });

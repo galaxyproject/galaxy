@@ -63,10 +63,10 @@ function findObject( objectArray, where, start ){
 
 // =================================================================== TESTS
 var panelSectionKeys = [
-        'elems', 'id', 'name', 'type', 'version'
+        'elems', 'id', 'name', 'version'
     ],
     panelToolKeys = [
-        'id', 'name', 'description', 'version', 'link', 'target', 'min_width', 'type'
+        'id', 'name', 'description', 'version', 'link', 'target', 'min_width'
     ],
     toolSummaryKeys = [
         'id', 'name', 'description', 'version'
