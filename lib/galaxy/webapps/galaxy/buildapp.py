@@ -144,38 +144,6 @@ def app_factory( global_conf, **kwargs ):
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
-
-    # =======================
-    # ===== LIBRARY API =====
-    # =======================
-    
-    # The /folders section is experimental at this point:
-    log.debug( "app.config.api_folders: %s" % app.config.api_folders )
-
-    webapp.mapper.connect( 'show_lda_item', '/api/libraries/datasets/:id', controller='lda_datasets', action='show', conditions=dict(method=["GET"]) )
-    webapp.mapper.connect( 'download_lda_items', '/api/libraries/datasets/download/:format', controller='lda_datasets', action='download', conditions=dict(method=["POST"]) )
-
-    webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
-    webapp.mapper.resource( 'folder', 'folders', path_prefix='/api' )
-
-    webapp.mapper.resource( 'content', 'contents',
-                                controller='folder_contents',
-                                name_prefix='folder_',
-                                path_prefix='/api/folders/:folder_id',
-                                parent_resources=dict( member_name='folder', collection_name='folders' ) )
-    webapp.mapper.resource( 'content',
-                                'contents',
-                                controller='library_contents',
-                                name_prefix='library_',
-                                path_prefix='/api/libraries/:library_id',
-                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    webapp.mapper.resource( 'permission',
-                                'permissions',
-                                path_prefix='/api/libraries/:library_id',
-                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
     
 
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
@@ -195,6 +163,52 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+
+    # =======================
+    # ===== LIBRARY API =====
+    # =======================
+    
+    webapp.mapper.connect( 'show_lda_item',
+                           '/api/libraries/datasets/:id', 
+                           controller='lda_datasets', 
+                           action='show', 
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'download_lda_items', 
+                           '/api/libraries/datasets/download/:format', 
+                           controller='lda_datasets', 
+                           action='download', 
+                           conditions=dict( method=[ "POST", "GET" ] ) )
+
+    webapp.mapper.resource_with_deleted( 'library',
+                                         'libraries', 
+                                         path_prefix='/api' )
+    webapp.mapper.resource( 'folder', 
+                            'folders', 
+                            path_prefix='/api' )
+
+    webapp.mapper.resource( 'content', 
+                            'contents',
+                            controller='folder_contents',
+                            name_prefix='folder_',
+                            path_prefix='/api/folders/:folder_id',
+                            parent_resources=dict( member_name='folder', collection_name='folders' ) )
+
+    webapp.mapper.resource( 'content',
+                            'contents',
+                            controller='library_contents',
+                            name_prefix='library_',
+                            path_prefix='/api/libraries/:library_id',
+                            parent_resources=dict( member_name='library', collection_name='libraries' ) )
+
+    webapp.mapper.resource( 'permission',
+                            'permissions',
+                            path_prefix='/api/libraries/:library_id',
+                            parent_resources=dict( member_name='library', collection_name='libraries' ) )
+    
+    _add_item_extended_metadata_controller( webapp,
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
     
     # ====================
     # ===== TOOLSHED =====

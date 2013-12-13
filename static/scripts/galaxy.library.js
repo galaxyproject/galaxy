@@ -8,7 +8,11 @@ var library_router  = null;
 var responses = [];
 
 // dependencies
-define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "libs/toastr"], function(mod_modal, mod_masthead, mod_utils, mod_toastr) {
+define([
+    "galaxy.modal", 
+    "galaxy.masthead", 
+    "utils/galaxy.utils", 
+    "libs/toastr"], function(mod_modal, mod_masthead, mod_utils, mod_toastr) {
 
 // MMMMMMMMMMMMMMM
 // === Models ====
@@ -308,7 +312,7 @@ var FolderContentView = Backbone.View.extend({
       // event binding
       events: {
             'click #select-all-checkboxes' : 'selectAll',
-            'click .folder_row' : 'selectClicked',
+            'click .folder_row' : 'selectClickedRow',
             'click #toolbtn_bulk_import' : 'modalBulkImport',
             'click #toolbtn_dl' : 'bulkDownload',
             'click .library-dataset' : 'showDatasetDetails',
@@ -350,6 +354,7 @@ var FolderContentView = Backbone.View.extend({
               var template = _.template(that.templateFolder(), { path: folderContainer.full_path, items: folderContainer.attributes.folder.models, id: options.id, upper_folder_id: upper_folder_id });
               // var template = _.template(that.templateFolder(), { path: folderContainer.full_path, items: folderContainer.attributes.folder.models, id: options.id });
               that.$el.html(template);
+
             }
           })
         },
@@ -456,12 +461,14 @@ var FolderContentView = Backbone.View.extend({
 
             // save the dataset into selected history
             historyItem.save({ content : library_dataset_id, source : 'library' }, { success : function(){
-                self.modal.showNotification('Dataset imported', 3000, 'success');
+                mod_toastr.success('Dataset imported');
+                // self.modal.showNotification('Dataset imported', 3000, 'success');
                 //enable the buttons
                 self.modal.enableButton('Import');
                 self.modal.enableButton('Download');
             }, error : function(){
-                self.modal.showNotification('An error occured! Dataset not imported. Please try again later.', 5000, 'error');
+                mod_toastr.error('An error occured! Dataset not imported. Please try again.')
+                // self.modal.showNotification('An error occured! Dataset not imported. Please try again later.', 5000, 'error');
                 //enable the buttons
                 self.modal.enableButton('Import');
                 self.modal.enableButton('Download');
@@ -471,37 +478,69 @@ var FolderContentView = Backbone.View.extend({
 
         // select all datasets
         selectAll : function (event) {
-           var selected = event.target.checked;
-                 // Iterate each checkbox
-                 $(':checkbox').each(function () { this.checked = selected; });
-                 this.showTools();
-             },
+             var selected = event.target.checked;
+             that = this;
+             // Iterate each checkbox
+             $(':checkbox').each(function () { 
+                this.checked = selected; 
+                $row = $(this.parentElement.parentElement);
+                // Change color of selected/unselected
+                (selected) ? that.makeDarkRow($row) : that.makeWhiteRow($row);
+            });
+             // Show the tools in menu
+             this.checkTools();
+         },
 
-         // click checkbox on folder click
-         selectClicked : function (event) {
-            var checkbox = $("#" + event.target.parentElement.id).find(':checkbox')
-                if (checkbox[0] != undefined) {
-                  if (checkbox[0].checked){
-                    checkbox[0].checked = '';
-                    // $(event.target.parentElement).css('background-color', '').css('color', '');
-                    $(event.target.parentElement).removeClass('dark');
-                    $(event.target.parentElement).find('a').removeClass('dark');
-                    $(event.target.parentElement).addClass('light');
-                    $(event.target.parentElement).find('a').addClass('light');
-                } else {
-                    checkbox[0].checked = 'selected';
-                    $(event.target.parentElement).removeClass('light');
-                    $(event.target.parentElement).find('a').removeClass('light');
-                    $(event.target.parentElement).addClass('dark');
-                    $(event.target.parentElement).find('a').addClass('dark');
-                    // $(event.target.parentElement).css('background-color', '#8389a1').css('color', 'white');
-                }
+         // Check checkbox on row itself or row checkbox click
+         selectClickedRow : function (event) {
+            var checkbox = '';
+            var $row;
+            var source;
+            if (event.target.localName === 'input'){
+                checkbox = event.target;
+                $row = $(event.target.parentElement.parentElement);
+                source = 'input';
+            } else if (event.target.localName === 'td') {
+                checkbox = $("#" + event.target.parentElement.id).find(':checkbox')[0];
+                $row = $(event.target.parentElement);
+                source = 'td';
             }
-            this.showTools();
+            if (checkbox === '') {event.stopPropagation(); return;} // button in row was clicked
+
+                if (checkbox.checked){
+                    if (source==='td'){
+                        checkbox.checked = '';
+                        this.makeWhiteRow($row);
+                    } else if (source==='input') {
+                        this.makeDarkRow($row);
+                    }
+                } else {
+                    if (source==='td'){
+                        checkbox.checked = 'selected';
+                        this.makeDarkRow($row);
+                    } else if (source==='input') {
+                        this.makeWhiteRow($row);
+                    }
+                }
+                this.checkTools();
+        },
+
+        makeDarkRow: function($row){
+            $row.removeClass('light');
+            $row.find('a').removeClass('light');
+            $row.addClass('dark');
+            $row.find('a').addClass('dark');
+        },
+
+        makeWhiteRow: function($row){
+            $row.removeClass('dark');
+            $row.find('a').removeClass('dark');
+            $row.addClass('light');
+            $row.find('a').addClass('light');
         },
 
         // show toolbar in case something is selected
-        showTools : function(){
+        checkTools : function(){
             var checkedValues = $('#folder_table').find(':checked');
             if(checkedValues.length > 0){
                 $('#toolbtn_bulk_import').show();
@@ -577,7 +616,9 @@ var FolderContentView = Backbone.View.extend({
             var self = this;
             var popped_item = history_item_set.pop();
             if (typeof popped_item === "undefined") {
-                self.modal.showNotification('All datasets imported', 3000, 'success');
+                mod_toastr.success('All datasets imported');
+                this.modal.hide();
+                // self.modal.showNotification('All datasets imported', 3000, 'success');
                 // enable button again
                 self.modal.enableButton('Import');
                 return
@@ -646,12 +687,13 @@ var FolderContentView = Backbone.View.extend({
                 //send request
                 $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
                 .appendTo('body').submit().remove();
+                mod_toastr.info('Your download will begin soon');
         };
       },
 
       // shows modal for creating folder
       createFolderModal: function(){
-        alert('creating folder');
+        mod_toastr.info('This will create folder...in the future');
       }
 
     });
@@ -704,7 +746,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 
     // render
     render: function () {
-        //hack to show scrollbars
+        //hack to show scrollbars due to #center element inheritance
         $("#center").css('overflow','auto');
         
         var that = this;
@@ -717,18 +759,16 @@ var GalaxyLibraryview = Backbone.View.extend({
           },
           error: function(model, response){
             if (response.statusCode().status === 403){
-                //show notification
-                // var toast = mod_toastr;
                 mod_toastr.error('Please log in first. Redirecting to login page in 3s.');   
                 setTimeout(that.redirectToLogin, 3000);
             } else {
-                library_router.navigate('#', {trigger: true, replace: true});
+                mod_toastr.error('An error occured. Please try again.');
             }
           }
     })
     },
 
-    redirectToSplash: function(){
+    redirectToHome: function(){
         window.location = '../';
     },    
     redirectToLogin: function(){
@@ -762,19 +802,23 @@ var GalaxyLibraryview = Backbone.View.extend({
     // create the new library from modal
     create_new_library_event: function(){
         var libraryDetails = this.serialize_new_library();
-        var valid = this.validate_new_library(libraryDetails);
-        var library = new Library();
-        var self = this;
-        library.save(libraryDetails, {
-          success: function (library) {
-            self.modal.hide();
-            self.clear_library_modal();
-            self.render();
-          },
-          error: function(){
-            self.modal.showNotification('An error occured', 5000, 'error');
-            }
-    });
+        if (this.validate_new_library(libraryDetails)){
+            var library = new Library();
+            var self = this;
+            library.save(libraryDetails, {
+              success: function (library) {
+                self.modal.hide();
+                self.clear_library_modal();
+                self.render();
+                mod_toastr.success('Library created');
+              },
+              error: function(){
+                mod_toastr.error('An error occured :(');
+              }
+            });
+        } else {
+            mod_toastr.error('Library\'s name is missing');
+        }
         return false;
     },
 
@@ -794,14 +838,13 @@ var GalaxyLibraryview = Backbone.View.extend({
         };
     },
 
-    validate_new_library: function(library){
-
+    // validate new library info
+    validate_new_library: function(libraryDetails){
+        return libraryDetails.name !== '';
     },
 
-
     // template for new library modal
-    template_new_library: function()
-    {
+    template_new_library: function(){
         tmpl_array = [];
 
         tmpl_array.push('<div id="new_library_modal">');
@@ -824,34 +867,29 @@ var GalaxyLibrary = Backbone.View.extend({
 
         folderContentView = new FolderContentView();
         galaxyLibraryview = new GalaxyLibraryview();
-
         library_router = new LibraryRouter();
 
         library_router.on('route:libraries', function() {
           // render libraries list
           galaxyLibraryview.render();
-      });
+        });
 
         library_router.on('route:folder_content', function(id) {
           // render folder's contents
           folderContentView.render({id: id});
-      });
+        });
 
        library_router.on('route:download', function(folder_id, format) {
-          // send download stream
-          if (typeof folderContentView === 'undefined'){
-            alert('you cant touch this!');
-          // } else if (folderContentView.modal !== null){
-            // folderContentView.download(folder_id, format);
-          } else if ($('#center').find(':checked').length === 0) { // coming from outside of the library app
+          if ($('#center').find(':checked').length === 0) { 
+            // this happens rarely when there is a server/data error and client gets an actual response instead of an attachment
+            // we don't know what was selected so we can't download again, we redirect to the folder provided
             library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
-            // TODO show message of redirection
           } else {
+            // send download stream
             folderContentView.download(folder_id, format);
             library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
           }
-
-      });
+        });
 
 Backbone.history.start();
 

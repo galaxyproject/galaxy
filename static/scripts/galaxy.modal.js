@@ -26,16 +26,17 @@ var GalaxyModal = Backbone.View.extend(
         if (options)
             this.create(options);
 
-        this.bindClick(event, self);
+        // Bind the hiding events
+        this.bindEvents(event, self);
     },
 
     // bind the click-to-hide function
-    bindClick: function(event, that) {
+    bindEvents: function(event, that) {
         // bind the ESC key to hide() function
         $(document).on('keyup', function(event){
             if (event.keyCode == 27) { self.hide(); }
         })
-        // bind the click anywhere to hide() function...
+        // bind the 'click anywhere' to hide() function...
         $('html').on('click', function(event){
             that.hide();
         })
@@ -46,26 +47,24 @@ var GalaxyModal = Backbone.View.extend(
     },
 
     // unbind the click-to-hide function
-    unbindClick: function(event, that){
+    unbindEvents: function(event, that){
         // bind the ESC key to hide() function
         $(document).off('keyup', function(event){
             if (event.keyCode == 27) { that.hide(); }
         })
-        // unbind the click anywhere to hide() function...
+        // unbind the 'click anywhere' to hide() function...
         $('html').off('click', function(event){
             that.hide();
         })
-        // ...but don't hide if the click is on modal content
         $('.modal-content').off('click', function(event){
             event.stopPropagation();
         })
     },
 
-
     // destroy
     destroy : function(){
         this.hide();
-        this.unbindClick();
+        this.unbindEvents();
         $('.modal').remove();
     },
 
@@ -103,6 +102,7 @@ var GalaxyModal = Backbone.View.extend(
         
         // set flag
         this.visible = false;
+        this.unbindEvents();
     },
     
     // create
@@ -127,7 +127,6 @@ var GalaxyModal = Backbone.View.extend(
         this.$footer  = (this.$el).find('.modal-footer');
         this.$buttons = (this.$el).find('.buttons');
         this.$backdrop = (this.$el).find('.modal-backdrop');
-        this.$notification = (this.$el).find('.notification-modal');
         
         // append body
         this.$body.html(this.options.body);
@@ -170,35 +169,6 @@ var GalaxyModal = Backbone.View.extend(
         this.$buttons.find('#' + String(name).toLowerCase()).show();
     },
 
-    // show notification
-    showNotification : function(message, duration, type) {
-        var duration = typeof duration !== 'undefined' ? duration : 3000;
-        var bgColor;
-        var txtColor;
-
-        if (type === 'error'){
-            bgColor = '#f4e0e1';
-            txtColor = '#a42732';
-        // } else if (type === 'success'){
-        } else { // success is default
-            bgColor = '#e1f4e0';
-            txtColor = '#32a427'; 
-        }
-
-        var HTMLmessage = "<div class='notification-message' style='text-align:center; line-height:16px; '> " + message + " </div>";
-        this.$notification.html("<div id='notification-bar' style='display:none; float: right; height: 16px; width:100%; background-color: " + bgColor + "; z-index: 100; color: " + txtColor + ";border-bottom: 1px solid " + txtColor + ";'>" + HTMLmessage + "</div>");
-
-        var self = this;
-        
-        /*animate the bar*/
-        $('#notification-bar').slideDown(function() {
-            setTimeout(function() {
-                $('#notification-bar').slideUp(function() {self.$notification.html('');});
-            }, duration);
-        });
-
-    },
-
     // returns scroll top for body element
     scrollTop: function()
     {
@@ -218,7 +188,6 @@ var GalaxyModal = Backbone.View.extend(
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
-                                '<span class="notification-modal"></span>' + 
                                 '</div>' +
                             '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +
