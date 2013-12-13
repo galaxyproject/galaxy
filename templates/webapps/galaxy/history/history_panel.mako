@@ -89,7 +89,6 @@ onhistoryready.done( function( historyPanel ){
 
 ## ----------------------------------------------------------------------------- generic 'base' function
 <%def name="history_panel_javascripts()">
-<% print 'history_panel_javascripts' %>
 ${h.js(
     "utils/localization",
     "mvc/base-mvc",

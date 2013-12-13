@@ -204,7 +204,9 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
     /** */
     toggle : function(){
         // can be called manually as well with normal toggle arguments
-        if( this.isHidden() ){
+        //TODO: better as a callback (when the show/hide is actually done)
+        // show
+        if( this.hidden ){
             // fire the optional fns on the first/each showing - good for render()
             if( !this.HUAVOptions.hasBeenShown ){
                 if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
@@ -214,17 +216,18 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
             }
             if( _.isFunction( this.HUAVOptions.onshow ) ){
                 this.HUAVOptions.onshow.call( this );
+                this.trigger( 'hiddenUntilActivated:shown', this );
             }
             this.hidden = false;
 
+        // hide
         } else {
             if( _.isFunction( this.HUAVOptions.onhide ) ){
                 this.HUAVOptions.onhide.call( this );
+                this.trigger( 'hiddenUntilActivated:hidden', this );
             }
             this.hidden = true;
         }
-        //TODO: better as a callback (when the show/hide is actually done)
-        this.trigger( 'hiddenUntilActivated:' + (( this.isHidden() )?( 'shown' ):( 'hidden' )), this );
         return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
     }
 };

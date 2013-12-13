@@ -899,7 +899,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     /** toggle the visibility of each hdaView's tagsEditor applying all the args sent to this function */
-    toggleHDATagEditors : function(){
+    toggleHDATagEditors : function( showOrHide ){
         var args = arguments;
         _.each( this.hdaViews, function( hdaView ){
             if( hdaView.tagsEditor ){
