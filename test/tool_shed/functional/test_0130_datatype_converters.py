@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'bed_to_gff_0130'
 repository_description = "Converter: BED to GFF"
 repository_long_description = "Convert bed to gff"
@@ -14,7 +12,6 @@ category_description = 'Test 0130 Datatype Converters'
 3) Visit the view tool metadata page and make sure that "Display in tool panel" is False
 '''
 
-
 class TestDatatypeConverters( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
     
@@ -22,14 +19,14 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_bed_to_gff_repository( self ):
         '''Create and populate bed_to_gff_0130.'''
@@ -64,7 +61,7 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         We are at step 2 - Visit the manage repository page and make sure there is the appropriate valid tool and datatype.
         There should be a 'Convert BED to GFF' tool and a 'galaxy.datatypes.interval:Bed' datatype with extension 'bed'
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'Convert BED to GFF', 'galaxy.datatypes.interval:Bed', 'bed', 'Valid tools', 'Datatypes' ]
         strings_not_displayed = [ 'Invalid tools' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
@@ -75,7 +72,7 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         We are at step 3
         Datatype converters that are associated with a datatype should have display in tool panel = False in the tool metadata.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         metadata = self.get_repository_metadata_by_changeset_revision( repository, self.get_repository_tip( repository ) )
         tool_metadata_strings_displayed = '<label>Display in tool panel:</label>\n                    False'
         self.check_repository_tools_for_changeset_revision( repository, 

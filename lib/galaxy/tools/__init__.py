@@ -1075,6 +1075,22 @@ class Tool( object, Dictifiable ):
         :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
+    
+    def get_panel_section( self ):
+        for key, item in self.app.toolbox.integrated_tool_panel.items():
+            if item:
+                if key.startswith( 'tool_' ):
+                    if item.id == self.id:
+                        return '', ''
+                if key.startswith( 'section_' ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    for section_key, section_item in item.elems.items():
+                        if section_key.startswith( 'tool_' ):
+                            if section_item:
+                                if section_item.id == self.id:
+                                    return section_id, section_name
+        return None, None
 
     def parse( self, root, guid=None ):
         """
@@ -3010,6 +3026,8 @@ class Tool( object, Dictifiable ):
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
             tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            
+        tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         return tool_dict
 

@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os, logging
-import tool_shed.base.test_db_util as test_db_util
-
 column_repository_name = 'column_maker_1085'
 column_repository_description = "Add column"
 column_repository_long_description = "Compute an expression on every row"
@@ -14,7 +12,6 @@ category_description = 'Test circular dependency features'
 
 log = logging.getLogger( __name__ )
 
-
 class TestRepositoryDependencies( ShedTwillTestCase ):
     '''Testing the behavior of repository dependencies with tool panel sections.'''
  
@@ -22,19 +19,19 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
  
     def test_0005_create_and_populate_column_repository( self ):
         """Create a category for this test suite and add repositories to it."""
@@ -82,8 +79,8 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                               strings_not_displayed=[] )
  
     def test_0015_create_and_upload_dependency_files( self ):
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_1085', additional_paths=[ 'column' ] )
         repository_tuple = ( self.url, convert_repository.name, convert_repository.user.username, self.get_repository_tip( convert_repository ) )
         self.create_repository_dependency( repository=column_repository, repository_tuples=[ repository_tuple ], filepath=repository_dependencies_path )
@@ -101,9 +98,9 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                  install_repository_dependencies=True,
                                  new_tool_panel_section_label='column_maker',
                                  strings_displayed=[ 'install_repository_dependencies' ] )
-        installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
+        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
-        installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
+        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         browse_strings_displayed = [ 'convert_chars_1085',
                                      'Convert delimiters',
@@ -125,22 +122,22 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
 
     def test_0025_uninstall_column_repository( self ):
         '''uninstall column_maker, verify same section'''
-        installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
+        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_column_repository )
+        self.test_db_util.ga_refresh( installed_column_repository )
         self.check_galaxy_repository_tool_panel_section( installed_column_repository, 'column_maker' )
  
     def test_0030_uninstall_convert_repository( self ):
-        installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
+        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_convert_repository )
+        self.test_db_util.ga_refresh( installed_convert_repository )
         self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'column_maker' )
   
     def test_0035_reinstall_column_repository( self ):
         '''reinstall column_maker into new section 'new_column_maker' (no_changes = false), no dependencies'''
-        installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
+        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.reinstall_repository( installed_column_repository, 
                                    install_tool_dependencies=False, 
@@ -156,7 +153,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
   
     def test_0040_reinstall_convert_repository( self ):
         '''reinstall convert_chars into new section 'new_convert_chars' (no_changes = false), no dependencies'''
-        installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
+        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
         self.reinstall_repository( installed_convert_repository, 
                                    install_tool_dependencies=False, 
@@ -172,13 +169,13 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
   
     def test_0045_uninstall_and_verify_tool_panel_sections( self ):
         '''uninstall both and verify tool panel sections'''
-        installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
+        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 
                                                                                             common.test_user_1_name )
-        installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
+        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
-        self.uninstall_repository( installed_column_repository, remove_from_disk=True )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_convert_repository )
-        test_db_util.ga_refresh( installed_column_repository )
+        self.uninstall_repository( installed_column_repository, remove_from_disk=True )
+        self.test_db_util.ga_refresh( installed_convert_repository )
+        self.test_db_util.ga_refresh( installed_column_repository )
         self.check_galaxy_repository_tool_panel_section( installed_column_repository, 'new_column_maker' )
         self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'new_convert_chars' )

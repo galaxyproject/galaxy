@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -34,6 +33,7 @@ In Galaxy:
 4) Make sure the filter_1430 repository is reinstalled and the tool is loaded into the tool panel in the same section specified in step 1.
 '''
 
+
 class TestRepairRepository( ShedTwillTestCase ):
     '''Test repairing an installed repository.'''
     
@@ -41,20 +41,20 @@ class TestRepairRepository( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         
     def test_0005_create_filter_repository( self ):
         '''Create and populate the filter_1430 repository.'''
@@ -63,7 +63,7 @@ class TestRepairRepository( ShedTwillTestCase ):
         
         This repository will be depended on by the column_1430 repository.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=filter_repository_name, 
                                                     description=filter_repository_description, 
                                                     long_description=filter_repository_long_description, 
@@ -87,7 +87,7 @@ class TestRepairRepository( ShedTwillTestCase ):
         
         This repository will depend on the filter_1430 repository.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=column_repository_name, 
                                                     description=column_repository_description, 
                                                     long_description=column_repository_long_description, 
@@ -110,8 +110,8 @@ class TestRepairRepository( ShedTwillTestCase ):
         This is step 3 - Upload a repository_dependencies.xml file to the column_1430 repository that creates a repository
         dependency on the filter_1430 repository.
         '''
-        column_repository = test_db_util.get_repository_by_name_and_owner( 'column_1430', common.test_user_1_name )
-        filter_repository = test_db_util.get_repository_by_name_and_owner( 'filter_1430', common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( 'column_1430', common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( 'filter_1430', common.test_user_1_name )
         tool_shed_url = self.url
         name = filter_repository.name
         owner = filter_repository.user.username
@@ -143,8 +143,13 @@ class TestRepairRepository( ShedTwillTestCase ):
         '''
         This is step 2 - Uninstall the filter_1430 repository.
         '''
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filter_1430', common.test_user_1_name )
-        self.uninstall_repository( installed_repository, remove_from_disk=True )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filter_1430', common.test_user_1_name )
+        strings_displayed = [ 'This repository cannot be uninstalled' ]
+        strings_not_displayed = [ 'Check to uninstall' ]
+        self.uninstall_repository( installed_repository, 
+                                   remove_from_disk=False, 
+                                   strings_displayed=strings_displayed, 
+                                   strings_not_displayed=strings_not_displayed  )
         strings_not_displayed = [ 'filter_1430',
                                   "Galaxy's filter tool for test 1430",
                                   installed_repository.installed_changeset_revision ]
@@ -155,7 +160,7 @@ class TestRepairRepository( ShedTwillTestCase ):
         '''
         This is step 3 - Repair the column_1430 repository.
         '''
-        column_repository = test_db_util.get_installed_repository_by_name_owner( 'column_1430', common.test_user_1_name )
+        column_repository = self.test_db_util.get_installed_repository_by_name_owner( 'column_1430', common.test_user_1_name )
         self.repair_installed_repository( column_repository )
         
     def test_0035_verify_tool_panel_section( self ):
@@ -164,17 +169,10 @@ class TestRepairRepository( ShedTwillTestCase ):
         This is step 4 - Make sure the filter_1430 repository is reinstalled and the tool is loaded into the tool panel
         in the same section specified in step 1.
         '''
-        filter_repository = test_db_util.get_installed_repository_by_name_owner( 'filter_1430', common.test_user_1_name )
+        filter_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filter_1430', common.test_user_1_name )
         strings_displayed = [ 'filter_1430',
                               "Galaxy's filter tool for test 1430",
                               filter_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        # Uninstall the filter repository again, so that the tool panel section metadata gets populated.
-        self.uninstall_repository( filter_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( filter_repository )
-        tool_panel_section_metadata = filter_repository.metadata[ 'tool_panel_section' ]
-        for tool_id in tool_panel_section_metadata:
-            for panel_section in tool_panel_section_metadata[ tool_id ]:
-                assert panel_section[ 'name' ] == 'repair', 'Tool %s in tool panel section %s after repair, expected %s.' % \
-                    ( tool_id, panel_section[ 'name' ], 'repair' )
+        self.check_galaxy_repository_tool_panel_section( repository=filter_repository, expected_tool_panel_section='repair' )
         

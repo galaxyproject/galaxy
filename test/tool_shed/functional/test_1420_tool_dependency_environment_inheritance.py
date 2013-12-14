@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -51,6 +50,7 @@ Repository dependency structure should be as follows:
 9. Verify that the env.sh file for package_rdkit_2012_12_1420 also defines the variables inherited from package_numpy_1_7_1420 and package_boost_1_53_1420.
 '''
 
+
 class TestEnvironmentInheritance( ShedTwillTestCase ):
     '''Test referencing environment variables that were defined in a separate tool dependency.'''
     
@@ -58,20 +58,20 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         
     def test_0005_create_lapack_repository( self ):
         '''Create and populate package_lapack_3_4_1420.'''
@@ -81,7 +81,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_lapack_repository_name, 
                                                     description=package_lapack_repository_description, 
                                                     long_description=package_lapack_repository_long_description, 
@@ -115,7 +115,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_atlas_repository_name, 
                                                     description=package_atlas_repository_description, 
                                                     long_description=package_atlas_repository_long_description, 
@@ -149,7 +149,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_bzlib_repository_name, 
                                                     description=package_bzlib_repository_description, 
                                                     long_description=package_bzlib_repository_long_description, 
@@ -183,7 +183,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_boost_repository_name, 
                                                     description=package_boost_repository_description, 
                                                     long_description=package_boost_repository_long_description, 
@@ -217,7 +217,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_numpy_repository_name, 
                                                     description=package_numpy_repository_description, 
                                                     long_description=package_numpy_repository_long_description, 
@@ -251,7 +251,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
         filesystem and install them into the path specified by $INSTALL_DIR.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_rdkit_repository_name, 
                                                     description=package_rdkit_repository_description, 
                                                     long_description=package_rdkit_repository_long_description, 
@@ -303,9 +303,9 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         This is step 5 - Verify that the env.sh file for package_rdkit_2012_12_1420 also defines the variables inherited from package_numpy_1_7_1420
         and package_boost_1_53_1420. Test for the numpy and boost tool dependency paths.
         '''
-        package_rdkit_repository = test_db_util.get_installed_repository_by_name_owner( 'package_rdkit_2012_12_1420', common.test_user_1_name )
-        package_numpy_repository = test_db_util.get_installed_repository_by_name_owner( 'package_numpy_1_7_1420', common.test_user_1_name )
-        package_boost_repository = test_db_util.get_installed_repository_by_name_owner( 'package_boost_1_53_1420', common.test_user_1_name )
+        package_rdkit_repository = self.test_db_util.get_installed_repository_by_name_owner( 'package_rdkit_2012_12_1420', common.test_user_1_name )
+        package_numpy_repository = self.test_db_util.get_installed_repository_by_name_owner( 'package_numpy_1_7_1420', common.test_user_1_name )
+        package_boost_repository = self.test_db_util.get_installed_repository_by_name_owner( 'package_boost_1_53_1420', common.test_user_1_name )
         rdkit_env_sh = self.get_env_sh_path( tool_dependency_name='rdkit', 
                                              tool_dependency_version='2012_12_1', 
                                              repository=package_rdkit_repository )

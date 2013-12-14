@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 
-import os, sys, shutil, tempfile, re, string, multiprocessing
+import os
+import sys
+import shutil
+import tempfile
+import re
+import string
+import multiprocessing
+import unittest
+import time
+import sys
+import threading
+import random
+import httplib
+import socket
+import urllib
+import atexit
+import logging
+import os
+import sys
+import tempfile
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -28,11 +47,7 @@ eggs.require( "Cheetah" )
 # This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import atexit, logging, os, os.path, sys, tempfile
-import twill, unittest, time
-import sys, threading, random
-import httplib, socket
-import urllib
+import twill
 from paste import httpserver
 # This is for the tool shed application.
 import galaxy.webapps.tool_shed.app
@@ -42,6 +57,7 @@ from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
 from galaxy.util import asbool
+from galaxy.util.json import to_json_string
 
 import nose.core
 import nose.config
@@ -68,6 +84,9 @@ default_install_db_merged = False
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
+
+global galaxyapp
+galaxyapp = None
 
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
@@ -488,7 +507,6 @@ def main():
         return 0
     else:
         return 1
-
 
 def __copy_database_template( source, db_path ):
     """

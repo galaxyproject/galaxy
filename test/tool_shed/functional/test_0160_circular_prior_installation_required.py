@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 filter_repository_name = 'filtering_0160'
 filter_repository_description = "Galaxy's filtering tool for test 0160"
 filter_repository_long_description = "Long description of Galaxy's filtering tool for test 0160"
@@ -25,7 +23,6 @@ Column maker repository dependency:
 Verify display.
 '''
 
-
 class TestSimplePriorInstallation( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
     
@@ -33,14 +30,14 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_convert_repository( self ):
         '''Create and populate convert_chars_0160.'''
@@ -106,9 +103,9 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         '''
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         '''
-        filter_repository = test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0160', additional_paths=[ 'column' ] )
         filter_revision = self.get_repository_tip( filter_repository )
         column_revision = self.get_repository_tip( column_repository )
@@ -131,9 +128,9 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         
     def test_0025_verify_repository_dependency( self ):
         '''Verify that the previously generated repositiory dependency displays correctly.'''
-        filter_repository = test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         self.check_repository_dependency( repository=column_repository, 
                                           depends_on_repository=convert_repository, 
                                           depends_on_changeset_revision=None, 

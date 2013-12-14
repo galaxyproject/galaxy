@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'filtering_0060'
 repository_description="Galaxy's filtering tool for test 0060"
 repository_long_description="Long description of Galaxy's filtering tool for test 0060"
@@ -16,25 +14,26 @@ workflow_repository_name = 'filtering_workflow_0060'
 workflow_repository_description="Workflow referencing the filtering tool for test 0060"
 workflow_repository_long_description="Long description of the workflow for test 0060"
 
+
 class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     '''Test installing a repository with repository dependencies.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_ensure_category_exists( self ):
         '''Create the 0060 category.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -85,7 +84,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                  new_tool_panel_section_label='test_1060' )
     def test_0015_import_workflow_from_installed_repository( self ):
         '''Import the workflow from the installed repository and verify that it appears in the list of all workflows.'''
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         self.display_installed_workflow_image( installed_repository, 
                                                workflow_name, 
                                                strings_displayed=[ '#EBD9B2' ],
@@ -140,7 +139,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                  includes_tools_for_display_in_tool_panel=False )
     def test_0030_import_workflow_from_installed_repository( self ):
         '''Import the workflow from the installed repository and verify that it appears in the list of all workflows.'''
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( workflow_repository_name, common.test_user_1_name )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( workflow_repository_name, common.test_user_1_name )
         self.display_installed_workflow_image( installed_repository, 
                                                'New workflow for 0060_filter_workflow_repository', 
                                                strings_displayed=[ '#EBD9B2' ],
