@@ -132,7 +132,6 @@ class ShedTwillTestCase( TwillTestCase ):
                                   galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             tool_panel_section = self.get_tool_panel_section_from_repository_metadata( metadata )
         else:
-            log.debug( 'Status is %s' % repository.status )
             tool_panel_section = self.get_tool_panel_section_from_api( metadata )
         assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
@@ -1070,13 +1069,11 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def reset_metadata_on_selected_repositories( self, repository_ids ):
         self.visit_url( '/admin/reset_metadata_on_selected_repositories_in_tool_shed' )
-        log.debug( repository_ids )
         kwd = dict( repository_ids=repository_ids )
         self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
         
     def reset_metadata_on_selected_installed_repositories( self, repository_ids ):
         self.visit_galaxy_url( '/admin_toolshed/reset_metadata_on_selected_installed_repositories' )
-        log.debug( repository_ids )
         kwd = dict( repository_ids=repository_ids )
         self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
         

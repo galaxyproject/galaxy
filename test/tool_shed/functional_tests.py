@@ -85,9 +85,6 @@ default_install_db_merged = False
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
 
-global galaxyapp
-galaxyapp = None
-
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
     to be wrapped in the static middleware.
