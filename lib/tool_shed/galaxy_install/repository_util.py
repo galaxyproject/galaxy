@@ -504,8 +504,8 @@ def initiate_repository_installation( trans, installation_dict ):
     query = trans.install_model.context.query( trans.install_model.ToolShedRepository ).filter( or_( *clause_list ) )
     return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 
-def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path, install_tool_dependencies,
-                                  reinstalling=False ):
+def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
+                                  install_tool_dependencies, reinstalling=False ):
     if tool_panel_section_key:
         try:
             tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
@@ -579,7 +579,11 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                                                         tool_dependencies_config=tool_dependencies_config,
                                                                                         tool_dependencies=tool_shed_repository.tool_dependencies )
             suc.remove_dir( work_dir )
-        suc.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.install_model.ToolShedRepository.installation_status.INSTALLED )
+        suc.update_tool_shed_repository_status( trans.app,
+                                                tool_shed_repository,
+                                                trans.install_model.ToolShedRepository.installation_status.INSTALLED )
+        # Add the installed repository and any tool dependencies to the in-memory dictionaries in the installed_repository_manager.
+        trans.app.installed_repository_manager.handle_repository_install( tool_shed_repository )
     else:
         # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
         set_repository_attributes( trans,

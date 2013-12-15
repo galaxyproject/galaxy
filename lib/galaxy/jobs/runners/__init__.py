@@ -198,7 +198,7 @@ class BaseJobRunner( object ):
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
         return output_pairs
 
-    def _handle_metadata_externally(self, job_wrapper):
+    def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
         Set metadata externally. Used by the local and lwr job runners where this
         shouldn't be attached to command-line to execute.
@@ -212,6 +212,12 @@ class BaseJobRunner( object ):
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
+            if resolve_requirements:
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                if dependency_shell_commands:
+                    if isinstance( dependency_shell_commands, list ):
+                        dependency_shell_commands = "&&".join( dependency_shell_commands )
+                    external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,

@@ -17,6 +17,13 @@
     <script type="text/javascript">
         $(function() {
             init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
+            $( '#switch-to-link' ).click( function( event ){
+                var galaxy = window.Galaxy || window.parent.Galaxy;
+                if( galaxy ){
+                    galaxy.currHistoryPanel.switchToHistory( '${ trans.security.encode_id( history.id ) }' );
+                }
+            });
+            $( '#refresh' ).click( function( event ){ window.location.reload( true ); })
         });
     </script>
 </%def>
@@ -119,9 +126,15 @@
             </div>
 
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
-                %if not history.purged:
-                    <a href="${h.url_for(controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
-                    <a href="${get_history_link( history )}">${_('refresh')}</a> |
+                %if not history.purged and history.user != trans.user:
+                    ##TODO: need to remove _top
+                    <a href="${h.url_for(controller='history', action='imp', id=trans.security.encode_id(history.id) )}"
+                       >import and start using history</a> |
+                    <a id="refresh" href="javascript:void(0)" >${_('refresh')}</a> |
+                %endif
+                %if not history.purged and history.user == trans.user:
+                    <a id="switch-to-link" href="javascript:void(0)">${_('switch to this history')}</a> |
+                    <a id="refresh" href="javascript:void(0)" >${_('refresh')}</a> |
                 %endif
                 %if show_deleted:
                     <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=False, use_panels=use_panels )}">${_('hide deleted')}</a> |

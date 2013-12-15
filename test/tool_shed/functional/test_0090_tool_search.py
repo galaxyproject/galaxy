@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 emboss_datatypes_repository_name = 'emboss_datatypes_0090'
 emboss_datatypes_repository_description = "Datatypes for emboss"
 emboss_datatypes_repository_long_description = "Long description of Emboss' datatypes"
@@ -28,7 +26,6 @@ bwa_color_repository_long_description = "Color space mapping with BWA"
 category_name = 'Test 0090 Tool Search And Installation'
 category_description = 'Test 0090 Tool Search And Installation'
 
-
 class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
     '''Test more features related to repository dependencies.'''
 
@@ -36,14 +33,14 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
 
     def test_0005_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0090.'''
@@ -167,12 +164,12 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
 
     def test_0035_create_and_upload_dependency_definitions( self ):
         '''Create and upload repository dependency definitions.'''
-        bwa_color_repository = test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
-        bwa_base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
-        datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        bwa_color_repository = self.test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
+        bwa_base_repository = self.test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0090', additional_paths=[ 'freebayes' ] )
         freebayes_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
         emboss_tuple = ( self.url, emboss_repository.name, emboss_repository.user.username, self.get_repository_tip( emboss_repository ) )
@@ -185,12 +182,12 @@ class TestRepositoryCircularDependenciesAgain( ShedTwillTestCase ):
 
     def test_0040_verify_repository_dependencies( self ):
         '''Verify the generated dependency structure.'''
-        bwa_color_repository = test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
-        bwa_base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
-        emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        bwa_color_repository = self.test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
+        bwa_base_repository = self.test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        emboss_datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         self.check_repository_dependency( emboss_repository, emboss_datatypes_repository )
         self.check_repository_dependency( filtering_repository, freebayes_repository )
         self.check_repository_dependency( bwa_base_repository, emboss_repository )

@@ -1,12 +1,9 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'bismark_0070'
 repository_description = "Galaxy's bismark wrapper"
 repository_long_description = "Long description of Galaxy's bismark wrapper"
 category_name = 'Test 0070 Invalid Tool Revisions'
 category_description = 'Tests for a repository with invalid tool revisions.' 
-
 
 class TestBismarkRepository( ShedTwillTestCase ):
     '''Testing bismark with valid and invalid tool entries.'''
@@ -15,14 +12,14 @@ class TestBismarkRepository( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_category_and_repository( self ):
         """Create a category for this test suite, then create and populate a bismark repository. It should contain at least one each valid and invalid tool."""
@@ -56,7 +53,7 @@ class TestBismarkRepository( ShedTwillTestCase ):
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         valid_revision = self.get_repository_tip( repository )
-        test_db_util.refresh( repository )
+        self.test_db_util.refresh( repository )
         tool_guid = '%s/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3' % self.url.replace( 'http://', '' ).rstrip( '/' )
         tool_metadata_strings_displayed = [ tool_guid,
                                             '0.7.7.3', # The tool version.

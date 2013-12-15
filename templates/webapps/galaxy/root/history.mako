@@ -43,7 +43,8 @@ ${h.templates( "helpers-common-templates" )}
 ${history_panel_javascripts()}
 
 <script type="text/javascript">
-function onModuleReady( historyPanel ){
+onhistoryready.done( function( historyPanel ){
+
     // history module is already in the dpn chain from the panel. We can re-scope it here.
     var historyModel    = require( 'mvc/history/history-model' ),
         debugging       = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
@@ -66,7 +67,7 @@ function onModuleReady( historyPanel ){
             }
         }
     });
-}
+})
 </script>
 
 </%def>

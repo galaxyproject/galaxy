@@ -21,7 +21,6 @@
 <%
     self.init(insert)
     self.stylesheets()
-    self.javascripts()
     self.grid_javascripts()
     if embedded:
         self.render_grid_header( grid, False )

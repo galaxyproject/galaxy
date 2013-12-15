@@ -204,7 +204,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
         if not LwrJobRunner.__remote_metadata( client ):
-            self._handle_metadata_externally( job_wrapper )
+            self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
             job_wrapper.finish( stdout, stderr )

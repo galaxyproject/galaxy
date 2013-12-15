@@ -33,6 +33,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             this._render_rerunButton
         ];
 
+        //TODO: move to HiddenUntilActivatedViewMixin
+        /** should the tags editor be shown or hidden initially? */
+        this.tagsEditorShown        = attributes.tagsEditorShown || false;
+        /** should the tags editor be shown or hidden initially? */
+        this.annotationEditorShown  = attributes.annotationEditorShown || false;
     },
 
     // ......................................................................... edit attr, delete
@@ -298,6 +303,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // more actions/buttons
         if( this.hasUser ){
             $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+            //TODO: might be better to move these into the render() and call setElement here
             this._renderTags( $body );
             this._renderAnnotation( $body );
         }
@@ -305,28 +311,38 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     },
 
     _renderTags : function( $where ){
+        var view = this;
         this.tagsEditor = new TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.tagsEditorShown = true; },
+            onhide          : function(){ view.tagsEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset tags' ),
                 classes : 'dataset-tag-btn',
                 faIcon  : 'fa-tags'
             }).appendTo( $where.find( '.dataset-actions .right' ) )
         });
+        if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
     },
     _renderAnnotation : function( $where ){
+        var view = this;
         this.annotationEditor = new AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.annotationEditorShown = true; },
+            onhide          : function(){ view.annotationEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset annotation' ),
                 classes : 'dataset-annotate-btn',
                 faIcon  : 'fa-comment'
             }).appendTo( $where.find( '.dataset-actions .right' ) )
         });
+        if( this.annotationEditorShown ){ this.annotationEditor.toggle( true ); }
     },
 
     makeDbkeyEditLink : function( $body ){

@@ -265,6 +265,9 @@ class AdminToolshed( AdminGalaxy ):
             if remove_from_disk_checked:
                 tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.UNINSTALLED
                 tool_shed_repository.error_message = None
+                # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
+                # installed_repository_manager.
+                trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
             else:
                 tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.DEACTIVATED
             trans.install_model.context.add( tool_shed_repository )
@@ -1564,7 +1567,7 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         if kwd.get( 'uninstall_tool_dependencies_button', False ):
             errors = False
-            # Filter tool dependencies to only those that are installed.
+            # Filter tool dependencies to only those that are installed but in an error state.
             tool_dependencies_for_uninstallation = []
             for tool_dependency in tool_dependencies:
                 if tool_dependency.can_uninstall:

@@ -68,9 +68,10 @@
     .search-clear,
     .search-loading {
         // it places the icons on the right of the bar (and puts the lotion on its skin)
-        position    : absolute;
-        right       : 15px;
-        top         : 10px;
+        position    : relative;
+        float       : right;
+        left        : -4px;
+        top         : -23px;
         font-size   : 1.4em;
         line-height : 23px;
         color       : grey;
@@ -134,10 +135,10 @@
             font-weight: bold;
         }
         .history-title input {
-            font-weight: bold;
             width: 100%;
             // keep the text in position
             margin: -2px 0px -2px -4px;
+            font-weight: bold;
         }
 
         .history-subtitle {
@@ -312,13 +313,6 @@
         .dataset-padding;
 
         .dataset-state-icon {
-            //display: inline-block;
-            //vertical-align: middle;
-            //line-height: 16px;
-            //width: 16px;
-            //height: 16px;
-            //background-position: 0 1px;
-            //background-repeat: no-repeat;
         }
         .dataset-title {
             display: inline;

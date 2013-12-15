@@ -207,7 +207,7 @@ User.prototype.getAdminData = function getAdminData(){
     // check for the setting in sg and the universe_wsgi.ini file
     var adminData = this.spaceghost.options.adminUser,
         iniAdminEmails = this.spaceghost.getUniverseSetting( 'admin_users' );
-    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ) ):( null );
+    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ).map( function( email ) { return email.trim(); } ) ):( null );
 
     //TODO: seems like we only need the wsgi setting - that's the only thing we can't change
     if( adminData ){

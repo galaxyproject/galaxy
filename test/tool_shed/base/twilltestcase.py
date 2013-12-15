@@ -9,6 +9,7 @@ import logging
 import time
 import tempfile
 import tarfile
+import urllib
 import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util as util
@@ -46,6 +47,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
+        self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
@@ -121,20 +123,16 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def check_galaxy_repository_tool_panel_section( self, repository, expected_tool_panel_section ):
         metadata = repository.metadata
-        assert 'tools' in metadata, 'Tools not found in metadata: %s' % metadata
+        assert 'tools' in metadata, 'Tools not found in repository metadata: %s' % metadata
         tool_metadata = metadata[ 'tools' ]
         # If integrated_tool_panel.xml is to be tested, this test method will need to be enhanced to handle tools 
         # from the same repository in different tool panel sections. Getting the first tool guid is ok, because 
         # currently all tools contained in a single repository will be loaded into the same tool panel section.
-        tool_guid = tool_metadata[ 0 ][ 'guid' ]
-        assert 'tool_panel_section' in metadata, 'Tool panel section not found in metadata: %s' % metadata
-        tool_panel_section_metadata = metadata[ 'tool_panel_section' ]
-        # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
-        #                           id=section_id,
-        #                           name=section_name,
-        #                           version=section_version )
-        # This dict is appended to tool_panel_section_metadata[ tool_guid ]
-        tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
+        if repository.status in [ galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
+                                  galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            tool_panel_section = self.get_tool_panel_section_from_repository_metadata( metadata )
+        else:
+            tool_panel_section = self.get_tool_panel_section_from_api( metadata )
         assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
@@ -765,6 +763,28 @@ class ShedTwillTestCase( TwillTestCase ):
                 invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
         return valid_tools, invalid_tools
         
+    def get_tool_panel_section_from_api( self, metadata ):
+        tool_metadata = metadata[ 'tools' ]
+        tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
+        api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
+        self.visit_galaxy_url( api_url )
+        tool_dict = from_json_string( self.last_page() )
+        tool_panel_section = tool_dict[ 'panel_section_name' ]
+        return tool_panel_section
+        
+    def get_tool_panel_section_from_repository_metadata( self, metadata ):
+        tool_metadata = metadata[ 'tools' ]
+        tool_guid = tool_metadata[ 0 ][ 'guid' ]
+        assert 'tool_panel_section' in metadata, 'Tool panel section not found in metadata: %s' % metadata
+        tool_panel_section_metadata = metadata[ 'tool_panel_section' ]
+        # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
+        #                           id=section_id,
+        #                           name=section_name,
+        #                           version=section_version )
+        # This dict is appended to tool_panel_section_metadata[ tool_guid ]
+        tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
+        return tool_panel_section
+        
     def grant_role_to_user( self, user, role ):
         strings_displayed = [ self.security.encode_id( role.id ), role.name ]
         strings_not_displayed = []
@@ -1173,16 +1193,15 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
-    def uninstall_repository( self, installed_repository, remove_from_disk=True ):
+    def uninstall_repository( self, installed_repository, remove_from_disk=True, is_required=False, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        if remove_from_disk:
-            tc.fv ( 1, "remove_from_disk", 'true' )
-        else:
-            tc.fv ( 1, "remove_from_disk", 'false' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
+        kwd = self.set_form_value( form, {}, 'remove_from_disk', remove_from_disk )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        if remove_from_disk:
+        if remove_from_disk and not is_required:
             strings_displayed.append( 'has been uninstalled' )
         else:
             strings_displayed.append( 'has been deactivated' )

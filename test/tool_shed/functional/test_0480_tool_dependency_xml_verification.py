@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -18,6 +17,7 @@ repository_long_description = "This repository is in the test suite 0480"
 
 '''
 
+
 class TestDependencyDefinitionValidation( ShedTwillTestCase ):
     '''Test the tool shed's tool dependency XML validation.'''
     
@@ -25,20 +25,20 @@ class TestDependencyDefinitionValidation( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         
     def test_0005_create_tool_dependency_repository( self ):
         '''Create and populate package_invalid_tool_dependency_xml_1_0_0.'''
@@ -47,7 +47,7 @@ class TestDependencyDefinitionValidation( ShedTwillTestCase ):
         
         Create a repository named package_invalid_tool_dependency_xml_1_0_0 that will contain only a single file named tool_dependencies.xml.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=repository_name, 
                                                     description=repository_description, 
                                                     long_description=repository_long_description, 
@@ -69,7 +69,7 @@ class TestDependencyDefinitionValidation( ShedTwillTestCase ):
         '''
         This is step 3 - Verify repository. The uploaded tool dependency XML should not have resulted in a new changeset.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         assert self.repository_is_new( repository ), 'Uploading an incorrectly defined tool_dependencies.xml resulted in a changeset being generated.'
 
         

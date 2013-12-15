@@ -306,14 +306,15 @@ def get_api_url( base, parts=[], params=None ):
     elif 'api' not in parts:
         parts.insert( 0, 'api' )
     url = suc.url_join( base, *parts )
-    if params:
-        url += '?%s' % params
+    if params is not None:
+        query_string = urllib.urlencode( params )
+        url += '?%s' % query_string
     return url
 
 def get_latest_downloadable_changeset_revision( url, name, owner ):
     error_message = ''
     parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
-    params = urllib.urlencode( dict( name=name, owner=owner ) )
+    params = dict( name=name, owner=owner )
     api_url = get_api_url( base=url, parts=parts, params=params )
     changeset_revisions, error_message = json_from_url( api_url )
     if error_message:
@@ -336,7 +337,7 @@ def get_missing_tool_dependencies( repository ):
 def get_repository_dict( url, repository_dict ):
     error_message = ''
     parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
-    api_url = get_api_url( base=url, parts=parts, params=None )
+    api_url = get_api_url( base=url, parts=parts )
     extended_dict, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
@@ -370,12 +371,12 @@ def get_repositories_to_install( tool_shed_url ):
         log.debug( 'Testing is restricted to the latest downloadable revision in this test run.' )
     repository_dicts = []
     parts = [ 'repository_revisions' ]
-    params = urllib.urlencode( dict( do_not_test='false',
-                                     downloadable='true',
-                                     includes_tools='true',
-                                     malicious='false',
-                                     missing_test_components='false',
-                                     skip_tool_test='false' ) )
+    params = dict( do_not_test='false',
+                   downloadable='true',
+                   includes_tools='true',
+                   malicious='false',
+                   missing_test_components='false',
+                   skip_tool_test='false' )
     api_url = get_api_url( base=tool_shed_url, parts=parts, params=params )
     baseline_repository_dicts, error_message = json_from_url( api_url )
     if error_message:
@@ -462,7 +463,7 @@ def get_tool_test_results_dicts( tool_shed_url, encoded_repository_metadata_id )
     """
     error_message = ''
     parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id ]
-    api_url = get_api_url( base=tool_shed_url, parts=parts, params=None )
+    api_url = get_api_url( base=tool_shed_url, parts=parts )
     repository_metadata, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
@@ -637,6 +638,11 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     # We can re-use the mostly empty tool_test_results_dict for this run because it is either empty or it contains only
                     # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
                     # since it will be re-inserted later.
+                    tool_test_results_dict = tool_test_results_dicts.pop( 0 )
+                elif len( tool_test_results_dict ) == 2 and \
+                    'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                    # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
+                    # In this case, some tools are missing tests components while others are not.
                     tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                 else:
                     # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.

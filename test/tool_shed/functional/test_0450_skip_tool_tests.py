@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -45,6 +44,7 @@ first_metadata_revision = None
 14) Uncheck the checkbox for the second revision, and verify that the skip reason is no longer displayed.
 '''
 
+
 class TestSkipToolTestFeature( ShedTwillTestCase ):
     '''Test core repository features.'''
     
@@ -52,19 +52,19 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_repository( self ):
         '''Create and populate the filtering repository'''
@@ -74,7 +74,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % repository_name, 
                               'Repository %s has been created' % "<b>%s</b>" % repository_name ]
         repository = self.get_or_create_repository( name=repository_name, 
@@ -99,7 +99,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 2 - Visit the Manage repository page and check the "Skip tool tests for this revision" checkbox and 
         enter some text in the reason.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.set_skip_tool_tsts_flag( repository=repository, flag_value=True, reason='Skip reason for first revision.' )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Skip reason for first revision.' ] )
         
@@ -111,7 +111,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         metadata revision.
         '''
         global first_metadata_revision
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='filtering/readme.txt', 
                           filepath=None,
@@ -129,7 +129,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 4 - Visit the Manage repository page again, the checked "Skip tool tests" checkbox and
         the reason should still be displayed since it should now be associated with this metadata revision.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Skip reason for first revision.' ] )
         self.load_checkable_revisions( strings_not_displayed=[ self.get_repository_tip( repository ) ] )
         
@@ -139,7 +139,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 5 - Upload a new version of the tool to the repository so that a new metadata changeset
         revision is created (there should now be 3 revisions with 2 of them having associated metadata).
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='filtering/filtering_2.2.0.tar', 
                           filepath=None,
@@ -156,7 +156,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 6 - Visit the Manage repository page for the tip revision - the Skip tools tests checkbox
         should not be checked and the reason should be empty.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.load_checkable_revisions( strings_displayed=[ self.get_repository_tip( repository ) ] )
         self.display_manage_repository_page( repository, strings_not_displayed=[ 'Skip reason for first revision.' ] )
         
@@ -167,7 +167,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         file in it). The Skip tool tests checkbox should still be checked and the reason should be there.
         '''
         global first_metadata_revision
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.load_checkable_revisions( strings_not_displayed=[ first_metadata_revision ] )
         self.display_manage_repository_page( repository, 
                                              changeset_revision=first_metadata_revision, 
@@ -178,7 +178,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         '''
         This is step 8 - Set the skip setting on the new metadata revision.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.set_skip_tool_tsts_flag( repository=repository, flag_value=True, reason='Skip reason for second revision.' )
         self.load_checkable_revisions( strings_not_displayed=[ self.get_repository_tip( repository ) ] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Skip reason for second revision.' ] )
@@ -190,7 +190,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         upward in the changelog. This should result in the skip_tool_tests setting being applied to the updated
         metadata revision.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='filtering/README', 
                           filepath=None,
@@ -210,7 +210,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 10 - Check the first revision, make sure the skip reason matches.
         '''
         global first_metadata_revision
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, 
                                              changeset_revision=first_metadata_revision,
                                              strings_displayed=[ 'Skip reason for first revision.' ],
@@ -221,7 +221,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         '''
         This is step 12 - Check the second revision, make sure the skip reason matches.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, 
                                              strings_displayed=[ 'Skip reason for second revision.' ],
                                              strings_not_displayed=[ 'Skip reason for first revision.' ] )
@@ -232,7 +232,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         This is step 13 - Uncheck the checkbox for the first revision, and verify that the skip reason is no longer displayed.
         '''
         global first_metadata_revision
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.set_skip_tool_tsts_flag( repository=repository, flag_value=False, reason='', changeset_revision=first_metadata_revision )
         self.display_manage_repository_page( repository, 
                                              changeset_revision=first_metadata_revision,
@@ -244,7 +244,7 @@ class TestSkipToolTestFeature( ShedTwillTestCase ):
         '''
         This is step 14 - Uncheck the checkbox for the second revision, and verify that the skip reason is no longer displayed.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.set_skip_tool_tsts_flag( repository=repository, flag_value=False, reason='' )
         self.display_manage_repository_page( repository, 
                                              strings_not_displayed=[ 'Skip reason for second revision.', 'Skip reason for first revision.' ] )

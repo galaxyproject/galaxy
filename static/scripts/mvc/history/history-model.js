@@ -116,9 +116,29 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
 
     // ........................................................................ common queries
     /** is this model already associated with a user? */
+//TODO: remove
     hasUser : function(){
         var user = this.get( 'user' );
         return !!( user && user.id );
+    },
+
+    /** T/F is this history owned by the current user (Galaxy.currUser)
+     *      Note: that this will return false for an anon user even if the history is theirs.
+     */
+    ownedByCurrUser : function(){
+        // no currUser
+        if( !Galaxy || !Galaxy.currUser ){
+            return false;
+        }
+        // user is anon or history isn't owned
+        if( Galaxy.currUser.isAnonymous() || Galaxy.currUser.id !== this.get( 'user_id' ) ){
+            return false;
+        }
+        return true;
+    },
+
+    hdaCount : function(){
+        return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
     },
 
     // ........................................................................ ajax
