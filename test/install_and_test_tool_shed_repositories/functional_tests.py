@@ -525,7 +525,7 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
         deactivate_repository( app, repository_dict )
     else:
         # We are uninstalling this repository and all of its repository dependencies.
-        uninstall_repository( app, repository_dict )
+        uninstall_repository_and_repository_dependencies( app, repository_dict )
         results_dict[ 'repositories_failed_install' ].append( dict( name=str( repository.name ),
                                                                     owner=str( repository.owner ),
                                                                     changeset_revision=str( repository.changeset_revision ) ) )
@@ -730,7 +730,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                             deactivate_repository( app, repository_dict )
                         else:
                             # We are uninstalling this repository and all of its repository dependencies.
-                            uninstall_repository( app, repository_dict )
+                            uninstall_repository_and_repository_dependencies( app, repository_dict )
                     except:
                         log.exception( 'Encountered error attempting to deactivate or uninstall %s.', str( repository_dict[ 'name' ] ) )
                     results_dict[ 'repositories_failed_install' ].append( repository_identifier_dict )
