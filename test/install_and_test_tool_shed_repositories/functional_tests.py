@@ -1363,10 +1363,9 @@ def uninstall_repository_and_repository_dependencies( app, repository_dict ):
                         # Run the uninstall method.
                         result, _ = run_tests( test_config )
                         success = result.wasSuccessful()
-                    if not success:
-                        log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed: %s' % \
-                            ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
-                        break
+                        if not success:
+                            log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed: %s' % \
+                                ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
         else:
             log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed.' % ( changeset_revision, name, owner ) )
     else:
