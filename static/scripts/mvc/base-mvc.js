@@ -1,27 +1,4 @@
 /**
- * Simple base model for any visible element. Includes useful attributes and ability
- * to set and track visibility.
- */
-var BaseModel = Backbone.Model.extend({
-    defaults: {
-        name: null,
-        hidden: false
-    },
-
-    show: function() {
-        this.set("hidden", false);
-    },
-
-    hide: function() {
-        this.set("hidden", true);
-    },
-
-    is_visible: function() {
-        return !this.attributes.hidden;
-    }
-});
-
-/**
  * Base view that handles visibility based on model's hidden attribute.
  */
 var BaseView = Backbone.View.extend({
@@ -52,10 +29,10 @@ var BaseView = Backbone.View.extend({
  *
  *  @example
  *  // Add to your models/views at the definition using chaining:
- *      var MyModel = BaseModel.extend( LoggableMixin ).extend({ // ... });
+ *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
  * 
  *  // or - more explicitly AFTER the definition:
- *      var MyModel = BaseModel.extend({
+ *      var MyModel = Backbone.Model.extend({
  *          logger  : console
  *          // ...
  *          this.log( '$#%& it! - broken already...' );

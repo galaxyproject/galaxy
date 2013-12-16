@@ -57,7 +57,6 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
      *  @param {Object} historyJSON model data for this History
      *  @param {Object[]} hdaJSON   array of model data for this History's HDAs
      *  @param {Object} options     any extra settings including logger
-     *  @see BaseModel#initialize
      */
     initialize : function( historyJSON, hdaJSON, options ){
         options = options || {};
