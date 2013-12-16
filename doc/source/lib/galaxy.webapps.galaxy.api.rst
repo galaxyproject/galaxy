@@ -205,6 +205,10 @@ used in the web form, like 'link_data_only' and etc.
 
 The request and response format should be considered alpha and are subject to change.
 
+API Return Codes and Formats
+==================
+
+TODO (here, or add a new page and link it)
 
 API Controllers
 ===============
