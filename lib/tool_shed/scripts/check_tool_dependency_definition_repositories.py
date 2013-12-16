@@ -30,6 +30,7 @@ from install_and_test_tool_shed_repositories.base.util import get_repository_cur
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
+from galaxy.util import listify
 from galaxy.web import url_for
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 

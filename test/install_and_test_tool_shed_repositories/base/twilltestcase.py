@@ -28,19 +28,14 @@ class InstallTestRepository( TwillTestCase ):
         self.shed_tools_dict = {}
         self.home()
 
-    def deactivate_or_uninstall_repository( self, installed_repository, deactivate=False ):
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+    def deactivate_repository( self, repository ):
+        """Deactivate a repository."""
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
-        if deactivate:
-            tc.fv ( 1, "remove_from_disk", 'false' )
-        else:
-            tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.fv ( 1, "remove_from_disk", 'false' )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        if deactivate:
-            strings_displayed.append( 'has been deactivated' )
-        else:
-            strings_displayed.append( 'has been uninstalled' )
+        strings_displayed.append( 'has been deactivated' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
 
     def initiate_installation_process( self,
@@ -129,7 +124,18 @@ class InstallTestRepository( TwillTestCase ):
                 log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
                 del( kwd[ field_name ] )
         return kwd
-        
+
+    def uninstall_repository( self, repository ):
+        """Uninstall a repository."""
+        # A repository can be uninstalled only if no dependent repositories are installed.
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
+        self.visit_url( url )
+        tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'The repository named' ]
+        strings_displayed.append( 'has been uninstalled' )
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+
     def visit_url( self, url, allowed_codes=[ 200 ] ):
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
@@ -145,11 +151,13 @@ class InstallTestRepository( TwillTestCase ):
         if repository_ids:
             for repository_id in repository_ids:
                 galaxy_repository = test_db_util.get_repository( self.security.decode_id( repository_id ) )
-                log.debug( 'Repository %s with ID %s has initial state %s.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
+                log.debug( 'Repository %s with ID %s has initial state %s.' % \
+                    ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                 timeout_counter = 0
                 while galaxy_repository.status not in final_states:
                     test_db_util.refresh( galaxy_repository )
-                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
+                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % \
+                        ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                     timeout_counter = timeout_counter + 1
                     if timeout_counter % 10 == 0:
                         log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )

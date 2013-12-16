@@ -26,16 +26,15 @@ def flush( obj ):
 
 def get_repository( repository_id ):
     return database_contexts.install_context.query( install_model.ToolShedRepository ) \
-                     .filter( install_model.ToolShedRepository.table.c.id == repository_id ) \
-                     .first()
+                                            .filter( install_model.ToolShedRepository.table.c.id == repository_id ) \
+                                            .first()
 
 def get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision ):
     return database_contexts.install_context.query( install_model.ToolShedRepository ) \
-                     .filter( and_( install_model.ToolShedRepository.table.c.name == name,
-                                    install_model.ToolShedRepository.table.c.owner == owner,
-                                    install_model.ToolShedRepository.table.c.installed_changeset_revision == changeset_revision ) ) \
-                     .one()
-
+                                            .filter( and_( install_model.ToolShedRepository.table.c.name == name,
+                                                           install_model.ToolShedRepository.table.c.owner == owner,
+                                                           install_model.ToolShedRepository.table.c.installed_changeset_revision == changeset_revision ) ) \
+                                            .one()
 
 def get_private_role( user ):
     for role in user.all_roles():
@@ -46,18 +45,18 @@ def get_private_role( user ):
 def get_tool_dependencies_for_installed_repository( repository_id, status=None, exclude_status=None ):
     if status is not None:
         return database_contexts.install_context.query( install_model.ToolDependency ) \
-                         .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
-                                        install_model.ToolDependency.table.c.status == status ) ) \
-                         .all()
+                                                .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
+                                                               install_model.ToolDependency.table.c.status == status ) ) \
+                                                .all()
     elif exclude_status is not None:
         return database_contexts.install_context.query( install_model.ToolDependency ) \
-                         .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
-                                        install_model.ToolDependency.table.c.status != exclude_status ) ) \
-                         .all()
+                                                .filter( and_( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id,
+                                                               install_model.ToolDependency.table.c.status != exclude_status ) ) \
+                                                .all()
     else:
         return database_contexts.install_context.query( install_model.ToolDependency ) \
-                         .filter( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id ) \
-                         .all()
+                                                .filter( install_model.ToolDependency.table.c.tool_shed_repository_id == repository_id ) \
+                                                .all()
 
 def mark_obj_deleted( obj ):
     obj.deleted = True
@@ -75,5 +74,5 @@ def get_private_role( user ):
 
 def get_user( email ):
     return database_contexts.galaxy_context.query( model.User ) \
-                     .filter( model.User.table.c.email==email ) \
-                     .first()
+                                            .filter( model.User.table.c.email==email ) \
+                                            .first()
