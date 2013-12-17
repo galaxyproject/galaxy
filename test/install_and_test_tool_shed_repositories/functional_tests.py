@@ -176,14 +176,14 @@ if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
 else:
     galaxy_encode_secret = os.environ[ 'GALAXY_INSTALL_TEST_SECRET' ]
 
-testing_single_repository = {}
+testing_single_repository_dict = {}
 if 'repository_name' in os.environ and 'repository_owner' in os.environ:
-    testing_single_repository[ 'name' ] = os.environ[ 'repository_name' ]
-    testing_single_repository[ 'owner' ] = os.environ[ 'repository_owner' ]
+    testing_single_repository_dict[ 'name' ] = str( os.environ[ 'repository_name' ] )
+    testing_single_repository_dict[ 'owner' ] = str( os.environ[ 'repository_owner' ] )
     if 'repository_revision' in os.environ:
-        testing_single_repository[ 'changeset_revision' ] = os.environ[ 'repository_revision' ]
+        testing_single_repository_dict[ 'changeset_revision' ] = str( os.environ[ 'repository_revision' ] )
     else:
-        testing_single_repository[ 'changeset_revision' ] = None
+        testing_single_repository_dict[ 'changeset_revision' ] = None
 
 
 class ReportResults( Plugin ):
@@ -364,6 +364,8 @@ def get_repositories_to_install( tool_shed_url ):
         log.debug( 'Testing is restricted to the latest downloadable revision in this test run.' )
     repository_dicts = []
     parts = [ 'repository_revisions' ]
+    # We'll filter out deprecated repositories from testing since testing them is necessary only if reproducibility
+    # is guaranteed and we currently do not guarantee reproducibility.
     params = dict( do_not_test='false',
                    downloadable='true',
                    includes_tools='true',
@@ -381,21 +383,25 @@ def get_repositories_to_install( tool_shed_url ):
         if error_message:
             log.debug( 'Error getting additional details from the API: %s' % str(  error_message ) )
         else:
-            # Don't test empty repositories.
-            changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
-            if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
-                # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
-                # append it to the list of repository_dicts to install and test.
-                if latest_revision_only:
-                    latest_revision = repository_dict[ 'latest_revision' ]
-                    if changeset_revision == latest_revision:
+            # Don't test deprecated repositories since testing them is necessary only if reproducibility is guaranteed
+            # and we are not currently guaranteeing reproducibility.
+            deprecated = asbool( repository_dict.get( 'deprecated', False ) )
+            if not deprecated:
+                # Don't test empty repositories.
+                changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
+                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                    # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
+                    # append it to the list of repository_dicts to install and test.
+                    if latest_revision_only:
+                        latest_revision = repository_dict[ 'latest_revision' ]
+                        if changeset_revision == latest_revision:
+                            repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
+                    else:
                         repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
-                else:
-                    repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
-    if testing_single_repository:
-        tsr_name = testing_single_repository[ 'name' ]
-        tsr_owner = testing_single_repository[ 'owner' ]
-        tsr_changeset_revision = testing_single_repository[ 'changeset_revision' ]
+    if testing_single_repository_dict:
+        tsr_name = testing_single_repository_dict[ 'name' ]
+        tsr_owner = testing_single_repository_dict[ 'owner' ]
+        tsr_changeset_revision = testing_single_repository_dict[ 'changeset_revision' ]
         log.debug( 'Testing single repository with name %s and owner %s.' % ( str( tsr_name ), str( tsr_owner ) ) )
         for repository_to_install in repository_dicts:
             rti_name = repository_to_install[ 'name' ]
