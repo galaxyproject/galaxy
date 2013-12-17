@@ -34,6 +34,8 @@ cp.read( config_file )
 if config_file == 'universe_wsgi.ini.sample' and 'GALAXY_TEST_DBURI' in os.environ:
     # Running functional tests.
     db_url = os.environ[ 'GALAXY_TEST_DBURI' ]
+elif cp.has_option( "app:main", "install_database_connection" ):
+    db_url = cp.get( "app:main", "install_database_connection" )
 elif cp.has_option( "app:main", "database_connection" ):
     db_url = cp.get( "app:main", "database_connection" )
 elif cp.has_option( "app:main", "database_file" ):
