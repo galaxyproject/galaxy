@@ -1,6 +1,10 @@
 """
 Custom exceptions for Galaxy
 """
+
+from galaxy import eggs
+eggs.require( "Paste" )
+
 from paste import httpexceptions
 
 class MessageException( Exception ):

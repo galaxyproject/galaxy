@@ -133,7 +133,16 @@ class DataManager( object ):
             self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed, name=repository_name, owner=repository_owner, installed_changeset_revision=installed_changeset_revision )
             #get tool_shed repo id
             tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app, tool_shed, repository_name, repository_owner, installed_changeset_revision )
-            tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
+            if tool_shed_repository is None:
+                log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
+                #we'll set tool_path manually here from shed_conf_file
+                tool_shed_repository_id = None
+                try:
+                    tool_path = util.parse_xml( elem.get( 'shed_conf_file' ) ).getroot().get( 'tool_path', tool_path )
+                except Exception, e:
+                    log.error( 'Error determining tool_path for Data Manager during testing: %s', e )
+            else:
+                tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
             #use shed_conf_file to determine tool_path
             shed_conf_file = elem.get( "shed_conf_file", None )
             if shed_conf_file:

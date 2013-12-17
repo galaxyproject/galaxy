@@ -13,7 +13,7 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from base.util import parse_tool_panel_config
+from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy import eggs
 
@@ -50,6 +50,8 @@ from galaxy.util import bunch
 from galaxy import util
 from galaxy.util.json import to_json_string
 
+from functional import database_contexts
+
 import nose.core
 import nose.config
 import nose.loader
@@ -62,12 +64,32 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
+default_galaxy_master_key = "TEST123"
+default_galaxy_user_key = None
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
 
+# Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
+job_conf_xml = '''<?xml version="1.0"?>
+<!-- A test job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations>
+        <destination id="local" runner="local"/>
+    </destinations>
+    <limits>
+        <limit type="walltime">00:10:00</limit>
+    </limits>
+</job_conf>
+'''
 
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
@@ -160,7 +182,7 @@ def __copy_database_template( source, db_path ):
     if os.path.exists( source ):
         shutil.copy( source, db_path )
         assert os.path.exists( db_path )
-    elif source.startswith("http"):
+    elif source.lower().startswith( ( "http://", "https://", "ftp://" ) ):
         urllib.urlretrieve( source, db_path )
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
@@ -174,11 +196,11 @@ def main():
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    testing_migrated_tools = '-migrated' in sys.argv
-    testing_installed_tools = '-installed' in sys.argv
+    testing_migrated_tools = __check_arg( '-migrated' )
+    testing_installed_tools = __check_arg( '-installed' )
+    datatypes_conf_override = None
 
     if testing_migrated_tools or testing_installed_tools:
-        sys.argv.pop()
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
@@ -195,8 +217,20 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml' )
-        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
+        framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
+        if framework_test:
+            framework_tool_dir = os.path.join('test', 'functional', 'tools')
+            tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
+            datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
+            test_dir = os.path.join( framework_tool_dir, 'test-data')
+
+            tool_path = framework_tool_dir
+        else:
+            # Use tool_conf.xml toolbox.
+            tool_conf = 'tool_conf.xml'
+            test_dir = default_galaxy_test_file_dir
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
+        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
         library_import_dir = galaxy_test_file_dir
@@ -214,6 +248,11 @@ def main():
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
+
+    galaxy_job_conf_file = os.environ.get( 'GALAXY_TEST_JOB_CONF',
+                                           os.path.join( galaxy_test_tmp_dir, 'test_job_conf.xml' ) )
+    # Generate the job_conf.xml file.
+    file( galaxy_job_conf_file, 'w' ).write( job_conf_xml )
 
     database_auto_migrate = False
 
@@ -284,6 +323,7 @@ def main():
                     # GALAXY_TEST_DBURI. The former requires a lot of setup
                     # time, the latter results in test failures in certain
                     # cases (namely tool shed tests expecting clean database).
+                    log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
                     __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
                     database_auto_migrate = True
                 database_connection = 'sqlite:///%s' % db_path
@@ -295,7 +335,13 @@ def main():
             except OSError:
                 pass
 
+    #Data Manager testing temp path
+    #For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
+    galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
+    
     # ---- Build Application --------------------------------------------------
+    master_api_key = os.environ.get( "GALAXY_TEST_MASTER_API_KEY", default_galaxy_master_key )
     app = None
     if start_server:
         kwargs = dict( admin_users='test@bx.psu.edu',
@@ -319,10 +365,13 @@ def main():
                        tool_config_file=tool_config_file,
                        tool_data_table_config_path=tool_data_table_config_path,
                        tool_path=tool_path,
+                       galaxy_data_manager_data_path=galaxy_data_manager_data_path,
                        tool_parse_help=False,
                        update_integrated_tool_panel=False,
                        use_heartbeat=False,
-                       user_library_import_dir=user_library_import_dir )
+                       user_library_import_dir=user_library_import_dir,
+                       master_api_key=master_api_key,
+        )
         if psu_production:
             kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
@@ -333,6 +382,8 @@ def main():
         if use_distributed_object_store:
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
+        if datatypes_conf_override:
+            kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
         # If the user has passed in a path for the .ini file, do not overwrite it.
         galaxy_config_file = os.environ.get( 'GALAXY_TEST_INI_FILE', None )
         if not galaxy_config_file:
@@ -349,6 +400,7 @@ def main():
         kwargs[ 'config_file' ] = galaxy_config_file
         # Build the Universe Application
         app = UniverseApplication( **kwargs )
+        database_contexts.galaxy_context = app.model.context
         log.info( "Embedded Universe application started" )
 
     # ---- Run webserver ------------------------------------------------------
@@ -401,7 +453,7 @@ def main():
     new_path = [ os.path.join( cwd, "test" ) ]
     new_path.extend( sys.path[1:] )
     sys.path = new_path
-    import functional.test_toolbox
+
     # ---- Find tests ---------------------------------------------------------
     if galaxy_test_proxy_port:
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
@@ -415,6 +467,38 @@ def main():
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
         # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
+
+        def _run_functional_test( testing_shed_tools=None ):
+            workflow_test = __check_arg( '-workflow', param=True )
+            if workflow_test:
+                import functional.test_workflow
+                functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
+                functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
+                functional.test_workflow.WorkflowTestCase.user_api_key = os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key )
+            data_manager_test = __check_arg( '-data_managers', param=False )
+            if data_manager_test:
+                import functional.test_data_managers
+                functional.test_data_managers.data_managers = app.data_managers #seems like a hack...
+                functional.test_data_managers.build_tests(
+                    tmp_dir=data_manager_test_tmp_path,
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                )
+            else: #when testing data managers, do not test toolbox
+                import functional.test_toolbox
+                functional.test_toolbox.toolbox = app.toolbox
+                functional.test_toolbox.build_tests(
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                )
+            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            result = run_tests( test_config )
+            success = result.wasSuccessful()
+            return success
+
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
@@ -438,12 +522,7 @@ def main():
                 for installed_tool_panel_config in installed_tool_panel_configs:
                     tool_configs.append( installed_tool_panel_config )
                 app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests( testing_shed_tools=True )
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )
-            success = result.wasSuccessful()
+            success = _run_functional_test( testing_shed_tools=True )
             try:
                 os.unlink( tmp_tool_panel_conf )
             except:
@@ -453,14 +532,9 @@ def main():
             except:
                 log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
         else:
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests()
             if galaxy_test_file_dir:
                 os.environ[ 'GALAXY_TEST_FILE_DIR' ] = galaxy_test_file_dir
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )
-            success = result.wasSuccessful()
+            success = _run_functional_test( )
     except:
         log.exception( "Failure running tests" )
 
@@ -496,6 +570,20 @@ def main():
         return 0
     else:
         return 1
+
+
+def __check_arg( name, param=False ):
+    try:
+        index = sys.argv.index( name )
+        del sys.argv[ index ]
+        if param:
+            ret_val = sys.argv[ index ]
+            del sys.argv[ index ]
+        else:
+            ret_val = True
+    except ValueError:
+        ret_val = False
+    return ret_val
 
 if __name__ == "__main__":
     sys.exit( main() )

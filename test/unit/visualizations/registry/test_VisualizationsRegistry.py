@@ -4,7 +4,7 @@ import os
 import imp
 import unittest
 
-utility = imp.load_source( 'utility', '../../util/utility.py' )
+utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
 log = utility.set_up_filelogger( __name__ + '.log' )
 
 relative_test_path = '/test/unit/visualizations/registry'
@@ -12,7 +12,7 @@ utility.add_galaxy_lib_to_path( relative_test_path )
 
 from galaxy.visualization.registry import VisualizationsRegistry
 
-base_mock = imp.load_source( 'mock', '../../web/base/mock.py' )
+base_mock = imp.load_source( 'mock',  os.path.join( os.path.dirname( __file__ ), '../../web/base/mock.py' ) )
 
 # ----------------------------------------------------------------------------- globals
 glx_dir = os.getcwd().replace( relative_test_path, '' )

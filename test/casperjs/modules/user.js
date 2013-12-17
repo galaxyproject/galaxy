@@ -44,17 +44,18 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
         };
 
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
-        this.clickLabel( spaceghost.data.labels.masthead.menus.user );
-        this.clickLabel( spaceghost.data.labels.masthead.userMenu.register );
+        this.waitForMasthead( function() {
+            this.clickLabel( spaceghost.data.labels.masthead.menus.user );
+            this.clickLabel( spaceghost.data.labels.masthead.userMenu.register );
 
-        this.withMainPanel( function mainBeforeRegister(){
-            spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') registering user:\n'
-                + spaceghost.jsonStr( userInfo ) );
-            this.fill( spaceghost.data.selectors.registrationPage.form, userInfo, false );
-            // need manual submit (not a normal html form)
-            this.click( xpath( spaceghost.data.selectors.registrationPage.submit_xpath ) );
+            this.withMainPanel( function mainBeforeRegister(){
+                spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') registering user:\n'
+                    + spaceghost.jsonStr( userInfo ) );
+                this.fill( spaceghost.data.selectors.registrationPage.form, userInfo, false );
+                // need manual submit (not a normal html form)
+                this.click( xpath( spaceghost.data.selectors.registrationPage.submit_xpath ) );
+            });
         });
-
         //// debugging
         //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterRegister(){
         //    var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
@@ -79,24 +80,26 @@ User.prototype._submitLogin = function _submitLogin( email, password ){
         };
 
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
-        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
+        spaceghost.waitForMasthead( function() {
+            spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+            spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
 
-        spaceghost.withMainPanel( function mainBeforeLogin(){
-            spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') logging in user:\n'
-                + spaceghost.jsonStr( loginInfo ) );
-            spaceghost.fill( spaceghost.data.selectors.loginPage.form, loginInfo, false );
-            spaceghost.click( xpath( spaceghost.data.selectors.loginPage.submit_xpath ) );
+            spaceghost.withMainPanel( function mainBeforeLogin(){
+                spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') logging in user:\n'
+                    + spaceghost.jsonStr( loginInfo ) );
+                spaceghost.fill( spaceghost.data.selectors.loginPage.form, loginInfo, false );
+                spaceghost.click( xpath( spaceghost.data.selectors.loginPage.submit_xpath ) );
+            });
+
+            //// debugging
+            //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterLogin(){
+            //    //TODO: prob. could use a more generalized form of this for url breakdown/checking
+            //    if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
+            //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
+            //        spaceghost.debug( 'post login message:\n' + spaceghost.jsonStr( messageInfo ) );
+            //    }
+            //});
         });
-
-        //// debugging
-        //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterLogin(){
-        //    //TODO: prob. could use a more generalized form of this for url breakdown/checking
-        //    if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
-        //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
-        //        spaceghost.debug( 'post login message:\n' + spaceghost.jsonStr( messageInfo ) );
-        //    }
-        //});
     });
 };
 
@@ -133,17 +136,19 @@ User.prototype.login = function login( email, password ){
     var spaceghost = this.spaceghost;
 
     this._submitLogin( email, password );
-    spaceghost.withMainPanel( function mainAfterLogin(){
-        if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) !== -1 ){
-            var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
-            if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
-                this.warning( 'Login failed: ' + messageInfo.text );
-                throw new spaceghost.GalaxyError( 'LoginError: ' + messageInfo.text );
+    spaceghost.waitForMasthead( function() {
+        spaceghost.withMainPanel( function mainAfterLogin(){
+            if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) !== -1 ){
+                var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
+                if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
+                    this.warning( 'Login failed: ' + messageInfo.text );
+                    throw new spaceghost.GalaxyError( 'LoginError: ' + messageInfo.text );
+                }
             }
-        }
-        if( spaceghost.user.loggedInAs() === email ){
-            spaceghost.info( 'logged in as ' + email );
-        }
+            if( spaceghost.user.loggedInAs() === email ){
+                spaceghost.info( 'logged in as ' + email );
+            }
+        });
     });
     return spaceghost;
 };
@@ -173,8 +178,10 @@ User.prototype.logout = function logout(){
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         this.info( 'user logging out' );
         //TODO: handle already logged out
-        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
+        spaceghost.waitForMasthead( function _logout() {
+            spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+            spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
+        });
     });
     return spaceghost;
 };
@@ -207,7 +214,7 @@ User.prototype.getAdminData = function getAdminData(){
     // check for the setting in sg and the universe_wsgi.ini file
     var adminData = this.spaceghost.options.adminUser,
         iniAdminEmails = this.spaceghost.getUniverseSetting( 'admin_users' );
-    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ) ):( null );
+    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ).map( function( email ) { return email.trim(); } ) ):( null );
 
     //TODO: seems like we only need the wsgi setting - that's the only thing we can't change
     if( adminData ){

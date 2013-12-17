@@ -65,7 +65,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, **kwd ):
         """
         GET /api/repository_revisions
@@ -132,7 +132,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
@@ -143,7 +143,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                    value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -165,11 +166,11 @@ class RepositoryRevisionsController( BaseAPIController ):
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
             flush_needed = False
             for key, new_value in payload.items():
-                if hasattr( repository_metadata, key ):
+                if key == 'time_last_tested':
+                    repository_metadata.time_last_tested = datetime.datetime.utcnow()
+                    flush_needed = True
+                elif hasattr( repository_metadata, key ):
                     setattr( repository_metadata, key, new_value )
-                    if key in [ 'tools_functionally_correct', 'time_last_tested' ]:
-                        # Automatically update repository_metadata.time_last_tested.
-                        repository_metadata.time_last_tested = datetime.datetime.utcnow()
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository_metadata )
@@ -179,7 +180,8 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )
@@ -189,5 +191,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         value_mapper = { 'id' : trans.security.encode_id,
                          'repository_id' : trans.security.encode_id }
         if repository_metadata.time_last_tested is not None:
+            # For some reason the Dictifiable.to_dict() method in ~/galaxy/model/item_attrs.py requires
+            # a function rather than a mapped value, so just pass the time_ago function here.
             value_mapper[ 'time_last_tested' ] = time_ago
         return value_mapper

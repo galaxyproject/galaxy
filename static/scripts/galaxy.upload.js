@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_masthead, mod_utils) {
+define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox"], function(mod_modal, mod_masthead, mod_utils) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -16,6 +16,9 @@ var GalaxyUpload = Backbone.View.extend(
     
     // upload mod
     uploadbox: null,
+    
+    // current history
+    current_history: null,
     
     // extension types
     select_extension :[['Auto-detect', 'auto']],
@@ -227,7 +230,6 @@ var GalaxyUpload = Backbone.View.extend(
         sy.addClass(this.state.running);
       
         // get configuration
-        var current_history = Galaxy.currHistoryPanel.model.get('id');
         var file_type = it.find('#extension').val();
         var genome = it.find('#genome').val();
         var url_paste = it.find('#text-content').val();
@@ -251,7 +253,7 @@ var GalaxyUpload = Backbone.View.extend(
         
         // setup data
         data = {};
-        data['history_id'] = current_history;
+        data['history_id'] = this.current_history;
         data['tool_id'] = 'upload1';
         data['inputs'] = JSON.stringify(tool_input);
         
@@ -374,6 +376,9 @@ var GalaxyUpload = Backbone.View.extend(
                 $(this).find('#space_to_tabs').attr('disabled', true);
             }
         });
+        
+        // backup current history
+        this.current_history = Galaxy.currHistoryPanel.model.get('id');
         
         // update running
         this.counter.running = this.counter.announce;

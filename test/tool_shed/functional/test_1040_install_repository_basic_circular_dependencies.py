@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 freebayes_repository_name = 'freebayes_0040'
 freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
 freebayes_repository_long_description = "Long description of Galaxy's freebayes tool for test 0040"
@@ -13,7 +11,6 @@ category_name = 'test_0040_repository_circular_dependencies'
 
 running_standalone = False
 
-
 class TestInstallingCircularDependencies( ShedTwillTestCase ):
     '''Verify that the code correctly handles installing repositories with circular dependencies.'''
 
@@ -21,14 +18,14 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
  
     def test_0005_create_freebayes_repository( self ):
         '''Create and populate freebayes_0040.'''
@@ -86,8 +83,8 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
         global running_standalone
         if running_standalone:
-            freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-            filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+            filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_1040', additional_paths=[ 'circular' ] )
             repository_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
             self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ repository_tuple ], filepath=repository_dependencies_path )
@@ -106,51 +103,58 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True )
  
-    def test_0030_uninstall_freebayes_repository( self ):
-        '''Uninstall freebayes, verify tool panel section and missing repository dependency.'''
-        installed_freebayes_repository = test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
-        installed_filtering_repository = test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
-        self.uninstall_repository( installed_freebayes_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_freebayes_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, '' )
-        strings_displayed = [ 'Missing repository', 'freebayes', 'filtering_0040', 'user1', "Galaxy's filtering tool for test 0040" ]
-        self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
-        self.check_galaxy_repository_db_status( freebayes_repository_name, 
-                                                common.test_user_1_name, 
-                                                'Uninstalled' )
-
-    def test_0035_reinstall_freebayes_repository( self ):
-        '''Reinstall freebayes into 'freebayes' tool panel section.'''
-        installed_freebayes_repository = test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, 
-                                                                                            common.test_user_1_name )
-        self.reinstall_repository( installed_freebayes_repository, 
-                                   install_tool_dependencies=False, 
-                                   install_repository_dependencies=True, 
-                                   new_tool_panel_section='freebayes',
-                                   no_changes=False )
-   
-    def test_0040_uninstall_filtering_repository( self ):
-        '''Uninstall filtering, verify tool panel section.'''
-        installed_filtering_repository = test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
-        installed_freebayes_repository = test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
-        self.uninstall_repository( installed_filtering_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_filtering_repository )
+    def test_0030_uninstall_filtering_repository( self ):
+        '''Deactivate filtering, verify tool panel section and missing repository dependency.'''
+        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
+        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
+        self.display_installed_repository_manage_page( installed_freebayes_repository )
+        self.display_installed_repository_manage_page( installed_filtering_repository )
+        self.uninstall_repository( installed_filtering_repository, remove_from_disk=False )
+        self.test_db_util.ga_refresh( installed_filtering_repository )
         self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, '' )
         strings_displayed = [ 'Missing repository', 'filtering', 'freebayes_0040', 'user1', "Galaxy's freebayes tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_freebayes_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( filtering_repository_name, 
                                                 common.test_user_1_name, 
-                                                'Uninstalled' )
- 
-    def test_0045_uninstall_freebayes_repository( self ):
-        '''Uninstall freebayes, verify tool panel section and missing repository dependency.'''
-        installed_freebayes_repository = test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
-        installed_filtering_repository = test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
-        self.uninstall_repository( installed_freebayes_repository, remove_from_disk=True )
-        test_db_util.ga_refresh( installed_freebayes_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, 'freebayes' )
+                                                'Deactivated' )
+
+    def test_0035_reactivate_filtering_repository( self ):
+        '''Reinstall filtering into 'filtering' tool panel section.'''
+        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, 
+                                                                                            common.test_user_1_name )
+        self.reinstall_repository( installed_filtering_repository, 
+                                   install_tool_dependencies=False, 
+                                   install_repository_dependencies=True,
+                                   new_tool_panel_section_label='filtering',
+                                   no_changes=False )
+
+    def test_0040_uninstall_freebayes_repository( self ):
+        '''Deactivate freebayes, verify tool panel section and missing repository dependency.'''
+        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
+        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
+        self.display_installed_repository_manage_page( installed_freebayes_repository )
+        self.display_installed_repository_manage_page( installed_filtering_repository )
+        self.uninstall_repository( installed_freebayes_repository, remove_from_disk=False )
+        self.test_db_util.ga_refresh( installed_freebayes_repository )
+        self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, '' )
         strings_displayed = [ 'Missing repository', 'freebayes', 'filtering_0040', 'user1', "Galaxy's filtering tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( 'freebayes_0040', 
                                                 'user1', 
-                                                'Uninstalled' )
+                                                'Deactivated' )
+   
+    def test_0045_deactivate_filtering_repository( self ):
+        '''Deactivate filtering, verify tool panel section.'''
+        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
+        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner( freebayes_repository_name, common.test_user_1_name )
+        self.display_installed_repository_manage_page( installed_freebayes_repository )
+        self.display_installed_repository_manage_page( installed_filtering_repository )
+        self.uninstall_repository( installed_filtering_repository, remove_from_disk=False )
+        self.test_db_util.ga_refresh( installed_filtering_repository )
+        self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, '' )
+        strings_displayed = [ 'Missing repository', 'filtering', 'freebayes_0040', 'user1', "Galaxy's freebayes tool for test 0040" ]
+        self.display_installed_repository_manage_page( installed_freebayes_repository, strings_displayed=strings_displayed )
+        self.check_galaxy_repository_db_status( filtering_repository_name, 
+                                                common.test_user_1_name, 
+                                                'Deactivated' )
+ 

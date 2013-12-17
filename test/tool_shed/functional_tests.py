@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 
-import os, sys, shutil, tempfile, re, string, multiprocessing
+import os
+import sys
+import shutil
+import tempfile
+import re
+import string
+import multiprocessing
+import unittest
+import time
+import sys
+import threading
+import random
+import httplib
+import socket
+import urllib
+import atexit
+import logging
+import os
+import sys
+import tempfile
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -11,7 +30,7 @@ default_tool_shed_test_file_dir = os.path.join( tool_shed_home_directory, 'test_
 # the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
 tool_shed_test_tmp_dir = os.path.join( tool_shed_home_directory, 'tmp' )
 os.environ[ 'TOOL_SHED_TEST_TMP_DIR' ] = tool_shed_test_tmp_dir
-new_path = [ os.path.join( cwd, "lib" ) ]
+new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
@@ -28,10 +47,7 @@ eggs.require( "Cheetah" )
 # This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import atexit, logging, os, os.path, sys, tempfile
-import twill, unittest, time
-import sys, threading, random
-import httplib, socket
+import twill
 from paste import httpserver
 # This is for the tool shed application.
 import galaxy.webapps.tool_shed.app
@@ -40,11 +56,16 @@ from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 # This is for the galaxy application.
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
+from galaxy.util import asbool
+from galaxy.util.json import to_json_string
 
 import nose.core
 import nose.config
 import nose.loader
 import nose.plugins.manager
+
+
+from functional import database_contexts
 
 log = logging.getLogger( "tool_shed_functional_tests.py" )
 
@@ -55,6 +76,11 @@ default_tool_shed_locales = 'en'
 default_galaxy_test_port_min = 9000
 default_galaxy_test_port_max = 9999
 default_galaxy_test_host = 'localhost'
+
+# Use separate databases for Galaxy and tool shed install info by default,
+# set GALAXY_TEST_INSTALL_DB_MERGED to True to revert to merged databases
+# behavior.
+default_install_db_merged = False
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -92,8 +118,9 @@ def get_webapp_global_conf():
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
-    <tool_shed name="Embedded tool shed for functional tests" url="http://${shed_url}:${shed_port}/"/>
     <tool_shed name="Galaxy main tool shed" url="http://toolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="Galaxy test tool shed" url="http://testtoolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="Embedded tool shed for functional tests" url="http://${shed_url}:${shed_port}/"/>
 </tool_sheds>
 '''
 
@@ -113,6 +140,11 @@ tool_conf_xml = '''<?xml version="1.0"?>
 tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 <tables>
 </tables>
+'''
+
+shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
+<data_managers>
+</data_managers>
 '''
 
 def run_tests( test_config ):
@@ -154,6 +186,7 @@ def main():
         tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         shed_db_path = os.path.join( tempdir, 'database' )
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
+    galaxy_shed_data_manager_conf_file = os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_data_manager_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
@@ -185,10 +218,27 @@ def main():
         toolshed_database_connection = os.environ[ 'TOOL_SHED_TEST_DBURI' ]
     else:
         toolshed_database_connection = 'sqlite:///' + os.path.join( shed_db_path, 'community_test.sqlite' )
+    galaxy_database_auto_migrate = False
     if 'GALAXY_TEST_DBURI' in os.environ:
         galaxy_database_connection = os.environ[ 'GALAXY_TEST_DBURI' ]
     else:
-        galaxy_database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'universe_test.sqlite' )
+        db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
+        if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+            # Middle ground between recreating a completely new
+            # database and pointing at existing database with
+            # GALAXY_TEST_DBURI. The former requires a lot of setup
+            # time, the latter results in test failures in certain
+            # cases (namely tool shed tests expecting clean database).
+            __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+            galaxy_database_auto_migrate = True
+        galaxy_database_connection = 'sqlite:///%s' % db_path
+    if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
+        install_galaxy_database_connection = os.environ[ 'GALAXY_TEST_INSTALL_DBURI' ]
+    elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
+        install_galaxy_database_connection = galaxy_database_connection
+    else:
+        install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
+        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     tool_shed_global_conf = get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
     kwargs = dict( admin_users = 'test@bx.psu.edu',
@@ -242,7 +292,7 @@ def main():
             kwargs[ 'database_engine_option_pool_size' ] = '10'
 
     toolshedapp = ToolshedUniverseApplication( **kwargs )
-
+    database_contexts.tool_shed_context = toolshedapp.model.context
     log.info( "Embedded Toolshed application started" )
 
     # ---- Run tool shed webserver ------------------------------------------------------
@@ -302,6 +352,9 @@ def main():
         migrated_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
         file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
         os.environ[ 'GALAXY_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
+        # Generate shed_data_manager_conf.xml
+        if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
+            open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
         galaxy_global_conf = get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'universe_wsgi.ini.sample'
         
@@ -309,7 +362,9 @@ def main():
                        allow_user_deletion = True,
                        admin_users = 'test@bx.psu.edu',
                        allow_library_path_paste = True,
+                       install_database_connection = install_galaxy_database_connection,
                        database_connection = galaxy_database_connection,
+                       database_auto_migrate = galaxy_database_auto_migrate,
                        datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                        enable_tool_shed_check = True,
                        file_path = galaxy_file_path,
@@ -321,6 +376,7 @@ def main():
                        migrated_tools_config = galaxy_migrated_tool_conf_file,
                        new_file_path = galaxy_tempfiles,
                        running_functional_tests=True,
+                       shed_data_manager_config_file = galaxy_shed_data_manager_conf_file,
                        shed_tool_data_table_config = shed_tool_data_table_conf_file,
                        shed_tool_path = galaxy_shed_tool_path,
                        template_path = "templates",
@@ -339,7 +395,7 @@ def main():
             kwargs[ 'database_engine_option_pool_size' ] = '10'
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( **kwargs )
-        
+
         log.info( "Embedded Galaxy application started" )
     
         # ---- Run galaxy webserver ------------------------------------------------------
@@ -349,7 +405,8 @@ def main():
                                                    use_translogger=False,
                                                    static_enabled=True,
                                                    app=galaxyapp )
-    
+        database_contexts.galaxy_context = galaxyapp.model.context
+        database_contexts.install_context = galaxyapp.install_model.context
         if galaxy_test_port is not None:
             galaxy_server = httpserver.serve( galaxywebapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:
@@ -447,6 +504,21 @@ def main():
         return 0
     else:
         return 1
+
+def __copy_database_template( source, db_path ):
+    """
+    Copy a 'clean' sqlite template database (from file or URL) to specified
+    database path.
+    """
+    os.makedirs( os.path.dirname( db_path ) )
+    if os.path.exists( source ):
+        shutil.copy( source, db_path )
+        assert os.path.exists( db_path )
+    elif source.startswith("http"):
+        urllib.urlretrieve( source, db_path )
+    else:
+        raise Exception( "Failed to copy database template from source %s" % source )
+
 
 if __name__ == "__main__":
     try:

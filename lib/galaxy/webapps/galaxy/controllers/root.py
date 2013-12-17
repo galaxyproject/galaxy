@@ -172,12 +172,16 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
-    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
+    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", encoded_id=None, **kwd ):
         """Returns data directly into the browser.
 
         Sets the mime-type according to the extension.
+
+        Used by the twill tool test driver - used anywhere else? Would like to drop hid
+        argument and path if unneeded now. Likewise, would like to drop encoded_id=XXX
+        and use assume id is encoded (likely id wouldn't be coming in encoded if this
+        is used anywhere else though.)
         """
-        #TODO: unused?
         #TODO: unencoded id
         if hid is not None:
             try:
@@ -192,6 +196,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             else:
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
+            if encoded_id and not id:
+                id = trans.security.decode_id( encoded_id )
             try:
                 data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:

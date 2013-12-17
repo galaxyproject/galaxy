@@ -26,7 +26,7 @@ def activate_repository( trans, repository ):
     repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
     shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
     repository.deleted = False
-    repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
+    repository.status = trans.install_model.ToolShedRepository.installation_status.INSTALLED
     if repository.includes_tools_for_display_in_tool_panel:
         metadata = repository.metadata
         repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
@@ -52,8 +52,8 @@ def activate_repository( trans, repository ):
                                                                          data_manager_relative_install_dir,
                                                                          repository,
                                                                          repository_tools_tups )
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
+    trans.install_model.context.add( repository )
+    trans.install_model.context.flush()
     if repository.includes_datatypes:
         if tool_path:
             repository_install_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir ) )
@@ -61,15 +61,18 @@ def activate_repository( trans, repository ):
             repository_install_dir = os.path.abspath( relative_install_dir )
         # Activate proprietary datatypes.
         installed_repository_dict = datatype_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
-        if installed_repository_dict and 'converter_path' in installed_repository_dict:
-            datatype_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
-        if installed_repository_dict and 'display_path' in installed_repository_dict:
-            datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
+        if installed_repository_dict:
+            converter_path = installed_repository_dict.get( 'converter_path' )
+            if converter_path is not None:
+                datatype_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
+            display_path = installed_repository_dict.get( 'display_path' )
+            if display_path is not None:
+                datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
 
 def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
     """
-    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated with the repository defined
-    by the received repo_info_dict.
+    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated
+    with the repository defined by the received repo_info_dict.
     """
     repository = None
     installed_rd = {}
@@ -99,7 +102,8 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # Discover all repository dependencies and retrieve information for installing them.
         all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
-        has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
+        has_repository_dependencies_only_if_compiling_contained_td = \
+            all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
         includes_tools = all_repo_info_dict.get( 'includes_tools', False )
@@ -135,7 +139,8 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # We have a single repository with (possibly) no defined repository dependencies.
         all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
-        has_repository_dependencies_only_if_compiling_contained_td = all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
+        has_repository_dependencies_only_if_compiling_contained_td = \
+            all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
         includes_tools_for_display_in_tool_panel = all_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
         includes_tool_dependencies = all_repo_info_dict.get( 'includes_tool_dependencies', False )
         includes_tools = all_repo_info_dict.get( 'includes_tools', False )
@@ -183,7 +188,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
                        only_if_compiling_contained_td,
                        tsr.id,
                        tsr.status ]
-            if tsr.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+            if tsr.status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                 installed_rd_tups.append( rd_tup )
             else:
                 # We'll only add the rd_tup to the missing_rd_tups list if the received repository has tool dependencies that are not
@@ -199,8 +204,8 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
             # Get the description from the metadata in case it has a value.
             repository_dependencies = metadata.get( 'repository_dependencies', {} )
             description = repository_dependencies.get( 'description', None )
-            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the missing_repository_dependencies
-            # dictionaries for proper display parsing.
+            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the
+            # missing_repository_dependencies dictionaries for proper display parsing.
             root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
                                                                                            repository.name,
                                                                                            repository.owner,
@@ -254,7 +259,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                                   only_if_compiling_contained_td,
                                   repository.id,
                                   repository.status ]
-                    if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                    if repository.status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
@@ -296,7 +301,7 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
     if tool_dependencies_dict:
         for td_key, val in tool_dependencies_dict.items():
             # Default the status to NEVER_INSTALLED.
-            tool_dependency_status = trans.model.ToolDependency.installation_status.NEVER_INSTALLED
+            tool_dependency_status = trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED
             # Set environment tool dependencies are a list.
             if td_key == 'set_environment':
                 new_val = []
@@ -310,7 +315,7 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
                         tool_dependency_status = tool_dependency.status
                     requirement_dict[ 'status' ] = tool_dependency_status
                     new_val.append( requirement_dict )
-                    if tool_dependency_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                    if tool_dependency_status in [ trans.install_model.ToolDependency.installation_status.INSTALLED ]:
                         installed_tool_dependencies[ td_key ] = new_val
                     else:
                         missing_tool_dependencies[ td_key ] = new_val
@@ -324,7 +329,7 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
                 if tool_dependency:
                     tool_dependency_status = tool_dependency.status
                 val[ 'status' ] = tool_dependency_status
-            if tool_dependency_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+            if tool_dependency_status in [ trans.install_model.ToolDependency.installation_status.INSTALLED ]:
                 installed_tool_dependencies[ td_key ] = val
             else:
                 missing_tool_dependencies[ td_key ] = val
@@ -432,7 +437,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     # that should be installed.  This allows for filtering out dependencies that have not been checked for installation on the 'Manage tool
     # dependencies' page for an installed tool shed repository.
     attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
-    sa_session = app.model.context.current
+    context = app.install_model.context
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
@@ -455,8 +460,9 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                 if index is not None:
                     tool_dependency = tool_dependencies[ index ]
                     if tool_dependency.can_install:
+                        # The database record is currently in a state that allows us to install the package on the file system.
                         try:
-                            dependencies_ignored = app.toolbox.dependency_manager and not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
+                            dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
                             if dependencies_ignored:
                                 log.debug( "Skipping package %s because tool shed dependency resolver not enabled." % str( package_name ) )
                                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
@@ -467,7 +473,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                 tool_dependency = \
                                     tool_dependency_util.set_tool_dependency_attributes( app,
                                                                                          tool_dependency=tool_dependency,
-                                                                                         status=app.model.ToolDependency.installation_status.ERROR,
+                                                                                         status=app.install_model.ToolDependency.installation_status.ERROR,
                                                                                          error_message=None,
                                                                                          remove_from_disk=False )
                             else:
@@ -482,9 +488,11 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                                                                   tool_dependency, 
                                                                                                                   error_message, 
                                                                                                                   remove_installation_path=False )
-                        if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
-                                                                           app.model.ToolDependency.installation_status.ERROR ]:
+                        if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
+                                                                           app.install_model.ToolDependency.installation_status.ERROR ]:
                             installed_tool_dependencies.append( tool_dependency )
+                            # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
+                            app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
         elif elem.tag == 'set_environment':
             # <set_environment version="1.0">
             #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
@@ -501,8 +509,8 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                                                       tool_dependency, 
                                                                                                       error_message, 
                                                                                                       remove_installation_path=False )
-            if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
-                                                               app.model.ToolDependency.installation_status.ERROR ]:
+            if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
+                                                               app.install_model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
 

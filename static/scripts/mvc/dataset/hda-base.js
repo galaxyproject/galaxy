@@ -39,14 +39,19 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.defaultPrimaryActionButtonRenderers = [
             this._render_showParamsButton
         ];
+
+        /** where should pages from links be displayed? (default to new tab/window) */
+        this.linkTarget = attributes.linkTarget || '_blank';
         
         /** is the view currently in selection mode? */
-        //this.selectable = attributes.selectable || false;
-        this.selectable = false;
+        this.selectable = attributes.selectable || false;
         /** is the view currently selected? */
-        this.selected = false;
-        /** is the body of this hda view expanded/not. */
-        this.expanded = attributes.expanded || false;
+        this.selected   = attributes.selected || false;
+        /** is the body of this hda view expanded/not? */
+        this.expanded   = attributes.expanded || false;
+        /** is the body of this hda view expanded/not? */
+        this.draggable  = attributes.draggable || false;
+        
         this._setUpListeners();
     },
 
@@ -93,8 +98,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
         $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
         $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
-        //this._renderSelectable( $newRender );
         this._setUpBehaviors( $newRender );
+        //this._renderSelectable( $newRender );
 
         // fade the old render out (if desired)
         if( fade ){
@@ -105,6 +110,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             this.$el.empty()
                 .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
                 .append( $newRender.children() );
+            if( this.selectable ){ this.showSelector( 0 ); }
             next();
         });
         // fade the new in
@@ -117,7 +123,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             if( this.model.inReadyState() ){
                 this.trigger( 'rendered:ready', view );
             }
-            if( this.selectable ){ this.showSelect(); }
+            if( this.draggable ){ this.draggableOn(); }
             next();
         });
         return this;
@@ -156,7 +162,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
         
         var displayBtnData = {
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             classes     : 'dataset-display'
         };
 
@@ -179,12 +185,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.onclick = function(){
-                Galaxy.frame.add({
-                    title       : "Data Viewer: " + self.model.get('name'),
-                    type        : "url",
-                    target      : "galaxy_main",
-                    content     : self.urls.display
-                });
+                if( Galaxy.frame && Galaxy.frame.active ){
+                    Galaxy.frame.add({
+                        title       : "Data Viewer: " + self.model.get('name'),
+                        type        : "url",
+                        content     : self.urls.display
+                    });
+                }
             };
         }
         displayBtnData.faIcon = 'fa-eye';
@@ -247,7 +254,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View details' ),
             href        : this.urls.show_params,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-info-circle'
         });
     },
@@ -263,6 +270,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         if( _.isFunction( renderFn ) ){
             $body = renderFn.call( this );
         }
+        this._setUpBehaviors( $body );
+
         // only render the body html if it's being shown
         if( this.expanded ){
             $body.show();
@@ -393,10 +402,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     // ......................................................................... events
     /** event map */
     events : {
-        // expand the body when the title is clicked
-        'click .dataset-title-bar'  : 'toggleBodyVisibility',
+        // expand the body when the title is clicked or when in focus and space or enter is pressed
+        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+        'keydown .dataset-title-bar'    : 'toggleBodyVisibility',
         // toggle selected state
-        'click .dataset-selector'   : 'select'
+        'click .dataset-selector'       : 'toggleSelect',
+
+        // dragging - don't work, originalEvent === null
+        //'dragstart .dataset-title-bar'  : 'dragStartHandler',
+        //'dragend .dataset-title-bar'    : 'dragEndHandler'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -407,6 +421,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expand ){
+        // bail (with propagation) if keydown and not space or enter
+        var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
+        if( event && ( event.type === 'keydown' )
+        &&  !( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
+            return true;
+        }
+
         var $body = this.$el.find( '.dataset-body' );
         expand = ( expand === undefined )?( !$body.is( ':visible' ) ):( expand );
         if( expand ){
@@ -460,58 +481,148 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
      *      Note: this also hides the primary actions
      */
-    showSelect : function( speed ){
+    showSelector : function( speed ){
         // if already shown, do nothing
         if( this.$el.find( '.dataset-selector' ).css( 'display' ) !== 'none' ){ return; }
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // make sure selected state is represented properly
+        if( this.selected ){
+            this.select( null, true );
+        }
 
         // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
         var hdaView = this,
             SELECTOR_WIDTH = 32;
 
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
-        });
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-selector' ).show()
-                // height is height of titlebar, width will animate from 0 to WIDTH
-                .css({
-                    height: $( this ).find( '.dataset-title-bar' ).innerHeight()
-                })
-                .animate({ width: SELECTOR_WIDTH }, speed, next );
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
+            });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-selector' ).show().animate({ width: SELECTOR_WIDTH }, speed, next );
+                $( this ).find( '.dataset-title-bar' ).animate({ 'margin-left': SELECTOR_WIDTH }, speed, next );
+                hdaView.selectable = true;
+                hdaView.trigger( 'selectable', true, hdaView );
+            });
+        // no animation
+        } else {
+            this.$el.find( '.dataset-primary-actions' ).hide();
+            this.$el.find( '.dataset-selector' ).show().css({ width : SELECTOR_WIDTH });
+            this.$el.find( '.dataset-title-bar' ).show().css({ 'margin-left' : SELECTOR_WIDTH });
             hdaView.selectable = true;
             hdaView.trigger( 'selectable', true, hdaView );
-        });
+        }
     },
 
     /** remove the selection checkbox */
-    hideSelect : function( speed ){
+    hideSelector : function( speed ){
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
 
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
-                $( this ).hide();
-                next();
+
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-title-bar' ).show().css({ 'margin-left' : '0' });
+                $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
+                    $( this ).hide();
+                    next();
+                });
             });
-        });
-        this.$el.queue( 'fx', function( next ){
-            $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
-        });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
+            });
+
+        // no animation
+        } else {
+            $( this ).find( '.dataset-selector' ).css({ width : '0px' }).hide();
+            $( this ).find( '.dataset-primary-actions' ).show();
+        }
+    },
+
+    toggleSelector : function( speed ){
+        if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
+            this.showSelector( speed );
+        } else {
+            this.hideSelector( speed );
+        }
     },
 
     /** event handler for selection (also programmatic selection)
-     *  @param {boolean} selected   T/F select/de-select this hda
      */
-    select : function( event, selected ){
-        // do nothing if selected is passed and selector already in desired state
-        if( selected !== undefined && selected === this.selected ){ return false; }
+    select : function( event ){
         // switch icon, set selected, and trigger event
-        this.$el.find( '.dataset-selector span' ).toggleClass( 'fa-square-o fa-check-square-o' );
-        this.selected = !this.selected;
-        this.trigger( ( this.selected )?( 'selected' ):( 'de-selected' ), this );
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
+        if( !this.selected ){
+            this.trigger( 'selected', this );
+            this.selected = true;
+        }
+        return false;
+    },
+
+    /** event handler for clearing selection (also programmatic deselection)
+     */
+    deselect : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
+        if( this.selected ){
+            this.trigger( 'de-selected', this );
+            this.selected = false;
+        }
+        return false;
+    },
+
+    toggleSelect : function( event ){
+        if( this.selected ){
+            this.deselect( event );
+        } else {
+            this.select( event );
+        }
+    },
+
+    // ......................................................................... drag/drop
+    draggableOn : function(){
+        this.draggable = true;
+        //TODO: I have no idea why this doesn't work with the events hash or jq.on()...
+        //this.$el.find( '.dataset-title-bar' )
+        //    .attr( 'draggable', true )
+        //    .bind( 'dragstart', this.dragStartHandler, false )
+        //    .bind( 'dragend',   this.dragEndHandler,   false );
+        this.dragStartHandler = _.bind( this._dragStartHandler, this );
+        this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
+
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', true ).get(0);
+        titleBar.addEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.addEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    draggableOff : function(){
+        this.draggable = false;
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', false ).get(0);
+        titleBar.removeEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.removeEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    toggleDraggable : function(){
+        if( this.draggable ){
+            this.draggableOff();
+        } else {
+            this.draggableOn();
+        }
+    },
+    _dragStartHandler : function( event ){
+        //console.debug( 'dragStartHandler:', this, event, arguments )
+        this.trigger( 'dragstart', this );
+        event.dataTransfer.effectAllowed = 'move';
+        //TODO: all except IE: should be 'application/json', IE: must be 'text'
+        event.dataTransfer.setData( 'text', JSON.stringify( this.model.toJSON() ) );
+        return false;
+    },
+    _dragEndHandler : function( event ){
+        this.trigger( 'dragend', this );
+        //console.debug( 'dragEndHandler:', event )
         return false;
     },
 

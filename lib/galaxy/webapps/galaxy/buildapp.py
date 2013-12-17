@@ -163,7 +163,11 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
-    webapp.mapper.resource( 'datatype', 'datatypes', path_prefix='/api' )
+    webapp.mapper.resource( 'datatype', 
+                            'datatypes', 
+                            path_prefix='/api', 
+                            collection={ 'sniffers': 'GET' },
+                            parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
@@ -218,6 +222,12 @@ def app_factory( global_conf, **kwargs ):
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+
     # Return
     return webapp
 

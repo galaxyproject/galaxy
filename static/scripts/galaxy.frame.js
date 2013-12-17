@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.masthead", "libs/backbone/backbone-relational"], function(mod_masthead) {
+define(["galaxy.masthead"], function(mod_masthead) {
 
 // frame manager
 var GalaxyFrame = Backbone.View.extend(

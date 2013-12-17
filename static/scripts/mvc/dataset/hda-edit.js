@@ -33,6 +33,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             this._render_rerunButton
         ];
 
+        //TODO: move to HiddenUntilActivatedViewMixin
+        /** should the tags editor be shown or hidden initially? */
+        this.tagsEditorShown        = attributes.tagsEditorShown || false;
+        /** should the tags editor be shown or hidden initially? */
+        this.annotationEditorShown  = attributes.annotationEditorShown || false;
     },
 
     // ......................................................................... edit attr, delete
@@ -69,7 +74,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             editBtnData = {
                 title       : _l( 'Edit Attributes' ),
                 href        : this.urls.edit,
-                target      : 'galaxy_main',
+                target      : this.linkTarget,
                 classes     : 'dataset-edit'
             };
             
@@ -133,7 +138,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
     },
@@ -145,7 +150,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
     },
@@ -184,23 +189,22 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
-            href        : this.urls.visualization,
             faIcon      : 'fa-bar-chart-o'
         });
 
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
+        var hdaView = this;
         /** @inner */
         function create_viz_action( visualization ) {
             switch( visualization ){
                 case 'trackster':
                     return create_trackster_action_fn( visualization_url, params, dbkey );
                 case 'scatterplot':
-                    return create_scatterplot_action_fn( visualization_url, params );
+                    return create_scatterplot_action_fn( visualization_url, params, hdaView.linkTarget );
                 default:
-                    return function(){// add widget
-                        Galaxy.frame.add(
-                        {
+                    return function(){
+                        Galaxy.frame.add({
                             title       : "Visualization",
                             type        : "url",
                             content     : visualization_url + '/' + visualization + '?' + $.param( params )
@@ -209,16 +213,19 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             }
         }
 
+        function titleCase( string ){
+            return string.charAt( 0 ).toUpperCase() + string.slice( 1 );
+        }
+
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ){
-            $icon.attr( 'data-original-title', visualizations[0] );
+            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + _l( titleCase( visualizations[0] ) ) );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
         } else {
             _.each( visualizations, function( visualization ) {
-                var titleCaseVisualization = visualization.charAt( 0 ).toUpperCase() + visualization.slice( 1 );
-                popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
+                popup_menu_dict[ _l( titleCase( visualization ) ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
         }
@@ -262,7 +269,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_body_failed_metadata : function(){
         // add a message box about the failure at the top of the body then render the remaining body as STATES.OK
-        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: 'galaxy_main' })
+        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: this.linkTarget })
                 .text( _l( 'set it manually or retry auto-detection' ) ),
             $span = $( '<span/>' ).text( '. ' + _l( 'You may be able to' ) + ' ' ).append( $link ),
             $body = hdaBase.HDABaseView.prototype._render_body_failed_metadata.call( this );
@@ -296,6 +303,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // more actions/buttons
         if( this.hasUser ){
             $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+            //TODO: might be better to move these into the render() and call setElement here
             this._renderTags( $body );
             this._renderAnnotation( $body );
         }
@@ -303,28 +311,38 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     },
 
     _renderTags : function( $where ){
+        var view = this;
         this.tagsEditor = new TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.tagsEditorShown = true; },
+            onhide          : function(){ view.tagsEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset tags' ),
                 classes : 'dataset-tag-btn',
                 faIcon  : 'fa-tags'
             }).appendTo( $where.find( '.dataset-actions .right' ) )
         });
+        if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
     },
     _renderAnnotation : function( $where ){
+        var view = this;
         this.annotationEditor = new AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.annotationEditorShown = true; },
+            onhide          : function(){ view.annotationEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset annotation' ),
                 classes : 'dataset-annotate-btn',
                 faIcon  : 'fa-comment'
             }).appendTo( $where.find( '.dataset-actions .right' ) )
         });
+        if( this.annotationEditorShown ){ this.annotationEditor.toggle( true ); }
     },
 
     makeDbkeyEditLink : function( $body ){
@@ -332,7 +350,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
             $body.find( '.dataset-dbkey .value' ).replaceWith(
-                $( '<a target="galaxy_main">?</a>' ).attr( 'href', this.urls.edit ) );
+                $( '<a target="' + this.linkTarget + '">?</a>' ).attr( 'href', this.urls.edit ) );
         }
     },
 
@@ -368,15 +386,13 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
  *  @returns function that loads the scatterplot
  */
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
-function create_scatterplot_action_fn( url, params ){
+function create_scatterplot_action_fn( url, params, target ){
     action = function() {
-        // add widget
-        Galaxy.frame.add(
-        {
+        Galaxy.frame.add({
             title       : "Scatterplot",
             type        : "url",
             content     : url + '/scatterplot?' + $.param(params),
-            target      : 'galaxy_main',
+            target      : target,
             scratchbook : true
         });
 

@@ -37,10 +37,30 @@ class EnvFileBuilder( object ):
 
     def append_line( self, skip_if_contained=True, make_executable=True, **kwd ):
         env_var_dict = dict( **kwd )
-        env_entry, env_file = td_common_util.create_or_update_env_shell_file( self.install_dir, env_var_dict )
+        env_entry, env_file = self.create_or_update_env_shell_file( self.install_dir, env_var_dict )
         return_code = file_append( env_entry, env_file, skip_if_contained=skip_if_contained, make_executable=make_executable )
         self.return_code = self.return_code or return_code
         return self.return_code
+    
+    @staticmethod
+    def create_or_update_env_shell_file( install_dir, env_var_dict ):
+        env_var_action = env_var_dict[ 'action' ]
+        env_var_value = env_var_dict[ 'value' ]
+        if env_var_action in [ 'prepend_to', 'set_to', 'append_to' ]:
+            env_var_name = env_var_dict[ 'name' ]
+            if env_var_action == 'prepend_to':
+                changed_value = '%s:$%s' % ( env_var_value, env_var_name )
+            elif env_var_action == 'set_to':
+                changed_value = '%s' % env_var_value
+            elif env_var_action == 'append_to':
+                changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+            line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
+        elif env_var_action == "source":
+            line = "if [ -f %s ] ; then . %s ; fi" % ( env_var_value, env_var_value )
+        else:
+            raise Exception( "Unknown shell file action %s" % env_var_action )
+        env_shell_file_path = os.path.join( install_dir, 'env.sh' )
+        return line, env_shell_file_path
 
 
 class InstallEnvironment( object ):
@@ -149,20 +169,20 @@ def handle_action_shell_file_paths( env_file_builder, action_dict ):
         env_file_builder.append_line( action="source", value=shell_file_path )
 
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
-    sa_session = app.model.context.current
+    context = app.install_model.context
     with settings( warn_only=True ):
         output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
-        tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+        tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
         if output.stderr:
             tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
         elif output.stdout:
             tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
         else:
             tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
-        sa_session.add( tool_dependency )
-        sa_session.flush()
+        context.add( tool_dependency )
+        context.flush()
     if return_output:
         return output
     return output.return_code
@@ -274,7 +294,6 @@ def install_virtualenv( app, venv_dir ):
 
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
-    sa_session = app.model.context.current
     install_dir = actions_dict[ 'install_dir' ]
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
@@ -390,7 +409,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         with settings( warn_only=True ):
                             for tarball_name in tarball_names:
-                                cmd = '''export PATH=$PATH:$R_HOME/bin && export R_LIBS=$INSTALL_DIR && 
+                                cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS; &&
                                     Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
@@ -398,7 +417,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     return tool_dependency
                             # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
                             env_file_builder = EnvFileBuilder( install_dir )
-                            handle_action_shell_file_paths( env_file_builder, action_dict )   # Pull in R environment (runtime).
+                            # Pull in R environment (runtime).
+                            handle_action_shell_file_paths( env_file_builder, action_dict )
                             env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_dir )
                             return_code = env_file_builder.return_code
                             if return_code:
@@ -432,24 +452,24 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 gem, gem_version = ruby_package_tup
                                 if os.path.isfile( gem ):
                                     # we assume a local shipped gem file
-                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                    cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install --local %s''' % ( gem )
                                 elif gem.find( '://' ) != -1:
                                     # We assume a URL to a gem file.
                                     url = gem
                                     gem_name = url.split( '/' )[ -1 ]
                                     td_common_util.url_download( work_dir, gem_name, url, extract=False )
-                                    cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                    cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install --local %s ''' % ( gem_name )
                                 else:
                                     # gem file from rubygems.org with or without version number
                                     if gem_version:
                                         # version number was specified
-                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install %s --version "=%s"''' % ( gem, gem_version)
                                     else:
                                         # no version number given
-                                        cmd = '''export PATH=$PATH:$RUBY_HOME/bin && export GEM_HOME=$INSTALL_DIR && 
+                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install %s''' % ( gem )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
@@ -490,7 +510,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for perl_package in perl_packages:
                                 # If set to a true value then MakeMaker's prompt function will always
                                 # return the default without waiting for user input.
-                                cmd = '''export PERL_MM_USE_DEFAULT=1 && '''
+                                cmd = '''PERL_MM_USE_DEFAULT=1; export PERL_MM_USE_DEFAULT; '''
                                 if perl_package.find( '://' ) != -1:
                                     # We assume a URL to a gem file.
                                     url = perl_package

@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -24,7 +23,6 @@ tool_repository_long_description = '%s: %s' % ( tool_repository_name, tool_repos
 
 '''
 
-
 class TestMissingEnvSh( ShedTwillTestCase ):
     '''Test installing a repository that should create an env.sh file, but does not.'''
     
@@ -32,20 +30,20 @@ class TestMissingEnvSh( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         
     def test_0005_create_package_repository( self ):
         '''Create and populate package_env_sh_1_0_1440.'''
@@ -55,7 +53,7 @@ class TestMissingEnvSh( ShedTwillTestCase ):
         Create and populate a repository that is designed to fail a tool dependency installation. This tool dependency should
         also define one or more environment variables.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_repository_name, 
                                                     description=package_repository_description, 
                                                     long_description=package_repository_long_description, 
@@ -79,7 +77,7 @@ class TestMissingEnvSh( ShedTwillTestCase ):
         This is step 2 - Create a repository that defines a complex repository dependency on the repository created in
         step 1, with prior_install_required and set_environment_for_install.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=tool_repository_name, 
                                                     description=tool_repository_description, 
                                                     long_description=tool_repository_long_description, 
@@ -123,7 +121,7 @@ class TestMissingEnvSh( ShedTwillTestCase ):
     
     def test_0020_verify_missing_tool_dependency( self ): 
         '''Verify that the filter_1440 repository is installed and missing tool dependencies.'''
-        repository = test_db_util.get_installed_repository_by_name_owner( 'filter_1440', common.test_user_1_name )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( 'filter_1440', common.test_user_1_name )
         strings_displayed = [ 'Missing tool dependencies' ]
         self.display_installed_repository_manage_page( repository, strings_displayed=strings_displayed )
         assert len( repository.missing_tool_dependencies ) == 1, 'filter_1440 should have a missing tool dependency, but does not.'

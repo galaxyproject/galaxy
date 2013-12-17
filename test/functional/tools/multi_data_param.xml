@@ -1,0 +1,40 @@
+<tool id="multi_data_param" name="multi_data_param" version="0.1.0">
+  <command>
+    cat #for $f in $f1# ${f} #end for# >> $out1;
+    cat #for $f in $f2# ${f} #end for# >> $out2
+  </command>
+  <inputs>
+    <param name="f1" type="data" format="txt" multiple="true" />
+    <param name="f2" type="data" format="txt" multiple="true" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+    <data format="txt" name="out2" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1" value="simple_line.txt" />
+      <param name="f2" value="simple_line_alternative.txt" />
+      <output name="out1" file="simple_line.txt" />
+      <output name="out2" file="simple_line_alternative.txt" />
+    </test>
+    <test>
+      <param name="f1" value="simple_line.txt,simple_line_alternative.txt" />
+      <param name="f2" value="simple_line_alternative.txt" />
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <!-- Twill interactor cannot do these latter two, but not even 
+         UI widget can do this next one. -->
+    <test>
+      <param name="f1" value="simple_line.txt,simple_line.txt" />
+      <param name="f2" value="simple_line_alternative.txt" />
+      <output name="out1" file="simple_line_x2.txt" />
+      <output name="out2" file="simple_line_alternative.txt" />
+    </test>
+  </tests>
+</tool>

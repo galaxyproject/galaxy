@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -44,7 +43,6 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 
 running_standalone = False
 
-
 class TestSimplePriorInstallation( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
     
@@ -52,19 +50,19 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_convert_repository( self ):
         '''Create and populate convert_chars_0160.'''
@@ -138,9 +136,9 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         '''
         global running_standalone
-        filter_repository = test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         filter_revision = self.get_repository_tip( filter_repository )
         column_revision = self.get_repository_tip( column_repository )
         convert_revision = self.get_repository_tip( convert_repository )
@@ -164,9 +162,9 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         
     def test_0025_verify_repository_dependency( self ):
         '''Verify that the previously generated repositiory dependency displays correctly.'''
-        filter_repository = test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         self.check_repository_dependency( repository=column_repository, 
                                           depends_on_repository=convert_repository, 
                                           depends_on_changeset_revision=None, 
@@ -196,7 +194,7 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         '''Install the filtering_0160 repository.'''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        filter_repository = test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_repository_by_name_and_owner( filter_repository_name, common.test_user_1_name )
         preview_strings_displayed = [ 'filtering_0160', self.get_repository_tip( filter_repository ) ]
         strings_displayed = [ 'Choose the tool panel section' ]
         self.install_repository( filter_repository_name, 
@@ -212,25 +210,25 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
 
     def test_0035_verify_installation_order( self ):
         '''Verify that convert_chars_0160 and column_maker_0160 were installed before filtering_0160.'''
-        filter_repository = test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
         # Filtering was selected for installation, so convert chars and column maker should have been installed first.
         assert filter_repository.update_time > convert_repository.update_time, 'Error: convert_chars_0160 shows a later update time than filtering_0160'
         assert filter_repository.update_time > column_repository.update_time, 'Error: column_maker_0160 shows a later update time than filtering_0160'
 
     def test_0040_uninstall_all_repositories( self ):
         '''Uninstall convert_chars_0160, column_maker_0160, and filtering_0160.'''
-        filter_repository = test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
-        self.uninstall_repository( filter_repository, remove_from_disk=True )
-        self.uninstall_repository( column_repository, remove_from_disk=True )
-        self.uninstall_repository( convert_repository, remove_from_disk=True )
+        filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
+        self.uninstall_repository( filter_repository, remove_from_disk=False )
+        self.uninstall_repository( column_repository, remove_from_disk=False )
+        self.uninstall_repository( convert_repository, remove_from_disk=False )
         
     def test_0045_reinstall_filter_repository( self ):
         '''Reinstall the filtering_0160 repository.'''
-        filter_repository = test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
         self.reinstall_repository( filter_repository )
         strings_displayed = [ 'filtering_0160',
                               "Galaxy's filtering tool for test 0160",
@@ -244,10 +242,12 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         
     def test_0050_verify_reinstallation_order( self ):
         '''Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160.'''
-        filter_repository = test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
+        filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
         # Filtering was selected for reinstallation, so convert chars and column maker should have been installed first.
-        assert filter_repository.update_time > convert_repository.update_time, 'Error: convert_chars_0160 shows a later update time than filtering_0160'
-        assert filter_repository.update_time > column_repository.update_time, 'Error: column_maker_0160 shows a later update time than filtering_0160'
+        for repo in [ convert_repository, column_repository, filter_repository ]:
+            self.test_db_util.ga_session.refresh( repo )
+        assert filter_repository.update_time > convert_repository.update_time, 'Prior installed convert_chars_0160 shows a later update time than filtering_0160'
+        assert filter_repository.update_time > column_repository.update_time, 'Prior installed column_maker_0160 shows a later update time than filtering_0160'
 

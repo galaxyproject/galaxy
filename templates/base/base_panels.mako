@@ -53,7 +53,6 @@
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
-        'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
         'galaxy.base',
         'libs/require',
@@ -89,8 +88,7 @@
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
                 "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+                "libs/backbone/backbone": { exports: "Backbone" }
             }
         });
     </script>
@@ -341,7 +339,7 @@
                     </div>
                 </div><!--end left-->
             %endif
-            <div id="center">
+            <div id="center" class="inbound">
                 ${self.center_panel()}
             </div><!--end center-->
             %if self.has_right_panel:

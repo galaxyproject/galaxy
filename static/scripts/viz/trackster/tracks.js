@@ -32,8 +32,7 @@ var is_container = function(element, obj) {
 var moveable = function(element, handle_class, container_selector, element_js_obj) {
     // HACK: set default value for container selector.
     container_selector = ".group";
-    var css_border_props = {};
-
+    
     // Register element with its object.
     html_elt_js_obj_dict[element.attr("id")] = element_js_obj;
     
@@ -130,14 +129,9 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
             html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, (d.deltaY > 0 ? i-1 : i) );
         }
     }).bind("dragstart", function() {
-        css_border_props["border-top"] = element.css("border-top");
-        css_border_props["border-bottom"] = element.css("border-bottom");
-        $(this).css({
-            "border-top": "1px solid blue",
-            "border-bottom": "1px solid blue"
-        });
+        $(this).addClass('dragging');
     }).bind("dragend", function() {
-        $(this).css(css_border_props);
+        $(this).removeClass('dragging');
     });
 };
 
@@ -236,7 +230,7 @@ var Drawable = function(view, container, obj_dict) {
         this.container_div.append(this.header_div);
         
         // Icons container.
-        this.icons_div = $("<div/>").css("float", "left").hide().appendTo(this.header_div);
+        this.icons_div = $("<div/>").addClass('track-icons').hide().appendTo(this.header_div);
         this.build_action_icons(this.action_icons_def);
                 
         this.header_div.append( $("<div style='clear: both'/>") );
@@ -930,7 +924,7 @@ var TracksterView = Backbone.View.extend({
         // Top container for things that are fixed at the top
         this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
         // Browser content, primary tracks are contained in here
-        this.browser_content_div = $("<div/>").addClass("content").css("position", "relative").appendTo(parent_element);
+        this.browser_content_div = $("<div/>").addClass("content").appendTo(parent_element);
         // Bottom container for things that are fixed at the bottom
         this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
         // Label track fixed at top 
@@ -967,7 +961,7 @@ var TracksterView = Backbone.View.extend({
         this.default_overview_height = this.overview_box.height();
         
         this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
-        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).css("width", "15em").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
+        this.chrom_select = $("<select/>").attr({ "name": "chrom"}).addClass('chrom-nav').append("<option value=''>Loading</option>").appendTo(this.nav_controls);
         var submit_nav = function(e) {
             if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27 ) {
                 if ((e.keyCode || e.which) !== 27) { // Not escape key
@@ -1618,6 +1612,8 @@ var TracksterTool = tools_mod.Tool.extend({
     },
 
     initialize: function(options) {
+        tools_mod.Tool.prototype.initialize.call(this, options);
+
         // Restore tool visibility from state; default to hidden.
         var hidden = true;
         if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
@@ -1706,7 +1702,7 @@ var TracksterToolView = Backbone.View.extend({
         // Add buttons for running on dataset, region.
         var run_tool_row = $("<div>").addClass("param-row").appendTo(parent_div);
         var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
-        var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").css("margin-left", "3em").appendTo(run_tool_row);
+        var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").appendTo(run_tool_row);
         run_on_region_button.click( function() {
             // Run tool to create new track.
             self.run_on_region();
@@ -1787,7 +1783,7 @@ var TracksterToolView = Backbone.View.extend({
             },
             current_track = track,
             // Set name of track to include tool name, parameters, and region used.
-            track_name = url_params.tool_id +
+            track_name = tool.get('name') +
                          current_track.tool_region_and_parameters_str(region),
             container;
             
@@ -1909,7 +1905,9 @@ var Config = Backbone.Model.extend({
 
         // Set default values.
         _.each(options.params, function(p) {
-            values[p.key] = p.default_value;
+            // For color parameters without a default value, assign a random color.
+            values[p.key] = (p.type === 'color' && !p.default_value ? util.get_random_color() : p.default_value );
+
         });
 
         // Restore saved values.
@@ -2023,7 +2021,10 @@ var ConfigView = Backbone.View.extend({
                 else if ( param.type === 'color' ) {
                     var 
                         container_div = $("<div/>").appendTo(row),
-                        input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
+                        input = $('<input/>').attr({
+                            id: id,
+                            name: id
+                        }).val( value ).addClass('color-input') 
                             .appendTo(container_div).click(function(e) {
                             // Hide other pickers.
                             $(".tooltip").removeClass( "in" );
@@ -2341,7 +2342,7 @@ var Track = function(view, container, obj_dict) {
     this.dataset = null;
     if (obj_dict.dataset) {
         // Dataset can be a Backbone model or a dict that can be used to create a model.
-        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : data.Dataset.findOrCreate(obj_dict.dataset) );
+        this.dataset = (obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset) );
     }
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
@@ -2430,7 +2431,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                 // Update track name.
                 if (track.tool.is_visible()) {
-                    track.set_name(track.name + track.tool_region_and_parameters_str());
+                    track.set_name(track.prefs.name + track.tool_region_and_parameters_str());
                 }
                 else {
                     track.revert_name();
@@ -2446,8 +2447,8 @@ extend(Track.prototype, Drawable.prototype, {
             css_class: "arrow-split",
             on_click_fn: function(track) {
                 var template =
-                    '<strong>Tool</strong>: <%= track.tool.name %><br/>' + 
-                    '<strong>Dataset</strong>: <%= track.name %><br/>' +
+                    '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' + 
+                    '<strong>Dataset</strong>: <%= track.prefs.name %><br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +
@@ -2513,7 +2514,7 @@ extend(Track.prototype, Drawable.prototype, {
     },
 
     build_container_div: function () {
-        return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
+        return $("<div/>").addClass('track').attr("id", "track_" + this.id);
     },
 
     build_header_div: function() {
@@ -2666,23 +2667,35 @@ extend(Track.prototype, Drawable.prototype, {
     },
 
     /**
+     * Remove visualization content and display message.
+     */
+    show_message: function(msg_html) {
+        this.tiles_div.remove();
+        return $('<span/>').addClass('message').html(msg_html).appendTo(this.content_div);
+    },
+
+    /**
      * Initialize and draw the track.
      */
     init: function(retry) {
+        // FIXME: track should have a 'state' attribute that is checked on load; this state attribute should be
+        // used in this function to determine what action(s) to take.
+
         var track = this;
         track.enabled = false;
         track.tile_cache.clear();    
         track.data_manager.clear();
-        track.tiles_div.css("height", "auto");
         /*
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
         }
         */
         // Remove old track content (e.g. tiles, messages).
-        track.tiles_div.text('').children().remove();
+        track.content_div.children().remove();
         track.container_div.removeClass("nodata error pending");
-        
+
+        track.tiles_div = $("<div/>").addClass("tiles").appendTo(track.content_div);
+
         //
         // Tracks with no dataset id are handled differently.
         // FIXME: is this really necessary?
@@ -2704,16 +2717,16 @@ extend(Track.prototype, Drawable.prototype, {
             if (!result || result === "error" || result.kind === "error") {
                 // Dataset is in error state.
                 track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
+                var msg_elt = track.show_message(DATA_ERROR);
                 if (result.message) {
                     // Add links to (a) show error and (b) try again.
-                    track.content_div.append(
+                    msg_elt.append(
                         $("<a href='javascript:void(0);'></a>").text("View error").click(function() {
                             Galaxy.modal.show({title: "Trackster Error", body: "<pre>" + result.message + "</pre>", buttons : {'Close' : function() { Galaxy.modal.hide(); } } });
                         })
                     );
-                    track.content_div.append( $('<span/>').text(' ') );
-                    track.content_div.append(
+                    msg_elt.append( $('<span/>').text(' ') );
+                    msg_elt.append(
                         $("<a href='javascript:void(0);'></a>").text("Try again").click(function() {
                             track.init(true);
                         })
@@ -2722,15 +2735,15 @@ extend(Track.prototype, Drawable.prototype, {
             } 
             else if (result === "no converter") {
                 track.container_div.addClass("error");
-                track.tiles_div.text(DATA_NOCONVERTER);
+                track.show_message(DATA_NOCONVERTER);
             } 
             else if (result === "no data" || (result.data !== undefined && (result.data === null || result.data.length === 0))) {
                 track.container_div.addClass("nodata");
-                track.tiles_div.text(DATA_NONE);
+                track.show_message(DATA_NONE);
             } 
             else if (result === "pending") {
                 track.container_div.addClass("pending");
-                track.tiles_div.html(DATA_PENDING);
+                track.show_message(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
                 setTimeout(function() { track.init(); }, track.data_query_wait);
             } 
@@ -3528,7 +3541,6 @@ extend(LabelTrack.prototype, Track.prototype, {
         while ( position < view.high ) {
             var screenPosition = ( position - view.low ) / range * width;
             new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
-                // Reduce by one to account for border
                 left: screenPosition
             }));
             position += tickDistance;
@@ -3821,7 +3833,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
     config_params: _.union( Drawable.prototype.config_params, [
-            { key: 'color', label: 'Color', type: 'color', default_value: util.get_random_color() },
+            { key: 'color', label: 'Color', type: 'color' },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3919,8 +3931,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block color', type: 'color', default_value: util.get_random_color() },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'block_color', label: 'Block color', type: 'color' },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
           help: 'Show the number of items in each bin when drawing summary histogram' },
@@ -4217,7 +4229,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'color', label: 'Histogram color', type: 'color', default_value: util.get_random_color() },
+        { key: 'color', label: 'Histogram color', type: 'color' },
         { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
@@ -4361,8 +4373,8 @@ var ReadTrack = function (view, container, obj_dict) {
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block and sense strand color', type: 'color', default_value: util.get_random_color() },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: util.get_random_color() },
+        { key: 'block_color', label: 'Block and sense strand color', type: 'color' },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },

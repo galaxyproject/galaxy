@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["libs/backbone/backbone-relational"], function() {
+define([], function() {
 
 // frame manager
 var GalaxyModal = Backbone.View.extend(

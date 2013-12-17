@@ -1,0 +1,44 @@
+<tool id="multi_repeats" name="multi_repeats">
+    <command>
+        cat $input1 #for $q in $queries# ${q.input2} #end for# #for $q in $more_queries# ${q.more_queries_input} #end for# > $out_file1
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <repeat name="queries" title="Dataset">
+            <param name="input2" type="data" label="Select" />
+        </repeat>
+        <repeat name="more_queries" title="Dataset">
+            <param name="more_queries_input" type="data" label="Select" />
+        </repeat>        
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="simple_line.txt"/>
+            <param name="input2" value="simple_line.txt"/>
+            <output name="out_file1" file="simple_line_x2.txt"/>
+        </test>
+        <!--
+            Following tests continue to work, but for anything more
+            advanced than this simple case these should be considered
+            something of an anti-pattern - see disambiguate_repeats.xml
+            for superior syntax.
+        -->
+        <test>
+            <param name="input1" value="simple_line.txt"/>
+            <param name="input2" value="simple_line.txt"/>
+            <param name="input2" value="simple_line.txt"/>
+            <output name="out_file1" file="simple_line_x3.txt"/>
+        </test>
+        <test>
+            <param name="input1" value="simple_line.txt"/>
+            <param name="input2" value="simple_line.txt"/>
+            <param name="input2" value="simple_line.txt"/>
+            <param name="more_queries_input" value="simple_line.txt"/>
+            <param name="more_queries_input" value="simple_line.txt"/>            
+            <output name="out_file1" file="simple_line_x5.txt"/>
+        </test>
+    </tests>
+</tool>

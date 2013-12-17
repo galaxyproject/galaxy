@@ -1,16 +1,16 @@
 // Additional dependencies: jQuery, underscore.
-define(["libs/backbone/backbone-relational"], function() {
+define([], function() {
 
 /**
  * Dataset metedata.
  */
-var DatasetMetadata = Backbone.RelationalModel.extend({});
+var DatasetMetadata = Backbone.Model.extend({});
 
 /**
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
  */
-var Dataset = Backbone.RelationalModel.extend({
+var Dataset = Backbone.Model.extend({
     defaults: {
         id: '',
         type: '',
@@ -20,8 +20,8 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // FIXME: pass back a metadata dict and then Backbone-relational
-        // can be used unpack metadata automatically.
+        this._set_metadata();
+        
         // Update metadata on change.
         this.on('change', this._set_metadata, this);
     },

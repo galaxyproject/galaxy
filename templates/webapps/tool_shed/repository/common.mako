@@ -392,11 +392,6 @@
             ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
         %endfor
     %endif
-    %if folder.installation_errors:
-        %for installation_error in folder.installation_errors:
-            ${render_folder( installation_error, pad, my_row, row_counter )}
-        %endfor
-    %endif
     %if folder.tool_dependency_installation_errors:
         %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
             ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
@@ -690,16 +685,16 @@
 
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "td_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rtdie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table">
+            <table id="test_environment">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -709,7 +704,7 @@
                     <td>${installation_error.version | h}</td>
                 </tr>
                 <tr><th>Error</th></tr>
-                <tr><td colspan="3">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="3">${unicodify( installation_error.error_message ) | h}</td></tr>
             </table>
         </td>
     </tr>
@@ -721,16 +716,16 @@
 
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "rd_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rrie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table">
+            <table id="test_environment">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
@@ -743,7 +738,7 @@
                     </tr>
                 %endif
                 <tr><th>Error</th></tr>
-                <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="4">${unicodify( installation_error.error_message ) | h}</td></tr>
             </table>
         </td>
     </tr>
@@ -823,7 +818,7 @@
                             <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
                         </div>
                     %else:
-                        %if tool.repository_installation_status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                        %if tool.repository_installation_status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
                         %else:
                             ${tool.name | h}
@@ -863,11 +858,11 @@
             %if row_is_header:
                 ${tool_dependency.name | h}
             %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
-                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.install_model.ToolDependency.installation_status.INSTALLED ]:
                     <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name | h}
                     </a>
-                %elif tool_dependency.installation_status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                %elif tool_dependency.installation_status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                     <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
@@ -909,7 +904,7 @@
         id="libraryItem-rte-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table class="grid" id="test_environment">
-                <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
+                <tr><td><b>Time tested:</b> ${test_environment.time_tested | h}</td></tr>
                 <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
                 <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
                 <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>

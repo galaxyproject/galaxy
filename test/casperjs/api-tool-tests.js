@@ -63,10 +63,10 @@ function findObject( objectArray, where, start ){
 
 // =================================================================== TESTS
 var panelSectionKeys = [
-        'elems', 'id', 'name', 'type', 'version'
+        'elems', 'id', 'name', 'version'
     ],
     panelToolKeys = [
-        'id', 'name', 'description', 'version', 'link', 'target', 'min_width', 'type'
+        'id', 'name', 'description', 'version', 'link', 'target', 'min_width'
     ],
     toolSummaryKeys = [
         'id', 'name', 'description', 'version'
@@ -212,6 +212,29 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     // ------------------------------------------------------------------------------------------- CREATE
     // this is a method of running a job. Shouldn't that be in jobs.create?
+
+    this.test.comment( 'create should work' );
+    var upload_params = {
+        'files_0|NAME': 'Test Dataset',
+        'files_0|url_paste': 'Hello World',
+        'dbkey': '?',
+        'file_type': 'txt'
+    };
+    var payload = {
+        'tool_id': 'upload1',
+        'inputs': upload_params,
+        'upload_type': 'upload_dataset',
+    };
+    var toolCreate = this.api.tools.create( payload );
+    this.test.assert( hasKeys( toolCreate, ['outputs'] ), 'Has outputs' );
+    var outputs = toolCreate['outputs'];
+    this.test.assert( utils.isArray( outputs ), 'outputs is an array' );
+    this.test.assert( outputs.length == 1, 'one dataset is created' );
+
+    var output = outputs[0]
+    this.test.assert( utils.isObject( output ), 'output0 is an array' );
+    this.test.assert( hasKeys( output, ['data_type', 'deleted', 'hid', 'history_id', 'id', 'name' ] ), 'Dataset information defined' );
+    this.test.assert( hasKeys( output, ['output_name' ] ), 'Output name labelled' );
 
     // ------------------------------------------------------------------------------------------- MISC
     //attemptShowOnAllTools.call( spaceghost );

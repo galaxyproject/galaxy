@@ -1,5 +1,7 @@
 <%!
-    from galaxy.web.framework.helpers.grids import TextColumn
+    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
+    from galaxy.web.framework.helpers import iff
+
     import galaxy.util
     def inherit(context):
         if context.get('use_panels'):
@@ -12,11 +14,24 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="./grid_common.mako" import="*" />
 <%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
-<%def name="init()">
+<%def name="load(embedded = False, insert = None)">
+<%
+    self.init(insert)
+    self.stylesheets()
+    self.grid_javascripts()
+    if embedded:
+        self.render_grid_header( grid, False )
+        self.render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )
+    else:
+        self.make_grid( grid )
+    endif
+%>
+</%def>
+
+<%def name="init(insert=None)">
 <%
     self.has_left_panel         = False
     self.has_right_panel        = False
@@ -47,9 +62,13 @@
         'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
-        'current_item_id'               : ''
+        'current_item_id'               : False,
+        'use_panels'                    : context.get('use_panels'),
+        'insert'                        : insert,
+        'default_filter_dict'           : default_filter_dict,
+        'advanced_search'               : advanced_search
     }
-
+    
     ## add current item if exists
     if current_item:
         self.grid_config['current_item_id'] = current_item.id
@@ -81,6 +100,8 @@
             'label_id_prefix'   : column.label_id_prefix,
             'sortable'          : column.sortable,
             'label'             : column.label,
+            'filterable'        : column.filterable,
+            'is_text'           : isinstance(column, TextColumn),
             'href'              : href,
             'extra'             : extra
         })
@@ -94,6 +115,7 @@
             'target'                : operation.target,
             'label'                 : operation.label,
             'confirm'               : operation.confirm,
+            'inbound'               : operation.inbound,
             'global_operation'      : False
         })
         if operation.allow_multiple:
@@ -107,7 +129,8 @@
     for action in grid.global_actions:
         self.grid_config['global_actions'].append({
             'url_args'  : url(**action.url_args),
-            'label'     : action.label
+            'label'     : action.label,
+            'inbound'   : action.inbound
         })
     endfor
 
@@ -144,6 +167,9 @@
                     link = None
                 endif
 
+                ## inbound
+                inbound = column.inbound
+
                 ## get value
                 value = column.get_value( trans, grid, item )
 
@@ -158,7 +184,8 @@
                 ## Item dictionary
                 item_dict['column_config'][column.label] = {
                     'link'      : link,
-                    'value'     : value
+                    'value'     : value,
+                    'inbound'  : inbound
                 }
             endif
         endfor
@@ -181,60 +208,40 @@
 ##
 
 <%def name="center_panel()">
-    ${self.grid_body( grid )}
+    ${self.grid_body()}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-    ${self.grid_body( grid )}
+    ${self.grid_body()}
 </%def>
 
 ## Because body() is special and always exists even if not explicitly defined,
 ## it's not possible to override body() in the topmost template in the chain.
 ## Because of this, override grid_body() instead.
-<%def name="grid_body( grid )">
-    ${self.make_grid( grid )}
+<%def name="grid_body()">
+    ${self.load()}
 </%def>
 
 <%def name="title()">${self.grid_config['title']}</%def>
 
-<%def name="javascripts()">
-   ${parent.javascripts()}
-   ${self.grid_javascripts()}
-</%def>
-
 <%def name="grid_javascripts()">
-    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating", "galaxy.grids" )}
-    ${handle_refresh_frames()}
-    
+    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
+
     <script type="text/javascript">
-
         var gridView = null;
-
         function add_tag_to_grid_filter (tag_name, tag_value)
         {
             // Put tag name and value together.
             var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "");
-            $('#advanced-search').show('fast');
-            gridView.add_filter_condition("tags", tag, true);
+            var advanced_search = $('#advanced-search').is(":visible");
+            if (!advanced_search)
+            {
+                $('#standard-search').slideToggle('fast');
+                $('#advanced-search').slideToggle('fast');
+            }
+            gridView.add_filter_condition("tags", tag);
         };
-
-        $(function() {
-            ## get configuration
-            var grid_config = ${ h.to_json_string( self.grid_config ) };
-            
-            // Create grid.
-            var grid = new Grid(grid_config);
-            
-            // strip protocol and domain
-            var url = grid.get('url_base');
-            url = url.replace(/^.*\/\/[^\/]+/, '');
-            grid.set('url_base', url);
-
-            // Create view.
-            gridView = new GridView(grid);
-        });
-
     </script>
 </%def>
 
@@ -290,21 +297,32 @@
 
         %if self.grid_config['global_actions']:
             <ul class="manage-table-actions">
-                %if len( self.grid_config['global_actions'] ) < 3:
-                    %for action in self.grid_config['global_actions']:
-                        <li><a class="action-button" href="${action['url_args']}">${action['label']}</a></li>
-                    %endfor
-                %else:
-                    <li><a class="action-button" id="action-8675309-popup" class="menubutton">Actions</a></li>
-                    <div popupmenu="action-8675309-popup">
-                        %for action in self.grid_config['global_actions']:
-                            <a class="action-button" href="${action['url_args']}">${action['label']}</a>
-                        %endfor
+                <%
+                    show_popup = len( self.grid_config['global_actions'] ) >= 3
+                %>
+                %if show_popup:
+                    <li><a class="action-button" id="popup-global-actions" class="menubutton">Actions</a></li>
+                    <div popupmenu="popup-global-actions">
+                %endif
+                %for action in self.grid_config['global_actions']:
+                    <%
+                        label_cls = ""
+                        if action['inbound']:
+                            label_cls = "use-inbound"
+                        else:
+                            label_cls = "use-outbound"
+                        endif
+                    %>
+                    <li><a class="action-button ${label_cls}" href="${action['url_args']}" onclick="return false;">${action['label']}</a></li>
+                %endfor
+                %if show_popup:
                     </div>
                 %endif
             </ul>
         %endif
-    
+        %if self.grid_config['insert']:
+            ${self.grid_config['insert']}
+        %endif
         ${render_grid_filters( grid )}
     </div>
 </%def>
@@ -396,23 +414,22 @@
                             # load attributes
                             link = column_settings['link']
                             value = column_settings['value']
+                            inbound = column_settings['inbound']
                             
-                            # check if formatting is defined
-                            value = str(value).replace('//', '/')
-                            
+                            # unescape value
+                            if isinstance(value, unicode):
+                                value = value.replace('//', '/')
+
                             # Attach popup menu?
                             id = ""
-                            if column['attach_popup']:
-                                id = 'grid-%d-popup' % i
-                            endif
-
-                            # Determine appropriate class
                             cls = ""
                             if column['attach_popup']:
+                                id = 'grid-%d-popup' % i
                                 cls = "menubutton"
                                 if link:
                                     cls += " split"
                                 endif
+                                cls += " popup"
                             endif
                         %>
                         <td ${nowrap}>
@@ -420,7 +437,16 @@
                             %if len(self.grid_config['operations']) != 0:
                                 <div id="${id}" class="${cls}" style="float: left;">
                             %endif
-                                    <a class="label" href="${link}">${value}</a>
+
+                            <%
+                                label_class = ""
+                                if inbound:
+                                    label_class = "use-inbound"
+                                else:
+                                    label_class = "use-outbound"
+                                endif
+                            %>
+                            <a class="label ${label_class}" href="${link}" onclick="return false;">${value}</a>
                             %if len(self.grid_config['operations']) != 0:
                                 </div>
                             %endif
@@ -430,32 +456,35 @@
                         </td>
                     %endif
                 %endfor
-                ## Actions column
-                <td>
-                    <div popupmenu="${popupmenu_id}">
-                        %for operation in self.grid_config['operations']:
-                            <%
-                                operation_id = operation['label']
-                                operation_settings = item['operation_config'][operation_id]
-                            %>
-                            %if operation_settings['allowed'] and operation['allow_popup']:
-                                <%
-                                target = ""
-                                if operation['target']:
-                                    target = "target='" + operation['target'] + "'"
-                                %>
-                                %if operation['confirm']:
-                                    <a class="action-button" ${target} confirm="${operation['confirm']}" href="${operation_settings['url_args']}">${operation_id}</a>
-                                %else:
-                                    <a class="action-button" ${target} href="${operation_settings['url_args']}">${operation_id}</a>
-                                %endif  
-                            %endif
-                        %endfor
-                    </div>
-                </td>
             </tr>
             <% num_rows_rendered += 1 %>
         %endfor
+
+        ## update configuration
+        <script type="text/javascript">
+        $(function() {
+            require(['galaxy.grids'], function(mod_grids) {
+                ## get configuration
+                var grid_config = ${ h.to_json_string( self.grid_config ) };
+                
+                // Create grid.
+                var grid = new mod_grids.Grid(grid_config);
+                
+                // strip protocol and domain
+                var url = grid.get('url_base');
+                url = url.replace(/^.*\/\/[^\/]+/, '');
+                grid.set('url_base', url);
+
+                // Create view.
+                if (!gridView)
+                    gridView = new mod_grids.GridView(grid);
+                else
+                    gridView.init_grid(grid);
+            });
+        });
+        </script>
+        
+        ${handle_refresh_frames()}
 </%def>
 
 ## Render grid table footer contents.
@@ -510,24 +539,24 @@
                     %>
                     Page:
                     % if min_page > 1:
-                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1">1</a></span> ...
+                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1" onclick="return false;">1</a></span> ...
                     % endif
                     %for page_index in range(min_page, max_page + 1):
                         %if page_index == cur_page_num:
                             <span class='page-link inactive-link' id="page-link-${page_index}">${page_index}</span>
                         %else:
                             <% args = { 'page' : page_index } %>
-                            <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" page_num='${page_index}'>${page_index}</a></span>
+                            <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" onclick="return false;" page_num='${page_index}'>${page_index}</a></span>
                         %endif
                     %endfor
                     %if max_page < num_pages:
                         ...
-                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" page_num="${num_pages}">${num_pages}</a></span>
+                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>
                     %endif
                 </span>
                 
                 ## Show all link
-                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" page_num="all">Show All</a></span>
+                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" onclick="return false;" page_num="all">Show All</a></span>
             </td>
         </tr>    
     %endif
@@ -565,5 +594,193 @@
             </td>
          </tr>
     %endif
+</%def>
+
+## Print grid search/filtering UI.
+<%def name="render_grid_filters( grid, render_advanced_search=True )">
+    <%
+        default_filter_dict = self.grid_config['default_filter_dict']
+        filters = self.grid_config['filters']
+
+        # Show advanced search if flag set or if there are filters for advanced search fields.
+        advanced_search_display = "none"
+
+        if self.grid_config['advanced_search']:
+            advanced_search_display = "block"
+
+        for column in self.grid_config['columns']:
+            if column['filterable'] == "advanced":
+                ## Show div if current filter has value that is different from the default filter.
+                column_key = column['key']
+                if column_key in filters and column_key in default_filter_dict and \
+                    filters[column_key] != default_filter_dict[column_key]:
+                        advanced_search_display = "block"
+
+        # do not show standard search if showing adv.
+        standard_search_display = "block"
+        if advanced_search_display == "block":
+            standard_search_display = "none"
+    %>
+    ## Standard search.
+    <div id="standard-search" style="display: ${standard_search_display};">
+        <table>
+            <tr><td style="padding: 0;">
+                <table>
+                %for column in self.grid_config['columns']:
+                    %if column['filterable'] == "standard":
+                       ${render_grid_column_filter( grid, column )}
+                    %endif
+                %endfor
+                </table>
+            </td></tr>
+            <tr><td>
+                ## Only show advanced search if there are filterable columns.
+                <%
+                    show_advanced_search_link = False
+                    if render_advanced_search:
+                        for column in self.grid_config['columns']:
+                            if column['filterable'] == "advanced":
+                                show_advanced_search_link = True
+                                break
+                            endif
+                %>
+                %if show_advanced_search_link:
+                    <a href="" class="advanced-search-toggle">Advanced Search</a>
+                %endif
+            </td></tr>
+        </table>
+    </div>
+    
+    ## Advanced search.
+    <div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;">
+        <table>
+            <tr><td style="text-align: left" colspan="100">
+                <a href="" class="advanced-search-toggle">Close Advanced Search</a>
+            </td></tr>
+            %for column in self.grid_config['columns']:
+                %if column['filterable'] == "advanced":
+                    ## Show div if current filter has value that is different from the default filter.
+                    <%
+                        column_key = column['key']
+                    %>
+                    % if column_key in filters and column_key in default_filter_dict and \
+                        filters[column_key] != default_filter_dict[column_key]:
+                        <script type="text/javascript">
+                            $('#advanced-search').css("display", "block");
+                        </script>
+                    % endif
+            
+                    ${render_grid_column_filter( grid, column )}
+                %endif
+            %endfor
+        </table>
+    </div>
+</%def>
+
+## Render a filter UI for a grid column. Filter is rendered as a table row.
+<%def name="render_grid_column_filter( grid, column )">
+    <tr>
+        <%
+            default_filter_dict = self.grid_config['default_filter_dict']
+            filters = self.grid_config['filters']
+            column_label = column['label']
+            column_key = column['key']
+            if column['filterable'] == "advanced":
+                column_label = column_label.lower()
+        %>
+        %if column['filterable'] == "advanced":
+            <td align="left" style="padding-left: 10px">${column_label}:</td>
+        %endif
+        <td style="padding: 0;">
+            %if column['is_text']:
+                <form class="text-filter-form" column_key="${column_key}" action="${url(dict())}" method="get" >
+                    ## Carry forward filtering criteria with hidden inputs.
+                    %for temp_column in self.grid_config['columns']:
+                        %if temp_column['key'] in filters:
+                            <% value = filters[ temp_column['key'] ] %>
+                            %if value != "All":
+                                <%
+                                    if temp_column['is_text']:
+                                        value = h.to_json_string( value )
+                                %>
+                                <input type="hidden" id="${temp_column['key']}" name="f-${temp_column['key']}" value='${value}'/>
+                            %endif
+                        %endif
+                    %endfor
+                    ## Print current filtering criteria and links to delete.
+                    <span id="${column_key}-filtering-criteria">
+                        %if column_key in filters:
+                            <% column_filter = filters[column_key] %>
+                            %if isinstance( column_filter, basestring ):
+                                %if column_filter != "All":
+                                    <span class='text-filter-val'>
+                                        ${filters[column_key]}
+                                        <% filter_all = GridColumnFilter( "", { column_key : "All" } ) %>
+                                        <a href="${url(filter_all.get_url_args())}"><span class="delete-search-icon" /></a>
+                                    </span>
+                                %endif
+                            %elif isinstance( column_filter, list ):
+                                %for i, filter in enumerate( column_filter ):
+                                    <span class='text-filter-val'>${filter}
+                                        <%
+                                            new_filter = list( column_filter )
+                                            del new_filter[ i ]
+                                            new_column_filter = GridColumnFilter( "", { column_key : h.to_json_string( new_filter ) } )
+                                        %>
+                                        <a href="${url(new_column_filter.get_url_args())}"><span class="delete-search-icon" /></a>
+                                    </span>
+                                %endfor
+                            %endif
+                        %endif
+                    </span>
+                    ## Print input field for column.
+                    <span class="search-box">
+                        <% 
+                            # Set value, size of search input field. Minimum size is 20 characters.
+                            value = iff( column['filterable'] == "standard", column['label'].lower(), "")
+                            size = len( value )
+                            if size < 20:
+                                size = 20
+                            # +4 to account for search icon/button.
+                            size = size + 4
+                        %>
+                        <input class="search-box-input" id="input-${column_key}-filter" name="f-${column_key}" type="text" value="${value}" size="${size}"/>
+                        <button class="submit-image" type="submit" title='Search'><span style="display: none;"></button>
+                    </span>
+                </form>
+            %else:
+                <span id="${column_key}-filtering-criteria">
+                    <%
+                        seperator = False
+                    %>
+                    %for filter_label in self.grid_config['categorical_filters'][column_key]:
+                        <%
+                            # get filter
+                            filter = self.grid_config['categorical_filters'][column_key][filter_label]
+                            
+                            # each filter will have only a single argument, so get that single argument
+                            for key in filter:
+                                filter_key = key
+                                filter_arg = filter[key]
+                        %>
+                        %if seperator:
+                            |
+                        %endif
+
+                        <%
+                            seperator = True
+                        %>
+                        %if column_key in cur_filter_dict and column_key in filter and cur_filter_dict[column_key] == filter_arg:
+                            <span class="categorical-filter ${column_key}-filter current-filter">${filter_label}</span>
+                        %else:
+                            <span class="categorical-filter ${column_key}-filter">
+                                <a href="" filter_key="${filter_key}" filter_val="${filter_arg}">${filter_label}</a>
+                            </span>
+                        %endif
+                    %endfor
+                </span>
+            %endif
+        </td>
+    </tr>
 </%def>
 

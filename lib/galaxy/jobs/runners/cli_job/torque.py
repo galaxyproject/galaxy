@@ -35,7 +35,8 @@ cd %s
 echo $? > %s
 """
 
-argmap = { 'Execution_Time'     : '-a',
+argmap = { 'destination'        : '-q',
+           'Execution_Time'     : '-a',
            'Account_Name'       : '-A',
            'Checkpoint'         : '-c',
            'Error_Path'         : '-e',

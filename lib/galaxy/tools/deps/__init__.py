@@ -7,12 +7,37 @@ import os.path
 import logging
 log = logging.getLogger( __name__ )
 
-from galaxy.util import parse_xml
+from xml.etree import ElementTree
 
 from .resolvers import INDETERMINATE_DEPENDENCY
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 from galaxy.util.submodules import submodules
+
+
+def build_dependency_manager( config ):
+    if config.use_tool_dependencies:
+        dependency_manager_kwds = {
+            'default_base_path': config.tool_dependency_dir,
+            'conf_file': config.dependency_resolvers_config_file,
+        }
+        dependency_manager = DependencyManager( **dependency_manager_kwds )
+    else:
+        dependency_manager = NullDependencyManager()
+
+    return dependency_manager
+
+
+class NullDependencyManager( object ):
+
+    def uses_tool_shed_dependencies(self):
+        return False
+
+    def dependency_shell_commands( self, requirements, **kwds ):
+        return []
+
+    def find_dep( self, name, version=None, type='package', **kwds ):
+        return INDETERMINATE_DEPENDENCY
 
 
 class DependencyManager( object ):
@@ -69,23 +94,24 @@ class DependencyManager( object ):
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file or not os.path.exists( conf_file ):
             return self.__default_dependency_resolvers()
-        tree = parse_xml( conf_file )
-        return self.__parse_resolver_conf_xml( tree )
+        root = ElementTree.parse( conf_file ).getroot()
+        return self.__parse_resolver_conf_xml( root )
 
     def __default_dependency_resolvers( self ):
         return [
             ToolShedPackageDependencyResolver(self),
             GalaxyPackageDependencyResolver(self),
+            GalaxyPackageDependencyResolver(self, versionless=True),
         ]
 
-    def __parse_resolver_conf_xml(self, tree):
+    def __parse_resolver_conf_xml(self, root):
         """
 
-        :param tree: Object representing the root ``<dependency_resolvers>`` object in the file.
-        :type tree: ``xml.etree.ElementTree.Element``
+        :param root: Object representing the root ``<dependency_resolvers>`` object in the file.
+        :type root: ``xml.etree.ElementTree.Element``
         """
         resolvers = []
-        resolvers_element = tree.getroot()
+        resolvers_element = root
         for resolver_element in resolvers_element.getchildren():
             resolver_type = resolver_element.tag
             resolver_kwds = dict(resolver_element.items())

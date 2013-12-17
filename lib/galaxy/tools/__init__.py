@@ -40,7 +40,7 @@ from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -52,7 +52,7 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.filters import FilterFactory
-from galaxy.tools.test import ToolTestBuilder
+from galaxy.tools.test import parse_tests_elem
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -394,6 +394,10 @@ class ToolBox( object, Dictifiable ):
                             return tool
                 #No tool matches by version, simply return the first available tool found
                 return rval[0]
+        #We now likely have a Toolshed guid passed in, but no supporting database entries
+        #If the tool exists by exact id and is loaded then provide exact match within a list
+        if tool_id in self.tools_by_id:
+            return[ self.tools_by_id[ tool_id ] ]
         return None
 
     def get_loaded_tools_by_lineage( self, tool_id ):
@@ -414,15 +418,15 @@ class ToolBox( object, Dictifiable ):
 
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                               .first()
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        return self.sa_session.query( self.app.model.ToolShedRepository ) \
-                              .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                             self.app.model.ToolShedRepository.table.c.name == name,
-                                             self.app.model.ToolShedRepository.table.c.owner == owner,
-                                             self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                              .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                             self.app.install_model.ToolShedRepository.table.c.name == name,
+                                             self.app.install_model.ToolShedRepository.table.c.owner == owner,
+                                             self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
@@ -503,9 +507,9 @@ class ToolBox( object, Dictifiable ):
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
                 if not self.__get_tool_version( tool.id ):
-                    tool_version = self.app.model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
-                    self.sa_session.add( tool_version )
-                    self.sa_session.flush()
+                    tool_version = self.app.install_model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
+                    self.app.install_model.context.add( tool_version )
+                    self.app.install_model.context.flush()
                 # Load the tool's lineage ids.
                 tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
@@ -696,14 +700,7 @@ class ToolBox( object, Dictifiable ):
         return stored.latest_workflow
 
     def init_dependency_manager( self ):
-        if self.app.config.use_tool_dependencies:
-            dependency_manager_kwds = {
-                'default_base_path': self.app.config.tool_dependency_dir,
-                'conf_file': self.app.config.dependency_resolvers_config_file,
-            }
-            self.dependency_manager = DependencyManager( **dependency_manager_kwds )
-        else:
-            self.dependency_manager = None
+        self.dependency_manager = build_dependency_manager( self.app.config )
 
     @property
     def sa_session( self ):
@@ -1003,8 +1000,8 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == self.id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
                               .first()
     @property
     def tool_versions( self ):
@@ -1078,6 +1075,22 @@ class Tool( object, Dictifiable ):
         :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
+    
+    def get_panel_section( self ):
+        for key, item in self.app.toolbox.integrated_tool_panel.items():
+            if item:
+                if key.startswith( 'tool_' ):
+                    if item.id == self.id:
+                        return '', ''
+                if key.startswith( 'section_' ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    for section_key, section_item in item.elems.items():
+                        if section_key.startswith( 'tool_' ):
+                            if section_item:
+                                if section_item.id == self.id:
+                                    return section_id, section_name
+        return None, None
 
     def parse( self, root, guid=None ):
         """
@@ -1219,14 +1232,9 @@ class Tool( object, Dictifiable ):
             for key, value in uihints_elem.attrib.iteritems():
                 self.uihints[ key ] = value
         # Tests
-        tests_elem = root.find( "tests" )
-        if tests_elem:
-            try:
-                self.parse_tests( tests_elem )
-            except:
-                log.exception( "Failed to parse tool tests" )
-        else:
-            self.tests = None
+        self.__tests_elem = root.find( "tests" )
+        self.__tests_populated = False
+
         # Requirements (dependencies)
         self.requirements = parse_requirements_from_xml( root )
         # Determine if this tool can be used in workflows
@@ -1237,6 +1245,21 @@ class Tool( object, Dictifiable ):
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
+
+    @property
+    def tests( self ):
+        if not self.__tests_populated:
+            tests_elem = self.__tests_elem
+            if tests_elem:
+                try:
+                    self.__tests = parse_tests_elem( self, tests_elem )
+                except:
+                    log.exception( "Failed to parse tool tests" )
+            else:
+                self.__tests = None
+            self.__tests_populated = True
+        return self.__tests
+
     def parse_inputs( self, root ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
@@ -1564,16 +1587,6 @@ class Tool( object, Dictifiable ):
                 log.error( "Traceback: %s" % trace_msg )
         return return_level
 
-    def parse_tests( self, tests_elem ):
-        """
-        Parse any "<test>" elements, create a `ToolTestBuilder` for each and
-        store in `self.tests`.
-        """
-        self.tests = []
-        for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
-            test = ToolTestBuilder( self, test_elem, i )
-            self.tests.append( test )
-
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
@@ -1698,9 +1711,9 @@ class Tool( object, Dictifiable ):
         return param
 
     def populate_tool_shed_info( self ):
-        if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
+        if self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id( self.repository_id )
-            tool_shed_repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( repository_id )
+            tool_shed_repository = self.app.install_model.context.query( self.app.install_model.ToolShedRepository ).get( repository_id )
             if tool_shed_repository:
                 self.tool_shed = tool_shed_repository.tool_shed
                 self.repository_name = tool_shed_repository.name
@@ -1982,6 +1995,7 @@ class Tool( object, Dictifiable ):
                 group_errors = [ ]
                 any_group_errors = False
                 rep_index = 0
+                del group_state[:]  # Clear prepopulated defaults if repeat.min set.
                 while True:
                     rep_name = "%s_%d" % ( key, rep_index )
                     if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
@@ -2998,10 +3012,10 @@ class Tool( object, Dictifiable ):
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
-            if not self.tool_type.startswith( 'data_source' ):
-                link = url_for( '/tool_runner', tool_id=self.id )
+            if not isinstance( self, DataSourceTool ):
+                link = url_for( controller='tool_runner', tool_id=self.id )
             else:
-                link = url_for( self.action, **self.get_static_param_values( trans ) )
+                link = url_for( controller='tool_runner', action='data_source_redirect', tool_id=self.id )
 
             # Basic information
             tool_dict.update( { 'link': link,
@@ -3012,6 +3026,8 @@ class Tool( object, Dictifiable ):
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
             tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            
+        tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         return tool_dict
 

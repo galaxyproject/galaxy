@@ -1062,7 +1062,8 @@ class ColumnListParameter( SelectToolParameter ):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.model.mapping import context as sa_session
+    >>> from galaxy.model.mapping import init
+    >>> sa_session = init( "/tmp", "sqlite:///:memory:", create_tables=True ).session
     >>> hist = History()
     >>> sa_session.add( hist )
     >>> sa_session.flush()
@@ -1739,7 +1740,13 @@ class DataToolParameter( ToolParameter ):
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in  value.split( "," ) ]
         if isinstance( value, list ):
-            rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
+            rval = []
+            for single_value in value:
+                if isinstance( single_value, dict ):
+                    assert single_value['src'] == 'hda'
+                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id( single_value[ 'id' ] ) ) )
+                else:
+                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:

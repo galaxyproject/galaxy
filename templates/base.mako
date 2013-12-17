@@ -10,7 +10,7 @@
         ${self.stylesheets()}
         ${self.javascripts()}
     </head>
-    <body>
+    <body class="inbound">
         ${next.body()}
     </body>
 </html>
@@ -47,10 +47,10 @@
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
-        "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
         "galaxy.base",
-        "mvc/ui"
+        "mvc/ui",
+        'libs/require'
     )}
 
     <script type="text/javascript">
@@ -69,6 +69,15 @@
             error   : function(){},
             assert  : function(){}
         };
+
+        ## configure require
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts') }",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/backbone/backbone": { exports: "Backbone" }
+            }
+        });
     </script>
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:

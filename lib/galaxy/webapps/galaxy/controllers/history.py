@@ -34,14 +34,14 @@ class HistoryListGrid( grids.Grid ):
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
                 if count:
-                    rval += '<div class="count-box state-color-%s">%s</div>' % (state, count)
+                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
             return rval
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
-                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
+                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True )
             return link
 
 
@@ -69,7 +69,7 @@ class HistoryListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
-        DatasetsByStateColumn( "Datasets", key="datasets_by_state", sortable=False ),
+        DatasetsByStateColumn( "Datasets", key="datasets_by_state", sortable=False, nowrap=True),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -85,10 +85,10 @@ class HistoryListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "View", allow_multiple=False ),
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "View", allow_multiple=False, inbound=True ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -377,7 +377,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         galaxy_session = trans.get_galaxy_session()
         try:
             association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                          .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
                                           .first()
         except:
             association = None
@@ -838,8 +838,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Set imported history to be user's current history.
             trans.set_history( new_history )
             return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
+                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
         elif not user_history or not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name

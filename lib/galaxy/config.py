@@ -1,6 +1,8 @@
 """
 Universe configuration builder.
 """
+# absolute_import needed for tool_shed package.
+from __future__ import absolute_import
 
 import sys, os, tempfile, re
 import logging, logging.config
@@ -33,15 +35,22 @@ class Configuration( object ):
         self.umask = os.umask( 077 ) # get the current umask
         os.umask( self.umask ) # can't get w/o set, so set it back
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
         self.database_auto_migrate = string_as_bool( kwargs.get( "database_auto_migrate", "False" ) )
+
+        # Install database related configuration (if different).
+        self.install_database_connection = kwargs.get( "install_database_connection", None )
+        self.install_database_engine_options = get_database_engine_options( kwargs, model_prefix="install_" )
+
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -439,7 +448,7 @@ class Configuration( object ):
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
 
-def get_database_engine_options( kwargs ):
+def get_database_engine_options( kwargs, model_prefix='' ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
@@ -455,7 +464,7 @@ def get_database_engine_options( kwargs ):
         'pool_threadlocal': string_as_bool,
         'server_side_cursors': string_as_bool
     }
-    prefix = "database_engine_option_"
+    prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
     for key, value in kwargs.iteritems():
@@ -465,6 +474,7 @@ def get_database_engine_options( kwargs ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
+
 
 def configure_logging( config ):
     """
@@ -506,3 +516,110 @@ def configure_logging( config ):
         sentry_handler.setLevel( logging.WARN )
         root.addHandler( sentry_handler )
 
+
+class ConfiguresGalaxyMixin:
+    """ Shared code for configuring Galaxy-like app objects.
+    """
+
+    def _configure_toolbox( self ):
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        from galaxy import tools
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        # Search support for tools
+        import galaxy.tools.search
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+
+    def _configure_tool_data_tables( self, from_shed_config ):
+        from galaxy.tools.data import ToolDataTableManager
+
+        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
+        self.tool_data_tables = ToolDataTableManager( tool_data_path=self.config.tool_data_path,
+                                                      config_filename=self.config.tool_data_table_config_path )
+        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
+        self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
+                                                     tool_data_path=self.tool_data_tables.tool_data_path,
+                                                     from_shed_config=from_shed_config )
+
+    def _configure_datatypes_registry( self, installed_repository_manager=None ):
+        from galaxy.datatypes import registry
+        # Create an empty datatypes registry.
+        self.datatypes_registry = registry.Registry()
+        if installed_repository_manager:
+            # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
+            # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
+            # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
+            # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
+            # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
+            # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
+            installed_repository_manager.load_proprietary_datatypes()
+        # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+
+    def _configure_object_store( self, **kwds ):
+        from galaxy.objectstore import build_object_store_from_config
+        self.object_store = build_object_store_from_config( self.config, **kwds )
+
+    def _configure_security( self ):
+        from galaxy.web import security
+        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
+
+    def _configure_tool_shed_registry( self ):
+        import tool_shed.tool_shed_registry
+
+        # Set up the tool sheds registry
+        if os.path.isfile( self.config.tool_sheds_config ):
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        else:
+            self.tool_shed_registry = None
+
+    def _configure_models( self, check_migrate_databases=False, check_migrate_tools=False, config_file=None ):
+        """
+        Preconditions: object_store must be set on self.
+        """
+        if self.config.database_connection:
+            db_url = self.config.database_connection
+        else:
+            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        install_db_url = self.config.install_database_connection
+        # TODO: Consider more aggressive check here that this is not the same
+        # database file under the hood.
+        combined_install_database = not( install_db_url and install_db_url != db_url )
+        install_db_url = install_db_url or db_url
+
+        if check_migrate_databases:
+            # Initialize database / check for appropriate schema version.  # If this
+            # is a new installation, we'll restrict the tool migration messaging.
+            from galaxy.model.migrate.check import create_or_verify_database
+            create_or_verify_database( db_url, config_file, self.config.database_engine_options, app=self )
+            if not combined_install_database:
+                from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
+                tsi_create_or_verify_database( install_db_url, self.config.install_database_engine_options, app=self )
+
+        if check_migrate_tools:
+            # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
+            from tool_shed.galaxy_install.migrate.check import verify_tools
+            verify_tools( self, install_db_url, config_file, self.config.database_engine_options )
+
+        from galaxy.model import mapping
+        self.model = mapping.init( self.config.file_path,
+                                   db_url,
+                                   self.config.database_engine_options,
+                                   map_install_models=combined_install_database,
+                                   database_query_profiling_proxy=self.config.database_query_profiling_proxy,
+                                   object_store=self.object_store,
+                                   trace_logger=getattr(self, "trace_logger", None),
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+
+        if combined_install_database:
+            log.info("Install database targetting Galaxy's database configuration.")
+            self.install_model = self.model
+        else:
+            from galaxy.model.tool_shed_install import mapping as install_mapping
+            install_db_url = self.config.install_database_connection
+            log.info("Install database using its own connection %s" % install_db_url)
+            install_db_engine_options = self.config.install_database_engine_options
+            self.install_model = install_mapping.init( install_db_url,
+                                                       install_db_engine_options )
