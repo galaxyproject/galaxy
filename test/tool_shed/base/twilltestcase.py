@@ -12,16 +12,27 @@ import tarfile
 import urllib
 import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model.tool_shed_install as galaxy_model
-import galaxy.util as util
+import galaxy.util
+
+from base.tool_shed_util import repository_installation_timeout
+from base.twilltestcase import TwillTestCase
+from galaxy.util.json import from_json_string
+from galaxy.web import security
+from tool_shed.util.encoding_util import tool_shed_encode
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import hg, ui, commands
+eggs.require( 'mercurial' )
+eggs.require( 'twill' )
+
 from mercurial.util import Abort
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
+
+import twill.commands as tc
+
 
 log = logging.getLogger( __name__ )
 
@@ -848,7 +859,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id 
+            # This regex ensures that non-hex characters are stripped out of the list, so that galaxy.util.listify/decode_id 
             # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
             # comma-separated values.
             repository_ids = str( iri_ids )
@@ -856,9 +867,9 @@ class ShedTwillTestCase( TwillTestCase ):
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
             url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
+                ( ','.join( galaxy.util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_galaxy_url( url )
-            return util.listify( repository_ids )
+            return galaxy.util.listify( repository_ids )
         
     def install_repositories_from_search_results( self, repositories, install_tool_dependencies=False, 
                                                   strings_displayed=[], strings_not_displayed=[], **kwd ):
@@ -1327,7 +1338,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def verify_installed_repository_data_table_entries( self, required_data_table_entries ):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
-        data_tables = util.parse_xml( self.shed_tool_data_table_conf )
+        data_tables = xml_util.parse_xml( self.shed_tool_data_table_conf )
         found = False
         # With the tool shed, the "path" attribute that is hard-coded into the tool_data_tble_conf.xml
         # file is ignored.  This is because the tool shed requires the directory location to which this
@@ -1445,8 +1456,8 @@ class ShedTwillTestCase( TwillTestCase ):
                 while galaxy_repository.status not in final_states:
                     test_db_util.ga_refresh( galaxy_repository )
                     timeout_counter = timeout_counter + 1
-                    # This timeout currently defaults to 180 seconds, or 3 minutes.
-                    if timeout_counter > common.repository_installation_timeout:
+                    # This timeout currently defaults to 10 minutes.
+                    if timeout_counter > repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
                                               ( timeout_counter, galaxy_repository.status ) )
                         break

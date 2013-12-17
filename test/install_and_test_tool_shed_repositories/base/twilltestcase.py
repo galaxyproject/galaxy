@@ -1,9 +1,22 @@
+import logging
+import os
+import re
+import test_db_util
+import time
+import urllib
+
 import galaxy.model as model
 import galaxy.model.tool_shed_install as install_model
-import common, string, os, re, test_db_util, simplejson, logging, time, sys
-import galaxy.util as util
-from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
+import galaxy.util
+
+from galaxy.web import security
+from base.twilltestcase import TwillTestCase
+from base.tool_shed_util import repository_installation_timeout
+
+from galaxy import eggs
+eggs.require( 'twill' )
+
+import twill.commands as tc
 
 log = logging.getLogger( __name__ )
 
@@ -52,7 +65,7 @@ class InstallTestRepository( TwillTestCase ):
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id
+            # This regex ensures that non-hex characters are stripped out of the list, so that galaxy.util.listify/decode_id
             # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
             # comma-separated values.
             repository_ids = str( iri_ids )
@@ -60,9 +73,9 @@ class InstallTestRepository( TwillTestCase ):
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
             url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
+                ( ','.join( galaxy.util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_url( url )
-            return util.listify( repository_ids )
+            return galaxy.util.listify( repository_ids )
 
     def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True,
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[],
@@ -161,9 +174,9 @@ class InstallTestRepository( TwillTestCase ):
                     timeout_counter = timeout_counter + 1
                     if timeout_counter % 10 == 0:
                         log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
-                    # This timeout currently defaults to 180 seconds, or 3 minutes.
-                    if timeout_counter > common.repository_installation_timeout:
-                        raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                              ( timeout_counter, repository.status ) )
+                    # This timeout currently defaults to 10 minutes.
+                    if timeout_counter > repository_installation_timeout:
+                        raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
+                            ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )

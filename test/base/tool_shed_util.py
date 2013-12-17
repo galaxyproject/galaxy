@@ -15,6 +15,9 @@ from galaxy.util import parse_xml
 
 log = logging.getLogger(__name__)
 
+# Set a 10 minute timeout for repository installation.
+repository_installation_timeout = 600
+
 def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision, tool_path ):
     """
     Return the GALAXY_TEST_FILE_DIR, the containing repository name and the change set revision for the tool elem.

@@ -1,39 +1,38 @@
-import pkg_resources
-pkg_resources.require( "twill==0.9" )
-
-import StringIO
-import os
+import difflib
 import filecmp
+import logging
+import os
+import re
+import pprint
+import shutil
+import StringIO
+import subprocess
+import tarfile
+import tempfile
 import time
 import unittest
 import urllib
-import logging
-import difflib
-import tarfile
 import zipfile
-import tempfile
-import re
-import shutil
-import subprocess
-import pprint
 
-import twill
-import twill.commands as tc
-from twill.other_packages._mechanize_dist import ClientForm
-pkg_resources.require( "elementtree" )
-pkg_resources.require( "MarkupSafe" )
-from markupsafe import escape
-from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from galaxy.util.json import from_json_string
 from base.asserts import verify_assertions
 
-buffer = StringIO.StringIO()
+from galaxy import eggs
+eggs.require( "elementtree" )
+eggs.require( 'twill' )
+
+from elementtree import ElementTree
+
+import twill
+import twill.commands as tc
+from twill.other_packages._mechanize_dist import ClientForm
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-twill.set_output(buffer)
-tc.config('use_tidy', 0)
+buffer = StringIO.StringIO()
+twill.set_output( buffer )
+tc.config( 'use_tidy', 0 )
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
