@@ -1220,9 +1220,9 @@ def show_summary_output( repository_dicts ):
     for owner, grouped_repository_dicts in repository_dicts_by_owner.items():
         print "# "
         for repository_dict in grouped_repository_dicts:
-            name = repository_dict[ 'name' ]
-            owner = repository_dict[ 'owner' ]
-            changeset_revision = repository_dict[ 'changeset_revision' ]
+            name = str( repository_dict[ 'name' ] )
+            owner = str( repository_dict[ 'owner' ] )
+            changeset_revision = str( repository_dict[ 'changeset_revision' ] )
             print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
 
 def test_repository_tools( app, repository, repository_dict, tool_test_results_dicts, tool_test_results_dict, results_dict ):
@@ -1328,15 +1328,20 @@ def uninstall_repository_and_repository_dependencies( app, repository_dict ):
                                           owner=owner,
                                           changeset_revision=changeset_revision )
         log.debug( 'Revision %s of repository %s owned by %s selected for uninstallation.' % ( changeset_revision, name, owner ) )
-        test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
-        # Set up nose to run the generated uninstall method as a functional test.
-        test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-        test_config.configure( sys.argv )
-        # Run the uninstall method. This method uses the Galaxy web interface to uninstall the previously installed
-        # repository and all of its repository dependencies, deleting each of them from disk.
-        result, _ = run_tests( test_config )
-        success = result.wasSuccessful()
-        if success:
+        try:
+            test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
+            # Set up nose to run the generated uninstall method as a functional test.
+            test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            # Run the uninstall method. This method uses the Galaxy web interface to uninstall the previously installed
+            # repository and all of its repository dependencies, deleting each of them from disk.
+            result, _ = run_tests( test_config )
+            repository_uninstall_successful = result.wasSuccessful()
+        except Exception, e:
+            repository_uninstall_successful = False
+            log.exception( 'Uninstallation of revision %s of repository %s owned by %s failed: %s.' % \
+                ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
+        if repository_uninstall_successful:
             # Now that the repository is uninstalled we can attempt to uninstall each of its repository dependencies.
             # We have to do this through Twill in order to maintain app.toolbox and shed_tool_conf.xml in a state that
             # is valid for future tests.  Since some of the repository's repository dependencies may require other of
@@ -1356,15 +1361,19 @@ def uninstall_repository_and_repository_dependencies( app, repository_dict ):
                             ( rd_changeset_revision, rd_name, rd_owner ) )
                         # Generate a test method to uninstall the repository dependency through the embedded Galaxy application's
                         # web interface.
-                        test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
-                        # Set up nose to run the generated uninstall method as a functional test.
-                        test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-                        test_config.configure( sys.argv )
-                        # Run the uninstall method.
-                        result, _ = run_tests( test_config )
-                        success = result.wasSuccessful()
-                        if not success:
-                            log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed: %s' % \
+                        try:
+                            test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
+                            # Set up nose to run the generated uninstall method as a functional test.
+                            test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+                            test_config.configure( sys.argv )
+                            # Run the uninstall method.
+                            result, _ = run_tests( test_config )
+                            if not result.wasSuccessful():
+                                # We won't set ok here because we'll continue to uninstall whatever we can.
+                                log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed.' % \
+                                    ( rd_changeset_revision, rd_name, rd_owner ) )
+                        except Exception, e:
+                            log.exception( 'Uninstallation of revision %s of repository %s owned by %s failed: %s.' % \
                                 ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
         else:
             log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed.' % ( changeset_revision, name, owner ) )
