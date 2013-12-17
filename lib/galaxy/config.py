@@ -1,6 +1,8 @@
 """
 Universe configuration builder.
 """
+# absolute_import needed for tool_shed package.
+from __future__ import absolute_import
 
 import sys, os, tempfile, re
 import logging, logging.config
