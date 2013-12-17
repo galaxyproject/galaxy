@@ -13,15 +13,17 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+from paste.httpexceptions import HTTPBadRequest
+from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException
 from galaxy.security import Action
 from galaxy import util, web
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixinItems
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 
 import logging
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
+class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     @web.expose_api
     def show( self, trans, id, **kwd ):
@@ -31,7 +33,7 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
         """
         # Get dataset.
         try:
-            dataset = self.get_library_dataset( trans, id = id )
+            dataset = self.get_library_dataset( trans, id = id, check_ownership=False, check_accessible=True )
         except Exception, e:
             return str( e )
         try:
@@ -65,12 +67,22 @@ class DatasetsController( BaseAPIController, UsesLibraryMixinItems ):
             datasets_to_download = util.listify( datasets_to_download )
             for dataset_id in datasets_to_download:
                 try:
-                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-                    assert not ldda.dataset.purged
+                    ldda = self.get_hda_or_ldda( trans, hda_ldda='ldda', dataset_id=dataset_id )
                     lddas.append( ldda )
-                except:
-                    ldda = None
-                    message += "Invalid library dataset id (%s) specified.  " % str( dataset_id )
+                except ItemAccessibilityException:
+                    trans.response.status = 403
+                    return 'Insufficient rights to access library dataset with id: (%s)'  % str( dataset_id )
+                except MessageException:
+                    trans.response.status = 400
+                    return 'Wrong library dataset id: (%s)'  % str( dataset_id )
+                except ItemDeletionException:
+                    trans.response.status = 400
+                    return 'The item with library dataset id: (%s) is deleted'  % str( dataset_id )
+                except HTTPBadRequest, e:
+                    return 'http bad request' + str( e.err_msg )
+                except Exception, e:
+                    trans.response.status = 500
+                    return 'error of unknown kind' + str( e )
 
         if format in [ 'zip','tgz','tbz' ]:
                 error = False
