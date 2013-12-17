@@ -1338,7 +1338,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def verify_installed_repository_data_table_entries( self, required_data_table_entries ):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
-        data_tables = xml_util.parse_xml( self.shed_tool_data_table_conf )
+        data_tables, error_message = xml_util.parse_xml( self.shed_tool_data_table_conf )
         found = False
         # With the tool shed, the "path" attribute that is hard-coded into the tool_data_tble_conf.xml
         # file is ignored.  This is because the tool shed requires the directory location to which this
