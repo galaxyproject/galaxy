@@ -14,7 +14,7 @@ import urllib
 import urllib2
 import zipfile
 from paste.httpexceptions import HTTPBadRequest
-from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException
+from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException, ObjectNotFound
 from galaxy.security import Action
 from galaxy import util, web
 from galaxy.util.streamball import StreamBall
@@ -84,7 +84,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     return 'error of unknown kind' + str( e )
 
         if format in [ 'zip','tgz','tbz' ]:
-                error = False
+                # error = False
                 killme = string.punctuation + string.whitespace
                 trantab = string.maketrans(killme,'_'*len(killme))
                 try:
@@ -117,12 +117,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                      log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0] )
                      trans.response.status = 500
                      return "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
-                if not error:
+                if True:
                     composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
                     seen = []
                     for ldda in lddas:
-                        if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                            continue
+                        # if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                            # continue
                         ext = ldda.extension
                         is_composite = ext in composite_extensions
                         path = ""
@@ -135,6 +135,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             path = os.path.join( parent_folder.name, path )
                             parent_folder = parent_folder.parent
                         path += ldda.name
+
                         while path in seen:
                             path += '_'
                         seen.append( path )
@@ -145,30 +146,61 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             if zpathext == '':
                                 zpath = '%s.html' % zpath # fake the real nature of the html file
                             try:
-                                archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
+                                if format=='zip':
+                                    archive.add( ldda.dataset.file_name, zpath ) # add the primary of a composite set
+                                else:                                    
+                                    archive.add( ldda.dataset.file_name, zpath, check_file=True ) # add the primary of a composite set
                             except IOError:
                                 log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
                                 trans.response.status = 500
                                 return "Unable to create archive for download, please report this error"
+                            except ObjectNotFound:
+                                log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                                trans.response.status = 500
+                                return "Requested dataset does not exist on the host."
+                            except:
+                                trans.response.status = 500
+                                return "Unknown error, please report this error"                                
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
                                 if fname > '':
                                     fname = fname.translate(trantab)
                                 try:
-                                    archive.add( fpath,fname )
+                                    if format=='zip':
+                                        archive.add( fpath,fname )
+                                    else:
+                                        archive.add( fpath,fname, check_file=True  )
                                 except IOError:
                                     log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
                                     trans.response.status = 500
                                     return "Unable to create archive for download, please report this error"
+                                except ObjectNotFound:
+                                    log.exception( "Requested dataset %s does not exist on the host." % fpath )
+                                    trans.response.status = 500
+                                    return "Requested dataset does not exist on the host."                                    
+                                except:
+                                    trans.response.status = 500
+                                    return "Unknown error, please report this error"
                         else: # simple case
                             try:
-                                archive.add( ldda.dataset.file_name, path )
+                                if format=='zip':
+                                    archive.add( ldda.dataset.file_name, path )
+                                else:
+                                    archive.add( ldda.dataset.file_name, path, check_file=True  )
                             except IOError:
                                 log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
                                 trans.response.status = 500
                                 return "Unable to create archive for download, please report this error"
-                    if not error:
+                            except ObjectNotFound:
+                                log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                                trans.response.status = 500
+                                return "Requested dataset does not exist on the host."
+                            except:
+                                trans.response.status = 500
+                                return "Unknown error, please report this error"
+
+                    if True:
                         lname = 'selected_dataset'
                         fname = lname.replace( ' ', '_' ) + '_files'
                         if format == 'zip':
