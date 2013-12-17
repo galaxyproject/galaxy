@@ -1,5 +1,5 @@
 """
-API operations on the dataset from library.
+API operations on the datasets from library.
 """
 import glob
 import logging
@@ -35,6 +35,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             dataset = self.get_library_dataset( trans, id = id, check_ownership=False, check_accessible=True )
         except Exception, e:
+            trans.response.status = 500
             return str( e )
         try:
             # Default: return dataset as dict.
@@ -43,24 +44,22 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
             trans.response.status = 500
+            return "Error in dataset API at listing contents: " + str( e )
 
         rval['id'] = trans.security.encode_id(rval['id']);
         rval['ldda_id'] = trans.security.encode_id(rval['ldda_id']);
         rval['folder_id'] = 'f' + trans.security.encode_id(rval['folder_id'])
-
+        trans.response.status = 200
         return rval
 
     @web.expose
     def download( self, trans, format, **kwd ):
         """
-        POST /api/libraries/datasets/download/{format}
-        POST data: ldda_ids = []
-        Downloads dataset(s) in the requested format.
+        GET /api/libraries/datasets/download/{format}
+        GET multiple params: ldda_ids = []
+        Downloads dataset(s) in the requested format or plain.
         """
         lddas = []
-#         is_admin = trans.user_is_admin()
-#         current_user_roles = trans.get_current_user_roles()
-
         datasets_to_download = kwd['ldda_ids%5B%5D']
 
         if ( datasets_to_download != None ):
@@ -111,15 +110,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         archive = StreamBall( 'w|bz2' )
                         outext = 'tbz2'
                 except ( OSError, zipfile.BadZipfile ):
-                    error = True
                     log.exception( "Unable to create archive for download" )
-                    message = "Unable to create archive for download, please report this error"
-                    status = 'error'
+                    trans.response.status = 500
+                    return "Unable to create archive for download, please report this error"
                 except:
-                     error = True
                      log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0] )
-                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
-                     status = 'error'
+                     trans.response.status = 500
+                     return "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
                 if not error:
                     composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
                     seen = []
@@ -150,11 +147,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             try:
                                 archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
                             except IOError:
-                                error = True
                                 log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
-                                continue
+                                trans.response.status = 500
+                                return "Unable to create archive for download, please report this error"
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
@@ -163,19 +158,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                                 try:
                                     archive.add( fpath,fname )
                                 except IOError:
-                                    error = True
                                     log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
-                                    message = "Unable to create archive for download, please report this error"
-                                    status = 'error'
-                                    continue
+                                    trans.response.status = 500
+                                    return "Unable to create archive for download, please report this error"
                         else: # simple case
                             try:
                                 archive.add( ldda.dataset.file_name, path )
                             except IOError:
-                                error = True
                                 log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
-                                message = "Unable to create archive for download, please report this error"
-                                status = 'error'
+                                trans.response.status = 500
+                                return "Unable to create archive for download, please report this error"
                     if not error:
                         lname = 'selected_dataset'
                         fname = lname.replace( ' ', '_' ) + '_files'
@@ -186,15 +178,18 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                             archive = util.streamball.ZipBall(tmpf, tmpd)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                            trans.response.status = 200
                             return archive.stream
                         else:
                             trans.response.set_content_type( "application/x-tar" )
                             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                            trans.response.status = 200
                             return archive.stream
         elif format == 'uncompressed':
             if len(lddas) != 1:
+                trans.response.status = 400
                 return 'Wrong request'
             else:
                 single_dataset = lddas[0]
@@ -206,8 +201,11 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
                 try:
+                    trans.response.status = 200
                     return open( single_dataset.file_name )
                 except:
+                    trans.response.status = 500
                     return 'This dataset contains no content'
         else:
-            return 'Wrong format';
+            trans.response.status = 400
+            return 'Wrong format parameter specified';
