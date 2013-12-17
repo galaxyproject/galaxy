@@ -927,10 +927,13 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     guid = suc.generate_tool_guid( repository_clone_url, tool )
     # Handle tool.requirements.
     tool_requirements = []
-    for tr in tool.requirements:
-        requirement_dict = dict( name=tr.name,
-                                 type=tr.type,
-                                 version=tr.version )
+    for tool_requirement in tool.requirements:
+        name = str( tool_requirement.name )
+        type = str( tool_requirement.type )
+        version = str( tool_requirement.version ) if tool_requirement.version else None
+        requirement_dict = dict( name=name,
+                                 type=type,
+                                 version=version )
         tool_requirements.append( requirement_dict )
     # Handle tool.tests.
     tool_tests = []
@@ -941,18 +944,31 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                 value, extra = required_file
                 required_files.append( ( value ) )
             inputs = []
-            for input_field, values in ttb.inputs.iteritems():
-                if len( values ) == 1:
-                    inputs.append( ( input_field, values[0] ) )
-                else:
-                    inputs.append( ( input_field, values ) )
+            for param_name, values in ttb.inputs.iteritems():
+                # Handle improperly defined or strange test parameters and values.
+                if param_name is not None:
+                    if values is None:
+                        # An example is the 3rd test in http://testtoolshed.g2.bx.psu.edu/view/devteam/samtools_rmdup
+                        # which is defined as:
+                        # <test>
+                        #    <param name="input1" value="1.bam" ftype="bam" />
+                        #    <param name="bam_paired_end_type_selector" value="PE" />
+                        #    <param name="force_se" />
+                        #    <output name="output1" file="1.bam" ftype="bam" sort="True" />
+                        # </test>
+                        inputs.append( ( param_name, values ) )
+                    else:
+                        if len( values ) == 1:
+                            inputs.append( ( param_name, values[ 0 ] ) )
+                        else:
+                            inputs.append( ( param_name, values ) )
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
                 outputs.append( ( name, suc.strip_path( file_name ) if file_name else None ) )
                 if file_name not in required_files and file_name is not None:
                     required_files.append( file_name )
-            test_dict = dict( name=ttb.name,
+            test_dict = dict( name=str( ttb.name ),
                               required_files=required_files,
                               inputs=inputs,
                               outputs=outputs )
