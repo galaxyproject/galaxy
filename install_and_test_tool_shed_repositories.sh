@@ -40,10 +40,13 @@ else
 fi
 
 # Test installation of repositories of type tool_dependency_definition.
-# ...coming soon!
+python test/install_and_test_tool_shed_repositories/tool_dependency_definitions/functional_tests.py $* -v --with-nosehtml --html-report-file \
+    test/install_and_test_tool_shed_repositories/tool_dependency_definitions/run_functional_tests.html \
+    test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
+    test/functional/test_toolbox.py  
 
 # Test installation of repositories that contain valid tools with defined functional tests and a test-data directory containing test files.
-python test/install_and_test_tool_shed_repositories/repositories_with_tools/functional_tests.py $* -v --with-nosehtml --html-report-file \
-	test/install_and_test_tool_shed_repositories/repositories_with_tools/run_functional_tests.html \
-	test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
-	test/functional/test_toolbox.py  
+#python test/install_and_test_tool_shed_repositories/repositories_with_tools/functional_tests.py $* -v --with-nosehtml --html-report-file \
+#	test/install_and_test_tool_shed_repositories/repositories_with_tools/run_functional_tests.html \
+#	test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
+#	test/functional/test_toolbox.py  

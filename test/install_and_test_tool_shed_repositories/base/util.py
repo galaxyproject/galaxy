@@ -20,6 +20,7 @@ import install_and_test_tool_shed_repositories.functional.test_install_repositor
 import nose
 import platform
 import time
+import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 import urllib
 
@@ -142,6 +143,9 @@ if 'repository_name' in os.environ and 'repository_owner' in os.environ:
     else:
         testing_single_repository_dict[ 'changeset_revision' ] = None
 
+# Test frameworks that use this utility module.
+REPOSITORIES_WITH_TOOLS = 'repositories_with_tools'
+TOOL_DEPENDENCY_DEFINITIONS = 'tool_dependency_definitions'
 
 class ReportResults( Plugin ):
     '''Simple Nose plugin to record the IDs of all tests run, regardless of success.'''
@@ -230,7 +234,7 @@ def get_missing_tool_dependencies( repository ):
             missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency ) )
     return missing_tool_dependencies
 
-def get_repositories_to_install( tool_shed_url ):
+def get_repositories_to_install( tool_shed_url, test_framework ):
     """
     Get a list of repository info dicts to install. This method expects a json list of dicts with the following structure:
     [{ "changeset_revision": <revision>,
@@ -247,12 +251,18 @@ def get_repositories_to_install( tool_shed_url ):
     parts = [ 'repository_revisions' ]
     # We'll filter out deprecated repositories from testing since testing them is necessary only if reproducibility
     # is guaranteed and we currently do not guarantee reproducibility.
-    params = dict( do_not_test='false',
-                   downloadable='true',
-                   includes_tools='true',
-                   malicious='false',
-                   missing_test_components='false',
-                   skip_tool_test='false' )
+    if test_framework == REPOSITORIES_WITH_TOOLS:
+        params = dict( do_not_test='false',
+                       downloadable='true',
+                       includes_tools='true',
+                       malicious='false',
+                       missing_test_components='false',
+                       skip_tool_test='false' )
+    elif test_framework == TOOL_DEPENDENCY_DEFINITIONS:
+        params = dict( do_not_test='false',
+                       downloadable='true',
+                       malicious='false',
+                       skip_tool_test='false' )
     api_url = get_api_url( base=tool_shed_url, parts=parts, params=params )
     baseline_repository_dicts, error_message = json_from_url( api_url )
     if error_message:
@@ -272,6 +282,9 @@ def get_repositories_to_install( tool_shed_url ):
                 # Don't test empty repositories.
                 changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
                 if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                    # If testing repositories of type tool_dependency_definition, filter accordingly.
+                    if test_framework == TOOL_DEPENDENCY_DEFINITIONS and repository_dict[ 'type' ] != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                        continue
                     # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
                     # append it to the list of repository_dicts to install and test.
                     if latest_revision_only:
@@ -299,7 +312,7 @@ def get_repositories_to_install( tool_shed_url ):
     # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL
     # environment variable.
     log.debug( "The Tool Shed's API url...\n%s" % str( api_url ) )
-    log.debug( "...retrieved %d repository revisions for testing." % len( repository_dicts ) )
+    log.debug( "...retrieved %d repository revisions for installation and possible testing." % len( repository_dicts ) )
     log.debug( "Repository revisions for testing:" )
     for repository_dict in repository_dicts:
         name = str( repository_dict.get( 'name', None ) )
@@ -309,15 +322,13 @@ def get_repositories_to_install( tool_shed_url ):
     return repository_dicts, error_message
 
 def get_repository_current_revision( repo_path ):
-    '''
-    This method uses the python mercurial API to get the current working directory's mercurial changeset hash. Note that if the author of mercurial
-    changes the API, this method will have to be updated or replaced.
-    '''
+    """This method uses the python mercurial API to get the current working directory's mercurial changeset hash."""
     # Initialize a mercurial repo object from the provided path.
     repo = hg.repository( ui.ui(), repo_path )
     # Get the working directory's change context.
     ctx = repo[ None ]
-    # Extract the changeset hash of the first parent of that change context (the most recent changeset to which the working directory was updated).
+    # Extract the changeset hash of the first parent of that change context (the most recent changeset to which the
+    # working directory was updated).
     changectx = ctx.parents()[ 0 ]
     # Also get the numeric revision, so we can return the customary id:hash changeset identifiers.
     ctx_rev = changectx.rev()
@@ -461,13 +472,18 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
                                                                 changeset_revision=str( repository.changeset_revision ) ) )
     return results_dict
 
-def initialize_results_dict():
+def initialize_results_dict( test_framework ):
     # Initialize a dictionary for the summary that will be printed to stdout.
     results_dict = {}
-    results_dict[ 'total_repositories_tested' ] = 0
-    results_dict[ 'all_tests_passed' ] = []
-    results_dict[ 'at_least_one_test_failed' ] = []
-    results_dict[ 'repositories_failed_install' ] = []
+    if test_framework == REPOSITORIES_WITH_TOOLS:
+        results_dict[ 'total_repositories_tested' ] = 0
+        results_dict[ 'all_tests_passed' ] = []
+        results_dict[ 'at_least_one_test_failed' ] = []
+        results_dict[ 'repositories_failed_install' ] = []
+    elif test_framework == TOOL_DEPENDENCY_DEFINITIONS:
+        results_dict[ 'total_repositories_installed' ] = 0
+        results_dict[ 'repositories_with_installation_error' ] = 0
+        results_dict[ 'tool_dependencies_with_installation_error' ] = 0
     return results_dict
 
 def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
